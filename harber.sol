@@ -12,8 +12,8 @@ contract harber {
         string name;
         address currentOwner;
         uint currentPrice;
-       //address[] ownershipChangeAddresses;
-       uint[] ownershipChangeBlockNumbers;
+       address[] ownershipChangeAddress;
+       uint[] ownershipChangeBlockNumber;
     }
     
     constructor () public {
@@ -21,20 +21,30 @@ contract harber {
         manu.name = 'Manchester United';
         manu.currentOwner = noOwner;
         manu.currentPrice = 0;
-        
-        // Team memory liverpool = Team ('Liverpool', noOwner, 0, new uint[](2)  );
         teamList[0] = manu;
-        // teamList[1] = liverpool;
+        Team memory liverpool;
+        manu.name = 'Liverpool';
+        manu.currentOwner = noOwner;
+        manu.currentPrice = 0;
+        teamList[1] = liverpool;
     }
     
-    function getTeamDetails (uint _teamId) view public returns (string memory, address, uint, uint[] memory)
+    function getTeamDetails (uint _teamId) view public returns (string memory, address, uint, address[] memory, uint[] memory)
     {
         Team memory team = teamList[_teamId];
-        return (team.name, team.currentOwner, team.currentPrice, team.ownershipChangeBlockNumbers);
+        return (team.name, team.currentOwner, team.currentPrice, team.ownershipChangeAddress, team.ownershipChangeBlockNumber);
     }
     
-    
-    
+    function buyTeam (uint _teamId, uint _price) public {
+        Team storage team = teamList[_teamId];
+        require(team.currentPrice < _price);
+        team.currentOwner = msg.sender;
+        team.currentPrice = _price;
+        team.ownershipChangeBlockNumber.push(block.number);
+        team.ownershipChangeAddress.push(msg.sender);
+        teamList[_teamId] = team; 
+
+    }
     
     
 }
