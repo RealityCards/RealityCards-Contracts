@@ -59,11 +59,19 @@ contract harber {
 	    		augurAccount = augurAccount + team.balance;
 	    		team.balance = 0;
 	    		team.timeLastCollected = now;
-	    		// foreclose(teamId)
+	    		foreclose(_teamId);
 	    	}
 	    	emit taxCollected(taxOwed,augurAccount);
     	}
     	
+    }
+
+    function foreclose(uint _teamId) internal
+    {
+    	Team storage team = teamList[_teamId];
+    	team.owned = false;
+    	team.currentOwner = noOwner;
+    	team.currentPrice = 0;
     }
 
     function getAugurBalance () view public returns (uint)
@@ -98,7 +106,7 @@ contract harber {
         team.balance = team.balance + msg.value;
         team.currentPrice = _price;
         team.timeLastCollected = now;
-        teamList[_teamId] = team; 
+        // teamList[_teamId] = team; 
 
     }
     
