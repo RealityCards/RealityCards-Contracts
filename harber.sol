@@ -5,9 +5,7 @@ contract harber {
     address public augurMarket = 0x800c4073ab02dA14B161C1bc1Da074c241F9B377;
     uint blockNumberToResolve = 6000000;
     address noOwner = 0x0000000000000000000000000000000000000000;
-    uint augurAccount;
-    // enum ownedState { Foreclosed, Owned }
-    // ownedState public state;
+    uint public augurAccount;
 
     event taxCollected(uint indexed taxOwed, uint indexed augurAccount);
     
@@ -20,8 +18,6 @@ contract harber {
         uint timeLastCollected;
         uint balance;
         bool owned; 
-        // address[] ownershipChangeAddress;
-        // uint[] ownershipChangeBlockNumber;
     }
     
     constructor () public {
@@ -74,11 +70,6 @@ contract harber {
     	team.currentPrice = 0;
     }
 
-    function getAugurBalance () view public returns (uint)
-    {
-    	return augurAccount;
-    }
-    
     function getTeamDetails (uint _teamId) view public returns (string memory, address, uint, uint, uint, bool)
     {
         Team memory team = teamList[_teamId];
