@@ -18,7 +18,7 @@ contract MyContract {
     
     ICompleteSets completeSets = ICompleteSets(0x48fcc9d538b9c86ba9d35b3eb0e7f64ee2b4664f);
     IMarket market = IMarket(0x448d1d8280844513c38b2b73bde8a539d0022954);
-    ERC20 erc20 = ERC20(0x48fcc9d538b9c86ba9d35b3eb0e7f64ee2b4664f);
+    ERC20 erc20 = ERC20(0x903e028cb6752c9079bcf1b6bfae182d873b4b23);
     
     function Approve () public {
         erc20.approve(address(this), 2^256-1);
