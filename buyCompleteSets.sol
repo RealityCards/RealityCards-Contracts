@@ -18,10 +18,13 @@ contract MyContract {
     
     ICompleteSets completeSets = ICompleteSets(0x48fcc9d538b9c86ba9d35b3eb0e7f64ee2b4664f);
     IMarket market = IMarket(0x448d1d8280844513c38b2b73bde8a539d0022954);
-    ERC20 erc20 = ERC20(0x903e028cb6752c9079bcf1b6bfae182d873b4b23);
+    //Augur.sol address: 0x990b2d2af7e87cd015a607c3a95d7622c9bbede1 [this is what the tx is sent to per metamask GUI]
+    //LegacyReputationToken address: 0x903e028cb6752c9079bcf1b6bfae182d873b4b23 [this is what works when I do it via remix]
+    //Cash.sol address: 0x2da4d465978981bd75bbac4c9f3bda10be0b465c [this is what the tx is sent to per etherscan when it originally said Augur.sol]
+    ERC20 erc20 = ERC20(0x2da4d465978981bd75bbac4c9f3bda10be0b465c);
     
     function Approve () public {
-        erc20.approve(address(this), 2^256-1);
+        erc20.approve(0x990b2d2af7e87cd015a607c3a95d7622c9bbede1, 2^256-1);
     }
     
     function getNumTicksLocal() public {
