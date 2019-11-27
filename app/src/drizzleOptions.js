@@ -1,4 +1,4 @@
-import ArtSteward from "./contracts/ArtSteward.json";
+import Harber from "./contracts/Harber.json";
 import ERC721Full from "./contracts/ERC721Full.json";
 
 // todo: read env var for fallback
@@ -13,7 +13,7 @@ const options = {
     },
   },
   contracts: [
-    ArtSteward, 
+    Harber, 
     ERC721Full
   ],
   syncAlways: true,

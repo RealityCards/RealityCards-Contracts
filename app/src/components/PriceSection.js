@@ -14,10 +14,10 @@ class PriceSection extends Component {
       this.contracts = context.drizzle.contracts;
       this.state = {
         USD: -1,
-        artworkPriceKey: context.drizzle.contracts.ArtSteward.methods.price.cacheCall(),
+        artworkPriceKey: context.drizzle.contracts.Harber.methods.price.cacheCall(),
         patron: null,
         patronKey: context.drizzle.contracts.ERC721Full.methods.ownerOf.cacheCall(42),
-        timeAcquiredKey: context.drizzle.contracts.ArtSteward.methods.timeAcquired.cacheCall(),
+        timeAcquiredKey: context.drizzle.contracts.Harber.methods.timeAcquired.cacheCall(),
         timeHeldKey: null,
         currentTimeHeld: 0,
         currentTimeHeldHumanized: ""
@@ -38,7 +38,7 @@ class PriceSection extends Component {
       note: this is a hack. smart contract didn't store timeAcquired when steward started. 
       Thus: time held will be very large. It needs to be reduced.
       */
-      if (props.contracts['ERC721Full']['ownerOf'][this.state.patronKey].value === this.contracts.ArtSteward.address) {
+      if (props.contracts['ERC721Full']['ownerOf'][this.state.patronKey].value === this.contracts.Harber.address) {
         const deployedtime = new this.utils.BN('1553202847');
         currentTimeHeld = new this.utils.BN(currentTimeHeld).sub(deployedtime).toString();
       }
@@ -53,7 +53,7 @@ class PriceSection extends Component {
     async updatePatron(props) {
       const patron = this.getPatron(props);
       // update timeHeldKey IF owner updated
-      const timeHeldKey = this.contracts.ArtSteward.methods.timeHeld.cacheCall(patron);
+      const timeHeldKey = this.contracts.Harber.methods.timeHeld.cacheCall(patron);
       this.setState({
         currentTimeHeld: 0,
         timeHeldKey,
@@ -62,7 +62,7 @@ class PriceSection extends Component {
     }
 
     getArtworkPrice(props) {
-      return new this.utils.BN(props.contracts['ArtSteward']['price']['0x0'].value);
+      return new this.utils.BN(props.contracts['Harber']['price']['0x0'].value);
     }
 
     getPatron(props) {
@@ -70,11 +70,11 @@ class PriceSection extends Component {
     }
 
     getTimeAcquired(props) {
-      return props.contracts['ArtSteward']['timeAcquired'][this.state.timeAcquiredKey].value;
+      return props.contracts['Harber']['timeAcquired'][this.state.timeAcquiredKey].value;
     }
 
     getTimeHeld(props, timeHeldKey) {
-      return props.contracts['ArtSteward']['timeHeld'][timeHeldKey].value;
+      return props.contracts['Harber']['timeHeld'][timeHeldKey].value;
     }
 
     async componentWillUpdate(nextProps, nextState) {
@@ -86,15 +86,15 @@ class PriceSection extends Component {
       }
 
       /* todo: fetch new exchange rate? */
-      if (this.state.artworkPriceKey in this.props.contracts['ArtSteward']['price']
-      && this.state.artworkPriceKey in nextProps.contracts['ArtSteward']['price']) {
+      if (this.state.artworkPriceKey in this.props.contracts['Harber']['price']
+      && this.state.artworkPriceKey in nextProps.contracts['Harber']['price']) {
         if (!this.getArtworkPrice(this.props).eq(this.getArtworkPrice(nextProps)) || this.state.USD === -1) {
           await this.updateUSDPrice(nextProps);
         }
       }
 
-      if(this.state.timeHeldKey in this.props.contracts['ArtSteward']['timeHeld']
-      && this.state.timeHeldKey in nextProps.contracts['ArtSteward']['timeHeld']) {
+      if(this.state.timeHeldKey in this.props.contracts['Harber']['timeHeld']
+      && this.state.timeHeldKey in nextProps.contracts['Harber']['timeHeld']) {
         if(this.getTimeHeld(this.props, this.state.timeHeldKey) !== this.getTimeHeld(nextProps, this.state.timeHeldKey) || this.state.currentTimeHeld === 0) {
           this.updateTimeHeld(nextProps, this.state.timeHeldKey);
         }
@@ -104,7 +104,7 @@ class PriceSection extends Component {
     render() {
       return (
         <Fragment>
-        <h2>Valued at: <ContractData contract="ArtSteward" method="price" toEth /> ETH (~${this.state.USD} USD) </h2>
+        <h2>Valued at: <ContractData contract="Harber" method="price" toEth /> ETH (~${this.state.USD} USD) </h2>
         Current Owner: <ContractData contract="ERC721Full" method="ownerOf" methodArgs={[42]}/><br />
         Total Time Held: {this.state.currentTimeHeldHumanized} 
         </Fragment>

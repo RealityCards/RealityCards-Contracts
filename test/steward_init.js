@@ -1,18 +1,18 @@
 const { BN, shouldFail, ether, expectEvent, balance, time } = require('openzeppelin-test-helpers');
 
 const Artwork = artifacts.require('./ERC721Full.sol');
-const ArtSteward = artifacts.require('./ArtSteward.sol');
+const Harber = artifacts.require('./Harber.sol');
 
 const delay = duration => new Promise(resolve => setTimeout(resolve, duration));
 
-contract('ArtSteward', (accounts) => {
+contract('Harber', (accounts) => {
 
   let artwork;
   let steward;
   
   beforeEach(async () => {
     artwork = await Artwork.new("TESTARTWORK", "TA");
-    steward = await ArtSteward.new(accounts[1], artwork.address, { from: accounts[0]});
+    steward = await Harber.new(accounts[1], artwork.address, { from: accounts[0]});
   });
 
   it('steward: init: artwork minted', async () => {

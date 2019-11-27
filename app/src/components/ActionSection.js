@@ -13,8 +13,8 @@ class ActionSection extends Component {
     this.utils = context.drizzle.web3.utils;
     this.contracts = context.drizzle.contracts;
     this.state = {
-      patronageOwedKey: context.drizzle.contracts.ArtSteward.methods.patronageOwed.cacheCall(),
-      totalCollectedKey: context.drizzle.contracts.ArtSteward.methods.totalCollected.cacheCall(),
+      patronageOwedKey: context.drizzle.contracts.Harber.methods.patronageOwed.cacheCall(),
+      totalCollectedKey: context.drizzle.contracts.Harber.methods.totalCollected.cacheCall(),
       patronageOwed: -1,
       combinedCollected: -1,
       foreclosureTime: "N/A"
@@ -22,7 +22,7 @@ class ActionSection extends Component {
   }
 
   getTotalCollected(props) {
-    return new this.utils.BN(props.contracts['ArtSteward']['totalCollected'][this.state.totalCollectedKey].value);
+    return new this.utils.BN(props.contracts['Harber']['totalCollected'][this.state.totalCollectedKey].value);
   }
 
   async updateCombineCollected(props) {
@@ -36,25 +36,25 @@ class ActionSection extends Component {
   }
 
   getPatronageOwed(props) {
-    return new this.utils.BN(props.contracts['ArtSteward']['patronageOwed'][this.state.patronageOwedKey].value);
+    return new this.utils.BN(props.contracts['Harber']['patronageOwed'][this.state.patronageOwedKey].value);
   }
 
   async componentWillReceiveProps(nextProps) {
-    if(this.props.contracts['ArtSteward']['price']['0x0'] !== nextProps.contracts['ArtSteward']['price']['0x0']) {
-      if (nextProps.contracts['ArtSteward']['price']['0x0'].value === '0') {
+    if(this.props.contracts['Harber']['price']['0x0'] !== nextProps.contracts['Harber']['price']['0x0']) {
+      if (nextProps.contracts['Harber']['price']['0x0'].value === '0') {
         this.setState({
           foreclosureTime: "N/A"
         });
       } else {
-        const foreclosureTime = moment(parseInt(await this.contracts.ArtSteward.methods.foreclosureTime().call())*1000).toString();
+        const foreclosureTime = moment(parseInt(await this.contracts.Harber.methods.foreclosureTime().call())*1000).toString();
         this.setState({foreclosureTime});
       }
     }
 
-    if (this.state.patronageOwedKey in this.props.contracts['ArtSteward']['patronageOwed']
-    && this.state.patronageOwedKey in nextProps.contracts['ArtSteward']['patronageOwed']
-    && this.state.totalCollectedKey in this.props.contracts['ArtSteward']['totalCollected']
-    && this.state.totalCollectedKey in nextProps.contracts['ArtSteward']['totalCollected']) {
+    if (this.state.patronageOwedKey in this.props.contracts['Harber']['patronageOwed']
+    && this.state.patronageOwedKey in nextProps.contracts['Harber']['patronageOwed']
+    && this.state.totalCollectedKey in this.props.contracts['Harber']['totalCollected']
+    && this.state.totalCollectedKey in nextProps.contracts['Harber']['totalCollected']) {
       if (!this.getPatronageOwed(this.props).eq(this.getPatronageOwed(nextProps)) || this.state.combinedCollected === -1) {
         this.updateCombineCollected(nextProps);
       }
@@ -66,17 +66,17 @@ class ActionSection extends Component {
     <div className="section">
       <h2>Current Owner Details:</h2>
         <p>Address: <ContractData contract="ERC721Full" method="ownerOf" methodArgs={[42]}/></p>
-        <p>Available Deposit: <ContractData contract="ArtSteward" method="depositAbleToWithdraw" toEth /> ETH</p>
+        <p>Available Deposit: <ContractData contract="Harber" method="depositAbleToWithdraw" toEth /> ETH</p>
         <p>Foreclosure Time: {this.state.foreclosureTime}</p>
         {/* <p>The current deposit will cover the patronage until the time above. At this time, the smart contract steward takes ownership of the artwork and sets its price back to zero.</p> */}
         {/* <p>Once it crosses this time period, the patron can't top up their deposit anymore and is effectively foreclosed.</p> */}
       <h2>Actions:</h2>
         {window.ethereum !== undefined ? (
           <Fragment>
-          <ContractForm buttonText="Change Price" contract="ArtSteward" method="changePrice" labels={["New Price"]}/>
-          <DepositWeiForm contract="ArtSteward" method="depositWei" valueLabel="Deposit" sendArgs={{}}/>
-          <ContractForm buttonText="Withdraw Deposit" contract="ArtSteward" method="withdrawDeposit" labels={["Deposit in ETH"]} toEth />
-          <ContractForm buttonText="Withdraw Whole Deposit And Foreclose" contract="ArtSteward" method="exit" />
+          <ContractForm buttonText="Change Price" contract="Harber" method="changePrice" labels={["New Price"]}/>
+          <DepositWeiForm contract="Harber" method="depositWei" valueLabel="Deposit" sendArgs={{}}/>
+          <ContractForm buttonText="Withdraw Deposit" contract="Harber" method="withdrawDeposit" labels={["Deposit in ETH"]} toEth />
+          <ContractForm buttonText="Withdraw Whole Deposit And Foreclose" contract="Harber" method="exit" />
           </Fragment>
         ) : (
           <Fragment>

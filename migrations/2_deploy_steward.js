@@ -1,5 +1,5 @@
 /* globals artifacts */
-var ArtSteward = artifacts.require("./ArtSteward.sol");
+var Harber = artifacts.require("./Harber.sol");
 var Artwork = artifacts.require("./ERC721Full.sol");
 
 const deploymentAccount =  '0x09b67b74fb050a35304a6447dfa41b1a9d6afa3a'; //[0] address from mnemonic
@@ -10,12 +10,12 @@ module.exports = function(deployer, network, accounts) {
     // deploy with mnemonic provider
     deployer.deploy(Artwork, "This Artwork Is Always OnSale", "TAIAOS").then((deployedArtwork) => {
       console.log(deployedArtwork.address);
-      return deployer.deploy(ArtSteward, artistAccount, deployedArtwork.address);
+      return deployer.deploy(Harber, artistAccount, deployedArtwork.address);
     });
   } else {
     // development deploy
     deployer.deploy(Artwork, "ThisArtworkIsAlwaysOnSale", "TAIAOS").then((deployedArtwork) => {
-      return deployer.deploy(ArtSteward, accounts[0], deployedArtwork.address);
+      return deployer.deploy(Harber, accounts[0], deployedArtwork.address);
     });
   }
 
