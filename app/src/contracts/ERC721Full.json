@@ -2465,12 +2465,12 @@
         }
       },
       "links": {},
-      "address": "0xF2b3D44f40C5D9082bFc6855063ca5EaE508dB6E",
-      "transactionHash": "0x5baffdf7dbc9aa841695e2884f16fc3063bc6d95e070883034bfa180f70d8c47"
+      "address": "0x42B701acbBc31541FD3b9383272e91289A854f99",
+      "transactionHash": "0x0c93cc1d5160ecd48cd888a338b673442224117545fee848f46f640fb6193035"
     }
   },
   "schemaVersion": "3.0.17",
-  "updatedAt": "2019-11-27T07:59:14.548Z",
+  "updatedAt": "2019-11-27T08:33:25.933Z",
   "networkType": "ethereum",
   "devdoc": {
     "details": "see https://github.com/ethereum/EIPs/blob/master/EIPS/eip-721.md",

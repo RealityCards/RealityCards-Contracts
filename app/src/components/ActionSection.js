@@ -64,12 +64,12 @@ class ActionSection extends Component {
   render() {
     return (
     <div className="section">
-      <h2>Current Patron Details:</h2>
+      <h2>Current Owner Details:</h2>
         <p>Address: <ContractData contract="ERC721Full" method="ownerOf" methodArgs={[42]}/></p>
         <p>Available Deposit: <ContractData contract="ArtSteward" method="depositAbleToWithdraw" toEth /> ETH</p>
         <p>Foreclosure Time: {this.state.foreclosureTime}</p>
-        <p>The current deposit will cover the patronage until the time above. At this time, the smart contract steward takes ownership of the artwork and sets its price back to zero.</p>
-        <p>Once it crosses this time period, the patron can't top up their deposit anymore and is effectively foreclosed.</p>
+        {/* <p>The current deposit will cover the patronage until the time above. At this time, the smart contract steward takes ownership of the artwork and sets its price back to zero.</p> */}
+        {/* <p>Once it crosses this time period, the patron can't top up their deposit anymore and is effectively foreclosed.</p> */}
       <h2>Actions:</h2>
         {window.ethereum !== undefined ? (
           <Fragment>

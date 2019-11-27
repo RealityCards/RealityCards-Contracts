@@ -105,7 +105,7 @@ class PriceSection extends Component {
       return (
         <Fragment>
         <h2>Valued at: <ContractData contract="ArtSteward" method="price" toEth /> ETH (~${this.state.USD} USD) </h2>
-        Current Patron: <ContractData contract="ERC721Full" method="ownerOf" methodArgs={[42]}/><br />
+        Current Owner: <ContractData contract="ERC721Full" method="ownerOf" methodArgs={[42]}/><br />
         Total Time Held: {this.state.currentTimeHeldHumanized} 
         </Fragment>
       )

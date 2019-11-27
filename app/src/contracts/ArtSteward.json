@@ -17337,12 +17337,12 @@
         }
       },
       "links": {},
-      "address": "0x071FaEE0d32e420C88295802a65758a924B56262",
-      "transactionHash": "0x93e2699087ce1abed021d9d6239b64a8f6b93383c6bc037204898386144fab52"
+      "address": "0x9929df6ecf561779067CC18f3EF9bc9aeaF642E2",
+      "transactionHash": "0x26097abe3310eed76dfb76871a250bf5bed393dd0728a5157426cc737396a67b"
     }
   },
   "schemaVersion": "3.0.17",
-  "updatedAt": "2019-11-27T07:59:14.538Z",
+  "updatedAt": "2019-11-27T08:33:25.924Z",
   "networkType": "ethereum",
   "devdoc": {
     "methods": {}
