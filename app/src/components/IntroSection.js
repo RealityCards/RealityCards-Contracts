@@ -2,7 +2,7 @@ import { drizzleConnect } from "drizzle-react";
 import React, { Component } from "react";
 import PropTypes from "prop-types";
 
-import BuyArtworkSection from "./BuyArtworkSection";
+// import BuyArtworkSection from "./BuyArtworkSection";
 import ArtAndPriceSection from "./ArtAndPriceSection";
 
 class IntroSection extends Component {
@@ -10,7 +10,7 @@ class IntroSection extends Component {
       return (
         <div className="section">
         <ArtAndPriceSection />
-        <BuyArtworkSection />
+        {/* <BuyArtworkSection /> */}
       </div>
       )
     }

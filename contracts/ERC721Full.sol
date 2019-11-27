@@ -21,8 +21,10 @@ contract ERC721Full is ERC721, ERC721Enumerable, ERC721Metadata {
         init = true;
 
         steward = msg.sender;
-        // mint artwork
-        _mint(steward, 42); // mint
-        _setTokenURI(42, "https://thisartworkisalwaysonsale.com/metadata");
+        // mint NFT for each outcome
+        _mint(steward, 0); // mint
+        _setTokenURI(0, "https://en.wikipedia.org/wiki/Manchester_United_F.C.");
+        _mint(steward, 1); // mint
+        _setTokenURI(1, "https://en.wikipedia.org/wiki/Liverpool_F.C.");
     }
 }

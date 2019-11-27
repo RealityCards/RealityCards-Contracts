@@ -12,7 +12,7 @@ class BuyArtworkSection extends Component {
         <h2>Buy Artwork</h2>
         {window.ethereum !== undefined ? (
         <Fragment>
-        <p>You will pay <ContractData contract="Harber" method="price" toEth/> ETH.<br /> Add your own sale price and amount you want to deposit for patronage: </p>
+        <p>You will pay <ContractData contract="Harber" method="price(0)" toEth/> ETH.<br /> Add your own sale price and amount you want to deposit for patronage: </p>
           <BuyForm contract="Harber" method="buy" labels={["Your Initial Sale Price"]} valueLabel="Your Initial Deposit" sendArgs={{}}/>
         </Fragment>
         ) : (

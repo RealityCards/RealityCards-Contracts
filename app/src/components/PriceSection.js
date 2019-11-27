@@ -16,8 +16,8 @@ class PriceSection extends Component {
         USD: -1,
         artworkPriceKey: context.drizzle.contracts.Harber.methods.price.cacheCall(),
         patron: null,
-        patronKey: context.drizzle.contracts.ERC721Full.methods.ownerOf.cacheCall(42),
-        timeAcquiredKey: context.drizzle.contracts.Harber.methods.timeAcquired.cacheCall(),
+        patronKey: context.drizzle.contracts.ERC721Full.methods.ownerOf.cacheCall(0),
+        timeAcquiredKey: context.drizzle.contracts.Harber.methods.timeAcquired.cacheCall(0),
         timeHeldKey: null,
         currentTimeHeld: 0,
         currentTimeHeldHumanized: ""
@@ -62,11 +62,11 @@ class PriceSection extends Component {
     }
 
     getArtworkPrice(props) {
-      return new this.utils.BN(props.contracts['Harber']['price']['0x0'].value);
+      return new this.utils.BN(props.contracts['Harber']['getPrice']['0x0'][0].value);
     }
 
     getPatron(props) {
-      return props.contracts['ERC721Full']['ownerOf'][this.state.patronKey].value;
+      return props.contracts['ERC721Full']['ownerOf'][0][this.state.patronKey].value;
     }
 
     getTimeAcquired(props) {
@@ -104,8 +104,8 @@ class PriceSection extends Component {
     render() {
       return (
         <Fragment>
-        <h2>Valued at: <ContractData contract="Harber" method="price" toEth /> ETH (~${this.state.USD} USD) </h2>
-        Current Owner: <ContractData contract="ERC721Full" method="ownerOf" methodArgs={[42]}/><br />
+        <h2>Valued at: <ContractData contract="Harber" method="getPrice" methodArgs={[0]} toEth /> ETH (~${this.state.USD} USD) </h2>
+        Current Owner: <ContractData contract="ERC721Full" method="ownerOf" methodArgs={[0]}/><br />
         Total Time Held: {this.state.currentTimeHeldHumanized} 
         </Fragment>
       )
