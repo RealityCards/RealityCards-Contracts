@@ -56,6 +56,11 @@ contract Harber {
     }
 
     /* public view functions */
+    function getTimeHeld(int256 _tokenId, address _adress) ublic view returns (uint256)
+    {
+        return timeHeld[_tokenId][_adress];
+    }
+
     function getPrice(uint256 _tokenId) public view returns (uint256)
     {
         return price[_tokenId];

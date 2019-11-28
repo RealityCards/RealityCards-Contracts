@@ -23,9 +23,7 @@ class PriceSection extends Component {
     }
 
     async updateUSDPrice(props) {
-      // console.log("stfu");
       const price = this.utils.fromWei(this.getArtworkPrice(props), 'ether');
-      // const price = 5;
       console.log("price is",price);
       const USD = await getUSDValue(price);
       this.setState({USD});
@@ -51,41 +49,41 @@ class PriceSection extends Component {
       });
     }
 
-    // async updatePatron(props) {
-    //   const patron = this.getPatron(props);
-    //   // update timeHeldKey IF owner updated
-    //   const timeHeldKey = this.contracts.Harber.methods.timeHeld.cacheCall(patron);
-    //   this.setState({
-    //     currentTimeHeld: 0,
-    //     timeHeldKey,
-    //     patron
-    //   });
-    // }
+    async updatePatron(props) {
+      const patron = this.getPatron(props);
+      // update timeHeldKey IF owner updated
+      const timeHeldKey = this.contracts.Harber.methods.timeHeld.cacheCall(0,patron);
+      this.setState({
+        currentTimeHeld: 0,
+        timeHeldKey,
+        patron
+      });
+    }
 
     getArtworkPrice(props) {
       console.log(props.contracts);
       return new this.utils.BN(props.contracts['Harber']['price'][this.state.artworkPriceKey].value);
     }
 
-    // getPatron(props) {
-    //   return props.contracts['ERC721Full']['ownerOf'][this.state.patronKey].value;
-    // }
+    getPatron(props) {
+      return props.contracts['ERC721Full']['ownerOf'][this.state.patronKey].value;
+    }
 
-    // getTimeAcquired(props) {
-    //   return props.contracts['Harber']['timeAcquired'][this.state.timeAcquiredKey].value;
-    // }
+    getTimeAcquired(props) {
+      return props.contracts['Harber']['timeAcquired'][this.state.timeAcquiredKey].value;
+    }
 
-    // getTimeHeld(props, timeHeldKey) {
-    //   return props.contracts['Harber']['timeHeld'][timeHeldKey].value;
-    // }
+    getTimeHeld(props, timeHeldKey) {
+      return props.contracts['Harber']['timeHeld'][timeHeldKey].value;
+    }
 
     async componentWillUpdate(nextProps, nextState) {
-      // if (this.state.patronKey in this.props.contracts['ERC721Full']['ownerOf']
-      // && this.state.patronKey in nextProps.contracts['ERC721Full']['ownerOf']) {
-      //   if(this.getPatron(this.props) !== this.getPatron(nextProps) || this.state.patron === null) {
-      //     this.updatePatron(nextProps);
-      //   }
-      // }
+      if (this.state.patronKey in this.props.contracts['ERC721Full']['ownerOf']
+      && this.state.patronKey in nextProps.contracts['ERC721Full']['ownerOf']) {
+        if(this.getPatron(this.props) !== this.getPatron(nextProps) || this.state.patron === null) {
+          this.updatePatron(nextProps);
+        }
+      }
 
       /* todo: fetch new exchange rate? */
       if (this.state.artworkPriceKey in this.props.contracts['Harber']['price']
@@ -95,12 +93,12 @@ class PriceSection extends Component {
         }
       }
 
-      // if(this.state.timeHeldKey in this.props.contracts['Harber']['timeHeld']
-      // && this.state.timeHeldKey in nextProps.contracts['Harber']['timeHeld']) {
-      //   if(this.getTimeHeld(this.props, this.state.timeHeldKey) !== this.getTimeHeld(nextProps, this.state.timeHeldKey) || this.state.currentTimeHeld === 0) {
-      //     this.updateTimeHeld(nextProps, this.state.timeHeldKey);
-      //   }
-      // }
+      if(this.state.timeHeldKey in this.props.contracts['Harber']['timeHeld']
+      && this.state.timeHeldKey in nextProps.contracts['Harber']['timeHeld']) {
+        if(this.getTimeHeld(this.props, this.state.timeHeldKey) !== this.getTimeHeld(nextProps, this.state.timeHeldKey) || this.state.currentTimeHeld === 0) {
+          this.updateTimeHeld(nextProps, this.state.timeHeldKey);
+        }
+      }
     }
 
     render() {
