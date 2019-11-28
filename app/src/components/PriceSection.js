@@ -5,6 +5,11 @@ import moment from "moment";
 import ContractData from "./ContractData";
 import { getUSDValue } from "../Actions";
 
+var url_string = window.location.href;
+var url = new URL(url_string);
+var urlId = url.searchParams.get("id");
+console.log(urlId);
+
 class PriceSection extends Component {
     constructor(props, context) {
       super();
@@ -12,19 +17,21 @@ class PriceSection extends Component {
       this.contracts = context.drizzle.contracts;
       this.state = {
         USD: -1,
-        artworkPriceKey: context.drizzle.contracts.Harber.methods.price.cacheCall(0),
+        artworkPriceKey: context.drizzle.contracts.Harber.methods.price.cacheCall(urlId),
         patron: null,
-        patronKey: context.drizzle.contracts.ERC721Full.methods.ownerOf.cacheCall(0),
-        timeAcquiredKey: context.drizzle.contracts.Harber.methods.timeAcquired.cacheCall(0),
+        patronKey: context.drizzle.contracts.ERC721Full.methods.ownerOf.cacheCall(urlId),
+        timeAcquiredKey: context.drizzle.contracts.Harber.methods.timeAcquired.cacheCall(urlId),
         timeHeldKey: null,
         currentTimeHeld: 0,
         currentTimeHeldHumanized: ""
       };
     }
 
+    
+
     async updateUSDPrice(props) {
       const price = this.utils.fromWei(this.getArtworkPrice(props), 'ether');
-      console.log("price is",price);
+      // console.log("price is",price);
       const USD = await getUSDValue(price);
       this.setState({USD});
     }
@@ -52,7 +59,7 @@ class PriceSection extends Component {
     async updatePatron(props) {
       const patron = this.getPatron(props);
       // update timeHeldKey IF owner updated
-      const timeHeldKey = this.contracts.Harber.methods.timeHeld.cacheCall(0,patron);
+      const timeHeldKey = this.contracts.Harber.methods.timeHeld.cacheCall(urlId,patron);
       this.setState({
         currentTimeHeld: 0,
         timeHeldKey,
@@ -61,7 +68,7 @@ class PriceSection extends Component {
     }
 
     getArtworkPrice(props) {
-      console.log(props.contracts);
+      // console.log(props.contracts);
       return new this.utils.BN(props.contracts['Harber']['price'][this.state.artworkPriceKey].value);
     }
 
@@ -102,13 +109,16 @@ class PriceSection extends Component {
     }
 
     render() {
-      console.log("this.state.patronKey is", this.state.patronKey);
+
+    
+
+      // console.log("this.state.patronKey is", this.state.patronKey);
       // console.log("this.utils is ", this.utils);
       // console.log("this.state.artworkPriceKey is", this.state.artworkPriceKey);
       return (
         <Fragment>
-        <h2>Valued at: <ContractData contract="Harber" method="getPrice" methodArgs={[0]} toEth /> ETH (~${this.state.USD} USD) </h2>
-        Current Owner: <ContractData contract="ERC721Full" method="ownerOf" methodArgs={[0]}/><br />
+        <h2>Valued at: <ContractData contract="Harber" method="getPrice" methodArgs={[urlId]} toEth /> ETH (~${this.state.USD} USD) </h2>
+        Current Owner: <ContractData contract="ERC721Full" method="ownerOf" methodArgs={[urlId]}/><br />
         Total Time Held: {this.state.currentTimeHeldHumanized} 
         </Fragment>
       )
