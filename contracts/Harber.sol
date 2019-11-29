@@ -24,10 +24,6 @@ contract Harber {
     mapping (uint256 => mapping (address => uint256) ) public timeHeld;
 
     uint256[numberOfOutcomes] public timeAcquired;
-    
-    // 5% patronage
-    uint256 patronageNumerator = 50000000000;
-    uint256 patronageDenominator = 1000000000000;
 
     enum ownedState { Foreclosed, Owned }
     ownedState[numberOfOutcomes] public state;
@@ -66,8 +62,7 @@ contract Harber {
         return price[_tokenId];
     }
     function augurFundsOwed(uint256 _tokenId) public view returns (uint256 augurFundsDue) {
-        return price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).mul(patronageNumerator)
-            .div(patronageDenominator).div(365 days);
+        return price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(365 days);
     }
 
     function augurFundsOwedWithTimestamp(uint256 _tokenId) public view returns (uint256 augurFundsDue, uint256 timestamp) {
@@ -102,7 +97,7 @@ contract Harber {
     */
     function foreclosureTime(uint256 _tokenId) public view returns (uint256) {
         // patronage per second
-        uint256 pps = price[_tokenId].mul(patronageNumerator).div(patronageDenominator).div(365 days);
+        uint256 pps = price[_tokenId].div(365 days);
         return now + depositAbleToWithdraw(_tokenId).div(pps); // zero division if price is zero.
     }
 
