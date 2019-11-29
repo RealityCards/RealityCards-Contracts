@@ -10,10 +10,15 @@ Edited from drizzle react components, ContractFrom.
 Overkill. Needs to be refactored to smaller scope.
 */
 
+var url_string = window.location.href;
+var url = new URL(url_string);
+var urlId = url.searchParams.get("id");
+console.log(urlId);
+
 class BuyForm extends Component {
   constructor(props, context) {
     super(props);
-
+    
     this.handleInputChange = this.handleInputChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
 
@@ -28,11 +33,12 @@ class BuyForm extends Component {
 
     // Iterate over abi for correct function.
     for (var i = 0; i < abi.length; i++) {
+      
       if (abi[i].name === this.props.method) {
         this.inputs = abi[i].inputs;
 
         for (var j = 0; j < this.inputs.length; j++) {
-          initialState[this.inputs[j].name] = "";
+            // console.log(this.inputs[j].name);
         }
 
         break;
@@ -40,15 +46,23 @@ class BuyForm extends Component {
     }
 
     this.state = initialState;
+    this.state.artworkPriceKey = context.drizzle.contracts.Harber.methods.price.cacheCall(urlId);
   }
 
   handleSubmit(event) {
     event.preventDefault();
     let args = this.props.sendArgs;
     const convertedInputs = this.inputs.map((input, index) => {
-      if (input.type === 'bytes32') {
+      if (input.name == "_tokenId")
+      {
+        return urlId;
+      }
+      else if (input.type === 'bytes32') 
+      {
         return this.utils.toHex(this.state[input.name])
-      } else if (input.type === 'uint256') {
+      } else if (input.type === 'uint256') 
+      {
+        // console.log("pls",this.state[input.name]);
         return this.utils.toWei(this.state[input.name], 'ether'); // all number fields are ETH  fields.
       }
       return this.state[input.name];
@@ -56,8 +70,8 @@ class BuyForm extends Component {
 
     // todo: if foreclosed, price should default to zero.
     if (this.state.value) {
-      console.log(this.props.contracts[this.props.contract]['price']['0x0'].value);
-      const artworkPrice = new this.utils.BN(this.props.contracts[this.props.contract]['price']['0x0'].value);
+      console.log(this.props.contracts[this.props.contract]['price'][this.state.artworkPriceKey].value);
+      const artworkPrice = new this.utils.BN(this.props.contracts[this.props.contract]['price'][this.state.artworkPriceKey].value);
       args.value = new this.utils.BN(this.utils.toWei(this.state.value, 'ether')).add(artworkPrice);
     }
     if (args) {
@@ -98,17 +112,24 @@ class BuyForm extends Component {
             ? this.props.labels[index]
             : input.name;
           // check if input type is struct and if so loop out struct fields as well
-          return (
-            <Input
-              key={input.name}
-              type={inputType}
-              name={input.name}
-              value={this.state[input.name]}
-              placeholder={inputLabel}
-              onChange={this.handleInputChange}
-              startAdornment={<InputAdornment position="start">ETH</InputAdornment>} 
-            />
-          );
+          // console.log(input);
+          //this is another hack as Im not sure what is going on
+          if (input.name == "_newPrice")
+          {
+            return (
+            
+              <Input
+                key={input.name}
+                type={inputType}
+                name={input.name}
+                value={this.state[input.name]}
+                placeholder={inputLabel}
+                onChange={this.handleInputChange}
+                startAdornment={<InputAdornment position="start">ETH</InputAdornment>} 
+              />
+            );
+          }
+
         })}
         {valueLabel &&
           <Fragment>
