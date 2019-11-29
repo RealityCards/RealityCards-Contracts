@@ -1,16 +1,30 @@
 import { drizzleConnect } from "drizzle-react";
 import React, { Component, Fragment } from "react";
 import PropTypes from "prop-types";
-
-import artwork from "./manu.svg";
-
+import team0 from "./manu.svg";
+import team1 from "./liverpool.jpg";
 import PriceSection from "./PriceSection";
+
+var url_string = window.location.href;
+var url = new URL(url_string);
+var urlId = url.searchParams.get("id");
+
+if (urlId == 0)
+{
+  var teamToDisplay = team0;
+}
+else 
+{
+  var teamToDisplay = team1;
+}
+
+
 
 class ArtAndPriceSection extends Component {
     render() {
       return (
         <Fragment>
-        <img src={artwork} style={{maxWidth: "100%", maxHeight: "100%"}} alt="A R T" />
+        <img src={teamToDisplay} style={{maxWidth: "100%", maxHeight: "100%"}} alt="A R T" />
         <PriceSection />
         </Fragment>
       )

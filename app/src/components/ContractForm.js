@@ -6,6 +6,9 @@ import InputAdornment from '@material-ui/core/InputAdornment';
 import Button from '@material-ui/core/Button';
 
 // todo: show ux when transacted
+var url_string = window.location.href;
+var url = new URL(url_string);
+var urlId = url.searchParams.get("id");
 
 class ContractForm extends Component {
   constructor(props, context) {
@@ -43,7 +46,11 @@ class ContractForm extends Component {
     event.preventDefault();
     let args = this.props.sendArgs;
     const convertedInputs = this.inputs.map((input, index) => {
-      if (input.type === 'bytes32') {
+      if (input.name == "_tokenId")
+      {
+        return urlId;
+      }
+      else if (input.type === 'bytes32') {
         return this.utils.toHex(this.state[input.name])
       } else if (input.type === 'uint256') {
         return this.utils.toWei(this.state[input.name], 'ether'); // all number fields are ETH  fields.
@@ -92,6 +99,10 @@ class ContractForm extends Component {
             ? this.props.labels[index]
             : input.name;
           // check if input type is struct and if so loop out struct fields as well
+          
+          if (input.name != "_tokenId")
+          {
+            // console.log(input.name);
           return (
             <Input
               key={input.name}
@@ -103,6 +114,7 @@ class ContractForm extends Component {
               startAdornment={<InputAdornment position="start">ETH</InputAdornment>} 
             />
           );
+          }
         })}
         <Button
           variant="contained"

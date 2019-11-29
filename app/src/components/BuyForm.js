@@ -13,7 +13,6 @@ Overkill. Needs to be refactored to smaller scope.
 var url_string = window.location.href;
 var url = new URL(url_string);
 var urlId = url.searchParams.get("id");
-console.log(urlId);
 
 class BuyForm extends Component {
   constructor(props, context) {
@@ -39,6 +38,7 @@ class BuyForm extends Component {
 
         for (var j = 0; j < this.inputs.length; j++) {
             // console.log(this.inputs[j].name);
+            initialState[this.inputs[j].name] = "";
         }
 
         break;

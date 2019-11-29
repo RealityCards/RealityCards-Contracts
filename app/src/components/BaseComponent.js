@@ -12,7 +12,7 @@ class BaseComponent extends Component {
     return (
       <div className="App">
         <IntroSection />
-        {/* <ActionSection /> */}
+        <ActionSection />
       </div>
     );
   }

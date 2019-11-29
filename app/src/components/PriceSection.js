@@ -8,7 +8,6 @@ import { getUSDValue } from "../Actions";
 var url_string = window.location.href;
 var url = new URL(url_string);
 var urlId = url.searchParams.get("id");
-console.log(urlId);
 
 class PriceSection extends Component {
     constructor(props, context) {

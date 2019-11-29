@@ -9,6 +9,9 @@ import Button from '@material-ui/core/Button';
 Edited from drizzle react components, ContractFrom.
 Overkill. Needs to be refactored to smaller scope.
 */
+var url_string = window.location.href;
+var url = new URL(url_string);
+var urlId = url.searchParams.get("id");
 
 class BuyForm extends Component {
   constructor(props, context) {
@@ -46,7 +49,11 @@ class BuyForm extends Component {
     event.preventDefault();
     let args = this.props.sendArgs;
     const convertedInputs = this.inputs.map((input, index) => {
-      if (input.type === 'bytes32') {
+      if (input.name == "_tokenId")
+      {
+        return urlId;
+      }
+      else if (input.type === 'bytes32') {
         return this.utils.toHex(this.state[input.name])
       } else if (input.type === 'uint256') {
         return this.utils.toWei(this.state[input.name], 'ether'); // all number fields are ETH  fields.
@@ -96,6 +103,9 @@ class BuyForm extends Component {
             ? this.props.labels[index]
             : input.name;
           // check if input type is struct and if so loop out struct fields as well
+
+          if (input.name != "_tokenId")
+          {
           return (
             <Input
               key={input.name}
@@ -107,6 +117,7 @@ class BuyForm extends Component {
               startAdornment={<InputAdornment position="start">ETH</InputAdornment>} 
             />
           );
+          }
         })}
         {valueLabel &&
           <Fragment>
