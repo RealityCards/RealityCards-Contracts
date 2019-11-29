@@ -99,6 +99,7 @@ contract Harber {
         // patronage per second
         uint256 pps = price[_tokenId].div(365 days);
         return now + depositAbleToWithdraw(_tokenId).div(pps); // zero division if price is zero.
+        // return pps;
     }
 
     /* actions */

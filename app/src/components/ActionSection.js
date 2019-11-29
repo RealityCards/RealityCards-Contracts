@@ -17,6 +17,7 @@ class ActionSection extends Component {
     this.utils = context.drizzle.web3.utils;
     this.contracts = context.drizzle.contracts;
     this.state = {
+      artworkPriceKey: context.drizzle.contracts.Harber.methods.price.cacheCall(urlId),
       augurFundsOwedKey: context.drizzle.contracts.Harber.methods.augurFundsOwed.cacheCall(urlId),
       totalCollectedKey: context.drizzle.contracts.Harber.methods.totalCollected.cacheCall(),
       augurFundsOwed: -1,
@@ -44,13 +45,13 @@ class ActionSection extends Component {
   }
 
   async componentWillReceiveProps(nextProps) {
-    if(this.props.contracts['Harber']['price']['0x0'] !== nextProps.contracts['Harber']['price']['0x0']) {
-      if (nextProps.contracts['Harber']['price']['0x0'].value === '0') {
+    if(this.props.contracts['Harber']['price'][this.state.artworkPriceKey] !== nextProps.contracts['Harber']['price'][this.state.artworkPriceKey]) {
+      if (nextProps.contracts['Harber']['price'][this.state.artworkPriceKey].value === '0') {
         this.setState({
           foreclosureTime: "N/A"
         });
       } else {
-        const foreclosureTime = moment(parseInt(await this.contracts.Harber.methods.foreclosureTime().call())*1000).toString();
+        const foreclosureTime = moment(parseInt(await this.contracts.Harber.methods.foreclosureTime(urlId).call())*1000).toString();
         this.setState({foreclosureTime});
       }
     }
