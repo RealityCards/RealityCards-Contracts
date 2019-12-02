@@ -190,10 +190,6 @@ contract Harber {
     mapping (uint256 => mapping (address => uint256) ) public timeHeld;
 
     uint256[numberOfOutcomes] public timeAcquired;
-    
-    // 5% patronage
-    uint256 patronageNumerator = 50000000000;
-    uint256 patronageDenominator = 1000000000000;
 
     enum ownedState { Foreclosed, Owned }
     ownedState[numberOfOutcomes] public state;
@@ -210,6 +206,7 @@ contract Harber {
     event LogPriceChange(uint256 indexed newPrice);
     event LogForeclosure(address indexed prevOwner);
     event LogCollection(uint256 indexed collected);
+    event TestEvent(uint256 indexed newPrice, uint256 indexed currentPrice);
     
     modifier onlyOwner(uint256 _tokenId) {
         require(msg.sender == team.ownerOf(_tokenId), "Not owner");
@@ -222,13 +219,17 @@ contract Harber {
     }
 
     /* public view functions */
+    // function getTimeHeld(uint256 _tokenId, address _adress) public view returns (uint256)
+    // {
+    //     return timeHeld[_tokenId][_address];
+    // }
+
     function getPrice(uint256 _tokenId) public view returns (uint256)
     {
         return price[_tokenId];
     }
     function augurFundsOwed(uint256 _tokenId) public view returns (uint256 augurFundsDue) {
-        return price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).mul(patronageNumerator)
-            .div(patronageDenominator).div(365 days);
+        return price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(365 days);
     }
 
     function augurFundsOwedWithTimestamp(uint256 _tokenId) public view returns (uint256 augurFundsDue, uint256 timestamp) {
@@ -263,8 +264,9 @@ contract Harber {
     */
     function foreclosureTime(uint256 _tokenId) public view returns (uint256) {
         // patronage per second
-        uint256 pps = price[_tokenId].mul(patronageNumerator).div(patronageDenominator).div(365 days);
+        uint256 pps = price[_tokenId].div(365 days);
         return now + depositAbleToWithdraw(_tokenId).div(pps); // zero division if price is zero.
+        // return pps;
     }
 
     /* actions */
@@ -299,27 +301,26 @@ contract Harber {
         deposit[_tokenId] = deposit[_tokenId].add(msg.value);
     }
     
-    //this function will need heavy modificaiton. the user will not actually need to pay whatever the price is
+    //this function has been modified from the original so that you no longer pay the current owner back the price that they set. Therefore, your entire msg.value becomes your deposit
     function buy(uint256 _newPrice, uint256 _tokenId) public payable collectAugurFunds(_tokenId) {
-        require(_newPrice > 0, "Price is zero");
-        require(msg.value > price[_tokenId], "Not enough"); // >, coz need to have at least something for deposit
+        emit TestEvent(_newPrice,price[_tokenId]);
+        require(_newPrice > price[_tokenId], "Price must be higher than current price");
+        require(msg.value > 0, "Must deposit something");
         address _currentOwner = team.ownerOf(_tokenId);
 
+        // pay previous owner their deposit back.
         if (state[_tokenId] == ownedState.Owned) {
-            uint256 _totalToPayBack = price[_tokenId];
             if(deposit[_tokenId] > 0) {
-                _totalToPayBack = _totalToPayBack.add(deposit[_tokenId]);
+                address payable _payableCurrentOwner = address(uint160(_currentOwner));
+                _payableCurrentOwner.transfer(deposit[_tokenId]);
             }  
-    
-            // pay previous owner their price + deposit back.
-            address payable _payableCurrentOwner = address(uint160(_currentOwner));
-            _payableCurrentOwner.transfer(_totalToPayBack);
+            
         } else if(state[_tokenId] == ownedState.Foreclosed) {
             state[_tokenId] = ownedState.Owned;
             timeLastCollected[_tokenId] = now;
         }
         
-        deposit[_tokenId] = msg.value.sub(price[_tokenId]);
+        deposit[_tokenId] = msg.value;
         transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
         emit LogBuy(msg.sender, _newPrice);
     }

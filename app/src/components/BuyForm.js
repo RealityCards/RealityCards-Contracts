@@ -4,6 +4,7 @@ import PropTypes from "prop-types";
 import Input from '@material-ui/core/Input';
 import InputAdornment from '@material-ui/core/InputAdornment';
 import Button from '@material-ui/core/Button';
+import { relativeTimeRounding } from "moment";
 
 /*
 Edited from drizzle react components, ContractFrom.
@@ -15,8 +16,12 @@ var url = new URL(url_string);
 var urlId = url.searchParams.get("id");
 
 class BuyForm extends Component {
+  
+  //the constructor is run when the page is loaded. NOT when the button is pressed
   constructor(props, context) {
     super(props);
+    // props = the stuff sent on BuyArtworkSection- mainly, it is that contract is Harber and method is buy
+    // console.log("props is", props);
     
     this.handleInputChange = this.handleInputChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
@@ -44,7 +49,8 @@ class BuyForm extends Component {
         break;
       }
     }
-
+    //the above function goes through the ABI for the 'buy' function and gets its inputs of _newPrice and _tokenId- that is what this.inputs is
+    // console.log("this.inputs is", this.inputs);
     this.state = initialState;
     this.state.artworkPriceKey = context.drizzle.contracts.Harber.methods.price.cacheCall(urlId);
   }
@@ -52,6 +58,11 @@ class BuyForm extends Component {
   handleSubmit(event) {
     event.preventDefault();
     let args = this.props.sendArgs;
+    //// args is the msg.value!!! It is NOT either of the two fields
+    //// console.log("args is", args);
+    //// we know what this.inputs is from above- it is the inputs newprice and tokenId from the abi
+
+    //// the below function gets the relevant data that is required to interact with the function. So after this, we get convertedinputs[0] = newprice, and [1] = tokenId. Note that at this point we still havnt got the deposit amount. This is fine as we don't need it as an argument, however we do need it to form the value of the tx.
     const convertedInputs = this.inputs.map((input, index) => {
       if (input.name == "_tokenId")
       {
@@ -59,6 +70,7 @@ class BuyForm extends Component {
       }
       else if (input.type === 'bytes32') 
       {
+        //// this elseif is not used as thre are no bytes32 inputs
         return this.utils.toHex(this.state[input.name])
       } else if (input.type === 'uint256') 
       {
@@ -67,19 +79,38 @@ class BuyForm extends Component {
       }
       return this.state[input.name];
     });
-
-    // todo: if foreclosed, price should default to zero.
+    // console.log("convertedinputs is", convertedInputs);
+  
+    //// this.state.value = the deposit amount
+    console.log("state.value is ", this.state.value);
     if (this.state.value) {
-      console.log(this.props.contracts[this.props.contract]['price'][this.state.artworkPriceKey].value);
+      
+      //// so the below gets the existing price, and then converts it to bignumber format
+      // console.log("thingy is ",this.props.contracts[this.props.contract]['price'][this.state.artworkPriceKey].value);
       const artworkPrice = new this.utils.BN(this.props.contracts[this.props.contract]['price'][this.state.artworkPriceKey].value);
-      args.value = new this.utils.BN(this.utils.toWei(this.state.value, 'ether')).add(artworkPrice);
+      console.log("artwork price is", artworkPrice);
+
+      ////originally, the amount payable was current price + deposit, this is now changed to just the deposit. 
+      // args.value = new this.utils.BN(this.utils.toWei(this.state.value, 'ether')).add(artworkPrice);
+      args.value = new this.utils.BN(this.utils.toWei(this.state.value, 'ether'));
+      console.log("args.value is" , args.value );
+      // console.log("value thingy is", this.utils.toWei(this.state.value, 'ether'));
+
+   
+
     }
     if (args) {
+      // console.log("args is: ", args);
+      
+      ////so heres the thing. convertedinputs is the arguments to send to the function. Args = the amount payable. It does this bit if there is value being sent
+      console.log("convertedInputs is ", convertedInputs);
       return this.contracts[this.props.contract].methods[
         this.props.method
       ].cacheSend(...convertedInputs, args);
+      
     }
 
+    ////it does this if is no value being sent, so in rality this is not used. 
     return this.contracts[this.props.contract].methods[
       this.props.method
     ].cacheSend(...convertedInputs);
