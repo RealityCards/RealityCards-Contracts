@@ -168,16 +168,35 @@ pragma solidity ^0.5.0;
 
 
 
+interface IMarket 
+{
+    function getWinningPayoutNumerator(uint256 _outcome) external view returns (uint256);
+}
+
+interface ShareToken 
+
+{
+    function publicBuyCompleteSets(IMarket _market, uint256 _amount) external returns (bool)  ;
+    function publicSellCompleteSets(IMarket _market, uint256 _amount) external returns (uint256 _creatorFee, uint256 _reportingFee) ;
+}
+
+interface Cash 
+{
+    function approve(address _spender, uint256 _amount) external returns (bool);
+    function balanceOf(address _owner) external view returns (uint256);
+    function faucet(uint256 _amount) external;
+}
 
 contract Harber {
     
     using SafeMath for uint256;
-    
 
     uint256 constant numberOfOutcomes = 2; //TEST with two teams
     uint256[numberOfOutcomes] public price; //in wei
-    // uint[numberOfOutcomes] balance;
     IERC721Full public team; // ERC721 NFT.
+    
+    //Augur contracts
+    Cash public cash;
     
     uint256 public totalCollected; // total into my whiskey fund
     uint256[numberOfOutcomes] public currentCollected; // amount currently collected for owner  
@@ -194,12 +213,15 @@ contract Harber {
     enum ownedState { Foreclosed, Owned }
     ownedState[numberOfOutcomes] public state;
 
-    constructor(address payable _andrewsAddress, address _addressOfToken) public {
+    constructor(address payable _andrewsAddress, address _addressOfToken, address _addressOfCashContract) public {
         team = IERC721Full(_addressOfToken);
         team.setup();
         andrewsAddress = _andrewsAddress;
         state[0] = ownedState.Foreclosed;
         state[1] = ownedState.Foreclosed;
+
+        //Augur specific:
+        cash = Cash(_addressOfCashContract);
     } 
 
     event LogBuy(address indexed owner, uint256 indexed price);
@@ -223,6 +245,11 @@ contract Harber {
     // {
     //     return timeHeld[_tokenId][_address];
     // }
+
+      function callfaucet() public 
+    {
+        cash.faucet(100000000000000000000);
+    }
 
     function getPrice(uint256 _tokenId) public view returns (uint256)
     {
@@ -303,7 +330,6 @@ contract Harber {
     
     //this function has been modified from the original so that you no longer pay the current owner back the price that they set. Therefore, your entire msg.value becomes your deposit
     function buy(uint256 _newPrice, uint256 _tokenId) public payable collectAugurFunds(_tokenId) {
-        emit TestEvent(_newPrice,price[_tokenId]);
         require(_newPrice > price[_tokenId], "Price must be higher than current price");
         require(msg.value > 0, "Must deposit something");
         address _currentOwner = team.ownerOf(_tokenId);
@@ -322,6 +348,7 @@ contract Harber {
         
         deposit[_tokenId] = msg.value;
         transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
+        emit TestEvent(_newPrice,price[_tokenId]);
         emit LogBuy(msg.sender, _newPrice);
     }
 

@@ -61,7 +61,7 @@
         "id": 2,
         "nodeType": "ImportDirective",
         "scope": 51,
-        "sourceUnit": 3079,
+        "sourceUnit": 3127,
         "src": "25:34:0",
         "symbolAliases": [],
         "unitAlias": ""
@@ -75,10 +75,10 @@
               "id": 3,
               "name": "IERC165",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 3078,
+              "referencedDeclaration": 3126,
               "src": "186:7:0",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_IERC165_$3078",
+                "typeIdentifier": "t_contract$_IERC165_$3126",
                 "typeString": "contract IERC165"
               }
             },
@@ -88,7 +88,7 @@
           }
         ],
         "contractDependencies": [
-          3078
+          3126
         ],
         "contractKind": "contract",
         "documentation": "@title ERC165\n@author Matt Condon (@shrugs)\n@dev Implements ERC165 using a lookup table.",
@@ -96,7 +96,7 @@
         "id": 50,
         "linearizedBaseContracts": [
           50,
-          3078
+          3126
         ],
         "name": "ERC165",
         "nodeType": "ContractDefinition",
@@ -406,7 +406,7 @@
             "scope": 50,
             "src": "788:133:0",
             "stateMutability": "view",
-            "superFunction": 3077,
+            "superFunction": 3125,
             "visibility": "external"
           },
           {
@@ -481,10 +481,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        3476,
-                        3477
+                        3524,
+                        3525
                       ],
-                      "referencedDeclaration": 3476,
+                      "referencedDeclaration": 3524,
                       "src": "1067:7:0",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
@@ -675,7 +675,7 @@
         "id": 2,
         "nodeType": "ImportDirective",
         "scope": 51,
-        "sourceUnit": 3079,
+        "sourceUnit": 3127,
         "src": "25:34:0",
         "symbolAliases": [],
         "unitAlias": ""
@@ -689,10 +689,10 @@
               "id": 3,
               "name": "IERC165",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 3078,
+              "referencedDeclaration": 3126,
               "src": "186:7:0",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_IERC165_$3078",
+                "typeIdentifier": "t_contract$_IERC165_$3126",
                 "typeString": "contract IERC165"
               }
             },
@@ -702,7 +702,7 @@
           }
         ],
         "contractDependencies": [
-          3078
+          3126
         ],
         "contractKind": "contract",
         "documentation": "@title ERC165\n@author Matt Condon (@shrugs)\n@dev Implements ERC165 using a lookup table.",
@@ -710,7 +710,7 @@
         "id": 50,
         "linearizedBaseContracts": [
           50,
-          3078
+          3126
         ],
         "name": "ERC165",
         "nodeType": "ContractDefinition",
@@ -1020,7 +1020,7 @@
             "scope": 50,
             "src": "788:133:0",
             "stateMutability": "view",
-            "superFunction": 3077,
+            "superFunction": 3125,
             "visibility": "external"
           },
           {
@@ -1095,10 +1095,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        3476,
-                        3477
+                        3524,
+                        3525
                       ],
-                      "referencedDeclaration": 3476,
+                      "referencedDeclaration": 3524,
                       "src": "1067:7:0",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
@@ -1268,7 +1268,7 @@
   },
   "networks": {},
   "schemaVersion": "3.0.17",
-  "updatedAt": "2019-12-02T08:57:54.909Z",
+  "updatedAt": "2019-12-03T04:17:12.487Z",
   "devdoc": {
     "author": "Matt Condon (@shrugs)",
     "details": "Implements ERC165 using a lookup table.",

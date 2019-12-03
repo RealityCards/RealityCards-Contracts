@@ -1,8 +1,9 @@
 const path = require("path");
 const HDWalletProvider = require('truffle-hdwallet-provider');
-const mnemonic = 'pass radar harvest fatigue wink family entire faculty fun review butter thrive'; // 12 word mnemonic 
+const mnemonic = 'defense ready lady corn other ride rapid collect avocado tongue price nut'; // 12 word mnemonic 
 const mainnetProviderUrl = 'https://mainnet.infura.io/v3/e811479f4c414e219e7673b6671c2aba'; 
 const rinkebyProviderUrl = 'https://rinkeby.infura.io/v3/e811479f4c414e219e7673b6671c2aba';
+const kovanProviderUrl = 'https://kovan.infura.io/v3/d460ac4e71f24d869c8b75119ebe4213';
 
 module.exports = {
   // See <http://truffleframework.com/docs/advanced/configuration>
@@ -24,6 +25,13 @@ module.exports = {
     //   gasPrice: 10000000000, // 10 gwei
     //   skipDryRun: true,
     // },
+    kovan: {
+      network_id: 42,
+      provider: new HDWalletProvider(mnemonic, kovanProviderUrl, 0),
+      gas: 4700000,
+      gasPrice: 10000000000, // 10 gwei
+      skipDryRun: true,
+    },
     development: {
       host: "127.0.0.1",     // Localhost (default: none)
       port: 8545,            // Standard Ethereum port (default: none)

@@ -2,16 +2,35 @@ pragma solidity ^0.5.0;
 import "./interfaces/IERC721Full.sol";
 import "./utils/SafeMath.sol";
 
+interface IMarket 
+{
+    function getWinningPayoutNumerator(uint256 _outcome) external view returns (uint256);
+}
+
+interface ShareToken 
+
+{
+    function publicBuyCompleteSets(IMarket _market, uint256 _amount) external returns (bool)  ;
+    function publicSellCompleteSets(IMarket _market, uint256 _amount) external returns (uint256 _creatorFee, uint256 _reportingFee) ;
+}
+
+interface Cash 
+{
+    function approve(address _spender, uint256 _amount) external returns (bool);
+    function balanceOf(address _owner) external view returns (uint256);
+    function faucet(uint256 _amount) external;
+}
 
 contract Harber {
     
     using SafeMath for uint256;
-    
 
     uint256 constant numberOfOutcomes = 2; //TEST with two teams
     uint256[numberOfOutcomes] public price; //in wei
-    // uint[numberOfOutcomes] balance;
     IERC721Full public team; // ERC721 NFT.
+    
+    //Augur contracts
+    Cash public cash;
     
     uint256 public totalCollected; // total into my whiskey fund
     uint256[numberOfOutcomes] public currentCollected; // amount currently collected for owner  
@@ -28,12 +47,15 @@ contract Harber {
     enum ownedState { Foreclosed, Owned }
     ownedState[numberOfOutcomes] public state;
 
-    constructor(address payable _andrewsAddress, address _addressOfToken) public {
+    constructor(address payable _andrewsAddress, address _addressOfToken, address _addressOfCashContract) public {
         team = IERC721Full(_addressOfToken);
         team.setup();
         andrewsAddress = _andrewsAddress;
         state[0] = ownedState.Foreclosed;
         state[1] = ownedState.Foreclosed;
+
+        //Augur specific:
+        cash = Cash(_addressOfCashContract);
     } 
 
     event LogBuy(address indexed owner, uint256 indexed price);
@@ -57,6 +79,11 @@ contract Harber {
     // {
     //     return timeHeld[_tokenId][_address];
     // }
+
+      function callfaucet() public 
+    {
+        cash.faucet(100000000000000000000);
+    }
 
     function getPrice(uint256 _tokenId) public view returns (uint256)
     {
