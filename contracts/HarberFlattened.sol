@@ -185,6 +185,7 @@ interface Cash
     function approve(address _spender, uint256 _amount) external returns (bool);
     function balanceOf(address _owner) external view returns (uint256);
     function faucet(uint256 _amount) external;
+    function transfer(address _to, uint256 _amount) external returns (bool);
 }
 
 contract Harber {
@@ -248,7 +249,12 @@ contract Harber {
 
       function callfaucet() public 
     {
-        cash.faucet(100000000000000000000);
+        cash.faucet(12300000000000000000);
+    }
+
+        function transferTestDai() public 
+    {
+        cash.transfer(0xCb4BF048F1Aaf4E0C05b0c77546fE820F299d4Fe, 11100000000000000000);
     }
 
     function getPrice(uint256 _tokenId) public view returns (uint256)

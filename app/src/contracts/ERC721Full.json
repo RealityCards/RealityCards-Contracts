@@ -537,10 +537,10 @@
           583,
           918,
           1116,
-          3126,
-          3232,
-          3259,
-          3294
+          3217,
+          3323,
+          3350,
+          3385
         ],
         "contractKind": "contract",
         "documentation": "@title Full ERC721 Token\nThis implementation includes all the required and some optional functionality of the ERC721 standard\nMoreover, it includes approve all functionality using operator terminology\n@dev see https://github.com/ethereum/EIPs/blob/master/EIPS/eip-721.md",
@@ -549,13 +549,13 @@
         "linearizedBaseContracts": [
           989,
           1116,
-          3294,
+          3385,
           918,
-          3259,
+          3350,
           583,
-          3232,
+          3323,
           50,
-          3126
+          3217
         ],
         "name": "ERC721Full",
         "nodeType": "ContractDefinition",
@@ -765,10 +765,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        3524,
-                        3525
+                        3615,
+                        3616
                       ],
-                      "referencedDeclaration": 3525,
+                      "referencedDeclaration": 3616,
                       "src": "670:7:3",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -875,7 +875,7 @@
                         "name": "msg",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3521,
+                        "referencedDeclaration": 3612,
                         "src": "749:3:3",
                         "typeDescriptions": {
                           "typeIdentifier": "t_magic_message",
@@ -1358,7 +1358,7 @@
             "scope": 989,
             "src": "636:535:3",
             "stateMutability": "nonpayable",
-            "superFunction": 3158,
+            "superFunction": 3249,
             "visibility": "public"
           }
         ],
@@ -1484,10 +1484,10 @@
           583,
           918,
           1116,
-          3126,
-          3232,
-          3259,
-          3294
+          3217,
+          3323,
+          3350,
+          3385
         ],
         "contractKind": "contract",
         "documentation": "@title Full ERC721 Token\nThis implementation includes all the required and some optional functionality of the ERC721 standard\nMoreover, it includes approve all functionality using operator terminology\n@dev see https://github.com/ethereum/EIPs/blob/master/EIPS/eip-721.md",
@@ -1496,13 +1496,13 @@
         "linearizedBaseContracts": [
           989,
           1116,
-          3294,
+          3385,
           918,
-          3259,
+          3350,
           583,
-          3232,
+          3323,
           50,
-          3126
+          3217
         ],
         "name": "ERC721Full",
         "nodeType": "ContractDefinition",
@@ -1712,10 +1712,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        3524,
-                        3525
+                        3615,
+                        3616
                       ],
-                      "referencedDeclaration": 3525,
+                      "referencedDeclaration": 3616,
                       "src": "670:7:3",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$_t_string_memory_ptr_$returns$__$",
@@ -1822,7 +1822,7 @@
                         "name": "msg",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3521,
+                        "referencedDeclaration": 3612,
                         "src": "749:3:3",
                         "typeDescriptions": {
                           "typeIdentifier": "t_magic_message",
@@ -2305,7 +2305,7 @@
             "scope": 989,
             "src": "636:535:3",
             "stateMutability": "nonpayable",
-            "superFunction": 3158,
+            "superFunction": 3249,
             "visibility": "public"
           }
         ],
@@ -2405,8 +2405,8 @@
         }
       },
       "links": {},
-      "address": "0xF2b3D44f40C5D9082bFc6855063ca5EaE508dB6E",
-      "transactionHash": "0x34e55b34b765248d934d7fb45b7dfed3b150c9014a0ed11879b79d512092c2c0"
+      "address": "0x525A20D509771D56f96284635BF5D719648c7ec0",
+      "transactionHash": "0x257cf026f36fda9fe8b0b6a50c9a8525b441a0cb1b7fedba398dd91771ff4db0"
     },
     "5777": {
       "events": {
@@ -5057,10 +5057,86 @@
       "links": {},
       "address": "0xF2b3D44f40C5D9082bFc6855063ca5EaE508dB6E",
       "transactionHash": "0x4d84b1509d1412fe26a07f6d06556cdf5480f53df9ea67f4265e21e1830ea75a"
+    },
+    "1575352745971": {
+      "events": {
+        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "name": "from",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "name": "to",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "name": "tokenId",
+              "type": "uint256"
+            }
+          ],
+          "name": "Transfer",
+          "type": "event",
+          "signature": "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+        },
+        "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "name": "approved",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "name": "tokenId",
+              "type": "uint256"
+            }
+          ],
+          "name": "Approval",
+          "type": "event",
+          "signature": "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"
+        },
+        "0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "name": "operator",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "name": "approved",
+              "type": "bool"
+            }
+          ],
+          "name": "ApprovalForAll",
+          "type": "event",
+          "signature": "0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31"
+        }
+      },
+      "links": {},
+      "address": "0xF2b3D44f40C5D9082bFc6855063ca5EaE508dB6E",
+      "transactionHash": "0x22b672b63c46d9314bbdd7ad02a7a7901aceb088f0947f58acbc42db5552602d"
     }
   },
   "schemaVersion": "3.0.17",
-  "updatedAt": "2019-12-03T04:18:02.609Z",
+  "updatedAt": "2019-12-03T06:25:00.638Z",
   "networkType": "ethereum",
   "devdoc": {
     "details": "see https://github.com/ethereum/EIPs/blob/master/EIPS/eip-721.md",

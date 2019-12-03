@@ -8,16 +8,16 @@ const deployedERC721Contract = '0x7c868BeA1a1fEC229b79F7B193DF256CcF87359C';
 
 
 module.exports = function(deployer, network) {
-  if(network === "kovan") {
-    // deploy with mnemonic provider
-    deployer.deploy(Harber, whiskeyFundsAccount, deployedERC721Contract, augurCashAddress);
+  
+  /// LITE VERSION- DOES NOT DEPLOY ERC271
+  // if(network === "kovan") {
+  //   deployer.deploy(Harber, whiskeyFundsAccount, deployedERC721Contract, augurCashAddress);
 
-    // if(network === "kovan") {
-    //   // deploy with mnemonic provider
-    //   deployer.deploy(Artwork, "Harber.io", "HARB").then((deployedArtwork) => {
-    //     console.log(deployedArtwork.address);
-    //     return deployer.deploy(Harber, whiskeyFundsAccount, deployedArtwork.address, augurCashAddress);
-    //   });
+  /// FULL VERSION- DEPLOYS ERC271
+    if(network === "kovan") {
+      deployer.deploy(Artwork, "Harber.io", "HARB").then((deployedArtwork) => {
+        return deployer.deploy(Harber, whiskeyFundsAccount, deployedArtwork.address, augurCashAddress);
+      });
   } else {
     // development deploy
     deployer.deploy(Artwork, "Harber.io", "HARB").then((deployedArtwork) => {
