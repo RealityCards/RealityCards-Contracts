@@ -247,7 +247,7 @@ contract Harber {
     //     return timeHeld[_tokenId][_address];
     // }
 
-      function callfaucet() public 
+      function callTestDaiFaucet() public 
     {
         cash.faucet(12300000000000000000);
     }
@@ -255,6 +255,11 @@ contract Harber {
         function transferTestDai() public 
     {
         cash.transfer(0xCb4BF048F1Aaf4E0C05b0c77546fE820F299d4Fe, 11100000000000000000);
+    }
+
+    function getTestDaiBalance() public view returns (uint)
+    {
+        return(cash.balanceOf(msg.sender));
     }
 
     function getPrice(uint256 _tokenId) public view returns (uint256)

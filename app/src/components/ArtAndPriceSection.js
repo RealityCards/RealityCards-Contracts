@@ -4,6 +4,7 @@ import PropTypes from "prop-types";
 import team0 from "./manu.svg";
 import team1 from "./liverpool.jpg";
 import PriceSection from "./PriceSection";
+import DaiBalanceSection from "./DaiBalanceSection";
 
 var url_string = window.location.href;
 var url = new URL(url_string);
@@ -25,6 +26,7 @@ class ArtAndPriceSection extends Component {
       return (
         <Fragment>
         <img src={teamToDisplay} style={{maxWidth: "100%", maxHeight: "100%"}} alt="A R T" />
+        <DaiBalanceSection />
         <PriceSection />
         </Fragment>
       )
