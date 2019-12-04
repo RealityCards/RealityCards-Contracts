@@ -5,6 +5,7 @@ import team0 from "./manu.svg";
 import team1 from "./liverpool.jpg";
 import PriceSection from "./PriceSection";
 import DaiBalanceSection from "./DaiBalanceSection";
+import TestDaiFaucetSection from "./TestDaiFaucetSection";
 
 var url_string = window.location.href;
 var url = new URL(url_string);
@@ -27,7 +28,8 @@ class ArtAndPriceSection extends Component {
         <Fragment>
         <img src={teamToDisplay} style={{maxWidth: "100%", maxHeight: "100%"}} alt="A R T" />
         <DaiBalanceSection />
-        <PriceSection />
+        <TestDaiFaucetSection />
+        {/* <PriceSection /> */}
         </Fragment>
       )
     }

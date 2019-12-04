@@ -109,11 +109,6 @@ class DaiBalanceSection extends Component {
 
     render() {
 
-    
-
-      // console.log("this.state.patronKey is", this.state.patronKey);
-      // console.log("this.utils is ", this.utils);
-      // console.log("this.state.artworkPriceKey is", this.state.artworkPriceKey);
       return (
         <Fragment>
         <h2>Current TestDai Balance: <ContractData contract="Harber" method="getTestDaiBalance"  /> $  </h2>

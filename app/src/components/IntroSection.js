@@ -10,7 +10,7 @@ class IntroSection extends Component {
       return (
         <div className="section">
         <ArtAndPriceSection />
-        <BuyArtworkSection />
+        {/* <BuyArtworkSection /> */}
       </div>
       )
     }
