@@ -20,11 +20,13 @@ interface Cash
     function balanceOf(address _owner) external view returns (uint256);
     function faucet(uint256 _amount) external;
     function transfer(address _to, uint256 _amount) external returns (bool);
+    function transferFrom(address _from, address _to, uint256 _amount) external returns (bool);
 }
 
 contract Harber {
     
     using SafeMath for uint256;
+    uint public constant version = 6933;
 
     uint256 constant numberOfOutcomes = 2; //TEST with two teams
     uint256[numberOfOutcomes] public price; //in wei
@@ -42,6 +44,7 @@ contract Harber {
     
     mapping (uint256 => mapping (address => bool) ) public owners;
     mapping (uint256 => mapping (address => uint256) ) public timeHeld;
+    mapping (address => uint256) public testDaiBalances;
 
     uint256[numberOfOutcomes] public timeAcquired;
 
@@ -81,16 +84,46 @@ contract Harber {
     //     return timeHeld[_tokenId][_address];
     // }
 
-      function getTestDai() public 
+    function getTestDai() public 
     {
-        cash.faucet(100000000000000000000);
-        cash.transfer(msg.sender, 100000000000000000000);
+        cash.faucet(98000000000000000000);
+        ////below line = my original plan of actually sending the user dai 
+        // cash.transfer(msg.sender, 98000000000000000000);
+        testDaiBalances[msg.sender]=98000000000000000000;
     }
+
+    // function getTestDaiDelegate() public 
+    // {
+    //     address(cash).delegatecall(abi.encodeWithSignature("faucet(uint256)",97000000000000000000));
+    // }
 
     function getTestDaiBalance() public view returns (uint)
     {
-        return(cash.balanceOf(msg.sender));
+        ////below line = my original plan of actually sending the user dai 
+        // return(cash.balanceOf(msg.sender));
+
+        ////im now keeping their dai in this contract
+        return(testDaiBalances[msg.sender]);
     }
+
+    // function transferDaiToContract() public returns (uint)
+    // {
+    //     // string memory _callValue = "transfer"+ address(this) + ")";
+    //     // address(cash).delegatecall(bytes4(keccak256("transfer(address,uint256)")),address(this),100000000000000000000);
+    //     address(cash).delegatecall(abi.encodeWithSignature("transfer(address,uint256)",address(this),123));
+    // }
+
+    // function approve1() public
+    // {
+    //     cash.approve(address(this),(2**256)-1);
+    //     // cash.approve(0xe2020A4a6B0a5D6C74c358e09B2b4758b5Cdb91C,(2**256)-1);
+    // }
+
+    // function approve2() public
+    // {
+    //     // cash.approve(address(this),(2**256)-1);
+    //     cash.approve(0xe2020A4a6B0a5D6C74c358e09B2b4758b5Cdb91C,(2**256)-1);
+    // }
 
     function getPrice(uint256 _tokenId) public view returns (uint256)
     {
@@ -170,16 +203,22 @@ contract Harber {
     }
     
     //this function has been modified from the original so that you no longer pay the current owner back the price that they set. Therefore, your entire msg.value becomes your deposit
-    function buy(uint256 _newPrice, uint256 _tokenId) public payable collectAugurFunds(_tokenId) {
+    function buy(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) public collectAugurFunds(_tokenId) {
         require(_newPrice > price[_tokenId], "Price must be higher than current price");
-        require(msg.value > 0, "Must deposit something");
+        require(_deposit > 0, "Must deposit something");
+        require(testDaiBalances[msg.sender] > _deposit, "Not enough DAI");
+
+        // approve();
+        // cash.transferFrom(msg.sender,address(this),_deposit);
+        testDaiBalances[msg.sender] = testDaiBalances[msg.sender].sub(_deposit);
+
         address _currentOwner = team.ownerOf(_tokenId);
 
         // pay previous owner their deposit back.
         if (state[_tokenId] == ownedState.Owned) {
             if(deposit[_tokenId] > 0) {
-                address payable _payableCurrentOwner = address(uint160(_currentOwner));
-                _payableCurrentOwner.transfer(deposit[_tokenId]);
+                // cash.transferFrom(msg.sender,_currentOwner,deposit[_tokenId]);
+                testDaiBalances[_currentOwner] = testDaiBalances[_currentOwner].add(deposit[_tokenId]);
             }  
             
         } else if(state[_tokenId] == ownedState.Foreclosed) {
@@ -187,7 +226,7 @@ contract Harber {
             timeLastCollected[_tokenId] = now;
         }
         
-        deposit[_tokenId] = msg.value;
+        deposit[_tokenId] = _deposit;
         transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
         emit TestEvent(_newPrice,price[_tokenId]);
         emit LogBuy(msg.sender, _newPrice);

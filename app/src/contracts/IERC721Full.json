@@ -396,14 +396,14 @@
     "absolutePath": "/Users/mcplums/Repos/Harber/contracts/interfaces/IERC721Full.sol",
     "exportedSymbols": {
       "IERC721Full": [
-        3402
+        3612
       ]
     },
-    "id": 3403,
+    "id": 3613,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 3392,
+        "id": 3602,
         "literals": [
           "solidity",
           "^",
@@ -416,10 +416,10 @@
       {
         "absolutePath": "/Users/mcplums/Repos/Harber/contracts/interfaces/IERC721.sol",
         "file": "./IERC721.sol",
-        "id": 3393,
+        "id": 3603,
         "nodeType": "ImportDirective",
-        "scope": 3403,
-        "sourceUnit": 3364,
+        "scope": 3613,
+        "sourceUnit": 3574,
         "src": "25:23:11",
         "symbolAliases": [],
         "unitAlias": ""
@@ -427,10 +427,10 @@
       {
         "absolutePath": "/Users/mcplums/Repos/Harber/contracts/interfaces/IERC721Enumerable.sol",
         "file": "./IERC721Enumerable.sol",
-        "id": 3394,
+        "id": 3604,
         "nodeType": "ImportDirective",
-        "scope": 3403,
-        "sourceUnit": 3391,
+        "scope": 3613,
+        "sourceUnit": 3601,
         "src": "49:33:11",
         "symbolAliases": [],
         "unitAlias": ""
@@ -438,10 +438,10 @@
       {
         "absolutePath": "/Users/mcplums/Repos/Harber/contracts/interfaces/IERC721Metadata.sol",
         "file": "./IERC721Metadata.sol",
-        "id": 3395,
+        "id": 3605,
         "nodeType": "ImportDirective",
-        "scope": 3403,
-        "sourceUnit": 3426,
+        "scope": 3613,
+        "sourceUnit": 3636,
         "src": "83:31:11",
         "symbolAliases": [],
         "unitAlias": ""
@@ -452,17 +452,17 @@
             "arguments": null,
             "baseName": {
               "contractScope": null,
-              "id": 3396,
+              "id": 3606,
               "name": "IERC721",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 3363,
+              "referencedDeclaration": 3573,
               "src": "298:7:11",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_IERC721_$3363",
+                "typeIdentifier": "t_contract$_IERC721_$3573",
                 "typeString": "contract IERC721"
               }
             },
-            "id": 3397,
+            "id": 3607,
             "nodeType": "InheritanceSpecifier",
             "src": "298:7:11"
           },
@@ -470,17 +470,17 @@
             "arguments": null,
             "baseName": {
               "contractScope": null,
-              "id": 3398,
+              "id": 3608,
               "name": "IERC721Enumerable",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 3390,
+              "referencedDeclaration": 3600,
               "src": "307:17:11",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_IERC721Enumerable_$3390",
+                "typeIdentifier": "t_contract$_IERC721Enumerable_$3600",
                 "typeString": "contract IERC721Enumerable"
               }
             },
-            "id": 3399,
+            "id": 3609,
             "nodeType": "InheritanceSpecifier",
             "src": "307:17:11"
           },
@@ -488,42 +488,42 @@
             "arguments": null,
             "baseName": {
               "contractScope": null,
-              "id": 3400,
+              "id": 3610,
               "name": "IERC721Metadata",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 3425,
+              "referencedDeclaration": 3635,
               "src": "326:15:11",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_IERC721Metadata_$3425",
+                "typeIdentifier": "t_contract$_IERC721Metadata_$3635",
                 "typeString": "contract IERC721Metadata"
               }
             },
-            "id": 3401,
+            "id": 3611,
             "nodeType": "InheritanceSpecifier",
             "src": "326:15:11"
           }
         ],
         "contractDependencies": [
-          3257,
-          3363,
-          3390,
-          3425
+          3467,
+          3573,
+          3600,
+          3635
         ],
         "contractKind": "contract",
         "documentation": "@title ERC-721 Non-Fungible Token Standard, full implementation interface\n@dev See https://github.com/ethereum/EIPs/blob/master/EIPS/eip-721.md",
         "fullyImplemented": false,
-        "id": 3402,
+        "id": 3612,
         "linearizedBaseContracts": [
-          3402,
-          3425,
-          3390,
-          3363,
-          3257
+          3612,
+          3635,
+          3600,
+          3573,
+          3467
         ],
         "name": "IERC721Full",
         "nodeType": "ContractDefinition",
         "nodes": [],
-        "scope": 3403,
+        "scope": 3613,
         "src": "274:124:11"
       }
     ],
@@ -533,14 +533,14 @@
     "absolutePath": "/Users/mcplums/Repos/Harber/contracts/interfaces/IERC721Full.sol",
     "exportedSymbols": {
       "IERC721Full": [
-        3402
+        3612
       ]
     },
-    "id": 3403,
+    "id": 3613,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 3392,
+        "id": 3602,
         "literals": [
           "solidity",
           "^",
@@ -553,10 +553,10 @@
       {
         "absolutePath": "/Users/mcplums/Repos/Harber/contracts/interfaces/IERC721.sol",
         "file": "./IERC721.sol",
-        "id": 3393,
+        "id": 3603,
         "nodeType": "ImportDirective",
-        "scope": 3403,
-        "sourceUnit": 3364,
+        "scope": 3613,
+        "sourceUnit": 3574,
         "src": "25:23:11",
         "symbolAliases": [],
         "unitAlias": ""
@@ -564,10 +564,10 @@
       {
         "absolutePath": "/Users/mcplums/Repos/Harber/contracts/interfaces/IERC721Enumerable.sol",
         "file": "./IERC721Enumerable.sol",
-        "id": 3394,
+        "id": 3604,
         "nodeType": "ImportDirective",
-        "scope": 3403,
-        "sourceUnit": 3391,
+        "scope": 3613,
+        "sourceUnit": 3601,
         "src": "49:33:11",
         "symbolAliases": [],
         "unitAlias": ""
@@ -575,10 +575,10 @@
       {
         "absolutePath": "/Users/mcplums/Repos/Harber/contracts/interfaces/IERC721Metadata.sol",
         "file": "./IERC721Metadata.sol",
-        "id": 3395,
+        "id": 3605,
         "nodeType": "ImportDirective",
-        "scope": 3403,
-        "sourceUnit": 3426,
+        "scope": 3613,
+        "sourceUnit": 3636,
         "src": "83:31:11",
         "symbolAliases": [],
         "unitAlias": ""
@@ -589,17 +589,17 @@
             "arguments": null,
             "baseName": {
               "contractScope": null,
-              "id": 3396,
+              "id": 3606,
               "name": "IERC721",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 3363,
+              "referencedDeclaration": 3573,
               "src": "298:7:11",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_IERC721_$3363",
+                "typeIdentifier": "t_contract$_IERC721_$3573",
                 "typeString": "contract IERC721"
               }
             },
-            "id": 3397,
+            "id": 3607,
             "nodeType": "InheritanceSpecifier",
             "src": "298:7:11"
           },
@@ -607,17 +607,17 @@
             "arguments": null,
             "baseName": {
               "contractScope": null,
-              "id": 3398,
+              "id": 3608,
               "name": "IERC721Enumerable",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 3390,
+              "referencedDeclaration": 3600,
               "src": "307:17:11",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_IERC721Enumerable_$3390",
+                "typeIdentifier": "t_contract$_IERC721Enumerable_$3600",
                 "typeString": "contract IERC721Enumerable"
               }
             },
-            "id": 3399,
+            "id": 3609,
             "nodeType": "InheritanceSpecifier",
             "src": "307:17:11"
           },
@@ -625,42 +625,42 @@
             "arguments": null,
             "baseName": {
               "contractScope": null,
-              "id": 3400,
+              "id": 3610,
               "name": "IERC721Metadata",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 3425,
+              "referencedDeclaration": 3635,
               "src": "326:15:11",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_IERC721Metadata_$3425",
+                "typeIdentifier": "t_contract$_IERC721Metadata_$3635",
                 "typeString": "contract IERC721Metadata"
               }
             },
-            "id": 3401,
+            "id": 3611,
             "nodeType": "InheritanceSpecifier",
             "src": "326:15:11"
           }
         ],
         "contractDependencies": [
-          3257,
-          3363,
-          3390,
-          3425
+          3467,
+          3573,
+          3600,
+          3635
         ],
         "contractKind": "contract",
         "documentation": "@title ERC-721 Non-Fungible Token Standard, full implementation interface\n@dev See https://github.com/ethereum/EIPs/blob/master/EIPS/eip-721.md",
         "fullyImplemented": false,
-        "id": 3402,
+        "id": 3612,
         "linearizedBaseContracts": [
-          3402,
-          3425,
-          3390,
-          3363,
-          3257
+          3612,
+          3635,
+          3600,
+          3573,
+          3467
         ],
         "name": "IERC721Full",
         "nodeType": "ContractDefinition",
         "nodes": [],
-        "scope": 3403,
+        "scope": 3613,
         "src": "274:124:11"
       }
     ],
@@ -672,7 +672,7 @@
   },
   "networks": {},
   "schemaVersion": "3.0.17",
-  "updatedAt": "2019-12-04T03:47:26.896Z",
+  "updatedAt": "2019-12-04T07:17:45.336Z",
   "devdoc": {
     "details": "See https://github.com/ethereum/EIPs/blob/master/EIPS/eip-721.md",
     "methods": {
