@@ -83,8 +83,8 @@ contract Harber {
 
       function getTestDai() public 
     {
-        cash.faucet(98000000000000000000);
-        cash.transfer(msg.sender, 97000000000000000000);
+        cash.faucet(100000000000000000000);
+        cash.transfer(msg.sender, 100000000000000000000);
     }
 
     function getTestDaiBalance() public view returns (uint)

@@ -29,7 +29,7 @@ class ArtAndPriceSection extends Component {
         <img src={teamToDisplay} style={{maxWidth: "100%", maxHeight: "100%"}} alt="A R T" />
         <DaiBalanceSection />
         <TestDaiFaucetSection />
-        {/* <PriceSection /> */}
+        <PriceSection />
         </Fragment>
       )
     }
