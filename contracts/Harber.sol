@@ -26,7 +26,7 @@ interface Cash
 contract Harber {
     
     using SafeMath for uint256;
-    uint public constant version = 6933;
+    uint public constant version = 2;
 
     uint256 constant numberOfOutcomes = 2; //TEST with two teams
     uint256[numberOfOutcomes] public price; //in wei
@@ -86,10 +86,10 @@ contract Harber {
 
     function getTestDai() public 
     {
-        cash.faucet(98000000000000000000);
+        cash.faucet(100000000000000000000);
         ////below line = my original plan of actually sending the user dai 
         // cash.transfer(msg.sender, 98000000000000000000);
-        testDaiBalances[msg.sender]=98000000000000000000;
+        testDaiBalances[msg.sender]=testDaiBalances[msg.sender] + 100000000000000000000;
     }
 
     // function getTestDaiDelegate() public 

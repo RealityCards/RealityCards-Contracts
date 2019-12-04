@@ -16,102 +16,48 @@ class DaiBalanceSection extends Component {
       this.contracts = context.drizzle.contracts;
       this.state = {
         USD: -1,
-        artworkPriceKey: context.drizzle.contracts.Harber.methods.price.cacheCall(urlId),
+        testDaiBalanceKey: context.drizzle.contracts.Harber.methods.getTestDaiBalance.cacheCall(),
+        // artworkPriceKey: context.drizzle.contracts.Harber.methods.price.cacheCall(urlId),
         patron: null,
-        patronKey: context.drizzle.contracts.ERC721Full.methods.ownerOf.cacheCall(urlId),
-        timeAcquiredKey: context.drizzle.contracts.Harber.methods.timeAcquired.cacheCall(urlId),
+        // patronKey: context.drizzle.contracts.ERC721Full.methods.ownerOf.cacheCall(urlId),
+        // timeAcquiredKey: context.drizzle.contracts.Harber.methods.timeAcquired.cacheCall(urlId),
         timeHeldKey: null,
         currentTimeHeld: 0,
         currentTimeHeldHumanized: ""
       };
     }
-
     
 
-    async updateUSDPrice(props) {
-      const price = this.utils.fromWei(this.getArtworkPrice(props), 'ether');
-      // console.log("price is",price);
-      const USD = await getUSDValue(price);
-      this.setState({USD});
-    }
-
-    async updateTimeHeld(props, timeHeldKey) {
-      const date = new Date();
-      let currentTimeHeld = parseInt(this.getTimeHeld(props, timeHeldKey)) + (parseInt(date.getTime()/1000) - parseInt(this.getTimeAcquired(props)));
-
-      /*
-      note: this is a hack. smart contract didn't store timeAcquired when steward started. 
-      Thus: time held will be very large. It needs to be reduced.
-      */
-      if (props.contracts['ERC721Full']['ownerOf'][this.state.patronKey].value === this.contracts.Harber.address) {
-        const deployedtime = new this.utils.BN('1553202847');
-        currentTimeHeld = new this.utils.BN(currentTimeHeld).sub(deployedtime).toString();
-      }
-
-      const currentTimeHeldHumanized = moment.duration(currentTimeHeld, 'seconds').humanize();
-      this.setState({
-        currentTimeHeld,
-        currentTimeHeldHumanized,
-      });
-    }
-
-    async updatePatron(props) {
-      const patron = this.getPatron(props);
+    async updateTestDaiBalance(props) {
+      const testDaiBalance = this.getTestDaiBalance(props);
       // update timeHeldKey IF owner updated
-      const timeHeldKey = this.contracts.Harber.methods.timeHeld.cacheCall(urlId,patron);
+      const testDaiBalanceKey = this.contracts.Harber.methods.getTestDaiBalance.cacheCall();
       this.setState({
-        currentTimeHeld: 0,
-        timeHeldKey,
-        patron
+        // currentTimeHeld: 0,
+        // timeHeldKey,
+        // patron
       });
     }
 
-    getArtworkPrice(props) {
-      // console.log(props.contracts);
-      return new this.utils.BN(props.contracts['Harber']['price'][this.state.artworkPriceKey].value);
-    }
-
-    getPatron(props) {
-      return props.contracts['ERC721Full']['ownerOf'][this.state.patronKey].value;
-    }
-
-    getTimeAcquired(props) {
-      return props.contracts['Harber']['timeAcquired'][this.state.timeAcquiredKey].value;
-    }
-
-    getTimeHeld(props, timeHeldKey) {
-      return props.contracts['Harber']['timeHeld'][timeHeldKey].value;
+    getTestDaiBalance(props) {
+      return props.contracts['Harber']['timeAcqtestDaiBalancesuired'][this.state.testDaiBalanceKey].value;
     }
 
     async componentWillUpdate(nextProps, nextState) {
-      if (this.state.patronKey in this.props.contracts['ERC721Full']['ownerOf']
-      && this.state.patronKey in nextProps.contracts['ERC721Full']['ownerOf']) {
-        if(this.getPatron(this.props) !== this.getPatron(nextProps) || this.state.patron === null) {
-          this.updatePatron(nextProps);
+      if (this.state.testDaiBalanceKey in this.props.contracts['Harber']['testDaiBalances']
+      && this.state.testDaiBalanceKey in nextProps.contracts['Harber']['testDaiBalances']) {
+        if(this.getTestDaiBalance(this.props) !== this.getTestDaiBalance(nextProps) || this.state.patron === null) {
+          this.updateTestDaiBalance(nextProps);
         }
       }
 
-      /* todo: fetch new exchange rate? */
-      if (this.state.artworkPriceKey in this.props.contracts['Harber']['price']
-      && this.state.artworkPriceKey in nextProps.contracts['Harber']['price']) {
-        if (!this.getArtworkPrice(this.props).eq(this.getArtworkPrice(nextProps)) || this.state.USD === -1) {
-          await this.updateUSDPrice(nextProps);
-        }
-      }
-
-      if(this.state.timeHeldKey in this.props.contracts['Harber']['timeHeld']
-      && this.state.timeHeldKey in nextProps.contracts['Harber']['timeHeld']) {
-        if(this.getTimeHeld(this.props, this.state.timeHeldKey) !== this.getTimeHeld(nextProps, this.state.timeHeldKey) || this.state.currentTimeHeld === 0) {
-          this.updateTimeHeld(nextProps, this.state.timeHeldKey);
-        }
-      }
     }
 
     render() {
 
       return (
         <Fragment>
-        <h2>Current TestDai Balance: <ContractData contract="Harber" method="getTestDaiBalance"  /> $  </h2>
+        <h2>Current TestDai Balance: $<ContractData contract="Harber" method="getTestDaiBalance" toEth />   </h2>
         </Fragment>
       )
     }
