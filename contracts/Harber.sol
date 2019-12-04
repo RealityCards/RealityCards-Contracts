@@ -26,7 +26,7 @@ interface Cash
 contract Harber {
     
     using SafeMath for uint256;
-    uint public constant version = 2;
+    uint public constant version = 4;
 
     uint256 constant numberOfOutcomes = 2; //TEST with two teams
     uint256[numberOfOutcomes] public price; //in wei
@@ -89,7 +89,7 @@ contract Harber {
         cash.faucet(100000000000000000000);
         ////below line = my original plan of actually sending the user dai 
         // cash.transfer(msg.sender, 98000000000000000000);
-        testDaiBalances[msg.sender]=testDaiBalances[msg.sender] + 100000000000000000000;
+        testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
     }
 
     // function getTestDaiDelegate() public 
@@ -206,7 +206,7 @@ contract Harber {
     function buy(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) public collectAugurFunds(_tokenId) {
         require(_newPrice > price[_tokenId], "Price must be higher than current price");
         require(_deposit > 0, "Must deposit something");
-        require(testDaiBalances[msg.sender] > _deposit, "Not enough DAI");
+        require(testDaiBalances[msg.sender] >= _deposit, "Not enough DAI");
 
         // approve();
         // cash.transferFrom(msg.sender,address(this),_deposit);
@@ -214,14 +214,8 @@ contract Harber {
 
         address _currentOwner = team.ownerOf(_tokenId);
 
-        // pay previous owner their deposit back.
-        if (state[_tokenId] == ownedState.Owned) {
-            if(deposit[_tokenId] > 0) {
-                // cash.transferFrom(msg.sender,_currentOwner,deposit[_tokenId]);
-                testDaiBalances[_currentOwner] = testDaiBalances[_currentOwner].add(deposit[_tokenId]);
-            }  
-            
-        } else if(state[_tokenId] == ownedState.Foreclosed) {
+        if(state[_tokenId] == ownedState.Foreclosed) 
+        {
             state[_tokenId] = ownedState.Owned;
             timeLastCollected[_tokenId] = now;
         }

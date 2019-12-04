@@ -63,6 +63,9 @@ class BuyForm extends Component {
     //// we know what this.inputs is from above- it is the inputs newprice and tokenId from the abi
 
     //// the below function gets the relevant data that is required to interact with the function. So after this, we get convertedinputs[0] = newprice, and [1] = tokenId. Note that at this point we still havnt got the deposit amount. This is fine as we don't need it as an argument, however we do need it to form the value of the tx.
+
+    console.log("events is", event);
+    console.log("this.state is", this.state);
     const convertedInputs = this.inputs.map((input, index) => {
       if (input.name == "_tokenId")
       {
@@ -96,8 +99,6 @@ class BuyForm extends Component {
       console.log("args.value is" , args.value );
       // console.log("value thingy is", this.utils.toWei(this.state.value, 'ether'));
 
-   
-
     }
     if (args) {
       // console.log("args is: ", args);
@@ -110,7 +111,7 @@ class BuyForm extends Component {
       
     }
 
-    ////it does this if is no value being sent, so in rality this is not used. 
+    ////it does this if is no value being sent, so in reality this is not used. 
     return this.contracts[this.props.contract].methods[
       this.props.method
     ].cacheSend(...convertedInputs);
@@ -156,10 +157,26 @@ class BuyForm extends Component {
                 value={this.state[input.name]}
                 placeholder={inputLabel}
                 onChange={this.handleInputChange}
-                startAdornment={<InputAdornment position="start">ETH</InputAdornment>} 
+                startAdornment={<InputAdornment position="start">USD</InputAdornment>} 
               />
             );
           }
+
+          // if (input.name == "_deposit")
+          // {
+          //   return (
+            
+          //     // <Input
+          //       // key={input.name}
+          //       // type={inputType}
+          //       // name={input.name}
+          //       // value={this.state[input.name]}
+          //       // placeholder={inputLabel}
+          //       // onChange={this.handleInputChange}
+          //       // startAdornment={<InputAdornment position="start">ETH</InputAdornment>} 
+          //     // />
+          //   );
+          // }
 
         })}
         {valueLabel &&
@@ -168,11 +185,11 @@ class BuyForm extends Component {
           <Input 
           key={valueLabel} 
           type='number' 
-          name='value' 
+          name='_deposit' 
           value={this.state[valueLabel]} 
           placeholder={valueLabel} 
           onChange={this.handleInputChange} 
-          startAdornment={<InputAdornment position="start">ETH</InputAdornment>} />
+          startAdornment={<InputAdornment position="start">USD</InputAdornment>} />
           <br />
           <br />
           </Fragment>
@@ -184,7 +201,7 @@ class BuyForm extends Component {
           type="button"
           onClick={this.handleSubmit}
         >
-          Buy Artwork
+          Buy Token
         </Button>
       </form>
     );
