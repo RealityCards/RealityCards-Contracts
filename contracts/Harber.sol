@@ -26,7 +26,7 @@ interface Cash
 contract Harber {
     
     using SafeMath for uint256;
-    uint256 public constant version = 12;
+    uint256 public constant version = 21;
 
     uint256 constant numberOfOutcomes = 2; //TEST with two teams
     uint256[numberOfOutcomes] public price; //in wei
@@ -84,16 +84,15 @@ contract Harber {
     //     return timeHeld[_tokenId][_address];
     // }
 
-    function getVersion() public view returns(uint256)
+    function getVersion() public pure returns(uint256)
     {
         return (version);
     }
 
     function getTestDai() public 
     {
-        cash.faucet(100000000000000000000);
-        ////below line = my original plan of actually sending the user dai 
-        // cash.transfer(msg.sender, 98000000000000000000);
+        ////comment out the below line when using local testing
+        // cash.faucet(100000000000000000000);
         testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
     }
 
@@ -200,28 +199,28 @@ contract Harber {
     /* actions */
     function _collectAugurFunds(uint256 _tokenId) public {
         // determine patronage to pay
-        if (state[_tokenId] == ownedState.Owned) {
-            uint256 _collection = augurFundsOwed(_tokenId);
+        // if (state[_tokenId] == ownedState.Owned) {
+        //     uint256 _collection = augurFundsOwed(_tokenId);
             
-            // should foreclose and stake stewardship
-            if (_collection >= deposit[_tokenId]) {
-                // up to when was it actually paid for?
-                timeLastCollected[_tokenId] = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(deposit[_tokenId]).div(_collection)));
-                _collection = deposit[_tokenId]; // take what's left.
+        //     // should foreclose and stake stewardship
+        //     if (_collection >= deposit[_tokenId]) {
+        //         // up to when was it actually paid for?
+        //         timeLastCollected[_tokenId] = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(deposit[_tokenId]).div(_collection)));
+        //         _collection = deposit[_tokenId]; // take what's left.
 
-                _foreclose(_tokenId);
-            } else  {
-                // just a normal collection
-                timeLastCollected[_tokenId] = now;
-                currentCollected[_tokenId] = currentCollected[_tokenId].add(_collection);
-            }
+        //         _foreclose(_tokenId);
+        //     } else  {
+        //         // just a normal collection
+        //         timeLastCollected[_tokenId] = now;
+        //         currentCollected[_tokenId] = currentCollected[_tokenId].add(_collection);
+        //     }
             
-            deposit[_tokenId] = deposit[_tokenId].sub(_collection);
-            userDeposits[_tokenId][msg.sender] = userDeposits[_tokenId][msg.sender].sub(_collection);
-            totalCollected = totalCollected.add(_collection);
-            augurFund = augurFund.add(_collection);
-            emit LogCollection(_collection);
-        }
+        //     deposit[_tokenId] = deposit[_tokenId].sub(_collection);
+        //     userDeposits[_tokenId][msg.sender] = userDeposits[_tokenId][msg.sender].sub(_collection);
+        //     totalCollected = totalCollected.add(_collection);
+        //     augurFund = augurFund.add(_collection);
+        //     emit LogCollection(_collection);
+        // }
     }
     
     // note: anyone can deposit

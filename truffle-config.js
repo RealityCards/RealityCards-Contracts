@@ -28,8 +28,8 @@ module.exports = {
     kovan: {
       network_id: 42,
       provider: new HDWalletProvider(mnemonic, kovanProviderUrl, 0),
-      gas: 4700000,
-      gasPrice: 10000000000, // 10 gwei
+      gas: 10000000,
+      gasPrice: 1000000000, // 1 gwei
       skipDryRun: true,
     },
     development: {
