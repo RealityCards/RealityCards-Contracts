@@ -50,13 +50,13 @@ class DaiBalanceSection extends Component {
           this.updateTestDaiBalance(nextProps);
         }
       }
-
     }
 
     render() {
 
       return (
         <Fragment>
+        <h4>Version: <ContractData contract="Harber" method="getVersion" />   </h4>
         <h2>Current TestDai Balance: $<ContractData contract="Harber" method="getTestDaiBalance" toEth />   </h2>
         </Fragment>
       )

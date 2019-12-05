@@ -26,7 +26,7 @@ interface Cash
 contract Harber {
     
     using SafeMath for uint256;
-    uint public constant version = 4;
+    uint256 public constant version = 12;
 
     uint256 constant numberOfOutcomes = 2; //TEST with two teams
     uint256[numberOfOutcomes] public price; //in wei
@@ -44,6 +44,7 @@ contract Harber {
     
     mapping (uint256 => mapping (address => bool) ) public owners;
     mapping (uint256 => mapping (address => uint256) ) public timeHeld;
+    mapping (uint256 => mapping (address => uint256) ) public userDeposits;
     mapping (address => uint256) public testDaiBalances;
 
     uint256[numberOfOutcomes] public timeAcquired;
@@ -66,7 +67,6 @@ contract Harber {
     event LogPriceChange(uint256 indexed newPrice);
     event LogForeclosure(address indexed prevOwner);
     event LogCollection(uint256 indexed collected);
-    event TestEvent(uint256 indexed newPrice, uint256 indexed currentPrice);
     
     modifier onlyOwner(uint256 _tokenId) {
         require(msg.sender == team.ownerOf(_tokenId), "Not owner");
@@ -83,6 +83,11 @@ contract Harber {
     // {
     //     return timeHeld[_tokenId][_address];
     // }
+
+    function getVersion() public view returns(uint256)
+    {
+        return (version);
+    }
 
     function getTestDai() public 
     {
@@ -129,6 +134,11 @@ contract Harber {
     {
         return price[_tokenId];
     }
+    
+    function getUserDepositBalance(uint256 _tokenId) public view returns (uint256)
+    {
+        return userDeposits[_tokenId][msg.sender];
+    }
     function augurFundsOwed(uint256 _tokenId) public view returns (uint256 augurFundsDue) {
         return price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(365 days);
     }
@@ -156,6 +166,23 @@ contract Harber {
             return 0;
         } else {
             return deposit[_tokenId].sub(_collection);
+        }
+    }
+
+    function userDepositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) {
+        uint256 _collection = augurFundsOwed(_tokenId);
+        address _currentOwner = team.ownerOf(_tokenId);
+
+        if(_currentOwner == msg.sender)
+        {
+            if(_collection >= deposit[_tokenId]) 
+        {
+            return 0;
+        } else {
+            return userDeposits[_tokenId][msg.sender].sub(_collection);
+        }
+        } else {
+            return userDeposits[_tokenId][msg.sender];
         }
     }
 
@@ -190,6 +217,7 @@ contract Harber {
             }
             
             deposit[_tokenId] = deposit[_tokenId].sub(_collection);
+            userDeposits[_tokenId][msg.sender] = userDeposits[_tokenId][msg.sender].sub(_collection);
             totalCollected = totalCollected.add(_collection);
             augurFund = augurFund.add(_collection);
             emit LogCollection(_collection);
@@ -210,9 +238,22 @@ contract Harber {
 
         // approve();
         // cash.transferFrom(msg.sender,address(this),_deposit);
+
         testDaiBalances[msg.sender] = testDaiBalances[msg.sender].sub(_deposit);
+        userDeposits[_tokenId][msg.sender] = userDeposits[_tokenId][msg.sender].add(_deposit);
+        price[_tokenId] = _newPrice;
 
         address _currentOwner = team.ownerOf(_tokenId);
+
+        if(_currentOwner == msg.sender)
+        {
+            deposit[_tokenId] = deposit[_tokenId].add(_deposit);
+        }
+        else
+        {
+            deposit[_tokenId] = _deposit;
+            transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
+        }
 
         if(state[_tokenId] == ownedState.Foreclosed) 
         {
@@ -220,9 +261,6 @@ contract Harber {
             timeLastCollected[_tokenId] = now;
         }
         
-        deposit[_tokenId] = _deposit;
-        transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
-        emit TestEvent(_newPrice,price[_tokenId]);
         emit LogBuy(msg.sender, _newPrice);
     }
 

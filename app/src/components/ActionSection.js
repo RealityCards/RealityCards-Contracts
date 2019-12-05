@@ -71,7 +71,8 @@ class ActionSection extends Component {
     <div className="section">
       <h2>Current Owner Details:</h2>
         <p>Address: <ContractData contract="ERC721Full" method="ownerOf" methodArgs={[urlId]}/></p>
-        <p>Available Deposit: <ContractData contract="Harber" method="depositAbleToWithdraw" methodArgs={[urlId]} toEth /> ETH</p>
+        <p>Token Deposit: <ContractData contract="Harber" method="depositAbleToWithdraw" methodArgs={[urlId]} toEth /> USD</p>
+        <p>Your Deposit: <ContractData contract="Harber" method="userDepositAbleToWithdraw" methodArgs={[urlId]} toEth /> USD</p>
         <p>Foreclosure Time: {this.state.foreclosureTime}</p>
         {/* <p>The current deposit will cover the patronage until the time above. At this time, the smart contract steward takes ownership of the artwork and sets its price back to zero.</p> */}
         {/* <p>Once it crosses this time period, the patron can't top up their deposit anymore and is effectively foreclosed.</p> */}

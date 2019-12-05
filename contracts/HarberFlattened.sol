@@ -192,7 +192,7 @@ interface Cash
 contract Harber {
     
     using SafeMath for uint256;
-    uint public constant version = 4;
+    uint public constant version = 6;
 
     uint256 constant numberOfOutcomes = 2; //TEST with two teams
     uint256[numberOfOutcomes] public price; //in wei
@@ -210,6 +210,7 @@ contract Harber {
     
     mapping (uint256 => mapping (address => bool) ) public owners;
     mapping (uint256 => mapping (address => uint256) ) public timeHeld;
+    mapping (uint256 => mapping (address => uint256) ) public userDeposits;
     mapping (address => uint256) public testDaiBalances;
 
     uint256[numberOfOutcomes] public timeAcquired;
@@ -232,7 +233,6 @@ contract Harber {
     event LogPriceChange(uint256 indexed newPrice);
     event LogForeclosure(address indexed prevOwner);
     event LogCollection(uint256 indexed collected);
-    event TestEvent(uint256 indexed newPrice, uint256 indexed currentPrice);
     
     modifier onlyOwner(uint256 _tokenId) {
         require(msg.sender == team.ownerOf(_tokenId), "Not owner");
@@ -356,6 +356,7 @@ contract Harber {
             }
             
             deposit[_tokenId] = deposit[_tokenId].sub(_collection);
+            userDeposits[_tokenId][msg.sender] = userDeposits[_tokenId][msg.sender].sub(_collection);
             totalCollected = totalCollected.add(_collection);
             augurFund = augurFund.add(_collection);
             emit LogCollection(_collection);
@@ -372,13 +373,25 @@ contract Harber {
     function buy(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) public collectAugurFunds(_tokenId) {
         require(_newPrice > price[_tokenId], "Price must be higher than current price");
         require(_deposit > 0, "Must deposit something");
-        require(testDaiBalances[msg.sender] > _deposit, "Not enough DAI");
+        require(testDaiBalances[msg.sender] >= _deposit, "Not enough DAI");
 
         // approve();
         // cash.transferFrom(msg.sender,address(this),_deposit);
+
         testDaiBalances[msg.sender] = testDaiBalances[msg.sender].sub(_deposit);
+        userDeposits[_tokenId][msg.sender] = userDeposits[_tokenId][msg.sender].add(_deposit);
 
         address _currentOwner = team.ownerOf(_tokenId);
+
+        if(_currentOwner == msg.sender)
+        {
+            deposit[_tokenId] = deposit[_tokenId].add(_deposit);
+        }
+        else
+        {
+            deposit[_tokenId] = _deposit;
+            transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
+        }
 
         if(state[_tokenId] == ownedState.Foreclosed) 
         {
@@ -386,9 +399,6 @@ contract Harber {
             timeLastCollected[_tokenId] = now;
         }
         
-        deposit[_tokenId] = _deposit;
-        transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
-        emit TestEvent(_newPrice,price[_tokenId]);
         emit LogBuy(msg.sender, _newPrice);
     }
 

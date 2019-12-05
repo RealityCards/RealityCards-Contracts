@@ -12,6 +12,7 @@ class ContractData extends Component {
 
     this.utils = context.drizzle.web3.utils;
     this.contracts = context.drizzle.contracts;
+    console.log("this.props.method is", this.props.method);
     this.state = {
       dataKey: this.contracts[this.props.contract].methods[
         this.props.method
