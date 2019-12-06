@@ -26,7 +26,7 @@ interface Cash
 contract Harber {
     
     using SafeMath for uint256;
-    uint256 public constant version = 21;
+    uint256 public constant version = 22;
 
     uint256 constant numberOfOutcomes = 2; //TEST with two teams
     uint256[numberOfOutcomes] public price; //in wei
@@ -91,9 +91,12 @@ contract Harber {
 
     function getTestDai() public 
     {
-        ////comment out the below line when using local testing
+        //// PUBLIC NETWORK VERSION
         // cash.faucet(100000000000000000000);
-        testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
+        // testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
+
+        //// GANACHE VERSION
+        testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100;
     }
 
     // function getTestDaiDelegate() public 

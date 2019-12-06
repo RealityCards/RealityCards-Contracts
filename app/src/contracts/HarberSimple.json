@@ -1,0 +1,416 @@
+{
+  "contractName": "HarberSimple",
+  "abi": [
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "version",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "getVersion",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "pure",
+      "type": "function"
+    }
+  ],
+  "metadata": "{\"compiler\":{\"version\":\"0.5.12+commit.7709ece9\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"constant\":true,\"inputs\":[],\"name\":\"getVersion\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"pure\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"version\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"methods\":{}},\"userdoc\":{\"methods\":{}}},\"settings\":{\"compilationTarget\":{\"/Users/mcplums/Repos/Harber/contracts/HarberSimple.sol\":\"HarberSimple\"},\"evmVersion\":\"petersburg\",\"libraries\":{},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/mcplums/Repos/Harber/contracts/HarberSimple.sol\":{\"keccak256\":\"0xa70aca0e71fef4105cb056bb98e571316fc7453ee153d5b80f654715a2408601\",\"urls\":[\"bzz-raw://5c5b7773da6e4bb28a47ffce98ae20456b7674bec92824188df8861b8bd7a2a2\",\"dweb:/ipfs/QmQKBuRGXJy3zjtvsXTA1sbvDY6mgy9ShKYbuSupirG3kh\"]}},\"version\":1}",
+  "bytecode": "0x608060405234801561001057600080fd5b5060b28061001f6000396000f3fe6080604052348015600f57600080fd5b506004361060325760003560e01c80630d8e6e2c14603757806354fd4d50146053575b600080fd5b603d606f565b6040518082815260200191505060405180910390f35b60596078565b6040518082815260200191505060405180910390f35b60006015905090565b60158156fea265627a7a723158203ae8e58b939673fe4c13ecdb587cab45f2910b010404cf8530404edcd8ebcf3864736f6c634300050c0032",
+  "deployedBytecode": "0x6080604052348015600f57600080fd5b506004361060325760003560e01c80630d8e6e2c14603757806354fd4d50146053575b600080fd5b603d606f565b6040518082815260200191505060405180910390f35b60596078565b6040518082815260200191505060405180910390f35b60006015905090565b60158156fea265627a7a723158203ae8e58b939673fe4c13ecdb587cab45f2910b010404cf8530404edcd8ebcf3864736f6c634300050c0032",
+  "sourceMap": "25:167:6:-;;;;8:9:-1;5:2;;;30:1;27;20:12;5:2;25:167:6;;;;;;;",
+  "deployedSourceMap": "25:167:6:-;;;;8:9:-1;5:2;;;30:1;27;20:12;5:2;25:167:6;;;;;;;;;;;;;;;;;;;;;;;;101:88;;;:::i;:::-;;;;;;;;;;;;;;;;;;;58:36;;;:::i;:::-;;;;;;;;;;;;;;;;;;;101:88;143:7;92:2;166:16;;101:88;:::o;58:36::-;92:2;58:36;:::o",
+  "source": "pragma solidity ^0.5.0;\n\ncontract HarberSimple {\n    \n    uint256 public constant version = 21;\n\n    function getVersion() public pure returns(uint256)\n    {\n        return (version);\n    }\n\n}",
+  "sourcePath": "/Users/mcplums/Repos/Harber/contracts/HarberSimple.sol",
+  "ast": {
+    "absolutePath": "/Users/mcplums/Repos/Harber/contracts/HarberSimple.sol",
+    "exportedSymbols": {
+      "HarberSimple": [
+        2044
+      ]
+    },
+    "id": 2045,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 2031,
+        "literals": [
+          "solidity",
+          "^",
+          "0.5",
+          ".0"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "0:23:6"
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "documentation": null,
+        "fullyImplemented": true,
+        "id": 2044,
+        "linearizedBaseContracts": [
+          2044
+        ],
+        "name": "HarberSimple",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "constant": true,
+            "id": 2034,
+            "name": "version",
+            "nodeType": "VariableDeclaration",
+            "scope": 2044,
+            "src": "58:36:6",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_uint256",
+              "typeString": "uint256"
+            },
+            "typeName": {
+              "id": 2032,
+              "name": "uint256",
+              "nodeType": "ElementaryTypeName",
+              "src": "58:7:6",
+              "typeDescriptions": {
+                "typeIdentifier": "t_uint256",
+                "typeString": "uint256"
+              }
+            },
+            "value": {
+              "argumentTypes": null,
+              "hexValue": "3231",
+              "id": 2033,
+              "isConstant": false,
+              "isLValue": false,
+              "isPure": true,
+              "kind": "number",
+              "lValueRequested": false,
+              "nodeType": "Literal",
+              "src": "92:2:6",
+              "subdenomination": null,
+              "typeDescriptions": {
+                "typeIdentifier": "t_rational_21_by_1",
+                "typeString": "int_const 21"
+              },
+              "value": "21"
+            },
+            "visibility": "public"
+          },
+          {
+            "body": {
+              "id": 2042,
+              "nodeType": "Block",
+              "src": "156:33:6",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "components": [
+                      {
+                        "argumentTypes": null,
+                        "id": 2039,
+                        "name": "version",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 2034,
+                        "src": "174:7:6",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        }
+                      }
+                    ],
+                    "id": 2040,
+                    "isConstant": false,
+                    "isInlineArray": false,
+                    "isLValue": false,
+                    "isPure": true,
+                    "lValueRequested": false,
+                    "nodeType": "TupleExpression",
+                    "src": "173:9:6",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "functionReturnParameters": 2038,
+                  "id": 2041,
+                  "nodeType": "Return",
+                  "src": "166:16:6"
+                }
+              ]
+            },
+            "documentation": null,
+            "id": 2043,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getVersion",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 2035,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "120:2:6"
+            },
+            "returnParameters": {
+              "id": 2038,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 2037,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 2043,
+                  "src": "143:7:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 2036,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "143:7:6",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "142:9:6"
+            },
+            "scope": 2044,
+            "src": "101:88:6",
+            "stateMutability": "pure",
+            "superFunction": null,
+            "visibility": "public"
+          }
+        ],
+        "scope": 2045,
+        "src": "25:167:6"
+      }
+    ],
+    "src": "0:192:6"
+  },
+  "legacyAST": {
+    "absolutePath": "/Users/mcplums/Repos/Harber/contracts/HarberSimple.sol",
+    "exportedSymbols": {
+      "HarberSimple": [
+        2044
+      ]
+    },
+    "id": 2045,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 2031,
+        "literals": [
+          "solidity",
+          "^",
+          "0.5",
+          ".0"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "0:23:6"
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "documentation": null,
+        "fullyImplemented": true,
+        "id": 2044,
+        "linearizedBaseContracts": [
+          2044
+        ],
+        "name": "HarberSimple",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "constant": true,
+            "id": 2034,
+            "name": "version",
+            "nodeType": "VariableDeclaration",
+            "scope": 2044,
+            "src": "58:36:6",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_uint256",
+              "typeString": "uint256"
+            },
+            "typeName": {
+              "id": 2032,
+              "name": "uint256",
+              "nodeType": "ElementaryTypeName",
+              "src": "58:7:6",
+              "typeDescriptions": {
+                "typeIdentifier": "t_uint256",
+                "typeString": "uint256"
+              }
+            },
+            "value": {
+              "argumentTypes": null,
+              "hexValue": "3231",
+              "id": 2033,
+              "isConstant": false,
+              "isLValue": false,
+              "isPure": true,
+              "kind": "number",
+              "lValueRequested": false,
+              "nodeType": "Literal",
+              "src": "92:2:6",
+              "subdenomination": null,
+              "typeDescriptions": {
+                "typeIdentifier": "t_rational_21_by_1",
+                "typeString": "int_const 21"
+              },
+              "value": "21"
+            },
+            "visibility": "public"
+          },
+          {
+            "body": {
+              "id": 2042,
+              "nodeType": "Block",
+              "src": "156:33:6",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "components": [
+                      {
+                        "argumentTypes": null,
+                        "id": 2039,
+                        "name": "version",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 2034,
+                        "src": "174:7:6",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        }
+                      }
+                    ],
+                    "id": 2040,
+                    "isConstant": false,
+                    "isInlineArray": false,
+                    "isLValue": false,
+                    "isPure": true,
+                    "lValueRequested": false,
+                    "nodeType": "TupleExpression",
+                    "src": "173:9:6",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "functionReturnParameters": 2038,
+                  "id": 2041,
+                  "nodeType": "Return",
+                  "src": "166:16:6"
+                }
+              ]
+            },
+            "documentation": null,
+            "id": 2043,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getVersion",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 2035,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "120:2:6"
+            },
+            "returnParameters": {
+              "id": 2038,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 2037,
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 2043,
+                  "src": "143:7:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 2036,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "143:7:6",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "142:9:6"
+            },
+            "scope": 2044,
+            "src": "101:88:6",
+            "stateMutability": "pure",
+            "superFunction": null,
+            "visibility": "public"
+          }
+        ],
+        "scope": 2045,
+        "src": "25:167:6"
+      }
+    ],
+    "src": "0:192:6"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.5.12+commit.7709ece9.Emscripten.clang"
+  },
+  "networks": {},
+  "schemaVersion": "3.0.19",
+  "updatedAt": "2019-12-06T03:42:22.343Z",
+  "networkType": "ethereum",
+  "devdoc": {
+    "methods": {}
+  },
+  "userdoc": {
+    "methods": {}
+  }
+}
