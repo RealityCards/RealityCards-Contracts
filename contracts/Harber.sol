@@ -99,38 +99,10 @@ contract Harber {
         testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100;
     }
 
-    // function getTestDaiDelegate() public 
-    // {
-    //     address(cash).delegatecall(abi.encodeWithSignature("faucet(uint256)",97000000000000000000));
-    // }
-
     function getTestDaiBalance() public view returns (uint)
     {
-        ////below line = my original plan of actually sending the user dai 
-        // return(cash.balanceOf(msg.sender));
-
-        ////im now keeping their dai in this contract
         return(testDaiBalances[msg.sender]);
     }
-
-    // function transferDaiToContract() public returns (uint)
-    // {
-    //     // string memory _callValue = "transfer"+ address(this) + ")";
-    //     // address(cash).delegatecall(bytes4(keccak256("transfer(address,uint256)")),address(this),100000000000000000000);
-    //     address(cash).delegatecall(abi.encodeWithSignature("transfer(address,uint256)",address(this),123));
-    // }
-
-    // function approve1() public
-    // {
-    //     cash.approve(address(this),(2**256)-1);
-    //     // cash.approve(0xe2020A4a6B0a5D6C74c358e09B2b4758b5Cdb91C,(2**256)-1);
-    // }
-
-    // function approve2() public
-    // {
-    //     // cash.approve(address(this),(2**256)-1);
-    //     cash.approve(0xe2020A4a6B0a5D6C74c358e09B2b4758b5Cdb91C,(2**256)-1);
-    // }
 
     function getPrice(uint256 _tokenId) public view returns (uint256)
     {
@@ -241,8 +213,7 @@ contract Harber {
         testDaiBalances[msg.sender] = testDaiBalances[msg.sender].sub(_deposit);
         userDeposits[_tokenId][msg.sender] = userDeposits[_tokenId][msg.sender].add(_deposit);
         price[_tokenId] = _newPrice;
-
-       
+        
         address _currentOwner = team.ownerOf(_tokenId);
 
         if(_currentOwner == msg.sender)
@@ -253,12 +224,7 @@ contract Harber {
         {
             deposit[_tokenId] = _deposit;
             transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
-              
-     
         }
-
-         
-
 
         if(state[_tokenId] == ownedState.Foreclosed) 
         {
@@ -266,8 +232,6 @@ contract Harber {
             timeLastCollected[_tokenId] = now;
         }
 
-        
-        
         emit LogBuy(msg.sender, _newPrice);
     }
 

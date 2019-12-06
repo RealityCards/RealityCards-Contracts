@@ -113,12 +113,10 @@ contract('HarberTests', (accounts) => {
 
   it('switch back to user 1 buy Token third time and check: daibalance, price, tokendeposit, userdeposit, token owner, state', async () => {
     user = user1;
-    const testDaiBalance = await harber.getTestDaiBalance.call({ from: user });
-    assert.equal(testDaiBalance, 80);
     await harber.buy(1000,0,20,{ from: user });
     const price = await harber.getPrice.call(0);
     assert.equal(price, 1000);
-    const testDaiBalance = await harber.getTestDaiBalance.call();
+    const testDaiBalance = await harber.getTestDaiBalance.call({ from: user });
     assert.equal(testDaiBalance, 60);
     const deposit = await harber.deposit.call(0);
     assert.equal(deposit, 40);
