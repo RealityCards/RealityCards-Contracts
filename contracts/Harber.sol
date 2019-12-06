@@ -38,13 +38,14 @@ contract Harber {
     uint256 public totalCollected; // total into my whiskey fund
     uint256[numberOfOutcomes] public currentCollected; // amount currently collected for owner  
     uint256[numberOfOutcomes] public timeLastCollected; // 
-    uint256[numberOfOutcomes] public deposit;
+    // uint256[numberOfOutcomes] public deposit;
     address payable public andrewsAddress;
     uint256 public augurFund;
     
     mapping (uint256 => mapping (address => bool) ) public owners;
+    // mapping (uint256 => mapping (address[] => bool) ) public ownerTracker;
     mapping (uint256 => mapping (address => uint256) ) public timeHeld;
-    mapping (uint256 => mapping (address => uint256) ) public userDeposits;
+    mapping (uint256 => mapping (address => uint256) ) public deposits;
     mapping (address => uint256) public testDaiBalances;
 
     uint256[numberOfOutcomes] public timeAcquired;
@@ -108,11 +109,7 @@ contract Harber {
     {
         return price[_tokenId];
     }
-    
-    function getUserDepositBalance(uint256 _tokenId) public view returns (uint256)
-    {
-        return userDeposits[_tokenId][msg.sender];
-    }
+
     function augurFundsOwed(uint256 _tokenId) public view returns (uint256 augurFundsDue) {
         return price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(365 days);
     }
@@ -126,7 +123,7 @@ contract Harber {
         // depending on whether deposit covers patronage due
         // useful helper function when price should be zero, but contract doesn't reflect it yet.
         uint256 _collection = augurFundsOwed(_tokenId);
-        if(_collection >= deposit[_tokenId]) {
+        if(_collection >= deposits[_tokenId][msg.sender]) {
             return true;
         } else {
             return false;
@@ -136,10 +133,10 @@ contract Harber {
     // same function as above, basically
     function depositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) {
         uint256 _collection = augurFundsOwed(_tokenId);
-        if(_collection >= deposit[_tokenId]) {
+        if(_collection >= deposits[_tokenId][msg.sender]) {
             return 0;
         } else {
-            return deposit[_tokenId].sub(_collection);
+            return deposits[_tokenId][msg.sender].sub(_collection);
         }
     }
 
@@ -149,14 +146,14 @@ contract Harber {
 
         if(_currentOwner == msg.sender)
         {
-            if(_collection >= deposit[_tokenId]) 
+            if(_collection >= deposits[_tokenId][msg.sender]) 
         {
             return 0;
         } else {
-            return userDeposits[_tokenId][msg.sender].sub(_collection);
+            return deposits[_tokenId][msg.sender].sub(_collection);
         }
         } else {
-            return userDeposits[_tokenId][msg.sender];
+            return deposits[_tokenId][msg.sender];
         }
     }
 
@@ -176,12 +173,13 @@ contract Harber {
         // determine patronage to paay
         if (state[_tokenId] == ownedState.Owned) {
             uint256 _collection = augurFundsOwed(_tokenId);
+            address _currentOwner = team.ownerOf(_tokenId);
             
             // should foreclose and stake stewardship
-            if (_collection >= deposit[_tokenId]) {
+            if (_collection >= deposits[_tokenId][_currentOwner]) {
                 // up to when was it actually paid for?
-                timeLastCollected[_tokenId] = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(deposit[_tokenId]).div(_collection)));
-                _collection = deposit[_tokenId]; // take what's left.
+                timeLastCollected[_tokenId] = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(deposits[_tokenId][_currentOwner]).div(_collection)));
+                _collection = deposits[_tokenId][_currentOwner]; // take what's left.
 
                 _foreclose(_tokenId);
             } else  {
@@ -190,10 +188,11 @@ contract Harber {
                 currentCollected[_tokenId] = currentCollected[_tokenId].add(_collection);
             }
             
-            deposit[_tokenId] = deposit[_tokenId].sub(_collection);
-            userDeposits[_tokenId][msg.sender] = userDeposits[_tokenId][msg.sender].sub(_collection);
+            deposits[_tokenId][_currentOwner] = deposits[_tokenId][_currentOwner].sub(_collection);
+            deposits[_tokenId][_currentOwner] = deposits[_tokenId][_currentOwner].sub(_collection);
             totalCollected = totalCollected.add(_collection);
             augurFund = augurFund.add(_collection);
+             
             emit LogCollection(_collection);
         }
     }
@@ -201,28 +200,26 @@ contract Harber {
     // note: anyone can deposit
     function depositWei(uint256 _tokenId) public payable collectAugurFunds(_tokenId) {
         require(state[_tokenId] != ownedState.Foreclosed, "Foreclosed");
-        deposit[_tokenId] = deposit[_tokenId].add(msg.value);
+        deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].add(msg.value);
     }
     
-    //this function has been modified from the original so that you no longer pay the current owner back the price that they set. Therefore, your entire msg.value becomes your deposit
+    // function buy(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) public 
+    // {
     function buy(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) public collectAugurFunds(_tokenId) {
         require(_newPrice > price[_tokenId], "Price must be higher than current price");
         require(_deposit > 0, "Must deposit something");
         require(testDaiBalances[msg.sender] >= _deposit, "Not enough DAI");
 
         testDaiBalances[msg.sender] = testDaiBalances[msg.sender].sub(_deposit);
-        userDeposits[_tokenId][msg.sender] = userDeposits[_tokenId][msg.sender].add(_deposit);
+        deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].add(_deposit);
+        // the live deposit will always equal whatever that user has in his balance
+        deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender];
         price[_tokenId] = _newPrice;
-        
+
         address _currentOwner = team.ownerOf(_tokenId);
 
-        if(_currentOwner == msg.sender)
+        if(_currentOwner != msg.sender)
         {
-            deposit[_tokenId] = deposit[_tokenId].add(_deposit);
-        }
-        else
-        {
-            deposit[_tokenId] = _deposit;
             transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
         }
 
@@ -254,19 +251,19 @@ contract Harber {
     }
 
     function exit(uint256 _tokenId) public onlyOwner(_tokenId) collectAugurFunds(_tokenId) {
-        _withdrawDeposit(deposit[_tokenId],  _tokenId);
+        _withdrawDeposit(deposits[_tokenId][msg.sender],  _tokenId);
     }
 
     /* internal */
 
     function _withdrawDeposit(uint256 _wei, uint256 _tokenId) internal {
         // note: can withdraw whole deposit, which puts it in immediate to be foreclosed state.
-        require(deposit[_tokenId] >= _wei, 'Withdrawing too much');
+        require(deposits[_tokenId][msg.sender] >= _wei, 'Withdrawing too much');
 
-        deposit[_tokenId] = deposit[_tokenId].sub(_wei);
+        deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].sub(_wei);
         msg.sender.transfer(_wei); // msg.sender == patron
 
-        if(deposit[_tokenId] == 0) {
+        if(deposits[_tokenId][msg.sender] == 0) {
             _foreclose(_tokenId);
         }
     }
@@ -286,7 +283,7 @@ contract Harber {
         // note: it would also tabulate time held in stewardship by smart contract
         
         timeHeld[_tokenId][_currentOwner] = timeHeld[_tokenId][_currentOwner].add((timeLastCollected[_tokenId].sub(timeAcquired[_tokenId])));
-        // if (_newPrice == 1000) {require(1 > 2, "STFU");}
+       
         team.transferFrom(_currentOwner, _newOwner, _tokenId);
 
         price[_tokenId] = _newPrice;
