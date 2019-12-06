@@ -41,7 +41,7 @@ contract('HarberTests', (accounts) => {
     assert.equal(testDaiBalance, 100);
   });
 
-  it('user 1 buy Token first time and check: daibalance, price, tokendeposit, userdeposit, token owner, state', async () => {
+  it('user 1 buy Token first time and check: various', async () => {
     user = user1;
     await harber.buy(100,0,10,{ from: user });
     const price = await harber.getPrice.call(0);
@@ -52,10 +52,13 @@ contract('HarberTests', (accounts) => {
     assert.equal(deposit, 10);
     const owner = await token.ownerOf.call(0);
     assert.equal(owner, user);
+    const trackedPrice = await harber.getOwnerTrackerPrice.call(0,0);
+    assert.equal(trackedPrice, 100);
+    const trackedAddress = await harber.getOwnerTrackerAddress.call(0,0);
+    assert.equal(trackedAddress, user);
   });
 
-
-  it('user 1 buy Token second time and check: daibalance, price, tokendeposit, userdeposit, token owner, state', async () => {
+  it('user 1 buy Token second time and check: various', async () => {
     user = user1;
     await harber.buy(200,0,10,{ from: user });
     const price = await harber.getPrice.call(0);
@@ -66,6 +69,10 @@ contract('HarberTests', (accounts) => {
     assert.equal(deposit, 20);
     const owner = await token.ownerOf.call(0);
     assert.equal(owner, user);
+    const trackedPrice = await harber.getOwnerTrackerPrice.call(0,0);
+    assert.equal(trackedPrice, 200);
+    const trackedAddress = await harber.getOwnerTrackerAddress.call(0,0);
+    assert.equal(trackedAddress, user);
   });
 
   it('user 2 buy Token fail states', async () => {
@@ -76,7 +83,7 @@ contract('HarberTests', (accounts) => {
     await shouldFail.reverting.withMessage(harber.buy(300,0,10,{ from: user}), "Not enough DAI");
   });
 
-  it('user 2 buy Token first time and check: daibalance, price, tokendeposit, userdeposit, token owner, state', async () => { 
+  it('user 2 buy Token first time and check: various', async () => { 
     user = user2;
     await harber.getTestDai({ from: user });
     await harber.buy(300,0,10,{ from: user  });
@@ -88,9 +95,13 @@ contract('HarberTests', (accounts) => {
     assert.equal(deposit, 10);
     const owner = await token.ownerOf.call(0);
     assert.equal(owner, user );
+    const trackedPrice = await harber.getOwnerTrackerPrice.call(0,1);
+    assert.equal(trackedPrice, 300);
+    const trackedAddress = await harber.getOwnerTrackerAddress.call(0,1);
+    assert.equal(trackedAddress, user);
   });
 
-  it('user 2 buy Token second time and check: daibalance, price, tokendeposit, userdeposit, token owner, state', async () => {
+  it('user 2 buy Token second time and check: various', async () => {
     user = user2;
     await harber.buy(400,0,10,{ from: user });
     const price = await harber.getPrice.call(0);
@@ -101,9 +112,13 @@ contract('HarberTests', (accounts) => {
     assert.equal(deposit, 20);
     const owner = await token.ownerOf.call(0);
     assert.equal(owner, user);
+    const trackedPrice = await harber.getOwnerTrackerPrice.call(0,1);
+    assert.equal(trackedPrice, 400);
+    const trackedAddress = await harber.getOwnerTrackerAddress.call(0,1);
+    assert.equal(trackedAddress, user);
   });
 
-  it('switch back to user 1 buy Token third time and check: daibalance, price, tokendeposit, userdeposit, token owner, state', async () => {
+  it('switch back to user 1 buy Token third time and check: various', async () => {
     user = user1;
     await harber.buy(1000,0,20,{ from: user });
     const price = await harber.getPrice.call(0);
@@ -114,6 +129,34 @@ contract('HarberTests', (accounts) => {
     assert.equal(deposit, 40);
     const owner = await token.ownerOf.call(0);
     assert.equal(owner, user);
+    const trackedPrice = await harber.getOwnerTrackerPrice.call(0,2);
+    assert.equal(trackedPrice, 1000);
+    const trackedAddress = await harber.getOwnerTrackerAddress.call(0,2);
+    assert.equal(trackedAddress, user);
+  });
+
+  it('changePrice function fail testing', async () => {
+    user = user2;
+    await shouldFail.reverting.withMessage(harber.changePrice(2000,0,{ from: user}), "Not owner");
+    user = user1;
+    await shouldFail.reverting.withMessage(harber.changePrice(1000,0,{ from: user}), "New price must be higher than current price");
+  });
+
+  it('user 1 using changePrice function', async () => {
+    user = user1;
+    await harber.changePrice(2000,0,{ from: user });
+    const price = await harber.getPrice.call(0);
+    assert.equal(price, 2000);
+    const testDaiBalance = await harber.getTestDaiBalance.call({ from: user });
+    assert.equal(testDaiBalance, 60);
+    const deposit = await harber.deposits.call(0,user);
+    assert.equal(deposit, 40);
+    const owner = await token.ownerOf.call(0);
+    assert.equal(owner, user);
+    const trackedPrice = await harber.getOwnerTrackerPrice.call(0,2);
+    assert.equal(trackedPrice, 2000);
+    const trackedAddress = await harber.getOwnerTrackerAddress.call(0,2);
+    assert.equal(trackedAddress, user);
   });
 
 

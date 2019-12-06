@@ -38,12 +38,17 @@ contract Harber {
     uint256 public totalCollected; // total into my whiskey fund
     uint256[numberOfOutcomes] public currentCollected; // amount currently collected for owner  
     uint256[numberOfOutcomes] public timeLastCollected; // 
-    // uint256[numberOfOutcomes] public deposit;
+    uint256[numberOfOutcomes] public purchaseIndex;
     address payable public andrewsAddress;
     uint256 public augurFund;
+
+    struct purchase {
+        address owner;
+        uint price;
+    }
     
     mapping (uint256 => mapping (address => bool) ) public owners;
-    // mapping (uint256 => mapping (address[] => bool) ) public ownerTracker;
+    mapping (uint256 => mapping (uint256 => purchase) ) public ownerTracker;
     mapping (uint256 => mapping (address => uint256) ) public timeHeld;
     mapping (uint256 => mapping (address => uint256) ) public deposits;
     mapping (address => uint256) public testDaiBalances;
@@ -59,6 +64,12 @@ contract Harber {
         andrewsAddress = _andrewsAddress;
         state[0] = ownedState.Foreclosed;
         state[1] = ownedState.Foreclosed;
+
+        //this variable is incremented before being used first so it needs to roll over to zero 
+        purchaseIndex[0]=0;
+        purchaseIndex[0] = purchaseIndex[0] -1;
+        purchaseIndex[1]=0;
+        purchaseIndex[1] = purchaseIndex[1] -1;
 
         //Augur specific:
         cash = Cash(_addressOfCashContract);
@@ -100,9 +111,19 @@ contract Harber {
         testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100;
     }
 
-    function getTestDaiBalance() public view returns (uint)
+    function getTestDaiBalance() public view returns (uint256)
     {
         return(testDaiBalances[msg.sender]);
+    }
+
+    function getOwnerTrackerPrice(uint256 _tokenId, uint256 _index) public view returns (uint256)
+    {
+        return (ownerTracker[_tokenId][_index].price);
+    }
+
+    function getOwnerTrackerAddress(uint256 _tokenId, uint256 _index) public view returns (address)
+    {
+        return (ownerTracker[_tokenId][_index].owner);
     }
 
     function getPrice(uint256 _tokenId) public view returns (uint256)
@@ -203,8 +224,6 @@ contract Harber {
         deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].add(msg.value);
     }
     
-    // function buy(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) public 
-    // {
     function buy(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) public collectAugurFunds(_tokenId) {
         require(_newPrice > price[_tokenId], "Price must be higher than current price");
         require(_deposit > 0, "Must deposit something");
@@ -212,15 +231,20 @@ contract Harber {
 
         testDaiBalances[msg.sender] = testDaiBalances[msg.sender].sub(_deposit);
         deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].add(_deposit);
-        // the live deposit will always equal whatever that user has in his balance
-        deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender];
         price[_tokenId] = _newPrice;
 
         address _currentOwner = team.ownerOf(_tokenId);
 
-        if(_currentOwner != msg.sender)
+        if(_currentOwner == msg.sender)
         {
+            ownerTracker[_tokenId][purchaseIndex[_tokenId]].price = _newPrice;
+        }
+        else
+        {
+            purchaseIndex[_tokenId] = purchaseIndex[_tokenId] + 1;
             transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
+            ownerTracker[_tokenId][purchaseIndex[_tokenId]].price = _newPrice;
+            ownerTracker[_tokenId][purchaseIndex[_tokenId]].owner = msg.sender;    
         }
 
         if(state[_tokenId] == ownedState.Foreclosed) 
@@ -234,9 +258,10 @@ contract Harber {
 
     function changePrice(uint256 _newPrice, uint256 _tokenId) public onlyOwner(_tokenId) collectAugurFunds(_tokenId) {
         require(state[_tokenId] != ownedState.Foreclosed, "Foreclosed");
-        require(_newPrice != 0, "Incorrect Price");
+        require(_newPrice > price[_tokenId], "New price must be higher than current price"); //This is to prevent griefing- buying it then immediately dropping the price really low. The original project did not suffer from this problem because when you bought it, you had to pay the purchase price to the previous user, not so in mine. 
         
         price[_tokenId] = _newPrice;
+        ownerTracker[_tokenId][purchaseIndex[_tokenId]].price = _newPrice;
         emit LogPriceChange(price[_tokenId]);
     }
     
