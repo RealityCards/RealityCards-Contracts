@@ -201,29 +201,29 @@ contract Harber {
 
     /* actions */
     function _collectAugurFunds(uint256 _tokenId) public {
-        // determine patronage to pay
-        // if (state[_tokenId] == ownedState.Owned) {
-        //     uint256 _collection = augurFundsOwed(_tokenId);
+        // determine patronage to paay
+        if (state[_tokenId] == ownedState.Owned) {
+            uint256 _collection = augurFundsOwed(_tokenId);
             
-        //     // should foreclose and stake stewardship
-        //     if (_collection >= deposit[_tokenId]) {
-        //         // up to when was it actually paid for?
-        //         timeLastCollected[_tokenId] = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(deposit[_tokenId]).div(_collection)));
-        //         _collection = deposit[_tokenId]; // take what's left.
+            // should foreclose and stake stewardship
+            if (_collection >= deposit[_tokenId]) {
+                // up to when was it actually paid for?
+                timeLastCollected[_tokenId] = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(deposit[_tokenId]).div(_collection)));
+                _collection = deposit[_tokenId]; // take what's left.
 
-        //         _foreclose(_tokenId);
-        //     } else  {
-        //         // just a normal collection
-        //         timeLastCollected[_tokenId] = now;
-        //         currentCollected[_tokenId] = currentCollected[_tokenId].add(_collection);
-        //     }
+                _foreclose(_tokenId);
+            } else  {
+                // just a normal collection
+                timeLastCollected[_tokenId] = now;
+                currentCollected[_tokenId] = currentCollected[_tokenId].add(_collection);
+            }
             
-        //     deposit[_tokenId] = deposit[_tokenId].sub(_collection);
-        //     userDeposits[_tokenId][msg.sender] = userDeposits[_tokenId][msg.sender].sub(_collection);
-        //     totalCollected = totalCollected.add(_collection);
-        //     augurFund = augurFund.add(_collection);
-        //     emit LogCollection(_collection);
-        // }
+            deposit[_tokenId] = deposit[_tokenId].sub(_collection);
+            userDeposits[_tokenId][msg.sender] = userDeposits[_tokenId][msg.sender].sub(_collection);
+            totalCollected = totalCollected.add(_collection);
+            augurFund = augurFund.add(_collection);
+            emit LogCollection(_collection);
+        }
     }
     
     // note: anyone can deposit
@@ -238,13 +238,11 @@ contract Harber {
         require(_deposit > 0, "Must deposit something");
         require(testDaiBalances[msg.sender] >= _deposit, "Not enough DAI");
 
-        // approve();
-        // cash.transferFrom(msg.sender,address(this),_deposit);
-
         testDaiBalances[msg.sender] = testDaiBalances[msg.sender].sub(_deposit);
         userDeposits[_tokenId][msg.sender] = userDeposits[_tokenId][msg.sender].add(_deposit);
         price[_tokenId] = _newPrice;
 
+       
         address _currentOwner = team.ownerOf(_tokenId);
 
         if(_currentOwner == msg.sender)
@@ -255,13 +253,20 @@ contract Harber {
         {
             deposit[_tokenId] = _deposit;
             transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
+              
+     
         }
+
+         
+
 
         if(state[_tokenId] == ownedState.Foreclosed) 
         {
             state[_tokenId] = ownedState.Owned;
             timeLastCollected[_tokenId] = now;
         }
+
+        
         
         emit LogBuy(msg.sender, _newPrice);
     }
@@ -315,8 +320,9 @@ contract Harber {
 
     function transferTokenTo(address _currentOwner, address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
         // note: it would also tabulate time held in stewardship by smart contract
-        timeHeld[_tokenId][_currentOwner] = timeHeld[_tokenId][_currentOwner].add((timeLastCollected[_tokenId].sub(timeAcquired[_tokenId])));
         
+        timeHeld[_tokenId][_currentOwner] = timeHeld[_tokenId][_currentOwner].add((timeLastCollected[_tokenId].sub(timeAcquired[_tokenId])));
+        // if (_newPrice == 1000) {require(1 > 2, "STFU");}
         team.transferFrom(_currentOwner, _newOwner, _tokenId);
 
         price[_tokenId] = _newPrice;
