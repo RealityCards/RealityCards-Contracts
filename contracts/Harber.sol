@@ -26,7 +26,7 @@ interface Cash
 contract Harber {
     
     using SafeMath for uint256;
-    uint256 public constant version = 22;
+    uint256 public constant version = 23;
 
     uint256 constant numberOfOutcomes = 2; //TEST with two teams
     uint256[numberOfOutcomes] public price; //in wei
@@ -139,6 +139,7 @@ contract Harber {
         return (augurFundsOwed(_tokenId), now);
     }
 
+
     function foreclosed(uint256 _tokenId) public view returns (bool) {
         // returns whether it is in foreclosed state or not
         // depending on whether deposit covers patronage due
@@ -151,7 +152,7 @@ contract Harber {
         }
     }
 
-    // same function as above, basically
+    // this is only used to calculate foreclosure time
     function depositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) {
         uint256 _collection = augurFundsOwed(_tokenId);
         if(_collection >= deposits[_tokenId][msg.sender]) {
@@ -161,6 +162,7 @@ contract Harber {
         }
     }
 
+    //this is my version of the above function. It shows how much each user can withdraw- whether or not they are the current owner. 
     function userDepositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) {
         uint256 _collection = augurFundsOwed(_tokenId);
         address _currentOwner = team.ownerOf(_tokenId);
@@ -191,8 +193,10 @@ contract Harber {
 
     /* actions */
     function _collectAugurFunds(uint256 _tokenId) public {
-        // determine patronage to paay
+        // determine patronage to pay
+        // require(1 > 2, "STFU");
         if (state[_tokenId] == ownedState.Owned) {
+            
             uint256 _collection = augurFundsOwed(_tokenId);
             address _currentOwner = team.ownerOf(_tokenId);
             
@@ -200,16 +204,15 @@ contract Harber {
             if (_collection >= deposits[_tokenId][_currentOwner]) {
                 // up to when was it actually paid for?
                 timeLastCollected[_tokenId] = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(deposits[_tokenId][_currentOwner]).div(_collection)));
-                _collection = deposits[_tokenId][_currentOwner]; // take what's left.
-
+                _collection = deposits[_tokenId][_currentOwner]; // take what's left
                 _foreclose(_tokenId);
+
             } else  {
                 // just a normal collection
                 timeLastCollected[_tokenId] = now;
                 currentCollected[_tokenId] = currentCollected[_tokenId].add(_collection);
             }
             
-            deposits[_tokenId][_currentOwner] = deposits[_tokenId][_currentOwner].sub(_collection);
             deposits[_tokenId][_currentOwner] = deposits[_tokenId][_currentOwner].sub(_collection);
             totalCollected = totalCollected.add(_collection);
             augurFund = augurFund.add(_collection);
@@ -225,6 +228,7 @@ contract Harber {
     }
     
     function buy(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) public collectAugurFunds(_tokenId) {
+    // function buy(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) public  {
         require(_newPrice > price[_tokenId], "Price must be higher than current price");
         require(_deposit > 0, "Must deposit something");
         require(testDaiBalances[msg.sender] >= _deposit, "Not enough DAI");
@@ -316,3 +320,5 @@ contract Harber {
         owners[_tokenId][_newOwner] = true;
     }
 }
+
+                // require(1 > 2, "STFU");
