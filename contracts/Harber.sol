@@ -41,7 +41,8 @@ contract Harber {
     uint256[numberOfOutcomes] public purchaseIndex;
     address payable public andrewsAddress;
     uint256 public augurFund;
-    bool testingVariable = false;
+    uint256 public peen = 2;
+
 
     struct purchase {
         address owner;
@@ -185,9 +186,18 @@ contract Harber {
 
     function rentalExpiryTime(uint256 _tokenId) public view returns (uint256) {
         // patronage per second
+        
         uint256 pps = price[_tokenId].div(365 days);
-        return now + liveDepositAbleToWithdraw(_tokenId).div(pps); // zero division if price is zero.
-        // return pps;
+        // peen = pps;
+        // require(pps > 1000000000000, "pps is not greater than 0");
+        if (pps == 0)
+        {
+            return now; //if price is so low that pps = 0 just return current time as a fallback
+        }
+        else
+        {
+            return now + liveDepositAbleToWithdraw(_tokenId).div(pps);
+        }
     }
 
     /* actions */
@@ -201,7 +211,6 @@ contract Harber {
             
             // should foreclose and stake stewardship
             if (_collection >= deposits[_tokenId][_currentOwner]) {
-                testingVariable = true;
                 // up to when was it actually paid for?
                 timeLastCollected[_tokenId] = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(deposits[_tokenId][_currentOwner]).div(_collection)));
                 _collection = deposits[_tokenId][_currentOwner]; // take what's left
@@ -235,13 +244,9 @@ contract Harber {
     function buy(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) public collectAugurFunds(_tokenId) {
         emit testEmit(_newPrice,price[_tokenId]);
 
-
         require(_newPrice > price[_tokenId], "Price must be higher than current price");
         require(_deposit > 0, "Must deposit something");
         require(testDaiBalances[msg.sender] >= _deposit, "Not enough DAI");
-        
-
-        
         
         testDaiBalances[msg.sender] = testDaiBalances[msg.sender].sub(_deposit);
         deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].add(_deposit);
@@ -255,22 +260,17 @@ contract Harber {
         }
         else
         {
-            
             purchaseIndex[_tokenId] = purchaseIndex[_tokenId] + 1;
             transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
             ownerTracker[_tokenId][purchaseIndex[_tokenId]].price = _newPrice;
             ownerTracker[_tokenId][purchaseIndex[_tokenId]].owner = msg.sender; 
-             
         }
-
-        
 
         if(state[_tokenId] == ownedState.Foreclosed) 
         {
             state[_tokenId] = ownedState.Owned;
             timeLastCollected[_tokenId] = now;
         }
-        
 
         emit LogBuy(msg.sender, _newPrice);
     }
@@ -328,16 +328,11 @@ contract Harber {
         
         timeHeld[_tokenId][_currentOwner] = timeHeld[_tokenId][_currentOwner].add((timeLastCollected[_tokenId].sub(timeAcquired[_tokenId])));
        
-        
         team.transferFrom(_currentOwner, _newOwner, _tokenId);
         
         price[_tokenId] = _newPrice;
         timeAcquired[_tokenId] = now;
-        
         owners[_tokenId][_newOwner] = true;
-        
-
-        // if (testingVariable) { require(1 > 2, "STFU"); } 
     }
 }
 
