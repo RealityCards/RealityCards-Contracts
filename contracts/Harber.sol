@@ -35,12 +35,11 @@ contract Harber {
     //Augur contracts
     Cash public cash;
     
-    uint256 public totalCollected; // total into my whiskey fund
-    uint256[numberOfOutcomes] public currentCollected; // amount currently collected for owner  
+    uint256 public totalCollected; // total collected across all tokens, ie sum of  currentCollected and = amount to send to  augur
+    uint256[numberOfOutcomes] public currentCollected; // amount currently collected for each token, ie the sum of all owner's patronage  
     uint256[numberOfOutcomes] public timeLastCollected; // 
     uint256[numberOfOutcomes] public purchaseIndex;
     address payable public andrewsAddress;
-    uint256 public augurFund;
     uint256 public peen = 2;
 
 
@@ -185,11 +184,7 @@ contract Harber {
     }
 
     function rentalExpiryTime(uint256 _tokenId) public view returns (uint256) {
-        // patronage per second
-        
         uint256 pps = price[_tokenId].div(365 days);
-        // peen = pps;
-        // require(pps > 1000000000000, "pps is not greater than 0");
         if (pps == 0)
         {
             return now; //if price is so low that pps = 0 just return current time as a fallback
@@ -213,23 +208,18 @@ contract Harber {
             if (_collection >= deposits[_tokenId][_currentOwner]) {
                 // up to when was it actually paid for?
                 timeLastCollected[_tokenId] = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(deposits[_tokenId][_currentOwner]).div(_collection)));
-                _collection = deposits[_tokenId][_currentOwner]; // take what's left
-                
+                _collection = deposits[_tokenId][_currentOwner]; // take what's left     
                 _foreclose(_tokenId);
                 
-
             } else  {
                 // just a normal collection
                 timeLastCollected[_tokenId] = now;
                 currentCollected[_tokenId] = currentCollected[_tokenId].add(_collection);
             }
 
-            
-            
             deposits[_tokenId][_currentOwner] = deposits[_tokenId][_currentOwner].sub(_collection);
             
             totalCollected = totalCollected.add(_collection);
-            augurFund = augurFund.add(_collection);
              
             emit LogCollection(_collection);
         }
@@ -286,12 +276,6 @@ contract Harber {
     
     function withdrawDeposit(uint256 _wei, uint256 _tokenId) public onlyOwner(_tokenId) collectAugurFunds(_tokenId) returns (uint256) {
         _withdrawDeposit(_wei, _tokenId);
-    }
-
-    function withdrawAugurFunds() public {
-        require(msg.sender == andrewsAddress, "Not andrew");
-        andrewsAddress.transfer(augurFund);
-        augurFund = 0;
     }
 
     function exit(uint256 _tokenId) public onlyOwner(_tokenId) collectAugurFunds(_tokenId) {
