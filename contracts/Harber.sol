@@ -204,12 +204,12 @@ contract Harber {
             uint256 _collection = augurFundsOwed(_tokenId);
             address _currentOwner = team.ownerOf(_tokenId);
             
-            // should foreclose and stake stewardship
+            // run out of deposit. Revert to Previous owner. 
             if (_collection >= deposits[_tokenId][_currentOwner]) {
                 // up to when was it actually paid for?
                 timeLastCollected[_tokenId] = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(deposits[_tokenId][_currentOwner]).div(_collection)));
                 _collection = deposits[_tokenId][_currentOwner]; // take what's left     
-                _foreclose(_tokenId);
+                _revertToPreviousOwner(_tokenId);
                 
             } else  {
                 // just a normal collection
@@ -251,7 +251,7 @@ contract Harber {
         else
         {
             purchaseIndex[_tokenId] = purchaseIndex[_tokenId] + 1;
-            transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
+            _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
             ownerTracker[_tokenId][purchaseIndex[_tokenId]].price = _newPrice;
             ownerTracker[_tokenId][purchaseIndex[_tokenId]].owner = msg.sender; 
         }
@@ -283,7 +283,6 @@ contract Harber {
     }
 
     /* internal */
-
     function _withdrawDeposit(uint256 _wei, uint256 _tokenId) internal {
         // note: can withdraw whole deposit, which puts it in immediate to be foreclosed state.
         require(deposits[_tokenId][msg.sender] >= _wei, 'Withdrawing too much');
@@ -296,18 +295,40 @@ contract Harber {
         }
     }
 
+    function _revertToPreviousOwner(uint256 _tokenId) internal {
+        bool _transferred = false;
+        while (_transferred == false)
+        {
+            purchaseIndex[_tokenId] = purchaseIndex[_tokenId] - 1;
+            uint256 _index = purchaseIndex[_tokenId]; //just for readability
+            if (_index == 0)
+            {
+                _foreclose(_tokenId);
+                _transferred = true;
+            }
+            address _previousOwner = ownerTracker[_tokenId][_index].owner;
+            if (deposits[_tokenId][_previousOwner] > 0)
+            {
+                address _currentOwner = team.ownerOf(_tokenId);
+                uint256 _oldPrice = ownerTracker[_tokenId][_index].price;
+                _transferTokenTo(_currentOwner, msg.sender, _oldPrice, _tokenId);
+                _transferred = true;
+            }
+        }       
+    }
+
     function _foreclose(uint256 _tokenId) internal {
         // become steward of artwork (aka foreclose)
         address _currentOwner = team.ownerOf(_tokenId);
         //final field is price, ie price goes to zero
-        transferTokenTo(_currentOwner, address(this), 0, _tokenId);
+        _transferTokenTo(_currentOwner, address(this), 0, _tokenId);
         state[_tokenId] = ownedState.Foreclosed;
         currentCollected[_tokenId] = 0;
 
         emit LogForeclosure(_currentOwner);
     }
 
-    function transferTokenTo(address _currentOwner, address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
+    function _transferTokenTo(address _currentOwner, address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
         // note: it would also tabulate time held in stewardship by smart contract
         
         timeHeld[_tokenId][_currentOwner] = timeHeld[_tokenId][_currentOwner].add((timeLastCollected[_tokenId].sub(timeAcquired[_tokenId])));

@@ -234,7 +234,7 @@ contract('HarberTests', (accounts) => {
 
   //at this point we are resetting things and will use second token
 
-  it('_collectAugurFunds function no foreclose', async () => {
+  it('_collectAugurFunds function no revertPreviousOwner/foreclose', async () => {
     user = user6;
     // get total collected from all the above tets and just check that it is added to properly
     var totalCollectedSoFar = await harber.totalCollected.call(); // this is  = 45 and is hard coded below
@@ -278,9 +278,23 @@ contract('HarberTests', (accounts) => {
     currentTime = await time.latest();
     var timeLastCollected = await harber.timeLastCollected.call(1);
     assert.equal(currentTime.toString(),timeLastCollected.toString());
+  });
+
+  it('_collectAugurFunds function with foreclose but no revertPreviousOwner', async () => {
+    user = user6;
+    // from the above, we currently have a price of 1095 = charge of 3 per day. We have a deposit of 39 left. Lets wait 1 month and check it isnt foreclosed. Then lets wait another month and check that it is
+    await time.increase(time.duration.months(1));
+    await harber.buy(731,1,21,{ from: user6  });
+    var tokenState = await harber.state.call(0);
+
+
+
+
+
 
 
   });
+
 
 
 
