@@ -34,7 +34,7 @@ contract Harber {
     // UINTS AND ADDRESSES
     address payable public andrewsAddress; // I am the original owner of tokens, and ownership reverts to me should the sale foreclose. I.e.  I am default owner if there is nobody else that wants it
     uint256 public constant version = 24;
-    uint256 constant numberOfOutcomes = 2; //TEST with two teams
+    uint256 constant numberOfOutcomes = 3; //TEST with two teams
     uint256[numberOfOutcomes] public price; //in wei
     uint256 public totalCollected; // total collected across all tokens, ie sum of  currentCollected and = amount to send to  augur
     uint256[numberOfOutcomes] public currentCollected; // amount currently collected for each token, ie the sum of all owner's patronage  
@@ -251,7 +251,6 @@ contract Harber {
         
         testDaiBalances[msg.sender] = testDaiBalances[msg.sender].sub(_deposit);
         deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].add(_deposit);
-        price[_tokenId] = _newPrice; // <- this is also in transferToken function.  deleete this one
 
         address _currentOwner = team.ownerOf(_tokenId);
 
@@ -274,7 +273,7 @@ contract Harber {
             timeLastCollected[_tokenId] = now;
         }
 
-        _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
+        _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId); //does this even if owner hasn't changed. this is ok. 
         emit LogBuy(msg.sender, _newPrice);
     }
 

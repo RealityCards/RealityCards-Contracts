@@ -295,12 +295,69 @@ contract('HarberTests', (accounts) => {
 
   it('_collectAugurFunds function with foreclose but no revertPreviousOwner', async () => {
     user = user6;
-    // from the above, we currently have a price of 1095 = charge of 3 per day. We have a deposit of 39 left. Lets wait 1 month and check it isnt foreclosed. Then lets wait another month and check that it is
-    await time.increase(time.duration.weeks(4));
-    await debug(harber.buy(1096,1,21,{ from: user  }));
-    // var tokenState = await harber.state.call(0);
-    // var currentOwnerIndex = await harber.currentOwnerIndex.call(1);
-    // assert.equal(currentOwnerIndex,1);
+    //from the above, we currently have a price of 1095 = charge of 3 per day. We have a deposit of 39 left, 39/3= 13 days. Let's wait ten days and check it hasn't been foreclosed, then another 5 and check that it has
+    //we cannot check the state variable to see if it's foreclosed, as it is immediately rebought. Instead, we can try and put a price lower than the previous one- it will accept this if there was a foreclosure that reduced the price to zero. 
+    await time.increase(time.duration.weeks(1));
+    await shouldFail.reverting.withMessage(harber.buy(1,1,21,{ from: user}), "Price must be higher than current price");
+    await time.increase(time.duration.weeks(1));
+    await harber.buy(1,1,5,{ from: user  }); 
+  });
+
+  it('_collectAugurFunds function with revertPreviousOwner and foreclose', async () => {
+    //let's rebuy with an easier price to work with
+    await harber.buy(365,1,5,{ from: user6  }); //10 deposit = 10 days
+    await harber.getTestDai({ from: user7 });
+    await harber.buy(730,1,20,{ from: user7  }); //20 deposit = 10 days
+    await harber.getTestDai({ from: user8 });
+    await harber.buy(1095,1,30,{ from: user8  }); //30 deposit = 10 days
+    //check deposits
+    var deposit = await harber.deposits.call(1,user6); 
+    assert.equal(deposit, 10);
+    var deposit = await harber.deposits.call(1,user7); 
+    assert.equal(deposit, 20);
+    var deposit = await harber.deposits.call(1,user8); 
+    assert.equal(deposit, 30);
+    //check ownerTracker variable
+    //user 6:
+    var trackedPrice = await harber.getOwnerTrackerPrice.call(1,1);
+    assert.equal(trackedPrice, 365);
+    var trackedAddress = await harber.getOwnerTrackerAddress.call(1,1);
+    assert.equal(trackedAddress, user6);
+    //user 7:
+    var trackedPrice = await harber.getOwnerTrackerPrice.call(1,2);
+    assert.equal(trackedPrice, 730);
+    var trackedAddress = await harber.getOwnerTrackerAddress.call(1,2);
+    assert.equal(trackedAddress, user7);
+    //user 8:
+    var trackedPrice = await harber.getOwnerTrackerPrice.call(1,3);
+    assert.equal(trackedPrice, 1095);
+    var trackedAddress = await harber.getOwnerTrackerAddress.call(1,3);
+    assert.equal(trackedAddress, user8);
+    //wait a week then call collectfunds, should not revert
+    await time.increase(time.duration.weeks(1));
+    await harber._collectAugurFunds.call(1,{ from: user1 }) //user irrelevant
+    var owner = await token.ownerOf.call(1);
+    assert.equal(owner, user8);
+    var price = await harber.getPrice.call(1);
+    assert.equal(price, 1095);
+    //wait another week, should now revert
+    await time.increase(time.duration.weeks(10));
+    await harber._collectAugurFunds.call(1,{ from: user1 }) //user irrelevant
+    var owner = await token.ownerOf.call(1);
+    assert.equal(owner, user7);
+    var price = await harber.getPrice.call(1);
+    assert.equal(price, 730);
+    
+
+
+
+
+
+
+
+
+    // var owner = await token.ownerOf.call(1);
+    // assert.equal(owner, user8 );
   });
 
   // it('debugger', async () => {
