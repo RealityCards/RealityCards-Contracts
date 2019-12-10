@@ -283,7 +283,7 @@ contract('HarberTests', (accounts) => {
   it('_collectAugurFunds function with foreclose but no revertPreviousOwner', async () => {
     user = user6;
     // from the above, we currently have a price of 1095 = charge of 3 per day. We have a deposit of 39 left. Lets wait 1 month and check it isnt foreclosed. Then lets wait another month and check that it is
-    await time.increase(time.duration.months(1));
+    await time.increase(time.duration.weeks(4));
     await harber.buy(731,1,21,{ from: user6  });
     var tokenState = await harber.state.call(0);
 

@@ -26,36 +26,37 @@ interface Cash
 contract Harber {
     
     using SafeMath for uint256;
-    uint256 public constant version = 24;
+    
+    // CONTRACT VARIABLES
+    IERC721Full public team; // ERC721 NFT.
+    Cash public cash; //Augur contracts
 
+    // UINTS AND ADDRESSES
+    address payable public andrewsAddress; // I am the original owner of tokens, and ownership reverts to me should the sale foreclose. I.e.  I am default owner if there is nobody else that wants it
+    uint256 public constant version = 24;
     uint256 constant numberOfOutcomes = 2; //TEST with two teams
     uint256[numberOfOutcomes] public price; //in wei
-    IERC721Full public team; // ERC721 NFT.
-    
-    //Augur contracts
-    Cash public cash;
-    
     uint256 public totalCollected; // total collected across all tokens, ie sum of  currentCollected and = amount to send to  augur
     uint256[numberOfOutcomes] public currentCollected; // amount currently collected for each token, ie the sum of all owner's patronage  
-    uint256[numberOfOutcomes] public timeLastCollected; // 
-    uint256[numberOfOutcomes] public purchaseIndex;
-    address payable public andrewsAddress;
-    uint256 public peen = 2;
+    uint256[numberOfOutcomes] public timeLastCollected; 
+    uint256[numberOfOutcomes] public timeAcquired;
+    uint256[numberOfOutcomes] public currentOwnerIndex; // tracks the position of the current owner in the ownerTracker mapping
+    uint256 public testingVariable = 0;
 
-
+    //  STRUCTS
     struct purchase {
         address owner;
         uint price;
     }
     
+    // MAPPINGS
     mapping (uint256 => mapping (address => bool) ) public owners;
-    mapping (uint256 => mapping (uint256 => purchase) ) public ownerTracker;
+    mapping (uint256 => mapping (uint256 => purchase) ) public ownerTracker; //keeps track of all owners of a token, including the price, so that if the current owner's deposit runs out, ownership can  be reverted to a previous owner
     mapping (uint256 => mapping (address => uint256) ) public timeHeld;
-    mapping (uint256 => mapping (address => uint256) ) public deposits;
+    mapping (uint256 => mapping (address => uint256) ) public deposits; //keeps track of all the deposits for each token, for each owner. Consider lumping this in with ownerTracker
     mapping (address => uint256) public testDaiBalances;
 
-    uint256[numberOfOutcomes] public timeAcquired;
-
+    // ENUMS
     enum ownedState { Foreclosed, Owned }
     ownedState[numberOfOutcomes] public state;
 
@@ -67,10 +68,10 @@ contract Harber {
         state[1] = ownedState.Foreclosed;
 
         //this variable is incremented before being used first so it needs to roll over to zero 
-        purchaseIndex[0]=0;
-        purchaseIndex[0] = purchaseIndex[0] -1;
-        purchaseIndex[1]=0;
-        purchaseIndex[1] = purchaseIndex[1] -1;
+        currentOwnerIndex[0]=0;
+        currentOwnerIndex[0] = currentOwnerIndex[0] -1;
+        currentOwnerIndex[1]=0;
+        currentOwnerIndex[1] = currentOwnerIndex[1] -1;
 
         //Augur specific:
         cash = Cash(_addressOfCashContract);
@@ -246,14 +247,14 @@ contract Harber {
 
         if(_currentOwner == msg.sender)
         {
-            ownerTracker[_tokenId][purchaseIndex[_tokenId]].price = _newPrice;
+            ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
         }
         else
         {
-            purchaseIndex[_tokenId] = purchaseIndex[_tokenId] + 1;
+            currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId] + 1;
             _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
-            ownerTracker[_tokenId][purchaseIndex[_tokenId]].price = _newPrice;
-            ownerTracker[_tokenId][purchaseIndex[_tokenId]].owner = msg.sender; 
+            ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
+            ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].owner = msg.sender; 
         }
 
         if(state[_tokenId] == ownedState.Foreclosed) 
@@ -270,7 +271,7 @@ contract Harber {
         require(_newPrice > price[_tokenId], "New price must be higher than current price"); //This is to prevent griefing- buying it then immediately dropping the price really low. The original project did not suffer from this problem because when you bought it, you had to pay the purchase price to the previous user, not so in mine. 
         
         price[_tokenId] = _newPrice;
-        ownerTracker[_tokenId][purchaseIndex[_tokenId]].price = _newPrice;
+        ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
         emit LogPriceChange(price[_tokenId]);
     }
     
@@ -296,32 +297,38 @@ contract Harber {
     }
 
     function _revertToPreviousOwner(uint256 _tokenId) internal {
-        bool _transferred = false;
-        while (_transferred == false)
+        bool _reverted = false;
+        while (_reverted == false)
         {
-            purchaseIndex[_tokenId] = purchaseIndex[_tokenId] - 1;
-            uint256 _index = purchaseIndex[_tokenId]; //just for readability
-            if (_index == 0)
+            testingVariable = testingVariable + 1;
+            assert(currentOwnerIndex[_tokenId] >=0);
+            currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId] - 1;
+            uint256 _index = currentOwnerIndex[_tokenId]; //just for readability
+            address _previousOwner = ownerTracker[_tokenId][_index].owner;
+
+            if (_index == 0) 
+            //no previous owners. price -> zero, owned by me
             {
                 _foreclose(_tokenId);
-                _transferred = true;
+                _reverted = true;
             }
-            address _previousOwner = ownerTracker[_tokenId][_index].owner;
-            if (deposits[_tokenId][_previousOwner] > 0)
+            else if (deposits[_tokenId][_previousOwner] > 0)
+            // previous owner still has a deposit, transfer to them, update thep rice to what it used to be
             {
                 address _currentOwner = team.ownerOf(_tokenId);
                 uint256 _oldPrice = ownerTracker[_tokenId][_index].price;
                 _transferTokenTo(_currentOwner, msg.sender, _oldPrice, _tokenId);
-                _transferred = true;
+                _reverted = true;
             }
         }       
     }
 
     function _foreclose(uint256 _tokenId) internal {
-        // become steward of artwork (aka foreclose)
+        require(1 > 2, "STFU");
+        // I become steward of artwork (aka foreclose)
         address _currentOwner = team.ownerOf(_tokenId);
-        //final field is price, ie price goes to zero
-        _transferTokenTo(_currentOwner, address(this), 0, _tokenId);
+        //third field is price, ie price goes to zero
+        _transferTokenTo(_currentOwner, andrewsAddress, 0, _tokenId);
         state[_tokenId] = ownedState.Foreclosed;
         currentCollected[_tokenId] = 0;
 
