@@ -51,7 +51,7 @@ contract Harber {
     
     // MAPPINGS
     mapping (uint256 => mapping (address => bool) ) public owners;
-    mapping (uint256 => mapping (uint256 => purchase) ) public ownerTracker; //keeps track of all owners of a token, including the price, so that if the current owner's deposit runs out, ownership can  be reverted to a previous owner
+    mapping (uint256 => mapping (uint256 => purchase) ) public ownerTracker; //keeps track of all owners of a token, including the price, so that if the current owner's deposit runs out, ownership can  be reverted to a previous owner. Index 0 is NOT used, this tells the contract to foreclose
     mapping (uint256 => mapping (address => uint256) ) public timeHeld;
     mapping (uint256 => mapping (address => uint256) ) public deposits; //keeps track of all the deposits for each token, for each owner. Consider lumping this in with ownerTracker
     mapping (address => uint256) public testDaiBalances;
@@ -67,11 +67,9 @@ contract Harber {
         state[0] = ownedState.Foreclosed;
         state[1] = ownedState.Foreclosed;
 
-        //this variable is incremented before being used first so it needs to roll over to zero 
+        //this variable is incremented before being used first so the 0 index will never contain a price/address. A zero index is used in the _revertToPreviousOwner  function to commence foreclosure
         currentOwnerIndex[0]=0;
-        currentOwnerIndex[0] = currentOwnerIndex[0] -1;
         currentOwnerIndex[1]=0;
-        currentOwnerIndex[1] = currentOwnerIndex[1] -1;
 
         //Augur specific:
         cash = Cash(_addressOfCashContract);
@@ -199,7 +197,6 @@ contract Harber {
     /* actions */
     function _collectAugurFunds(uint256 _tokenId) public {
         // determine patronage to pay
-        // require(1 > 2, "STFU");
         if (state[_tokenId] == ownedState.Owned) {
             
             uint256 _collection = augurFundsOwed(_tokenId);
@@ -251,7 +248,9 @@ contract Harber {
         }
         else
         {
-            currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId] + 1;
+            currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId] + 1; 
+            // currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].add(1);
+            //^^ the above line causes VM errors, I need to figure out why
             _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].owner = msg.sender; 
@@ -301,6 +300,7 @@ contract Harber {
         while (_reverted == false)
         {
             testingVariable = testingVariable + 1;
+            require(testingVariable < 10, "pls");
             assert(currentOwnerIndex[_tokenId] >=0);
             currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId] - 1;
             uint256 _index = currentOwnerIndex[_tokenId]; //just for readability
@@ -309,12 +309,14 @@ contract Harber {
             if (_index == 0) 
             //no previous owners. price -> zero, owned by me
             {
+                require(1 > 2, "STFU");
                 _foreclose(_tokenId);
                 _reverted = true;
             }
             else if (deposits[_tokenId][_previousOwner] > 0)
             // previous owner still has a deposit, transfer to them, update thep rice to what it used to be
             {
+                require(1 > 2, "STFU");
                 address _currentOwner = team.ownerOf(_tokenId);
                 uint256 _oldPrice = ownerTracker[_tokenId][_index].price;
                 _transferTokenTo(_currentOwner, msg.sender, _oldPrice, _tokenId);
@@ -324,7 +326,6 @@ contract Harber {
     }
 
     function _foreclose(uint256 _tokenId) internal {
-        require(1 > 2, "STFU");
         // I become steward of artwork (aka foreclose)
         address _currentOwner = team.ownerOf(_tokenId);
         //third field is price, ie price goes to zero
