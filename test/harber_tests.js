@@ -244,15 +244,18 @@ contract('HarberTests', (accounts) => {
   it('_collectAugurFunds function no revertPreviousOwner/foreclose', async () => {
     user = user6;
     // get total collected from all the above tets and just check that it is added to properly
-    var totalCollectedSoFar = await harber.totalCollected.call(); // this is  = 45 and is hard coded below
+    var totalCollectedSoFar = await harber.totalCollected.call(); 
     await harber.getTestDai({ from: user });
     await harber.buy(365,1,20,{ from: user  });
-
-    
-
+    var timeAcquired = await harber.timeAcquired.call(1); 
+    var currentTime = await time.latest();
+    assert.equal(timeAcquired.toString(),currentTime.toString());
     //wait a week and buy again to trigger function call 
     await time.increase(time.duration.weeks(1));
-    await harber.buy(730,1,20,{ from: user6  });
+    await harber.buy(730,1,20,{ from: user  });
+    var timeAcquired = await harber.timeAcquired.call(1); 
+    var currentTime = await time.latest();
+    assert.equal(timeAcquired.toString(),currentTime.toString());
     //test deposits
     var deposit = await harber.deposits.call(1,user); 
     assert.equal(deposit, 33); //price 365, 1 week delay = charge of 7, 40-7 = 33
@@ -261,7 +264,7 @@ contract('HarberTests', (accounts) => {
     assert.equal(currentCollected,7);
     //test totalCollected. The total so far from previous tests is 45.  So we expect 52
     var totalCollected = await harber.totalCollected.call();
-    assert.equal(totalCollected,52);
+    assert.equal(totalCollected,totalCollectedSoFar.toNumber()+currentCollected.toNumber());
     //test timeLastCollected
     var timeLastCollected = await harber.timeLastCollected.call(1);
     currentTime = await time.latest();
@@ -274,35 +277,31 @@ contract('HarberTests', (accounts) => {
     var currentCollected = await harber.currentCollected.call(1); 
     assert.equal(currentCollected,7);
     var totalCollected = await harber.totalCollected.call();
-    assert.equal(totalCollected,52);
+    assert.equal(totalCollected,totalCollectedSoFar.toNumber()+currentCollected.toNumber());
     var timeLastCollected = await harber.timeLastCollected.call(1);
     assert.equal(time10MinsAgo.toString(),timeLastCollected.toString());
     //trigger the function again by doing another purchase and check all variables have updated correctly
-    await harber.buy(1095,1,20,{ from: user6  });
+    await harber.buy(1095,1,20,{ from: user });
     var deposit = await harber.deposits.call(1,user); 
     assert.equal(deposit, 39); // 33 + 20 - 14
     var currentCollected = await harber.currentCollected.call(1); 
     assert.equal(currentCollected,21); // 7 + 14
     var totalCollected = await harber.totalCollected.call();
-    assert.equal(totalCollected,66); //52 + 14
+    assert.equal(totalCollected,totalCollectedSoFar.toNumber()+currentCollected.toNumber());
     currentTime = await time.latest();
     var timeLastCollected = await harber.timeLastCollected.call(1);
     assert.equal(currentTime.toString(),timeLastCollected.toString());
   });
 
-  // it('_collectAugurFunds function with foreclose but no revertPreviousOwner', async () => {
-  //   user = user6;
-  //   var currentOwnerIndex = await harber.currentOwnerIndex.call(1);
-  //   assert.equal(currentOwnerIndex,1);
-
-
-
-
-  //   // from the above, we currently have a price of 1095 = charge of 3 per day. We have a deposit of 39 left. Lets wait 1 month and check it isnt foreclosed. Then lets wait another month and check that it is
-  //   await time.increase(time.duration.weeks(4));
-  //   await harber.buy(731,1,21,{ from: user6  });
-  //   var tokenState = await harber.state.call(0);
-  // });
+  it('_collectAugurFunds function with foreclose but no revertPreviousOwner', async () => {
+    user = user6;
+    // from the above, we currently have a price of 1095 = charge of 3 per day. We have a deposit of 39 left. Lets wait 1 month and check it isnt foreclosed. Then lets wait another month and check that it is
+    await time.increase(time.duration.weeks(4));
+    await debug(harber.buy(1096,1,21,{ from: user  }));
+    // var tokenState = await harber.state.call(0);
+    // var currentOwnerIndex = await harber.currentOwnerIndex.call(1);
+    // assert.equal(currentOwnerIndex,1);
+  });
 
   // it('debugger', async () => {
   //   console.log(await harber.currentOwnerIndex.call(1));

@@ -42,6 +42,9 @@ contract Harber {
     uint256[numberOfOutcomes] public timeAcquired;
     uint256[numberOfOutcomes] public currentOwnerIndex; // tracks the position of the current owner in the ownerTracker mapping
     uint256 public testingVariable = 0;
+    uint256 public a = 0;
+    uint256 public b = 0;
+    uint256 public c = 0;
 
     //  STRUCTS
     struct purchase {
@@ -70,6 +73,9 @@ contract Harber {
         //this variable is incremented before being used first so the 0 index will never contain a price/address. A zero index is used in the _revertToPreviousOwner  function to commence foreclosure
         currentOwnerIndex[0]=0;
         currentOwnerIndex[1]=0;
+        //manually set myself as the default owner so that in a foreclose situation, it is returned back to me, beause the owners variable is used to determine who to assign new ownerhip to
+        // owners[0][0].owner = andrewsAddress;
+        // owners[1][0].owner = andrewsAddress;
 
         //Augur specific:
         cash = Cash(_addressOfCashContract);
@@ -205,9 +211,16 @@ contract Harber {
             // run out of deposit. Revert to Previous owner. 
             if (_collection >= deposits[_tokenId][_currentOwner]) {
                 // up to when was it actually paid for?
+                uint256 _originalTimeLastCollected = timeLastCollected[_tokenId];
+
                 timeLastCollected[_tokenId] = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(deposits[_tokenId][_currentOwner]).div(_collection)));
+
+                uint256 _updatedTimeLastCollected = timeLastCollected[_tokenId];
+                require(_originalTimeLastCollected < _updatedTimeLastCollected, "timeLastCollected has gone down");
+
                 _collection = deposits[_tokenId][_currentOwner]; // take what's left     
                 _revertToPreviousOwner(_tokenId);
+                testingVariable = 1;
                 
             } else  {
                 // just a normal collection
@@ -218,7 +231,7 @@ contract Harber {
             deposits[_tokenId][_currentOwner] = deposits[_tokenId][_currentOwner].sub(_collection);
             
             totalCollected = totalCollected.add(_collection);
-             
+            
             emit LogCollection(_collection);
         }
     }
@@ -238,7 +251,7 @@ contract Harber {
         
         testDaiBalances[msg.sender] = testDaiBalances[msg.sender].sub(_deposit);
         deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].add(_deposit);
-        price[_tokenId] = _newPrice;
+        price[_tokenId] = _newPrice; // <- this is also in transferToken function.  deleete this one
 
         address _currentOwner = team.ownerOf(_tokenId);
 
@@ -251,7 +264,6 @@ contract Harber {
             currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId] + 1; 
             // currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].add(1);
             //^^ the above line causes VM errors, I need to figure out why
-            _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].owner = msg.sender; 
         }
@@ -262,6 +274,7 @@ contract Harber {
             timeLastCollected[_tokenId] = now;
         }
 
+        _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
         emit LogBuy(msg.sender, _newPrice);
     }
 
@@ -299,8 +312,6 @@ contract Harber {
         bool _reverted = false;
         while (_reverted == false)
         {
-            testingVariable = testingVariable + 1;
-            require(testingVariable < 10, "pls");
             assert(currentOwnerIndex[_tokenId] >=0);
             currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId] - 1;
             uint256 _index = currentOwnerIndex[_tokenId]; //just for readability
@@ -309,14 +320,13 @@ contract Harber {
             if (_index == 0) 
             //no previous owners. price -> zero, owned by me
             {
-                require(1 > 2, "STFU");
                 _foreclose(_tokenId);
                 _reverted = true;
+                // require(1 > 2, "STFU");
             }
             else if (deposits[_tokenId][_previousOwner] > 0)
             // previous owner still has a deposit, transfer to them, update thep rice to what it used to be
             {
-                require(1 > 2, "STFU");
                 address _currentOwner = team.ownerOf(_tokenId);
                 uint256 _oldPrice = ownerTracker[_tokenId][_index].price;
                 _transferTokenTo(_currentOwner, msg.sender, _oldPrice, _tokenId);
@@ -332,20 +342,32 @@ contract Harber {
         _transferTokenTo(_currentOwner, andrewsAddress, 0, _tokenId);
         state[_tokenId] = ownedState.Foreclosed;
         currentCollected[_tokenId] = 0;
-
         emit LogForeclosure(_currentOwner);
     }
 
     function _transferTokenTo(address _currentOwner, address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
-        // note: it would also tabulate time held in stewardship by smart contract
-        
-        timeHeld[_tokenId][_currentOwner] = timeHeld[_tokenId][_currentOwner].add((timeLastCollected[_tokenId].sub(timeAcquired[_tokenId])));
-       
+        // require(timeLastCollected[_tokenId] >= timeAcquired[_tokenId], "timeAcquired is more recent than time last connected");
+        a = timeLastCollected[_tokenId];
+        b = timeAcquired[_tokenId];
+        c = c;
+        c = c + 1;
+
+        // if (testingVariable == 0) 
+        // {
+            timeHeld[_tokenId][_currentOwner] = timeHeld[_tokenId][_currentOwner].add((timeLastCollected[_tokenId].sub(timeAcquired[_tokenId])));
+            // uint _stfu = timeLastCollected[_tokenId].sub(timeAcquired[_tokenId]);
+        // }
+        // else
+        // {
+        //     //
+        // }
         team.transferFrom(_currentOwner, _newOwner, _tokenId);
         
         price[_tokenId] = _newPrice;
         timeAcquired[_tokenId] = now;
         owners[_tokenId][_newOwner] = true;
+
+        
     }
 }
 
