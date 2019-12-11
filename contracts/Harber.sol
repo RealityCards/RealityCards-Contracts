@@ -33,8 +33,7 @@ contract Harber {
 
     // UINTS AND ADDRESSES
     address payable public andrewsAddress; // I am the original owner of tokens, and ownership reverts to me should the sale foreclose. I.e.  I am default owner if there is nobody else that wants it
-    uint256 public constant version = 24;
-    uint256 constant numberOfOutcomes = 3; //TEST with two teams
+    uint256 constant numberOfOutcomes = 2; //TEST with two teams
     uint256[numberOfOutcomes] public price; //in wei
     uint256 public totalCollected; // total collected across all tokens, ie sum of  currentCollected and = amount to send to  augur
     uint256[numberOfOutcomes] public currentCollected; // amount currently collected for each token, ie the sum of all owner's patronage  
@@ -93,7 +92,7 @@ contract Harber {
     }
 
     modifier collectAugurFunds(uint256 _tokenId) {
-       _collectAugurFunds(_tokenId); 
+    //    _collectAugurFunds(_tokenId); 
        _;
     }
 
@@ -102,11 +101,6 @@ contract Harber {
     // {
     //     return timeHeld[_tokenId][_address];
     // }
-
-    function getVersion() public pure returns(uint256)
-    {
-        return (version);
-    }
 
     function getTestDai() public 
     {
@@ -145,8 +139,6 @@ contract Harber {
     function augurFundsOwedWithTimestamp(uint256 _tokenId) public view returns (uint256 augurFundsDue, uint256 timestamp) {
         return (augurFundsOwed(_tokenId), now);
     }
-
-
     function foreclosed(uint256 _tokenId) public view returns (bool) {
         // returns whether it is in foreclosed state or not
         // depending on whether deposit covers patronage due
@@ -243,7 +235,7 @@ contract Harber {
     }
     
     function buy(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) public collectAugurFunds(_tokenId) {
-        emit testEmit(_newPrice,price[_tokenId]);
+        // emit testEmit(_newPrice,price[_tokenId]);
 
         require(_newPrice > price[_tokenId], "Price must be higher than current price");
         require(_deposit > 0, "Must deposit something");
