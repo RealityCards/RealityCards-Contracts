@@ -307,84 +307,72 @@ contract('HarberTests', (accounts) => {
     await harber.buy(1,1,5,{ from: user  }); 
   });
 
-  // it('_collectAugurFunds function with revertPreviousOwner and immediately get bought again. Not sure how useful this is, but at this stage I cannot call _collect and test it without an instant rebuy', async () => {
-  //   //let's rebuy with an easier price to work with
-  //   await harber.getTestDai({ from: user6 });
-  //   await harber.getTestDai({ from: user7 });
-  //   await harber.buy(365,1,10,{ from: user6  }); 
-  //   await time.increase(time.duration.weeks(2)); //the deposit willl last only 10 days so 2 weeks will reset it
-  //   await harber.buy(366,1,10,{ from: user7 }); //this should trigger a revert to previous, then straight to owned by user 7
-  //   var deposit = await harber.deposits.call(1,user6); 
-  //   assert.equal(deposit, 0);
-  //   var owner = await token.ownerOf.call(1);
-  //   assert.equal(owner, user7);
-  // });
-
   it('_collectAugurFunds function with revertPreviousOwner via calling _collect directly', async () => {
-    // await harber.buy(365,1,5,{ from: user5  }); //10 deposit = 10 days
-    // await harber.getTestDai({ from: user6 });
-    // await harber.buy(730,1,20,{ from: user6  }); //20 deposit = 10 days
-    // await harber.getTestDai({ from: user7 });
-    // await harber.buy(1095,1,30,{ from: user7  }); //30 deposit = 10 days
-    // //check deposits
-    // var deposit = await harber.deposits.call(1,user5); 
-    // assert.equal(deposit, 10);
-    // var deposit = await harber.deposits.call(1,user6); 
-    // assert.equal(deposit, 20);
-    // var deposit = await harber.deposits.call(1,user7); 
-    // assert.equal(deposit, 30);
-    // //check ownerTracker variable
-    // //user 6:
-    // var trackedPrice = await harber.getOwnerTrackerPrice.call(1,1);
-    // assert.equal(trackedPrice, 365);
-    // var trackedAddress = await harber.getOwnerTrackerAddress.call(1,1);
-    // assert.equal(trackedAddress, user5);
-    // //user 7:
-    // var trackedPrice = await harber.getOwnerTrackerPrice.call(1,2);
-    // assert.equal(trackedPrice, 730);
-    // var trackedAddress = await harber.getOwnerTrackerAddress.call(1,2);
-    // assert.equal(trackedAddress, user6);
-    // //user 8:
-    // var trackedPrice = await harber.getOwnerTrackerPrice.call(1,3);
-    // assert.equal(trackedPrice, 1095);
-    // var trackedAddress = await harber.getOwnerTrackerAddress.call(1,3);
-    // assert.equal(trackedAddress, user7);
-    // //wait a week then call collectfunds, should not revert
-    // await time.increase(time.duration.weeks(1));
-    // await debug(harber._collectAugurFunds.call(1,{ from: user7 })); //user irrelevant
-    // // var deposit = await harber.deposits.call(1,user7); 
-    // var deposit = await harber.testingVariable.call(); 
-    // assert.equal(deposit, 9); // <-------------
+    await harber.buy(365,1,5,{ from: user5  }); //10 deposit = 10 days
+    await harber.getTestDai({ from: user6 });
+    await harber.buy(730,1,20,{ from: user6  }); //20 deposit = 10 days
+    await harber.getTestDai({ from: user7 });
+    await harber.buy(1095,1,30,{ from: user7  }); //30 deposit = 10 days
+    //check deposits
+    var deposit = await harber.deposits.call(1,user5); 
+    assert.equal(deposit, 10);
+    var deposit = await harber.deposits.call(1,user6); 
+    assert.equal(deposit, 20);
+    var deposit = await harber.deposits.call(1,user7); 
+    assert.equal(deposit, 30);
+    //check ownerTracker variable
+    //user 6:
+    var trackedPrice = await harber.getOwnerTrackerPrice.call(1,1);
+    assert.equal(trackedPrice, 365);
+    var trackedAddress = await harber.getOwnerTrackerAddress.call(1,1);
+    assert.equal(trackedAddress, user5);
+    //user 7:
+    var trackedPrice = await harber.getOwnerTrackerPrice.call(1,2);
+    assert.equal(trackedPrice, 730);
+    var trackedAddress = await harber.getOwnerTrackerAddress.call(1,2);
+    assert.equal(trackedAddress, user6);
+    //user 8:
+    var trackedPrice = await harber.getOwnerTrackerPrice.call(1,3);
+    assert.equal(trackedPrice, 1095);
+    var trackedAddress = await harber.getOwnerTrackerAddress.call(1,3);
+    assert.equal(trackedAddress, user7);
+    //wait a week then call collectfunds, should not revert
+    await time.increase(time.duration.weeks(1));
+    await harber._collectAugurFunds(1,{ from: user0 }); //user irrelevant
+    var deposit = await harber.deposits.call(1,user7); 
+    assert.equal(deposit, 9); 
+    var owner = await token.ownerOf.call(1);
+    assert.equal(owner, user7);
+    var price = await harber.getPrice.call(1);
+    assert.equal(price, 1095);
+    //wait another week, should now revert
+    await time.increase(time.duration.weeks(1));
+    await debug(harber._collectAugurFunds(1,{ from: user0 })); //user irrelevant
+    var owner = await token.ownerOf.call(1);
+    assert.equal(owner, user6);
+    var price = await harber.getPrice.call(1);
+    assert.equal(price, 730);
+    //wait another 2 weeks, should revert again
+    await time.increase(time.duration.weeks(2));
+    await harber._collectAugurFunds(1,{ from: user0 }); //user irrelevant
+    var owner = await token.ownerOf.call(1);
+    assert.equal(owner, user5);
+    var price = await harber.getPrice.call(1);
+    assert.equal(price, 365);
+    //wait another 2 weeks, check that its foreclosed 
+    await time.increase(time.duration.weeks(2));
+    await harber._collectAugurFunds(1,{ from: user0 }); //user irrelevant
+    var owner = await token.ownerOf.call(1);
+    assert.equal(owner, '0x34A971cA2fd6DA2Ce2969D716dF922F17aAA1dB0');
+    var price = await harber.getPrice.call(1);
+    assert.equal(price, 0);
+    await harber.buy(365,1,5,{ from: user5  });
 
-    await harber.incrementTestingVariable.call(); 
-    var deposit = await harber.testingVariable.call(); 
-    assert.equal(deposit, 123); // <-------------
 
 
 
 
 
-    // var owner = await token.ownerOf.call(1);
-    // assert.equal(owner, user7);
-    // var price = await harber.getPrice.call(1);
-    // assert.equal(price, 1095);
-    // //wait another week, should now revert
-    // await time.increase(time.duration.weeks(10  ));
-    // await harber._collectAugurFunds.call(1,{ from: user0 }); //user irrelevant
-
-    // console.log(await harber.deposits.call(1,user7)); 
-
-    // var owner = await token.ownerOf.call(1);
-    // assert.equal(owner, user6);
-    // var price = await harber.getPrice.call(1);
-    // assert.equal(price, 730);
-
-
-
-
-
-    // var owner = await token.ownerOf.call(1);
-    // assert.equal(owner, user7 );
   });
 
 

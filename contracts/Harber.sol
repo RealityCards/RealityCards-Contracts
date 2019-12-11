@@ -215,17 +215,12 @@ contract Harber {
             }
 
             deposits[_tokenId][_currentOwner] = deposits[_tokenId][_currentOwner].sub(_collection);
-            testingVariable = deposits[_tokenId][_currentOwner];
             totalCollected = totalCollected.add(_collection);
             
             emit LogCollection(_collection);
         }
     }
 
-    function incrementTestingVariable() public {
-        testingVariable = 123;
-    }
-    
     // note: anyone can deposit
     function depositWei(uint256 _tokenId) public payable collectAugurFunds(_tokenId) {
         require(state[_tokenId] != ownedState.Foreclosed, "Foreclosed");
@@ -313,11 +308,11 @@ contract Harber {
                 // require(1 > 2, "STFU");
             }
             else if (deposits[_tokenId][_previousOwner] > 0)
-            // previous owner still has a deposit, transfer to them, update thep rice to what it used to be
+            // previous owner still has a deposit, transfer to them, update the price to what it used to be
             {
                 address _currentOwner = team.ownerOf(_tokenId);
                 uint256 _oldPrice = ownerTracker[_tokenId][_index].price;
-                _transferTokenTo(_currentOwner, msg.sender, _oldPrice, _tokenId);
+                _transferTokenTo(_currentOwner, _previousOwner, _oldPrice, _tokenId);
                 _reverted = true;
             }
         }       
@@ -335,8 +330,6 @@ contract Harber {
 
     function _transferTokenTo(address _currentOwner, address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
         require(timeLastCollected[_tokenId] >= timeAcquired[_tokenId], "timeAcquired is more recent than time last collected");
-
-        // if require(1 > 2, "STFU");
 
         timeHeld[_tokenId][_currentOwner] = timeHeld[_tokenId][_currentOwner].add((timeLastCollected[_tokenId].sub(timeAcquired[_tokenId])));
 
