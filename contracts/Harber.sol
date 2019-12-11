@@ -52,9 +52,8 @@ contract Harber {
     }
     
     // MAPPINGS
-    mapping (uint256 => mapping (address => bool) ) public owners;
     mapping (uint256 => mapping (uint256 => purchase) ) public ownerTracker; //keeps track of all owners of a token, including the price, so that if the current owner's deposit runs out, ownership can  be reverted to a previous owner. Index 0 is NOT used, this tells the contract to foreclose
-    mapping (uint256 => mapping (address => uint256) ) public timeHeld;
+    mapping (uint256 => mapping (address => uint256) ) public timeHeld; //this is the key variable that tracks the total amount of time each user has held it for
     mapping (uint256 => mapping (address => uint256) ) public deposits; //keeps track of all the deposits for each token, for each owner. Consider lumping this in with ownerTracker
     mapping (address => uint256) public testDaiBalances;
 
@@ -92,7 +91,7 @@ contract Harber {
     }
 
     modifier collectAugurFunds(uint256 _tokenId) {
-    //    _collectAugurFunds(_tokenId); 
+       _collectAugurFunds(_tokenId); 
        _;
     }
 
@@ -203,12 +202,8 @@ contract Harber {
             // run out of deposit. Revert to Previous owner. 
             if (_collection >= deposits[_tokenId][_currentOwner]) {
                 // up to when was it actually paid for?
-                uint256 _originalTimeLastCollected = timeLastCollected[_tokenId];
 
                 timeLastCollected[_tokenId] = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(deposits[_tokenId][_currentOwner]).div(_collection)));
-
-                uint256 _updatedTimeLastCollected = timeLastCollected[_tokenId];
-                require(_originalTimeLastCollected < _updatedTimeLastCollected, "timeLastCollected has gone down");
 
                 _collection = deposits[_tokenId][_currentOwner]; // take what's left     
                 _revertToPreviousOwner(_tokenId);
@@ -262,7 +257,6 @@ contract Harber {
         if(state[_tokenId] == ownedState.Foreclosed) 
         {
             state[_tokenId] = ownedState.Owned;
-            timeLastCollected[_tokenId] = now;
         }
 
         _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId); //does this even if owner hasn't changed. this is ok. 
@@ -337,28 +331,18 @@ contract Harber {
     }
 
     function _transferTokenTo(address _currentOwner, address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
-        // require(timeLastCollected[_tokenId] >= timeAcquired[_tokenId], "timeAcquired is more recent than time last connected");
-        a = timeLastCollected[_tokenId];
-        b = timeAcquired[_tokenId];
-        c = c;
-        c = c + 1;
+        a = a + 1;
+        require(timeLastCollected[_tokenId] >= timeAcquired[_tokenId], "timeAcquired is more recent than time last collected");
 
-        // if (testingVariable == 0) 
-        // {
-            timeHeld[_tokenId][_currentOwner] = timeHeld[_tokenId][_currentOwner].add((timeLastCollected[_tokenId].sub(timeAcquired[_tokenId])));
-            // uint _stfu = timeLastCollected[_tokenId].sub(timeAcquired[_tokenId]);
-        // }
-        // else
-        // {
-        //     //
-        // }
+        // if require(1 > 2, "STFU");
+
+        timeHeld[_tokenId][_currentOwner] = timeHeld[_tokenId][_currentOwner].add((timeLastCollected[_tokenId].sub(timeAcquired[_tokenId])));
+
         team.transferFrom(_currentOwner, _newOwner, _tokenId);
         
         price[_tokenId] = _newPrice;
         timeAcquired[_tokenId] = now;
-        owners[_tokenId][_newOwner] = true;
-
-        
+        timeLastCollected[_tokenId] = now;
     }
 }
 
