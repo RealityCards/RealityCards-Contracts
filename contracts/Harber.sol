@@ -207,7 +207,6 @@ contract Harber {
 
                 _collection = deposits[_tokenId][_currentOwner]; // take what's left     
                 _revertToPreviousOwner(_tokenId);
-                testingVariable = 1;
                 
             } else  {
                 // just a normal collection
@@ -216,11 +215,15 @@ contract Harber {
             }
 
             deposits[_tokenId][_currentOwner] = deposits[_tokenId][_currentOwner].sub(_collection);
-            
+            testingVariable = deposits[_tokenId][_currentOwner];
             totalCollected = totalCollected.add(_collection);
             
             emit LogCollection(_collection);
         }
+    }
+
+    function incrementTestingVariable() public {
+        testingVariable = 123;
     }
     
     // note: anyone can deposit
@@ -331,7 +334,6 @@ contract Harber {
     }
 
     function _transferTokenTo(address _currentOwner, address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
-        a = a + 1;
         require(timeLastCollected[_tokenId] >= timeAcquired[_tokenId], "timeAcquired is more recent than time last collected");
 
         // if require(1 > 2, "STFU");

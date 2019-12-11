@@ -307,21 +307,20 @@ contract('HarberTests', (accounts) => {
     await harber.buy(1,1,5,{ from: user  }); 
   });
 
-  it('_collectAugurFunds function with revertPreviousOwner and immediately get bought again', async () => {
-    //let's rebuy with an easier price to work with
-    await harber.getTestDai({ from: user6 });
-    await harber.getTestDai({ from: user7 });
-    await harber.buy(365,1,10,{ from: user6  }); 
-    await time.increase(time.duration.weeks(2)); //the deposit willl last only 10 days so 2 weeks will reset it
-    await harber.buy(366,1,10,{ from: user7 }); //this should trigger a revert to previous, then straight to owned by user 7
-    var deposit = await harber.deposits.call(1,user6); 
-    assert.equal(deposit, 0);
-    var owner = await token.ownerOf.call(1);
-    assert.equal(owner, user7);
+  // it('_collectAugurFunds function with revertPreviousOwner and immediately get bought again. Not sure how useful this is, but at this stage I cannot call _collect and test it without an instant rebuy', async () => {
+  //   //let's rebuy with an easier price to work with
+  //   await harber.getTestDai({ from: user6 });
+  //   await harber.getTestDai({ from: user7 });
+  //   await harber.buy(365,1,10,{ from: user6  }); 
+  //   await time.increase(time.duration.weeks(2)); //the deposit willl last only 10 days so 2 weeks will reset it
+  //   await harber.buy(366,1,10,{ from: user7 }); //this should trigger a revert to previous, then straight to owned by user 7
+  //   var deposit = await harber.deposits.call(1,user6); 
+  //   assert.equal(deposit, 0);
+  //   var owner = await token.ownerOf.call(1);
+  //   assert.equal(owner, user7);
+  // });
 
-
-
-
+  it('_collectAugurFunds function with revertPreviousOwner via calling _collect directly', async () => {
     // await harber.buy(365,1,5,{ from: user5  }); //10 deposit = 10 days
     // await harber.getTestDai({ from: user6 });
     // await harber.buy(730,1,20,{ from: user6  }); //20 deposit = 10 days
@@ -352,10 +351,14 @@ contract('HarberTests', (accounts) => {
     // assert.equal(trackedAddress, user7);
     // //wait a week then call collectfunds, should not revert
     // await time.increase(time.duration.weeks(1));
-    // // await debug(harber._collectAugurFunds.call(1,{ from: user7 })); //user irrelevant
-    // await harber.buy(73000,1,20,{ from: user6  });
-    // var deposit2 = await harber.deposits.call(1,user7); 
-    // assert.equal(deposit2, 9); // <-------------
+    // await debug(harber._collectAugurFunds.call(1,{ from: user7 })); //user irrelevant
+    // // var deposit = await harber.deposits.call(1,user7); 
+    // var deposit = await harber.testingVariable.call(); 
+    // assert.equal(deposit, 9); // <-------------
+
+    await harber.incrementTestingVariable.call(); 
+    var deposit = await harber.testingVariable.call(); 
+    assert.equal(deposit, 123); // <-------------
 
 
 
