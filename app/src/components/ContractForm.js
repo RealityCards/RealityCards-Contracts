@@ -111,7 +111,7 @@ class ContractForm extends Component {
               value={this.state[input.name]}
               placeholder={inputLabel}
               onChange={this.handleInputChange}
-              startAdornment={<InputAdornment position="start">ETH</InputAdornment>} 
+              startAdornment={<InputAdornment position="start">DAI</InputAdornment>} 
             />
           );
           }

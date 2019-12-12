@@ -2,51 +2,96 @@
   "contractName": "ERC721Enumerable",
   "abi": [
     {
-      "constant": true,
-      "inputs": [
-        {
-          "name": "interfaceId",
-          "type": "bytes4"
-        }
-      ],
-      "name": "supportsInterface",
-      "outputs": [
-        {
-          "name": "",
-          "type": "bool"
-        }
-      ],
+      "inputs": [],
       "payable": false,
-      "stateMutability": "view",
-      "type": "function"
+      "stateMutability": "nonpayable",
+      "type": "constructor"
     },
     {
-      "constant": true,
+      "anonymous": false,
       "inputs": [
         {
+          "indexed": true,
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "approved",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
           "name": "tokenId",
           "type": "uint256"
         }
       ],
-      "name": "getApproved",
-      "outputs": [
+      "name": "Approval",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
         {
-          "name": "",
+          "indexed": true,
+          "internalType": "address",
+          "name": "owner",
           "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "operator",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "bool",
+          "name": "approved",
+          "type": "bool"
         }
       ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
+      "name": "ApprovalForAll",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
+        }
+      ],
+      "name": "Transfer",
+      "type": "event"
     },
     {
       "constant": false,
       "inputs": [
         {
+          "internalType": "address",
           "name": "to",
           "type": "address"
         },
         {
+          "internalType": "uint256",
           "name": "tokenId",
           "type": "uint256"
         }
@@ -58,86 +103,10 @@
       "type": "function"
     },
     {
-      "constant": false,
-      "inputs": [
-        {
-          "name": "from",
-          "type": "address"
-        },
-        {
-          "name": "to",
-          "type": "address"
-        },
-        {
-          "name": "tokenId",
-          "type": "uint256"
-        }
-      ],
-      "name": "transferFrom",
-      "outputs": [],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "name": "from",
-          "type": "address"
-        },
-        {
-          "name": "to",
-          "type": "address"
-        },
-        {
-          "name": "tokenId",
-          "type": "uint256"
-        }
-      ],
-      "name": "safeTransferFrom",
-      "outputs": [],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
       "constant": true,
       "inputs": [
         {
-          "name": "tokenId",
-          "type": "uint256"
-        }
-      ],
-      "name": "ownerOf",
-      "outputs": [
-        {
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [],
-      "name": "steward",
-      "outputs": [
-        {
-          "name": "",
-          "type": "address"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "constant": true,
-      "inputs": [
-        {
+          "internalType": "address",
           "name": "owner",
           "type": "address"
         }
@@ -145,8 +114,77 @@
       "name": "balanceOf",
       "outputs": [
         {
+          "internalType": "uint256",
           "name": "",
           "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
+        }
+      ],
+      "name": "getApproved",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "operator",
+          "type": "address"
+        }
+      ],
+      "name": "isApprovedForAll",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
+        }
+      ],
+      "name": "ownerOf",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
         }
       ],
       "payable": false,
@@ -157,15 +195,22 @@
       "constant": false,
       "inputs": [
         {
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
           "name": "to",
           "type": "address"
         },
         {
-          "name": "approved",
-          "type": "bool"
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
         }
       ],
-      "name": "setApprovalForAll",
+      "name": "safeTransferFrom",
       "outputs": [],
       "payable": false,
       "stateMutability": "nonpayable",
@@ -175,23 +220,47 @@
       "constant": false,
       "inputs": [
         {
+          "internalType": "address",
           "name": "from",
           "type": "address"
         },
         {
+          "internalType": "address",
           "name": "to",
           "type": "address"
         },
         {
+          "internalType": "uint256",
           "name": "tokenId",
           "type": "uint256"
         },
         {
+          "internalType": "bytes",
           "name": "_data",
           "type": "bytes"
         }
       ],
       "name": "safeTransferFrom",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "bool",
+          "name": "approved",
+          "type": "bool"
+        }
+      ],
+      "name": "setApprovalForAll",
       "outputs": [],
       "payable": false,
       "stateMutability": "nonpayable",
@@ -208,19 +277,32 @@
     },
     {
       "constant": true,
-      "inputs": [
+      "inputs": [],
+      "name": "steward",
+      "outputs": [
         {
-          "name": "owner",
-          "type": "address"
-        },
-        {
-          "name": "operator",
+          "internalType": "address",
+          "name": "",
           "type": "address"
         }
       ],
-      "name": "isApprovedForAll",
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "constant": true,
+      "inputs": [
+        {
+          "internalType": "bytes4",
+          "name": "interfaceId",
+          "type": "bytes4"
+        }
+      ],
+      "name": "supportsInterface",
       "outputs": [
         {
+          "internalType": "bool",
           "name": "",
           "type": "bool"
         }
@@ -230,85 +312,40 @@
       "type": "function"
     },
     {
-      "inputs": [],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "constructor"
-    },
-    {
-      "anonymous": false,
+      "constant": false,
       "inputs": [
         {
-          "indexed": true,
+          "internalType": "address",
           "name": "from",
           "type": "address"
         },
         {
-          "indexed": true,
+          "internalType": "address",
           "name": "to",
           "type": "address"
         },
         {
-          "indexed": true,
+          "internalType": "uint256",
           "name": "tokenId",
           "type": "uint256"
         }
       ],
-      "name": "Transfer",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "name": "owner",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "name": "approved",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "name": "tokenId",
-          "type": "uint256"
-        }
-      ],
-      "name": "Approval",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "name": "owner",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "name": "operator",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "name": "approved",
-          "type": "bool"
-        }
-      ],
-      "name": "ApprovalForAll",
-      "type": "event"
+      "name": "transferFrom",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
     },
     {
       "constant": true,
       "inputs": [
         {
+          "internalType": "address",
           "name": "owner",
           "type": "address"
         },
         {
+          "internalType": "uint256",
           "name": "index",
           "type": "uint256"
         }
@@ -316,6 +353,7 @@
       "name": "tokenOfOwnerByIndex",
       "outputs": [
         {
+          "internalType": "uint256",
           "name": "",
           "type": "uint256"
         }
@@ -330,6 +368,7 @@
       "name": "totalSupply",
       "outputs": [
         {
+          "internalType": "uint256",
           "name": "",
           "type": "uint256"
         }
@@ -342,6 +381,7 @@
       "constant": true,
       "inputs": [
         {
+          "internalType": "uint256",
           "name": "index",
           "type": "uint256"
         }
@@ -349,6 +389,7 @@
       "name": "tokenByIndex",
       "outputs": [
         {
+          "internalType": "uint256",
           "name": "",
           "type": "uint256"
         }
@@ -358,7 +399,7 @@
       "type": "function"
     }
   ],
-  "metadata": "{\"compiler\":{\"version\":\"0.5.8+commit.23d335f2\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"constant\":true,\"inputs\":[{\"name\":\"interfaceId\",\"type\":\"bytes4\"}],\"name\":\"supportsInterface\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"getApproved\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"approve\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"totalSupply\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"from\",\"type\":\"address\"},{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"owner\",\"type\":\"address\"},{\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"tokenOfOwnerByIndex\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"from\",\"type\":\"address\"},{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"safeTransferFrom\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"tokenByIndex\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"ownerOf\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"steward\",\"outputs\":[{\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"owner\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"approved\",\"type\":\"bool\"}],\"name\":\"setApprovalForAll\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"name\":\"from\",\"type\":\"address\"},{\"name\":\"to\",\"type\":\"address\"},{\"name\":\"tokenId\",\"type\":\"uint256\"},{\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"safeTransferFrom\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"setup\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"name\":\"owner\",\"type\":\"address\"},{\"name\":\"operator\",\"type\":\"address\"}],\"name\":\"isApprovedForAll\",\"outputs\":[{\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"to\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"Transfer\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"approved\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"name\":\"operator\",\"type\":\"address\"},{\"indexed\":false,\"name\":\"approved\",\"type\":\"bool\"}],\"name\":\"ApprovalForAll\",\"type\":\"event\"}],\"devdoc\":{\"details\":\"See https://github.com/ethereum/EIPs/blob/master/EIPS/eip-721.md\",\"methods\":{\"approve(address,uint256)\":{\"details\":\"Approves another address to transfer the given token ID The zero address indicates there is no approved address. There can only be one approved address per token at a given time. Can only be called by the token owner or an approved operator.\",\"params\":{\"to\":\"address to be approved for the given token ID\",\"tokenId\":\"uint256 ID of the token to be approved\"}},\"balanceOf(address)\":{\"details\":\"Gets the balance of the specified address\",\"params\":{\"owner\":\"address to query the balance of\"},\"return\":\"uint256 representing the amount owned by the passed address\"},\"constructor\":{\"details\":\"Constructor function\"},\"getApproved(uint256)\":{\"details\":\"Gets the approved address for a token ID, or zero if no address set Reverts if the token ID does not exist.\",\"params\":{\"tokenId\":\"uint256 ID of the token to query the approval of\"},\"return\":\"address currently approved for the given token ID\"},\"isApprovedForAll(address,address)\":{\"details\":\"Tells whether an operator is approved by a given owner\",\"params\":{\"operator\":\"operator address which you want to query the approval of\",\"owner\":\"owner address which you want to query the approval of\"},\"return\":\"bool whether the given operator is approved by the given owner\"},\"ownerOf(uint256)\":{\"details\":\"Gets the owner of the specified token ID\",\"params\":{\"tokenId\":\"uint256 ID of the token to query the owner of\"},\"return\":\"address currently marked as the owner of the given token ID\"},\"safeTransferFrom(address,address,uint256)\":{\"details\":\"Safely transfers the ownership of a given token ID to another address If the target address is a contract, it must implement `onERC721Received`, which is called upon a safe transfer, and return the magic value `bytes4(keccak256(\\\"onERC721Received(address,address,uint256,bytes)\\\"))`; otherwise, the transfer is reverted. Requires the msg.sender to be the owner, approved, or operator\",\"params\":{\"from\":\"current owner of the token\",\"to\":\"address to receive the ownership of the given token ID\",\"tokenId\":\"uint256 ID of the token to be transferred\"}},\"safeTransferFrom(address,address,uint256,bytes)\":{\"details\":\"Safely transfers the ownership of a given token ID to another address If the target address is a contract, it must implement `onERC721Received`, which is called upon a safe transfer, and return the magic value `bytes4(keccak256(\\\"onERC721Received(address,address,uint256,bytes)\\\"))`; otherwise, the transfer is reverted. Requires the msg.sender to be the owner, approved, or operator\",\"params\":{\"_data\":\"bytes data to send along with a safe transfer check\",\"from\":\"current owner of the token\",\"to\":\"address to receive the ownership of the given token ID\",\"tokenId\":\"uint256 ID of the token to be transferred\"}},\"setApprovalForAll(address,bool)\":{\"details\":\"Sets or unsets the approval of a given operator An operator is allowed to transfer all tokens of the sender on their behalf\",\"params\":{\"approved\":\"representing the status of the approval to be set\",\"to\":\"operator address to set the approval\"}},\"supportsInterface(bytes4)\":{\"details\":\"implement supportsInterface(bytes4) using a lookup table\"},\"tokenByIndex(uint256)\":{\"details\":\"Gets the token ID at a given index of all the tokens in this contract Reverts if the index is greater or equal to the total number of tokens\",\"params\":{\"index\":\"uint256 representing the index to be accessed of the tokens list\"},\"return\":\"uint256 token ID at the given index of the tokens list\"},\"tokenOfOwnerByIndex(address,uint256)\":{\"details\":\"Gets the token ID at a given index of the tokens list of the requested owner\",\"params\":{\"index\":\"uint256 representing the index to be accessed of the requested tokens list\",\"owner\":\"address owning the tokens list to be accessed\"},\"return\":\"uint256 token ID at the given index of the tokens list owned by the requested address\"},\"totalSupply()\":{\"details\":\"Gets the total amount of tokens stored by the contract\",\"return\":\"uint256 representing the total amount of tokens\"},\"transferFrom(address,address,uint256)\":{\"details\":\"Transfers the ownership of a given token ID to another address Usage of this method is discouraged, use `safeTransferFrom` whenever possible Requires the msg.sender to be the owner, approved, or operator\",\"params\":{\"from\":\"current owner of the token\",\"to\":\"address to receive the ownership of the given token ID\",\"tokenId\":\"uint256 ID of the token to be transferred\"}}},\"title\":\"ERC-721 Non-Fungible Token with optional enumeration extension logic\"},\"userdoc\":{\"methods\":{}}},\"settings\":{\"compilationTarget\":{\"/Users/mcplums/Repos/Harber/contracts/ERC721Enumerable.sol\":\"ERC721Enumerable\"},\"evmVersion\":\"petersburg\",\"libraries\":{},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/mcplums/Repos/Harber/contracts/ERC165.sol\":{\"keccak256\":\"0x33b374b94ea96554221e5d524ba65936a30c6afdee24f3ab3f680da9f59bf0d5\",\"urls\":[\"bzzr://c60e03e8d4b8d25f194e4b807b98d498a44a45149f31e37caca9c82f94d0ac4d\"]},\"/Users/mcplums/Repos/Harber/contracts/ERC721.sol\":{\"keccak256\":\"0xe1823161715805755836fb41716b9527421c0ecdea02c70690c224ba196f2947\",\"urls\":[\"bzzr://fc5c06d94cbb1eb878c9e548a9e11b989b795b9cd67491a49f18839a03b6b2ec\"]},\"/Users/mcplums/Repos/Harber/contracts/ERC721Enumerable.sol\":{\"keccak256\":\"0x173f9380ee645d77223a1181073f9e4f883c31c09bb4d0d413034914a43d32f8\",\"urls\":[\"bzzr://f1e594eca62450972483d743dbaa21ec242bcf33712c5293b1ef3d2e85f54c1e\"]},\"/Users/mcplums/Repos/Harber/contracts/interfaces/IERC165.sol\":{\"keccak256\":\"0xfb2758dbd44b9aab19f4e145f076c37b5d4f47d4af450061c06fcb51f2ddf310\",\"urls\":[\"bzzr://a26eb788d7e561a82e696f085f82ebdd6c821bd4c596a613c2ecc7ff906007ba\"]},\"/Users/mcplums/Repos/Harber/contracts/interfaces/IERC721.sol\":{\"keccak256\":\"0xae3e972b773763a70f6130cc79b0837e07b632d8380a8494bf8ac604710a6eaa\",\"urls\":[\"bzzr://09cd398533d4d385fa9b7fe1e972a4b5938286c13a3eb2dffbad40d89d8a3919\"]},\"/Users/mcplums/Repos/Harber/contracts/interfaces/IERC721Enumerable.sol\":{\"keccak256\":\"0xdde577e95abc5370efa42ee66071c33ac64aea839db76a239479f0c3af653901\",\"urls\":[\"bzzr://9d68aff9316a8a026a4a7abd02d8581c52ccac746eec8e489f033e85aa16b954\"]},\"/Users/mcplums/Repos/Harber/contracts/interfaces/IERC721Receiver.sol\":{\"keccak256\":\"0xadbfb7028fb0f851dc848a48b9e54e7c89ffd2c2edc12fa4ba9bb383dfaa83d9\",\"urls\":[\"bzzr://2466b6491600969dd9ffdeb0b705e7cecc38418aa215cec64b2481273bba9076\"]},\"/Users/mcplums/Repos/Harber/contracts/utils/Address.sol\":{\"keccak256\":\"0x0310369b596c52c8bb134bf20b1468030be19d634508e01774eb5e5ba4304a80\",\"urls\":[\"bzzr://94ae52cd4aafdcb51599063e8be5d5e150d07f9b8a7740c9fe1e8f241f09d66c\"]},\"/Users/mcplums/Repos/Harber/contracts/utils/Counters.sol\":{\"keccak256\":\"0x3321144c17fc11e4571940d2bf1723269862ee3bcc21798fdf332e98290149c4\",\"urls\":[\"bzzr://c95038d9b82909c731350cabdcfa25bc30a88a7cb560b893f337920a7c0321a7\"]},\"/Users/mcplums/Repos/Harber/contracts/utils/SafeMath.sol\":{\"keccak256\":\"0x5529a09ca96e4da2b5b011221de54e24a958708fa20fef69710c90fae407dcef\",\"urls\":[\"bzzr://e56429bf1fa273f581c3db2012cc4f1c096d70bf23ad6775b851c9a831b21f21\"]}},\"version\":1}",
+  "metadata": "{\"compiler\":{\"version\":\"0.5.12+commit.7709ece9\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"approved\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"operator\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"bool\",\"name\":\"approved\",\"type\":\"bool\"}],\"name\":\"ApprovalForAll\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"Transfer\",\"type\":\"event\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"approve\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"getApproved\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"operator\",\"type\":\"address\"}],\"name\":\"isApprovedForAll\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"ownerOf\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"safeTransferFrom\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"safeTransferFrom\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"approved\",\"type\":\"bool\"}],\"name\":\"setApprovalForAll\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[],\"name\":\"setup\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"steward\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"bytes4\",\"name\":\"interfaceId\",\"type\":\"bytes4\"}],\"name\":\"supportsInterface\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"tokenByIndex\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"tokenOfOwnerByIndex\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[],\"name\":\"totalSupply\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"details\":\"See https://github.com/ethereum/EIPs/blob/master/EIPS/eip-721.md\",\"methods\":{\"approve(address,uint256)\":{\"details\":\"Approves another address to transfer the given token ID The zero address indicates there is no approved address. There can only be one approved address per token at a given time. Can only be called by the token owner or an approved operator.\",\"params\":{\"to\":\"address to be approved for the given token ID\",\"tokenId\":\"uint256 ID of the token to be approved\"}},\"balanceOf(address)\":{\"details\":\"Gets the balance of the specified address\",\"params\":{\"owner\":\"address to query the balance of\"},\"return\":\"uint256 representing the amount owned by the passed address\"},\"constructor\":{\"details\":\"Constructor function\"},\"getApproved(uint256)\":{\"details\":\"Gets the approved address for a token ID, or zero if no address set Reverts if the token ID does not exist.\",\"params\":{\"tokenId\":\"uint256 ID of the token to query the approval of\"},\"return\":\"address currently approved for the given token ID\"},\"isApprovedForAll(address,address)\":{\"details\":\"Tells whether an operator is approved by a given owner\",\"params\":{\"operator\":\"operator address which you want to query the approval of\",\"owner\":\"owner address which you want to query the approval of\"},\"return\":\"bool whether the given operator is approved by the given owner\"},\"ownerOf(uint256)\":{\"details\":\"Gets the owner of the specified token ID\",\"params\":{\"tokenId\":\"uint256 ID of the token to query the owner of\"},\"return\":\"address currently marked as the owner of the given token ID\"},\"safeTransferFrom(address,address,uint256)\":{\"details\":\"Safely transfers the ownership of a given token ID to another address If the target address is a contract, it must implement `onERC721Received`, which is called upon a safe transfer, and return the magic value `bytes4(keccak256(\\\"onERC721Received(address,address,uint256,bytes)\\\"))`; otherwise, the transfer is reverted. Requires the msg.sender to be the owner, approved, or operator\",\"params\":{\"from\":\"current owner of the token\",\"to\":\"address to receive the ownership of the given token ID\",\"tokenId\":\"uint256 ID of the token to be transferred\"}},\"safeTransferFrom(address,address,uint256,bytes)\":{\"details\":\"Safely transfers the ownership of a given token ID to another address If the target address is a contract, it must implement `onERC721Received`, which is called upon a safe transfer, and return the magic value `bytes4(keccak256(\\\"onERC721Received(address,address,uint256,bytes)\\\"))`; otherwise, the transfer is reverted. Requires the msg.sender to be the owner, approved, or operator\",\"params\":{\"_data\":\"bytes data to send along with a safe transfer check\",\"from\":\"current owner of the token\",\"to\":\"address to receive the ownership of the given token ID\",\"tokenId\":\"uint256 ID of the token to be transferred\"}},\"setApprovalForAll(address,bool)\":{\"details\":\"Sets or unsets the approval of a given operator An operator is allowed to transfer all tokens of the sender on their behalf\",\"params\":{\"approved\":\"representing the status of the approval to be set\",\"to\":\"operator address to set the approval\"}},\"supportsInterface(bytes4)\":{\"details\":\"implement supportsInterface(bytes4) using a lookup table\"},\"tokenByIndex(uint256)\":{\"details\":\"Gets the token ID at a given index of all the tokens in this contract Reverts if the index is greater or equal to the total number of tokens\",\"params\":{\"index\":\"uint256 representing the index to be accessed of the tokens list\"},\"return\":\"uint256 token ID at the given index of the tokens list\"},\"tokenOfOwnerByIndex(address,uint256)\":{\"details\":\"Gets the token ID at a given index of the tokens list of the requested owner\",\"params\":{\"index\":\"uint256 representing the index to be accessed of the requested tokens list\",\"owner\":\"address owning the tokens list to be accessed\"},\"return\":\"uint256 token ID at the given index of the tokens list owned by the requested address\"},\"totalSupply()\":{\"details\":\"Gets the total amount of tokens stored by the contract\",\"return\":\"uint256 representing the total amount of tokens\"},\"transferFrom(address,address,uint256)\":{\"details\":\"Transfers the ownership of a given token ID to another address Usage of this method is discouraged, use `safeTransferFrom` whenever possible Requires the msg.sender to be the owner, approved, or operator\",\"params\":{\"from\":\"current owner of the token\",\"to\":\"address to receive the ownership of the given token ID\",\"tokenId\":\"uint256 ID of the token to be transferred\"}}},\"title\":\"ERC-721 Non-Fungible Token with optional enumeration extension logic\"},\"userdoc\":{\"methods\":{}}},\"settings\":{\"compilationTarget\":{\"/Users/mcplums/Repos/Harber/contracts/ERC721Enumerable.sol\":\"ERC721Enumerable\"},\"evmVersion\":\"petersburg\",\"libraries\":{},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/mcplums/Repos/Harber/contracts/ERC165.sol\":{\"keccak256\":\"0x33b374b94ea96554221e5d524ba65936a30c6afdee24f3ab3f680da9f59bf0d5\",\"urls\":[\"bzz-raw://b0edaa2f8ade15e9d0cca4267919e9727e6d8e089bf77a5c4f8aaea59f4a9a1c\",\"dweb:/ipfs/QmZuCDxocBqCZev1pLELww9rm1TBTWSzAZ4NvEQCg6p1uP\"]},\"/Users/mcplums/Repos/Harber/contracts/ERC721.sol\":{\"keccak256\":\"0xe1823161715805755836fb41716b9527421c0ecdea02c70690c224ba196f2947\",\"urls\":[\"bzz-raw://53b944afd1af38b4d0505a288324d4360e0b1c2646f3aadf4f9ce546fd969e6f\",\"dweb:/ipfs/Qmem2akQ9DAcm8zXp2TxZrv3Tpisepwvee4Kd54J3zVJiM\"]},\"/Users/mcplums/Repos/Harber/contracts/ERC721Enumerable.sol\":{\"keccak256\":\"0x173f9380ee645d77223a1181073f9e4f883c31c09bb4d0d413034914a43d32f8\",\"urls\":[\"bzz-raw://393b4184f6695824e3e4db21c2d73ad413f62751ee6cc5f1868b26f020a921f6\",\"dweb:/ipfs/QmU78tQVnPeAmJo8JRo3ffm8nKt99PC36819HahXq82CJM\"]},\"/Users/mcplums/Repos/Harber/contracts/interfaces/IERC165.sol\":{\"keccak256\":\"0xfb2758dbd44b9aab19f4e145f076c37b5d4f47d4af450061c06fcb51f2ddf310\",\"urls\":[\"bzz-raw://52f83ece2985e7c333117eff36ae7cef18a00998f0ed1ea0134830da954fdfb2\",\"dweb:/ipfs/QmXLWvXwWWME5hFxH6utqch8Yeh8fRA3qoAPmidHPk9vir\"]},\"/Users/mcplums/Repos/Harber/contracts/interfaces/IERC721.sol\":{\"keccak256\":\"0xae3e972b773763a70f6130cc79b0837e07b632d8380a8494bf8ac604710a6eaa\",\"urls\":[\"bzz-raw://88963cee99283c5fff941219493a1e24fc9276b469311a5102a6ceda444537ef\",\"dweb:/ipfs/QmYr2TawkB5dc2XkuUHFphGn38UwW8YZTVdovbWDAsjhQq\"]},\"/Users/mcplums/Repos/Harber/contracts/interfaces/IERC721Enumerable.sol\":{\"keccak256\":\"0xdde577e95abc5370efa42ee66071c33ac64aea839db76a239479f0c3af653901\",\"urls\":[\"bzz-raw://cde1843a93dfa48580b5a8464e187913fe2cfdec25e6fe380626843350937f58\",\"dweb:/ipfs/Qmarj8yfwjg1hU5nueqyc6zHP5GLxUwM2khmXzApmHDzB8\"]},\"/Users/mcplums/Repos/Harber/contracts/interfaces/IERC721Receiver.sol\":{\"keccak256\":\"0xadbfb7028fb0f851dc848a48b9e54e7c89ffd2c2edc12fa4ba9bb383dfaa83d9\",\"urls\":[\"bzz-raw://90dceab42713246639100b87d6650037d68e4a2ab2dd4b5768c3ed35d6b3a4a0\",\"dweb:/ipfs/QmQ42UW5nchMoYP9bU9F1AJga5chG8j92fCPkURpiDKsCu\"]},\"/Users/mcplums/Repos/Harber/contracts/utils/Address.sol\":{\"keccak256\":\"0x0310369b596c52c8bb134bf20b1468030be19d634508e01774eb5e5ba4304a80\",\"urls\":[\"bzz-raw://845a6c96bbfe1ab7c102f38bc703bf99ce84a022993c55be257fa67656a156e1\",\"dweb:/ipfs/QmYeWcYqUANfQswH7KGhzQcdAz2NrDvbxwMyuGGGnPToP8\"]},\"/Users/mcplums/Repos/Harber/contracts/utils/Counters.sol\":{\"keccak256\":\"0x3321144c17fc11e4571940d2bf1723269862ee3bcc21798fdf332e98290149c4\",\"urls\":[\"bzz-raw://68c4b022e8d2038b6ece5de5ce3afb667bac4c515784a8a95a5b2e389d3297bd\",\"dweb:/ipfs/QmR5djmsqou33KfWxjos4QwwSiop2xpML28PuutTQfbw4W\"]},\"/Users/mcplums/Repos/Harber/contracts/utils/SafeMath.sol\":{\"keccak256\":\"0x440e126d35c767f263ad60029d68b9f1a946caedcc51ae10266f28e305fffe40\",\"urls\":[\"bzz-raw://87eaf2dfa0a988fd31e8b44703ffbf21a99a8c663263c2fad2c26dc9a120d5c3\",\"dweb:/ipfs/QmenpSEG3kX4SbXDuDVDi7EwHgSrRTYrbEdJ1H2H14HxGZ\"]}},\"version\":1}",
   "bytecode": "0x",
   "deployedBytecode": "0x",
   "sourceMap": "",
@@ -392,7 +433,7 @@
         "id": 590,
         "nodeType": "ImportDirective",
         "scope": 923,
-        "sourceUnit": 2400,
+        "sourceUnit": 2539,
         "src": "25:44:2",
         "symbolAliases": [],
         "unitAlias": ""
@@ -464,10 +505,10 @@
               "id": 597,
               "name": "IERC721Enumerable",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 2399,
+              "referencedDeclaration": 2538,
               "src": "322:17:2",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_IERC721Enumerable_$2399",
+                "typeIdentifier": "t_contract$_IERC721Enumerable_$2538",
                 "typeString": "contract IERC721Enumerable"
               }
             },
@@ -479,9 +520,9 @@
         "contractDependencies": [
           50,
           587,
-          2266,
-          2372,
-          2399
+          2405,
+          2511,
+          2538
         ],
         "contractKind": "contract",
         "documentation": "@title ERC-721 Non-Fungible Token with optional enumeration extension logic\n@dev See https://github.com/ethereum/EIPs/blob/master/EIPS/eip-721.md",
@@ -489,11 +530,11 @@
         "id": 922,
         "linearizedBaseContracts": [
           922,
-          2399,
+          2538,
           587,
-          2372,
+          2511,
           50,
-          2266
+          2405
         ],
         "name": "ERC721Enumerable",
         "nodeType": "ContractDefinition",
@@ -914,10 +955,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        2664,
-                        2665
+                        2862,
+                        2863
                       ],
-                      "referencedDeclaration": 2664,
+                      "referencedDeclaration": 2862,
                       "src": "1762:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
@@ -1120,7 +1161,7 @@
             "scope": 922,
             "src": "1663:182:2",
             "stateMutability": "view",
-            "superFunction": 2391,
+            "superFunction": 2530,
             "visibility": "public"
           },
           {
@@ -1215,7 +1256,7 @@
             "scope": 922,
             "src": "1997:94:2",
             "stateMutability": "view",
-            "superFunction": 2382,
+            "superFunction": 2521,
             "visibility": "public"
           },
           {
@@ -1304,10 +1345,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        2664,
-                        2665
+                        2862,
+                        2863
                       ],
-                      "referencedDeclaration": 2664,
+                      "referencedDeclaration": 2862,
                       "src": "2505:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
@@ -1456,7 +1497,7 @@
             "scope": 922,
             "src": "2428:148:2",
             "stateMutability": "view",
-            "superFunction": 2398,
+            "superFunction": 2537,
             "visibility": "public"
           },
           {
@@ -1530,7 +1571,7 @@
                         "name": "super",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 2694,
+                        "referencedDeclaration": 2892,
                         "src": "3036:5:2",
                         "typeDescriptions": {
                           "typeIdentifier": "t_super$_ERC721Enumerable_$922",
@@ -1873,7 +1914,7 @@
                         "name": "super",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 2694,
+                        "referencedDeclaration": 2892,
                         "src": "3508:5:2",
                         "typeDescriptions": {
                           "typeIdentifier": "t_super$_ERC721Enumerable_$922",
@@ -2172,7 +2213,7 @@
                         "name": "super",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 2694,
+                        "referencedDeclaration": 2892,
                         "src": "3979:5:2",
                         "typeDescriptions": {
                           "typeIdentifier": "t_super$_ERC721Enumerable_$922",
@@ -3289,7 +3330,7 @@
                       "lValueRequested": false,
                       "memberName": "sub",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 2601,
+                      "referencedDeclaration": 2700,
                       "src": "6340:29:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_pure$_t_uint256_$_t_uint256_$returns$_t_uint256_$bound_to$_t_uint256_$",
@@ -3985,7 +4026,7 @@
                       "lValueRequested": false,
                       "memberName": "sub",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 2601,
+                      "referencedDeclaration": 2700,
                       "src": "7743:21:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_pure$_t_uint256_$_t_uint256_$returns$_t_uint256_$bound_to$_t_uint256_$",
@@ -4523,7 +4564,7 @@
         "id": 590,
         "nodeType": "ImportDirective",
         "scope": 923,
-        "sourceUnit": 2400,
+        "sourceUnit": 2539,
         "src": "25:44:2",
         "symbolAliases": [],
         "unitAlias": ""
@@ -4595,10 +4636,10 @@
               "id": 597,
               "name": "IERC721Enumerable",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 2399,
+              "referencedDeclaration": 2538,
               "src": "322:17:2",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_IERC721Enumerable_$2399",
+                "typeIdentifier": "t_contract$_IERC721Enumerable_$2538",
                 "typeString": "contract IERC721Enumerable"
               }
             },
@@ -4610,9 +4651,9 @@
         "contractDependencies": [
           50,
           587,
-          2266,
-          2372,
-          2399
+          2405,
+          2511,
+          2538
         ],
         "contractKind": "contract",
         "documentation": "@title ERC-721 Non-Fungible Token with optional enumeration extension logic\n@dev See https://github.com/ethereum/EIPs/blob/master/EIPS/eip-721.md",
@@ -4620,11 +4661,11 @@
         "id": 922,
         "linearizedBaseContracts": [
           922,
-          2399,
+          2538,
           587,
-          2372,
+          2511,
           50,
-          2266
+          2405
         ],
         "name": "ERC721Enumerable",
         "nodeType": "ContractDefinition",
@@ -5045,10 +5086,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        2664,
-                        2665
+                        2862,
+                        2863
                       ],
-                      "referencedDeclaration": 2664,
+                      "referencedDeclaration": 2862,
                       "src": "1762:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
@@ -5251,7 +5292,7 @@
             "scope": 922,
             "src": "1663:182:2",
             "stateMutability": "view",
-            "superFunction": 2391,
+            "superFunction": 2530,
             "visibility": "public"
           },
           {
@@ -5346,7 +5387,7 @@
             "scope": 922,
             "src": "1997:94:2",
             "stateMutability": "view",
-            "superFunction": 2382,
+            "superFunction": 2521,
             "visibility": "public"
           },
           {
@@ -5435,10 +5476,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        2664,
-                        2665
+                        2862,
+                        2863
                       ],
-                      "referencedDeclaration": 2664,
+                      "referencedDeclaration": 2862,
                       "src": "2505:7:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
@@ -5587,7 +5628,7 @@
             "scope": 922,
             "src": "2428:148:2",
             "stateMutability": "view",
-            "superFunction": 2398,
+            "superFunction": 2537,
             "visibility": "public"
           },
           {
@@ -5661,7 +5702,7 @@
                         "name": "super",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 2694,
+                        "referencedDeclaration": 2892,
                         "src": "3036:5:2",
                         "typeDescriptions": {
                           "typeIdentifier": "t_super$_ERC721Enumerable_$922",
@@ -6004,7 +6045,7 @@
                         "name": "super",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 2694,
+                        "referencedDeclaration": 2892,
                         "src": "3508:5:2",
                         "typeDescriptions": {
                           "typeIdentifier": "t_super$_ERC721Enumerable_$922",
@@ -6303,7 +6344,7 @@
                         "name": "super",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 2694,
+                        "referencedDeclaration": 2892,
                         "src": "3979:5:2",
                         "typeDescriptions": {
                           "typeIdentifier": "t_super$_ERC721Enumerable_$922",
@@ -7420,7 +7461,7 @@
                       "lValueRequested": false,
                       "memberName": "sub",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 2601,
+                      "referencedDeclaration": 2700,
                       "src": "6340:29:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_pure$_t_uint256_$_t_uint256_$returns$_t_uint256_$bound_to$_t_uint256_$",
@@ -8116,7 +8157,7 @@
                       "lValueRequested": false,
                       "memberName": "sub",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 2601,
+                      "referencedDeclaration": 2700,
                       "src": "7743:21:2",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_pure$_t_uint256_$_t_uint256_$returns$_t_uint256_$bound_to$_t_uint256_$",
@@ -8629,11 +8670,11 @@
   },
   "compiler": {
     "name": "solc",
-    "version": "0.5.8+commit.23d335f2.Emscripten.clang"
+    "version": "0.5.12+commit.7709ece9.Emscripten.clang"
   },
   "networks": {},
-  "schemaVersion": "3.0.17",
-  "updatedAt": "2019-12-06T09:17:56.416Z",
+  "schemaVersion": "3.0.19",
+  "updatedAt": "2019-12-12T07:14:43.136Z",
   "devdoc": {
     "details": "See https://github.com/ethereum/EIPs/blob/master/EIPS/eip-721.md",
     "methods": {

@@ -49,7 +49,7 @@ class TestDaiFaucetSection extends Component {
           foreclosureTime: "N/A"
         });
       } else {
-        const foreclosureTime = moment(parseInt(await this.contracts.Harber.methods.foreclosureTime(urlId).call())*1000).toString();
+        const foreclosureTime = moment(parseInt(await this.contracts.Harber.methods.rentalExpiryTime(urlId).call())*1000).toString();
         this.setState({foreclosureTime});
       }
     }

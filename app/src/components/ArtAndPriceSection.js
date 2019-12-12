@@ -20,8 +20,6 @@ else
   var teamToDisplay = team1;
 }
 
-
-
 class ArtAndPriceSection extends Component {
     render() {
       return (

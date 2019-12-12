@@ -64,8 +64,8 @@ class BuyForm extends Component {
 
     //// the below function gets the relevant data that is required to interact with the function. So after this, we get convertedinputs[0] = newprice, and [1] = tokenId. Note that at this point we still havnt got the deposit amount. This is fine as we don't need it as an argument, however we do need it to form the value of the tx.
 
-    console.log("events is", event);
-    console.log("this.state is", this.state);
+    // console.log("events is", event);
+    // console.log("this.state is", this.state);
     const convertedInputs = this.inputs.map((input, index) => {
       if (input.name == "_tokenId")
       {
@@ -85,18 +85,18 @@ class BuyForm extends Component {
     // console.log("convertedinputs is", convertedInputs);
   
     //// this.state.value = the deposit amount
-    console.log("state.value is ", this.state.value);
+    // console.log("state.value is ", this.state.value);
     if (this.state.value) {
       
       //// so the below gets the existing price, and then converts it to bignumber format
       // console.log("thingy is ",this.props.contracts[this.props.contract]['price'][this.state.artworkPriceKey].value);
       const artworkPrice = new this.utils.BN(this.props.contracts[this.props.contract]['price'][this.state.artworkPriceKey].value);
-      console.log("artwork price is", artworkPrice);
+      // console.log("artwork price is", artworkPrice);
 
       ////originally, the amount payable was current price + deposit, this is now changed to just the deposit. 
       // args.value = new this.utils.BN(this.utils.toWei(this.state.value, 'ether')).add(artworkPrice);
       args.value = new this.utils.BN(this.utils.toWei(this.state.value, 'ether'));
-      console.log("args.value is" , args.value );
+      // console.log("args.value is" , args.value );
       // console.log("value thingy is", this.utils.toWei(this.state.value, 'ether'));
 
     }
@@ -104,7 +104,7 @@ class BuyForm extends Component {
       // console.log("args is: ", args);
       
       ////so heres the thing. convertedinputs is the arguments to send to the function. Args = the amount payable. It does this bit if there is value being sent
-      console.log("convertedInputs is ", convertedInputs);
+      // console.log("convertedInputs is ", convertedInputs);
       return this.contracts[this.props.contract].methods[
         this.props.method
       ].cacheSend(...convertedInputs, args);
@@ -157,7 +157,7 @@ class BuyForm extends Component {
                 value={this.state[input.name]}
                 placeholder={inputLabel}
                 onChange={this.handleInputChange}
-                startAdornment={<InputAdornment position="start">USD</InputAdornment>} 
+                startAdornment={<InputAdornment position="start">DAI</InputAdornment>} 
               />
             );
           }
@@ -189,7 +189,7 @@ class BuyForm extends Component {
           value={this.state[valueLabel]} 
           placeholder={valueLabel} 
           onChange={this.handleInputChange} 
-          startAdornment={<InputAdornment position="start">USD</InputAdornment>} />
+          startAdornment={<InputAdornment position="start">DAI</InputAdornment>} />
           <br />
           <br />
           </Fragment>

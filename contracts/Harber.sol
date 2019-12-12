@@ -109,7 +109,7 @@ contract Harber {
         // testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
 
         //// GANACHE VERSION
-        testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100;
+        testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
     }
 
     function getTestDaiBalance() public view returns (uint256)
@@ -218,9 +218,10 @@ contract Harber {
     }
 
     // note: anyone can deposit
-    function depositWei(uint256 _tokenId) public payable collectAugurFunds(_tokenId) {
+    function depositDai(uint256 _dai, uint256 _tokenId) public collectAugurFunds(_tokenId) {
         require(state[_tokenId] != ownedState.Foreclosed, "Foreclosed");
-        deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].add(msg.value);
+        testDaiBalances[msg.sender] = testDaiBalances[msg.sender].sub(_dai);
+        deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].add(_dai);
     }
     
     function buy(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) public collectAugurFunds(_tokenId) {
@@ -280,7 +281,8 @@ contract Harber {
         require(deposits[_tokenId][msg.sender] >= _dai, 'Withdrawing too much');
 
         deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].sub(_dai);
-        //TO DO THE SEND DAI FUNCTION, CANNOT DO ON GANACHE
+        testDaiBalances[msg.sender] = testDaiBalances[msg.sender].add(_dai);
+        //TO DO THE SEND DAI FUNCTION, CANNOT DO ON TESTNET
 
         if(deposits[_tokenId][msg.sender] == 0) {
             _foreclose(_tokenId);

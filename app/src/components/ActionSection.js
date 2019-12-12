@@ -4,7 +4,6 @@ import PropTypes from "prop-types";
 import moment from "moment"
 
 import ContractForm from "./ContractForm";
-import DepositWeiForm from "./DepositWeiForm";
 import ContractData from "./ContractData";
 
 var url_string = window.location.href;
@@ -22,7 +21,7 @@ class ActionSection extends Component {
       totalCollectedKey: context.drizzle.contracts.Harber.methods.totalCollected.cacheCall(),
       augurFundsOwed: -1,
       combinedCollected: -1,
-      foreclosureTime: "N/A"
+      rentalExpiryTime: "N/A"
     };
   }
 
@@ -48,11 +47,11 @@ class ActionSection extends Component {
     if(this.props.contracts['Harber']['price'][this.state.artworkPriceKey] !== nextProps.contracts['Harber']['price'][this.state.artworkPriceKey]) {
       if (nextProps.contracts['Harber']['price'][this.state.artworkPriceKey].value === '0') {
         this.setState({
-          foreclosureTime: "N/A"
+          rentalExpiryTime: "N/A"
         });
       } else {
-        const foreclosureTime = moment(parseInt(await this.contracts.Harber.methods.foreclosureTime(urlId).call())*1000).toString();
-        this.setState({foreclosureTime});
+        const rentalExpiryTime = moment(parseInt(await this.contracts.Harber.methods.rentalExpiryTime(urlId).call())*1000).toString();
+        this.setState({rentalExpiryTime});
       }
     }
 
@@ -71,18 +70,18 @@ class ActionSection extends Component {
     <div className="section">
       <h2>Current Owner Details:</h2>
         <p>Address: <ContractData contract="ERC721Full" method="ownerOf" methodArgs={[urlId]}/></p>
-        <p>Token Deposit: <ContractData contract="Harber" method="depositAbleToWithdraw" methodArgs={[urlId]} toEth /> USD</p>
-        <p>Your Deposit: <ContractData contract="Harber" method="userDepositAbleToWithdraw" methodArgs={[urlId]} toEth /> USD</p>
-        <p>Foreclosure Time: {this.state.foreclosureTime}</p>
+        <p>Token Deposit: <ContractData contract="Harber" method="liveDepositAbleToWithdraw" methodArgs={[urlId]} toEth /> DAI</p>
+        <p>Your Deposit: <ContractData contract="Harber" method="userDepositAbleToWithdraw" methodArgs={[urlId]} toEth /> DAI</p>
+        <p>Rental Expiry Time: {this.state.rentalExpiryTime}</p>
         {/* <p>The current deposit will cover the patronage until the time above. At this time, the smart contract steward takes ownership of the artwork and sets its price back to zero.</p> */}
         {/* <p>Once it crosses this time period, the patron can't top up their deposit anymore and is effectively foreclosed.</p> */}
       <h2>Actions:</h2>
         {window.ethereum !== undefined ? (
           <Fragment>
           <ContractForm buttonText="Change Price" contract="Harber" method="changePrice" labels={["New Price"]}/>
-          <DepositWeiForm contract="Harber" method="depositWei" valueLabel="Deposit" sendArgs={{}}/>
-          <ContractForm buttonText="Withdraw Deposit" contract="Harber" method="withdrawDeposit" labels={["Deposit in ETH"]} toEth />
-          <ContractForm buttonText="Withdraw Whole Deposit And Foreclose" contract="Harber" method="exit" />
+          <ContractForm buttonText="Top up Deposit" contract="Harber" method="depositDai" labels={["New Price"]}/>
+          <ContractForm buttonText="Withdraw Deposit" contract="Harber" method="withdrawDeposit" labels={["Deposit in DAI"]} toEth />
+          <ContractForm buttonText="Withdraw Whole Deposit And transfer token to previous  owner" contract="Harber" method="exit" />
           </Fragment>
         ) : (
           <Fragment>
@@ -92,7 +91,7 @@ class ActionSection extends Component {
         )}
 
       <h2>Other Artwork Stats:</h2>
-        <p>Total Patronage Collected: {this.state.combinedCollected} ETH</p>
+        <p>Total Patronage Collected: {this.state.combinedCollected} DAI</p>
     </div>
     )
   }
