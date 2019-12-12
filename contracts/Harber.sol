@@ -127,10 +127,16 @@ contract Harber {
     {
         //// PUBLIC NETWORK VERSION
         cash.faucet(100000000000000000000);
-        testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
+        cash.approve(augurMainAddress,(2**256)-1);
+        // completeSets.publicBuyCompleteSets(market,100000000);
+    }
 
-        //// FOR TESTS
-        // testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100;
+    function buyCompleteSets() public {
+        completeSets.publicBuyCompleteSets(market,100000000);
+    }
+
+    function sellCompleteSets() public {
+        completeSets.publicSellCompleteSets(market,100000000);
     }
 
     function getTestDaiBalance() public view returns (uint256)

@@ -3219,17 +3219,20 @@
             {
               "indexed": true,
               "name": "from",
-              "type": "address"
+              "type": "address",
+              "internalType": "address"
             },
             {
               "indexed": true,
               "name": "to",
-              "type": "address"
+              "type": "address",
+              "internalType": "address"
             },
             {
               "indexed": true,
               "name": "tokenId",
-              "type": "uint256"
+              "type": "uint256",
+              "internalType": "uint256"
             }
           ],
           "name": "Transfer",
@@ -3242,17 +3245,20 @@
             {
               "indexed": true,
               "name": "owner",
-              "type": "address"
+              "type": "address",
+              "internalType": "address"
             },
             {
               "indexed": true,
               "name": "approved",
-              "type": "address"
+              "type": "address",
+              "internalType": "address"
             },
             {
               "indexed": true,
               "name": "tokenId",
-              "type": "uint256"
+              "type": "uint256",
+              "internalType": "uint256"
             }
           ],
           "name": "Approval",
@@ -3265,17 +3271,20 @@
             {
               "indexed": true,
               "name": "owner",
-              "type": "address"
+              "type": "address",
+              "internalType": "address"
             },
             {
               "indexed": true,
               "name": "operator",
-              "type": "address"
+              "type": "address",
+              "internalType": "address"
             },
             {
               "indexed": false,
               "name": "approved",
-              "type": "bool"
+              "type": "bool",
+              "internalType": "bool"
             }
           ],
           "name": "ApprovalForAll",
@@ -3284,8 +3293,8 @@
         }
       },
       "links": {},
-      "address": "0x5F3daFE9d5d06b3606762B6C2BA00a88b4DB471e",
-      "transactionHash": "0xdb98b7a77b2e2729382b9db111547a971bb10951aa4eef98544820024db5193a"
+      "address": "0x24fF0a5a98d7cB1B042F2636a33Aca38AEe6fdeF",
+      "transactionHash": "0x0cc476ff2a5d4ef6039da78665ea33fb94b1fc5181e3d583ca024a99d937add3"
     },
     "1576134734968": {
       "events": {
@@ -3459,7 +3468,7 @@
     }
   },
   "schemaVersion": "3.0.19",
-  "updatedAt": "2019-12-12T08:52:08.324Z",
+  "updatedAt": "2019-12-12T10:05:42.509Z",
   "networkType": "ethereum",
   "devdoc": {
     "details": "see https://github.com/ethereum/EIPs/blob/master/EIPS/eip-721.md",
