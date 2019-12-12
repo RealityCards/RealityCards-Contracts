@@ -35,7 +35,7 @@ contract Harber {
 
     // UINTS AND ADDRESSES
     address payable public andrewsAddress; // I am the original owner of tokens, and ownership reverts to me should the sale foreclose
-    uint256 constant numberOfTokens = 3; 
+    uint256 constant numberOfTokens = 5; 
     uint256[numberOfTokens] public price; //in wei
     uint256 public totalCollected; // total collected across all tokens, ie sum of currentCollected and = amount to send to  augur
     uint256[numberOfTokens] public currentCollected; // amount currently collected for each token, ie the sum of all owner's patronage  
@@ -70,11 +70,15 @@ contract Harber {
         state[0] = ownedState.Foreclosed;
         state[1] = ownedState.Foreclosed;
         state[2] = ownedState.Foreclosed;
+        state[3] = ownedState.Foreclosed;
+        state[4] = ownedState.Foreclosed;
 
         //this variable is incremented before being used first so the 0 index will never contain a price/address. A zero index is used in the _revertToPreviousOwner  function to commence foreclosure
         currentOwnerIndex[0]=0;
         currentOwnerIndex[1]=0;
         currentOwnerIndex[2]=0;
+        currentOwnerIndex[3]=0;
+        currentOwnerIndex[4]=0;
 
         //Augur specific:
         cash = Cash(_addressOfCashContract);
@@ -109,7 +113,7 @@ contract Harber {
         // testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
 
         //// GANACHE VERSION
-        testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
+        testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100;
     }
 
     function getTestDaiBalance() public view returns (uint256)
@@ -285,7 +289,7 @@ contract Harber {
         //TO DO THE SEND DAI FUNCTION, CANNOT DO ON TESTNET
 
         if(deposits[_tokenId][msg.sender] == 0) {
-            _foreclose(_tokenId);
+            _revertToPreviousOwner(_tokenId);
         }
     }
 
@@ -303,7 +307,6 @@ contract Harber {
             {
                 _foreclose(_tokenId);
                 _reverted = true;
-                // require(1 > 2, "STFU");
             }
             else if (deposits[_tokenId][_previousOwner] > 0)
             // previous owner still has a deposit, transfer to them, update the price to what it used to be

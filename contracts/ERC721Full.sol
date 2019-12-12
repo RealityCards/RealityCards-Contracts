@@ -29,5 +29,9 @@ contract ERC721Full is ERC721, ERC721Enumerable, ERC721Metadata {
         _setTokenURI(1, "https://en.wikipedia.org/wiki/Liverpool_F.C.");
         _mint(_originalOwner, 2); // mint
         _setTokenURI(2, "https://en.wikipedia.org/wiki/FC_Barcelona");
+        _mint(_originalOwner, 3); // mint
+        _setTokenURI(3, "https://en.wikipedia.org/wiki/FC_Barcelona");
+        _mint(_originalOwner, 4); // mint
+        _setTokenURI(4, "https://en.wikipedia.org/wiki/FC_Barcelona");
     }
 }

@@ -424,6 +424,69 @@ contract('HarberTests', (accounts) => {
     assert.isBelow(difference,2);
   });
 
+  //token 3
+
+  it('test withdrawDeposit', async () => {
+    user = user0;
+    //buy then withdraw half
+    await harber.buy(365,3,14,{ from: user }); 
+    var deposit = await harber.deposits.call(3,user); 
+    assert.equal(deposit, 14); 
+    await harber.withdrawDeposit(7,3,{ from: user  });
+    var deposit = await harber.deposits.call(3,user); 
+    assert.equal(deposit, 7); 
+    // withdraw other half then check foreclose
+    await debug(harber.withdrawDeposit(7,3,{ from: user  }));
+    var deposit = await harber.deposits.call(3,user); 
+    assert.equal(deposit, 0); 
+    var price = await harber.price.call(3);
+    assert.equal(price, 0);
+    var owner = await token.ownerOf.call(3);
+    assert.equal(owner, '0x34A971cA2fd6DA2Ce2969D716dF922F17aAA1dB0'); //if it belongs to me it means it has foreclosed
+    //try again but this time have two users buy it, and make sure it reverts to original  user after the first one sells
+    await harber.buy(365,3,10,{ from: user1 });
+    await harber.buy(720,3,10,{ from: user2 });
+    await harber.withdrawDeposit(10,3,{ from: user2 });
+    var owner = await token.ownerOf.call(3);
+    assert.equal(owner, user1);
+    var price = await harber.price.call(3);
+    assert.equal(price, 365);
+    await harber.withdrawDeposit(10,3,{ from: user1 });
+    var owner = await token.ownerOf.call(3);
+    assert.equal(owner, '0x34A971cA2fd6DA2Ce2969D716dF922F17aAA1dB0');
+    var price = await harber.price.call(3);
+    assert.equal(price, 0);
+  });
+
+  it('test exit', async () => {
+    user = user0;
+    //buy then withdraw half
+    await harber.buy(365,3,14,{ from: user }); 
+    var deposit = await harber.deposits.call(3,user); 
+    assert.equal(deposit, 14); 
+    await harber.exit(3,{ from: user  });
+    var deposit = await harber.deposits.call(3,user); 
+    assert.equal(deposit, 0); 
+    var price = await harber.price.call(3);
+    assert.equal(price, 0);
+    var owner = await token.ownerOf.call(3);
+    assert.equal(owner, '0x34A971cA2fd6DA2Ce2969D716dF922F17aAA1dB0'); //if it belongs to me it means it has foreclosed
+    //try again but this time have two users buy it, and make sure it reverts to original  user after the first one sells
+    await harber.buy(365,3,10,{ from: user1 });
+    await harber.buy(720,3,10,{ from: user2 });
+    await harber.exit(3,{ from: user2 });
+    var owner = await token.ownerOf.call(3);
+    assert.equal(owner, user1);
+    var price = await harber.price.call(3);
+    assert.equal(price, 365);
+    await harber.exit(3,{ from: user1 });
+    var owner = await token.ownerOf.call(3);
+    assert.equal(owner, '0x34A971cA2fd6DA2Ce2969D716dF922F17aAA1dB0');
+    var price = await harber.price.call(3);
+    assert.equal(price, 0);
+  });
+
+
 
 
 
