@@ -31,10 +31,14 @@ contract Harber {
     
     // CONTRACT VARIABLES
     IERC721Full public team; // ERC721 NFT.
-    Cash public cash; //Augur contracts
+    //Augur contracts:
+    IMarket market;
+    ShareToken completeSets;
+    Cash cash; 
 
     // UINTS AND ADDRESSES
-    address payable public andrewsAddress; // I am the original owner of tokens, and ownership reverts to me should the sale foreclose
+    address andrewsAddress; // I am the original owner of tokens, and ownership reverts to me should the sale foreclose
+    address augurMainAddress; // this is needed only to give augur approval to transfer dai on the contract's behalf
     uint256 constant numberOfTokens = 5; 
     uint256[numberOfTokens] public price; //in wei
     uint256[numberOfTokens] public collectedAndSentToAugur; // amount collected for each token, ie the sum of all owners' rent  
@@ -54,16 +58,17 @@ contract Harber {
     }
     
     // MAPPINGS
-    mapping (uint256 => mapping (uint256 => purchase) ) public ownerTracker; //keeps track of all owners of a token, including the price, so that if the current owner's deposit runs out, ownership can be reverted to a previous owner. Index 0 is NOT used, this tells the contract to foreclose
+    mapping (uint256 => mapping (uint256 => purchase) ) public ownerTracker; //keeps track of all owners of a token, including the price, so that if the current owner's deposit runs out, ownership can be reverted to a previous owner with the previous price. Index 0 is NOT used, this tells the contract to foreclose
     mapping (uint256 => mapping (address => uint256) ) public timeHeld; //this is the key variable that tracks the total amount of time each user has held it for. It is ONLY updated upon a new owner buying the token. If _collect is run and there is no new owner, this is not updated.
-    mapping (uint256 => mapping (address => uint256) ) public deposits; //keeps track of all the deposits for each token, for each owner. Consider lumping this in with ownerTracker
+    mapping (uint256 => mapping (address => uint256) ) public deposits; //keeps track of all the deposits for each token, for each owner.
     mapping (address => uint256) public testDaiBalances;
 
     // ENUMS
     enum ownedState { Foreclosed, Owned }
     ownedState[numberOfTokens] public state;
 
-    constructor(address payable _andrewsAddress, address _addressOfToken, address _addressOfCashContract) public {
+    constructor(address _andrewsAddress, address _addressOfToken, address _addressOfCashContract, address _addressOfMarket, address _addressOfCompleteSetsContract, address _addressOfMainAugurContract) public {
+        //initialise ERC721s
         team = IERC721Full(_addressOfToken);
         team.setup();
         andrewsAddress = _andrewsAddress;
@@ -80,15 +85,17 @@ contract Harber {
         currentOwnerIndex[3]=0;
         currentOwnerIndex[4]=0;
 
-        //Augur specific:
+        //initialise augur contract variables
         cash = Cash(_addressOfCashContract);
+        market = IMarket(_addressOfMarket);
+        completeSets = ShareToken(_addressOfCompleteSetsContract);
+        augurMainAddress = _addressOfMainAugurContract;
     } 
 
     event LogBuy(address indexed owner, uint256 indexed price);
     event LogPriceChange(uint256 indexed newPrice);
     event LogForeclosure(address indexed prevOwner);
     event LogCollection(uint256 indexed collected);
-    event testEmit(uint256 indexed thing1, uint256 thing2);
     
     modifier onlyOwner(uint256 _tokenId) {
         require(msg.sender == team.ownerOf(_tokenId), "Not owner");
@@ -110,6 +117,16 @@ contract Harber {
     {
         //// PUBLIC NETWORK VERSION
         // cash.faucet(100000000000000000000);
+        // testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
+
+        //// FOR TESTS
+        testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100;
+    }
+
+    function augurTest() public 
+    {
+        //// PUBLIC NETWORK VERSION
+        cash.faucet(100000000000000000000);
         testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
 
         //// FOR TESTS
@@ -229,8 +246,6 @@ contract Harber {
     }
     
     function buy(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) public collectAugurFunds(_tokenId) {
-        // emit testEmit(_newPrice,price[_tokenId]);
-
         require(_newPrice > price[_tokenId], "Price must be higher than current price");
         require(_deposit > 0, "Must deposit something");
         require(testDaiBalances[msg.sender] >= _deposit, "Not enough DAI");
