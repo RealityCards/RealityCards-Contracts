@@ -23,6 +23,8 @@ interface Cash
     function transferFrom(address _from, address _to, uint256 _amount) external returns (bool);
 }
 
+//TODO: make sure timeHeld is updated for the final owner because it is not automatically updated unless there is a transfer of the token. 
+
 contract Harber {
     
     using SafeMath for uint256;
@@ -32,14 +34,14 @@ contract Harber {
     Cash public cash; //Augur contracts
 
     // UINTS AND ADDRESSES
-    address payable public andrewsAddress; // I am the original owner of tokens, and ownership reverts to me should the sale foreclose. I.e.  I am default owner if there is nobody else that wants it
-    uint256 constant numberOfOutcomes = 2; //TEST with two teams
-    uint256[numberOfOutcomes] public price; //in wei
-    uint256 public totalCollected; // total collected across all tokens, ie sum of  currentCollected and = amount to send to  augur
-    uint256[numberOfOutcomes] public currentCollected; // amount currently collected for each token, ie the sum of all owner's patronage  
-    uint256[numberOfOutcomes] public timeLastCollected; 
-    uint256[numberOfOutcomes] public timeAcquired;
-    uint256[numberOfOutcomes] public currentOwnerIndex; // tracks the position of the current owner in the ownerTracker mapping
+    address payable public andrewsAddress; // I am the original owner of tokens, and ownership reverts to me should the sale foreclose
+    uint256 constant numberOfTokens = 3; 
+    uint256[numberOfTokens] public price; //in wei
+    uint256 public totalCollected; // total collected across all tokens, ie sum of currentCollected and = amount to send to  augur
+    uint256[numberOfTokens] public currentCollected; // amount currently collected for each token, ie the sum of all owner's patronage  
+    uint256[numberOfTokens] public timeLastCollected; 
+    uint256[numberOfTokens] public timeAcquired;
+    uint256[numberOfTokens] public currentOwnerIndex; // tracks the position of the current owner in the ownerTracker mapping
     uint256 public testingVariable = 0;
     uint256 public a = 0;
     uint256 public b = 0;
@@ -52,14 +54,14 @@ contract Harber {
     }
     
     // MAPPINGS
-    mapping (uint256 => mapping (uint256 => purchase) ) public ownerTracker; //keeps track of all owners of a token, including the price, so that if the current owner's deposit runs out, ownership can  be reverted to a previous owner. Index 0 is NOT used, this tells the contract to foreclose
-    mapping (uint256 => mapping (address => uint256) ) public timeHeld; //this is the key variable that tracks the total amount of time each user has held it for
+    mapping (uint256 => mapping (uint256 => purchase) ) public ownerTracker; //keeps track of all owners of a token, including the price, so that if the current owner's deposit runs out, ownership can be reverted to a previous owner. Index 0 is NOT used, this tells the contract to foreclose
+    mapping (uint256 => mapping (address => uint256) ) public timeHeld; //this is the key variable that tracks the total amount of time each user has held it for. It is ONLY updated upon a new owner buying the token. If _collect is run and there is no new owner, this is not updated.
     mapping (uint256 => mapping (address => uint256) ) public deposits; //keeps track of all the deposits for each token, for each owner. Consider lumping this in with ownerTracker
     mapping (address => uint256) public testDaiBalances;
 
     // ENUMS
     enum ownedState { Foreclosed, Owned }
-    ownedState[numberOfOutcomes] public state;
+    ownedState[numberOfTokens] public state;
 
     constructor(address payable _andrewsAddress, address _addressOfToken, address _addressOfCashContract) public {
         team = IERC721Full(_addressOfToken);
@@ -67,13 +69,12 @@ contract Harber {
         andrewsAddress = _andrewsAddress;
         state[0] = ownedState.Foreclosed;
         state[1] = ownedState.Foreclosed;
+        state[2] = ownedState.Foreclosed;
 
         //this variable is incremented before being used first so the 0 index will never contain a price/address. A zero index is used in the _revertToPreviousOwner  function to commence foreclosure
         currentOwnerIndex[0]=0;
         currentOwnerIndex[1]=0;
-        //manually set myself as the default owner so that in a foreclose situation, it is returned back to me, beause the owners variable is used to determine who to assign new ownerhip to
-        // owners[0][0].owner = andrewsAddress;
-        // owners[1][0].owner = andrewsAddress;
+        currentOwnerIndex[2]=0;
 
         //Augur specific:
         cash = Cash(_addressOfCashContract);
@@ -124,11 +125,6 @@ contract Harber {
     function getOwnerTrackerAddress(uint256 _tokenId, uint256 _index) public view returns (address)
     {
         return (ownerTracker[_tokenId][_index].owner);
-    }
-
-    function getPrice(uint256 _tokenId) public view returns (uint256)
-    {
-        return price[_tokenId];
     }
 
     function augurFundsOwed(uint256 _tokenId) public view returns (uint256 augurFundsDue) {
@@ -236,7 +232,7 @@ contract Harber {
         
         testDaiBalances[msg.sender] = testDaiBalances[msg.sender].sub(_deposit);
         deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].add(_deposit);
-
+        
         address _currentOwner = team.ownerOf(_tokenId);
 
         if(_currentOwner == msg.sender)
@@ -256,7 +252,7 @@ contract Harber {
         {
             state[_tokenId] = ownedState.Owned;
         }
-
+        
         _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId); //does this even if owner hasn't changed. this is ok. 
         emit LogBuy(msg.sender, _newPrice);
     }

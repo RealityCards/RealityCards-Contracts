@@ -20,12 +20,14 @@ contract ERC721Full is ERC721, ERC721Enumerable, ERC721Metadata {
         require(!init, "Already initialized");
         init = true;
 
-        steward = msg.sender;
-        address steward = 0x34A971cA2fd6DA2Ce2969D716dF922F17aAA1dB0;
+        steward = msg.sender; //only the steward can make transfers
+        address _originalOwner = 0x34A971cA2fd6DA2Ce2969D716dF922F17aAA1dB0;
         // mint NFT for each outcome
-        _mint(steward, 0); // mint
+        _mint(_originalOwner, 0); // mint
         _setTokenURI(0, "https://en.wikipedia.org/wiki/Manchester_United_F.C.");
-        _mint(steward, 1); // mint
+        _mint(_originalOwner, 1); // mint
         _setTokenURI(1, "https://en.wikipedia.org/wiki/Liverpool_F.C.");
+        _mint(_originalOwner, 2); // mint
+        _setTokenURI(2, "https://en.wikipedia.org/wiki/FC_Barcelona");
     }
 }

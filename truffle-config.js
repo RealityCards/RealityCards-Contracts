@@ -38,6 +38,12 @@ module.exports = {
       network_id: "*",       // Any network (default: none)
       gasPrice: 1000000000, // 1 gwei
     },
+    proxy: {
+      host: "127.0.0.1",     // Localhost (default: none)
+      port: 9545,            // Standard Ethereum port (default: none)
+      network_id: "*",       // Any network (default: none)
+      gasPrice: 0, // 1 gwei
+    },
   },
   mocha: {
     reporter: 'eth-gas-reporter',
