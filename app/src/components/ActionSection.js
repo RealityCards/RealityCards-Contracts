@@ -69,10 +69,10 @@ class ActionSection extends Component {
     return (
     <div className="section">
       <h2>Current Owner Details:</h2>
-        <p>Address: <ContractData contract="ERC721Full" method="ownerOf" methodArgs={[urlId]}/></p>
-        <p>Token Deposit: <ContractData contract="Harber" method="liveDepositAbleToWithdraw" methodArgs={[urlId]} toEth /> DAI</p>
-        <p>Your Deposit: <ContractData contract="Harber" method="userDepositAbleToWithdraw" methodArgs={[urlId]} toEth /> DAI</p>
-        <p>Rental Expiry Time: {this.state.rentalExpiryTime}</p>
+        Address: <ContractData contract="ERC721Full" method="ownerOf" methodArgs={[urlId]}/><br />
+        Token Deposit: <ContractData contract="Harber" method="liveDepositAbleToWithdraw" methodArgs={[urlId]} toEth /> DAI<br />
+        Your Deposit: <ContractData contract="Harber" method="userDepositAbleToWithdraw" methodArgs={[urlId]} toEth /> DAI<br />
+        Rental Expiry Time: {this.state.rentalExpiryTime}<br />
         {/* <p>The current deposit will cover the patronage until the time above. At this time, the smart contract steward takes ownership of the artwork and sets its price back to zero.</p> */}
         {/* <p>Once it crosses this time period, the patron can't top up their deposit anymore and is effectively foreclosed.</p> */}
       <h2>Actions:</h2>
@@ -80,7 +80,7 @@ class ActionSection extends Component {
           <Fragment>
           <ContractForm buttonText="Change Price" contract="Harber" method="changePrice" labels={["New Price"]}/>
           <ContractForm buttonText="Top up Deposit" contract="Harber" method="depositDai" labels={["New Price"]}/>
-          <ContractForm buttonText="Withdraw Deposit" contract="Harber" method="withdrawDeposit" labels={["Deposit in DAI"]} toEth />
+          <ContractForm buttonText="Withdraw Deposit" contract="Harber" method="withdrawDeposit" labels={["Amount to withdraw"]} toEth />
           <ContractForm buttonText="Withdraw Whole Deposit And transfer token to previous  owner" contract="Harber" method="exit" />
           </Fragment>
         ) : (
@@ -90,8 +90,8 @@ class ActionSection extends Component {
           </Fragment>
         )}
 
-      <h2>Other Artwork Stats:</h2>
-        <p>Total Patronage Collected: {this.state.combinedCollected} DAI</p>
+      {/* <h2>Other Artwork Stats:</h2>
+        <p>Total Patronage Collected: {this.state.combinedCollected} DAI</p> */}
     </div>
     )
   }

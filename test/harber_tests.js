@@ -248,7 +248,7 @@ contract('HarberTests', (accounts) => {
   it('_collectAugurFunds function no revertPreviousOwner/foreclose', async () => {
     user = user5;
     // get total collected from all the above tets and just check that it is added to properly
-    var totalCollectedSoFar = await harber.totalCollected.call(); 
+    var totalCollectedSoFar = await harber.totalCollectedAndSentToAugur.call(); 
     await harber.getTestDai({ from: user });
     await harber.buy(365,1,20,{ from: user  });
     var timeAcquired = await harber.timeAcquired.call(1); 
@@ -263,12 +263,12 @@ contract('HarberTests', (accounts) => {
     //test deposits
     var deposit = await harber.deposits.call(1,user); 
     assert.equal(deposit, 33); //price 365, 1 week delay = charge of 7, 40-7 = 33
-    //test currentCollected
-    var currentCollected = await harber.currentCollected.call(1); 
-    assert.equal(currentCollected,7);
-    //test totalCollected. The total so far from previous tests is 45.  So we expect 52
-    var totalCollected = await harber.totalCollected.call();
-    assert.equal(totalCollected,totalCollectedSoFar.toNumber()+currentCollected.toNumber());
+    //test collectedAndSentToAugur
+    var collectedAndSentToAugur = await harber.collectedAndSentToAugur.call(1); 
+    assert.equal(collectedAndSentToAugur,7);
+    //test totalCollectedAndSentToAugur. The total so far from previous tests is 45.  So we expect 52
+    var totalCollectedAndSentToAugur = await harber.totalCollectedAndSentToAugur.call();
+    assert.equal(totalCollectedAndSentToAugur,totalCollectedSoFar.toNumber()+collectedAndSentToAugur.toNumber());
     //test timeLastCollected
     var timeLastCollected = await harber.timeLastCollected.call(1);
     currentTime = await time.latest();
@@ -278,20 +278,20 @@ contract('HarberTests', (accounts) => {
     time10MinsAgo=currentTime;
     var deposit = await harber.deposits.call(1,user); 
     assert.equal(deposit, 33);
-    var currentCollected = await harber.currentCollected.call(1); 
-    assert.equal(currentCollected,7);
-    var totalCollected = await harber.totalCollected.call();
-    assert.equal(totalCollected,totalCollectedSoFar.toNumber()+currentCollected.toNumber());
+    var collectedAndSentToAugur = await harber.collectedAndSentToAugur.call(1); 
+    assert.equal(collectedAndSentToAugur,7);
+    var totalCollectedAndSentToAugur = await harber.totalCollectedAndSentToAugur.call();
+    assert.equal(totalCollectedAndSentToAugur,totalCollectedSoFar.toNumber()+collectedAndSentToAugur.toNumber());
     var timeLastCollected = await harber.timeLastCollected.call(1);
     assert.equal(time10MinsAgo.toString(),timeLastCollected.toString());
     //trigger the function again by doing another purchase and check all variables have updated correctly
     await harber.buy(1095,1,20,{ from: user });
     var deposit = await harber.deposits.call(1,user); 
     assert.equal(deposit, 39); // 33 + 20 - 14
-    var currentCollected = await harber.currentCollected.call(1); 
-    assert.equal(currentCollected,21); // 7 + 14
-    var totalCollected = await harber.totalCollected.call();
-    assert.equal(totalCollected,totalCollectedSoFar.toNumber()+currentCollected.toNumber());
+    var collectedAndSentToAugur = await harber.collectedAndSentToAugur.call(1); 
+    assert.equal(collectedAndSentToAugur,21); // 7 + 14
+    var totalCollectedAndSentToAugur = await harber.totalCollectedAndSentToAugur.call();
+    assert.equal(totalCollectedAndSentToAugur,totalCollectedSoFar.toNumber()+collectedAndSentToAugur.toNumber());
     currentTime = await time.latest();
     var timeLastCollected = await harber.timeLastCollected.call(1);
     assert.equal(currentTime.toString(),timeLastCollected.toString());
@@ -436,7 +436,7 @@ contract('HarberTests', (accounts) => {
     var deposit = await harber.deposits.call(3,user); 
     assert.equal(deposit, 7); 
     // withdraw other half then check foreclose
-    await debug(harber.withdrawDeposit(7,3,{ from: user  }));
+    await harber.withdrawDeposit(7,3,{ from: user  });
     var deposit = await harber.deposits.call(3,user); 
     assert.equal(deposit, 0); 
     var price = await harber.price.call(3);
@@ -485,6 +485,8 @@ contract('HarberTests', (accounts) => {
     var price = await harber.price.call(3);
     assert.equal(price, 0);
   });
+
+  //token 4
 
 
 

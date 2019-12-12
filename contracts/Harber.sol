@@ -37,8 +37,8 @@ contract Harber {
     address payable public andrewsAddress; // I am the original owner of tokens, and ownership reverts to me should the sale foreclose
     uint256 constant numberOfTokens = 5; 
     uint256[numberOfTokens] public price; //in wei
-    uint256 public totalCollected; // total collected across all tokens, ie sum of currentCollected and = amount to send to  augur
-    uint256[numberOfTokens] public currentCollected; // amount currently collected for each token, ie the sum of all owner's patronage  
+    uint256[numberOfTokens] public collectedAndSentToAugur; // amount collected for each token, ie the sum of all owners' rent  
+    uint256  public totalCollectedAndSentToAugur; // an easy way to track the above
     uint256[numberOfTokens] public timeLastCollected; 
     uint256[numberOfTokens] public timeAcquired;
     uint256[numberOfTokens] public currentOwnerIndex; // tracks the position of the current owner in the ownerTracker mapping
@@ -110,10 +110,10 @@ contract Harber {
     {
         //// PUBLIC NETWORK VERSION
         // cash.faucet(100000000000000000000);
-        // testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
+        testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
 
-        //// GANACHE VERSION
-        testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100;
+        //// FOR TESTS
+        // testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100;
     }
 
     function getTestDaiBalance() public view returns (uint256)
@@ -211,12 +211,12 @@ contract Harber {
             } else  {
                 // just a normal collection
                 timeLastCollected[_tokenId] = now;
-                currentCollected[_tokenId] = currentCollected[_tokenId].add(_collection);
             }
 
             deposits[_tokenId][_currentOwner] = deposits[_tokenId][_currentOwner].sub(_collection);
-            totalCollected = totalCollected.add(_collection);
-            
+            collectedAndSentToAugur[_tokenId] = collectedAndSentToAugur[_tokenId].add(_collection);
+            totalCollectedAndSentToAugur = totalCollectedAndSentToAugur.add(_collection);
+            // TODO: will  need a function here to actually send the dai to augur
             emit LogCollection(_collection);
         }
     }
@@ -325,7 +325,6 @@ contract Harber {
         //third field is price, ie price goes to zero
         _transferTokenTo(_currentOwner, andrewsAddress, 0, _tokenId);
         state[_tokenId] = ownedState.Foreclosed;
-        currentCollected[_tokenId] = 0;
         emit LogForeclosure(_currentOwner);
     }
 
