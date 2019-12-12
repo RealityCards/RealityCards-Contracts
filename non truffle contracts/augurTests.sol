@@ -24,9 +24,10 @@ interface Cash
 
 contract MyContract {
     
-    ShareToken completeSets = ShareToken(0x88316706a2bfe905E2dd1bA3589811e882DD1D16);
-    IMarket market = IMarket(0x182932bF8585d7CB89686aC1826025916A44Ae03); 
-    Cash cash = Cash(0xa836c1D6a35A443FD6F8d5d4A9cf5b1664bF76D6);
+    ShareToken completeSets = ShareToken(0x63cbfEb0Cf1EE91Ca1689d8dbBa143bbf8Fd0fd1);
+    IMarket market = IMarket(0x4Ca5B2E0A87325F962208561E87c82638cc384Ca); 
+    Cash cash = Cash(0x0802563FB6CfA1f07363D3aBf529F7b3999096f6);
+    address augurMain = 0x62214e5c919332AC17c5e5127383B84378Ef9C1d;
 
     function callfaucet() public 
     {
@@ -43,7 +44,7 @@ contract MyContract {
     
     function approve() public
     {
-        cash.approve(0xe2020A4a6B0a5D6C74c358e09B2b4758b5Cdb91C,(2**256)-1);
+        cash.approve(augurMain,(2**256)-1);
     }
     
     function getBalance(address _owner) public view returns(uint256)
