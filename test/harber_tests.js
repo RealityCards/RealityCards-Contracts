@@ -388,7 +388,8 @@ contract('HarberTests', (accounts) => {
     await time.increase(time.duration.weeks(2));
     await harber._collectAugurFunds(2);
     var timeHeld = await harber.timeHeld.call(2, user0);
-    assert.equal(timeHeld,1209600);
+    var difference = Math.abs(timeHeld - 1209600);
+    assert.isBelow(difference,2);
     //check many timeHelds now. Flow: user1 deposits enough for 4 weeks. After 2  weeks, user2 buys it with enough deposit for 1 week. After 2 weeks, _collect is called and ownership reverts back to user1. After 1 week, user3 buys it with enough deposit for 2 weeks. After 1 week, user4 buys it with enough deposit for 3 days. After 1 week _collect is called, ownership  reverts back to user3. After 2 weeks _collect is called, ownership goes back to user2. Wait three days. Call collect. Timehelds should be: user1 21 days, user2 7 days, user3 14 days, user4 3 days
     await harber.buy(365,2,28,{ from: user1  }); 
     await time.increase(time.duration.weeks(2));
@@ -410,13 +411,17 @@ contract('HarberTests', (accounts) => {
     await time.increase(time.duration.days(2));
     await harber._collectAugurFunds(2);
     var timeHeld = await harber.timeHeld.call(2, user1);
-    assert.equal(timeHeld,1814400); // 24 days
+    var difference = Math.abs(timeHeld - 1814400); // 24 days
+    assert.isBelow(difference,2);
     var timeHeld = await harber.timeHeld.call(2, user2);
-    assert.equal(timeHeld,604800); // 7 days
+    var difference = Math.abs(timeHeld - 604800); // 7 days
+    assert.isBelow(difference,2);
     var timeHeld = await harber.timeHeld.call(2, user3);
-    assert.equal(timeHeld,1209600); // 14 days 
+    var difference = Math.abs(timeHeld - 1209600); // 14 days 
+    assert.isBelow(difference,2);
     var timeHeld = await harber.timeHeld.call(2, user4);
-    assert.equal(timeHeld,259200); // 7 days
+    var difference = Math.abs(timeHeld - 259200); // 7 days
+    assert.isBelow(difference,2);
   });
 
 

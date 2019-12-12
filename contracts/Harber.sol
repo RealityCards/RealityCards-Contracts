@@ -266,8 +266,8 @@ contract Harber {
         emit LogPriceChange(price[_tokenId]);
     }
     
-    function withdrawDeposit(uint256 _wei, uint256 _tokenId) public onlyOwner(_tokenId) collectAugurFunds(_tokenId) returns (uint256) {
-        _withdrawDeposit(_wei, _tokenId);
+    function withdrawDeposit(uint256 _dai, uint256 _tokenId) public onlyOwner(_tokenId) collectAugurFunds(_tokenId) returns (uint256) {
+        _withdrawDeposit(_dai, _tokenId);
     }
 
     function exit(uint256 _tokenId) public onlyOwner(_tokenId) collectAugurFunds(_tokenId) {
@@ -275,12 +275,12 @@ contract Harber {
     }
 
     /* internal */
-    function _withdrawDeposit(uint256 _wei, uint256 _tokenId) internal {
+    function _withdrawDeposit(uint256 _dai, uint256 _tokenId) internal {
         // note: can withdraw whole deposit, which puts it in immediate to be foreclosed state.
-        require(deposits[_tokenId][msg.sender] >= _wei, 'Withdrawing too much');
+        require(deposits[_tokenId][msg.sender] >= _dai, 'Withdrawing too much');
 
-        deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].sub(_wei);
-        msg.sender.transfer(_wei); // msg.sender == patron
+        deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].sub(_dai);
+        //TO DO THE SEND DAI FUNCTION, CANNOT DO ON GANACHE
 
         if(deposits[_tokenId][msg.sender] == 0) {
             _foreclose(_tokenId);
@@ -292,12 +292,12 @@ contract Harber {
         while (_reverted == false)
         {
             assert(currentOwnerIndex[_tokenId] >=0);
-            currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId] - 1;
+            currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId] - 1; // ownerTraker will now point to  previous owner
             uint256 _index = currentOwnerIndex[_tokenId]; //just for readability
             address _previousOwner = ownerTracker[_tokenId][_index].owner;
 
             if (_index == 0) 
-            //no previous owners. price -> zero, owned by me
+            //no previous owners. price -> zero, foreclose
             {
                 _foreclose(_tokenId);
                 _reverted = true;
@@ -325,6 +325,7 @@ contract Harber {
     }
 
     function _transferTokenTo(address _currentOwner, address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
+        //leaving the below for now only for testing, can remove in production
         require(timeLastCollected[_tokenId] >= timeAcquired[_tokenId], "timeAcquired is more recent than time last collected");
 
         timeHeld[_tokenId][_currentOwner] = timeHeld[_tokenId][_currentOwner].add((timeLastCollected[_tokenId].sub(timeAcquired[_tokenId])));
