@@ -10,6 +10,7 @@ const augurCashAddress = '0x0802563FB6CfA1f07363D3aBf529F7b3999096f6';
 const augurMarketAddress = '0x4Ca5B2E0A87325F962208561E87c82638cc384Ca';
 const augurShareTokenAddress = '0x63cbfEb0Cf1EE91Ca1689d8dbBa143bbf8Fd0fd1';
 const augurMainAddress = '0x62214e5c919332AC17c5e5127383B84378Ef9C1d';
+const marketedExpectedResolutionTime = 0;
 
 module.exports = function(deployer, network) {
   
@@ -20,12 +21,12 @@ module.exports = function(deployer, network) {
   /// FULL VERSION- DEPLOYS ERC271
     if(network === "kovan") {
       deployer.deploy(Token, "Harber.io", "HARB").then((deployedToken) => {
-        return deployer.deploy(Harber, whiskeyFundsAccount, deployedToken.address, augurCashAddress, augurMarketAddress,augurShareTokenAddress, augurMainAddress);
+        return deployer.deploy(Harber, whiskeyFundsAccount, deployedToken.address, augurCashAddress, augurMarketAddress,augurShareTokenAddress, augurMainAddress, marketedExpectedResolutionTime);
       });
   } else {
     // development deploy
     deployer.deploy(Token, "Harber.io", "HARB").then((deployedToken) => {
-      return deployer.deploy(Harber, whiskeyFundsAccount, deployedToken.address, augurCashAddress, augurMarketAddress,augurShareTokenAddress, augurMainAddress);
+      return deployer.deploy(Harber, whiskeyFundsAccount, deployedToken.address, augurCashAddress, augurMarketAddress,augurShareTokenAddress, augurMainAddress, marketedExpectedResolutionTime);
     });
   }
 

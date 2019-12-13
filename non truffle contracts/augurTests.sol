@@ -25,7 +25,8 @@ interface Cash
 contract MyContract {
     
     ShareToken completeSets = ShareToken(0x63cbfEb0Cf1EE91Ca1689d8dbBa143bbf8Fd0fd1);
-    IMarket market = IMarket(0x4Ca5B2E0A87325F962208561E87c82638cc384Ca); 
+    // IMarket market = IMarket(0x4Ca5B2E0A87325F962208561E87c82638cc384Ca); //live
+    IMarket market = IMarket(0xf72A93d1b0c728C58B72b008C9b2FeAb82288a13); //resolved
     Cash cash = Cash(0x0802563FB6CfA1f07363D3aBf529F7b3999096f6);
     address augurMain = 0x62214e5c919332AC17c5e5127383B84378Ef9C1d;
 
