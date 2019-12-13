@@ -28,6 +28,13 @@ interface Cash
 contract Harber {
     
     using SafeMath for uint256;
+
+    //TESTING VARIABLES
+    bool usingGanache = false;
+    uint256 public testingVariable = 0;
+    uint256 public a = 0;
+    uint256 public b = 0;
+    uint256 public c = 0;
     
     // CONTRACT VARIABLES
     IERC721Full public team; // ERC721 NFT.
@@ -38,7 +45,6 @@ contract Harber {
 
     // UINTS AND ADDRESSES
     address andrewsAddress; // I am the original owner of tokens, and ownership reverts to me should the sale foreclose
-    address augurMainAddress; // this is needed only to give augur approval to transfer dai on the contract's behalf
     address marketAddress;
     uint256 constant numberOfTokens = 5; 
     uint256[numberOfTokens] public price; //in wei
@@ -47,10 +53,6 @@ contract Harber {
     uint256[numberOfTokens] public timeLastCollected; 
     uint256[numberOfTokens] public timeAcquired;
     uint256[numberOfTokens] public currentOwnerIndex; // tracks the position of the current owner in the ownerTracker mapping
-    uint256 public testingVariable = 0;
-    uint256 public a = 0;
-    uint256 public b = 0;
-    uint256 public c = 0;
 
     //  STRUCTS
     struct purchase {
@@ -90,8 +92,12 @@ contract Harber {
         cash = Cash(_addressOfCashContract);
         market = IMarket(_addressOfMarket);
         completeSets = ShareToken(_addressOfCompleteSetsContract);
-        augurMainAddress = _addressOfMainAugurContract;
-        // marketAddress = _addressOfMarket;
+        
+        //approve augur contract to transfer this contract's dai
+        if (usingGanache == false)
+        {
+            cash.approve(_addressOfMainAugurContract,(2**256)-1);
+        }       
     } 
 
     event LogBuy(address indexed owner, uint256 indexed price);
@@ -117,28 +123,27 @@ contract Harber {
 
     function getTestDai() public 
     {
-        //// PUBLIC NETWORK VERSION
-        // cash.faucet(100000000000000000000);
-        // testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
-
-        //// FOR TESTS
-        testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100;
+        if (usingGanache == false)
+        {
+            cash.faucet(100000000000000000000);
+            testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
+        }
+        else
+        {
+            testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100;
+        }
     }
 
-    function augurTest() public 
+    function buyCompleteSets(uint256 _collection) internal 
     {
-        //// PUBLIC NETWORK VERSION
-        cash.faucet(100000000000000000000);
-        cash.approve(augurMainAddress,(2**256)-1);
-        // completeSets.publicBuyCompleteSets(market,100000000);
+        if (usingGanache == false)
+        {
+            completeSets.publicBuyCompleteSets(market, _collection);
+        } 
     }
 
-    function buyCompleteSets() public {
-        completeSets.publicBuyCompleteSets(market,100000000);
-        // completeSets.publicBuyCompleteSets(marketAddress,100000000);
-    }
-
-    function sellCompleteSets() public {
+    function sellCompleteSets() public 
+    {
         completeSets.publicSellCompleteSets(market,100000000);
     }
 
@@ -217,7 +222,6 @@ contract Harber {
         }
     }
 
-    /* actions */
     function _collectAugurFunds(uint256 _tokenId) public {
         // determine patronage to pay
         if (state[_tokenId] == ownedState.Owned) {
@@ -228,7 +232,6 @@ contract Harber {
             // run out of deposit. Revert to Previous owner. 
             if (_collection >= deposits[_tokenId][_currentOwner]) {
                 // up to when was it actually paid for?
-
                 timeLastCollected[_tokenId] = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(deposits[_tokenId][_currentOwner]).div(_collection)));
 
                 _collection = deposits[_tokenId][_currentOwner]; // take what's left     
@@ -242,7 +245,8 @@ contract Harber {
             deposits[_tokenId][_currentOwner] = deposits[_tokenId][_currentOwner].sub(_collection);
             collectedAndSentToAugur[_tokenId] = collectedAndSentToAugur[_tokenId].add(_collection);
             totalCollectedAndSentToAugur = totalCollectedAndSentToAugur.add(_collection);
-            // TODO: will  need a function here to actually send the dai to augur
+            buyCompleteSets(_collection);
+
             emit LogCollection(_collection);
         }
     }
