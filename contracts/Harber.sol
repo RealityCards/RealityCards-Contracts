@@ -10,8 +10,8 @@ interface IMarket
 interface ShareToken 
 
 {
-    function publicBuyCompleteSets(address _market, uint256 _amount) external returns (bool)  ;
-    function publicSellCompleteSets(address _market, uint256 _amount) external returns (uint256 _creatorFee, uint256 _reportingFee) ;
+    function publicBuyCompleteSets(IMarket _market, uint256 _amount) external returns (bool)  ;
+    function publicSellCompleteSets(IMarket _market, uint256 _amount) external returns (uint256 _creatorFee, uint256 _reportingFee) ;
 }
 
 interface Cash 
@@ -32,7 +32,7 @@ contract Harber {
     // CONTRACT VARIABLES
     IERC721Full public team; // ERC721 NFT.
     //Augur contracts:
-    // IMarket market;
+    IMarket market;
     ShareToken completeSets;
     Cash cash; 
 
@@ -88,10 +88,10 @@ contract Harber {
 
         //initialise augur contract variables
         cash = Cash(_addressOfCashContract);
-        // market = IMarket(_addressOfMarket);
+        market = IMarket(_addressOfMarket);
         completeSets = ShareToken(_addressOfCompleteSetsContract);
         augurMainAddress = _addressOfMainAugurContract;
-        marketAddress = _addressOfMarket;
+        // marketAddress = _addressOfMarket;
     } 
 
     event LogBuy(address indexed owner, uint256 indexed price);
@@ -134,12 +134,12 @@ contract Harber {
     }
 
     function buyCompleteSets() public {
-        // completeSets.publicBuyCompleteSets(market,100000000);
-        completeSets.publicBuyCompleteSets(marketAddress,100000000);
+        completeSets.publicBuyCompleteSets(market,100000000);
+        // completeSets.publicBuyCompleteSets(marketAddress,100000000);
     }
 
     function sellCompleteSets() public {
-        // completeSets.publicSellCompleteSets(marketAddress,100000000);
+        completeSets.publicSellCompleteSets(market,100000000);
     }
 
     function getTestDaiBalance() public view returns (uint256)

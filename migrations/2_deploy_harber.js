@@ -6,7 +6,7 @@ var Token = artifacts.require("./ERC721Full.sol");
 const whiskeyFundsAccount = '0x34a971ca2fd6da2ce2969d716df922f17aaa1db0'; 
 
 // FOR AUGUR KOVAN TESTNET ONLY
-const augurCashAddress = '0xa836c1D6a35A443FD6F8d5d4A9cf5b1664bF76D6';
+const augurCashAddress = '0x0802563FB6CfA1f07363D3aBf529F7b3999096f6';
 const augurMarketAddress = '0x4Ca5B2E0A87325F962208561E87c82638cc384Ca';
 const augurShareTokenAddress = '0x63cbfEb0Cf1EE91Ca1689d8dbBa143bbf8Fd0fd1';
 const augurMainAddress = '0x62214e5c919332AC17c5e5127383B84378Ef9C1d';
