@@ -79,7 +79,7 @@ contract('HarberTests', (accounts) => {
     var testDaiBalance = await harber.getTestDaiBalance.call();
     assert.equal(testDaiBalance, 80);
     var deposit = await harber.deposits.call(0,user);
-    assert.equal(deposit, 20);
+    assert.equal(deposit, 20); //<------------
     var owner = await token.ownerOf.call(0);
     assert.equal(owner, user);
     var trackedPrice = await harber.getOwnerTrackerPrice.call(0,newOwnerPurchaseCount1);
@@ -177,15 +177,15 @@ contract('HarberTests', (accounts) => {
     assert.equal(trackedAddress, user);
   });
 
-  it('augurFundsOwed function', async () => {
+  it('calculateRentOwed function', async () => {
     user = user2;
     await harber.getTestDai({ from: user });
     await harber.buy(3650,0,30,{ from: user  });
     newOwnerPurchaseCount1++;
-    var fundsOwedActual = await harber.augurFundsOwed.call(0);
+    var fundsOwedActual = await harber.calculateRentOwed.call(0);
     assert.equal(fundsOwedActual, 0);
     await time.increase(time.duration.minutes(1440)); //mins in a day
-    var fundsOwedActual = await harber.augurFundsOwed.call(0);
+    var fundsOwedActual = await harber.calculateRentOwed.call(0);
     assert.equal(fundsOwedActual, 10);
   });
 
@@ -251,15 +251,15 @@ contract('HarberTests', (accounts) => {
     var totalCollectedSoFar = await harber.totalCollectedAndSentToAugur.call(); 
     await harber.getTestDai({ from: user });
     await harber.buy(365,1,20,{ from: user  });
-    var timeAcquired = await harber.timeAcquired.call(1); 
-    var currentTime = await time.latest();
-    assert.equal(timeAcquired.toString(),currentTime.toString());
+    // var timeAcquired = await harber.timeAcquired.call(1); 
+    // var currentTime = await time.latest();
+    // assert.equal(timeAcquired.toString(),currentTime.toString());
     //wait a week and buy again to trigger function call 
     await time.increase(time.duration.weeks(1));
     await harber.buy(730,1,20,{ from: user  });
-    var timeAcquired = await harber.timeAcquired.call(1); 
-    var currentTime = await time.latest();
-    assert.equal(timeAcquired.toString(),currentTime.toString());
+    // var timeAcquired = await harber.timeAcquired.call(1); 
+    // var currentTime = await time.latest();
+    // assert.equal(timeAcquired.toString(),currentTime.toString());
     //test deposits
     var deposit = await harber.deposits.call(1,user); 
     assert.equal(deposit, 33); //price 365, 1 week delay = charge of 7, 40-7 = 33
@@ -373,14 +373,14 @@ contract('HarberTests', (accounts) => {
 
   it('test collected, acquired, held variables', async () => {
     await harber.buy(365,2,14,{ from: user0  }); //14 so lasts exactly 2 weeks
-    var timeAcquiredExpected = await time.latest();
+    // var timeAcquiredExpected = await time.latest();
     //delay a week, do  collection
     await time.increase(time.duration.weeks(1));
     await harber._collectRent(2);
     var currentTime = await time.latest();
     //check time acquired
-    var timeAcquiredActual = await harber.timeAcquired.call(2);
-    assert.equal(timeAcquiredExpected.toString(),timeAcquiredActual.toString());
+    // var timeAcquiredActual = await harber.timeAcquired.call(2);
+    // assert.equal(timeAcquiredExpected.toString(),timeAcquiredActual.toString());
     // check time collected
     var timeCollected = await harber.timeLastCollected.call(2);
     assert.equal(timeCollected.toString(),currentTime.toString());
@@ -388,7 +388,7 @@ contract('HarberTests', (accounts) => {
     await time.increase(time.duration.weeks(2));
     await harber._collectRent(2);
     var timeHeld = await harber.timeHeld.call(2, user0);
-    var difference = Math.abs(timeHeld - 1209600);
+    var difference = Math.abs(timeHeld - 1209600); // 14 days 
     assert.isBelow(difference,2);
     //check many timeHelds now. Flow: user1 deposits enough for 4 weeks. After 2  weeks, user2 buys it with enough deposit for 1 week. After 2 weeks, _collect is called and ownership reverts back to user1. After 1 week, user3 buys it with enough deposit for 2 weeks. After 1 week, user4 buys it with enough deposit for 3 days. After 1 week _collect is called, ownership  reverts back to user3. After 2 weeks _collect is called, ownership goes back to user2. Wait three days. Call collect. Timehelds should be: user1 21 days, user2 7 days, user3 14 days, user4 3 days
     await harber.buy(365,2,28,{ from: user1  }); 
@@ -409,9 +409,9 @@ contract('HarberTests', (accounts) => {
     await time.increase(time.duration.days(3));
     await harber._collectRent(2); //revert to user1
     await time.increase(time.duration.days(2));
-    await harber._collectRent(2);
+    await debug(harber._collectRent(2));
     var timeHeld = await harber.timeHeld.call(2, user1);
-    var difference = Math.abs(timeHeld - 1814400); // 24 days
+    var difference = Math.abs(timeHeld - 1814400); // 21 days
     assert.isBelow(difference,2);
     var timeHeld = await harber.timeHeld.call(2, user2);
     var difference = Math.abs(timeHeld - 604800); // 7 days

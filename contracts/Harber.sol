@@ -32,7 +32,7 @@ contract Harber {
     using SafeMath for uint256;
 
     //TESTING VARIABLES
-    bool usingGanache = false;
+    bool usingGanache = true;
     uint256 public testingVariable = 0;
     uint256 public a = 0;
     uint256 public b = 0;
@@ -102,10 +102,8 @@ contract Harber {
         marketExpectedResolutionTime = _marketExpectedResolutionTime;
         
         //approve augur contract to transfer this contract's dai
-        if (usingGanache == false)
-        {
-            cash.approve(_addressOfMainAugurContract,(2**256)-1);
-        }       
+        // MUST BE COMMENTED OUT WHEN RUNNING ON GANACHE UNTIL I GET PRIVATE VERSION OF AUGUR CONTRACTS
+        // cash.approve(_addressOfMainAugurContract,(2**256)-1);
     } 
 
     event LogBuy(address indexed owner, uint256 indexed price);
@@ -354,6 +352,7 @@ contract Harber {
         if(state[_tokenId] == ownedState.Foreclosed) 
         {
             state[_tokenId] = ownedState.Owned;
+            timeLastCollected[_tokenId] = now;
         }
         
         _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId); //does this even if owner hasn't changed. this is ok. 
