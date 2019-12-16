@@ -31,6 +31,9 @@ contract('HarberTests', (accounts) => {
   user7 = accounts[7];
   user8 = accounts[8];
   var newOwnerPurchaseCount1 = 0;
+
+  // var andrewsAddress = '0x34A971cA2fd6DA2Ce2969D716dF922F17aAA1dB0';
+  var andrewsAddress = accounts[9];
   
   beforeEach(async () => {
     token = await Token.deployed();
@@ -39,7 +42,7 @@ contract('HarberTests', (accounts) => {
 
     it('getOwner', async () => {
     var owner = await token.ownerOf.call(0);
-    assert.equal(owner, '0x34A971cA2fd6DA2Ce2969D716dF922F17aAA1dB0');
+    assert.equal(owner, andrewsAddress);
   });
 
   it('getName', async () => {
@@ -363,32 +366,31 @@ contract('HarberTests', (accounts) => {
     await time.increase(time.duration.weeks(2));
     await harber._collectRent(1,{ from: user0 }); //user irrelevant
     var owner = await token.ownerOf.call(1);
-    assert.equal(owner, '0x34A971cA2fd6DA2Ce2969D716dF922F17aAA1dB0');
+    assert.equal(owner, andrewsAddress);
     var price = await harber.price.call(1);
     assert.equal(price, 0);
     // await harber.buy(365,1,5,{ from: user5  });
   });
 
-//reset to third token
+//reset token2
 
-  it('test collected, acquired, held variables', async () => {
+  it('test collected, held variables', async () => {
     await harber.buy(365,2,14,{ from: user0  }); //14 so lasts exactly 2 weeks
-    // var timeAcquiredExpected = await time.latest();
     //delay a week, do  collection
     await time.increase(time.duration.weeks(1));
     await harber._collectRent(2);
     var currentTime = await time.latest();
-    //check time acquired
-    // var timeAcquiredActual = await harber.timeAcquired.call(2);
-    // assert.equal(timeAcquiredExpected.toString(),timeAcquiredActual.toString());
     // check time collected
     var timeCollected = await harber.timeLastCollected.call(2);
     assert.equal(timeCollected.toString(),currentTime.toString());
-    // wait 2 weeks and do collection, check time held = 2 weeks
+    // wait 2 weeks and do collection, check time held and total time held = 2 weeks
     await time.increase(time.duration.weeks(2));
     await harber._collectRent(2);
     var timeHeld = await harber.timeHeld.call(2, user0);
     var difference = Math.abs(timeHeld - 1209600); // 14 days 
+    assert.isBelow(difference,2);
+    var totalTimeHeld = await harber.totalTimeHeld.call(2);
+    var difference = Math.abs(totalTimeHeld - 1209600); // 14 days
     assert.isBelow(difference,2);
     //check many timeHelds now. Flow: user1 deposits enough for 4 weeks. After 2  weeks, user2 buys it with enough deposit for 1 week. After 2 weeks, _collect is called and ownership reverts back to user1. After 1 week, user3 buys it with enough deposit for 2 weeks. After 1 week, user4 buys it with enough deposit for 3 days. After 1 week _collect is called, ownership  reverts back to user3. After 2 weeks _collect is called, ownership goes back to user2. Wait three days. Call collect, ownership goes back to user1. Wait 2 days, acll collect. Timehelds should be: user1 23 days, user2 7 days, user3 14 days, user4 3 days
     await harber.buy(365,2,28,{ from: user1  }); //user 1 has 28 days total
@@ -420,12 +422,21 @@ contract('HarberTests', (accounts) => {
     var difference = Math.abs(timeHeld - 1209600); // 14 days 
     assert.isBelow(difference,2);
     var timeHeld = await harber.timeHeld.call(2, user4);
-    var difference = Math.abs(timeHeld - 259200); // 7 days
+    var difference = Math.abs(timeHeld - 259200); // 3 days
     assert.isBelow(difference,2);
+    //check total time held
+    var totalTimeHeld = await harber.totalTimeHeld.call(2);
+    var difference = Math.abs(totalTimeHeld - 5529600); // 14+26+7+14+3 days = 64
+    assert.isBelow(difference,2);
+    //call exit so that it is owned by me, and check totalTimeHeld has NOT incremented
+    await harber.exit(2,{ from: user1 }); 
+    var totalTimeHeld = await harber.totalTimeHeld.call(2);
+    var difference = Math.abs(totalTimeHeld - 5529600); 
+    assert.isBelow(difference,5);
+
   });
 
   //token 3
-
   it('test withdrawDeposit', async () => {
     user = user0;
     //buy then withdraw half
@@ -442,7 +453,7 @@ contract('HarberTests', (accounts) => {
     var price = await harber.price.call(3);
     assert.equal(price, 0);
     var owner = await token.ownerOf.call(3);
-    assert.equal(owner, '0x34A971cA2fd6DA2Ce2969D716dF922F17aAA1dB0'); //if it belongs to me it means it has foreclosed
+    assert.equal(owner, andrewsAddress); //if it belongs to me it means it has foreclosed
     //try again but this time have two users buy it, and make sure it reverts to original  user after the first one sells
     await harber.buy(365,3,10,{ from: user1 });
     await harber.buy(720,3,10,{ from: user2 });
@@ -453,7 +464,7 @@ contract('HarberTests', (accounts) => {
     assert.equal(price, 365);
     await harber.withdrawDeposit(10,3,{ from: user1 });
     var owner = await token.ownerOf.call(3);
-    assert.equal(owner, '0x34A971cA2fd6DA2Ce2969D716dF922F17aAA1dB0');
+    assert.equal(owner, andrewsAddress);
     var price = await harber.price.call(3);
     assert.equal(price, 0);
   });
@@ -470,7 +481,7 @@ contract('HarberTests', (accounts) => {
     var price = await harber.price.call(3);
     assert.equal(price, 0);
     var owner = await token.ownerOf.call(3);
-    assert.equal(owner, '0x34A971cA2fd6DA2Ce2969D716dF922F17aAA1dB0'); //if it belongs to me it means it has foreclosed
+    assert.equal(owner, andrewsAddress); //if it belongs to me it means it has foreclosed
     //try again but this time have two users buy it, and make sure it reverts to original  user after the first one sells
     await harber.buy(365,3,10,{ from: user1 });
     await harber.buy(720,3,10,{ from: user2 });
@@ -481,13 +492,17 @@ contract('HarberTests', (accounts) => {
     assert.equal(price, 365);
     await harber.exit(3,{ from: user1 });
     var owner = await token.ownerOf.call(3);
-    assert.equal(owner, '0x34A971cA2fd6DA2Ce2969D716dF922F17aAA1dB0');
+    assert.equal(owner, andrewsAddress);
     var price = await harber.price.call(3);
     assert.equal(price, 0);
   });
 
-  //token 4
+  it('test finaliseAndPayout', async () => {
+    //set the winner manually
+    await harber.setWinner(2, { from: andrewsAddress }); 
+    // total time held is 5529600. Total to distribte is 
 
+  });
 
 
 

@@ -195,7 +195,7 @@ contract ERC721 is ERC165, IERC721 {
 
         // MODIFIED:
         // Below is just to suppress the compilation warning in truffle
-        tokenId  = 2;
+        // tokenId  = 2;
         // Only the steward is allowed to transfer
         return (spender == steward); 
     }

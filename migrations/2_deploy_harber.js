@@ -1,9 +1,11 @@
 /* globals artifacts */
 var Harber = artifacts.require("./Harber.sol");
-var HarberSimple = artifacts.require("./HarberSimple.sol");
 var Token = artifacts.require("./ERC721Full.sol");
 
-const whiskeyFundsAccount = '0x34a971ca2fd6da2ce2969d716df922f17aaa1db0'; 
+// production:
+// const whiskeyFundsAccount = '0x34a971ca2fd6da2ce2969d716df922f17aaa1db0'; 
+// dev:
+const whiskeyFundsAccount = '0x84CAbF995E9Af67B6d73232C2D5E9fBeBEF92224'; 
 
 // FOR AUGUR KOVAN TESTNET ONLY
 const augurCashAddress = '0x0802563FB6CfA1f07363D3aBf529F7b3999096f6';
@@ -20,12 +22,12 @@ module.exports = function(deployer, network) {
 
   /// FULL VERSION- DEPLOYS ERC271
     if(network === "kovan") {
-      deployer.deploy(Token, "Harber.io", "HARB").then((deployedToken) => {
+      deployer.deploy(Token, "Harber.io", "HARB", whiskeyFundsAccount).then((deployedToken) => {
         return deployer.deploy(Harber, whiskeyFundsAccount, deployedToken.address, augurCashAddress, augurMarketAddress,augurShareTokenAddress, augurMainAddress, marketedExpectedResolutionTime);
       });
   } else {
     // development deploy
-    deployer.deploy(Token, "Harber.io", "HARB").then((deployedToken) => {
+    deployer.deploy(Token, "Harber.io", "HARB", whiskeyFundsAccount).then((deployedToken) => {
       return deployer.deploy(Harber, whiskeyFundsAccount, deployedToken.address, augurCashAddress, augurMarketAddress,augurShareTokenAddress, augurMainAddress, marketedExpectedResolutionTime);
     });
   }

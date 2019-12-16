@@ -26,17 +26,19 @@ interface Cash
 //TODO: make sure timeHeld is updated for the final owner because it is not automatically updated unless there is a transfer of the token. 
 //TODO: augur will not accept to buy complete sets when itis resolved, so add smth to check if it is resolved with very collectRent
 //TODO : add something that will pay back all unused deposits at end of market
+//TODO : ensure that andrewsaddress is set correctly. It is different in dev
 
 contract Harber {
     
     using SafeMath for uint256;
 
     //TESTING VARIABLES
-    bool usingGanache = true;
+    bool usingAugur = false;
     uint256 public testingVariable = 0;
     uint256 public a = 0;
     uint256 public b = 0;
     uint256 public c = 0;
+    // uint256 public fundsInAugur
     
     // CONTRACT VARIABLES
     IERC721Full public team; // ERC721 NFT.
@@ -53,10 +55,10 @@ contract Harber {
     uint256[numberOfTokens] public collectedAndSentToAugur; // amount collected for each token, ie the sum of all owners' rent  
     uint256 public totalCollectedAndSentToAugur; // an easy way to track the above
     uint256[numberOfTokens] public timeLastCollected; 
-    uint256[numberOfTokens] public timeAcquired;
     uint256[numberOfTokens] public currentOwnerIndex; // tracks the position of the current owner in the ownerTracker mapping
     // winning outcome variables
     bool marketResolved = false;
+    bool doneAndDusted = false;
     uint256 winningOutcome = 99; //start with invalid winning outcome
     uint256 public marketExpectedResolutionTime; //so the function to manually set the winner can only be called long after it should have resolved via Augur. Must be public so others can verify it is accurate. 
 
@@ -128,7 +130,7 @@ contract Harber {
 
     function getTestDai() public 
     {
-        if (usingGanache == false)
+        if (usingAugur == true)
         {
             cash.faucet(100000000000000000000);
             testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
@@ -141,20 +143,27 @@ contract Harber {
 
     function buyCompleteSets(uint256 _rentOwed) internal 
     {
-        if (usingGanache == false)
+        if (usingAugur == true)
         {
             completeSets.publicBuyCompleteSets(market, _rentOwed);
         } 
+        else 
+        {
+
+        }
     }
 
      function sellCompleteSets(uint256 _sets) internal 
     {
-        assert(_sets<=totalCollectedAndSentToAugur);
+        //change below to assert in production. 
+        require(_sets<=totalCollectedAndSentToAugur, "Trying to get back too much");
 
-        if (usingGanache == false)
+        if (usingAugur == true)
         {
             completeSets.publicSellCompleteSets(market, _sets);
         } 
+
+        
     }
 
     //this can be called by anyone, at any time. getWinningPayoutNumerator will always return with 0 unless the market is resolved. 
@@ -188,13 +197,16 @@ contract Harber {
         finaliseAndPayout();
     }
 
-    function finaliseAndPayout() internal
+    function finaliseAndPayout() public
     {
+        require (marketResolved == true, "Winner not known");
+        require (doneAndDusted == false, "Already paid out");
+
         //get the dai back from Augur
         sellCompleteSets(totalCollectedAndSentToAugur);
         //Im not relying on totalCollectedAndSentToAugur to distribute in case get less back from Augur due to fees. Will get the actual DAI balance of the contract. 
-        uint256 _daiAvailableToDistribute = cash.balanceOf(msg.sender);
-
+        uint256 _daiAvailableToDistribute = cash.balanceOf(address(this));
+        
         //do the payout. start from 1 not 0 because 0 is the foreclosed state
         for (uint i=1; i <= currentOwnerIndex[winningOutcome]; i++)
         {   
@@ -204,6 +216,7 @@ contract Harber {
             uint256 _winningsToTransfer = _daiAvailableToDistribute.mul(_timeHeldFraction);
             cash.transfer(_winnersAddress,_winningsToTransfer);
         }
+        doneAndDusted = true;
     }
 
     function getTestDaiBalance() public view returns (uint256)
@@ -288,7 +301,14 @@ contract Harber {
             uint256 _rentOwed = calculateRentOwed(_tokenId);
             address _currentOwner = team.ownerOf(_tokenId);
             uint256 _timeOfThisCollection;
+            testingVariable =totalTimeHeld[_tokenId];
             
+            // if (deposits[_tokenId][_currentOwner] == 0){
+            //     //this will only trigger if a user withdraws their entire deposit
+            //     _timeOfThisCollection = timeLastCollected[_tokenId];
+            //     _rentOwed = 0;
+            //     _revertToPreviousOwner(_tokenId);
+            // }
             if (_rentOwed >= deposits[_tokenId][_currentOwner]) {
                 // run out of deposit. Calculate time it was actually paid for, then revert to previous owner 
                 _timeOfThisCollection = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(deposits[_tokenId][_currentOwner]).div(_rentOwed)));
@@ -303,18 +323,18 @@ contract Harber {
             uint256 _timeHeldToIncrement = (_timeOfThisCollection.sub(timeLastCollected[_tokenId])); //just for readability
             timeHeld[_tokenId][_currentOwner] = timeHeld[_tokenId][_currentOwner].add(_timeHeldToIncrement);
 
-            //do NOT count when the token is foreclosed
-            if (currentOwnerIndex[_tokenId] != 0)
-            {
-                totalTimeHeld[_tokenId] = totalTimeHeld[_tokenId].add(_timeHeldToIncrement);
-            }
+            //totalTimeHeld should not increment when forelosed, but this is taken care of because this entire function only runs if not foreclosed
+            totalTimeHeld[_tokenId] = totalTimeHeld[_tokenId].add(_timeHeldToIncrement);
 
             timeLastCollected[_tokenId] = now;
             deposits[_tokenId][_currentOwner] = deposits[_tokenId][_currentOwner].sub(_rentOwed);
             collectedAndSentToAugur[_tokenId] = collectedAndSentToAugur[_tokenId].add(_rentOwed);
             totalCollectedAndSentToAugur = totalCollectedAndSentToAugur.add(_rentOwed);
-            buyCompleteSets(_rentOwed);
 
+            // if (_rentOwed > 0) {
+            buyCompleteSets(_rentOwed);
+            // }
+            
             emit LogCollection(_rentOwed);
         }
     }

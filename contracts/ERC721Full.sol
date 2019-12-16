@@ -12,8 +12,10 @@ import "./ERC721Metadata.sol";
  */
 contract ERC721Full is ERC721, ERC721Enumerable, ERC721Metadata {
 
-    constructor (string memory name, string memory symbol) public ERC721Metadata(name, symbol) {
-        // solhint-disable-previous-line no-empty-blocks
+    address andrewsAddress;
+
+    constructor (string memory name, string memory symbol, address _andrewsAddress) public ERC721Metadata(name, symbol) {
+        andrewsAddress = _andrewsAddress;
     }
 
     function setup() public {
@@ -21,7 +23,7 @@ contract ERC721Full is ERC721, ERC721Enumerable, ERC721Metadata {
         init = true;
 
         steward = msg.sender; //only the steward can make transfers
-        address _originalOwner = 0x34A971cA2fd6DA2Ce2969D716dF922F17aAA1dB0;
+        address _originalOwner = andrewsAddress;
         // mint NFT for each outcome
         _mint(_originalOwner, 0); // mint
         _setTokenURI(0, "https://en.wikipedia.org/wiki/Manchester_United_F.C.");
