@@ -51,7 +51,7 @@ contract Harber {
     uint256 constant numberOfTokens = 5; 
     uint256[numberOfTokens] public price; //in wei
     uint256[numberOfTokens] public collectedAndSentToAugur; // amount collected for each token, ie the sum of all owners' rent  
-    uint256  public totalCollectedAndSentToAugur; // an easy way to track the above
+    uint256 public totalCollectedAndSentToAugur; // an easy way to track the above
     uint256[numberOfTokens] public timeLastCollected; 
     uint256[numberOfTokens] public timeAcquired;
     uint256[numberOfTokens] public currentOwnerIndex; // tracks the position of the current owner in the ownerTracker mapping
@@ -68,8 +68,8 @@ contract Harber {
     
     // MAPPINGS
     mapping (uint256 => mapping (uint256 => purchase) ) public ownerTracker; //keeps track of all owners of a token, including the price, so that if the current owner's deposit runs out, ownership can be reverted to a previous owner with the previous price. Index 0 is NOT used, this tells the contract to foreclose
-    mapping (uint256 => mapping (address => uint256) ) public timeHeld; //this is the key variable that tracks the total amount of time each user has held it for. It is ONLY updated upon a new owner buying the token. If _collect is run and there is no new owner, this is not updated.
-    mapping (uint256 => uint256) public totalTimeHeld; //for the payout, what is the total time each token is owned for
+    mapping (uint256 => mapping (address => uint256) ) public timeHeld; //this is the key variable that tracks the total amount of time each user has held it for. 
+    mapping (uint256 => uint256) public totalTimeHeld; //for the payout, what is the total time each token is owned for, excluding foreclosed state (ie owned by me)
     mapping (uint256 => mapping (address => uint256) ) public deposits; //keeps track of all the deposits for each token, for each owner.
     mapping (address => uint256) public testDaiBalances;
 
@@ -88,7 +88,7 @@ contract Harber {
         state[3] = ownedState.Foreclosed;
         state[4] = ownedState.Foreclosed;
 
-        //this variable is incremented before being used first so the 0 index will never contain a price/address. A zero index is used in the _revertToPreviousOwner  function to commence foreclosure
+        //this variable is incremented before being used first so the 0 index will never contain a price/address. A zero index is used in the _revertToPreviousOwner function to commence foreclosure
         currentOwnerIndex[0]=0;
         currentOwnerIndex[1]=0;
         currentOwnerIndex[2]=0;
@@ -319,7 +319,6 @@ contract Harber {
         }
     }
 
-    // note: anyone can deposit
     function depositDai(uint256 _dai, uint256 _tokenId) public collectRent(_tokenId) notResolved() {
         require(state[_tokenId] != ownedState.Foreclosed, "Foreclosed");
         testDaiBalances[msg.sender] = testDaiBalances[msg.sender].sub(_dai);
@@ -372,13 +371,12 @@ contract Harber {
         _withdrawDeposit(_dai, _tokenId);
     }
 
-    function exit(uint256 _tokenId) public onlyOwner(_tokenId) collectRent(_tokenId) {
+    function exit(uint256 _tokenId) public onlyOwner(_tokenId) collectRent(_tokenId) notResolved() {
         _withdrawDeposit(deposits[_tokenId][msg.sender],  _tokenId);
     }
 
     /* internal */
     function _withdrawDeposit(uint256 _dai, uint256 _tokenId) internal {
-        // note: can withdraw whole deposit, which puts it in immediate to be foreclosed state.
         require(deposits[_tokenId][msg.sender] >= _dai, 'Withdrawing too much');
 
         deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].sub(_dai);

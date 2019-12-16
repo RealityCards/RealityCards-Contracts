@@ -390,28 +390,28 @@ contract('HarberTests', (accounts) => {
     var timeHeld = await harber.timeHeld.call(2, user0);
     var difference = Math.abs(timeHeld - 1209600); // 14 days 
     assert.isBelow(difference,2);
-    //check many timeHelds now. Flow: user1 deposits enough for 4 weeks. After 2  weeks, user2 buys it with enough deposit for 1 week. After 2 weeks, _collect is called and ownership reverts back to user1. After 1 week, user3 buys it with enough deposit for 2 weeks. After 1 week, user4 buys it with enough deposit for 3 days. After 1 week _collect is called, ownership  reverts back to user3. After 2 weeks _collect is called, ownership goes back to user2. Wait three days. Call collect. Timehelds should be: user1 21 days, user2 7 days, user3 14 days, user4 3 days
-    await harber.buy(365,2,28,{ from: user1  }); 
+    //check many timeHelds now. Flow: user1 deposits enough for 4 weeks. After 2  weeks, user2 buys it with enough deposit for 1 week. After 2 weeks, _collect is called and ownership reverts back to user1. After 1 week, user3 buys it with enough deposit for 2 weeks. After 1 week, user4 buys it with enough deposit for 3 days. After 1 week _collect is called, ownership  reverts back to user3. After 2 weeks _collect is called, ownership goes back to user2. Wait three days. Call collect, ownership goes back to user1. Wait 2 days, acll collect. Timehelds should be: user1 23 days, user2 7 days, user3 14 days, user4 3 days
+    await harber.buy(365,2,28,{ from: user1  }); //user 1 has 28 days total
     await time.increase(time.duration.weeks(2));
-    await harber.buy(730,2,14,{ from: user2  }); 
+    await harber.buy(730,2,14,{ from: user2  }); //1: 14 days , user 2 has 7 days total
     await time.increase(time.duration.weeks(2));
-    await harber._collectRent(2);
-    await time.increase(time.duration.weeks(1));
-    await harber.getTestDai({ from: user3 });
-    await harber.buy(1095,2,42,{ from: user3  }); 
+    await harber._collectRent(2); //1: 14 days, 2: 0 days
+    await time.increase(time.duration.weeks(1)); 
+    await harber.getTestDai({ from: user3 }); 
+    await harber.buy(1095,2,42,{ from: user3  }); //1: 21`days, 3: 14 days total
     await time.increase(time.duration.weeks(1));
     await harber.getTestDai({ from: user4 });
-    await harber.buy(1460,2,12,{ from: user4  }); 
+    await harber.buy(1460,2,12,{ from: user4  }); //1: 21 days, 3: 
     await time.increase(time.duration.weeks(1));
-    await harber._collectRent(2); //revert to user3
+    await harber._collectRent(2); //revert to user 3
     await time.increase(time.duration.weeks(2));
-    await harber._collectRent(2); //revert to user2
+    await harber._collectRent(2); //revert to user 1 [2 is already 0]
     await time.increase(time.duration.days(3));
-    await harber._collectRent(2); //revert to user1
+    await harber._collectRent(2); //stay on user 1
     await time.increase(time.duration.days(2));
-    await debug(harber._collectRent(2));
+    await harber._collectRent(2);
     var timeHeld = await harber.timeHeld.call(2, user1);
-    var difference = Math.abs(timeHeld - 1814400); // 21 days
+    var difference = Math.abs(timeHeld - 2246400); // 26 days 
     assert.isBelow(difference,2);
     var timeHeld = await harber.timeHeld.call(2, user2);
     var difference = Math.abs(timeHeld - 604800); // 7 days
