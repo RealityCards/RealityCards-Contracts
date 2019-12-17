@@ -27,17 +27,22 @@ interface Cash
 //TODO: augur will not accept to buy complete sets when itis resolved, so add smth to check if it is resolved with very collectRent
 //TODO : add something that will pay back all unused deposits at end of market
 //TODO : ensure that andrewsaddress is set correctly. It is different in dev
+//TODO : owner tracker variable test
 
 contract Harber {
     
     using SafeMath for uint256;
 
+    // NUMBER OF TOKENS
+    uint256 constant numberOfTokens = 5; 
+
     //TESTING VARIABLES
     bool usingAugur = false;
-    uint256 public testingVariable = 0;
-    uint256 public a = 0;
-    uint256 public b = 0;
-    uint256 public c = 0;
+    uint256 testingVariable = 0;
+    uint256 a = 0;
+    uint256 b = 0;
+    uint256 c = 0;
+    mapping (address => uint256) public fundsSentToUser;
     // uint256 public fundsInAugur
     
     // CONTRACT VARIABLES
@@ -50,12 +55,12 @@ contract Harber {
     // UINTS ADDRESSES, BOOLS
     address andrewsAddress; // I am the original owner of tokens, and ownership reverts to me should the sale foreclose
     address marketAddress;
-    uint256 constant numberOfTokens = 5; 
     uint256[numberOfTokens] public price; //in wei
     uint256[numberOfTokens] public collectedAndSentToAugur; // amount collected for each token, ie the sum of all owners' rent  
     uint256 public totalCollectedAndSentToAugur; // an easy way to track the above
     uint256[numberOfTokens] public timeLastCollected; 
-    uint256[numberOfTokens] public currentOwnerIndex; // tracks the position of the current owner in the ownerTracker mapping
+    uint256[numberOfTokens] public currentOwnerIndex; // tracks the position of the current owner in the previousOwnerTracker mapping
+    uint256[numberOfTokens] public numberOfOwners; //used to cycle through ownerTracker during finalse & payout. Since you can't find the size of a mapping.
     // winning outcome variables
     bool marketResolved = false;
     bool doneAndDusted = false;
@@ -69,7 +74,8 @@ contract Harber {
     }
     
     // MAPPINGS
-    mapping (uint256 => mapping (uint256 => purchase) ) public ownerTracker; //keeps track of all owners of a token, including the price, so that if the current owner's deposit runs out, ownership can be reverted to a previous owner with the previous price. Index 0 is NOT used, this tells the contract to foreclose
+    mapping (uint256 => mapping (uint256 => purchase) ) public previousOwnerTracker; //keeps track of all previous owners of a token, including the price, so that if the current owner's deposit runs out, ownership can be reverted to a previous owner with the previous price. Index 0 is NOT used, this tells the contract to foreclose. This does NOT keep a reliable list of all owners, if it reverts to a previous owner then the next owner will overwrite the owner that was in that slot. The variable currentOwnerIndex is used to track the location of the current owner. 
+    mapping (uint256 => mapping (uint256 => address) ) public ownerTracker; //used to keep hold of all the owners, for payout. 
     mapping (uint256 => mapping (address => uint256) ) public timeHeld; //this is the key variable that tracks the total amount of time each user has held it for. 
     mapping (uint256 => uint256) public totalTimeHeld; //for the payout, what is the total time each token is owned for, excluding foreclosed state (ie owned by me)
     mapping (uint256 => mapping (address => uint256) ) public deposits; //keeps track of all the deposits for each token, for each owner.
@@ -84,18 +90,14 @@ contract Harber {
         team = IERC721Full(_addressOfToken);
         team.setup();
         andrewsAddress = _andrewsAddress;
-        state[0] = ownedState.Foreclosed;
-        state[1] = ownedState.Foreclosed;
-        state[2] = ownedState.Foreclosed;
-        state[3] = ownedState.Foreclosed;
-        state[4] = ownedState.Foreclosed;
 
-        //this variable is incremented before being used first so the 0 index will never contain a price/address. A zero index is used in the _revertToPreviousOwner function to commence foreclosure
-        currentOwnerIndex[0]=0;
-        currentOwnerIndex[1]=0;
-        currentOwnerIndex[2]=0;
-        currentOwnerIndex[3]=0;
-        currentOwnerIndex[4]=0;
+        //currentOwnerIndex is incremented before being used first so the 0 index will never contain a price/address. A zero index is used in the _revertToPreviousOwner function to commence foreclosure
+        for (uint i=0; i<numberOfTokens; i++)
+        {
+            currentOwnerIndex[i]=0;
+            numberOfOwners[i]=0;
+            state[i] = ownedState.Foreclosed;
+        }
 
         //initialise Augur contract variables
         cash = Cash(_addressOfCashContract);
@@ -147,10 +149,6 @@ contract Harber {
         {
             completeSets.publicBuyCompleteSets(market, _rentOwed);
         } 
-        else 
-        {
-
-        }
     }
 
      function sellCompleteSets(uint256 _sets) internal 
@@ -201,20 +199,30 @@ contract Harber {
     {
         require (marketResolved == true, "Winner not known");
         require (doneAndDusted == false, "Already paid out");
+        uint256 _daiAvailableToDistribute;
 
         //get the dai back from Augur
         sellCompleteSets(totalCollectedAndSentToAugur);
         //Im not relying on totalCollectedAndSentToAugur to distribute in case get less back from Augur due to fees. Will get the actual DAI balance of the contract. 
-        uint256 _daiAvailableToDistribute = cash.balanceOf(address(this));
+        if (usingAugur) {
+            _daiAvailableToDistribute = cash.balanceOf(address(this));
+        }
+        else {
+             _daiAvailableToDistribute = totalCollectedAndSentToAugur;
+        }
         
-        //do the payout. start from 1 not 0 because 0 is the foreclosed state
-        for (uint i=1; i <= currentOwnerIndex[winningOutcome]; i++)
+        //do the payout
+        for (uint i=0; i <= numberOfOwners[winningOutcome]; i++)
         {   
-            address _winnersAddress = ownerTracker[winningOutcome][i].owner;
+            address _winnersAddress = ownerTracker[winningOutcome][i];
             uint _winnersTimeHeld = timeHeld[winningOutcome][_winnersAddress];
-            uint256 _timeHeldFraction = _winnersTimeHeld.div(totalTimeHeld[winningOutcome]);
-            uint256 _winningsToTransfer = _daiAvailableToDistribute.mul(_timeHeldFraction);
-            cash.transfer(_winnersAddress,_winningsToTransfer);
+            uint256 _numerator = _daiAvailableToDistribute.mul(_winnersTimeHeld);
+            uint256 _winningsToTransfer = _numerator.div(totalTimeHeld[winningOutcome]);
+            if (usingAugur) {
+                cash.transfer(_winnersAddress,_winningsToTransfer);
+            } else {
+                fundsSentToUser[_winnersAddress] = _winningsToTransfer;
+            }
         }
         doneAndDusted = true;
     }
@@ -226,12 +234,12 @@ contract Harber {
 
     function getOwnerTrackerPrice(uint256 _tokenId, uint256 _index) public view returns (uint256)
     {
-        return (ownerTracker[_tokenId][_index].price);
+        return (previousOwnerTracker[_tokenId][_index].price);
     }
 
     function getOwnerTrackerAddress(uint256 _tokenId, uint256 _index) public view returns (address)
     {
-        return (ownerTracker[_tokenId][_index].owner);
+        return (previousOwnerTracker[_tokenId][_index].owner);
     }
 
     function calculateRentOwed(uint256 _tokenId) public view returns (uint256 augurFundsDue) {
@@ -320,11 +328,19 @@ contract Harber {
                 _timeOfThisCollection = now;
             }
 
+            //update the ownerTracker and numberOfOwners variables. only for new owners. 
+            if (timeHeld[_tokenId][_currentOwner] > 0) {
+                ownerTracker[_tokenId][numberOfOwners[_tokenId]] = _currentOwner;
+                numberOfOwners[_tokenId] = numberOfOwners[_tokenId] + 1;
+            }
+
             uint256 _timeHeldToIncrement = (_timeOfThisCollection.sub(timeLastCollected[_tokenId])); //just for readability
             timeHeld[_tokenId][_currentOwner] = timeHeld[_tokenId][_currentOwner].add(_timeHeldToIncrement);
 
             //totalTimeHeld should not increment when forelosed, but this is taken care of because this entire function only runs if not foreclosed
             totalTimeHeld[_tokenId] = totalTimeHeld[_tokenId].add(_timeHeldToIncrement);
+
+
 
             timeLastCollected[_tokenId] = now;
             deposits[_tokenId][_currentOwner] = deposits[_tokenId][_currentOwner].sub(_rentOwed);
@@ -357,15 +373,15 @@ contract Harber {
 
         if(_currentOwner == msg.sender)
         {
-            ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
+            previousOwnerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
         }
         else
         {
             currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId] + 1; 
             // currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].add(1);
             //^^ the above line causes VM errors, I need to figure out why
-            ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
-            ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].owner = msg.sender; 
+            previousOwnerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
+            previousOwnerTracker[_tokenId][currentOwnerIndex[_tokenId]].owner = msg.sender; 
         }
 
         if(state[_tokenId] == ownedState.Foreclosed) 
@@ -383,7 +399,7 @@ contract Harber {
         require(_newPrice > price[_tokenId], "New price must be higher than current price"); //This is to prevent griefing- buying it then immediately dropping the price really low. The original project did not suffer from this problem because when you bought it, you had to pay the purchase price to the previous user, not so in mine. 
         
         price[_tokenId] = _newPrice;
-        ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
+        previousOwnerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
         emit LogPriceChange(price[_tokenId]);
     }
     
@@ -413,9 +429,10 @@ contract Harber {
         while (_reverted == false)
         {
             assert(currentOwnerIndex[_tokenId] >=0);
+            //change below to use safemath
             currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId] - 1; // ownerTraker will now point to  previous owner
             uint256 _index = currentOwnerIndex[_tokenId]; //just for readability
-            address _previousOwner = ownerTracker[_tokenId][_index].owner;
+            address _previousOwner = previousOwnerTracker[_tokenId][_index].owner;
 
             if (_index == 0) 
             //no previous owners. price -> zero, foreclose
@@ -427,7 +444,7 @@ contract Harber {
             // previous owner still has a deposit, transfer to them, update the price to what it used to be
             {
                 address _currentOwner = team.ownerOf(_tokenId);
-                uint256 _oldPrice = ownerTracker[_tokenId][_index].price;
+                uint256 _oldPrice = previousOwnerTracker[_tokenId][_index].price;
                 _transferTokenTo(_currentOwner, _previousOwner, _oldPrice, _tokenId);
                 _reverted = true;
             }
