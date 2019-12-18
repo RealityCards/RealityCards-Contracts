@@ -37,10 +37,11 @@ contract Harber {
     using SafeMath for uint256;
 
     // NUMBER OF TOKENS
-    uint256 constant numberOfTokens = 5; 
+    //this MUST be accurate. If it is too high, the getWinner function will try and check if a team that does not exist has won, which will cause a revert, preventing the contract from determining the winner
+    uint256 constant numberOfTokens = 3; 
 
     //TESTING VARIABLES
-    bool usingAugur = false;
+    bool usingAugur = true;
     uint256 testingVariable = 0;
     uint256 a = 0;
     uint256 b = 0;
@@ -57,11 +58,11 @@ contract Harber {
 
     // UINTS ADDRESSES, BOOLS
     address andrewsAddress; // I am the original owner of tokens, and ownership reverts to me should the sale foreclose. Also, only I have the ability to SET the winner (which is an emergency ability if the decentralised approach fails- and can only be done if a month has passed aafter the augur resolution should have passed).
-    address marketAddress;
+    address marketAddress; // the address of the Augur market. It is set in the constructor. Does not change. 
     uint256[numberOfTokens] public price; //in wei
     uint256[numberOfTokens] public collectedAndSentToAugur; // amount collected for each token, ie the sum of all owners' rent  
     uint256 public totalCollected; // an easy way to track the above
-    uint256[numberOfTokens] public timeLastCollected; // used to determine the rent due. Rent is due for the period (now - timeLastCollected)
+    uint256[numberOfTokens] public timeLastCollected; // used to determine the rent due. Rent is due for the period (now - timeLastCollected), at which point timeLastCollected is set to now.
     uint256[numberOfTokens] public timeAcquired; // used only for front end
     uint256[numberOfTokens] public currentOwnerIndex; // tracks the position of the current owner in the previousOwnerTracker mapping
     uint256[numberOfTokens] public numberOfOwners; //used to cycle through ownerTracker during finalse & payout. Since you can't find the size of a mapping.
@@ -79,10 +80,10 @@ contract Harber {
     
     // MAPPINGS
     mapping (uint256 => mapping (uint256 => purchase) ) public previousOwnerTracker; //keeps track of all previous owners of a token, including the price, so that if the current owner's deposit runs out, ownership can be reverted to a previous owner with the previous price. Index 0 is NOT used, this tells the contract to foreclose. This does NOT keep a reliable list of all owners, if it reverts to a previous owner then the next owner will overwrite the owner that was in that slot. The variable currentOwnerIndex is used to track the location of the current owner. 
-    mapping (uint256 => mapping (uint256 => address) ) public ownerTracker; //used to keep hold of all the owners, for payout. 
+    mapping (uint256 => mapping (uint256 => address) ) public ownerTracker; //used to keep hold of all the owners, for payout, similar to previousOwnerTracker except that the pointer to the current position never decrements
     mapping (uint256 => mapping (address => uint256) ) public timeHeld; //this is the key variable that tracks the total amount of time each user has held it for. It is key because this is used to determine the proportion of the pot to be sent to each winning address
-    mapping (uint256 => uint256) public totalTimeHeld; //for the payout, what is the total time each token is owned for, excluding foreclosed state (ie owned by me). Winning addresses are sent payout * (timeHeld/totalTimeHeld)
-    mapping (uint256 => mapping (address => uint256) ) public deposits; //keeps track of all the deposits for each token, for each owner. Deposits are not returned automatically when there is a new buyer. 
+    mapping (uint256 => uint256) public totalTimeHeld; //for the payout, what is the total time each token is owned for, excluding foreclosed state (ie owned by me). Winning addresses are sent totalFunds * (timeHeld/totalTimeHeld)
+    mapping (uint256 => mapping (address => uint256) ) public deposits; //keeps track of all the deposits for each token, for each owner. Unused deposits are not returned automatically when there is a new buyer. Unused deposits are returned automatically upon resolution of the market (TODO)
     mapping (address => uint256) public testDaiBalances;
 
     // ENUMS
@@ -138,15 +139,12 @@ contract Harber {
 
     function getTestDai() public 
     {
-        if (usingAugur == true)
-        {
+        if (usingAugur == true) {
             cash.faucet(100000000000000000000);
-            testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
         }
-        else
-        {
-            testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100;
-        }
+
+        //tests assume 100, else use 100000000000000000000
+        testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
     }
 
     function buyCompleteSets(uint256 _rentOwed) internal 
@@ -168,11 +166,11 @@ contract Harber {
         {
             completeSets.publicSellCompleteSets(market, _sets);
         } 
-
-        
     }
 
     //this can be called by anyone, at any time. getWinningPayoutNumerator will always return with 0 unless the market is resolved. 
+    // of extreme importance here is that the teams that each integer refers to within augur is the same as within my contract. Ie if ID 1 refers to Manchester United within my contract, but ID 1 is equal to Liverpool within the Augur market, the wrong winner will be selected. This can either be dealt with manually or programmatically, either way it needs to happen within the setup() of the ERC721s
+    // it is also imperative that numberOfTokens is set correctly. If getWinningPayoutNumerator is called with a token ID that does not exist, it will revert. 
     function getWinner() notResolved() public 
     {
         for (uint i=0; i < numberOfTokens; i++)

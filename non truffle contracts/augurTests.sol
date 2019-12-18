@@ -22,13 +22,17 @@ interface Cash
     function faucet(uint256 _amount) external;
 }
 
+interface Augur {
+    function getMarketOutcomes(IMarket _market) external view returns (bytes32[] memory _outcomes);
+}
+
 contract MyContract {
     
     ShareToken completeSets = ShareToken(0x63cbfEb0Cf1EE91Ca1689d8dbBa143bbf8Fd0fd1);
-    // IMarket market = IMarket(0x4Ca5B2E0A87325F962208561E87c82638cc384Ca); //live
-    IMarket market = IMarket(0x3276323FCcAA197DCCe782CCF783120D78D57cE6); //resolved
+    IMarket market = IMarket(0xA830e8A271909b2407985F95921E5dD4AD1d859A);
     Cash cash = Cash(0x0802563FB6CfA1f07363D3aBf529F7b3999096f6);
     address augurMain = 0x62214e5c919332AC17c5e5127383B84378Ef9C1d;
+    Augur augur = Augur(augurMain);
 
     function callfaucet() public 
     {
@@ -56,5 +60,9 @@ contract MyContract {
     function getWinner(uint256 _outcome) public view returns(uint256)
     {
         return market.getWinningPayoutNumerator(_outcome);
+    }
+    
+    function getOutcomes() public view returns (bytes32[] memory _outcomes) {
+        return augur.getMarketOutcomes(market);
     }
 }
