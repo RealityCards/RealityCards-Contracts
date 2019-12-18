@@ -185,16 +185,16 @@ contract('HarberTests', (accounts) => {
 //     await harber.getTestDai({ from: user });
 //     await harber.buy(3650,0,30,{ from: user  });
 //     newOwnerPurchaseCount1++;
-//     var fundsOwedActual = await harber.calculateRentOwed.call(0);
+//     var fundsOwedActual = await harber.rentOwed.call(0);
 //     assert.equal(fundsOwedActual, 0);
 //     await time.increase(time.duration.minutes(1440)); //mins in a day
-//     var fundsOwedActual = await harber.calculateRentOwed.call(0);
+//     var fundsOwedActual = await harber.rentOwed.call(0);
 //     assert.equal(fundsOwedActual, 10);
 //   });
 
 //   it('userDepositAbleToWithdraw and  liveDepositAbleToWithdraw function', async () => {
 //     user = user2;
-//     //due to 1 day passing from above, the userDepositAbleToWithdraw and depositAbleToWithdraw should be lower by 10 but the deposit amount should no
+//     //due to 1 day passing from above, the userDepositAbleToWithdraw and depositAbleToWithdraw should be lower by 10 but the deposit amount should not
 //     var userDepositAbleToWithdraw = await harber.userDepositAbleToWithdraw.call(0, { from: user });
 //     var depositAbleToWithdraw = await harber.liveDepositAbleToWithdraw.call(0, { from: user })
 //     var deposit = await harber.deposits.call(0,user);
@@ -251,7 +251,7 @@ contract('HarberTests', (accounts) => {
 //   it('_collectRent function no revertPreviousOwner/foreclose', async () => {
 //     user = user5;
 //     // get total collected from all the above tets and just check that it is added to properly
-//     var totalCollectedSoFar = await harber.totalCollectedAndSentToAugur.call(); 
+//     var totalCollectedSoFar = await harber.totalCollected.call(); 
 //     await harber.getTestDai({ from: user });
 //     await harber.buy(365,1,20,{ from: user  });
 //     // var timeAcquired = await harber.timeAcquired.call(1); 
@@ -269,9 +269,9 @@ contract('HarberTests', (accounts) => {
 //     //test collectedAndSentToAugur
 //     var collectedAndSentToAugur = await harber.collectedAndSentToAugur.call(1); 
 //     assert.equal(collectedAndSentToAugur,7);
-//     //test totalCollectedAndSentToAugur. The total so far from previous tests is 45.  So we expect 52
-//     var totalCollectedAndSentToAugur = await harber.totalCollectedAndSentToAugur.call();
-//     assert.equal(totalCollectedAndSentToAugur,totalCollectedSoFar.toNumber()+collectedAndSentToAugur.toNumber());
+//     //test totalCollected. The total so far from previous tests is 45.  So we expect 52
+//     var totalCollected = await harber.totalCollected.call();
+//     assert.equal(totalCollected,totalCollectedSoFar.toNumber()+collectedAndSentToAugur.toNumber());
 //     //test timeLastCollected
 //     var timeLastCollected = await harber.timeLastCollected.call(1);
 //     currentTime = await time.latest();
@@ -283,8 +283,8 @@ contract('HarberTests', (accounts) => {
 //     assert.equal(deposit, 33);
 //     var collectedAndSentToAugur = await harber.collectedAndSentToAugur.call(1); 
 //     assert.equal(collectedAndSentToAugur,7);
-//     var totalCollectedAndSentToAugur = await harber.totalCollectedAndSentToAugur.call();
-//     assert.equal(totalCollectedAndSentToAugur,totalCollectedSoFar.toNumber()+collectedAndSentToAugur.toNumber());
+//     var totalCollected = await harber.totalCollected.call();
+//     assert.equal(totalCollected,totalCollectedSoFar.toNumber()+collectedAndSentToAugur.toNumber());
 //     var timeLastCollected = await harber.timeLastCollected.call(1);
 //     assert.equal(time10MinsAgo.toString(),timeLastCollected.toString());
 //     //trigger the function again by doing another purchase and check all variables have updated correctly
@@ -293,8 +293,8 @@ contract('HarberTests', (accounts) => {
 //     assert.equal(deposit, 39); // 33 + 20 - 14
 //     var collectedAndSentToAugur = await harber.collectedAndSentToAugur.call(1); 
 //     assert.equal(collectedAndSentToAugur,21); // 7 + 14
-//     var totalCollectedAndSentToAugur = await harber.totalCollectedAndSentToAugur.call();
-//     assert.equal(totalCollectedAndSentToAugur,totalCollectedSoFar.toNumber()+collectedAndSentToAugur.toNumber());
+//     var totalCollected = await harber.totalCollected.call();
+//     assert.equal(totalCollected,totalCollectedSoFar.toNumber()+collectedAndSentToAugur.toNumber());
 //     currentTime = await time.latest();
 //     var timeLastCollected = await harber.timeLastCollected.call(1);
 //     assert.equal(currentTime.toString(),timeLastCollected.toString());
@@ -372,16 +372,16 @@ contract('HarberTests', (accounts) => {
 //     // await harber.buy(365,1,5,{ from: user5  });
 //   });
 
-//reset token2
+// //reset token2
 
-  it('test collected, held variables and collectedAndSentToAugur and totalCollectedAndSentToAugur', async () => {
-    //ONLY IF STUFF ABOVE IS COMMENTED OUT TO SAVE TIME
+  it('test collected, held variables and collectedAndSentToAugur and totalCollected', async () => {
+    // below only needed if i commented the above to save time but no harm in keeping it here
     await harber.getTestDai({ from: user0 });
     await harber.getTestDai({ from: user1 });
     await harber.getTestDai({ from: user2 });
     await harber.getTestDai({ from: user3 });
-    // first get totalCollectedAndSentToAugur from all of the above and just check it increments properly from now on. And check collectedAndSentToAugur is zero
-    var totalCollectedAndSentToAugurAtStart = await harber.totalCollectedAndSentToAugur.call();
+    // first get totalCollected from all of the above and just check it increments properly from now on. And check collectedAndSentToAugur is zero
+    var totalCollectedAtStart = await harber.totalCollected.call();
     var collectedAndSentToAugur = await harber.collectedAndSentToAugur.call(2);
     assert.equal(collectedAndSentToAugur,0);
     await harber.buy(365,2,14,{ from: user0  }); //14 so lasts exactly 2 weeks
@@ -449,9 +449,9 @@ contract('HarberTests', (accounts) => {
     var collectedAndSentToAugur = await harber.collectedAndSentToAugur.call(2);
     assert.equal(collectedAndSentToAugur,108); // 14 from u0 + 26 from u1 + 14 from u2 + 42 from u3 + 12 from u4
     // TotalCollectedAndSentToAugur
-    var totalCollectedAndSentToAugur = await harber.totalCollectedAndSentToAugur.call();
-    var totalCollectedAndSentToAugurShouldBe = totalCollectedAndSentToAugurAtStart.toNumber() + 108;
-    assert.equal(totalCollectedAndSentToAugur,totalCollectedAndSentToAugurShouldBe);
+    var totalCollected = await harber.totalCollected.call();
+    var totalCollectedShouldBe = totalCollectedAtStart.toNumber() + 108;
+    assert.equal(totalCollected,totalCollectedShouldBe);
   });
 
   //token 3
@@ -517,8 +517,8 @@ contract('HarberTests', (accounts) => {
 
   it('test finaliseAndPayout', async () => {
     //set the winner manually
-    await debug(harber.setWinner(2, { from: andrewsAddress })); 
-    var totalCollectedAndSentToAugur = await harber.totalCollectedAndSentToAugur.call();
+    await harber.setWinner(2, { from: andrewsAddress }); 
+    var totalCollected = await harber.totalCollected.call();
     // total time held is 64 days users:
     // 0 14 days
     // 1 26 days
@@ -526,19 +526,19 @@ contract('HarberTests', (accounts) => {
     // 3 14 days
     // 4 3 days
     var user0Winnings = await harber.fundsSentToUser.call(user0);
-    var difference = Math.abs(user0Winnings - ((totalCollectedAndSentToAugur.toNumber()*14)/64));
-    assert.isBelow(difference,2);
+    var difference = Math.abs(user0Winnings - ((totalCollected.toNumber()*14)/64));
+    assert.isBelow(difference,2); //<--------
     var user1Winnings = await harber.fundsSentToUser.call(user1);
-    var difference = Math.abs(user1Winnings - ((totalCollectedAndSentToAugur.toNumber()*26)/64));
+    var difference = Math.abs(user1Winnings - ((totalCollected.toNumber()*26)/64));
     assert.isBelow(difference,2);
     var user2Winnings = await harber.fundsSentToUser.call(user2);
-    var difference = Math.abs(user2Winnings - ((totalCollectedAndSentToAugur.toNumber()*7)/64));
+    var difference = Math.abs(user2Winnings - ((totalCollected.toNumber()*7)/64));
     assert.isBelow(difference,2); 
     var user3Winnings = await harber.fundsSentToUser.call(user3);
-    var difference = Math.abs(user3Winnings - ((totalCollectedAndSentToAugur.toNumber()*14)/64));
+    var difference = Math.abs(user3Winnings - ((totalCollected.toNumber()*14)/64));
     assert.isBelow(difference,2);
     var user4Winnings = await harber.fundsSentToUser.call(user4);
-    var difference = Math.abs(user4Winnings - ((totalCollectedAndSentToAugur.toNumber()*3)/64));
+    var difference = Math.abs(user4Winnings - ((totalCollected.toNumber()*3)/64));
     assert.isBelow(difference,2);
   });
 

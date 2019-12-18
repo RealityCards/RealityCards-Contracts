@@ -37,10 +37,10 @@ contract Harber {
     using SafeMath for uint256;
 
     // NUMBER OF TOKENS
-    uint256 constant numberOfTokens = 2; 
+    uint256 constant numberOfTokens = 5; 
 
     //TESTING VARIABLES
-    bool usingAugur = true;
+    bool usingAugur = false;
     uint256 testingVariable = 0;
     uint256 a = 0;
     uint256 b = 0;
@@ -145,7 +145,7 @@ contract Harber {
         }
         else
         {
-            testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
+            testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100;
         }
     }
 
@@ -200,7 +200,7 @@ contract Harber {
         winningOutcome = _winner;
         _collectRent(winningOutcome);
         marketResolved = true;
-        // finaliseAndPayout();
+        finaliseAndPayout();
     }
 
     function finaliseAndPayout() public
@@ -210,7 +210,7 @@ contract Harber {
         uint256 _daiAvailableToDistribute;
 
         //get the dai back from Augur
-        // sellCompleteSets(totalCollected);
+        sellCompleteSets(totalCollected);
         //Im not relying on totalCollected to distribute in case get less back from Augur due to fees. Will get the actual DAI balance of the contract. 
         if (usingAugur) {
             _daiAvailableToDistribute = cash.balanceOf(address(this));
