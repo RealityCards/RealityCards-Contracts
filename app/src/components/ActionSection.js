@@ -79,7 +79,7 @@ class ActionSection extends Component {
         {window.ethereum !== undefined ? (
           <Fragment>
           <ContractForm buttonText="Change Price" contract="Harber" method="changePrice" labels={["New Price"]}/>
-          <ContractForm buttonText="Top up Deposit" contract="Harber" method="depositDai" labels={["New Price"]}/>
+          <ContractForm buttonText="Top up Deposit" contract="Harber" method="depositDai" labels={["Dai to Deposit"]}/>
           <ContractForm buttonText="Withdraw Deposit" contract="Harber" method="withdrawDeposit" labels={["Deposit in DAI"]} toEth />
           <ContractForm buttonText="Withdraw Whole Deposit And transfer token to previous  owner" contract="Harber" method="exit" />
           </Fragment>

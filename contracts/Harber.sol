@@ -28,6 +28,9 @@ interface Cash
 //TODO : add something that will pay back all unused deposits at end of market
 //TODO : ensure that andrewsaddress is set correctly. It is different in dev
 //TODO : owner tracker variable test
+//TODO : add some more events 
+//TODO : I seemed to get errors via front ened when i bought for 100000000 and 50 daik deposit, then switched to anew user and bought for 100000001 and 50 dai, investigate
+//TODO: it seems when testing via front end that the amount sent to augur was well above the 'total parongage collected' on the very first _collect (ie when adding deposit), investigate. I just tried a second time and yes itsa problem. as test, check that whatever is sent to buy sets matches the variable that the front end is checking (actually it appears to be out by 2 decimal places)
 
 contract Harber {
     
@@ -63,9 +66,9 @@ contract Harber {
     uint256[numberOfTokens] public currentOwnerIndex; // tracks the position of the current owner in the previousOwnerTracker mapping
     uint256[numberOfTokens] public numberOfOwners; //used to cycle through ownerTracker during finalse & payout. Since you can't find the size of a mapping.
     // winning outcome variables
-    bool marketResolved = false;
-    bool doneAndDusted = false;
-    uint256 winningOutcome = 99; //start with invalid winning outcome
+    bool public marketResolved = false;
+    bool public doneAndDusted = false;
+    uint256 public winningOutcome = 99; //start with invalid winning outcome
     uint256 public marketExpectedResolutionTime; //so the function to manually set the winner can only be called long after it should have resolved via Augur. Must be public so others can verify it is accurate. 
 
     //  STRUCTS
@@ -108,7 +111,9 @@ contract Harber {
         
         //approve augur contract to transfer this contract's dai
         // MUST BE COMMENTED OUT WHEN RUNNING ON GANACHE UNTIL I GET PRIVATE VERSION OF AUGUR CONTRACTS
-        // cash.approve(_addressOfMainAugurContract,(2**256)-1);
+        if (usingAugur == true) {
+            cash.approve(_addressOfMainAugurContract,(2**256)-1);
+        }
     } 
 
     event LogBuy(address indexed owner, uint256 indexed price);
@@ -140,7 +145,7 @@ contract Harber {
         }
         else
         {
-            testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100;
+            testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
         }
     }
 
@@ -152,10 +157,12 @@ contract Harber {
         } 
     }
 
-     function sellCompleteSets(uint256 _sets) internal 
+    //currently public for testing, change to internal for production
+     function sellCompleteSets(uint256 _sets) public 
     {
         //change below to assert in production. 
         require(_sets<=totalCollected, "Trying to get back too much");
+        assert (marketResolved);
 
         if (usingAugur == true)
         {
@@ -185,15 +192,15 @@ contract Harber {
     //this function is used for testing, and in production is kept unless the above function fails. It can ONLY be called well after the market should have resolved on Augur, otherwise I could influence the outcome
     function setWinner(uint256 _winner) notResolved() public 
     {
-        //only I can call this
-        require (msg.sender == andrewsAddress, "Imposter detected"); 
+        //only I can call this- MAKE SURE IT IS UNCOMMENTED IN PRODUCTION!
+        // require (msg.sender == andrewsAddress, "Imposter detected"); 
         // can only be called if a month has passed and the Augur market still not resolved
         require (now > (marketExpectedResolutionTime + 2592000), "Wait for decentralised resolution first");
         //final rent collection before it is locked down
         winningOutcome = _winner;
         _collectRent(winningOutcome);
         marketResolved = true;
-        finaliseAndPayout();
+        // finaliseAndPayout();
     }
 
     function finaliseAndPayout() public
@@ -203,7 +210,7 @@ contract Harber {
         uint256 _daiAvailableToDistribute;
 
         //get the dai back from Augur
-        sellCompleteSets(totalCollected);
+        // sellCompleteSets(totalCollected);
         //Im not relying on totalCollected to distribute in case get less back from Augur due to fees. Will get the actual DAI balance of the contract. 
         if (usingAugur) {
             _daiAvailableToDistribute = cash.balanceOf(address(this));
@@ -213,7 +220,7 @@ contract Harber {
         }
         
         //do the payout
-        for (uint i=0; i <= numberOfOwners[winningOutcome]; i++)
+        for (uint i=0; i < numberOfOwners[winningOutcome]; i++)
         {   
             address _winnersAddress = ownerTracker[winningOutcome][i];
             uint _winnersTimeHeld = timeHeld[winningOutcome][_winnersAddress];

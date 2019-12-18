@@ -5,7 +5,7 @@ var Token = artifacts.require("./ERC721Full.sol");
 // production:
 const whiskeyFundsAccount = '0x34a971ca2fd6da2ce2969d716df922f17aaa1db0'; 
 // dev:
-// const whiskeyFundsAccount = '0x84CAbF995E9Af67B6d73232C2D5E9fBeBEF92224'; 
+// const whiskeyFundsAccount = '0x84CAbF995E9Af67B6d73232C2D5E9fBeBEF92224'; //this is user9
 
 // FOR AUGUR KOVAN TESTNET ONLY
 const augurCashAddress = '0x0802563FB6CfA1f07363D3aBf529F7b3999096f6';
