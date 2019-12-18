@@ -34,10 +34,10 @@ contract Harber {
     using SafeMath for uint256;
 
     // NUMBER OF TOKENS
-    uint256 constant numberOfTokens = 5; 
+    uint256 constant numberOfTokens = 2; 
 
     //TESTING VARIABLES
-    bool usingAugur = false;
+    bool usingAugur = true;
     uint256 testingVariable = 0;
     uint256 a = 0;
     uint256 b = 0;
@@ -53,12 +53,13 @@ contract Harber {
     Cash cash; 
 
     // UINTS ADDRESSES, BOOLS
-    address andrewsAddress; // I am the original owner of tokens, and ownership reverts to me should the sale foreclose
+    address andrewsAddress; // I am the original owner of tokens, and ownership reverts to me should the sale foreclose. Also, only I have the ability to SET the winner (which is an emergency ability if the decentralised approach fails- and can only be done if a month has passed aafter the augur resolution should have passed).
     address marketAddress;
     uint256[numberOfTokens] public price; //in wei
     uint256[numberOfTokens] public collectedAndSentToAugur; // amount collected for each token, ie the sum of all owners' rent  
     uint256 public totalCollectedAndSentToAugur; // an easy way to track the above
-    uint256[numberOfTokens] public timeLastCollected; 
+    uint256[numberOfTokens] public timeLastCollected; // used to determine the rent due. Rent is due for the period (now - timeLastCollected)
+    uint256[numberOfTokens] public timeAcquired; // used only for front end
     uint256[numberOfTokens] public currentOwnerIndex; // tracks the position of the current owner in the previousOwnerTracker mapping
     uint256[numberOfTokens] public numberOfOwners; //used to cycle through ownerTracker during finalse & payout. Since you can't find the size of a mapping.
     // winning outcome variables
@@ -76,9 +77,9 @@ contract Harber {
     // MAPPINGS
     mapping (uint256 => mapping (uint256 => purchase) ) public previousOwnerTracker; //keeps track of all previous owners of a token, including the price, so that if the current owner's deposit runs out, ownership can be reverted to a previous owner with the previous price. Index 0 is NOT used, this tells the contract to foreclose. This does NOT keep a reliable list of all owners, if it reverts to a previous owner then the next owner will overwrite the owner that was in that slot. The variable currentOwnerIndex is used to track the location of the current owner. 
     mapping (uint256 => mapping (uint256 => address) ) public ownerTracker; //used to keep hold of all the owners, for payout. 
-    mapping (uint256 => mapping (address => uint256) ) public timeHeld; //this is the key variable that tracks the total amount of time each user has held it for. 
-    mapping (uint256 => uint256) public totalTimeHeld; //for the payout, what is the total time each token is owned for, excluding foreclosed state (ie owned by me)
-    mapping (uint256 => mapping (address => uint256) ) public deposits; //keeps track of all the deposits for each token, for each owner.
+    mapping (uint256 => mapping (address => uint256) ) public timeHeld; //this is the key variable that tracks the total amount of time each user has held it for. It is key because this is used to determine the proportion of the pot to be sent to each winning address
+    mapping (uint256 => uint256) public totalTimeHeld; //for the payout, what is the total time each token is owned for, excluding foreclosed state (ie owned by me). Winning addresses are sent payout * (timeHeld/totalTimeHeld)
+    mapping (uint256 => mapping (address => uint256) ) public deposits; //keeps track of all the deposits for each token, for each owner. Deposits are not returned automatically when there is a new buyer. 
     mapping (address => uint256) public testDaiBalances;
 
     // ENUMS
@@ -380,7 +381,9 @@ contract Harber {
             timeLastCollected[_tokenId] = now;
         }
         
-        _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId); //does this even if owner hasn't changed. this is ok. 
+        //does the below even if owner hasn't changed. this is ok. 
+        timeAcquired[_tokenId] = now;
+        _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId); 
         emit LogBuy(msg.sender, _newPrice);
     }
 
