@@ -243,18 +243,18 @@ contract Harber {
         return (previousOwnerTracker[_tokenId][_index].owner);
     }
 
-    function augurFundsOwed(uint256 _tokenId) public view returns (uint256 augurFundsDue) {
+    function rentOwed(uint256 _tokenId) public view returns (uint256 augurFundsDue) {
         return price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(365 days);
     }
 
-    function augurFundsOwedWithTimestamp(uint256 _tokenId) public view returns (uint256 augurFundsDue, uint256 timestamp) {
-        return (augurFundsOwed(_tokenId), now);
+    function rentOwedWithTimestamp(uint256 _tokenId) public view returns (uint256 augurFundsDue, uint256 timestamp) {
+        return (rentOwed(_tokenId), now);
     }
     function foreclosed(uint256 _tokenId) public view returns (bool) {
         // returns whether it is in foreclosed state or not
         // depending on whether deposit covers patronage due
         // useful helper function when price should be zero, but contract doesn't reflect it yet.
-        uint256 _rentOwed = augurFundsOwed(_tokenId);
+        uint256 _rentOwed = rentOwed(_tokenId);
         if(_rentOwed >= deposits[_tokenId][msg.sender]) {
             return true;
         } else {
@@ -264,7 +264,7 @@ contract Harber {
 
     // this is only used to calculate foreclosure time
     function liveDepositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) {
-        uint256 _rentOwed = augurFundsOwed(_tokenId);
+        uint256 _rentOwed = rentOwed(_tokenId);
         address _currentOwner = team.ownerOf(_tokenId);
         if(_rentOwed >= deposits[_tokenId][_currentOwner]) {
             return 0;
@@ -275,7 +275,7 @@ contract Harber {
 
     //this is my version of the above function. It shows how much each user can withdraw- whether or not they are the current owner. 
     function userDepositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) {
-        uint256 _rentOwed = augurFundsOwed(_tokenId);
+        uint256 _rentOwed = rentOwed(_tokenId);
         address _currentOwner = team.ownerOf(_tokenId);
 
         if(_currentOwner == msg.sender)
@@ -307,7 +307,7 @@ contract Harber {
         // determine patronage to pay
         if (state[_tokenId] == ownedState.Owned) {
             
-            uint256 _rentOwed = augurFundsOwed(_tokenId);
+            uint256 _rentOwed = rentOwed(_tokenId);
             address _currentOwner = team.ownerOf(_tokenId);
             uint256 _timeOfThisCollection;
             testingVariable =totalTimeHeld[_tokenId];

@@ -16,9 +16,9 @@ class TestDaiFaucetSection extends Component {
     this.contracts = context.drizzle.contracts;
     this.state = {
       artworkPriceKey: context.drizzle.contracts.Harber.methods.price.cacheCall(urlId),
-      augurFundsOwedKey: context.drizzle.contracts.Harber.methods.augurFundsOwed.cacheCall(urlId),
+      rentOwedKey: context.drizzle.contracts.Harber.methods.rentOwed.cacheCall(urlId),
       totalCollectedKey: context.drizzle.contracts.Harber.methods.totalCollected.cacheCall(),
-      augurFundsOwed: -1,
+      rentOwed: -1,
       combinedCollected: -1,
       foreclosureTime: "N/A"
     };
@@ -29,17 +29,17 @@ class TestDaiFaucetSection extends Component {
   }
 
   async updateCombineCollected(props) {
-    const augurFundsOwed = this.getaugurFundsOwed(props);
+    const rentOwed = this.getrentOwed(props);
     const totalCollected = this.getTotalCollected(props);
-    const combinedCollected = this.utils.fromWei(totalCollected.add(augurFundsOwed), 'ether').toString();
+    const combinedCollected = this.utils.fromWei(totalCollected.add(rentOwed), 'ether').toString();
     this.setState({
-      augurFundsOwed,
+      rentOwed,
       combinedCollected,
     });
   }
 
-  getaugurFundsOwed(props) {
-    return new this.utils.BN(props.contracts['Harber']['augurFundsOwed'][this.state.augurFundsOwedKey].value);
+  getrentOwed(props) {
+    return new this.utils.BN(props.contracts['Harber']['rentOwed'][this.state.rentOwedKey].value);
   }
 
   async componentWillReceiveProps(nextProps) {
@@ -54,11 +54,11 @@ class TestDaiFaucetSection extends Component {
       }
     }
 
-    if (this.state.augurFundsOwedKey in this.props.contracts['Harber']['augurFundsOwed']
-    && this.state.augurFundsOwedKey in nextProps.contracts['Harber']['augurFundsOwed']
+    if (this.state.rentOwedKey in this.props.contracts['Harber']['rentOwed']
+    && this.state.rentOwedKey in nextProps.contracts['Harber']['rentOwed']
     && this.state.totalCollectedKey in this.props.contracts['Harber']['totalCollected']
     && this.state.totalCollectedKey in nextProps.contracts['Harber']['totalCollected']) {
-      if (!this.getaugurFundsOwed(this.props).eq(this.getaugurFundsOwed(nextProps)) || this.state.combinedCollected === -1) {
+      if (!this.getrentOwed(this.props).eq(this.getrentOwed(nextProps)) || this.state.combinedCollected === -1) {
         this.updateCombineCollected(nextProps);
       }
     }
