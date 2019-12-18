@@ -17,30 +17,30 @@ class ActionSection extends Component {
     this.contracts = context.drizzle.contracts;
     this.state = {
       artworkPriceKey: context.drizzle.contracts.Harber.methods.price.cacheCall(urlId),
-      calculateRentOwedKey: context.drizzle.contracts.Harber.methods.calculateRentOwed.cacheCall(urlId),
-      totalCollectedKey: context.drizzle.contracts.Harber.methods.totalCollectedAndSentToAugur.cacheCall(),
-      calculateRentOwed: -1,
+      augurFundsOwedKey: context.drizzle.contracts.Harber.methods.augurFundsOwed.cacheCall(urlId),
+      totalCollectedKey: context.drizzle.contracts.Harber.methods.totalCollected.cacheCall(),
+      augurFundsOwed: -1,
       combinedCollected: -1,
       rentalExpiryTime: "N/A"
     };
   }
 
   getTotalCollected(props) {
-    return new this.utils.BN(props.contracts['Harber']['totalCollectedAndSentToAugur'][this.state.totalCollectedKey].value);
+    return new this.utils.BN(props.contracts['Harber']['totalCollected'][this.state.totalCollectedKey].value);
   }
 
   async updateCombineCollected(props) {
-    const calculateRentOwed = this.getcalculateRentOwed(props);
+    const augurFundsOwed = this.getaugurFundsOwed(props);
     const totalCollected = this.getTotalCollected(props);
-    const combinedCollected = this.utils.fromWei(totalCollected.add(calculateRentOwed), 'ether').toString();
+    const combinedCollected = this.utils.fromWei(totalCollected.add(augurFundsOwed), 'ether').toString();
     this.setState({
-      calculateRentOwed,
+      augurFundsOwed,
       combinedCollected,
     });
   }
 
-  getcalculateRentOwed(props) {
-    return new this.utils.BN(props.contracts['Harber']['calculateRentOwed'][this.state.calculateRentOwedKey].value);
+  getaugurFundsOwed(props) {
+    return new this.utils.BN(props.contracts['Harber']['augurFundsOwed'][this.state.augurFundsOwedKey].value);
   }
 
   async componentWillReceiveProps(nextProps) {
@@ -54,13 +54,12 @@ class ActionSection extends Component {
         this.setState({rentalExpiryTime});
       }
     }
-    console.log(this.state.calculateRentOwedKey);
-    console.log(this.props.contracts['Harber']['calculateRentOwed']);
-    if (this.state.calculateRentOwedKey in this.props.contracts['Harber']['calculateRentOwed']
-    && this.state.calculateRentOwedKey in nextProps.contracts['Harber']['calculateRentOwed']
+
+    if (this.state.augurFundsOwedKey in this.props.contracts['Harber']['augurFundsOwed']
+    && this.state.augurFundsOwedKey in nextProps.contracts['Harber']['augurFundsOwed']
     && this.state.totalCollectedKey in this.props.contracts['Harber']['totalCollected']
     && this.state.totalCollectedKey in nextProps.contracts['Harber']['totalCollected']) {
-      if (!this.getcalculateRentOwed(this.props).eq(this.getcalculateRentOwed(nextProps)) || this.state.combinedCollected === -1) {
+      if (!this.getaugurFundsOwed(this.props).eq(this.getaugurFundsOwed(nextProps)) || this.state.combinedCollected === -1) {
         this.updateCombineCollected(nextProps);
       }
     }
@@ -70,10 +69,10 @@ class ActionSection extends Component {
     return (
     <div className="section">
       <h2>Current Owner Details:</h2>
-        Address: <ContractData contract="ERC721Full" method="ownerOf" methodArgs={[urlId]}/><br />
-        Token Deposit: <ContractData contract="Harber" method="liveDepositAbleToWithdraw" methodArgs={[urlId]} toEth /> DAI<br />
-        Your Deposit: <ContractData contract="Harber" method="userDepositAbleToWithdraw" methodArgs={[urlId]} toEth /> DAI<br />
-        Rental Expiry Time: {this.state.rentalExpiryTime}<br />
+        <p>Address: <ContractData contract="ERC721Full" method="ownerOf" methodArgs={[urlId]}/></p>
+        <p>Token Deposit: <ContractData contract="Harber" method="liveDepositAbleToWithdraw" methodArgs={[urlId]} toEth /> DAI</p>
+        <p>Your Deposit: <ContractData contract="Harber" method="userDepositAbleToWithdraw" methodArgs={[urlId]} toEth /> DAI</p>
+        <p>Rental Expiry Time: {this.state.rentalExpiryTime}</p>
         {/* <p>The current deposit will cover the patronage until the time above. At this time, the smart contract steward takes ownership of the artwork and sets its price back to zero.</p> */}
         {/* <p>Once it crosses this time period, the patron can't top up their deposit anymore and is effectively foreclosed.</p> */}
       <h2>Actions:</h2>
@@ -81,7 +80,7 @@ class ActionSection extends Component {
           <Fragment>
           <ContractForm buttonText="Change Price" contract="Harber" method="changePrice" labels={["New Price"]}/>
           <ContractForm buttonText="Top up Deposit" contract="Harber" method="depositDai" labels={["New Price"]}/>
-          <ContractForm buttonText="Withdraw Deposit" contract="Harber" method="withdrawDeposit" labels={["Amount to withdraw"]} toEth />
+          <ContractForm buttonText="Withdraw Deposit" contract="Harber" method="withdrawDeposit" labels={["Deposit in DAI"]} toEth />
           <ContractForm buttonText="Withdraw Whole Deposit And transfer token to previous  owner" contract="Harber" method="exit" />
           </Fragment>
         ) : (
@@ -91,8 +90,8 @@ class ActionSection extends Component {
           </Fragment>
         )}
 
-      {/* <h2>Other Artwork Stats:</h2>
-        <p>Total Patronage Collected: {this.state.combinedCollected} DAI</p> */}
+      <h2>Other Artwork Stats:</h2>
+        <p>Total Patronage Collected: {this.state.combinedCollected} DAI</p>
     </div>
     )
   }

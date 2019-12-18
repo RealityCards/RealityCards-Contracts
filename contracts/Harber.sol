@@ -57,7 +57,7 @@ contract Harber {
     address marketAddress;
     uint256[numberOfTokens] public price; //in wei
     uint256[numberOfTokens] public collectedAndSentToAugur; // amount collected for each token, ie the sum of all owners' rent  
-    uint256 public totalCollectedAndSentToAugur; // an easy way to track the above
+    uint256 public totalCollected; // an easy way to track the above
     uint256[numberOfTokens] public timeLastCollected; // used to determine the rent due. Rent is due for the period (now - timeLastCollected)
     uint256[numberOfTokens] public timeAcquired; // used only for front end
     uint256[numberOfTokens] public currentOwnerIndex; // tracks the position of the current owner in the previousOwnerTracker mapping
@@ -155,7 +155,7 @@ contract Harber {
      function sellCompleteSets(uint256 _sets) internal 
     {
         //change below to assert in production. 
-        require(_sets<=totalCollectedAndSentToAugur, "Trying to get back too much");
+        require(_sets<=totalCollected, "Trying to get back too much");
 
         if (usingAugur == true)
         {
@@ -203,13 +203,13 @@ contract Harber {
         uint256 _daiAvailableToDistribute;
 
         //get the dai back from Augur
-        sellCompleteSets(totalCollectedAndSentToAugur);
-        //Im not relying on totalCollectedAndSentToAugur to distribute in case get less back from Augur due to fees. Will get the actual DAI balance of the contract. 
+        sellCompleteSets(totalCollected);
+        //Im not relying on totalCollected to distribute in case get less back from Augur due to fees. Will get the actual DAI balance of the contract. 
         if (usingAugur) {
             _daiAvailableToDistribute = cash.balanceOf(address(this));
         }
         else {
-             _daiAvailableToDistribute = totalCollectedAndSentToAugur;
+             _daiAvailableToDistribute = totalCollected;
         }
         
         //do the payout
@@ -243,18 +243,18 @@ contract Harber {
         return (previousOwnerTracker[_tokenId][_index].owner);
     }
 
-    function calculateRentOwed(uint256 _tokenId) public view returns (uint256 augurFundsDue) {
+    function augurFundsOwed(uint256 _tokenId) public view returns (uint256 augurFundsDue) {
         return price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(365 days);
     }
 
-    function calculateRentOwedWithTimestamp(uint256 _tokenId) public view returns (uint256 augurFundsDue, uint256 timestamp) {
-        return (calculateRentOwed(_tokenId), now);
+    function augurFundsOwedWithTimestamp(uint256 _tokenId) public view returns (uint256 augurFundsDue, uint256 timestamp) {
+        return (augurFundsOwed(_tokenId), now);
     }
     function foreclosed(uint256 _tokenId) public view returns (bool) {
         // returns whether it is in foreclosed state or not
         // depending on whether deposit covers patronage due
         // useful helper function when price should be zero, but contract doesn't reflect it yet.
-        uint256 _rentOwed = calculateRentOwed(_tokenId);
+        uint256 _rentOwed = augurFundsOwed(_tokenId);
         if(_rentOwed >= deposits[_tokenId][msg.sender]) {
             return true;
         } else {
@@ -264,7 +264,7 @@ contract Harber {
 
     // this is only used to calculate foreclosure time
     function liveDepositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) {
-        uint256 _rentOwed = calculateRentOwed(_tokenId);
+        uint256 _rentOwed = augurFundsOwed(_tokenId);
         address _currentOwner = team.ownerOf(_tokenId);
         if(_rentOwed >= deposits[_tokenId][_currentOwner]) {
             return 0;
@@ -275,7 +275,7 @@ contract Harber {
 
     //this is my version of the above function. It shows how much each user can withdraw- whether or not they are the current owner. 
     function userDepositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) {
-        uint256 _rentOwed = calculateRentOwed(_tokenId);
+        uint256 _rentOwed = augurFundsOwed(_tokenId);
         address _currentOwner = team.ownerOf(_tokenId);
 
         if(_currentOwner == msg.sender)
@@ -307,7 +307,7 @@ contract Harber {
         // determine patronage to pay
         if (state[_tokenId] == ownedState.Owned) {
             
-            uint256 _rentOwed = calculateRentOwed(_tokenId);
+            uint256 _rentOwed = augurFundsOwed(_tokenId);
             address _currentOwner = team.ownerOf(_tokenId);
             uint256 _timeOfThisCollection;
             testingVariable =totalTimeHeld[_tokenId];
@@ -338,7 +338,7 @@ contract Harber {
             timeLastCollected[_tokenId] = now;
             deposits[_tokenId][_currentOwner] = deposits[_tokenId][_currentOwner].sub(_rentOwed);
             collectedAndSentToAugur[_tokenId] = collectedAndSentToAugur[_tokenId].add(_rentOwed);
-            totalCollectedAndSentToAugur = totalCollectedAndSentToAugur.add(_rentOwed);
+            totalCollected = totalCollected.add(_rentOwed);
 
             buyCompleteSets(_rentOwed);
             
