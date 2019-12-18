@@ -17,6 +17,8 @@ const augurCashAddress = '0xa836c1D6a35A443FD6F8d5d4A9cf5b1664bF76D6';
 // (8) 0x06b58dDf8CF8E115D01137A296fb57e522Cc441f (100 ETH)
 // (9) 0x84CAbF995E9Af67B6d73232C2D5E9fBeBEF92224 (100 ETH)
 
+// These test assume that 100 dai (in wei-dai or whatever) is sent with the getTestDai function. 
+
 contract('HarberTests', (accounts) => {
 
   let token;

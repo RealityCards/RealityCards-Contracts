@@ -24,46 +24,6 @@ class TestDaiFaucetSection extends Component {
     };
   }
 
-  getTotalCollected(props) {
-    return new this.utils.BN(props.contracts['Harber']['totalCollected'][this.state.totalCollectedKey].value);
-  }
-
-  async updateCombineCollected(props) {
-    const rentOwed = this.getrentOwed(props);
-    const totalCollected = this.getTotalCollected(props);
-    const combinedCollected = this.utils.fromWei(totalCollected.add(rentOwed), 'ether').toString();
-    this.setState({
-      rentOwed,
-      combinedCollected,
-    });
-  }
-
-  getrentOwed(props) {
-    return new this.utils.BN(props.contracts['Harber']['rentOwed'][this.state.rentOwedKey].value);
-  }
-
-  async componentWillReceiveProps(nextProps) {
-    if(this.props.contracts['Harber']['price'][this.state.artworkPriceKey] !== nextProps.contracts['Harber']['price'][this.state.artworkPriceKey]) {
-      if (nextProps.contracts['Harber']['price'][this.state.artworkPriceKey].value === '0') {
-        this.setState({
-          foreclosureTime: "N/A"
-        });
-      } else {
-        const foreclosureTime = moment(parseInt(await this.contracts.Harber.methods.rentalExpiryTime(urlId).call())*1000).toString();
-        this.setState({foreclosureTime});
-      }
-    }
-
-    if (this.state.rentOwedKey in this.props.contracts['Harber']['rentOwed']
-    && this.state.rentOwedKey in nextProps.contracts['Harber']['rentOwed']
-    && this.state.totalCollectedKey in this.props.contracts['Harber']['totalCollected']
-    && this.state.totalCollectedKey in nextProps.contracts['Harber']['totalCollected']) {
-      if (!this.getrentOwed(this.props).eq(this.getrentOwed(nextProps)) || this.state.combinedCollected === -1) {
-        this.updateCombineCollected(nextProps);
-      }
-    }
-  }
-
   render() {
     return (
     <div className="section" style={{margin: '0px'}}>

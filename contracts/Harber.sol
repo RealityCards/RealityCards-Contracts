@@ -23,14 +23,15 @@ interface Cash
     function transferFrom(address _from, address _to, uint256 _amount) external returns (bool);
 }
 
-//TODO: make sure timeHeld is updated for the final owner because it is not automatically updated unless there is a transfer of the token. 
-//TODO: augur will not accept to buy complete sets when itis resolved, so add smth to check if it is resolved with very collectRent
 //TODO : add something that will pay back all unused deposits at end of market
+//TODO : if im not going to implement proper augur local testing, at least get a local cash contract, so much cleaner, and i dont need to mess about with _daiAvailableToDistribute split between two verisons
+//TODO : write tests for returndeposits
 //TODO : ensure that andrewsaddress is set correctly. It is different in dev
 //TODO : owner tracker variable test
 //TODO : add some more events 
 //TODO : I seemed to get errors via front ened when i bought for 100000000 and 50 daik deposit, then switched to anew user and bought for 100000001 and 50 dai, investigate
 //TODO: it seems when testing via front end that the amount sent to augur was well above the 'total parongage collected' on the very first _collect (ie when adding deposit), investigate. I just tried a second time and yes itsa problem. as test, check that whatever is sent to buy sets matches the variable that the front end is checking (actually it appears to be out by 2 decimal places)
+//TODO: make sure that tokenID of 0 is never used, do i need to do anything? maybe not
 
 contract Harber {
     
@@ -65,7 +66,8 @@ contract Harber {
     uint256[numberOfTokens] public timeLastCollected; // used to determine the rent due. Rent is due for the period (now - timeLastCollected), at which point timeLastCollected is set to now.
     uint256[numberOfTokens] public timeAcquired; // used only for front end
     uint256[numberOfTokens] public currentOwnerIndex; // tracks the position of the current owner in the previousOwnerTracker mapping
-    uint256[numberOfTokens] public numberOfOwners; //used to cycle through ownerTracker during finalse & payout. Since you can't find the size of a mapping.
+    uint256[numberOfTokens] public numberOfOwners; //used to cycle through ownerTracker during finalse & payout. Since you can't find the size of a mapping. If the value is 5, it means there are 5 owners. Ie it is not doing programming counting. 
+    
     // winning outcome variables
     bool public marketResolved = false;
     bool public doneAndDusted = false;
@@ -111,7 +113,6 @@ contract Harber {
         marketExpectedResolutionTime = _marketExpectedResolutionTime;
         
         //approve augur contract to transfer this contract's dai
-        // MUST BE COMMENTED OUT WHEN RUNNING ON GANACHE UNTIL I GET PRIVATE VERSION OF AUGUR CONTRACTS
         if (usingAugur == true) {
             cash.approve(_addressOfMainAugurContract,(2**256)-1);
         }
@@ -140,6 +141,7 @@ contract Harber {
     function getTestDai() public 
     {
         if (usingAugur == true) {
+            //instead of the user getting testDai to his account, it is generated here and and allocated to the user
             cash.faucet(100000000000000000000);
         }
 
@@ -155,11 +157,9 @@ contract Harber {
         } 
     }
 
-    //currently public for testing, change to internal for production
-     function sellCompleteSets(uint256 _sets) public 
+     function sellCompleteSets(uint256 _sets) internal 
     {
         //change below to assert in production. 
-        require(_sets<=totalCollected, "Trying to get back too much");
         assert (marketResolved);
 
         if (usingAugur == true)
@@ -182,7 +182,13 @@ contract Harber {
                 //final rent collection before it is locked down
                 _collectRent(winningOutcome);
                 marketResolved = true;
-                finaliseAndPayout();
+                //check if market resolved invalid
+                if (winningOutcome == 0) {
+                    invalidMarketFinaliseAndPayout();
+                }
+                else {
+                    finaliseAndPayout();
+                }
             }
         }
     }
@@ -190,17 +196,37 @@ contract Harber {
     //this function is used for testing, and in production is kept unless the above function fails. It can ONLY be called well after the market should have resolved on Augur, otherwise I could influence the outcome
     function setWinner(uint256 _winner) notResolved() public 
     {
-        //only I can call this- MAKE SURE IT IS UNCOMMENTED IN PRODUCTION!
+        // only I can call this- MAKE SURE IT IS UNCOMMENTED IN PRODUCTION!
         // require (msg.sender == andrewsAddress, "Imposter detected"); 
         // can only be called if a month has passed and the Augur market still not resolved
         require (now > (marketExpectedResolutionTime + 2592000), "Wait for decentralised resolution first");
-        //final rent collection before it is locked down
+        assert(_winner != 0); //0 is invalid market, would never set this manually
         winningOutcome = _winner;
         _collectRent(winningOutcome);
         marketResolved = true;
         finaliseAndPayout();
     }
 
+    //return all unused deposits upon resolution
+    //should be internal in production
+    function returnDeposits() public
+    {
+        for (uint i=1; i <= numberOfTokens; i++) //not counting from zero, 0 = invalid
+        {  
+            for (uint j=0; j < numberOfOwners[i]; j++)
+            {  
+                address _thisUsersAddress = ownerTracker[i][j];
+                uint256 _depositToReturn = deposits[i][_thisUsersAddress];
+                if (usingAugur) {
+                    cash.transfer(_thisUsersAddress,_depositToReturn);
+                } else {
+                    fundsSentToUser[_thisUsersAddress] = _depositToReturn;
+                }
+            }
+        }
+    }
+
+    // leaving this public in an abundance of caution. It can't be called twice or early. 
     function finaliseAndPayout() public
     {
         require (marketResolved == true, "Winner not known");
@@ -209,7 +235,7 @@ contract Harber {
 
         //get the dai back from Augur
         sellCompleteSets(totalCollected);
-        //Im not relying on totalCollected to distribute in case get less back from Augur due to fees. Will get the actual DAI balance of the contract. 
+        //The Dai returned to distribute will not be known in advance due to fees, so I cannot hard code the figure to payout to winners. So I will just get the dai balance of the contract. 
         if (usingAugur) {
             _daiAvailableToDistribute = cash.balanceOf(address(this));
         }
@@ -231,6 +257,21 @@ contract Harber {
             }
         }
         doneAndDusted = true;
+    }
+
+    // This will ONLY be called if the market returns invalid, in which case everyone will be returned funds in proportion to how long they have held each token. It is not possible to pay back the actual funds sent, since the relevant data is not tracked by the contract. It would be prohibitive in gas costs to track this for a situation that should never occur.  
+    function invalidMarketFinaliseAndPayout() internal
+    {
+        require (marketResolved == true, "Winner not known");
+        require (doneAndDusted == false, "Already paid out");
+        sellCompleteSets(totalCollected);
+        if (usingAugur) {
+            uint256 _daiAvailableToDistribute = cash.balanceOf(address(this));
+        }
+        else {
+            uint256 _daiAvailableToDistribute = totalCollected;
+        }
+        //TOD: transfer function
     }
 
     function getTestDaiBalance() public view returns (uint256)

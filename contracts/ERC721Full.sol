@@ -20,6 +20,7 @@ contract ERC721Full is ERC721, ERC721Enumerable, ERC721Metadata {
 
     function setup() public {
         //consider the token setup here being modified such that it enforces a match between the token ID on augur and the token ID here. Ie, use the getMarketOutcomes function within the main Augur contract to get the 'name' of each outcome, and then pass this name over to the _mint process. 
+        //also, note that token 0 is not used, since this refers to an invalid outcome within Augur
         require(!init, "Already initialized");
         init = true;
 
