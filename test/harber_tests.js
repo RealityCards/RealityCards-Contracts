@@ -439,7 +439,7 @@ contract('HarberTests', (accounts) => {
     //check total time held
     var totalTimeHeld = await harber.totalTimeHeld.call(2);
     var difference = Math.abs(totalTimeHeld - 5529600); // 14+26+7+14+3 days = 64
-    assert.isBelow(difference,2);
+    assert.isBelow(difference,3);
     //call exit so that it is owned by me, and check totalTimeHeld has NOT incremented
     await harber.exit(2,{ from: user1 }); 
     var totalTimeHeld = await harber.totalTimeHeld.call(2);
@@ -533,11 +533,7 @@ contract('HarberTests', (accounts) => {
     assert.isBelow(difference,2);
     var user2Winnings = await harber.fundsSentToUser.call(user2);
     var difference = Math.abs(user2Winnings - ((totalCollectedAndSentToAugur.toNumber()*7)/64));
-
-    console.log(totalCollectedAndSentToAugur);
-    console.log(user2Winnings);
-
-    assert.isBelow(difference,2);
+    assert.isBelow(difference,2); 
     var user3Winnings = await harber.fundsSentToUser.call(user3);
     var difference = Math.abs(user3Winnings - ((totalCollectedAndSentToAugur.toNumber()*14)/64));
     assert.isBelow(difference,2);

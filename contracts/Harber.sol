@@ -311,12 +311,6 @@ contract Harber {
             uint256 _timeOfThisCollection;
             testingVariable =totalTimeHeld[_tokenId];
             
-            // if (deposits[_tokenId][_currentOwner] == 0){
-            //     //this will only trigger if a user withdraws their entire deposit
-            //     _timeOfThisCollection = timeLastCollected[_tokenId];
-            //     _rentOwed = 0;
-            //     _revertToPreviousOwner(_tokenId);
-            // }
             if (_rentOwed >= deposits[_tokenId][_currentOwner]) {
                 // run out of deposit. Calculate time it was actually paid for, then revert to previous owner 
                 _timeOfThisCollection = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(deposits[_tokenId][_currentOwner]).div(_rentOwed)));
@@ -329,7 +323,7 @@ contract Harber {
             }
 
             //update the ownerTracker and numberOfOwners variables. only for new owners. 
-            if (timeHeld[_tokenId][_currentOwner] > 0) {
+            if (timeHeld[_tokenId][_currentOwner] == 0) {
                 ownerTracker[_tokenId][numberOfOwners[_tokenId]] = _currentOwner;
                 numberOfOwners[_tokenId] = numberOfOwners[_tokenId] + 1;
             }
@@ -337,19 +331,15 @@ contract Harber {
             uint256 _timeHeldToIncrement = (_timeOfThisCollection.sub(timeLastCollected[_tokenId])); //just for readability
             timeHeld[_tokenId][_currentOwner] = timeHeld[_tokenId][_currentOwner].add(_timeHeldToIncrement);
 
-            //totalTimeHeld should not increment when forelosed, but this is taken care of because this entire function only runs if not foreclosed
+            //totalTimeHeld should not increment when forelosed (or it would pay me a reward as I am the default owner), but this is taken care of because this entire function only runs if not foreclosed
             totalTimeHeld[_tokenId] = totalTimeHeld[_tokenId].add(_timeHeldToIncrement);
-
-
 
             timeLastCollected[_tokenId] = now;
             deposits[_tokenId][_currentOwner] = deposits[_tokenId][_currentOwner].sub(_rentOwed);
             collectedAndSentToAugur[_tokenId] = collectedAndSentToAugur[_tokenId].add(_rentOwed);
             totalCollectedAndSentToAugur = totalCollectedAndSentToAugur.add(_rentOwed);
 
-            // if (_rentOwed > 0) {
             buyCompleteSets(_rentOwed);
-            // }
             
             emit LogCollection(_rentOwed);
         }
