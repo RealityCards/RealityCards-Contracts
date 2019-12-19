@@ -17,7 +17,7 @@ interface ShareToken
 interface Cash 
 {
     function approve(address _spender, uint256 _amount) external returns (bool);
-    function balanceOf(address _owner) external view returns (uint256);
+    function balanceOf(address _ownesr) external view returns (uint256);
     function faucet(uint256 _amount) external;
     function transfer(address _to, uint256 _amount) external returns (bool);
     function transferFrom(address _from, address _to, uint256 _amount) external returns (bool);
@@ -32,6 +32,7 @@ interface Cash
 //TODO : I seemed to get errors via front ened when i bought for 100000000 and 50 daik deposit, then switched to anew user and bought for 100000001 and 50 dai, investigate
 //TODO: it seems when testing via front end that the amount sent to augur was well above the 'total parongage collected' on the very first _collect (ie when adding deposit), investigate. I just tried a second time and yes itsa problem. as test, check that whatever is sent to buy sets matches the variable that the front end is checking (actually it appears to be out by 2 decimal places)
 //TODO: make sure that tokenID of 0 is never used, do i need to do anything? maybe not
+//TODO: see the screenshot in the harber folder of ownerTracker (which I got via debug at the end of debugging returndeposits function) it does not look right, there are 0000 addresses and things out of order
 
 contract Harber {
     
@@ -39,10 +40,10 @@ contract Harber {
 
     // NUMBER OF TOKENS
     //this MUST be accurate. If it is too high, the getWinner function will try and check if a team that does not exist has won, which will cause a revert, preventing the contract from determining the winner
-    uint256 constant numberOfTokens = 3; 
+    uint256 constant numberOfTokens = 4; 
 
     //TESTING VARIABLES
-    bool usingAugur = true;
+    bool usingAugur = false;
     uint256 testingVariable = 0;
     uint256 a = 0;
     uint256 b = 0;
@@ -87,6 +88,7 @@ contract Harber {
     mapping (uint256 => uint256) public totalTimeHeld; //for the payout, what is the total time each token is owned for, excluding foreclosed state (ie owned by me). Winning addresses are sent totalFunds * (timeHeld/totalTimeHeld)
     mapping (uint256 => mapping (address => uint256) ) public deposits; //keeps track of all the deposits for each token, for each owner. Unused deposits are not returned automatically when there is a new buyer. Unused deposits are returned automatically upon resolution of the market (TODO)
     mapping (address => uint256) public testDaiBalances;
+    mapping (uint256 => mapping (address => bool)) public everOwned; //this is required to prevent the ownerTracker variable being incremented unless a completely new user buys the token. 
 
     // ENUMS
     enum ownedState { Foreclosed, Owned }
@@ -146,7 +148,7 @@ contract Harber {
         }
 
         //tests assume 100, else use 100000000000000000000
-        testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
+        testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100;
     }
 
     function buyCompleteSets(uint256 _rentOwed) internal 
@@ -211,16 +213,21 @@ contract Harber {
     //should be internal in production
     function returnDeposits() public
     {
-        for (uint i=1; i <= numberOfTokens; i++) //not counting from zero, 0 = invalid
+        a =numberOfOwners[1];
+        for (uint i=0; i < numberOfTokens; i++) //not counting from zero, 0 = invalid
         {  
             for (uint j=0; j < numberOfOwners[i]; j++)
             {  
                 address _thisUsersAddress = ownerTracker[i][j];
                 uint256 _depositToReturn = deposits[i][_thisUsersAddress];
-                if (usingAugur) {
-                    cash.transfer(_thisUsersAddress,_depositToReturn);
-                } else {
-                    fundsSentToUser[_thisUsersAddress] = _depositToReturn;
+
+                if (_depositToReturn > 0) {
+                    if (usingAugur) {
+                        cash.transfer(_thisUsersAddress,_depositToReturn);
+                    } else {
+                        fundsSentToUser[_thisUsersAddress] = fundsSentToUser[_thisUsersAddress] + _depositToReturn;
+                        a=1;
+                    }
                 }
             }
         }
@@ -350,6 +357,8 @@ contract Harber {
     }
 
     function _collectRent(uint256 _tokenId) notResolved() public {
+        //testing thing
+        a = numberOfOwners[0] ;
         // determine patronage to pay
         if (state[_tokenId] == ownedState.Owned) {
             
@@ -369,8 +378,10 @@ contract Harber {
                 _timeOfThisCollection = now;
             }
 
-            //update the ownerTracker and numberOfOwners variables. only for new owners. 
-            if (timeHeld[_tokenId][_currentOwner] == 0) {
+            //update the ownerTracker and numberOfOwners variables. only for new owners.
+            
+            if (everOwned[_tokenId][_currentOwner] == false) {
+                everOwned[_tokenId][_currentOwner] = true;
                 ownerTracker[_tokenId][numberOfOwners[_tokenId]] = _currentOwner;
                 numberOfOwners[_tokenId] = numberOfOwners[_tokenId] + 1;
             }
