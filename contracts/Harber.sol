@@ -48,7 +48,8 @@ contract Harber {
     uint256 a = 0;
     uint256 b = 0;
     uint256 c = 0;
-    mapping (address => uint256) public fundsSentToUser;
+    mapping (address => uint256) public winngsSentToUser;
+    mapping (address => uint256) public depositReturnedToUser;
     // uint256 public fundsInAugur
     
     // CONTRACT VARIABLES
@@ -211,38 +212,37 @@ contract Harber {
 
     //return all unused deposits upon resolution
     //should be internal in production
-    function returnDeposits() public
+    function returnDeposits() internal
     {
-        a =numberOfOwners[1];
         for (uint i=0; i < numberOfTokens; i++) //not counting from zero, 0 = invalid
         {  
             for (uint j=0; j < numberOfOwners[i]; j++)
             {  
                 address _thisUsersAddress = ownerTracker[i][j];
                 uint256 _depositToReturn = deposits[i][_thisUsersAddress];
+                deposits[i][_thisUsersAddress] = 0;
 
                 if (_depositToReturn > 0) {
                     if (usingAugur) {
                         cash.transfer(_thisUsersAddress,_depositToReturn);
                     } else {
-                        fundsSentToUser[_thisUsersAddress] = fundsSentToUser[_thisUsersAddress] + _depositToReturn;
-                        a=1;
+                        depositReturnedToUser[_thisUsersAddress] = depositReturnedToUser[_thisUsersAddress] + _depositToReturn;
                     }
                 }
             }
         }
     }
 
-    // leaving this public in an abundance of caution. It can't be called twice or early. 
-    function finaliseAndPayout() public
+    function finaliseAndPayout() internal
     {
         require (marketResolved == true, "Winner not known");
         require (doneAndDusted == false, "Already paid out");
         uint256 _daiAvailableToDistribute;
-
-        //get the dai back from Augur
+        //return unused deposits
+        returnDeposits();
+        // get the dai back from Augur
         sellCompleteSets(totalCollected);
-        //The Dai returned to distribute will not be known in advance due to fees, so I cannot hard code the figure to payout to winners. So I will just get the dai balance of the contract. 
+        // the Dai returned to distribute will not be known in advance due to fees, so I cannot hard code the figure to payout to winners. So I will just get the dai balance of the contract. 
         if (usingAugur) {
             _daiAvailableToDistribute = cash.balanceOf(address(this));
         }
@@ -260,7 +260,7 @@ contract Harber {
             if (usingAugur) {
                 cash.transfer(_winnersAddress,_winningsToTransfer);
             } else {
-                fundsSentToUser[_winnersAddress] = _winningsToTransfer;
+                winngsSentToUser[_winnersAddress] = _winningsToTransfer;
             }
         }
         doneAndDusted = true;
@@ -467,7 +467,12 @@ contract Harber {
 
         deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].sub(_dai);
         testDaiBalances[msg.sender] = testDaiBalances[msg.sender].add(_dai);
-        //TO DO THE SEND DAI FUNCTION, CANNOT DO ON TESTNET
+        //return the dai
+        if (usingAugur) {
+                cash.transfer(msg.sender,_dai);
+            } else {
+                depositReturnedToUser[msg.sender] = depositReturnedToUser[msg.sender] + _dai;
+            }
 
         if(deposits[_tokenId][msg.sender] == 0) {
             _revertToPreviousOwner(_tokenId);

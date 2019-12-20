@@ -378,7 +378,11 @@ contract('HarberTests', (accounts) => {
     assert.equal(owner, andrewsAddress);
     var price = await harber.price.call(1);
     assert.equal(price, 0);
-    // await harber.buy(365,1,5,{ from: user5  });
+    //doing some buys so that some users for this token will have a deposit balance, which can be tested later when doing return deposit
+    await harber.buy(365,1,11,{ from: user5  }); 
+    await harber.buy(730,1,12,{ from: user6  }); 
+    await harber.buy(1095,1,13,{ from: user7  }); 
+
   });
 
 //reset token2
@@ -428,7 +432,7 @@ contract('HarberTests', (accounts) => {
     await time.increase(time.duration.weeks(1));
     await harber._collectRent(2); //revert to user 3
     await time.increase(time.duration.weeks(2));
-    await harber._collectRent(2); //revert to user 1 [2 is already 0]
+    await harber._collectRent(2); //revert to user 1 [2 is already 0]c
     await time.increase(time.duration.days(3));
     await harber._collectRent(2); //stay on user 1
     await time.increase(time.duration.days(2));
@@ -522,6 +526,8 @@ contract('HarberTests', (accounts) => {
     assert.equal(owner, andrewsAddress);
     var price = await harber.price.call(3);
     assert.equal(price, 0);
+    //just to test return deposit
+    await harber.buy(1,3,3,{ from: user2 });
   });
 
   //back to token 2
@@ -538,43 +544,53 @@ contract('HarberTests', (accounts) => {
     assert.equal(deposit, 70); //70
     var deposit = await harber.deposits.call(0,user4);
     assert.equal(deposit, 100); //100
-    // lets add some more
-    // TODO
-    var stfu = await harber.numberOfOwners.call(0);
-    assert.equal(stfu,5);
-    await debug(harber.returnDeposits());
-    var depositReturned = await harber.fundsSentToUser.call(user0);
-    assert.equal(depositReturned,40);
-    var depositReturned = await harber.fundsSentToUser.call(user1);
-    assert.equal(depositReturned,20);
-    var depositReturned = await harber.fundsSentToUser.call(user2);
-    assert.equal(depositReturned,15);
-    var depositReturned = await harber.fundsSentToUser.call(user3);
-    assert.equal(depositReturned,70);
-    var depositReturned = await harber.fundsSentToUser.call(user4);
-    assert.equal(depositReturned,100);
+    var deposit = await harber.deposits.call(1,user5);
+    assert.equal(deposit, 11); //11
+    var deposit = await harber.deposits.call(1,user6);
+    assert.equal(deposit, 12); //12
+    var deposit = await harber.deposits.call(1,user7);
+    assert.equal(deposit, 13); //13
+    var deposit = await harber.deposits.call(3,user2);
+    assert.equal(deposit, 3); //3
     //set the winner manually
     await harber.setWinner(2, { from: andrewsAddress }); 
     var totalCollected = await harber.totalCollected.call();
+    //check that the correct deposit was returned
+    var depositReturned = await harber.depositReturnedToUser.call(user0);
+    assert.equal(depositReturned,68); //40 + 14 from withdrawDeposit + 14 from exit
+    var depositReturned = await harber.depositReturnedToUser.call(user1);
+    assert.equal(depositReturned,42); //20 + 10 from withdraw + 12 from exit()
+    var depositReturned = await harber.depositReturnedToUser.call(user2);
+    assert.equal(depositReturned,38); // 15 + 3 from above, + 10 from withdraw + 10 exit
+    var depositReturned = await harber.depositReturnedToUser.call(user3);
+    assert.equal(depositReturned,70);
+    var depositReturned = await harber.depositReturnedToUser.call(user4);
+    assert.equal(depositReturned,100);
+    var depositReturned = await harber.depositReturnedToUser.call(user5);
+    assert.equal(depositReturned,11);
+    var depositReturned = await harber.depositReturnedToUser.call(user6);
+    assert.equal(depositReturned,12);
+    var depositReturned = await harber.depositReturnedToUser.call(user7);
+    assert.equal(depositReturned,13);
     // total time held is 64 days users:
     // 0 14 days
     // 1 26 days
     // 2 7 days
     // 3 14 days
     // 4 3 days
-    var user0Winnings = await harber.fundsSentToUser.call(user0);
+    var user0Winnings = await harber.winngsSentToUser.call(user0);
     var difference = Math.abs(user0Winnings - ((totalCollected.toNumber()*14)/64));
-    assert.isBelow(difference,2); //<--------
-    var user1Winnings = await harber.fundsSentToUser.call(user1);
+    assert.isBelow(difference,2); 
+    var user1Winnings = await harber.winngsSentToUser.call(user1);
     var difference = Math.abs(user1Winnings - ((totalCollected.toNumber()*26)/64));
     assert.isBelow(difference,2);
-    var user2Winnings = await harber.fundsSentToUser.call(user2);
+    var user2Winnings = await harber.winngsSentToUser.call(user2);
     var difference = Math.abs(user2Winnings - ((totalCollected.toNumber()*7)/64));
     assert.isBelow(difference,2); 
-    var user3Winnings = await harber.fundsSentToUser.call(user3);
+    var user3Winnings = await harber.winngsSentToUser.call(user3);
     var difference = Math.abs(user3Winnings - ((totalCollected.toNumber()*14)/64));
     assert.isBelow(difference,2);
-    var user4Winnings = await harber.fundsSentToUser.call(user4);
+    var user4Winnings = await harber.winngsSentToUser.call(user4);
     var difference = Math.abs(user4Winnings - ((totalCollected.toNumber()*3)/64));
     assert.isBelow(difference,2);
   });
