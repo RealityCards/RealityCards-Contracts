@@ -23,15 +23,11 @@ interface Cash
     function transferFrom(address _from, address _to, uint256 _amount) external returns (bool);
 }
 
-//TODO : add something that will pay back all unused deposits at end of market
 //TODO : if im not going to implement proper augur local testing, at least get a local cash contract, so much cleaner, and i dont need to mess about with _daiAvailableToDistribute split between two verisons
-//TODO : write tests for returndeposits
 //TODO : ensure that andrewsaddress is set correctly. It is different in dev
-//TODO : owner tracker variable test
 //TODO : add some more events 
 //TODO : I seemed to get errors via front ened when i bought for 100000000 and 50 daik deposit, then switched to anew user and bought for 100000001 and 50 dai, investigate
 //TODO: it seems when testing via front end that the amount sent to augur was well above the 'total parongage collected' on the very first _collect (ie when adding deposit), investigate. I just tried a second time and yes itsa problem. as test, check that whatever is sent to buy sets matches the variable that the front end is checking (actually it appears to be out by 2 decimal places)
-//TODO: make sure that tokenID of 0 is never used, do i need to do anything? maybe not
 //TODO: see the screenshot in the harber folder of ownerTracker (which I got via debug at the end of debugging returndeposits function) it does not look right, there are 0000 addresses and things out of order
 
 contract Harber {
@@ -39,8 +35,8 @@ contract Harber {
     using SafeMath for uint256;
 
     // NUMBER OF TOKENS
-    //this MUST be accurate. If it is too high, the getWinner function will try and check if a team that does not exist has won, which will cause a revert, preventing the contract from determining the winner
-    uint256 constant numberOfTokens = 4; 
+    // this needs to INCLUDE the invalid outcome. So it will always be 1 higher than the number of teams. But if it is too high, the getWinner function will try and check if a team that does not exist has won, which will cause a revert, preventing the contract from determining the winner. So it must be accurate. 
+    uint256 constant numberOfTokens = 5; 
 
     //TESTING VARIABLES
     bool usingAugur = false;
@@ -283,7 +279,9 @@ contract Harber {
             {
                 winningOutcome = i;
                 //final rent collection before it is locked down
-                _collectRent(winningOutcome);
+                for (uint i=1; i < numberOfTokens; i++) {
+                    _collectRent(i);
+                }
                 marketResolved = true;
                 //check if market resolved invalid
                 if (winningOutcome == 0) {
@@ -303,18 +301,26 @@ contract Harber {
         // require (msg.sender == andrewsAddress, "Imposter detected"); 
         // can only be called if a month has passed and the Augur market still not resolved
         require (now > (marketExpectedResolutionTime + 2592000), "Wait for decentralised resolution first");
-        assert(_winner != 0); //0 is invalid market, would never set this manually
         winningOutcome = _winner;
-        _collectRent(winningOutcome);
+        //final rent collection before it is locked down
+        for (uint i=1; i < numberOfTokens; i++) {
+             _collectRent(i);
+        }
         marketResolved = true;
-        finaliseAndPayout();
+        //check if market resolved invalid
+        if (winningOutcome == 0) {
+            invalidMarketFinaliseAndPayout();
+        }
+        else {
+            finaliseAndPayout();
+        }
     }
 
     //return all unused deposits upon resolution
-    //should be internal in production
+    // * internal * 
     function returnDeposits() internal
     {
-        for (uint i=0; i < numberOfTokens; i++) //not counting from zero, 0 = invalid
+        for (uint i=1; i < numberOfTokens; i++) //not counting from zero, 0 = invalid
         {  
             for (uint j=0; j < numberOfOwners[i]; j++)
             {  
@@ -333,6 +339,7 @@ contract Harber {
         }
     }
 
+    // * internal * 
     function finaliseAndPayout() internal
     {
         require (marketResolved == true, "Winner not known");
@@ -367,6 +374,7 @@ contract Harber {
     }
 
     // This will ONLY be called if the market returns invalid, in which case everyone will be returned funds in proportion to how long they have held each token. It is not possible to pay back the actual funds sent, since the relevant data is not tracked by the contract. It would be prohibitive in gas costs to track this for a situation that should never occur.  
+    // * internal * 
     function invalidMarketFinaliseAndPayout() internal
     {
         require (marketResolved == true, "Winner not known");
@@ -428,6 +436,8 @@ contract Harber {
     }
     
     function buy(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) public collectRent(_tokenId) notResolved() {
+        require(_tokenId != 0, "Cannot bet on invalid outcome");
+        require(_tokenId < numberOfTokens, "This team does not exist");
         require(_newPrice > price[_tokenId], "Price must be higher than current price");
         require(_deposit > 0, "Must deposit something");
         require(testDaiBalances[msg.sender] >= _deposit, "Not enough DAI");
@@ -548,4 +558,3 @@ contract Harber {
     }
 }
 
-                // require(1 > 2, "STFU");

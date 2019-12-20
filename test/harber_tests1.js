@@ -18,7 +18,7 @@ const augurCashAddress = '0xa836c1D6a35A443FD6F8d5d4A9cf5b1664bF76D6';
 // (8) 0x06b58dDf8CF8E115D01137A296fb57e522Cc441f (100 ETH)
 // (9) 0x84CAbF995E9Af67B6d73232C2D5E9fBeBEF92224 (100 ETH)
 
-// These test assume that 100 dai (in wei-dai or whatever) is sent with the getTestDai function. 
+// These test assume that 100 dai (in wei-dai or whatever) is sent with the getTestDai function and numberoftokens = 5
 // These tests do NOT reset the blockchain after each test. In retrospect this was a mistake, as it wasted a huge amount of time. harber_test2 fix this. 
 
 contract('HarberTests', (accounts) => {
@@ -47,7 +47,7 @@ contract('HarberTests', (accounts) => {
   });
 
     it('getOwner', async () => {
-    var owner = await token.ownerOf.call(0);
+    var owner = await token.ownerOf.call(4);
     assert.equal(owner, andrewsAddress);
   });
 
@@ -67,177 +67,179 @@ contract('HarberTests', (accounts) => {
 
   it('user 1 buy Token first time and check: various', async () => {
     user = user0;
-    await harber.buy(100,0,10,{ from: user });
+    await harber.buy(100,4,10,{ from: user });
     newOwnerPurchaseCount1++;
-    var price = await harber.price.call(0);
+    var price = await harber.price.call(4);
     assert.equal(price, 100);
     var testDaiBalance = await harber.getTestDaiBalance.call();
     assert.equal(testDaiBalance, 90);
-    var deposit = await harber.deposits.call(0,user);
+    var deposit = await harber.deposits.call(4,user);
     assert.equal(deposit, 10);
-    var owner = await token.ownerOf.call(0);
+    var owner = await token.ownerOf.call(4);
     assert.equal(owner, user);
-    var trackedPrice = await harber.getOwnerTrackerPrice.call(0,newOwnerPurchaseCount1);
+    var trackedPrice = await harber.getOwnerTrackerPrice.call(4,newOwnerPurchaseCount1);
     assert.equal(trackedPrice, 100);
-    var trackedAddress = await harber.getOwnerTrackerAddress.call(0,newOwnerPurchaseCount1);
+    var trackedAddress = await harber.getOwnerTrackerAddress.call(4,newOwnerPurchaseCount1);
     assert.equal(trackedAddress, user);
   });
 
   it('user 1 buy Token second time and check: various', async () => {
     user = user0;
-    await harber.buy(200,0,10,{ from: user });
-    var price = await harber.price.call(0);
+    await harber.buy(200,4,10,{ from: user });
+    var price = await harber.price.call(4);
     assert.equal(price, 200);
     var testDaiBalance = await harber.getTestDaiBalance.call();
     assert.equal(testDaiBalance, 80);
-    var deposit = await harber.deposits.call(0,user);
+    var deposit = await harber.deposits.call(4,user);
     assert.equal(deposit, 20); //<------------
-    var owner = await token.ownerOf.call(0);
+    var owner = await token.ownerOf.call(4);
     assert.equal(owner, user);
-    var trackedPrice = await harber.getOwnerTrackerPrice.call(0,newOwnerPurchaseCount1);
+    var trackedPrice = await harber.getOwnerTrackerPrice.call(4,newOwnerPurchaseCount1);
     assert.equal(trackedPrice, 200);
-    var trackedAddress = await harber.getOwnerTrackerAddress.call(0,newOwnerPurchaseCount1);
+    var trackedAddress = await harber.getOwnerTrackerAddress.call(4,newOwnerPurchaseCount1);
     assert.equal(trackedAddress, user);
   });
 
   it('user 2 buy Token fail states', async () => {
     user = user1;
-    await shouldFail.reverting.withMessage(harber.buy(200,0,0,{ from: user}), "Price must be higher than current price");
-    await shouldFail.reverting.withMessage(harber.buy(300,0,0,{ from: user}), "Must deposit something");
-    await shouldFail.reverting.withMessage(harber.buy(300,0,10,{ from: user}), "Not enough DAI");
+    await shouldFail.reverting.withMessage(harber.buy(200,4,0,{ from: user}), "Price must be higher than current price");
+    await shouldFail.reverting.withMessage(harber.buy(300,4,0,{ from: user}), "Must deposit something");
+    await shouldFail.reverting.withMessage(harber.buy(300,4,10,{ from: user}), "Not enough DAI");
+    await shouldFail.reverting.withMessage(harber.buy(300,0,10,{ from: user}), "Cannot bet on invalid outcome");
+    // await shouldFail.reverting.withMessage(harber.buy(300,5,10,{ from: user}), "This team does not exist");
   });
 
   it('user 2 buy Token first time and check: various', async () => { 
     user = user1;
     await harber.getTestDai({ from: user });
-    await harber.buy(300,0,10,{ from: user  });
+    await harber.buy(300,4,10,{ from: user  });
     newOwnerPurchaseCount1++;
     //  check user0 deposit is still there
-    var deposit = await harber.deposits.call(0,user0);
+    var deposit = await harber.deposits.call(4,user0);
     assert.equal(deposit, 20);
     //
-    var price = await harber.price.call(0);
+    var price = await harber.price.call(4);
     assert.equal(price, 300);
     var testDaiBalance = await harber.getTestDaiBalance.call({ from: user });
     assert.equal(testDaiBalance, 90);
-    var deposit = await harber.deposits.call(0,user);
+    var deposit = await harber.deposits.call(4,user);
     assert.equal(deposit, 10);
-    var owner = await token.ownerOf.call(0);
+    var owner = await token.ownerOf.call(4);
     assert.equal(owner, user );
-    var trackedPrice = await harber.getOwnerTrackerPrice.call(0,newOwnerPurchaseCount1);
+    var trackedPrice = await harber.getOwnerTrackerPrice.call(4,newOwnerPurchaseCount1);
     assert.equal(trackedPrice, 300);
-    var trackedAddress = await harber.getOwnerTrackerAddress.call(0,newOwnerPurchaseCount1);
+    var trackedAddress = await harber.getOwnerTrackerAddress.call(4,newOwnerPurchaseCount1);
     assert.equal(trackedAddress, user);
   });
 
   it('user 2 buy Token second time and check: various', async () => {
     user = user1;
-    await harber.buy(400,0,10,{ from: user });
-    var price = await harber.price.call(0);
+    await harber.buy(400,4,10,{ from: user });
+    var price = await harber.price.call(4);
     assert.equal(price, 400);
     var testDaiBalance = await harber.getTestDaiBalance.call({ from: user });
     assert.equal(testDaiBalance, 80);
-    var deposit = await harber.deposits.call(0,user);
+    var deposit = await harber.deposits.call(4,user);
     assert.equal(deposit, 20);
-    var owner = await token.ownerOf.call(0);
+    var owner = await token.ownerOf.call(4);
     assert.equal(owner, user);
-    var trackedPrice = await harber.getOwnerTrackerPrice.call(0,newOwnerPurchaseCount1);
+    var trackedPrice = await harber.getOwnerTrackerPrice.call(4,newOwnerPurchaseCount1);
     assert.equal(trackedPrice, 400);
-    var trackedAddress = await harber.getOwnerTrackerAddress.call(0,newOwnerPurchaseCount1);
+    var trackedAddress = await harber.getOwnerTrackerAddress.call(4,newOwnerPurchaseCount1);
     assert.equal(trackedAddress, user);
   });
 ////////////
   it('switch back to user 1 buy Token third time and check: various', async () => {
     user = user0;
-    await harber.buy(1000,0,20,{ from: user });
+    await harber.buy(1000,4,20,{ from: user });
     newOwnerPurchaseCount1++;
-    var price = await harber.price.call(0);
+    var price = await harber.price.call(4);
     assert.equal(price, 1000);
     var testDaiBalance = await harber.getTestDaiBalance.call({ from: user });
     assert.equal(testDaiBalance, 60);
-    var deposit = await harber.deposits.call(0,user);
+    var deposit = await harber.deposits.call(4,user);
     assert.equal(deposit, 40);
-    var owner = await token.ownerOf.call(0);
+    var owner = await token.ownerOf.call(4);
     assert.equal(owner, user);
-    var trackedPrice = await harber.getOwnerTrackerPrice.call(0,newOwnerPurchaseCount1);
+    var trackedPrice = await harber.getOwnerTrackerPrice.call(4,newOwnerPurchaseCount1);
     assert.equal(trackedPrice, 1000);
-    var trackedAddress = await harber.getOwnerTrackerAddress.call(0,newOwnerPurchaseCount1);
+    var trackedAddress = await harber.getOwnerTrackerAddress.call(4,newOwnerPurchaseCount1);
     assert.equal(trackedAddress, user);
   });
 
   it('changePrice function fail testing', async () => {
     user = user1;
-    await shouldFail.reverting.withMessage(harber.changePrice(2000,0,{ from: user}), "Not owner");
+    await shouldFail.reverting.withMessage(harber.changePrice(2000,4,{ from: user}), "Not owner");
     user = user0;
-    await shouldFail.reverting.withMessage(harber.changePrice(1000,0,{ from: user}), "New price must be higher than current price");
+    await shouldFail.reverting.withMessage(harber.changePrice(1000,4,{ from: user}), "New price must be higher than current price");
   });
 
   it('user 1 using changePrice function', async () => {
     user = user0;
-    await harber.changePrice(2000,0,{ from: user });
-    var price = await harber.price.call(0);
+    await harber.changePrice(2000,4,{ from: user });
+    var price = await harber.price.call(4);
     assert.equal(price, 2000);
     var testDaiBalance = await harber.getTestDaiBalance.call({ from: user });
     assert.equal(testDaiBalance, 60);
-    var deposit = await harber.deposits.call(0,user);
+    var deposit = await harber.deposits.call(4,user);
     assert.equal(deposit, 40);
-    var owner = await token.ownerOf.call(0);
+    var owner = await token.ownerOf.call(4);
     assert.equal(owner, user);
-    var trackedPrice = await harber.getOwnerTrackerPrice.call(0,newOwnerPurchaseCount1);
+    var trackedPrice = await harber.getOwnerTrackerPrice.call(4,newOwnerPurchaseCount1);
     assert.equal(trackedPrice, 2000);
-    var trackedAddress = await harber.getOwnerTrackerAddress.call(0,newOwnerPurchaseCount1);
+    var trackedAddress = await harber.getOwnerTrackerAddress.call(4,newOwnerPurchaseCount1);
     assert.equal(trackedAddress, user);
   });
 
   it('calculateRentOwed function', async () => {
     user = user2;
     await harber.getTestDai({ from: user });
-    await harber.buy(3650,0,30,{ from: user  });
+    await harber.buy(3650,4,30,{ from: user  });
     newOwnerPurchaseCount1++;
-    var fundsOwedActual = await harber.rentOwed.call(0);
+    var fundsOwedActual = await harber.rentOwed.call(4);
     assert.equal(fundsOwedActual, 0);
     await time.increase(time.duration.minutes(1440)); //mins in a day
-    var fundsOwedActual = await harber.rentOwed.call(0);
+    var fundsOwedActual = await harber.rentOwed.call(4);
     assert.equal(fundsOwedActual, 10);
   });
 
   it('userDepositAbleToWithdraw and  liveDepositAbleToWithdraw function', async () => {
     user = user2;
     //due to 1 day passing from above, the userDepositAbleToWithdraw and depositAbleToWithdraw should be lower by 10 but the deposit amount should not
-    var userDepositAbleToWithdraw = await harber.userDepositAbleToWithdraw.call(0, { from: user });
-    var depositAbleToWithdraw = await harber.liveDepositAbleToWithdraw.call(0, { from: user })
-    var deposit = await harber.deposits.call(0,user);
+    var userDepositAbleToWithdraw = await harber.userDepositAbleToWithdraw.call(4, { from: user });
+    var depositAbleToWithdraw = await harber.liveDepositAbleToWithdraw.call(4, { from: user })
+    var deposit = await harber.deposits.call(4,user);
     assert.equal(deposit, 30);
     assert.equal(userDepositAbleToWithdraw,20);
     assert.equal(depositAbleToWithdraw,20);
     //increment time another half day and check that deposit is the same but the other two are not
     await time.increase(time.duration.minutes(720)); //mins in half a day
-    var userDepositAbleToWithdraw = await harber.userDepositAbleToWithdraw.call(0, { from: user });
-    var depositAbleToWithdraw = await harber.liveDepositAbleToWithdraw.call(0, { from: user })
-    var deposit = await harber.deposits.call(0,user);
+    var userDepositAbleToWithdraw = await harber.userDepositAbleToWithdraw.call(4, { from: user });
+    var depositAbleToWithdraw = await harber.liveDepositAbleToWithdraw.call(4, { from: user })
+    var deposit = await harber.deposits.call(4,user);
     assert.equal(deposit, 30);
     assert.equal(userDepositAbleToWithdraw,15);
     assert.equal(depositAbleToWithdraw,15);
     //switch user, buy, increment time. user2 deposit and userDepositAbleToWithdraw should not change but depositAbleToWithdraw should 
     await harber.getTestDai({ from: user3 });
-    await harber.buy(7300,0,100,{ from: user3  });
+    await harber.buy(7300,4,100,{ from: user3  });
     newOwnerPurchaseCount1++;
-    var price = await harber.price.call(0);
+    var price = await harber.price.call(4);
     assert.equal(price, 7300);
-    var owner = await token.ownerOf.call(0);
+    var owner = await token.ownerOf.call(4);
     assert.equal(owner, user3);
     await time.increase(time.duration.minutes(1440)); 
     // 
-    var userDepositAbleToWithdraw = await harber.userDepositAbleToWithdraw.call(0, { from: user });
-    var deposit = await harber.deposits.call(0,user);
-    var depositAbleToWithdraw = await harber.liveDepositAbleToWithdraw.call(0, { from: user })
+    var userDepositAbleToWithdraw = await harber.userDepositAbleToWithdraw.call(4, { from: user });
+    var deposit = await harber.deposits.call(4,user);
+    var depositAbleToWithdraw = await harber.liveDepositAbleToWithdraw.call(4, { from: user })
     assert.equal(deposit, 15);
     assert.equal(userDepositAbleToWithdraw,15);
     assert.equal(depositAbleToWithdraw,80);
     //wait another half a day and check that nothing has changed for user 3 since he isnt the owner
     await time.increase(time.duration.minutes(720));
-    var userDepositAbleToWithdraw = await harber.userDepositAbleToWithdraw.call(0, { from: user });
-    var deposit = await harber.deposits.call(0,user);
+    var userDepositAbleToWithdraw = await harber.userDepositAbleToWithdraw.call(4, { from: user });
+    var deposit = await harber.deposits.call(4,user);
     assert.equal(deposit, 15);
     assert.equal(userDepositAbleToWithdraw,15);
   });
@@ -245,14 +247,14 @@ contract('HarberTests', (accounts) => {
   it('rentalExpiryTime function', async () => {
     user = user4;
     await harber.getTestDai({ from: user });
-    await harber.buy(31536000,0,100,{ from: user  }); //price = number of seconds in a year so that deposit = number of seconds we expect it to last for. 
-    await harber._collectRent(0);
+    await harber.buy(31536000,4,100,{ from: user  }); //price = number of seconds in a year so that deposit = number of seconds we expect it to last for. 
+    await harber._collectRent(4);
     newOwnerPurchaseCount1++;
-    var depositAbleToWithdraw = await harber.liveDepositAbleToWithdraw.call(0);
+    var depositAbleToWithdraw = await harber.liveDepositAbleToWithdraw.call(4);
     assert.equal(depositAbleToWithdraw,100);
     currentTime = await time.latest();
     var expectedRentalExpiryTime = currentTime.add(time.duration.seconds(100));
-    var actualRentalExpiryTime = await harber.rentalExpiryTime.call(0);
+    var actualRentalExpiryTime = await harber.rentalExpiryTime.call(4);
     assert.equal(expectedRentalExpiryTime.toString(),actualRentalExpiryTime.toString());
   });
 
@@ -535,15 +537,15 @@ contract('HarberTests', (accounts) => {
   it('test finaliseAndPayout, returnDeposits', async () => {
     //below are the only combinations of users/tokens with a positive deposit
     //these are all zero if everything is commented out above token 2 stuff. 
-    var deposit = await harber.deposits.call(0,user0);
+    var deposit = await harber.deposits.call(4,user0);
     assert.equal(deposit, 40); //40
-    var deposit = await harber.deposits.call(0,user1);
+    var deposit = await harber.deposits.call(4,user1);
     assert.equal(deposit, 20); //20
-    var deposit = await harber.deposits.call(0,user2);
+    var deposit = await harber.deposits.call(4,user2);
     assert.equal(deposit, 15); //15
-    var deposit = await harber.deposits.call(0,user3);
+    var deposit = await harber.deposits.call(4,user3);
     assert.equal(deposit, 70); //70
-    var deposit = await harber.deposits.call(0,user4);
+    var deposit = await harber.deposits.call(4,user4);
     assert.equal(deposit, 100); //100
     var deposit = await harber.deposits.call(1,user5);
     assert.equal(deposit, 11); //11
@@ -566,14 +568,14 @@ contract('HarberTests', (accounts) => {
     var depositReturned = await harber.depositReturnedToUser.call(user3);
     assert.equal(depositReturned,70);
     var depositReturned = await harber.depositReturnedToUser.call(user4);
-    assert.equal(depositReturned,100);
+    assert.equal(depositReturned,0);  //0 not 100 from above, due to the _collect within setWinner that had not been called on token4 for ages
     var depositReturned = await harber.depositReturnedToUser.call(user5);
     assert.equal(depositReturned,11);
     var depositReturned = await harber.depositReturnedToUser.call(user6);
     assert.equal(depositReturned,12);
     var depositReturned = await harber.depositReturnedToUser.call(user7);
-    assert.equal(depositReturned,13);
-    // total time held is 64 days users:
+    assert.equal(depositReturned,0); //0 not 13 from above, due to the _collect within setWinner that had not been called on token3 for ages
+    // total time held for winning token is 64 days users:
     // 0 14 days
     // 1 26 days
     // 2 7 days
