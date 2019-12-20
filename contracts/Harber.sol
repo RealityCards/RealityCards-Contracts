@@ -95,6 +95,7 @@ contract Harber {
     enum ownedState { Foreclosed, Owned }
     ownedState[numberOfTokens] public state;
 
+    ////////////// CONSTRUCTOR //////////////
     constructor(address _andrewsAddress, address _addressOfToken, address _addressOfCashContract, address _addressOfMarket, address _addressOfCompleteSetsContract, address _addressOfMainAugurContract, uint _marketExpectedResolutionTime) public {
         //initialise ERC721s
         team = IERC721Full(_addressOfToken);
@@ -126,6 +127,7 @@ contract Harber {
     event LogForeclosure(address indexed prevOwner);
     event LogCollection(uint256 indexed collected);
     
+    ////////////// MODIFIERS //////////////
     modifier onlyOwner(uint256 _tokenId) {
         require(msg.sender == team.ownerOf(_tokenId), "Not owner");
         _;
@@ -141,6 +143,89 @@ contract Harber {
        _;
     }
 
+    ////////////// VIEW FUNCTIONS //////////////
+    function getTestDaiBalance() public view returns (uint256)
+    {
+        return(testDaiBalances[msg.sender]);
+    }
+
+    function getOwnerTrackerPrice(uint256 _tokenId, uint256 _index) public view returns (uint256)
+    {
+        return (previousOwnerTracker[_tokenId][_index].price);
+    }
+
+    function getOwnerTrackerAddress(uint256 _tokenId, uint256 _index) public view returns (address)
+    {
+        return (previousOwnerTracker[_tokenId][_index].owner);
+    }
+
+    function rentOwed(uint256 _tokenId) public view returns (uint256 augurFundsDue) 
+    {
+        return price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(365 days);
+    }
+
+    function rentOwedWithTimestamp(uint256 _tokenId) public view returns (uint256 augurFundsDue, uint256 timestamp) 
+    {
+        return (rentOwed(_tokenId), now);
+    }
+    function foreclosed(uint256 _tokenId) public view returns (bool) 
+    {
+        // returns whether it is in foreclosed state or not
+        // depending on whether deposit covers patronage due
+        // useful helper function when price should be zero, but contract doesn't reflect it yet.
+        uint256 _rentOwed = rentOwed(_tokenId);
+        if(_rentOwed >= deposits[_tokenId][msg.sender]) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    // this is only used to calculate foreclosure time
+    function liveDepositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) 
+    {
+        uint256 _rentOwed = rentOwed(_tokenId);
+        address _currentOwner = team.ownerOf(_tokenId);
+        if(_rentOwed >= deposits[_tokenId][_currentOwner]) {
+            return 0;
+        } else {
+            return deposits[_tokenId][_currentOwner].sub(_rentOwed);
+        }
+    }
+
+    //this is my version of the above function. It shows how much each user can withdraw- whether or not they are the current owner. 
+    function userDepositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) 
+    {
+        uint256 _rentOwed = rentOwed(_tokenId);
+        address _currentOwner = team.ownerOf(_tokenId);
+
+        if(_currentOwner == msg.sender)
+        {
+            if(_rentOwed >= deposits[_tokenId][msg.sender]) 
+        {
+            return 0;
+        } else {
+            return deposits[_tokenId][msg.sender].sub(_rentOwed);
+        }
+        } else {
+            return deposits[_tokenId][msg.sender];
+        }
+    }
+
+    function rentalExpiryTime(uint256 _tokenId) public view returns (uint256) 
+    {
+        uint256 pps = price[_tokenId].div(365 days);
+        if (pps == 0)
+        {
+            return now; //if price is so low that pps = 0 just return current time as a fallback
+        }
+        else
+        {
+            return now + liveDepositAbleToWithdraw(_tokenId).div(pps);
+        }
+    }
+
+    ////////////// AUGUR FUNCTIONS //////////////
     function getTestDai() public 
     {
         if (usingAugur == true) {
@@ -160,7 +245,7 @@ contract Harber {
         } 
     }
 
-     function sellCompleteSets(uint256 _sets) internal 
+    function sellCompleteSets(uint256 _sets) internal 
     {
         //change below to assert in production. 
         assert (marketResolved);
@@ -171,6 +256,21 @@ contract Harber {
         } 
     }
 
+    //i have not tested this on the front end/kovan since i refactored
+    function getWinnerFromAugur(uint256 _outcomeToTest) internal view returns(bool) 
+    {
+        if (market.getWinningPayoutNumerator(_outcomeToTest) > 0)
+        {
+            return true;
+        }
+        else 
+        {
+            return false;
+        }
+    }
+
+    ////////////// MARKET RESOLUTION FUNCTIONS ////////////// 
+
     //this can be called by anyone, at any time. getWinningPayoutNumerator will always return with 0 unless the market is resolved. 
     // of extreme importance here is that the teams that each integer refers to within augur is the same as within my contract. Ie if ID 1 refers to Manchester United within my contract, but ID 1 is equal to Liverpool within the Augur market, the wrong winner will be selected. This can either be dealt with manually or programmatically, either way it needs to happen within the setup() of the ERC721s
     // it is also imperative that numberOfTokens is set correctly. If getWinningPayoutNumerator is called with a token ID that does not exist, it will revert. 
@@ -178,8 +278,8 @@ contract Harber {
     {
         for (uint i=0; i < numberOfTokens; i++)
         {
-            uint256 _response = market.getWinningPayoutNumerator(i);
-            if (_response != 0)
+            bool _isWinner = getWinnerFromAugur(i);
+            if (_isWinner)
             {
                 winningOutcome = i;
                 //final rent collection before it is locked down
@@ -281,84 +381,9 @@ contract Harber {
         //TOD: transfer function
     }
 
-    function getTestDaiBalance() public view returns (uint256)
-    {
-        return(testDaiBalances[msg.sender]);
-    }
-
-    function getOwnerTrackerPrice(uint256 _tokenId, uint256 _index) public view returns (uint256)
-    {
-        return (previousOwnerTracker[_tokenId][_index].price);
-    }
-
-    function getOwnerTrackerAddress(uint256 _tokenId, uint256 _index) public view returns (address)
-    {
-        return (previousOwnerTracker[_tokenId][_index].owner);
-    }
-
-    function rentOwed(uint256 _tokenId) public view returns (uint256 augurFundsDue) {
-        return price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(365 days);
-    }
-
-    function rentOwedWithTimestamp(uint256 _tokenId) public view returns (uint256 augurFundsDue, uint256 timestamp) {
-        return (rentOwed(_tokenId), now);
-    }
-    function foreclosed(uint256 _tokenId) public view returns (bool) {
-        // returns whether it is in foreclosed state or not
-        // depending on whether deposit covers patronage due
-        // useful helper function when price should be zero, but contract doesn't reflect it yet.
-        uint256 _rentOwed = rentOwed(_tokenId);
-        if(_rentOwed >= deposits[_tokenId][msg.sender]) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    // this is only used to calculate foreclosure time
-    function liveDepositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) {
-        uint256 _rentOwed = rentOwed(_tokenId);
-        address _currentOwner = team.ownerOf(_tokenId);
-        if(_rentOwed >= deposits[_tokenId][_currentOwner]) {
-            return 0;
-        } else {
-            return deposits[_tokenId][_currentOwner].sub(_rentOwed);
-        }
-    }
-
-    //this is my version of the above function. It shows how much each user can withdraw- whether or not they are the current owner. 
-    function userDepositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) {
-        uint256 _rentOwed = rentOwed(_tokenId);
-        address _currentOwner = team.ownerOf(_tokenId);
-
-        if(_currentOwner == msg.sender)
-        {
-            if(_rentOwed >= deposits[_tokenId][msg.sender]) 
-        {
-            return 0;
-        } else {
-            return deposits[_tokenId][msg.sender].sub(_rentOwed);
-        }
-        } else {
-            return deposits[_tokenId][msg.sender];
-        }
-    }
-
-    function rentalExpiryTime(uint256 _tokenId) public view returns (uint256) {
-        uint256 pps = price[_tokenId].div(365 days);
-        if (pps == 0)
-        {
-            return now; //if price is so low that pps = 0 just return current time as a fallback
-        }
-        else
-        {
-            return now + liveDepositAbleToWithdraw(_tokenId).div(pps);
-        }
-    }
+    ////////////// ORDINARY COURSE OF BUSINESS FUNCTIONS //////////////
 
     function _collectRent(uint256 _tokenId) notResolved() public {
-        //testing thing
-        a = numberOfOwners[0] ;
         // determine patronage to pay
         if (state[_tokenId] == ownedState.Owned) {
             
@@ -379,7 +404,6 @@ contract Harber {
             }
 
             //update the ownerTracker and numberOfOwners variables. only for new owners.
-            
             if (everOwned[_tokenId][_currentOwner] == false) {
                 everOwned[_tokenId][_currentOwner] = true;
                 ownerTracker[_tokenId][numberOfOwners[_tokenId]] = _currentOwner;
@@ -401,12 +425,6 @@ contract Harber {
             
             emit LogCollection(_rentOwed);
         }
-    }
-
-    function depositDai(uint256 _dai, uint256 _tokenId) public collectRent(_tokenId) notResolved() {
-        require(state[_tokenId] != ownedState.Foreclosed, "Foreclosed");
-        testDaiBalances[msg.sender] = testDaiBalances[msg.sender].sub(_dai);
-        deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].add(_dai);
     }
     
     function buy(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) public collectRent(_tokenId) notResolved() {
@@ -444,6 +462,12 @@ contract Harber {
         emit LogBuy(msg.sender, _newPrice);
     }
 
+    function depositDai(uint256 _dai, uint256 _tokenId) public collectRent(_tokenId) notResolved() {
+        require(state[_tokenId] != ownedState.Foreclosed, "Foreclosed");
+        testDaiBalances[msg.sender] = testDaiBalances[msg.sender].sub(_dai);
+        deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].add(_dai);
+    }
+
     function changePrice(uint256 _newPrice, uint256 _tokenId) public onlyOwner(_tokenId) collectRent(_tokenId) notResolved() {
         require(state[_tokenId] != ownedState.Foreclosed, "Foreclosed");
         require(_newPrice > price[_tokenId], "New price must be higher than current price"); //This is to prevent griefing- buying it then immediately dropping the price really low. The original project did not suffer from this problem because when you bought it, you had to pay the purchase price to the previous user, not so in mine. 
@@ -479,6 +503,7 @@ contract Harber {
         }
     }
 
+    /* internal */
     function _revertToPreviousOwner(uint256 _tokenId) internal {
         bool _reverted = false;
         while (_reverted == false)
@@ -506,6 +531,7 @@ contract Harber {
         }       
     }
 
+    /* internal */
     function _foreclose(uint256 _tokenId) internal {
         // I become steward of artwork (aka foreclose)
         address _currentOwner = team.ownerOf(_tokenId);
@@ -515,6 +541,7 @@ contract Harber {
         emit LogForeclosure(_currentOwner);
     }
 
+    /* internal */
     function _transferTokenTo(address _currentOwner, address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
         team.transferFrom(_currentOwner, _newOwner, _tokenId);
         price[_tokenId] = _newPrice;
