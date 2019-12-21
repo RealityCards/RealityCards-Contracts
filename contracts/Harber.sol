@@ -229,12 +229,14 @@ contract Harber {
         if (usingAugur == true) {
             //instead of the user getting testDai to his account, it is generated here and and allocated to the user
             cash.faucet(100000000000000000000);
+            testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
         }
-
-        //tests assume 100, else use 100000000000000000000
-        testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100;
+        else {
+            testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100;
+        }
     }
 
+    // * internal *
     function buyCompleteSets(uint256 _rentOwed) internal 
     {
         if (usingAugur == true)
@@ -243,6 +245,7 @@ contract Harber {
         } 
     }
 
+    // * internal *
     function sellCompleteSets(uint256 _sets) internal 
     {
         //change below to assert in production. 
@@ -255,16 +258,24 @@ contract Harber {
     }
 
     //i have not tested this on the front end/kovan since i refactored
+    // * internal * CHECK
     function getWinnerFromAugur(uint256 _outcomeToTest) internal view returns(bool) 
-    {
-        if (market.getWinningPayoutNumerator(_outcomeToTest) > 0)
-        {
+    {   
+        if (usingAugur) {
+            if (market.getWinningPayoutNumerator(_outcomeToTest) > 0) {
             return true;
+            } else {
+                return false;
+            }
         }
-        else 
-        {
-            return false;
+        else {
+            if (_outcomeToTest == 1) {
+            return true;
+            } else {
+                return false;
+            }
         }
+        
     }
 
     ////////////// MARKET RESOLUTION FUNCTIONS ////////////// 
@@ -287,7 +298,7 @@ contract Harber {
                 marketResolved = true;
                 //check if market resolved invalid
                 if (winningOutcome == 0) {
-                    invalidMarketFinaliseAndPayout();
+                    // invalidMarketFinaliseAndPayout();
                 }
                 else {
                     finaliseAndPayout();
