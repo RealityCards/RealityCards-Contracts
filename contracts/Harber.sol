@@ -45,7 +45,7 @@ contract Harber {
     uint256 a = 0;
     uint256 b = 0;
     uint256 c = 0;
-    mapping (address => uint256) public winngsSentToUser;
+    mapping (address => uint256) public winningsSentToUser;
     mapping (address => uint256) public depositReturnedToUser;
     // uint256 public fundsInAugur
     
@@ -269,13 +269,12 @@ contract Harber {
             }
         }
         else {
-            if (_outcomeToTest == 1) {
+            if (_outcomeToTest == 2) {
             return true;
             } else {
                 return false;
             }
         }
-        
     }
 
     ////////////// MARKET RESOLUTION FUNCTIONS ////////////// 
@@ -285,16 +284,15 @@ contract Harber {
     // it is also imperative that numberOfTokens is set correctly. If getWinningPayoutNumerator is called with a token ID that does not exist, it will revert. 
     function getWinner() notResolved() public 
     {
-        for (uint i=0; i < numberOfTokens; i++)
-        {
+        // final rent collection before it is locked down
+        for (uint i=1; i < numberOfTokens; i++) {
+            _collectRent(i);
+        }
+
+        for (uint i=0; i < numberOfTokens; i++) {
             bool _isWinner = getWinnerFromAugur(i);
-            if (_isWinner)
-            {
+            if (_isWinner) {
                 winningOutcome = i;
-                //final rent collection before it is locked down
-                for (uint j=1; i < numberOfTokens; j++) {
-                    _collectRent(i);
-                }
                 marketResolved = true;
                 //check if market resolved invalid
                 if (winningOutcome == 0) {
@@ -394,7 +392,7 @@ contract Harber {
             if (usingAugur) {
                 cash.transfer(_winnersAddress,_winningsToTransfer);
             } else {
-                winngsSentToUser[_winnersAddress] = _winningsToTransfer;
+                winningsSentToUser[_winnersAddress] = _winningsToTransfer;
             }
         }
         doneAndDusted = true;
@@ -428,7 +426,7 @@ contract Harber {
                     if (usingAugur) {
                         cash.transfer(_usersAddress,_fundsToReturn);
                     } else {
-                        winngsSentToUser[_usersAddress] = _fundsToReturn;
+                        winningsSentToUser[_usersAddress] = _fundsToReturn;
                     }
                 }
             }
