@@ -24,12 +24,8 @@ interface Cash
 }
 
 //TODO : if im not going to implement proper augur local testing, at least get a local cash contract, so much cleaner, and i dont need to mess about with _daiAvailableToDistribute split between two verisons
-//TODO : ensure that andrewsaddress is set correctly. It is different in dev
 //TODO : add some more events 
-//TODO : I seemed to get errors via front ened when i bought for 100000000 and 50 daik deposit, then switched to anew user and bought for 100000001 and 50 dai, investigate
-//TODO: it seems when testing via front end that the amount sent to augur was well above the 'total parongage collected' on the very first _collect (ie when adding deposit), investigate. I just tried a second time and yes itsa problem. as test, check that whatever is sent to buy sets matches the variable that the front end is checking (actually it appears to be out by 2 decimal places)
 //TODO: see the screenshot in the harber folder of ownerTracker (which I got via debug at the end of debugging returndeposits function) it does not look right, there are 0000 addresses and things out of order
-//TODO: setWinnerPublic and invalid payout
 
 contract Harber {
     
@@ -37,17 +33,16 @@ contract Harber {
 
     // NUMBER OF TOKENS
     // this needs to INCLUDE the invalid outcome. So it will always be 1 higher than the number of teams. But if it is too high, the getWinner function will try and check if a team that does not exist has won, which will cause a revert, preventing the contract from determining the winner. So it must be accurate. 
-    uint256 constant numberOfTokens = 5; 
+    uint256 constant numberOfTokens = 4; 
 
     //TESTING VARIABLES
-    bool usingAugur = false;
+    bool usingAugur = true;
     uint256 testingVariable = 0;
-    uint256 a = 0;
-    uint256 b = 0;
-    uint256 c = 0;
+    uint256 public a = 0;
+    uint256 public b = 0;
+    uint256 public c = 0;
     mapping (address => uint256) public winningsSentToUser;
     mapping (address => uint256) public depositReturnedToUser;
-    // uint256 public fundsInAugur
     
     // CONTRACT VARIABLES
     IERC721Full public team; // ERC721 NFT.
@@ -236,24 +231,25 @@ contract Harber {
         }
     }
 
-    // * internal *
+    // * internal * 
     function buyCompleteSets(uint256 _rentOwed) internal 
     {
         if (usingAugur == true)
         {
-            completeSets.publicBuyCompleteSets(market, _rentOwed);
+            uint256 _setsToBuy =_rentOwed.div(100);
+            completeSets.publicBuyCompleteSets(market, _setsToBuy);
         } 
     }
 
     // * internal *
     function sellCompleteSets(uint256 _sets) internal 
     {
-        //change below to assert in production. 
         assert (marketResolved);
 
         if (usingAugur == true)
         {
-            completeSets.publicSellCompleteSets(market, _sets);
+            uint256 _setsToSell =_sets.div(100);
+            completeSets.publicSellCompleteSets(market, _setsToSell);
         } 
     }
 
@@ -269,7 +265,7 @@ contract Harber {
             }
         }
         else {
-            if (_outcomeToTest == 2) {
+            if (_outcomeToTest == 1) {
             return true;
             } else {
                 return false;
@@ -296,7 +292,7 @@ contract Harber {
                 marketResolved = true;
                 //check if market resolved invalid
                 if (winningOutcome == 0) {
-                    // invalidMarketFinaliseAndPayout();
+                    invalidMarketFinaliseAndPayout();
                 }
                 else {
                     finaliseAndPayout();
@@ -404,6 +400,9 @@ contract Harber {
     {
         require (marketResolved == true, "Winner not known");
         require (doneAndDusted == false, "Already paid out");
+        //return unused deposits
+        returnDeposits();
+        // get the dai back from Augur
         sellCompleteSets(totalCollected);
         uint256 _daiAvailableToDistribute;
 

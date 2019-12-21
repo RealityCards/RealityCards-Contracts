@@ -3490,8 +3490,8 @@
         }
       },
       "links": {},
-      "address": "0xfC27d023A73E01776E165b1A10eB636704b81fed",
-      "transactionHash": "0xd20b823deaa489c90bc082dddd2cca6b98c55b1c7686d2e5d018c45e7704d241"
+      "address": "0xC809F5f515AAB18E2f8DD5B8095dCf00cDe5276b",
+      "transactionHash": "0x8f781a8f6966b8c859eb9e18b378767e7b8d89017143da21aa5727c8ea1a4ab5"
     },
     "1576134734968": {
       "events": {
@@ -4345,7 +4345,7 @@
     }
   },
   "schemaVersion": "3.0.19",
-  "updatedAt": "2019-12-21T03:22:37.759Z",
+  "updatedAt": "2019-12-21T07:14:41.014Z",
   "networkType": "ethereum",
   "devdoc": {
     "details": "see https://github.com/ethereum/EIPs/blob/master/EIPS/eip-721.md",
