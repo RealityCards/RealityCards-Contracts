@@ -29,6 +29,7 @@ interface Cash
 //TODO : I seemed to get errors via front ened when i bought for 100000000 and 50 daik deposit, then switched to anew user and bought for 100000001 and 50 dai, investigate
 //TODO: it seems when testing via front end that the amount sent to augur was well above the 'total parongage collected' on the very first _collect (ie when adding deposit), investigate. I just tried a second time and yes itsa problem. as test, check that whatever is sent to buy sets matches the variable that the front end is checking (actually it appears to be out by 2 decimal places)
 //TODO: see the screenshot in the harber folder of ownerTracker (which I got via debug at the end of debugging returndeposits function) it does not look right, there are 0000 addresses and things out of order
+//TODO: setWinnerPublic and invalid payout
 
 contract Harber {
     
@@ -65,7 +66,7 @@ contract Harber {
     uint256[numberOfTokens] public timeAcquired; // used only for front end
     uint256[numberOfTokens] public currentOwnerIndex; // tracks the position of the current owner in the previousOwnerTracker mapping
     uint256[numberOfTokens] public numberOfOwners; //used to cycle through ownerTracker during finalse & payout. Since you can't find the size of a mapping. If the value is 5, it means there are 5 owners. Ie it is not doing programming counting. 
-    
+  
     // winning outcome variables
     bool public marketResolved = false;
     bool public doneAndDusted = false;
@@ -86,6 +87,7 @@ contract Harber {
     mapping (uint256 => mapping (address => uint256) ) public deposits; //keeps track of all the deposits for each token, for each owner. Unused deposits are not returned automatically when there is a new buyer. Unused deposits are returned automatically upon resolution of the market (TODO)
     mapping (address => uint256) public testDaiBalances;
     mapping (uint256 => mapping (address => bool)) public everOwned; //this is required to prevent the ownerTracker variable being incremented unless a completely new user buys the token. 
+    mapping (address => uint256) public rentPaid; //keeps track of all the rent paid by each user. So that it can be returned in case of an invalid market outcome
 
     // ENUMS
     enum ownedState { Foreclosed, Owned }
@@ -267,7 +269,7 @@ contract Harber {
 
     ////////////// MARKET RESOLUTION FUNCTIONS ////////////// 
 
-    //this can be called by anyone, at any time. getWinningPayoutNumerator will always return with 0 unless the market is resolved. 
+    //this can be called by anyone, at any time. getWinningPayoutNumerator will always return with false unless the market is resolved. 
     // of extreme importance here is that the teams that each integer refers to within augur is the same as within my contract. Ie if ID 1 refers to Manchester United within my contract, but ID 1 is equal to Liverpool within the Augur market, the wrong winner will be selected. This can either be dealt with manually or programmatically, either way it needs to happen within the setup() of the ERC721s
     // it is also imperative that numberOfTokens is set correctly. If getWinningPayoutNumerator is called with a token ID that does not exist, it will revert. 
     function getWinner() notResolved() public 
@@ -279,7 +281,7 @@ contract Harber {
             {
                 winningOutcome = i;
                 //final rent collection before it is locked down
-                for (uint i=1; i < numberOfTokens; i++) {
+                for (uint j=1; i < numberOfTokens; j++) {
                     _collectRent(i);
                 }
                 marketResolved = true;
@@ -294,13 +296,13 @@ contract Harber {
         }
     }
 
-    //this function is used for testing, and in production is kept unless the above function fails. It can ONLY be called well after the market should have resolved on Augur, otherwise I could influence the outcome
-    function setWinner(uint256 _winner) notResolved() public 
+    //if the above function fails for whatever reason. It can ONLY be called by me, and well after the market should have resolved on Augur, otherwise I could influence the outcome
+    function setWinnerMe(uint256 _winner) notResolved() public 
     {
         // only I can call this- MAKE SURE IT IS UNCOMMENTED IN PRODUCTION!
-        // require (msg.sender == andrewsAddress, "Imposter detected"); 
+        require (msg.sender == andrewsAddress, "Imposter detected"); 
         // can only be called if a month has passed and the Augur market still not resolved
-        require (now > (marketExpectedResolutionTime + 2592000), "Wait for decentralised resolution first");
+        require (now > (marketExpectedResolutionTime + 2592000), "Wait for decentralised resolution first"); //1 month
         winningOutcome = _winner;
         //final rent collection before it is locked down
         for (uint i=1; i < numberOfTokens; i++) {
@@ -314,6 +316,20 @@ contract Harber {
         else {
             finaliseAndPayout();
         }
+    }
+
+    //if getWinner fails but I've been run over by a bus so don't trigger setWinnerMe. Sets the winner as invalid, which returns all funds to all users
+    //must give me 1 week to call the above before this can be called by anyone
+    function setWinnerPublic() notResolved() public 
+    {
+        // can only be called if 5 weeks have passed and the Augur market still not resolved
+        require (now > (marketExpectedResolutionTime + 3196800), "Give Andrew 1 week first"); //5 weeks
+        //final rent collection before it is locked down
+        for (uint i=1; i < numberOfTokens; i++) {
+            _collectRent(i);
+        }
+        marketResolved = true;
+        invalidMarketFinaliseAndPayout(); //returns all rent to all users
     }
 
     //return all unused deposits upon resolution
@@ -373,20 +389,40 @@ contract Harber {
         doneAndDusted = true;
     }
 
-    // This will ONLY be called if the market returns invalid, in which case everyone will be returned funds in proportion to how long they have held each token. It is not possible to pay back the actual funds sent, since the relevant data is not tracked by the contract. It would be prohibitive in gas costs to track this for a situation that should never occur.  
+    // This will ONLY be called if the market returns invalid (or if setWinnerPublic is triggered), in which case everyone's funds will be returned
     // * internal * 
     function invalidMarketFinaliseAndPayout() internal
     {
         require (marketResolved == true, "Winner not known");
         require (doneAndDusted == false, "Already paid out");
         sellCompleteSets(totalCollected);
+        uint256 _daiAvailableToDistribute;
+
         if (usingAugur) {
-            uint256 _daiAvailableToDistribute = cash.balanceOf(address(this));
+            _daiAvailableToDistribute = cash.balanceOf(address(this));
         }
         else {
-            uint256 _daiAvailableToDistribute = totalCollected;
+            _daiAvailableToDistribute = totalCollected;
         }
-        //TOD: transfer function
+
+        for (uint i=1; i < numberOfTokens; i++) //not counting from zero, 0 = invalid
+        {  
+            for (uint j=0; j < numberOfOwners[i]; j++)
+            {  
+                address _usersAddress = ownerTracker[i][j];
+                uint256 _numerator = _daiAvailableToDistribute.mul(rentPaid[_usersAddress]);
+                uint256 _fundsToReturn = _numerator.div(totalCollected);
+                rentPaid[_usersAddress] = 0; //same address could be across multiple tokens, don't want to pay the user more than once
+                if (_fundsToReturn > 0) {
+                    if (usingAugur) {
+                        cash.transfer(_usersAddress,_fundsToReturn);
+                    } else {
+                        winngsSentToUser[_usersAddress] = _fundsToReturn;
+                    }
+                }
+            }
+        }
+        doneAndDusted = true;
     }
 
     ////////////// ORDINARY COURSE OF BUSINESS FUNCTIONS //////////////
@@ -417,6 +453,9 @@ contract Harber {
                 ownerTracker[_tokenId][numberOfOwners[_tokenId]] = _currentOwner;
                 numberOfOwners[_tokenId] = numberOfOwners[_tokenId] + 1;
             }
+
+            //update the rentPaid mapping
+            rentPaid[_currentOwner] = rentPaid[_currentOwner].add(_rentOwed);
 
             uint256 _timeHeldToIncrement = (_timeOfThisCollection.sub(timeLastCollected[_tokenId])); //just for readability
             timeHeld[_tokenId][_currentOwner] = timeHeld[_tokenId][_currentOwner].add(_timeHeldToIncrement);
