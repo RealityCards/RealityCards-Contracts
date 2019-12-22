@@ -21,7 +21,7 @@ const augurCashAddress = '0xa836c1D6a35A443FD6F8d5d4A9cf5b1664bF76D6';
 // These test assume that 100 dai (in wei-dai or whatever) is sent with the getTestDai function and numberoftokens = 5
 // These tests do NOT reset the blockchain after each test. In retrospect this was a mistake, as it wasted a huge amount of time. harber_test2 fix this. 
 
-contract('HarberTests', (accounts) => {
+contract('HarberTests1', (accounts) => {
 
   let token;
   let harber;
@@ -581,19 +581,19 @@ contract('HarberTests', (accounts) => {
     // 2 7 days
     // 3 14 days
     // 4 3 days
-    var user0Winnings = await harber.winngsSentToUser.call(user0);
+    var user0Winnings = await harber.winningsSentToUser.call(user0);
     var difference = Math.abs(user0Winnings - ((totalCollected.toNumber()*14)/64));
     assert.isBelow(difference,2); 
-    var user1Winnings = await harber.winngsSentToUser.call(user1);
+    var user1Winnings = await harber.winningsSentToUser.call(user1);
     var difference = Math.abs(user1Winnings - ((totalCollected.toNumber()*26)/64));
     assert.isBelow(difference,2);
-    var user2Winnings = await harber.winngsSentToUser.call(user2);
+    var user2Winnings = await harber.winningsSentToUser.call(user2);
     var difference = Math.abs(user2Winnings - ((totalCollected.toNumber()*7)/64));
     assert.isBelow(difference,2); 
-    var user3Winnings = await harber.winngsSentToUser.call(user3);
+    var user3Winnings = await harber.winningsSentToUser.call(user3);
     var difference = Math.abs(user3Winnings - ((totalCollected.toNumber()*14)/64));
     assert.isBelow(difference,2);
-    var user4Winnings = await harber.winngsSentToUser.call(user4);
+    var user4Winnings = await harber.winningsSentToUser.call(user4);
     var difference = Math.abs(user4Winnings - ((totalCollected.toNumber()*3)/64));
     assert.isBelow(difference,2);
   });

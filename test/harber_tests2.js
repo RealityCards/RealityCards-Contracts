@@ -21,7 +21,7 @@ const augurCashAddress = '0xa836c1D6a35A443FD6F8d5d4A9cf5b1664bF76D6';
 // These test assume that 100 dai (in wei-dai or whatever) is sent with the getTestDai function and numberoftokens = 5
 // These tests do NOT reset the blockchain after each test. In retrospect this was a mistake, as it wasted a huge amount of time. harber_test2 fix this. 
 
-contract('HarberTests', (accounts) => {
+contract('HarberTests2', (accounts) => {
 
   let token;
   let harber;

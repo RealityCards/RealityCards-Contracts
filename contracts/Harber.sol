@@ -8,7 +8,6 @@ interface IMarket
 }
 
 interface ShareToken 
-
 {
     function publicBuyCompleteSets(IMarket _market, uint256 _amount) external returns (bool)  ;
     function publicSellCompleteSets(IMarket _market, uint256 _amount) external returns (uint256 _creatorFee, uint256 _reportingFee) ;
@@ -33,11 +32,11 @@ contract Harber {
 
     // NUMBER OF TOKENS
     // this needs to INCLUDE the invalid outcome. So it will always be 1 higher than the number of teams. But if it is too high, the getWinner function will try and check if a team that does not exist has won, which will cause a revert, preventing the contract from determining the winner. So it must be accurate. 
-    uint256 constant numberOfTokens = 4; 
+    // Example: UK Premier League. 20 teams. numberOfTokens must equal 21 (20 teams + invalid outcome)
+    uint256 constant numberOfTokens = 5; // needs to be 5 for ganache testing
 
     //TESTING VARIABLES
-    bool usingAugur = true;
-    uint256 testingVariable = 0;
+    bool constant usingAugur = false; //if false, none of the augur contracts are interacted with. Required for ganache testing. Must be true in production :)
     uint256 public a = 0;
     uint256 public b = 0;
     uint256 public c = 0;
@@ -245,7 +244,6 @@ contract Harber {
     function sellCompleteSets(uint256 _sets) internal 
     {
         assert (marketResolved);
-
         if (usingAugur == true)
         {
             uint256 _setsToSell =_sets.div(100);
@@ -253,8 +251,7 @@ contract Harber {
         } 
     }
 
-    //i have not tested this on the front end/kovan since i refactored
-    // * internal * CHECK
+    // * internal * 
     function getWinnerFromAugur(uint256 _outcomeToTest) internal view returns(bool) 
     {   
         if (usingAugur) {
@@ -264,12 +261,36 @@ contract Harber {
                 return false;
             }
         }
+        //hard code a winner for testing
         else {
             if (_outcomeToTest == 1) {
             return true;
             } else {
                 return false;
             }
+        }
+    }
+
+    // * internal * 
+    function sendCash(address _to, uint256 _amount, uint256 _reason) internal {  
+        if (usingAugur) {
+            cash.transfer(_to,_amount);
+        } else {
+            // using different variables if the cash is sent for different reasons. Allows for more granular testing. 
+            if (_reason == 0) { //0 = returned unused deposits at market resolution, or calling withdraw deposit, or calling exit
+                depositReturnedToUser[_to] = depositReturnedToUser[_to].add(_amount);
+            } else { //1 = winnings paid out or invalid outcome
+                winningsSentToUser[_to] = winningsSentToUser[_to].add(_amount);
+            }
+            
+        }
+    }
+
+    function getCashBalance(address _addressToCheck) internal view returns (uint256) {
+        if (usingAugur) {
+            return cash.balanceOf(_addressToCheck);
+        } else {
+            return totalCollected;
         }
     }
 
@@ -350,11 +371,7 @@ contract Harber {
                 deposits[i][_thisUsersAddress] = 0;
 
                 if (_depositToReturn > 0) {
-                    if (usingAugur) {
-                        cash.transfer(_thisUsersAddress,_depositToReturn);
-                    } else {
-                        depositReturnedToUser[_thisUsersAddress] = depositReturnedToUser[_thisUsersAddress] + _depositToReturn;
-                    }
+                    sendCash(_thisUsersAddress,_depositToReturn, 0);
                 }
             }
         }
@@ -365,18 +382,12 @@ contract Harber {
     {
         require (marketResolved == true, "Winner not known");
         require (doneAndDusted == false, "Already paid out");
-        uint256 _daiAvailableToDistribute;
         //return unused deposits
         returnDeposits();
         // get the dai back from Augur
         sellCompleteSets(totalCollected);
         // the Dai returned to distribute will not be known in advance due to fees, so I cannot hard code the figure to payout to winners. So I will just get the dai balance of the contract. 
-        if (usingAugur) {
-            _daiAvailableToDistribute = cash.balanceOf(address(this));
-        }
-        else {
-             _daiAvailableToDistribute = totalCollected;
-        }
+        uint256 _daiAvailableToDistribute = getCashBalance(address(this));
         
         //do the payout
         for (uint i=0; i < numberOfOwners[winningOutcome]; i++)
@@ -385,11 +396,7 @@ contract Harber {
             uint _winnersTimeHeld = timeHeld[winningOutcome][_winnersAddress];
             uint256 _numerator = _daiAvailableToDistribute.mul(_winnersTimeHeld);
             uint256 _winningsToTransfer = _numerator.div(totalTimeHeld[winningOutcome]);
-            if (usingAugur) {
-                cash.transfer(_winnersAddress,_winningsToTransfer);
-            } else {
-                winningsSentToUser[_winnersAddress] = _winningsToTransfer;
-            }
+            sendCash(_winnersAddress,_winningsToTransfer, 1);
         }
         doneAndDusted = true;
     }
@@ -404,14 +411,8 @@ contract Harber {
         returnDeposits();
         // get the dai back from Augur
         sellCompleteSets(totalCollected);
-        uint256 _daiAvailableToDistribute;
-
-        if (usingAugur) {
-            _daiAvailableToDistribute = cash.balanceOf(address(this));
-        }
-        else {
-            _daiAvailableToDistribute = totalCollected;
-        }
+        // the Dai returned to distribute will not be known in advance due to fees, so I cannot hard code the figure to payout to winners. So I will just get the dai balance of the contract. 
+        uint256 _daiAvailableToDistribute = getCashBalance(address(this));
 
         for (uint i=1; i < numberOfTokens; i++) //not counting from zero, 0 = invalid
         {  
@@ -422,11 +423,7 @@ contract Harber {
                 uint256 _fundsToReturn = _numerator.div(totalCollected);
                 rentPaid[_usersAddress] = 0; //same address could be across multiple tokens, don't want to pay the user more than once
                 if (_fundsToReturn > 0) {
-                    if (usingAugur) {
-                        cash.transfer(_usersAddress,_fundsToReturn);
-                    } else {
-                        winningsSentToUser[_usersAddress] = _fundsToReturn;
-                    }
+                    sendCash(_usersAddress,_fundsToReturn,1);
                 }
             }
         }
@@ -442,7 +439,6 @@ contract Harber {
             uint256 _rentOwed = rentOwed(_tokenId);
             address _currentOwner = team.ownerOf(_tokenId);
             uint256 _timeOfThisCollection;
-            testingVariable =totalTimeHeld[_tokenId];
             
             if (_rentOwed >= deposits[_tokenId][_currentOwner]) {
                 // run out of deposit. Calculate time it was actually paid for, then revert to previous owner 
@@ -549,11 +545,7 @@ contract Harber {
         deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].sub(_dai);
         testDaiBalances[msg.sender] = testDaiBalances[msg.sender].add(_dai);
         //return the dai
-        if (usingAugur) {
-                cash.transfer(msg.sender,_dai);
-            } else {
-                depositReturnedToUser[msg.sender] = depositReturnedToUser[msg.sender] + _dai;
-            }
+        sendCash(msg.sender, _dai, 0);
 
         if(deposits[_tokenId][msg.sender] == 0) {
             _revertToPreviousOwner(_tokenId);
