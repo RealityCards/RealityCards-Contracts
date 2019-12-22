@@ -5,6 +5,8 @@ const mainnetProviderUrl = 'https://mainnet.infura.io/v3/e811479f4c414e219e7673b
 const rinkebyProviderUrl = 'https://rinkeby.infura.io/v3/e811479f4c414e219e7673b6671c2aba';
 const kovanProviderUrl = 'https://kovan.infura.io/v3/d460ac4e71f24d869c8b75119ebe4213';
 
+
+
 module.exports = {
   // See <http://truffleframework.com/docs/advanced/configuration>
   // to customize your Truffle configuration!

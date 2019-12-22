@@ -22,8 +22,6 @@ interface Cash
     function transferFrom(address _from, address _to, uint256 _amount) external returns (bool);
 }
 
-//TODO : if im not going to implement proper augur local testing, at least get a local cash contract, so much cleaner, and i dont need to mess about with _daiAvailableToDistribute split between two verisons
-//TODO : add some more events 
 //TODO: see the screenshot in the harber folder of ownerTracker (which I got via debug at the end of debugging returndeposits function) it does not look right, there are 0000 addresses and things out of order
 
 contract Harber {
@@ -40,6 +38,7 @@ contract Harber {
     uint256 public a = 0;
     uint256 public b = 0;
     uint256 public c = 0;
+    // these are in lieu of interacting with ERC20 token contract, for tests
     mapping (address => uint256) public winningsSentToUser;
     mapping (address => uint256) public depositReturnedToUser;
     
@@ -51,13 +50,13 @@ contract Harber {
     Cash cash; 
 
     // UINTS ADDRESSES, BOOLS
-    address andrewsAddress; // I am the original owner of tokens, and ownership reverts to me should the sale foreclose. Also, only I have the ability to SET the winner (which is an emergency ability if the decentralised approach fails- and can only be done if a month has passed aafter the augur resolution should have passed).
-    address marketAddress; // the address of the Augur market. It is set in the constructor. Does not change. 
-    uint256[numberOfTokens] public price; //in wei
-    uint256[numberOfTokens] public collectedAndSentToAugur; // amount collected for each token, ie the sum of all owners' rent  
-    uint256 public totalCollected; // an easy way to track the above
+    address public andrewsAddress; // I am the original owner of tokens, and ownership reverts to me should the sale foreclose. Also, only I have the ability to SET the winner (which is an emergency ability if the decentralised approach fails- and can only be done if a month has passed after the augur resolution should have passed).
+    address public marketAddress; // the address of the Augur market. It is set in the constructor. Does not change. 
+    uint256[numberOfTokens] public price; //in dai-wei (so $100 = 100000000000000000000)
+    uint256[numberOfTokens] public collectedAndSentToAugur; // amount collected for each token, ie the sum of all owners' rent. Not actually used for anything. 
+    uint256 public totalCollected; // an easy way to track the above across all tokens. It is used for a) if there is an invalid outcome and it pays everyone back the amount of: ((total funds available * amount paid by user) / totalCollected). totalCollected is slightly higher than total funds available due to augur fees. And b) upon market resolution, it sells complete sets of Augur equal to totalCollected.
     uint256[numberOfTokens] public timeLastCollected; // used to determine the rent due. Rent is due for the period (now - timeLastCollected), at which point timeLastCollected is set to now.
-    uint256[numberOfTokens] public timeAcquired; // used only for front end
+    uint256[numberOfTokens] public timeAcquired; // when a token was bought. used only for front end
     uint256[numberOfTokens] public currentOwnerIndex; // tracks the position of the current owner in the previousOwnerTracker mapping
     uint256[numberOfTokens] public numberOfOwners; //used to cycle through ownerTracker during finalse & payout. Since you can't find the size of a mapping. If the value is 5, it means there are 5 owners. Ie it is not doing programming counting. 
   
@@ -78,10 +77,10 @@ contract Harber {
     mapping (uint256 => mapping (uint256 => address) ) public ownerTracker; //used to keep hold of all the owners, for payout, similar to previousOwnerTracker except that the pointer to the current position never decrements
     mapping (uint256 => mapping (address => uint256) ) public timeHeld; //this is the key variable that tracks the total amount of time each user has held it for. It is key because this is used to determine the proportion of the pot to be sent to each winning address
     mapping (uint256 => uint256) public totalTimeHeld; //for the payout, what is the total time each token is owned for, excluding foreclosed state (ie owned by me). Winning addresses are sent totalFunds * (timeHeld/totalTimeHeld)
-    mapping (uint256 => mapping (address => uint256) ) public deposits; //keeps track of all the deposits for each token, for each owner. Unused deposits are not returned automatically when there is a new buyer. Unused deposits are returned automatically upon resolution of the market (TODO)
+    mapping (uint256 => mapping (address => uint256) ) public deposits; //keeps track of all the deposits for each token, for each owner. Unused deposits are not returned automatically when there is a new buyer. They can be withdrawn manually however. Unused deposits are returned automatically upon resolution of the market
     mapping (address => uint256) public testDaiBalances;
     mapping (uint256 => mapping (address => bool)) public everOwned; //this is required to prevent the ownerTracker variable being incremented unless a completely new user buys the token. 
-    mapping (address => uint256) public rentPaid; //keeps track of all the rent paid by each user. So that it can be returned in case of an invalid market outcome
+    mapping (address => uint256) public rentPaid; //keeps track of all the rent paid by each user. So that it can be returned in case of an invalid market outcome. Only required in this instance. 
 
     // ENUMS
     enum ownedState { Foreclosed, Owned }
@@ -117,8 +116,11 @@ contract Harber {
     event LogBuy(address indexed owner, uint256 indexed price);
     event LogPriceChange(uint256 indexed newPrice);
     event LogForeclosure(address indexed prevOwner);
-    event LogCollection(uint256 indexed collected);
-    
+    event LogRentCollection(uint256 indexed collected);
+    event LogFinalised(uint256 indexed winningOutcome, uint256 indexed daiAvailableToDistribute);
+    event LogReturnToPreviousOwner(uint256 indexed tokenId, address indexed previousOwner);
+
+
     ////////////// MODIFIERS //////////////
     modifier onlyOwner(uint256 _tokenId) {
         require(msg.sender == team.ownerOf(_tokenId), "Not owner");
@@ -399,6 +401,7 @@ contract Harber {
             sendCash(_winnersAddress,_winningsToTransfer, 1);
         }
         doneAndDusted = true;
+        emit LogFinalised(winningOutcome,_daiAvailableToDistribute);
     }
 
     // This will ONLY be called if the market returns invalid (or if setWinnerPublic is triggered), in which case everyone's funds will be returned
@@ -428,6 +431,7 @@ contract Harber {
             }
         }
         doneAndDusted = true;
+        emit LogFinalised(winningOutcome,_daiAvailableToDistribute);
     }
 
     ////////////// ORDINARY COURSE OF BUSINESS FUNCTIONS //////////////
@@ -474,7 +478,7 @@ contract Harber {
 
             buyCompleteSets(_rentOwed);
             
-            emit LogCollection(_rentOwed);
+            emit LogRentCollection(_rentOwed);
         }
     }
     
@@ -576,6 +580,7 @@ contract Harber {
                 uint256 _oldPrice = previousOwnerTracker[_tokenId][_index].price;
                 _transferTokenTo(_currentOwner, _previousOwner, _oldPrice, _tokenId);
                 _reverted = true;
+                emit LogReturnToPreviousOwner(_tokenId,_previousOwner);
             }
         }       
     }
