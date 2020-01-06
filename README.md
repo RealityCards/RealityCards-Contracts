@@ -8,7 +8,7 @@ Harber = Prediction Markets + Non Fungible Tokens + Harberger Taxes
 
 *If you think Manchester United will win the Premier League- instead of simply putting money on Manchester United, rent the Manchester United token instead.*
 
-At the end of the season/competition/tournament, all holders of the winning Non Fungible Token (NFT) will receive a split of the total rental payments in proportion to how long they have held the token. Token ownership changes via modified Harberger Tax rules. Augur v2 is used as an Oracle. All rental payments sent to the contract are used to purchase complete sets on the relevant Augur market. Tokens are fully ERC721 compliant (and can be viewed in any ERC721 wallet) with the exception that only the contract can modify the owner. 
+At the end of the season/competition/tournament, all holders of the winning NFT will receive a split of the total rental payments in proportion to how long they have held the token. Token ownership changes via modified Harberger Tax rules. Augur v2 is used as an Oracle. All rental payments sent to the contract are used to purchase complete sets on the relevant Augur market. Tokens are fully ERC721 compliant (and can be viewed in any ERC721 wallet) with the exception that only the contract can modify the owner. 
 
 This project began as a fork of Simon de la Rouviere's brilliant project [ThisArtworkIsAlwaysOnSale](https://thisartworkisalwaysonsale.com/).
 
