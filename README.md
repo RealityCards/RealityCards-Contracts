@@ -29,7 +29,7 @@ Users are free to withdraw any unused deposits at any time. Upon market resoluti
 To continue again the example of the English Premier League. The Premier League lasts 9 months. There are 20 teams. Manchester United wins. All prices given are the cost to rent the token for one day. The following are assumed to happen at the start of each month:
 
 * Month 1: Vitalik rents the Manchester United token and sets a price of 1 DAI. He deposits 90 DAI. 
-* Month 2: Gavin rents the Manchester United token and takes ownershhip off Vitalik by setting a higher price, of 2 DAI. He deposits 60 DAI. Vitalik has 60 DAI remaining of his deposit. 
+* Month 2: Gavin rents the Manchester United token and takes ownership off Vitalik by setting a higher price, of 2 DAI. He deposits 60 DAI. Vitalik has 60 DAI remaining of his deposit. 
 * Month 3: Gavin's deposit runs out (30 days * 2 DAI =60) and so ownership reverts to Vitalik, and the price reverts to 1 DAI
 * Month 5: Vitalik's deposit runs out and there are no previous owners so the token becomes unowned and remains unowned until market resolution
 
@@ -46,4 +46,4 @@ Assuming Manchester United wins, Vitalik will receive winnings of 750 DAI (1000 
 
 The relevant market is created on Augur prior to the contract being created. The Harber contract is passed the market's address in the constructor function. 
 
-Whenver rent is paid (in DAI) the contract immediately uses the DAI to purchase complete sets on Augur. When the relevant market has resolved (i.e. to continue the above example, when the Premier League has finished, and the Aguur market has completed its resolution process) the Harber contract will ask Augur who won. Once it knows the winner, the complete sets are sold, and the funds are paid out. 
+Whenver rent is paid (in DAI) the contract immediately uses the DAI to purchase complete sets on Augur. When the relevant market has resolved (i.e. to continue the above example, when the Premier League has finished, and the Augur market has completed its resolution process) the Harber contract will ask Augur who won. Once it knows the winner, the complete sets are sold, and the funds are paid out. 
