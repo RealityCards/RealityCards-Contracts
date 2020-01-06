@@ -22,6 +22,8 @@ interface Cash
     function transferFrom(address _from, address _to, uint256 _amount) external returns (bool);
 }
 
+//TODO: upon learning that the max number of options in a categorical market is 7 I will need to interact with multiple different markets
+
 contract Harber {
     
     using SafeMath for uint256;
@@ -306,7 +308,7 @@ contract Harber {
             _collectRent(i);
         }
 
-        for (uint i=0; i < numberOfTokens; i++) {
+        for (uint i=0; i < numberOfTokens; i++) { //start from 0 to test if invalid was the actual outcome
             bool _isWinner = getWinnerFromAugur(i);
             if (_isWinner) {
                 winningOutcome = i;
@@ -356,26 +358,6 @@ contract Harber {
         }
         marketResolved = true;
         invalidMarketFinaliseAndPayout(); //returns all rent to all users
-    }
-
-    //return all unused deposits upon resolution
-    // * internal * 
-    function returnDeposits() internal
-    {
-        for (uint i=1; i < numberOfTokens; i++) //not counting from zero, 0 = invalid
-        {  
-            for (uint j=0; j < numberOfOwners[i]; j++)
-            {  
-                address _thisUsersAddress = ownerTracker[i][j];
-                if (i == 3 ) { if ( j ==4) { require (1 == 2, "STFU"); }}
-                uint256 _depositToReturn = deposits[i][_thisUsersAddress];
-                deposits[i][_thisUsersAddress] = 0;
-
-                if (_depositToReturn > 0) {
-                    sendCash(_thisUsersAddress,_depositToReturn, 0);
-                }
-            }
-        }
     }
 
     // * internal * 
@@ -433,16 +415,34 @@ contract Harber {
         emit LogFinalised(winningOutcome,_daiAvailableToDistribute);
     }
 
+        //return all unused deposits upon resolution
+    // * internal * 
+    function returnDeposits() internal
+    {
+        for (uint i=1; i < numberOfTokens; i++) //not counting from zero, 0 = invalid
+        {  
+            for (uint j=0; j < numberOfOwners[i]; j++)
+            {  
+                address _thisUsersAddress = ownerTracker[i][j];
+                uint256 _depositToReturn = deposits[i][_thisUsersAddress];
+                deposits[i][_thisUsersAddress] = 0;
+
+                if (_depositToReturn > 0) {
+                    sendCash(_thisUsersAddress,_depositToReturn, 0);
+                }
+            }
+        }
+    }
+
     ////////////// ORDINARY COURSE OF BUSINESS FUNCTIONS //////////////
 
     function _collectRent(uint256 _tokenId) notResolved() public {
-        // determine patronage to pay
+        // determine rent to pay
         if (state[_tokenId] == ownedState.Owned) {
             
             uint256 _rentOwed = rentOwed(_tokenId);
             address _currentOwner = team.ownerOf(_tokenId);
             uint256 _timeOfThisCollection;
-            // require (_currentOwner != 0x0000000000000000000000000000000000000000);
             
             if (_rentOwed >= deposits[_tokenId][_currentOwner]) {
                 // run out of deposit. Calculate time it was actually paid for, then revert to previous owner 
@@ -462,9 +462,10 @@ contract Harber {
                 numberOfOwners[_tokenId] = numberOfOwners[_tokenId] + 1;
             }
 
-            //update the rentPaid mapping
+            //update the rentPaid mapping. Only used for invalid outcome, so everyone can be paid back
             rentPaid[_currentOwner] = rentPaid[_currentOwner].add(_rentOwed);
 
+            //the 'important bit', where the duration the token has been held by each user is updated
             uint256 _timeHeldToIncrement = (_timeOfThisCollection.sub(timeLastCollected[_tokenId])); //just for readability
             timeHeld[_tokenId][_currentOwner] = timeHeld[_tokenId][_currentOwner].add(_timeHeldToIncrement);
 
@@ -494,10 +495,12 @@ contract Harber {
         
         address _currentOwner = team.ownerOf(_tokenId);
 
+        //bought by current owner (ie, it just increases the price, token ownership does not change)
         if(_currentOwner == msg.sender)
         {
             previousOwnerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
         }
+        //bought by different user (the normal situation)
         else
         {
             currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId] + 1; 
@@ -587,7 +590,7 @@ contract Harber {
 
     /* internal */
     function _foreclose(uint256 _tokenId) internal {
-        // I become steward of artwork (aka foreclose)
+        // I become steward of token (aka foreclose)
         address _currentOwner = team.ownerOf(_tokenId);
         //third field is price, ie price goes to zero
         _transferTokenTo(_currentOwner, andrewsAddress, 0, _tokenId);

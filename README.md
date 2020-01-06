@@ -1,4 +1,7 @@
 # Harber
+
+(--STILL IN DEVELOPMENT--)
+
 Nov 2019 - Jan 2020 Consensys Bootcamp Final Project
 
 Harber = Prediction Markets + NFTs + Harberger Taxes
@@ -7,11 +10,11 @@ Harber = Prediction Markets + NFTs + Harberger Taxes
 
 At the end of the season/competition/tournament, all holders of the winning NFT will receive a split of the winnings in proportion to how long they have held the token. Token ownership changes via modified Harberger Tax rules. Augur v2 is used as an Oracle. All funds sent to the contract are used to purchase complete sets on the relevant Augur market. Tokens are fully ERC721 compliant (and can be viewed in any ERC721 wallet) with the exception that only the contract can change owners. 
 
-This project began as a fork of Simon de la Rouviere's brilliant project [ThisArtworkIsAlwaysOnSale](https://thisartworkisalwaysonsale.com/)
+This project began as a fork of Simon de la Rouviere's brilliant project [ThisArtworkIsAlwaysOnSale](https://thisartworkisalwaysonsale.com/).
 
 ## How does it work?
 
-To continue the example of the English Premier League. There are 20 teams and therefore 20 unique NFTs. Each token is originally unowned, and has a daily rental price of zero. If someone wishes to rent the Manchester United NFT they must set a daily rental price (1 DAI for example) and deposit some DAI to fund the rent. From this point, the user owns the token and the contract will start to track how long they have owned it for. The users's deposit will be deducted over time in line with the rental price they have set. 
+To continue the example of the English Premier League. There are 20 teams and therefore 20 unique NFTs. Each token is originally unowned, and has a daily rental price of zero. If someone wishes to rent the Manchester United NFT they must set a daily rental price (1 DAI for example) and deposit some DAI to fund the rent. From this point, the user owns the token and the contract will start to track how long they have owned it for. The user's deposit will be deducted over time in line with the rental price they have set. 
 
 At any time, the token can be taken off the previous owner by repeating the above, the only restriction being that the new rental price must be higher than its current price. Unlike traditional Harberger Tax rules, the new owner does *not* need to pay anything to the previous owner. 
 
@@ -23,7 +26,7 @@ Users are free to withdraw any unused deposits at any time. Upon market resoluti
 
 ## Example flow
 
-To continue again the example of the English Premier League. The Premier League lasts 9 months. There are 20 teams. Manchester United wins. All prices given are the cost to rent the token for one day. The following are assumed to happen at the start of each month.
+To continue again the example of the English Premier League. The Premier League lasts 9 months. There are 20 teams. Manchester United wins. All prices given are the cost to rent the token for one day. The following are assumed to happen at the start of each month:
 
 * Month 1: Vitalik rents the Manchester United token and sets a price of 1 DAI. He deposits 90 DAI. 
 * Month 2: Gavin rents the Manchester United token and takes ownershhip off Vitalik by setting a higher price, of 2 DAI. He deposits 60 DAI. Vitalik has 60 DAI remaining of his deposit. 
