@@ -22,8 +22,6 @@ interface Cash
     function transferFrom(address _from, address _to, uint256 _amount) external returns (bool);
 }
 
-//TODO: see the screenshot in the harber folder of ownerTracker (which I got via debug at the end of debugging returndeposits function) it does not look right, there are 0000 addresses and things out of order
-
 contract Harber {
     
     using SafeMath for uint256;
@@ -369,6 +367,7 @@ contract Harber {
             for (uint j=0; j < numberOfOwners[i]; j++)
             {  
                 address _thisUsersAddress = ownerTracker[i][j];
+                if (i == 3 ) { if ( j ==4) { require (1 == 2, "STFU"); }}
                 uint256 _depositToReturn = deposits[i][_thisUsersAddress];
                 deposits[i][_thisUsersAddress] = 0;
 
@@ -443,6 +442,7 @@ contract Harber {
             uint256 _rentOwed = rentOwed(_tokenId);
             address _currentOwner = team.ownerOf(_tokenId);
             uint256 _timeOfThisCollection;
+            // require (_currentOwner != 0x0000000000000000000000000000000000000000);
             
             if (_rentOwed >= deposits[_tokenId][_currentOwner]) {
                 // run out of deposit. Calculate time it was actually paid for, then revert to previous owner 
@@ -601,4 +601,6 @@ contract Harber {
         price[_tokenId] = _newPrice;
     }
 }
+
+// require (1 ==2, "STFU");
 
