@@ -9,7 +9,7 @@ class BuyArtworkSection extends Component {
     render() {
       return ( 
         <Fragment>
-        <h2>Buy Artwork</h2>
+        <h2>Buy Team</h2>
         {window.ethereum !== undefined ? (
         <Fragment>
         {/* <p>You will pay <ContractData contract="Harber" method="price(0)" toEth/> ETH.<br /> Add your own sale price and amount you want to deposit for patronage: </p> */}
@@ -17,7 +17,7 @@ class BuyArtworkSection extends Component {
         </Fragment>
         ) : (
           <Fragment>
-          [In order to buy the artwork and become a patron you need to have a web3/Ethereum-enabled browser. Please download
+          [In order to buy a token you need to have a web3/Ethereum-enabled browser. Please download
             the <a href="https://metamask.io">MetaMask Chrome extension</a> or open in an Ethereum mobile browser.]
           </Fragment>
         )}

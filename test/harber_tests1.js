@@ -60,9 +60,6 @@ contract('HarberTests1', (accounts) => {
     await harber.getTestDai({ from: user0 });
     var testDaiBalance = await harber.getTestDaiBalance.call();
     assert.equal(testDaiBalance, 100);
-    // await debug(cash.balanceOf.call(user0));
-    // var testDaiBalance = debug(await cash.balanceOf.call(user0);
-    // assert.equal(testDaiBalance, 100);
   });
 
   it('user 1 buy Token first time and check: various', async () => {
@@ -558,7 +555,7 @@ contract('HarberTests1', (accounts) => {
     var deposit = await harber.deposits.call(3,user2);
     assert.equal(deposit, 3); //3
     //set the winner manually
-    await debug(harber.setWinnerMe(2, { from: andrewsAddress })); 
+    await harber.setWinnerMe(2, { from: andrewsAddress }); 
     var totalCollected = await harber.totalCollected.call();
     //check that the correct deposit was returned
     var depositReturned = await harber.depositReturnedToUser.call(user0);

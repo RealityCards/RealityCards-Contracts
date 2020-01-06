@@ -113,7 +113,7 @@ class PriceSection extends Component {
       // console.log("this.state.artworkPriceKey is", this.state.artworkPriceKey);
       return (
         <Fragment>
-        <h2>Valued at: $<ContractData contract="Harber" method="price" methodArgs={[urlId]} toEth /></h2>
+        <h2>Daily rental price: $<ContractData contract="Harber" method="price" methodArgs={[urlId]} toEth /></h2>
         Current Owner: <ContractData contract="ERC721Full" method="ownerOf" methodArgs={[urlId]}/><br />
         Total Time Held: {this.state.currentTimeHeldHumanized} 
         </Fragment>

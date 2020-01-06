@@ -78,20 +78,20 @@ class ActionSection extends Component {
       <h2>Actions:</h2>
         {window.ethereum !== undefined ? (
           <Fragment>
-          <ContractForm buttonText="Change Price" contract="Harber" method="changePrice" labels={["New Price"]}/>
+          <ContractForm buttonText="Increase Daily Rental" contract="Harber" method="changePrice" labels={["New Price"]}/>
           <ContractForm buttonText="Top up Deposit" contract="Harber" method="depositDai" labels={["Dai to Deposit"]}/>
           <ContractForm buttonText="Withdraw Deposit" contract="Harber" method="withdrawDeposit" labels={["Deposit in DAI"]} toEth />
           <ContractForm buttonText="Withdraw Whole Deposit And transfer token to previous  owner" contract="Harber" method="exit" />
           </Fragment>
         ) : (
           <Fragment>
-          In order to interact with the artwork you need to have a web3/Ethereum-enabled browser. Please download
+          In order to interact with this contract you need to have a web3/Ethereum-enabled browser. Please download
           the <a href="https://metamask.io">MetaMask Chrome extension</a> or open in an Ethereum mobile browser.
           </Fragment>
         )}
 
-      <h2>Other Artwork Stats:</h2>
-        <p>Total Patronage Collected: {this.state.combinedCollected} DAI</p>
+      <h2>Other Token Stats:</h2>
+        <p>Total Rent Collected: {this.state.combinedCollected} DAI</p>
     </div>
     )
   }

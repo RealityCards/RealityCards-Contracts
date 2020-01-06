@@ -155,7 +155,13 @@ contract Harber {
 
     function rentOwed(uint256 _tokenId) public view returns (uint256 augurFundsDue) 
     {
-        return price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(365 days);
+        //the tests are written assuming price = annual rental price. Final version should be price =daily rental price
+        if (usingAugur) {
+            return price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(1 days);
+        }
+        else {
+            return price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(365 days);
+        }
     }
 
     function rentOwedWithTimestamp(uint256 _tokenId) public view returns (uint256 augurFundsDue, uint256 timestamp) 
