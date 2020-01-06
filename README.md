@@ -16,7 +16,7 @@ This project began as a fork of Simon de la Rouviere's brilliant project [ThisAr
 
 To continue the example of the English Premier League. There are 20 teams and therefore 20 unique NFTs. Each token is originally unowned, and has a daily rental price of zero. If someone wishes to rent the Manchester United NFT they must set a daily rental price (1 DAI for example) and deposit some DAI to fund the rent. From this point, the user owns the token and the contract will start to track how long they have owned it for. The user's deposit will be deducted over time in line with the rental price they have set. 
 
-At any time, the token can be taken off the previous owner by repeating the above, the only restriction being that the new rental price must be higher than its current price. Unlike traditional Harberger Tax rules, the new owner does *not* need to pay anything to the previous owner. 
+At any time, a new user can 'buy' the taken off the current owner by repeating the above, the only restriction being that the new rental price must be higher than its current price. Unlike traditional Harberger Tax rules, the new owner does *not* need to pay anything to the previous owner. 
 
 If a user's deposit balance runs out, then token ownership reverts to the previous owner, assuming they have a remaining deposit balance. The rental price will also revert to whatever it was when that user purchased it. If a user's deposit balance runs out and there are no previous owners, or no previous owners with deposits left, the token will become unowned again and the price will revert to zero. 
 
