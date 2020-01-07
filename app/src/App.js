@@ -7,6 +7,7 @@ import "./App.css";
 
 import drizzleOptions from "./drizzleOptions";
 import BaseContainer from "./BaseContainer";
+import FrontBaseContainer from "./FrontBaseContainer";
 
 
 
@@ -16,6 +17,18 @@ class App extends Component {
       <DrizzleProvider options={drizzleOptions}>
         <OfflineContainer>
           <BaseContainer />
+        </OfflineContainer>
+      </DrizzleProvider>
+    );
+  }
+}
+
+class AppFront extends Component {
+  render() {
+    return (
+      <DrizzleProvider options={drizzleOptions}>
+        <OfflineContainer>
+          <FrontBaseContainer />
         </OfflineContainer>
       </DrizzleProvider>
     );
@@ -43,7 +56,8 @@ class AppRoutes extends Component {
   render() {
     return (
       <Router>
-        <Route path='/team' exact component={App}/>
+        <Route path='/token' exact component={App}/>
+        <Route path='/' exact component={AppFront}/>
         <Route path='/metadata' exact component={Metadata}/>
       </Router>
     )

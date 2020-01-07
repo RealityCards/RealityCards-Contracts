@@ -12,3 +12,13 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
     monospace;
 }
+
+
+/* h3 {
+  display: inline-block;
+} */
+
+a {
+  font-weight: bold;
+  color: inherit;
+}
