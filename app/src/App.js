@@ -27,8 +27,8 @@ class Metadata extends Component {
   constructor() {
     super();
     this.data = {
-      name: "This Artwork Is Always On Sale",
-      description: "A Digital Artwork That Is Always On Sale",
+      name: "Harber.io",
+      description: "Harber.io",
       image: "https://thisartworkisalwaysonsale.com/static/media/TAIAOS4.3cd60b66.png"
     };
   }
@@ -43,7 +43,7 @@ class AppRoutes extends Component {
   render() {
     return (
       <Router>
-        <Route path='/' exact component={App}/>
+        <Route path='/team' exact component={App}/>
         <Route path='/metadata' exact component={Metadata}/>
       </Router>
     )

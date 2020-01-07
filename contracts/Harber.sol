@@ -23,6 +23,8 @@ interface Cash
 }
 
 //TODO: upon learning that the max number of options in a categorical market is 7 I will need to interact with multiple different markets
+//TODO: remove setwinnerme, it is a trust problem
+//TODO: make token ownershiip default to the contract address, not me
 
 contract Harber {
     
@@ -31,7 +33,7 @@ contract Harber {
     // NUMBER OF TOKENS
     // this needs to INCLUDE the invalid outcome. So it will always be 1 higher than the number of teams. But if it is too high, the getWinner function will try and check if a team that does not exist has won, which will cause a revert, preventing the contract from determining the winner. So it must be accurate. 
     // Example: UK Premier League. 20 teams. numberOfTokens must equal 21 (20 teams + invalid outcome)
-    uint256 constant numberOfTokens = 5; // needs to be 5 for ganache testing
+    uint256 constant numberOfTokens = 20; // needs to be 5 for ganache testing
 
     //TESTING VARIABLES
     bool constant usingAugur = false; //if false, none of the augur contracts are interacted with. Required for ganache testing. Must be true in production :)
