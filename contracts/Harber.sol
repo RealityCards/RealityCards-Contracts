@@ -31,9 +31,8 @@ contract Harber {
     using SafeMath for uint256;
 
     // NUMBER OF TOKENS
-    // this needs to INCLUDE the invalid outcome. So it will always be 1 higher than the number of teams. But if it is too high, the getWinner function will try and check if a team that does not exist has won, which will cause a revert, preventing the contract from determining the winner. So it must be accurate. 
-    // Example: UK Premier League. 20 teams. numberOfTokens must equal 21 (20 teams + invalid outcome)
-    uint256 constant numberOfTokens = 6; // needs to be 5 for ganache testing
+    //Also equals number of markets on augur
+    uint256 constant numberOfTokens = 5; // needs to be 5 for ganache testing
 
     //TESTING VARIABLES
     bool constant usingAugur = false; //if false, none of the augur contracts are interacted with. Required for ganache testing. Must be true in production :)
@@ -47,13 +46,13 @@ contract Harber {
     // CONTRACT VARIABLES
     IERC721Full public team; // ERC721 NFT.
     //Augur contracts:
-    IMarket market;
+    IMarket[numberOfTokens] market;
     ShareToken completeSets;
     Cash cash; 
 
     // UINTS ADDRESSES, BOOLS
     address public andrewsAddress; // I am the original owner of tokens, and ownership reverts to me should the sale foreclose. Also, only I have the ability to SET the winner (which is an emergency ability if the decentralised approach fails- and can only be done if a month has passed after the augur resolution should have passed).
-    address public marketAddress; // the address of the Augur market. It is set in the constructor. Does not change. 
+    address[numberOfTokens] public marketAddresses; // the addresses of the various Augur binary markets. One market for each token. Does not change. Initiated in the constructor and does not change.
     uint256[numberOfTokens] public price; //in dai-wei (so $100 = 100000000000000000000)
     uint256[numberOfTokens] public collectedAndSentToAugur; // amount collected for each token, ie the sum of all owners' rent. Not actually used for anything. 
     uint256 public totalCollected; // an easy way to track the above across all tokens. It is used for a) if there is an invalid outcome and it pays everyone back the amount of: ((total funds available * amount paid by user) / totalCollected). totalCollected is slightly higher than total funds available due to augur fees. And b) upon market resolution, it sells complete sets of Augur equal to totalCollected.
@@ -63,7 +62,7 @@ contract Harber {
     uint256[numberOfTokens] public numberOfOwners; //used to cycle through ownerTracker during finalse & payout. Since you can't find the size of a mapping. If the value is 5, it means there are 5 owners. Ie it is not doing programming counting. 
   
     // winning outcome variables
-    bool public marketResolved = false;
+    bool public marketsResolved = false;
     bool public doneAndDusted = false;
     uint256 public winningOutcome = 99; //start with invalid winning outcome
     uint256 public marketExpectedResolutionTime; //so the function to manually set the winner can only be called long after it should have resolved via Augur. Must be public so others can verify it is accurate. 
@@ -89,23 +88,23 @@ contract Harber {
     ownedState[numberOfTokens] public state;
 
     ////////////// CONSTRUCTOR //////////////
-    constructor(address _andrewsAddress, address _addressOfToken, address _addressOfCashContract, address _addressOfMarket, address _addressOfCompleteSetsContract, address _addressOfMainAugurContract, uint _marketExpectedResolutionTime) public {
+    constructor(address _andrewsAddress, address _addressOfToken, address _addressOfCashContract, address[numberOfTokens] memory _addressesOfMarkets, address _addressOfCompleteSetsContract, address _addressOfMainAugurContract, uint _marketExpectedResolutionTime) public {
         //initialise ERC721s
         team = IERC721Full(_addressOfToken);
         team.setup();
         andrewsAddress = _andrewsAddress;
+        marketAddresses = _addressesOfMarkets; //this is to make the market addresses public so users can check the actual augur markets for themselves
 
-        //currentOwnerIndex is incremented before being used first so the 0 index will never contain a price/address. A zero index is used in the _revertToPreviousOwner function to commence foreclosure
         for (uint i=0; i<numberOfTokens; i++)
         {
             currentOwnerIndex[i]=0;
             numberOfOwners[i]=0;
             state[i] = ownedState.Foreclosed;
+            market[i] = IMarket(_addressesOfMarkets[i]);
         }
 
-        //initialise Augur contract variables
+        //initialise Augur contract variables (markets variables initialised above)
         cash = Cash(_addressOfCashContract);
-        market = IMarket(_addressOfMarket);
         completeSets = ShareToken(_addressOfCompleteSetsContract);
         marketExpectedResolutionTime = _marketExpectedResolutionTime;
         
@@ -241,7 +240,7 @@ contract Harber {
     }
 
     // * internal * 
-    function buyCompleteSets(uint256 _rentOwed) internal 
+    function buyCompleteSets(uint256 _tokenId, uint256 _rentOwed) internal 
     {
         if (usingAugur == true)
         {
@@ -251,37 +250,83 @@ contract Harber {
     }
 
     // * internal *
-    function sellCompleteSets(uint256 _sets) internal 
+    function sellCompleteSets() internal 
     {
         assert (marketResolved);
         if (usingAugur == true)
         {
-            uint256 _setsToSell =_sets.div(100);
-            completeSets.publicSellCompleteSets(market, _setsToSell);
+            for (uint i=0; i<numberOfTokens; i++) {
+                uint256 _setsToSell =collectedAndSentToAugur[i].div(100);
+                completeSets.publicSellCompleteSets(market[i], _setsToSell);
+            } 
         } 
     }
 
     // * internal * 
-    function getWinnerFromAugur(uint256 _outcomeToTest) internal view returns(bool) 
+    // checks if all X markets have resolved to either yes, no, or invalid
+    function haveAllAugurMarketsResolved() internal view returns(bool) 
     {   
         if (usingAugur) {
-            if (market.getWinningPayoutNumerator(_outcomeToTest) > 0) {
+            uint256 _resolvedOutcomesCount =0;
+
+            for (uint i=0; i<numberOfTokens; i++) {
+                // binary market has three outcomes: 0 (invalid) 1 ('yes') 2 ('no')
+                if (market[i].getWinningPayoutNumerator(0) > 0 || market[i].getWinningPayoutNumerator(1) > 0 | market[i].getWinningPayoutNumerator(2) > 0  ) {
+                    _resolvedOutcomesCount = _resolvedOutcomesCount + 1;
+                }
+            }
+
+            if (_resolvedOutcomesCount == numberOfTokens) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        //hard code 'yes' for testing
+        else {
             return true;
+            }
+        }
+    }
+
+    // * internal * 
+    // zero errors = all markets resolved 'no' except one that resolved 'yes'
+    // this function will also set the winningOutcome variable
+    function haveAllAugurMarketsResolvedWithoutErrors() internal view returns(bool) 
+    {   
+        if (usingAugur) {
+            uint256 _winningOutcomesCount = 0;
+            uint256 _losingOutcomesCount = 0;
+            uint256 _invalidOutcomesCount = 0;
+
+            //cycle through all the markets for a positive value on outcome 0 (invalid) or 1 (winner). 
+            //return true if there is 1 winner and 0 invalid. Anything else, return false. 
+            for (uint i=0; i<numberOfTokens; i++) {
+                if (market[i].getWinningPayoutNumerator(0) > 0) {
+                    _invalidOutcomesCount = _invalidOutcomesCount + 1;
+                }
+                if (market[i].getWinningPayoutNumerator(1) > 0) {
+                    winningOutcome = i;
+                    _winningOutcomesCount = _winningOutcomesCount + 1;
+                }
+                if (market[i].getWinningPayoutNumerator(2) > 0) {
+                    winningOutcome = i;
+                    _losingOutcomesCount = _losingOutcomesCount + 1;
+                }
+            }
+
+            if (_winningOutcomesCount == 1 && _invalidOutcomesCount == 0 && _losingOutcomesCount == (numberOfTokens - 1)) {
+                return true;
             } else {
                 return false;
             }
         }
         //hard code a winner for testing
         else {
-            if (_outcomeToTest == 1) {
+            winningOutcome = 2;
             return true;
-            } else {
-                return false;
             }
         }
-    }
-
-    // * internal * 
     function sendCash(address _to, uint256 _amount, uint256 _reason) internal {  
         if (usingAugur) {
             cash.transfer(_to,_amount);
@@ -307,8 +352,6 @@ contract Harber {
     ////////////// MARKET RESOLUTION FUNCTIONS ////////////// 
 
     //this can be called by anyone, at any time. getWinningPayoutNumerator will always return with false unless the market is resolved. 
-    // of extreme importance here is that the teams that each integer refers to within augur is the same as within my contract. Ie if ID 1 refers to Manchester United within my contract, but ID 1 is equal to Liverpool within the Augur market, the wrong winner will be selected. This can either be dealt with manually or programmatically, either way it needs to happen within the setup() of the ERC721s
-    // it is also imperative that numberOfTokens is set correctly. If getWinningPayoutNumerator is called with a token ID that does not exist, it will revert. 
     function getWinner() notResolved() public 
     {
         // final rent collection before it is locked down
@@ -316,43 +359,43 @@ contract Harber {
             _collectRent(i);
         }
 
-        for (uint i=0; i < numberOfTokens; i++) { //start from 0 to test if invalid was the actual outcome
-            bool _isWinner = getWinnerFromAugur(i);
-            if (_isWinner) {
-                winningOutcome = i;
-                marketResolved = true;
-                //check if market resolved invalid
-                if (winningOutcome == 0) {
-                    invalidMarketFinaliseAndPayout();
-                }
-                else {
-                    finaliseAndPayout();
-                }
+        //first check if all X markets have all resolved one way or the other
+        bool _haveAllAugurMarketsResolved = haveAllAugurMarketsResolved();
+
+        if (_haveAllAugurMarketsResolved) {
+
+            //now check if they all resolved without errors
+            bool _haveAllAugurMarketsResolvedWithoutErrors = haveAllAugurMarketsResolvedWithoutErrors();
+            if (_haveAllAugurMarketsResolvedWithoutErrors) {
+                finaliseAndPayout();
+            }
+            else {
+                invalidMarketFinaliseAndPayout();
             }
         }
     }
 
-    //if the above function fails for whatever reason. It can ONLY be called by me, and well after the market should have resolved on Augur, otherwise I could influence the outcome
-    function setWinnerMe(uint256 _winner) notResolved() public 
-    {
-        // only I can call this- MAKE SURE IT IS UNCOMMENTED IN PRODUCTION!
-        require (msg.sender == andrewsAddress, "Imposter detected"); 
-        // can only be called if a month has passed and the Augur market still not resolved
-        require (now > (marketExpectedResolutionTime + 2592000), "Wait for decentralised resolution first"); //1 month
-        winningOutcome = _winner;
-        //final rent collection before it is locked down
-        for (uint i=1; i < numberOfTokens; i++) {
-             _collectRent(i);
-        }
-        marketResolved = true;
-        //check if market resolved invalid
-        if (winningOutcome == 0) {
-            invalidMarketFinaliseAndPayout();
-        }
-        else {
-            finaliseAndPayout();
-        }
-    }
+    // //if the above function fails for whatever reason. It can ONLY be called by me, and well after the market should have resolved on Augur, otherwise I could influence the outcome
+    // function setWinnerMe(uint256 _winner) notResolved() public 
+    // {
+    //     // only I can call this- MAKE SURE IT IS UNCOMMENTED IN PRODUCTION!
+    //     require (msg.sender == andrewsAddress, "Imposter detected"); 
+    //     // can only be called if a month has passed and the Augur market still not resolved
+    //     require (now > (marketExpectedResolutionTime + 2592000), "Wait for decentralised resolution first"); //1 month
+    //     winningOutcome = _winner;
+    //     //final rent collection before it is locked down
+    //     for (uint i=1; i < numberOfTokens; i++) {
+    //          _collectRent(i);
+    //     }
+    //     marketsResolved = true;
+    //     //check if market resolved invalid
+    //     if (winningOutcome == 0) {
+    //         invalidMarketFinaliseAndPayout();
+    //     }
+    //     else {
+    //         finaliseAndPayout();
+    //     }
+    // }
 
     //if getWinner fails but I've been run over by a bus so don't trigger setWinnerMe. Sets the winner as invalid, which returns all funds to all users
     //must give me 1 week to call the above before this can be called by anyone
@@ -376,7 +419,7 @@ contract Harber {
         //return unused deposits
         returnDeposits();
         // get the dai back from Augur
-        sellCompleteSets(totalCollected);
+        sellCompleteSets();
         // the Dai returned to distribute will not be known in advance due to fees, so I cannot hard code the figure to payout to winners. So I will just get the dai balance of the contract. 
         uint256 _daiAvailableToDistribute = getCashBalance(address(this));
         
@@ -485,7 +528,7 @@ contract Harber {
             collectedAndSentToAugur[_tokenId] = collectedAndSentToAugur[_tokenId].add(_rentOwed);
             totalCollected = totalCollected.add(_rentOwed);
 
-            buyCompleteSets(_rentOwed);
+            buyCompleteSets(_tokenId,_rentOwed);
             
             emit LogRentCollection(_rentOwed);
         }

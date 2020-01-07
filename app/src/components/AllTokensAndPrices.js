@@ -32,6 +32,7 @@ class ArtAndPriceSection extends Component {
     render() {
       return (
         <Fragment>
+        <h1>Harber.io</h1>
         <a href="/token?id=1"><img src={team1} style={{maxWidth: "10%", maxHeight: "10%"}} alt="A R T" /><br />Manchester United</a>
         <Token1 />   
         <a href="/token?id=2"><img src={team2} style={{maxWidth: "10%", maxHeight: "10%"}} alt="A R T" /><br />Liverpool</a>

@@ -1479,12 +1479,12 @@
     "1578383696662": {
       "events": {},
       "links": {},
-      "address": "0x12C3198b21ef124EC06f83835302720CE62caE82",
-      "transactionHash": "0x791576d874bc5cfee51c8011ec2d4deb4b5153918790c1a741d6cd6b4d1c1f11"
+      "address": "0x2D3a677BF88F8B13b2745ABAd7AE3e57c31281bE",
+      "transactionHash": "0x3ca8f98df5dc730b4d87a65c38ed577a208cacd352e78d1530c4e209f2035d0b"
     }
   },
   "schemaVersion": "3.0.19",
-  "updatedAt": "2020-01-07T07:58:35.737Z",
+  "updatedAt": "2020-01-07T11:10:49.966Z",
   "networkType": "ethereum",
   "devdoc": {
     "methods": {}
