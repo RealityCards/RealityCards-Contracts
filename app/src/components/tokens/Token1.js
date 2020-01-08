@@ -5,7 +5,7 @@ import moment from "moment";
 import ContractData from "../ContractData";
 import { getUSDValue } from "../../Actions";
 
-var urlId = 1;
+var urlId = 2;
 
 class PriceSection extends Component {
     constructor(props, context) {
