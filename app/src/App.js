@@ -4,12 +4,14 @@ import { DrizzleProvider } from "drizzle-react";
 import OfflineContainer from "./OfflineContainer"; // modified from drizzle-react-components
 
 import "./App.css";
-
+// import { createHistory } from 'history'
 import drizzleOptions from "./drizzleOptions";
 import BaseContainer from "./BaseContainer";
 import FrontBaseContainer from "./FrontBaseContainer";
 
-
+// const history = useRouterHistory(createHistory)({
+//   basename: '/'
+// })
 
 class App extends Component {
   render() {
@@ -55,7 +57,7 @@ class Metadata extends Component {
 class AppRoutes extends Component {
   render() {
     return (
-      <Router>
+      <Router >
         <Route path='/token' exact component={App}/>
         <Route path='/' exact component={AppFront}/>
         <Route path='/metadata' exact component={Metadata}/>

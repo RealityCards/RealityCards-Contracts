@@ -22,7 +22,7 @@ interface Cash
     function transferFrom(address _from, address _to, uint256 _amount) external returns (bool);
 }
 
-//TODO: make token ownershiip default to the contract address, not me
+//TODO: have not yet tested the new check winner functions
 
 contract Harber {
     
@@ -33,7 +33,7 @@ contract Harber {
     uint256 constant numberOfTokens = 5; // needs to be 5 for ganache testing
 
     //TESTING VARIABLES
-    bool constant usingAugur = false; //if false, none of the augur contracts are interacted with. Required for ganache testing. Must be true in production :)
+    bool constant usingAugur = true; //if false, none of the augur contracts are interacted with. Required for ganache testing. Must be true in production :)
     uint256 public a = 0;
     uint256 public b = 0;
     uint256 public c = 0;
@@ -356,7 +356,7 @@ contract Harber {
     function getWinner() notResolved() public 
     {
         // final rent collection before it is locked down
-        for (uint i=1; i < numberOfTokens; i++) {
+        for (uint i=0; i < numberOfTokens; i++) {
             _collectRent(i);
         }
 

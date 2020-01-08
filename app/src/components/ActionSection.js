@@ -70,7 +70,7 @@ class ActionSection extends Component {
     <div className="section">
       <h2>Current Owner Details:</h2>
         <p>Address: <ContractData contract="ERC721Full" method="ownerOf" methodArgs={[urlId]}/></p>
-        <p>Token Deposit: <ContractData contract="Harber" method="liveDepositAbleToWithdraw" methodArgs={[urlId]} toEth /> DAI</p>
+        <p>Total Token Deposits: <ContractData contract="Harber" method="liveDepositAbleToWithdraw" methodArgs={[urlId]} toEth /> DAI</p>
         <p>Your Deposit: <ContractData contract="Harber" method="userDepositAbleToWithdraw" methodArgs={[urlId]} toEth /> DAI</p>
         <p>Rental Expiry Time: {this.state.rentalExpiryTime}</p>
         {/* <p>The current deposit will cover the patronage until the time above. At this time, the smart contract steward takes ownership of the artwork and sets its price back to zero.</p> */}
@@ -79,8 +79,8 @@ class ActionSection extends Component {
         {window.ethereum !== undefined ? (
           <Fragment>
           <ContractForm buttonText="Increase Daily Rental" contract="Harber" method="changePrice" labels={["New Price"]}/>
-          <ContractForm buttonText="Top up Deposit" contract="Harber" method="depositDai" labels={["Dai to Deposit"]}/>
-          <ContractForm buttonText="Withdraw Deposit" contract="Harber" method="withdrawDeposit" labels={["Deposit in DAI"]} toEth />
+          <ContractForm buttonText="Top up Deposit" contract="Harber" method="depositDai" labels={["DAI to Deposit"]}/>
+          <ContractForm buttonText="Withdraw Deposit" contract="Harber" method="withdrawDeposit" labels={["DAI to Withdraw"]} toEth />
           <ContractForm buttonText="Withdraw Whole Deposit And transfer token to previous  owner" contract="Harber" method="exit" />
           </Fragment>
         ) : (
