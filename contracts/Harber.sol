@@ -54,7 +54,8 @@ contract Harber {
     address public andrewsAddress; // I am the original owner of tokens, and ownership reverts to me should the sale foreclose. Also, only I have the ability to SET the winner (which is an emergency ability if the decentralised approach fails- and can only be done if a month has passed after the augur resolution should have passed).
     address[numberOfTokens] public marketAddresses; // the addresses of the various Augur binary markets. One market for each token. Does not change. Initiated in the constructor and does not change.
     uint256[numberOfTokens] public price; //in dai-wei (so $100 = 100000000000000000000)
-    uint256[numberOfTokens] public collectedAndSentToAugur; // amount collected for each token, ie the sum of all owners' rent. Not actually used for anything. 
+    uint256[numberOfTokens] public collectedAndSentToAugur; // amount collected for each token, ie the sum of all owners' rent per token. Used to know how many complete
+    // sets to sell for each market (since there is one market per token) 
     uint256 public totalCollected; // an easy way to track the above across all tokens. It is used for a) if there is an invalid outcome and it pays everyone back the amount of: ((total funds available * amount paid by user) / totalCollected). totalCollected is slightly higher than total funds available due to augur fees. And b) upon market resolution, it sells complete sets of Augur equal to totalCollected.
     uint256[numberOfTokens] public timeLastCollected; // used to determine the rent due. Rent is due for the period (now - timeLastCollected), at which point timeLastCollected is set to now.
     uint256[numberOfTokens] public timeAcquired; // when a token was bought. used only for front end
@@ -129,7 +130,7 @@ contract Harber {
     }
 
     modifier notResolved() {
-        require(marketResolved == false);
+        require(marketsResolved == false);
         _;
     }
 
@@ -245,14 +246,14 @@ contract Harber {
         if (usingAugur == true)
         {
             uint256 _setsToBuy =_rentOwed.div(100);
-            completeSets.publicBuyCompleteSets(market, _setsToBuy);
+            completeSets.publicBuyCompleteSets(market[_tokenId], _setsToBuy);
         } 
     }
 
     // * internal *
     function sellCompleteSets() internal 
     {
-        assert (marketResolved);
+        assert (marketsResolved);
         if (usingAugur == true)
         {
             for (uint i=0; i<numberOfTokens; i++) {
@@ -263,20 +264,21 @@ contract Harber {
     }
 
     // * internal * 
-    // checks if all X markets have resolved to either yes, no, or invalid
-    function haveAllAugurMarketsResolved() internal view returns(bool) 
+    // checks if all X (x = number of tokens = number of teams) markets have resolved to either yes, no, or invalid
+    function haveAllAugurMarketsResolved() internal returns(bool) 
     {   
         if (usingAugur) {
-            uint256 _resolvedOutcomesCount =0;
+            uint256 _resolvedOutcomesCount = 0;
 
             for (uint i=0; i<numberOfTokens; i++) {
-                // binary market has three outcomes: 0 (invalid) 1 ('yes') 2 ('no')
-                if (market[i].getWinningPayoutNumerator(0) > 0 || market[i].getWinningPayoutNumerator(1) > 0 | market[i].getWinningPayoutNumerator(2) > 0  ) {
+                // binary market has three outcomes: 0 (invalid), 1 (yes), 2 (no)
+                if (market[i].getWinningPayoutNumerator(0) > 0 || market[i].getWinningPayoutNumerator(1) > 0 || market[i].getWinningPayoutNumerator(2) > 0  ) {
                     _resolvedOutcomesCount = _resolvedOutcomesCount + 1;
                 }
             }
 
             if (_resolvedOutcomesCount == numberOfTokens) {
+                marketsResolved = true;
                 return true;
             } else {
                 return false;
@@ -284,33 +286,34 @@ contract Harber {
         }
         //hard code 'yes' for testing
         else {
+            marketsResolved = true;
             return true;
-            }
         }
     }
 
     // * internal * 
     // zero errors = all markets resolved 'no' except one that resolved 'yes'
     // this function will also set the winningOutcome variable
-    function haveAllAugurMarketsResolvedWithoutErrors() internal view returns(bool) 
+    // the reason there are two functions (haveAllAugurMarketsResolved and haveAllAugurMarketsResolvedWithoutErrors) is simply to ensure that the contract does not interpret
+    // a delay in one of the market's resolving as an 'error' and refunding everyone prematurely
+    function haveAllAugurMarketsResolvedWithoutErrors() internal returns(bool) 
     {   
         if (usingAugur) {
             uint256 _winningOutcomesCount = 0;
             uint256 _losingOutcomesCount = 0;
             uint256 _invalidOutcomesCount = 0;
 
-            //cycle through all the markets for a positive value on outcome 0 (invalid) or 1 (winner). 
-            //return true if there is 1 winner and 0 invalid. Anything else, return false. 
+            //cycle through all the markets for a positive value on outcome 0 (invalid) or 1 (yes) or 2 (no). 
+            //return true if there is 1 winner and 0 invalid and [number of tokens - 1] losers. Anything else, return false. 
             for (uint i=0; i<numberOfTokens; i++) {
                 if (market[i].getWinningPayoutNumerator(0) > 0) {
                     _invalidOutcomesCount = _invalidOutcomesCount + 1;
                 }
                 if (market[i].getWinningPayoutNumerator(1) > 0) {
-                    winningOutcome = i;
+                    winningOutcome = i; // <- the winning outcome (a global variable) is set here
                     _winningOutcomesCount = _winningOutcomesCount + 1;
                 }
                 if (market[i].getWinningPayoutNumerator(2) > 0) {
-                    winningOutcome = i;
                     _losingOutcomesCount = _losingOutcomesCount + 1;
                 }
             }
@@ -351,7 +354,7 @@ contract Harber {
 
     ////////////// MARKET RESOLUTION FUNCTIONS ////////////// 
 
-    //this can be called by anyone, at any time. getWinningPayoutNumerator will always return with false unless the market is resolved. 
+    //this can be called by anyone, at any time. 
     function getWinner() notResolved() public 
     {
         // final rent collection before it is locked down
@@ -364,7 +367,7 @@ contract Harber {
 
         if (_haveAllAugurMarketsResolved) {
 
-            //now check if they all resolved without errors
+            //now check if they all resolved without errors. If yes, normal payout. If no, return all funds to all users. 
             bool _haveAllAugurMarketsResolvedWithoutErrors = haveAllAugurMarketsResolvedWithoutErrors();
             if (_haveAllAugurMarketsResolvedWithoutErrors) {
                 finaliseAndPayout();
@@ -375,46 +378,24 @@ contract Harber {
         }
     }
 
-    // //if the above function fails for whatever reason. It can ONLY be called by me, and well after the market should have resolved on Augur, otherwise I could influence the outcome
-    // function setWinnerMe(uint256 _winner) notResolved() public 
-    // {
-    //     // only I can call this- MAKE SURE IT IS UNCOMMENTED IN PRODUCTION!
-    //     require (msg.sender == andrewsAddress, "Imposter detected"); 
-    //     // can only be called if a month has passed and the Augur market still not resolved
-    //     require (now > (marketExpectedResolutionTime + 2592000), "Wait for decentralised resolution first"); //1 month
-    //     winningOutcome = _winner;
-    //     //final rent collection before it is locked down
-    //     for (uint i=1; i < numberOfTokens; i++) {
-    //          _collectRent(i);
-    //     }
-    //     marketsResolved = true;
-    //     //check if market resolved invalid
-    //     if (winningOutcome == 0) {
-    //         invalidMarketFinaliseAndPayout();
-    //     }
-    //     else {
-    //         finaliseAndPayout();
-    //     }
-    // }
-
-    //if getWinner fails but I've been run over by a bus so don't trigger setWinnerMe. Sets the winner as invalid, which returns all funds to all users
-    //must give me 1 week to call the above before this can be called by anyone
-    function setWinnerPublic() notResolved() public 
+    // Sets the winner as invalid, which returns all funds to all users. Anyone can call this. Emergency function in case the augur markets never resolve for whatever reason,
+    // (or perhaps the markets resolve, but this contract cant see due to a bug in the relevant function)
+    // can only be called 6 months after augur markets should have ended
+    function emergencyExit() notResolved() public 
     {
-        // can only be called if 5 weeks have passed and the Augur market still not resolved
-        require (now > (marketExpectedResolutionTime + 3196800), "Give Andrew 1 week first"); //5 weeks
+        require (now > (marketExpectedResolutionTime + 15778800), "Must wait 6 months for Augur Oracle"); //5 weeks
         //final rent collection before it is locked down
-        for (uint i=1; i < numberOfTokens; i++) {
+        for (uint i=0; i < numberOfTokens; i++) {
             _collectRent(i);
         }
-        marketResolved = true;
+        marketsResolved = true;
         invalidMarketFinaliseAndPayout(); //returns all rent to all users
     }
 
     // * internal * 
     function finaliseAndPayout() internal
     {
-        require (marketResolved == true, "Winner not known");
+        require (marketsResolved == true, "Winner not known");
         require (doneAndDusted == false, "Already paid out");
         //return unused deposits
         returnDeposits();
@@ -440,16 +421,16 @@ contract Harber {
     // * internal * 
     function invalidMarketFinaliseAndPayout() internal
     {
-        require (marketResolved == true, "Winner not known");
+        require (marketsResolved == true, "Winner not known");
         require (doneAndDusted == false, "Already paid out");
         //return unused deposits
         returnDeposits();
         // get the dai back from Augur
-        sellCompleteSets(totalCollected);
+        sellCompleteSets();
         // the Dai returned to distribute will not be known in advance due to fees, so I cannot hard code the figure to payout to winners. So I will just get the dai balance of the contract. 
         uint256 _daiAvailableToDistribute = getCashBalance(address(this));
 
-        for (uint i=1; i < numberOfTokens; i++) //not counting from zero, 0 = invalid
+        for (uint i=0; i < numberOfTokens; i++) 
         {  
             for (uint j=0; j < numberOfOwners[i]; j++)
             {  
@@ -466,11 +447,11 @@ contract Harber {
         emit LogFinalised(winningOutcome,_daiAvailableToDistribute);
     }
 
-        //return all unused deposits upon resolution
+    //return all unused deposits upon resolution
     // * internal * 
     function returnDeposits() internal
     {
-        for (uint i=1; i < numberOfTokens; i++) //not counting from zero, 0 = invalid
+        for (uint i=0; i < numberOfTokens; i++) 
         {  
             for (uint j=0; j < numberOfOwners[i]; j++)
             {  
@@ -535,7 +516,6 @@ contract Harber {
     }
     
     function buy(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) public collectRent(_tokenId) notResolved() {
-        require(_tokenId != 0, "Cannot bet on invalid outcome");
         require(_tokenId < numberOfTokens, "This team does not exist");
         require(_newPrice > price[_tokenId], "Price must be higher than current price");
         require(_deposit > 0, "Must deposit something");
