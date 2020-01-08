@@ -22,8 +22,6 @@ interface Cash
     function transferFrom(address _from, address _to, uint256 _amount) external returns (bool);
 }
 
-//TODO: upon learning that the max number of options in a categorical market is 7 I will need to interact with multiple different markets
-//TODO: remove setwinnerme, it is a trust problem
 //TODO: make token ownershiip default to the contract address, not me
 
 contract Harber {
@@ -51,7 +49,7 @@ contract Harber {
     Cash cash; 
 
     // UINTS ADDRESSES, BOOLS
-    address public andrewsAddress; // I am the original owner of tokens, and ownership reverts to me should the sale foreclose. Also, only I have the ability to SET the winner (which is an emergency ability if the decentralised approach fails- and can only be done if a month has passed after the augur resolution should have passed).
+    address andrewsAddress; // my whiskey fund, for my cut (TBD)
     address[numberOfTokens] public marketAddresses; // the addresses of the various Augur binary markets. One market for each token. Does not change. Initiated in the constructor and does not change.
     uint256[numberOfTokens] public price; //in dai-wei (so $100 = 100000000000000000000)
     uint256[numberOfTokens] public collectedAndSentToAugur; // amount collected for each token, ie the sum of all owners' rent per token. Used to know how many complete
@@ -621,10 +619,10 @@ contract Harber {
 
     /* internal */
     function _foreclose(uint256 _tokenId) internal {
-        // I become steward of token (aka foreclose)
+        // the contract becomes owner of token (aka foreclose)
         address _currentOwner = team.ownerOf(_tokenId);
         //third field is price, ie price goes to zero
-        _transferTokenTo(_currentOwner, andrewsAddress, 0, _tokenId);
+        _transferTokenTo(_currentOwner, address(this), 0, _tokenId);
         state[_tokenId] = ownedState.Foreclosed;
         emit LogForeclosure(_currentOwner);
     }
