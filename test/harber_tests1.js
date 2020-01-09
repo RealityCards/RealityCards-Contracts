@@ -48,7 +48,7 @@ contract('HarberTests1', (accounts) => {
 
     it('getOwner', async () => {
     var owner = await token.ownerOf.call(4);
-    assert.equal(owner, andrewsAddress);
+    assert.equal(owner, harber.address);
   });
 
   it('getName', async () => {
@@ -102,7 +102,6 @@ contract('HarberTests1', (accounts) => {
     await shouldFail.reverting.withMessage(harber.buy(200,4,0,{ from: user}), "Price must be higher than current price");
     await shouldFail.reverting.withMessage(harber.buy(300,4,0,{ from: user}), "Must deposit something");
     await shouldFail.reverting.withMessage(harber.buy(300,4,10,{ from: user}), "Not enough DAI");
-    await shouldFail.reverting.withMessage(harber.buy(300,0,10,{ from: user}), "Cannot bet on invalid outcome");
     // await shouldFail.reverting.withMessage(harber.buy(300,5,10,{ from: user}), "This team does not exist");
   });
 
@@ -376,7 +375,7 @@ contract('HarberTests1', (accounts) => {
     await time.increase(time.duration.weeks(2));
     await harber._collectRent(1,{ from: user0 }); //user irrelevant
     var owner = await token.ownerOf.call(1);
-    assert.equal(owner, andrewsAddress);
+    assert.equal(owner, harber.address);
     var price = await harber.price.call(1);
     assert.equal(price, 0);
     //doing some buys so that some users for this token will have a deposit balance, which can be tested later when doing return deposit
@@ -485,7 +484,7 @@ contract('HarberTests1', (accounts) => {
     var price = await harber.price.call(3);
     assert.equal(price, 0);
     var owner = await token.ownerOf.call(3);
-    assert.equal(owner, andrewsAddress); //if it belongs to me it means it has foreclosed
+    assert.equal(owner, harber.address); //if it belongs to the contract it means it has foreclosed
     //try again but this time have two users buy it, and make sure it reverts to original  user after the first one sells
     await harber.buy(365,3,10,{ from: user1 });
     await harber.buy(720,3,10,{ from: user2 });
@@ -496,7 +495,7 @@ contract('HarberTests1', (accounts) => {
     assert.equal(price, 365);
     await harber.withdrawDeposit(10,3,{ from: user1 });
     var owner = await token.ownerOf.call(3);
-    assert.equal(owner, andrewsAddress);
+    assert.equal(owner, harber.address);
     var price = await harber.price.call(3);
     assert.equal(price, 0);
   });
@@ -513,7 +512,7 @@ contract('HarberTests1', (accounts) => {
     var price = await harber.price.call(3);
     assert.equal(price, 0);
     var owner = await token.ownerOf.call(3);
-    assert.equal(owner, andrewsAddress); //if it belongs to me it means it has foreclosed
+    assert.equal(owner, harber.address); //if it belongs to me it means it has foreclosed
     //try again but this time have two users buy it, and make sure it reverts to original  user after the first one sells
     await harber.buy(365,3,10,{ from: user1 });
     await harber.buy(720,3,10,{ from: user2 });
@@ -524,7 +523,7 @@ contract('HarberTests1', (accounts) => {
     assert.equal(price, 365);
     await harber.exit(3,{ from: user1 });
     var owner = await token.ownerOf.call(3);
-    assert.equal(owner, andrewsAddress);
+    assert.equal(owner, harber.address);
     var price = await harber.price.call(3);
     assert.equal(price, 0);
     //just to test return deposit
@@ -555,7 +554,7 @@ contract('HarberTests1', (accounts) => {
     var deposit = await harber.deposits.call(3,user2);
     assert.equal(deposit, 3); //3
     //set the winner manually
-    await harber.setWinnerMe(2, { from: andrewsAddress }); 
+    await harber.getWinner(); 
     var totalCollected = await harber.totalCollected.call();
     //check that the correct deposit was returned
     var depositReturned = await harber.depositReturnedToUser.call(user0);

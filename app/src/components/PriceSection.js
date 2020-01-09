@@ -28,16 +28,6 @@ class PriceSection extends Component {
     }
 
 
-    // async updateOwner(props) {
-    //   const currentOwner = "unowned";
-    //   if (props.contracts['ERC721Full']['ownerOf'][this.state.patronKey].value !== this.contracts.Harber.address) {
-    //    const currentOwner = props.contracts['ERC721Full']['ownerOf'][this.state.patronKey].value;
-    //   }
-    //   this.setState({
-    //     currentOwner,
-    //   });
-    // }
-
     async updateUSDPrice(props) {
       const price = this.utils.fromWei(this.getArtworkPrice(props), 'ether');
       // console.log("price is",price);
@@ -124,7 +114,6 @@ class PriceSection extends Component {
       return (
         <Fragment>
         <h2>Daily rental price: $<ContractData contract="Harber" method="price" methodArgs={[urlId]} toEth /></h2>
-        {/* Current Owner: <ContractData contract="ERC721Full" method="ownerOf" methodArgs={[urlId]}/> */}
         Current Owner: {this.state.patron} 
         <br />
         Time Held: {this.state.currentTimeHeldHumanized} 
