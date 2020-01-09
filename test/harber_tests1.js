@@ -18,7 +18,7 @@ const augurCashAddress = '0xa836c1D6a35A443FD6F8d5d4A9cf5b1664bF76D6';
 // (8) 0x06b58dDf8CF8E115D01137A296fb57e522Cc441f (100 ETH)
 // (9) 0x84CAbF995E9Af67B6d73232C2D5E9fBeBEF92224 (100 ETH)
 
-// These test assume that 100 dai (in wei-dai or whatever) is sent with the getTestDai function and numberoftokens = 5
+// These test assume that 100 dai (in wei-dai or whatever) is sent with the getTestDai function and numberoftokens = 5, and that usingAugur = false
 // These tests do NOT reset the blockchain after each test. In retrospect this was a mistake, as it wasted a huge amount of time. harber_test2 fix this. 
 
 contract('HarberTests1', (accounts) => {
@@ -554,7 +554,7 @@ contract('HarberTests1', (accounts) => {
     var deposit = await harber.deposits.call(3,user2);
     assert.equal(deposit, 3); //3
     //set the winner manually
-    await harber.getWinner(); 
+    await harber.getWinner(2, true); 
     var totalCollected = await harber.totalCollected.call();
     //check that the correct deposit was returned
     var depositReturned = await harber.depositReturnedToUser.call(user0);

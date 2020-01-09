@@ -19,7 +19,6 @@ const augurCashAddress = '0xa836c1D6a35A443FD6F8d5d4A9cf5b1664bF76D6';
 // (9) 0x84CAbF995E9Af67B6d73232C2D5E9fBeBEF92224 (100 ETH)
 
 // These test assume that 100 dai (in wei-dai or whatever) is sent with the getTestDai function and numberoftokens = 5
-// These tests do NOT reset the blockchain after each test. In retrospect this was a mistake, as it wasted a huge amount of time. harber_test2 fix this. 
 
 contract('HarberTests2', (accounts) => {
 
@@ -42,7 +41,12 @@ contract('HarberTests2', (accounts) => {
 
 //the actual addresses are not used, I just need to pass the constructor smth
 const augurCashAddress = '0x0802563FB6CfA1f07363D3aBf529F7b3999096f6';
-const augurMarketAddress = '0xA830e8A271909b2407985F95921E5dD4AD1d859A'; //0x3276323FCcAA197DCCe782CCF783120D78D57cE6 this has worked before
+const augurMarketAddress = [
+  '0xA830e8A271909b2407985F95921E5dD4AD1d859A',
+  '0xA830e8A271909b2407985F95921E5dD4AD1d859A', 
+  '0xA830e8A271909b2407985F95921E5dD4AD1d859A', 
+  '0xA830e8A271909b2407985F95921E5dD4AD1d859A', 
+  '0xA830e8A271909b2407985F95921E5dD4AD1d859A']; 
 const augurShareTokenAddress = '0x63cbfEb0Cf1EE91Ca1689d8dbBa143bbf8Fd0fd1';
 const augurMainAddress = '0x62214e5c919332AC17c5e5127383B84378Ef9C1d';
 const marketedExpectedResolutionTime = 0;
@@ -75,7 +79,7 @@ beforeEach(async () => {
     // total days: 22
     // time: 0: 7 days 1: 1: 7 days: 8 days
     ////////////////////////
-    await harber.getWinner();
+    await harber.getWinner(1, true);
     // total deposits = 75, check:
     var totalCollected = await harber.totalCollected.call();
     assert.equal(totalCollected,75);
@@ -88,76 +92,7 @@ beforeEach(async () => {
     assert.equal(winningsSentToUser,27);
   });
 
-  it('test setWinnerMe- winner 1', async () => {
-    /////// STANDARD //////
-    await harber.getTestDai({ from: user0 });
-    await harber.getTestDai({ from: user1 });
-    await harber.getTestDai({ from: user2 });
-    await harber.getTestDai({ from: user3 });
-    //buy losing teams
-    await harber.buy(365,2,10,{ from: user0 }); //used deposit of 10
-    await harber.buy(730,3,20,{ from: user1 }); //used deposit of 20
-    //buy winning team
-    await harber.buy(365,1,10,{ from: user0 }); //used deposit of 7
-    await time.increase(time.duration.weeks(1));
-    await harber.buy(730,1,20,{ from: user1 }); //used deposit of 14
-    await time.increase(time.duration.weeks(1));
-    await harber.buy(1095,1,24,{ from: user2 }); //used deposit of 24
-    await time.increase(time.duration.weeks(2)); 
-    // totalcollected = 75, 
-    // paid: 0: 17, 1: 34, 2: 30
-    // total days: 22
-    // time: 0: 7 days 1: 1: 7 days: 8 days
-    ////////////////////////
-    await harber.setWinnerMe(1, { from: andrewsAddress });
-    // total deposits = 75, check:
-    var totalCollected = await harber.totalCollected.call();
-    assert.equal(totalCollected,75);
-    // 0,1 = 75 * 7 / 22
-    var winningsSentToUser = await harber.winningsSentToUser.call(user0);
-    assert.equal(winningsSentToUser,23);
-    var winningsSentToUser = await harber.winningsSentToUser.call(user1);
-    assert.equal(winningsSentToUser,23);
-    var winningsSentToUser = await harber.winningsSentToUser.call(user2);
-    assert.equal(winningsSentToUser,27);
-  });
-
-  //get winner can take no argument, for testing the winner to set is hard coded within the contract, so this is commented out most of the time to preven fails
-  // it('test GetWinner- winner 2', async () => {
-  //   /////// STANDARD //////
-  //   await harber.getTestDai({ from: user0 });
-  //   await harber.getTestDai({ from: user1 });
-  //   await harber.getTestDai({ from: user2 });
-  //   await harber.getTestDai({ from: user3 });
-  //   //buy losing teams
-  //   await harber.buy(365,2,10,{ from: user0 }); //used deposit of 10
-  //   await harber.buy(730,3,20,{ from: user1 }); //used deposit of 20
-  //   //buy winning team
-  //   await harber.buy(365,1,10,{ from: user0 }); //used deposit of 7
-  //   await time.increase(time.duration.weeks(1));
-  //   await harber.buy(730,1,20,{ from: user1 }); //used deposit of 14
-  //   await time.increase(time.duration.weeks(1));
-  //   await harber.buy(1095,1,24,{ from: user2 }); //used deposit of 24
-  //   await time.increase(time.duration.weeks(2)); 
-  //   // winner 1: 
-  //   // totalcollected = 75, 
-  //   // paid: 0: 17, 1: 34, 2: 30
-  //   // total days: 22
-  //   // time: 0: 7 days 1: 1: 7 days: 8 days
-  //   ////////////////////////
-  //   await harber.getWinner();
-  //   // total deposits = 75, check:
-  //   var totalCollected = await harber.totalCollected.call();
-  //   assert.equal(totalCollected,75);
-  //   var winningsSentToUser = await harber.winningsSentToUser.call(user0);
-  //   assert.equal(winningsSentToUser,75);
-  //   var winningsSentToUser = await harber.winningsSentToUser.call(user1);
-  //   assert.equal(winningsSentToUser,0);
-  //   var winningsSentToUser = await harber.winningsSentToUser.call(user2);
-  //   assert.equal(winningsSentToUser,0);
-  // });
-
-  it('test setWinnerMe- winner 2', async () => {
+  it('test GetWinner- winner 2', async () => {
     /////// STANDARD //////
     await harber.getTestDai({ from: user0 });
     await harber.getTestDai({ from: user1 });
@@ -179,7 +114,10 @@ beforeEach(async () => {
     // total days: 22
     // time: 0: 7 days 1: 1: 7 days: 8 days
     ////////////////////////
-    await harber.setWinnerMe(2, { from: andrewsAddress });
+    await harber.getWinner(2, true);
+    // total deposits = 75, check:
+    var totalCollected = await harber.totalCollected.call();
+    assert.equal(totalCollected,75);
     var winningsSentToUser = await harber.winningsSentToUser.call(user0);
     assert.equal(winningsSentToUser,75);
     var winningsSentToUser = await harber.winningsSentToUser.call(user1);
@@ -188,40 +126,38 @@ beforeEach(async () => {
     assert.equal(winningsSentToUser,0);
   });
 
+  it('test GetWinner- invalid', async () => {
+    /////// STANDARD //////
+    await harber.getTestDai({ from: user0 });
+    await harber.getTestDai({ from: user1 });
+    await harber.getTestDai({ from: user2 });
+    await harber.getTestDai({ from: user3 });
+    //buy losing teams
+    await harber.buy(365,2,10,{ from: user0 }); //used deposit of 10
+    await harber.buy(730,3,20,{ from: user1 }); //used deposit of 20
+    //buy winning team
+    await harber.buy(365,1,10,{ from: user0 }); //used deposit of 7
+    await time.increase(time.duration.weeks(1));
+    await harber.buy(730,1,20,{ from: user1 }); //used deposit of 14
+    await time.increase(time.duration.weeks(1));
+    await harber.buy(1095,1,24,{ from: user2 }); //used deposit of 24
+    await time.increase(time.duration.weeks(2)); 
+    // winner 1: 
+    // totalcollected = 75, 
+    // paid: 0: 17, 1: 34, 2: 30
+    // total days: 22
+    // time: 0: 7 days 1: 1: 7 days: 8 days
+    ////////////////////////
+    await harber.getWinner(1, false);
+    var winningsSentToUser = await harber.winningsSentToUser.call(user0);
+    assert.equal(winningsSentToUser,17);
+    var winningsSentToUser = await harber.winningsSentToUser.call(user1);
+    assert.equal(winningsSentToUser,34);
+    var winningsSentToUser = await harber.winningsSentToUser.call(user2);
+    assert.equal(winningsSentToUser,24);
+  });
 
-  //get winner can take no argument, for testing the winner to set is hard coded within the contract, so this is commented out most of the time to preven fails
-  // it('test GetWinner- invalid', async () => {
-  //   /////// STANDARD //////
-  //   await harber.getTestDai({ from: user0 });
-  //   await harber.getTestDai({ from: user1 });
-  //   await harber.getTestDai({ from: user2 });
-  //   await harber.getTestDai({ from: user3 });
-  //   //buy losing teams
-  //   await harber.buy(365,2,10,{ from: user0 }); //used deposit of 10
-  //   await harber.buy(730,3,20,{ from: user1 }); //used deposit of 20
-  //   //buy winning team
-  //   await harber.buy(365,1,10,{ from: user0 }); //used deposit of 7
-  //   await time.increase(time.duration.weeks(1));
-  //   await harber.buy(730,1,20,{ from: user1 }); //used deposit of 14
-  //   await time.increase(time.duration.weeks(1));
-  //   await harber.buy(1095,1,24,{ from: user2 }); //used deposit of 24
-  //   await time.increase(time.duration.weeks(2)); 
-  //   // winner 1: 
-  //   // totalcollected = 75, 
-  //   // paid: 0: 17, 1: 34, 2: 30
-  //   // total days: 22
-  //   // time: 0: 7 days 1: 1: 7 days: 8 days
-  //   ////////////////////////
-  //   await harber.getWinner();
-  //   var winningsSentToUser = await harber.winningsSentToUser.call(user0);
-  //   assert.equal(winningsSentToUser,17);
-  //   var winningsSentToUser = await harber.winningsSentToUser.call(user1);
-  //   assert.equal(winningsSentToUser,34);
-  //   var winningsSentToUser = await harber.winningsSentToUser.call(user2);
-  //   assert.equal(winningsSentToUser,24);
-  // });
-
-  it('test setWinnerMe- invalid', async () => {
+  it('test emergencyExit', async () => {
     /////// STANDARD //////
     await harber.getTestDai({ from: user0 });
     await harber.getTestDai({ from: user1 });
@@ -243,7 +179,7 @@ beforeEach(async () => {
     // total days: 22
     // time: 0: 7 days 1: 1: 7 days: 8 days
     ////////////////////////
-    await harber.setWinnerMe(0, { from: andrewsAddress });
+    await harber.emergencyExit();
     var winningsSentToUser = await harber.winningsSentToUser.call(user0);
     assert.equal(winningsSentToUser,17);
     var winningsSentToUser = await harber.winningsSentToUser.call(user1);
@@ -251,39 +187,5 @@ beforeEach(async () => {
     var winningsSentToUser = await harber.winningsSentToUser.call(user2);
     assert.equal(winningsSentToUser,24);
   });
-
-  it('test setWinnerPublic- invalid', async () => {
-    /////// STANDARD //////
-    await harber.getTestDai({ from: user0 });
-    await harber.getTestDai({ from: user1 });
-    await harber.getTestDai({ from: user2 });
-    await harber.getTestDai({ from: user3 });
-    //buy losing teams
-    await harber.buy(365,2,10,{ from: user0 }); //used deposit of 10
-    await harber.buy(730,3,20,{ from: user1 }); //used deposit of 20
-    //buy winning team
-    await harber.buy(365,1,10,{ from: user0 }); //used deposit of 7
-    await time.increase(time.duration.weeks(1));
-    await harber.buy(730,1,20,{ from: user1 }); //used deposit of 14
-    await time.increase(time.duration.weeks(1));
-    await harber.buy(1095,1,24,{ from: user2 }); //used deposit of 24
-    await time.increase(time.duration.weeks(2)); 
-    // winner 1: 
-    // totalcollected = 75, 
-    // paid: 0: 17, 1: 34, 2: 24
-    // total days: 22
-    // time: 0: 7 days 1: 1: 7 days: 8 days
-    ////////////////////////
-    await harber.setWinnerPublic();
-    var winningsSentToUser = await harber.winningsSentToUser.call(user0);
-    assert.equal(winningsSentToUser,17);
-    var winningsSentToUser = await harber.winningsSentToUser.call(user1);
-    assert.equal(winningsSentToUser,34);
-    var winningsSentToUser = await harber.winningsSentToUser.call(user2);
-    assert.equal(winningsSentToUser,24);
-  });
-
-
-
 
 });

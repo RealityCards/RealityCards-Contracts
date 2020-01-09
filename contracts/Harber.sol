@@ -294,9 +294,13 @@ contract Harber {
     // this function will also set the winningOutcome variable
     // the reason there are two functions (haveAllAugurMarketsResolved and haveAllAugurMarketsResolvedWithoutErrors) is simply to ensure that the contract does not interpret
     // a delay in one of the market's resolving as an 'error' and refunding everyone prematurely
-    function haveAllAugurMarketsResolvedWithoutErrors() internal returns(bool) 
+    // the two arguments this function takes are for testing only. They are not used when usingAugur
+    // is set to true
+    function haveAllAugurMarketsResolvedWithoutErrors(uint256 _hardCodedWinner, bool _hardCodedInvalid) internal returns(bool) 
     {   
         if (usingAugur) {
+            _hardCodedWinner = 69420; //just to make it obvious that this is not a relevant variable at this point
+
             uint256 _winningOutcomesCount = 0;
             uint256 _losingOutcomesCount = 0;
             uint256 _invalidOutcomesCount = 0;
@@ -322,10 +326,10 @@ contract Harber {
                 return false;
             }
         }
-        //hard code a winner for testing
+        //if in testing mode, return the supplied arguments
         else {
-            winningOutcome = 2;
-            return true;
+            winningOutcome = _hardCodedWinner;
+            return _hardCodedInvalid;
             }
         }
     function sendCash(address _to, uint256 _amount, uint256 _reason) internal {  
@@ -353,7 +357,9 @@ contract Harber {
     ////////////// MARKET RESOLUTION FUNCTIONS ////////////// 
 
     //this can be called by anyone, at any time. 
-    function getWinner() notResolved() public 
+    function getWinner(uint256 _hardCodedWinner, bool _hardCodedInvalid) notResolved() public 
+    // the two arguments are testing variables. They are ignored when usingAugur is set to true. 
+    // it is required to test the correct response to different winners. 
     {
         // final rent collection before it is locked down
         for (uint i=0; i < numberOfTokens; i++) {
@@ -366,7 +372,7 @@ contract Harber {
         if (_haveAllAugurMarketsResolved) {
 
             //now check if they all resolved without errors. If yes, normal payout. If no, return all funds to all users. 
-            bool _haveAllAugurMarketsResolvedWithoutErrors = haveAllAugurMarketsResolvedWithoutErrors();
+            bool _haveAllAugurMarketsResolvedWithoutErrors = haveAllAugurMarketsResolvedWithoutErrors(_hardCodedWinner, _hardCodedInvalid);
             if (_haveAllAugurMarketsResolvedWithoutErrors) {
                 finaliseAndPayout();
             }
@@ -381,7 +387,7 @@ contract Harber {
     // can only be called 6 months after augur markets should have ended
     function emergencyExit() notResolved() public 
     {
-        require (now > (marketExpectedResolutionTime + 15778800), "Must wait 6 months for Augur Oracle"); //5 weeks
+        require (now > (marketExpectedResolutionTime + 15778800), "Must wait 6 months for Augur Oracle");
         //final rent collection before it is locked down
         for (uint i=0; i < numberOfTokens; i++) {
             _collectRent(i);
