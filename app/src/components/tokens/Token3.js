@@ -35,16 +35,12 @@ class PriceSection extends Component {
       const date = new Date();
       let currentTimeHeld = parseInt(this.getTimeHeld(props, timeHeldKey)) + (parseInt(date.getTime()/1000) - parseInt(this.getTimeAcquired(props)));
 
-      /*
-      note: this is a hack. smart contract didn't store timeAcquired when steward started. 
-      Thus: time held will be very large. It needs to be reduced.
-      */
+      var currentTimeHeldHumanized = moment.duration(currentTimeHeld, 'seconds').humanize();
+
       if (props.contracts['ERC721Full']['ownerOf'][this.state.patronKey].value === this.contracts.Harber.address) {
-        const deployedtime = new this.utils.BN('1553202847');
-        currentTimeHeld = new this.utils.BN(currentTimeHeld).sub(deployedtime).toString();
+        currentTimeHeldHumanized = "unowned";
       }
 
-      const currentTimeHeldHumanized = moment.duration(currentTimeHeld, 'seconds').humanize();
       this.setState({
         currentTimeHeld,
         currentTimeHeldHumanized,
@@ -52,7 +48,10 @@ class PriceSection extends Component {
     }
 
     async updatePatron(props) {
-      const patron = this.getPatron(props);
+      var patron = this.getPatron(props);
+      if (patron === this.contracts.Harber.address) {
+        patron = 'unowned';
+      }
       // update timeHeldKey IF owner updated
       const timeHeldKey = this.contracts.Harber.methods.timeHeld.cacheCall(urlId,patron);
       this.setState({
@@ -108,8 +107,8 @@ class PriceSection extends Component {
         <Fragment>
       <br /><b>
         Daily rental price: $<ContractData contract="Harber" method="price" methodArgs={[urlId]} toEth /></b><br />
-        Current Owner: <ContractData contract="ERC721Full" method="ownerOf" methodArgs={[urlId]}/><br />
-        Total Time Held: {this.state.currentTimeHeldHumanized} 
+        Current Owner: {this.state.patron} <br />
+        Time Held: {this.state.currentTimeHeldHumanized} 
         <br/><br/>
         </Fragment>
       )

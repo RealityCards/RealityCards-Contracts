@@ -76,7 +76,7 @@ class ArtAndPriceSection extends Component {
     render() {
       return (
         <Fragment>
-        <img src={teamToDisplay} style={{maxWidth: "100%", maxHeight: "100%"}} alt="A R T" />
+        <img src={teamToDisplay} style={{maxWidth: "25%", maxHeight: "25%"}} alt="A R T" />
         <DaiBalanceSection />
         <TestDaiFaucetSection />
         <PriceSection />

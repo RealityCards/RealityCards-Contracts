@@ -1,6 +1,7 @@
 import { drizzleConnect } from "drizzle-react";
 import React, { Component, Fragment } from "react";
 import PropTypes from "prop-types";
+import ContractData from "./ContractData";
 import team0 from "./logos/manu.svg";
 import team1 from "./logos/liverpool.jpg";
 import team2 from "./logos/Leicester.png";
@@ -33,6 +34,10 @@ class ArtAndPriceSection extends Component {
       return (
         <Fragment>
         <h1>Harber.io</h1>
+        <h3>Harber is a unique gambling platform, built on top of Augur, where instead of betting on a team, you <i>own</i> the team. See <a href = "https://github.com/mcplums/Harber/blob/master/README.md">here</a> for more information. It is still in development and currently hosted on Kovan.</h3>
+        <h4><i>I am looking for someone to help me build a decent front end prior to mainnet deployment, if you are interested please get in touch, andrew@stanger.co.uk</i></h4>
+        <h4>All prices are in DAI.</h4>
+        <h4>Total rent collected and sent to Augur: $<ContractData contract="Harber" method="totalCollected" methodArgs={[]} toEth /></h4>
         <a href="/token?id=0"><img src={team0} style={{maxWidth: "10%", maxHeight: "10%"}} alt="A R T" /><br />Manchester United</a>
         <Token0 />   
         <a href="/token?id=1"><img src={team1} style={{maxWidth: "10%", maxHeight: "10%"}} alt="A R T" /><br />Liverpool</a>

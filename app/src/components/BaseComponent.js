@@ -7,6 +7,7 @@ import ActionSection from "./ActionSection";
 
 class BaseComponent extends Component {
 
+
   render() {
     return (
       <div className="App">
