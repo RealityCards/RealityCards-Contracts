@@ -33,7 +33,7 @@ contract Harber {
     uint256 constant numberOfTokens = 20; // needs to be 5 for ganache testing
 
     //TESTING VARIABLES
-    bool constant usingAugur = false; //if false, none of the augur contracts are interacted with. Required for ganache testing. Must be true in production :)
+    bool constant usingAugur = true; //if false, none of the augur contracts are interacted with. Required for ganache testing. Must be true in production :)
     uint256 public a = 0;
     uint256 public b = 0;
     uint256 public c = 0;
@@ -214,7 +214,7 @@ contract Harber {
 
     function rentalExpiryTime(uint256 _tokenId) public view returns (uint256) 
     {
-        uint256 pps = price[_tokenId].div(365 days);
+        uint256 pps = price[_tokenId].div(24 hours);
         if (pps == 0)
         {
             return now; //if price is so low that pps = 0 just return current time as a fallback
@@ -294,8 +294,7 @@ contract Harber {
     // this function will also set the winningOutcome variable
     // the reason there are two functions (haveAllAugurMarketsResolved and haveAllAugurMarketsResolvedWithoutErrors) is simply to ensure that the contract does not interpret
     // a delay in one of the market's resolving as an 'error' and refunding everyone prematurely
-    // the two arguments this function takes are for testing only. They are not used when usingAugur
-    // is set to true
+    // the two arguments this function takes are for testing only. They are not used when usingAugur is set to true
     function haveAllAugurMarketsResolvedWithoutErrors(uint256 _hardCodedWinner, bool _hardCodedInvalid) internal returns(bool) 
     {   
         if (usingAugur) {

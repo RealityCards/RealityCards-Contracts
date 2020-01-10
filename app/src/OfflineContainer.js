@@ -27,7 +27,7 @@ class OfflineContainer extends Component {
         <div className="pure-g">
           <div className="pure-u-1-1">
             <h1>⚙️</h1>
-            <p>Loading dapp...</p>
+            <p>Please ensure you have metamask installed, logged in, and set to Kovan.</p>
           </div>
         </div>
       </main>

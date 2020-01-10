@@ -201,7 +201,7 @@ class BuyForm extends Component {
           type="button"
           onClick={this.handleSubmit}
         >
-          Buy Token
+          Rent Token
         </Button>
       </form>
     );

@@ -37,24 +37,14 @@ const augurMainAddress = '0x62214e5c919332AC17c5e5127383B84378Ef9C1d';
 const marketedExpectedResolutionTime = 0;
 
 module.exports = function(deployer, network) {
-  
 
-  /// FULL VERSION- DEPLOYS ERC271
-    if(network === "kovan") {
-      deployer.deploy(Token, "Harber.io", "HARB", andrewsAddress).then((deployedToken) => {
-        return deployer.deploy(Harber, andrewsAddress, deployedToken.address, augurCashAddress, augurMarketAddress,augurShareTokenAddress, augurMainAddress, marketedExpectedResolutionTime);
-      });
-  } else {
-    // development deploy
-    //deploy the token contract
-    deployer.deploy(Token, "Harber.io", "HARB", andrewsAddress).then((deployedToken) => {
-      //deploy Harber
-      return deployer.deploy(Harber, andrewsAddress, deployedToken.address, augurCashAddress, augurMarketAddress,augurShareTokenAddress, augurMainAddress, marketedExpectedResolutionTime);
-    }).then((deployedHarber) => {
-      //deploy mintNFTs, which does what it says on the tin
-      return deployer.deploy(mintNFTs, Token.address, deployedHarber.address );
-    });
-
-  }
+  //deploy the token contract (which Harber needs the address of)
+  deployer.deploy(Token, "Harber.io", "HARB", andrewsAddress).then((deployedToken) => {
+    //deploy Harber (which mint NFTs needs the address of)
+    return deployer.deploy(Harber, andrewsAddress, deployedToken.address, augurCashAddress, augurMarketAddress,augurShareTokenAddress, augurMainAddress, marketedExpectedResolutionTime);
+  }).then((deployedHarber) => {
+    //deploy mintNFTs, which does what it says on the tin
+    return deployer.deploy(mintNFTs, Token.address, deployedHarber.address );
+  });
 
 };

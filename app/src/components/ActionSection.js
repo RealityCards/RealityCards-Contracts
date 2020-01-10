@@ -68,10 +68,10 @@ class ActionSection extends Component {
   render() {
     return (
     <div className="section">
-      <h2>Current Owner Details:</h2>
-        <p>Address: <ContractData contract="ERC721Full" method="ownerOf" methodArgs={[urlId]}/></p>
-        <p>Total Token Deposits: <ContractData contract="Harber" method="liveDepositAbleToWithdraw" methodArgs={[urlId]} toEth /> DAI</p>
-        <p>Your Deposit: <ContractData contract="Harber" method="userDepositAbleToWithdraw" methodArgs={[urlId]} toEth /> DAI</p>
+      <h2>Token Details:</h2>
+        {/* <p>Address: <ContractData contract="ERC721Full" method="ownerOf" methodArgs={[urlId]}/></p> */}
+        <p>Current Owners' Remaining deposit: <ContractData contract="Harber" method="liveDepositAbleToWithdraw" methodArgs={[urlId]} toEth /> DAI</p>
+        <p>Your Remaining Deposit: <ContractData contract="Harber" method="userDepositAbleToWithdraw" methodArgs={[urlId]} toEth /> DAI</p>
         <p>Rental Expiry Time: {this.state.rentalExpiryTime}</p>
         {/* <p>The current deposit will cover the patronage until the time above. At this time, the smart contract steward takes ownership of the artwork and sets its price back to zero.</p> */}
         {/* <p>Once it crosses this time period, the patron can't top up their deposit anymore and is effectively foreclosed.</p> */}

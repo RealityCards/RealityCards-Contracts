@@ -45,7 +45,7 @@ class Metadata extends Component {
     this.data = {
       name: "Harber.io",
       description: "Harber.io",
-      image: "https://thisartworkisalwaysonsale.com/static/media/TAIAOS4.3cd60b66.png"
+      image: ""
     };
   }
   render() {

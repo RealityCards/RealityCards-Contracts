@@ -50,9 +50,11 @@ class ArtAndPriceSection extends Component {
         <Fragment>
         <h1>Harber.io</h1>
         <h3>Harber is a unique gambling platform, built on top of Augur, where instead of betting on a team, you <i>own</i> the team. See <a href = "https://github.com/mcplums/Harber/blob/master/README.md">here</a> for more information. It is still in development and currently hosted on Kovan.</h3>
-        <h4><i>I am looking for someone to help me build a decent front end prior to mainnet deployment, if you are interested please get in touch, andrew@stanger.co.uk</i></h4>
+        <h4><i>I am looking for someone to help me build a decent front end prior to mainnet deployment, if you are interested please get in touch: telegram-mcplums, email-andrew@stanger.co.uk</i></h4>
         <h4>All prices are in DAI.</h4>
-        <h4>Total rent collected and sent to Augur: $<ContractData contract="Harber" method="totalCollected" methodArgs={[]} toEth /></h4>
+        <h4>This demo uses the 19/20 English Premier League. There is one Non Fungible Token per team. To rent a team, set a daily rental price (which must be higher than the current price) and deposit some Dai. The owners of the team that win will receive a split of all rental payments, in proportion to how long they have owned the team.</h4>
+        <h4>You do not need Dai to interact with this demo, click on a team and you will be taken to a test Dai faucet. </h4>
+        <h4>Total rent collected: $<ContractData contract="Harber" method="totalCollected" methodArgs={[]} toEth /></h4>
         <a href="/token?id=0"><img src={team0} style={{maxWidth: "10%", maxHeight: "10%"}} alt="A R T" /><br />Manchester United</a>
         <Token0 />   
         <a href="/token?id=1"><img src={team1} style={{maxWidth: "10%", maxHeight: "10%"}} alt="A R T" /><br />Liverpool</a>
