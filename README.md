@@ -2,9 +2,9 @@
 
 (--STILL IN DEVELOPMENT--)
 
-This project is live on Kovan and can be viewed at www.harber.io (you will need Kovan Eth to interact with it, some faucets are [here](https://faucet.kovan.network/) and [here](https://gitter.im/kovan-testnet/faucet), if these do not work feel free to get in touch with me on telegram (mcplums). 
+This project is live on Kovan and can be viewed at www.harber.io (you will need Kovan Eth to interact with it, some faucets are [here](https://faucet.kovan.network/) and [here](https://gitter.im/kovan-testnet/faucet), if these do not work feel free to get in touch with me on telegram (mcplums)). 
 
-A short video demo can be seen [here] (https://www.youtube.com/watch?v=-TpHjpKOQe8). 
+A short video demo can be seen [here](https://www.youtube.com/watch?v=-TpHjpKOQe8). 
 
 Nov 2019 - Jan 2020 Consensys Bootcamp Final Project
 
