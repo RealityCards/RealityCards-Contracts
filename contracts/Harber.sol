@@ -30,7 +30,7 @@ contract Harber {
 
     // NUMBER OF TOKENS
     //Also equals number of markets on augur
-    uint256 constant numberOfTokens = 5; // needs to be 5 for ganache testing
+    uint256 constant numberOfTokens = 20; // needs to be 5 for ganache testing
 
     //TESTING VARIABLES
     bool constant usingAugur = false; //if false, none of the augur contracts are interacted with. Required for ganache testing. Must be true in production :)
@@ -49,7 +49,7 @@ contract Harber {
     Cash cash; 
 
     // UINTS ADDRESSES, BOOLS
-    address andrewsAddress; // my whiskey fund, for my cut (TBD)
+    address public andrewsAddress; // my whiskey fund, for my cut (TBD)
     address[numberOfTokens] public marketAddresses; // the addresses of the various Augur binary markets. One market for each token. Does not change. Initiated in the constructor and does not change.
     uint256[numberOfTokens] public price; //in dai-wei (so $100 = 100000000000000000000)
     uint256[numberOfTokens] public collectedAndSentToAugur; // amount collected for each token, ie the sum of all owners' rent per token. Used to know how many complete
@@ -90,7 +90,7 @@ contract Harber {
     constructor(address _andrewsAddress, address _addressOfToken, address _addressOfCashContract, address[numberOfTokens] memory _addressesOfMarkets, address _addressOfCompleteSetsContract, address _addressOfMainAugurContract, uint _marketExpectedResolutionTime) public {
         //initialise ERC721s
         team = IERC721Full(_addressOfToken);
-        team.setup();
+        // team.setup(msg.sender);
         andrewsAddress = _andrewsAddress;
         marketAddresses = _addressesOfMarkets; //this is to make the market addresses public so users can check the actual augur markets for themselves
 

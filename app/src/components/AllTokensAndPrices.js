@@ -63,7 +63,7 @@ class ArtAndPriceSection extends Component {
         <Token3 />
         <a href="/token?id=4"><img src={team4} style={{maxWidth: "10%", maxHeight: "10%"}} alt="A R T" /><br />Chelsea</a>
         <Token4 />
-        {/* <a href="/token?id=5"><img src={team5} style={{maxWidth: "10%", maxHeight: "10%"}} alt="A R T" /><br />Tottenham Hotspur</a>
+        <a href="/token?id=5"><img src={team5} style={{maxWidth: "10%", maxHeight: "10%"}} alt="A R T" /><br />Tottenham Hotspur</a>
         <Token5 />
         <a href="/token?id=6"><img src={team6} style={{maxWidth: "10%", maxHeight: "10%"}} alt="A R T" /><br />Wolverhampton Wanderers</a>
         <Token6 />
@@ -92,7 +92,7 @@ class ArtAndPriceSection extends Component {
         <a href="/token?id=18"><img src={team18} style={{maxWidth: "10%", maxHeight: "10%"}} alt="A R T" /><br />Watford</a>
         <Token18 />
         <a href="/token?id=19"><img src={team19} style={{maxWidth: "10%", maxHeight: "10%"}} alt="A R T" /><br />Norwich City</a>
-        <Token19 /> */}
+        <Token19 />
         </Fragment>
       )
     }

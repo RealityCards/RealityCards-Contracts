@@ -54,11 +54,14 @@ class PriceSection extends Component {
 
     async updatePatron(props) {
       var patron = this.getPatron(props);
+      console.log(patron);
+      // update timeHeldKey IF owner updated
+      const timeHeldKey = this.contracts.Harber.methods.timeHeld.cacheCall(urlId,patron);
+
       if (patron === this.contracts.Harber.address) {
         patron = 'unowned';
       }
-      // update timeHeldKey IF owner updated
-      const timeHeldKey = this.contracts.Harber.methods.timeHeld.cacheCall(urlId,patron);
+
       this.setState({
         currentTimeHeld: 0,
         timeHeldKey,
