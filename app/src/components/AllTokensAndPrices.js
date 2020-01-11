@@ -49,7 +49,7 @@ class ArtAndPriceSection extends Component {
       return (
         <Fragment>
         <h1>Harber.io</h1>
-        <h3>Harber is a unique gambling platform, built on top of Augur, where instead of betting on a team, you <i>own</i> the team. See <a href = "https://github.com/mcplums/Harber/blob/master/README.md">here</a> for more information. It is still in development and currently hosted on Kovan.</h3>
+        <h3>Harber is a unique gambling platform, built on top of Augur, where instead of betting on a team, you <i>own</i> the team. See <a href = "https://github.com/mcplums/Harber/blob/master/README.md">here</a> for more information. </h3>
         <h4><i>I am looking for someone to help me build a decent front end prior to mainnet deployment, if you are interested please get in touch: telegram-mcplums, email-andrew@stanger.co.uk</i></h4>
         <h4>All prices are in DAI.</h4>
         <h4>This demo uses the 19/20 English Premier League. There is one Non Fungible Token per team. To rent a team, set a daily rental price (which must be higher than the current price) and deposit some Dai. The owners of the team that win will receive a split of all rental payments, in proportion to how long they have owned the team.</h4>

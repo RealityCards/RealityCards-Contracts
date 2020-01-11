@@ -13,6 +13,10 @@ code {
     monospace;
 }
 
+.banner {
+  background-color: black;
+  color: white;
+}
 
 /* h3 {
   display: inline-block;

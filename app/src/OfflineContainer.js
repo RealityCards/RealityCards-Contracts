@@ -17,7 +17,7 @@ class OfflineContainer extends Component {
       console.log(this.props);
       return (
         <div className="section">
-        This application is offline. Please ensure you have an Ethereum/web3 enabled browser.
+        Please ensure you have metamask installed, logged in, and set to Kovan.
         </div>
       )
     }
