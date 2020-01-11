@@ -30,7 +30,8 @@ contract MyContract {
     IMarket public market = IMarket(marketAddress);
     ShareToken completeSets = ShareToken(0x493785FaD8122a26A5ED33e0E81E20b33B689e63);
     Cash cash = Cash(0x74c7D5734A9Ebdd34845e132bEB9B759e1E3a98e);
-    Augur augur = Augur(0xeD7e993fb7Da1d48E671df1Aa8B07fc96BF60442);
+    address augurMain = 0xeD7e993fb7Da1d48E671df1Aa8B07fc96BF60442;
+    Augur augur = Augur(augurMain);
 
     function callFaucetAndApprove() public 
     {
