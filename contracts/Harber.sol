@@ -23,6 +23,7 @@ interface Cash
 }
 
 //TODO: have not yet tested the new check winner functions
+//TODO: replace completesets with OICash
 
 contract Harber {
     
@@ -33,7 +34,7 @@ contract Harber {
     uint256 constant numberOfTokens = 20; // needs to be 5 for ganache testing
 
     //TESTING VARIABLES
-    bool constant usingAugur = true; //if false, none of the augur contracts are interacted with. Required for ganache testing. Must be true in production :)
+    bool constant usingAugur = true; //if false, none of the augur contracts are interacted with. Required false for ganache testing. Must be true in production :)
     uint256 public a = 0;
     uint256 public b = 0;
     uint256 public c = 0;
@@ -50,7 +51,7 @@ contract Harber {
 
     // UINTS ADDRESSES, BOOLS
     address public andrewsAddress; // my whiskey fund, for my cut (TBD)
-    address[numberOfTokens] public marketAddresses; // the addresses of the various Augur binary markets. One market for each token. Does not change. Initiated in the constructor and does not change.
+    address[numberOfTokens] public marketAddresses; // the addresses of the various Augur binary markets. One market for each token. Initiated in the constructor and does not change.
     uint256[numberOfTokens] public price; //in dai-wei (so $100 = 100000000000000000000)
     uint256[numberOfTokens] public collectedAndSentToAugur; // amount collected for each token, ie the sum of all owners' rent per token. Used to know how many complete
     // sets to sell for each market (since there is one market per token) 
