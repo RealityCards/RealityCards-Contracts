@@ -19,14 +19,20 @@ class ActionSection extends Component {
       artworkPriceKey: context.drizzle.contracts.Harber.methods.price.cacheCall(urlId),
       rentOwedKey: context.drizzle.contracts.Harber.methods.rentOwed.cacheCall(urlId),
       totalCollectedKey: context.drizzle.contracts.Harber.methods.totalCollected.cacheCall(),
+      tokenCollectedKey: context.drizzle.contracts.Harber.methods.collectedAndSentToAugur.cacheCall(urlId),
       rentOwed: -1,
       combinedCollected: -1,
+      combinedCollectedToken: -1,
       rentalExpiryTime: "N/A"
     };
   }
 
   getTotalCollected(props) {
     return new this.utils.BN(props.contracts['Harber']['totalCollected'][this.state.totalCollectedKey].value);
+  }
+
+  getTokenCollected(props) {
+    return new this.utils.BN(props.contracts['Harber']['collectedAndSentToAugur'][this.state.tokenCollectedKey].value);
   }
 
   async updateCombineCollected(props) {
@@ -36,6 +42,16 @@ class ActionSection extends Component {
     this.setState({
       rentOwed,
       combinedCollected,
+    });
+  }
+
+  async updateCombineCollectedToken(props) {
+    const rentOwed = this.getrentOwed(props);
+    const tokenCollected = this.getTokenCollected(props);
+    const combinedCollectedToken = this.utils.fromWei(tokenCollected.add(rentOwed), 'ether').toString();
+    this.setState({
+      rentOwed,
+      combinedCollectedToken,
     });
   }
 
@@ -61,6 +77,15 @@ class ActionSection extends Component {
     && this.state.totalCollectedKey in nextProps.contracts['Harber']['totalCollected']) {
       if (!this.getrentOwed(this.props).eq(this.getrentOwed(nextProps)) || this.state.combinedCollected === -1) {
         this.updateCombineCollected(nextProps);
+      }
+    }
+
+    if (this.state.rentOwedKey in this.props.contracts['Harber']['rentOwed']
+    && this.state.rentOwedKey in nextProps.contracts['Harber']['rentOwed']
+    && this.state.tokenCollectedKey in this.props.contracts['Harber']['collectedAndSentToAugur']
+    && this.state.tokenCollectedKey in nextProps.contracts['Harber']['collectedAndSentToAugur']) {
+      if (!this.getrentOwed(this.props).eq(this.getrentOwed(nextProps)) || this.state.combinedCollectedToken === -1) {
+        this.updateCombineCollectedToken(nextProps);
       }
     }
   }
@@ -91,7 +116,8 @@ class ActionSection extends Component {
         )}
 
       <h2>Other Token Stats:</h2>
-        <p>Total Rent Collected: {this.state.combinedCollected} DAI</p>
+        {/* <p>Total Rent Collected: {this.state.combinedCollected} DAI</p> */}
+        <p>Total Rent Collected: {this.state.combinedCollectedToken} DAI</p>
     </div>
     )
   }
