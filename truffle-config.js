@@ -1,6 +1,6 @@
 const path = require("path");
 const HDWalletProvider = require('truffle-hdwallet-provider');
-const mnemonic = 'defense ready lady corn other ride rapid collect avocado tongue price nut'; // 12 word mnemonic 
+const mnemonic = 'defense ready lady corn other ride rapid collect avocado tongue price nut'; // pls dont steal my testnet ether 
 const mainnetProviderUrl = 'https://mainnet.infura.io/v3/e811479f4c414e219e7673b6671c2aba'; 
 const rinkebyProviderUrl = 'https://rinkeby.infura.io/v3/e811479f4c414e219e7673b6671c2aba';
 const kovanProviderUrl = 'https://kovan.infura.io/v3/d460ac4e71f24d869c8b75119ebe4213';

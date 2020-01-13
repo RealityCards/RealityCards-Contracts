@@ -17,7 +17,7 @@ class OfflineContainer extends Component {
       console.log(this.props);
       return (
         <div className="section">
-        Please ensure you have metamask installed, logged in, and set to Kovan.
+        Please ensure you have metamask installed, logged in, and set to <strike>stun</strike> Kovan. If you do not have metamask please click <a href="offline/index.html">here</a> for an 'offline' version which cannot be interacted with.
         </div>
       )
     }
@@ -27,7 +27,7 @@ class OfflineContainer extends Component {
         <div className="pure-g">
           <div className="pure-u-1-1">
             <h1>⚙️</h1>
-            <p>Please ensure you have metamask installed, logged in, and set to Kovan.</p>
+            <p>Please ensure you have metamask installed, logged in, and set to <strike>stun</strike> Kovan. If you do not have metamask please click <a href="offline/index.html">here</a> for an 'offline' version which cannot be interacted with.</p>
           </div>
         </div>
       </main>

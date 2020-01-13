@@ -34,7 +34,7 @@ contract Harber {
     uint256 constant numberOfTokens = 20; // needs to be 5 for ganache testing
 
     //TESTING VARIABLES
-    bool constant usingAugur = true; //if false, none of the augur contracts are interacted with. Required false for ganache testing. Must be true in production :)
+    bool constant usingAugur = false; //if false, none of the augur contracts are interacted with. Required false for ganache testing. Must be true in production :)
     uint256 public a = 0;
     uint256 public b = 0;
     uint256 public c = 0;
@@ -235,7 +235,7 @@ contract Harber {
             testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
         }
         else {
-            testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100;
+            testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
         }
     }
 
