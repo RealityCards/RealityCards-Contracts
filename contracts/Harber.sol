@@ -24,6 +24,7 @@ interface Cash
 
 //TODO: have not yet tested the new check winner functions
 //TODO: replace completesets with OICash
+//TODO: change buy and depositDai and withdrawDai funcitons to actually transfer Dai form the user's address
 
 contract Harber {
     
@@ -62,7 +63,6 @@ contract Harber {
     uint256[numberOfTokens] public numberOfOwners; //used to cycle through ownerTracker during finalse & payout. Since you can't find the size of a mapping. If the value is 5, it means there are 5 owners. Ie it is not doing programming counting. 
   
     // winning outcome variables
-    bool public marketsResolved = false;
     bool public doneAndDusted = false;
     uint256 public winningOutcome = 99; //start with invalid winning outcome
     uint256 public marketExpectedResolutionTime; //so the function to manually set the winner can only be called long after it should have resolved via Augur. Must be public so others can verify it is accurate. 
@@ -129,7 +129,7 @@ contract Harber {
     }
 
     modifier notResolved() {
-        require(marketsResolved == false);
+        require(doneAndDusted == false);
         _;
     }
 
@@ -144,16 +144,19 @@ contract Harber {
         return(testDaiBalances[msg.sender]);
     }
 
+    //this is used only in tests
     function getOwnerTrackerPrice(uint256 _tokenId, uint256 _index) public view returns (uint256)
     {
         return (previousOwnerTracker[_tokenId][_index].price);
     }
 
+    //this is used only in tests
     function getOwnerTrackerAddress(uint256 _tokenId, uint256 _index) public view returns (address)
     {
         return (previousOwnerTracker[_tokenId][_index].owner);
     }
 
+    //called in collectRent, and various other view functions 
     function rentOwed(uint256 _tokenId) public view returns (uint256 augurFundsDue) 
     {
         //the tests are written assuming price = annual rental price. Final version should be price =daily rental price
@@ -165,10 +168,13 @@ contract Harber {
         }
     }
 
+    //never used
     function rentOwedWithTimestamp(uint256 _tokenId) public view returns (uint256 augurFundsDue, uint256 timestamp) 
     {
         return (rentOwed(_tokenId), now);
     }
+
+    //this is never used but leaving in case front end wishes to make use of it one day
     function foreclosed(uint256 _tokenId) public view returns (bool) 
     {
         // returns whether it is in foreclosed state or not
@@ -182,7 +188,8 @@ contract Harber {
         }
     }
 
-    // this is only used to calculate foreclosure time
+    //for front end only
+    //for how much the current owner has deposited, and also estimated foreclosure time
     function liveDepositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) 
     {
         uint256 _rentOwed = rentOwed(_tokenId);
@@ -194,7 +201,8 @@ contract Harber {
         }
     }
 
-    //this is my version of the above function. It shows how much each user can withdraw- whether or not they are the current owner. 
+    //for front end only
+    //for how much the current user (regardless of whether or not they own it) has deposited
     function userDepositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) 
     {
         uint256 _rentOwed = rentOwed(_tokenId);
@@ -213,6 +221,7 @@ contract Harber {
         }
     }
 
+    //for front end only
     function rentalExpiryTime(uint256 _tokenId) public view returns (uint256) 
     {
         uint256 pps = price[_tokenId].div(24 hours);
@@ -252,7 +261,6 @@ contract Harber {
     // * internal *
     function sellCompleteSets() internal 
     {
-        assert (marketsResolved);
         if (usingAugur == true)
         {
             for (uint i=0; i<numberOfTokens; i++) {
@@ -277,7 +285,6 @@ contract Harber {
             }
 
             if (_resolvedOutcomesCount == numberOfTokens) {
-                marketsResolved = true;
                 return true;
             } else {
                 return false;
@@ -285,7 +292,6 @@ contract Harber {
         }
         //hard code 'yes' for testing
         else {
-            marketsResolved = true;
             return true;
         }
     }
@@ -332,6 +338,7 @@ contract Harber {
             return _hardCodedInvalid;
             }
         }
+        
     function sendCash(address _to, uint256 _amount, uint256 _reason) internal {  
         if (usingAugur) {
             cash.transfer(_to,_amount);
@@ -357,7 +364,7 @@ contract Harber {
     ////////////// MARKET RESOLUTION FUNCTIONS ////////////// 
 
     //this can be called by anyone, at any time. 
-    function getWinner(uint256 _hardCodedWinner, bool _hardCodedInvalid) notResolved() public 
+    function getWinner(uint256 _hardCodedWinner, bool _hardCodedInvalid) public 
     // the two arguments are testing variables. They are ignored when usingAugur is set to true. 
     // it is required to test the correct response to different winners. 
     {
@@ -392,14 +399,12 @@ contract Harber {
         for (uint i=0; i < numberOfTokens; i++) {
             _collectRent(i);
         }
-        marketsResolved = true;
         invalidMarketFinaliseAndPayout(); //returns all rent to all users
     }
 
     // * internal * 
     function finaliseAndPayout() internal
     {
-        require (marketsResolved == true, "Winner not known");
         require (doneAndDusted == false, "Already paid out");
         //return unused deposits
         returnDeposits();
@@ -425,7 +430,6 @@ contract Harber {
     // * internal * 
     function invalidMarketFinaliseAndPayout() internal
     {
-        require (marketsResolved == true, "Winner not known");
         require (doneAndDusted == false, "Already paid out");
         //return unused deposits
         returnDeposits();
@@ -519,10 +523,14 @@ contract Harber {
         }
     }
     
+    //this function needs to be modified to actually send the Dai from the user to the contract
     function buy(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) public collectRent(_tokenId) notResolved() {
         require(_tokenId < numberOfTokens, "This team does not exist");
         require(_newPrice > price[_tokenId], "Price must be higher than current price");
         require(_deposit > 0, "Must deposit something");
+
+        //the below is a testing require only, a new one will be required to ensure the 
+        //user is actually paying the deposit they say they are
         require(testDaiBalances[msg.sender] >= _deposit, "Not enough DAI");
         
         testDaiBalances[msg.sender] = testDaiBalances[msg.sender].sub(_deposit);
@@ -557,6 +565,7 @@ contract Harber {
         emit LogBuy(msg.sender, _newPrice);
     }
 
+    //this will also need to be adjusted to work with the dai contract properly
     function depositDai(uint256 _dai, uint256 _tokenId) public collectRent(_tokenId) notResolved() {
         require(state[_tokenId] != ownedState.Foreclosed, "Foreclosed");
         testDaiBalances[msg.sender] = testDaiBalances[msg.sender].sub(_dai);
