@@ -27,6 +27,7 @@ interface Cash
 //TODO: change buy and depositDai and withdrawDai funcitons to actually transfer Dai form the user's address
 //TODO: replace all + 1s with safemath
 //TODO: do some research into gas costs if some of these variables are thousands of entries long and consider attempts to prevent this
+//TODO: write new tests so that you can get rid of the 100 and the 365 days nonsense
 
 contract Harber {
     
@@ -34,7 +35,7 @@ contract Harber {
 
     // NUMBER OF TOKENS
     //Also equals number of markets on augur
-    uint256 constant numberOfTokens = 20; // needs to be 5 for ganache testing
+    uint256 constant numberOfTokens = 5; // needs to be 5 for ganache testing
 
     //TESTING VARIABLES
     bool constant usingAugur = false; //if false, none of the augur contracts are interacted with. Required false for ganache testing. Must be true in production :)
@@ -79,7 +80,7 @@ contract Harber {
     mapping (uint256 => mapping (uint256 => purchase) ) public previousOwnerTracker; //keeps track of all previous owners of a token, including the price, so that if the current owner's deposit runs out, ownership can be reverted to a previous owner with the previous price. Index 0 is NOT used, this tells the contract to foreclose. This does NOT keep a reliable list of all owners, if it reverts to a previous owner then the next owner will overwrite the owner that was in that slot. The variable currentOwnerIndex is used to track the location of the current owner. 
     mapping (uint256 => mapping (uint256 => address) ) public ownerTracker; //used to keep hold of all the owners, for payout, similar to previousOwnerTracker except that the pointer to the current position never decrements
     mapping (uint256 => mapping (address => uint256) ) public timeHeld; //this is the key variable that tracks the total amount of time each user has held it for. It is key because this is used to determine the proportion of the pot to be sent to each winning address
-    mapping (address => uint256) public totalTimeHeld; //sums all the timeHelds for each token. Not required, but saves on gas when paying out
+    mapping (uint256 => uint256) public totalTimeHeld; //sums all the timeHelds for each token. Not required, but saves on gas when paying out
     mapping (uint256 => mapping (address => uint256) ) public deposits; //keeps track of all the deposits for each token, for each owner. Unused deposits are not returned automatically when there is a new buyer. They can be withdrawn manually however. Unused deposits are returned automatically upon resolution of the market
     mapping (address => uint256) public testDaiBalances;
     mapping (uint256 => mapping (address => bool)) public everOwned; //this is required to prevent the ownerTracker variable being incremented unless a completely new user buys the token. 
@@ -216,7 +217,13 @@ contract Harber {
     //for front end only
     function rentalExpiryTime(uint256 _tokenId) public view returns (uint256) 
     {
-        uint256 pps = price[_tokenId].div(24 hours);
+        uint256 pps;
+        if (usingAugur) {
+            pps = price[_tokenId].div(24 hours);
+        }
+        else {
+            pps = price[_tokenId].div(365 days);
+        }
         if (pps == 0)
         {
             return now; //if price is so low that pps = 0 just return current time as a fallback
@@ -236,7 +243,7 @@ contract Harber {
             testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
         }
         else {
-            testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
+            testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100;
         }
     }
 
@@ -405,7 +412,7 @@ contract Harber {
             address _winnersAddress = ownerTracker[winningOutcome][i];
             uint256 _winnersTimeHeld = timeHeld[winningOutcome][_winnersAddress];
             uint256 _numerator = _daiAvailableToDistribute.mul(_winnersTimeHeld);
-            uint256 _winningsToTransfer = _numerator.div(totalTimeHeld);
+            uint256 _winningsToTransfer = _numerator.div(totalTimeHeld[winningOutcome]);
             _sendCash(_winnersAddress,_winningsToTransfer, 1);
         }
         doneAndDusted = true;
@@ -561,7 +568,7 @@ contract Harber {
         deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].add(_dai);
     }
 
-    function changePrice(uint256 _newPrice, uint256 _tokenId) public onlyOwner(_tokenId) collectRent(_tokenId) notCompleted() {
+    function changePrice(uint256 _newPrice, uint256 _tokenId) public collectRent(_tokenId) notCompleted() {
         require(_newPrice > price[_tokenId], "New price must be higher than current price"); 
         require(msg.sender == team.ownerOf(_tokenId), "Not owner");
         

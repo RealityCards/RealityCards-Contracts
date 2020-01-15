@@ -2,10 +2,9 @@ const { BN, shouldFail, ether, expectEvent, balance, time } = require('openzeppe
 
 const Token = artifacts.require('./ERC721Full.sol');
 const Harber = artifacts.require('./Harber.sol');
-// const Cash = artifacts.require('./Cash.sol');
+const MintNFTs = artifacts.require("./mintNFTs.sol");
 
 const delay = duration => new Promise(resolve => setTimeout(resolve, duration));
-const augurCashAddress = '0xa836c1D6a35A443FD6F8d5d4A9cf5b1664bF76D6';
 
 // (0) 0xCb4BF048F1Aaf4E0C05b0c77546fE820F299d4Fe (100 ETH)
 // (1) 0xA2b8502b1bC80A345400054Ffc00F49C2A9362d8 (100 ETH)
@@ -34,7 +33,6 @@ contract('HarberTests2', (accounts) => {
   user6 = accounts[6];
   user7 = accounts[7];
   user8 = accounts[8];
-  var newOwnerPurchaseCount1 = 0;
 
   // var andrewsAddress = '0x34A971cA2fd6DA2Ce2969D716dF922F17aAA1dB0';
   var andrewsAddress = accounts[9];
@@ -55,9 +53,10 @@ const marketedExpectedResolutionTime = 0;
 beforeEach(async () => {
     token = await Token.new("Harber.io", "HARB", andrewsAddress);
     harber = await Harber.new(andrewsAddress, token.address, augurCashAddress, augurMarketAddress,augurShareTokenAddress, augurMainAddress, marketedExpectedResolutionTime);
+    mintNFTs = await MintNFTs.new(token.address, harber.address);
   });
 
-  it('test GetWinner- winner 1', async () => {
+  it('test complete- winner 1', async () => {
     /////// STANDARD //////
     await harber.getTestDai({ from: user0 });
     await harber.getTestDai({ from: user1 });
@@ -79,7 +78,7 @@ beforeEach(async () => {
     // total days: 22
     // time: 0: 7 days 1: 1: 7 days: 8 days
     ////////////////////////
-    await harber.getWinner(1, true);
+    await harber.complete(1, true);
     // total deposits = 75, check:
     var totalCollected = await harber.totalCollected.call();
     assert.equal(totalCollected,75);
@@ -92,7 +91,7 @@ beforeEach(async () => {
     assert.equal(winningsSentToUser,27);
   });
 
-  it('test GetWinner- winner 2', async () => {
+  it('test complete- winner 2', async () => {
     /////// STANDARD //////
     await harber.getTestDai({ from: user0 });
     await harber.getTestDai({ from: user1 });
@@ -114,7 +113,7 @@ beforeEach(async () => {
     // total days: 22
     // time: 0: 7 days 1: 1: 7 days: 8 days
     ////////////////////////
-    await harber.getWinner(2, true);
+    await harber.complete(2, true);
     // total deposits = 75, check:
     var totalCollected = await harber.totalCollected.call();
     assert.equal(totalCollected,75);
@@ -126,7 +125,7 @@ beforeEach(async () => {
     assert.equal(winningsSentToUser,0);
   });
 
-  it('test GetWinner- invalid', async () => {
+  it('test complete- invalid', async () => {
     /////// STANDARD //////
     await harber.getTestDai({ from: user0 });
     await harber.getTestDai({ from: user1 });
@@ -148,7 +147,7 @@ beforeEach(async () => {
     // total days: 22
     // time: 0: 7 days 1: 1: 7 days: 8 days
     ////////////////////////
-    await harber.getWinner(1, false);
+    await harber.complete(1, false);
     var winningsSentToUser = await harber.winningsSentToUser.call(user0);
     assert.equal(winningsSentToUser,17);
     var winningsSentToUser = await harber.winningsSentToUser.call(user1);
