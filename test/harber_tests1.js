@@ -58,8 +58,8 @@ contract('HarberTests1', (accounts) => {
 
   it('getTestDai and check balance', async () => {
     await harber.getTestDai({ from: user0 });
-    var testDaiBalance = await harber.getTestDaiBalance.call();
-    assert.equal(testDaiBalance, 100);
+    var testDaiBalances = await harber.testDaiBalances.call(user0);
+    assert.equal(testDaiBalances, 100);
   });
 
   it('user 1 buy Token first time and check: various', async () => {
@@ -68,8 +68,8 @@ contract('HarberTests1', (accounts) => {
     newOwnerPurchaseCount1++;
     var price = await harber.price.call(4);
     assert.equal(price, 100);
-    var testDaiBalance = await harber.getTestDaiBalance.call();
-    assert.equal(testDaiBalance, 90);
+    var testDaiBalances = await harber.testDaiBalances.call(user);
+    assert.equal(testDaiBalances, 90);
     var deposit = await harber.deposits.call(4,user);
     assert.equal(deposit, 10);
     var owner = await token.ownerOf.call(4);
@@ -85,8 +85,8 @@ contract('HarberTests1', (accounts) => {
     await harber.buy(200,4,10,{ from: user });
     var price = await harber.price.call(4);
     assert.equal(price, 200);
-    var testDaiBalance = await harber.getTestDaiBalance.call();
-    assert.equal(testDaiBalance, 80);
+    var testDaiBalances = await harber.testDaiBalances.call(user);
+    assert.equal(testDaiBalances, 80);
     var deposit = await harber.deposits.call(4,user);
     assert.equal(deposit, 20); //<------------
     var owner = await token.ownerOf.call(4);
@@ -116,8 +116,8 @@ contract('HarberTests1', (accounts) => {
     //
     var price = await harber.price.call(4);
     assert.equal(price, 300);
-    var testDaiBalance = await harber.getTestDaiBalance.call({ from: user });
-    assert.equal(testDaiBalance, 90);
+    var testDaiBalances = await harber.testDaiBalances.call(user);
+    assert.equal(testDaiBalances, 90);
     var deposit = await harber.deposits.call(4,user);
     assert.equal(deposit, 10);
     var owner = await token.ownerOf.call(4);
@@ -133,8 +133,8 @@ contract('HarberTests1', (accounts) => {
     await harber.buy(400,4,10,{ from: user });
     var price = await harber.price.call(4);
     assert.equal(price, 400);
-    var testDaiBalance = await harber.getTestDaiBalance.call({ from: user });
-    assert.equal(testDaiBalance, 80);
+    var testDaiBalances = await harber.testDaiBalances.call(user);
+    assert.equal(testDaiBalances, 80);
     var deposit = await harber.deposits.call(4,user);
     assert.equal(deposit, 20);
     var owner = await token.ownerOf.call(4);
@@ -151,8 +151,8 @@ contract('HarberTests1', (accounts) => {
     newOwnerPurchaseCount1++;
     var price = await harber.price.call(4);
     assert.equal(price, 1000);
-    var testDaiBalance = await harber.getTestDaiBalance.call({ from: user });
-    assert.equal(testDaiBalance, 60);
+    var testDaiBalances = await harber.testDaiBalances.call(user);
+    assert.equal(testDaiBalances, 60);
     var deposit = await harber.deposits.call(4,user);
     assert.equal(deposit, 40);
     var owner = await token.ownerOf.call(4);
@@ -175,8 +175,8 @@ contract('HarberTests1', (accounts) => {
     await harber.changePrice(2000,4,{ from: user });
     var price = await harber.price.call(4);
     assert.equal(price, 2000);
-    var testDaiBalance = await harber.getTestDaiBalance.call({ from: user });
-    assert.equal(testDaiBalance, 60);
+    var testDaiBalances = await harber.testDaiBalances.call(user);
+    assert.equal(testDaiBalances, 60);
     var deposit = await harber.deposits.call(4,user);
     assert.equal(deposit, 40);
     var owner = await token.ownerOf.call(4);

@@ -35,7 +35,7 @@ contract Harber {
 
     // NUMBER OF TOKENS
     //Also equals number of markets on augur
-    uint256 constant numberOfTokens = 5; // needs to be 5 for ganache testing
+    uint256 constant numberOfTokens = 20;
 
     //TESTING VARIABLES
     bool constant usingAugur = false; //if false, none of the augur contracts are interacted with. Required false for ganache testing. Must be true in production :)
@@ -132,11 +132,6 @@ contract Harber {
     }
 
     ////////////// VIEW FUNCTIONS //////////////
-    function getTestDaiBalance() public view returns (uint256)
-    {
-        return(testDaiBalances[msg.sender]);
-    }
-
     //this is used only in tests
     function getOwnerTrackerPrice(uint256 _tokenId, uint256 _index) public view returns (uint256)
     {
@@ -158,26 +153,6 @@ contract Harber {
         }
         else {
             return price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(365 days);
-        }
-    }
-
-    //never used
-    function rentOwedWithTimestamp(uint256 _tokenId) public view returns (uint256 augurFundsDue, uint256 timestamp) 
-    {
-        return (rentOwed(_tokenId), now);
-    }
-
-    //this is never used but leaving in case front end wishes to make use of it one day
-    function foreclosed(uint256 _tokenId) public view returns (bool) 
-    {
-        // returns whether it is in foreclosed state or not
-        // depending on whether deposit covers patronage due
-        // useful helper function when price should be zero, but contract doesn't reflect it yet.
-        uint256 _rentOwed = rentOwed(_tokenId);
-        if(_rentOwed >= deposits[_tokenId][msg.sender]) {
-            return true;
-        } else {
-            return false;
         }
     }
 
