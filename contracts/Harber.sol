@@ -2,17 +2,23 @@ pragma solidity ^0.5.0;
 import "./interfaces/IERC721Full.sol";
 import "./utils/SafeMath.sol";
 
+/// @title Augur Markets interface
+/// @notice Gets the winner of each market from Augur
 interface IMarket 
 {
     function getWinningPayoutNumerator(uint256 _outcome) external view returns (uint256);
 }
 
+/// @title Augur ShareToken interface
+/// @notice used for buying and selling complete sets
 interface ShareToken 
 {
     function publicBuyCompleteSets(IMarket _market, uint256 _amount) external returns (bool)  ;
     function publicSellCompleteSets(IMarket _market, uint256 _amount) external returns (uint256 _creatorFee, uint256 _reportingFee) ;
 }
 
+/// @title Dai contract interface
+/// @notice Various cash functions
 interface Cash 
 {
     function approve(address _spender, uint256 _amount) external returns (bool);
@@ -24,13 +30,16 @@ interface Cash
 
 //TODO: have not yet tested the new check winner functions
 //TODO: replace completesets with OICash
-//TODO: change buy and depositDai and withdrawDai funcitons to actually transfer Dai form the user's address
+//TODO: change rent and depositDai and withdrawDai funcitons to actually transfer Dai form the user's address
 //TODO: replace all + 1s with safemath
 //TODO: do some research into gas costs if some of these variables are thousands of entries long and consider attempts to prevent this
 //TODO: write new tests so that you can get rid of the 100 and the 365 days nonsense
 
+/// @title Harber
+/// @author Andrew Stanger
+/// @dev ensure usingAugur is set to false upon local testing and true on kovan or mainnet
 contract Harber {
-    
+
     using SafeMath for uint256;
 
     // NUMBER OF TOKENS
@@ -121,30 +130,34 @@ contract Harber {
 
 
     ////////////// MODIFIERS //////////////
+    /// @notice prevents functions from being interacted with after the end of the competition 
+    /// @dev should be on all public functions
     modifier notCompleted() {
         require(doneAndDusted == false);
         _;
     }
 
+    /// @notice collect Rent
+    /// @dev should be on all 'ordinary course of business' functions
     modifier collectRent(uint256 _tokenId) {
        _collectRent(_tokenId); 
        _;
     }
 
     ////////////// VIEW FUNCTIONS //////////////
-    //this is used only in tests
+    /// @dev used in testing only
     function getOwnerTrackerPrice(uint256 _tokenId, uint256 _index) public view returns (uint256)
     {
         return (previousOwnerTracker[_tokenId][_index].price);
     }
 
-    //this is used only in tests
+    /// @dev used in testing only
     function getOwnerTrackerAddress(uint256 _tokenId, uint256 _index) public view returns (address)
     {
         return (previousOwnerTracker[_tokenId][_index].owner);
     }
 
-    //called in collectRent, and various other view functions 
+    /// @dev called in collectRent function, and various other view functions 
     function rentOwed(uint256 _tokenId) public view returns (uint256 augurFundsDue) 
     {
         //the tests are written assuming price = annual rental price. Final version should be price =daily rental price
@@ -156,8 +169,8 @@ contract Harber {
         }
     }
 
-    //for front end only
-    //for how much the current owner has deposited, and also estimated foreclosure time
+    /// @dev for front end only
+    /// @return how much the current owner has deposited
     function liveDepositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) 
     {
         uint256 _rentOwed = rentOwed(_tokenId);
@@ -169,8 +182,8 @@ contract Harber {
         }
     }
 
-    //for front end only
-    //for how much the current user (regardless of whether or not they own it) has deposited
+    /// @dev for front end only
+    /// @return how much the current user (regardless of whether or not they own it) has deposited
     function userDepositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) 
     {
         uint256 _rentOwed = rentOwed(_tokenId);
@@ -189,7 +202,8 @@ contract Harber {
         }
     }
 
-    //for front end only
+    /// @dev for front end only
+    /// @return estimated rental expiry time
     function rentalExpiryTime(uint256 _tokenId) public view returns (uint256) 
     {
         uint256 pps;
@@ -210,10 +224,12 @@ contract Harber {
     }
 
     ////////////// AUGUR FUNCTIONS //////////////
+    /// @notice get test Dai to allow a user to rent tokens
+    /// @dev only a relevant function on kovan 
+    /// @dev instead of the user getting testDai to his account, it is generated here and and allocated to the user
     function getTestDai() public 
     {
         if (usingAugur == true) {
-            //instead of the user getting testDai to his account, it is generated here and and allocated to the user
             cash.faucet(100000000000000000000);
             testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
         }
@@ -223,6 +239,7 @@ contract Harber {
     }
 
     // * internal * 
+    /// @notice buy complete sets from Augur
     function _buyCompleteSets(uint256 _tokenId, uint256 _rentOwed) internal 
     {
         if (usingAugur == true)
@@ -233,6 +250,7 @@ contract Harber {
     }
 
     // * internal *
+    /// @notice buy complete sets from Augur
     function _sellCompleteSets() internal 
     {
         if (usingAugur == true)
@@ -245,7 +263,8 @@ contract Harber {
     }
 
     // * internal * 
-    // checks if all X (x = number of tokens = number of teams) markets have resolved to either yes, no, or invalid
+    /// @notice checks if all X (x = number of tokens = number of teams) markets have resolved to either yes, no, or invalid
+    /// @return true if yes, false if no
     function _haveAllAugurMarketsResolved() internal returns(bool) 
     {   
         if (usingAugur) {
@@ -271,11 +290,12 @@ contract Harber {
     }
 
     // * internal * 
-    // zero errors = all markets resolved 'no' except one that resolved 'yes'
-    // this function will also set the winningOutcome variable
-    // the reason there are two functions (haveAllAugurMarketsResolved and haveAllAugurMarketsResolvedWithoutErrors) is simply to ensure that the contract does not interpret
-    // a delay in one of the market's resolving as an 'error' and refunding everyone prematurely
-    // the two arguments this function takes are for testing only. They are not used when usingAugur is set to true
+    /// @notice checks if all markets have resolved without conflicts or errors
+    /// @return true if yes, false if no
+    /// @dev this function will also set the winningOutcome variable
+    /// @dev the reason there are two functions (haveAllAugurMarketsResolved and haveAllAugurMarketsResolvedWithoutErrors) is simply to ensure that the contract does not interpret
+    /// @dev ... a delay in one of the market's resolving as an 'error' and refunding everyone prematurely
+    /// @dev the two arguments this function takes are for testing only. They are not used when usingAugur is set to true
     function _haveAllAugurMarketsResolvedWithoutErrors(uint256 _hardCodedWinner, bool _hardCodedInvalid) internal returns(bool) 
     {   
         if (usingAugur) {
@@ -313,6 +333,9 @@ contract Harber {
             }
         }
 
+    // * internal * 
+    /// @notice common function for all DAI transfers
+    /// @param _reason param is for testing only
     function _sendCash(address _to, uint256 _amount, uint256 _reason) internal {  
         if (usingAugur) {
             cash.transfer(_to,_amount);
@@ -327,9 +350,12 @@ contract Harber {
         }
     }
 
-    function getCashBalance(address _addressToCheck) internal view returns (uint256) {
+    // * internal * 
+    /// @return DAI balance of the contract
+    /// @dev if usingAugur = false, totalCollected is returned instead
+    function getContractsCashBalance() internal view returns (uint256) {
         if (usingAugur) {
-            return cash.balanceOf(_addressToCheck);
+            return cash.balanceOf(address(this));
         } else {
             return totalCollected;
         }
@@ -337,10 +363,10 @@ contract Harber {
 
     ////////////// MARKET RESOLUTION FUNCTIONS ////////////// 
 
-    //this can be called by anyone, at any time. 
-    function complete(uint256 _hardCodedWinner, bool _hardCodedInvalid) notCompleted() public 
-    // the two arguments are testing variables. They are ignored when usingAugur is set to true. 
-    // it is required to test the correct response to different winners. 
+    /// @notice to end the compeition- determine the winning team and make the payout to winners
+    /// @dev this can be called by anyone, at any time. 
+    /// @dev the two arguments passed are for testing only
+    function complete(uint256 _hardCodedWinner, bool _hardCodedInvalid) notCompleted() public  
     {
         //do a final rent collection before the contract is locked down
         collectRentAllTokens();
@@ -356,9 +382,9 @@ contract Harber {
         }
     }
 
-    // Sets the winner as invalid, which returns all funds to all users. Anyone can call this. Emergency function in case the augur markets never resolve for whatever reason,
-    // (or perhaps the markets resolve, but this contract cant see due to a bug in the relevant function)
-    // can only be called 6 months after augur markets should have ended
+    /// @notice sets the winner as invalid, which returns all funds to all users. Anyone can call this. 
+    /// @notice ... emergency function in case the augur markets never resolve for whatever reason or the complete function doesn't work
+    /// @notice can only be called 6 months after augur markets should have ended 
     function emergencyExit() notCompleted() public 
     {
         require (now > (marketExpectedResolutionTime + 15778800), "Must wait 6 months for Augur Oracle");
@@ -368,6 +394,7 @@ contract Harber {
     }
 
     // * internal * 
+    /// @notice payout winnings
     function _finaliseAndPayout() internal
     {
         //return unused deposits
@@ -375,7 +402,7 @@ contract Harber {
         // get the dai back from Augur
         _sellCompleteSets();
         // the Dai returned to distribute will not be known in advance due to fees, so I cannot hard code the figure to payout to winners. So I will just get the dai balance of the contract. 
-        uint256 _daiAvailableToDistribute = getCashBalance(address(this));
+        uint256 _daiAvailableToDistribute = getContractsCashBalance();
         //payout to me
         uint256 _andrewsWellEarntMonies = _daiAvailableToDistribute.div(100);
         _sendCash(andrewsAddress,_andrewsWellEarntMonies, 3);
@@ -394,8 +421,8 @@ contract Harber {
         emit LogFinalised(winningOutcome,_daiAvailableToDistribute);
     }
 
-    // This will ONLY be called if the market returns invalid (or if setWinnerPublic is triggered), in which case everyone's funds will be returned
     // * internal * 
+    /// @notice return all funds to all users 
     function _invalidMarketFinaliseAndPayout() internal
     {
         //return unused deposits
@@ -404,7 +431,7 @@ contract Harber {
         _sellCompleteSets();
         // the Dai returned to distribute will not be known in advance due to fees, so I cannot hard code the figure to payout to winners. So I will just get the dai balance of the contract. 
         //no payout to me, I don't deserve it if we get to this point
-        uint256 _daiAvailableToDistribute = getCashBalance(address(this));
+        uint256 _daiAvailableToDistribute = getContractsCashBalance();
 
         for (uint i=0; i < numberOfTokens; i++) 
         {  
@@ -423,8 +450,8 @@ contract Harber {
         emit LogFinalised(winningOutcome,_daiAvailableToDistribute);
     }
 
-    //return all unused deposits upon resolution
     // * internal * 
+    /// @notice return all unused deposits upon resolution
     function _returnDeposits() internal
     {
         for (uint i=0; i < numberOfTokens; i++) 
@@ -444,13 +471,16 @@ contract Harber {
 
     ////////////// ORDINARY COURSE OF BUSINESS FUNCTIONS //////////////
 
-    //originally a modifier but changed to a function to make it easy for me to call whenever I want to keep people paying their rent
+    /// @notice collects rent for all tokens
+    /// @dev originally a modifier but changed to a function to make it easy for me to call whenever I want to keep people paying their rent
     function collectRentAllTokens() public notCompleted() {
        for (uint i=0; i < numberOfTokens; i++) {
             _collectRent(i);
         }
     }
 
+    /// @notice collects rent for a specific token
+    /// @dev also updates calculates and updates how long the current user has held the token for
     function _collectRent(uint256 _tokenId) public notCompleted() {
         //only collect rent if the token is owned (ie, if owned by the contract this implies unowned)
         if (team.ownerOf(_tokenId) != address(this)) {
@@ -470,15 +500,15 @@ contract Harber {
                 _timeOfThisCollection = now;
             }
 
+            //decrease deposit by rent owed
+            deposits[_tokenId][_currentOwner] = deposits[_tokenId][_currentOwner].sub(_rentOwed);
+
             //the 'important bit', where the duration the token has been held by each user is updated
             //it is essential that timeHeld and totalTimeHeld are incremented together such that the sum of
             //the first is equal to the second
             uint256 _timeHeldToIncrement = (_timeOfThisCollection.sub(timeLastCollected[_tokenId])); //just for readability
             timeHeld[_tokenId][_currentOwner] = timeHeld[_tokenId][_currentOwner].add(_timeHeldToIncrement);
             totalTimeHeld[_tokenId] = totalTimeHeld[_tokenId].add(_timeHeldToIncrement);
-
-            //decrease deposit by rent owed
-            deposits[_tokenId][_currentOwner] = deposits[_tokenId][_currentOwner].sub(_rentOwed);
 
             //it is also essential that collectedPerMarket, collectedPerUser and totalCollected are all incremented together
             //such that the sum of the first two (individually) is equal to the third
@@ -494,26 +524,27 @@ contract Harber {
         timeLastCollected[_tokenId] = now;
     }
     
-    //this function needs to be modified to actually send the Dai from the user to the contract
-    function buy(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) public collectRent(_tokenId) notCompleted() {
+    /// @notice to rent a token
+    // *** this function needs to be modified to actually send the Dai from the user to the contract
+    function newRental(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) public collectRent(_tokenId) notCompleted() {
         require(_tokenId < numberOfTokens, "This team does not exist");
         require(_newPrice > price[_tokenId], "Price must be higher than current price");
         require(_deposit > 0, "Must deposit something");
 
-        //the below is a testing require only, a new one will be required to ensure the 
-        //user is actually paying the deposit they say they are
+        // the below is a testing require only, a new one will be required to ensure the 
+        // ...user is actually paying the deposit they say they are
         require(testDaiBalances[msg.sender] >= _deposit, "Not enough DAI");
         testDaiBalances[msg.sender] = testDaiBalances[msg.sender].sub(_deposit);
         deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].add(_deposit);
      
         address _currentOwner = team.ownerOf(_tokenId);
 
-        //bought by current owner (ie, it just increases the price, token ownership does not change)
+        // bought by current owner (ie, it just increases the price, token ownership does not change)
         if(_currentOwner == msg.sender)
         {
             changePrice(_newPrice, _tokenId);
         }
-        //bought by different user (the normal situation)
+        // bought by different user (the normal situation)
         else
         {   
             // update currentOwnerIndex and previousOwnerTracker
@@ -521,7 +552,7 @@ contract Harber {
             previousOwnerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
             previousOwnerTracker[_tokenId][currentOwnerIndex[_tokenId]].owner = msg.sender; 
 
-            //update the ownerTracker and numberOfOwners variables. only for new owners.
+            // update the ownerTracker and numberOfOwners variables. only for new owners.
         if (everOwned[_tokenId][msg.sender] == false) {
             everOwned[_tokenId][msg.sender] = true;
             ownerTracker[_tokenId][numberOfOwners[_tokenId]] = msg.sender;
@@ -537,12 +568,14 @@ contract Harber {
         }
     }
 
-    //this will also need to be adjusted to work with the dai contract properly
+    /// @notice add new dai deposit to an existing rental
+    // *** this will also need to be adjusted to work with the dai contract properly
     function depositDai(uint256 _dai, uint256 _tokenId) public collectRent(_tokenId) notCompleted() {
         testDaiBalances[msg.sender] = testDaiBalances[msg.sender].sub(_dai);
         deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].add(_dai);
     }
 
+    /// @notice increase the price of an existing rental
     function changePrice(uint256 _newPrice, uint256 _tokenId) public collectRent(_tokenId) notCompleted() {
         require(_newPrice > price[_tokenId], "New price must be higher than current price"); 
         require(msg.sender == team.ownerOf(_tokenId), "Not owner");
@@ -553,15 +586,20 @@ contract Harber {
         emit LogPriceChange(price[_tokenId]);
     }
     
+    /// @notice withdraw deposit
+    /// @dev do not need to be the current owner
     function withdrawDeposit(uint256 _dai, uint256 _tokenId) public collectRent(_tokenId) notCompleted() returns (uint256) {
         _withdrawDeposit(_dai, _tokenId);
     }
 
+    /// @notice withdraw full deposit
+    /// @dev do not need to be the current owner
     function exit(uint256 _tokenId) public collectRent(_tokenId) notCompleted() {
         _withdrawDeposit(deposits[_tokenId][msg.sender],  _tokenId);
     }
 
     /* internal */
+    /// @notice actually withdraw the deposit
     function _withdrawDeposit(uint256 _dai, uint256 _tokenId) internal {
         require(deposits[_tokenId][msg.sender] >= _dai, 'Withdrawing too much');
 
@@ -576,6 +614,7 @@ contract Harber {
     }
 
     /* internal */
+    /// @notice if a users deposit runs out, either return to previous owner or foreclose
     function _revertToPreviousOwner(uint256 _tokenId) internal {
         bool _reverted = false;
         while (_reverted == false)
@@ -604,20 +643,19 @@ contract Harber {
     }
 
     /* internal */
+    /// @notice return token to the contract and return price to zero
     function _foreclose(uint256 _tokenId) internal {
         address _currentOwner = team.ownerOf(_tokenId);
-        // the contract becomes owner of token (aka foreclose)
         //third field is price, ie price goes to zero
         _transferTokenTo(_currentOwner, address(this), 0, _tokenId);
         emit LogForeclosure(_currentOwner);
     }
 
     /* internal */
+    /// @notice transfer ERC 721 between users
     function _transferTokenTo(address _currentOwner, address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
         team.transferFrom(_currentOwner, _newOwner, _tokenId);
         price[_tokenId] = _newPrice;
     }
 }
-
-// require (1 ==2, "STFU");
 

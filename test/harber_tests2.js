@@ -77,15 +77,15 @@ beforeEach(async () => {
     await harber.getTestDai({ from: user1 });
     await harber.getTestDai({ from: user2 });
     await harber.getTestDai({ from: user3 });
-    //buy losing teams
-    await harber.buy(365,2,10,{ from: user0 }); //used deposit of 10
-    await harber.buy(730,3,20,{ from: user1 }); //used deposit of 20
-    //buy winning team
-    await harber.buy(365,1,10,{ from: user0 }); //used deposit of 7
+    //rent losing teams
+    await harber.newRental(365,2,10,{ from: user0 }); //used deposit of 10
+    await harber.newRental(730,3,20,{ from: user1 }); //used deposit of 20
+    //rent winning team
+    await harber.newRental(365,1,10,{ from: user0 }); //used deposit of 7
     await time.increase(time.duration.weeks(1));
-    await harber.buy(730,1,20,{ from: user1 }); //used deposit of 14
+    await harber.newRental(730,1,20,{ from: user1 }); //used deposit of 14
     await time.increase(time.duration.weeks(1));
-    await harber.buy(1095,1,24,{ from: user2 }); //used deposit of 24
+    await harber.newRental(1095,1,24,{ from: user2 }); //used deposit of 24
     await time.increase(time.duration.weeks(2)); 
     // winner 1: 
     // totalcollected = 75, 
@@ -112,15 +112,15 @@ beforeEach(async () => {
     await harber.getTestDai({ from: user1 });
     await harber.getTestDai({ from: user2 });
     await harber.getTestDai({ from: user3 });
-    //buy losing teams
-    await harber.buy(365,2,10,{ from: user0 }); //used deposit of 10
-    await harber.buy(730,3,20,{ from: user1 }); //used deposit of 20
-    //buy winning team
-    await harber.buy(365,1,10,{ from: user0 }); //used deposit of 7
+    //rent losing teams
+    await harber.newRental(365,2,10,{ from: user0 }); //used deposit of 10
+    await harber.newRental(730,3,20,{ from: user1 }); //used deposit of 20
+    //rent winning team
+    await harber.newRental(365,1,10,{ from: user0 }); //used deposit of 7
     await time.increase(time.duration.weeks(1));
-    await harber.buy(730,1,20,{ from: user1 }); //used deposit of 14
+    await harber.newRental(730,1,20,{ from: user1 }); //used deposit of 14
     await time.increase(time.duration.weeks(1));
-    await harber.buy(1095,1,24,{ from: user2 }); //used deposit of 24
+    await harber.newRental(1095,1,24,{ from: user2 }); //used deposit of 24
     await time.increase(time.duration.weeks(2)); 
     // winner 1: 
     // totalcollected = 75, 
@@ -146,15 +146,15 @@ beforeEach(async () => {
     await harber.getTestDai({ from: user1 });
     await harber.getTestDai({ from: user2 });
     await harber.getTestDai({ from: user3 });
-    //buy losing teams
-    await harber.buy(365,2,10,{ from: user0 }); //used deposit of 10
-    await harber.buy(730,3,20,{ from: user1 }); //used deposit of 20
-    //buy winning team
-    await harber.buy(365,1,10,{ from: user0 }); //used deposit of 7
+    //rent losing teams
+    await harber.newRental(365,2,10,{ from: user0 }); //used deposit of 10
+    await harber.newRental(730,3,20,{ from: user1 }); //used deposit of 20
+    //rent winning team
+    await harber.newRental(365,1,10,{ from: user0 }); //used deposit of 7
     await time.increase(time.duration.weeks(1));
-    await harber.buy(730,1,20,{ from: user1 }); //used deposit of 14
+    await harber.newRental(730,1,20,{ from: user1 }); //used deposit of 14
     await time.increase(time.duration.weeks(1));
-    await harber.buy(1095,1,24,{ from: user2 }); //used deposit of 24
+    await harber.newRental(1095,1,24,{ from: user2 }); //used deposit of 24
     await time.increase(time.duration.weeks(2)); 
     // winner 1: 
     // totalcollected = 75, 
@@ -177,15 +177,15 @@ beforeEach(async () => {
     await harber.getTestDai({ from: user1 });
     await harber.getTestDai({ from: user2 });
     await harber.getTestDai({ from: user3 });
-    //buy losing teams
-    await harber.buy(365,2,10,{ from: user0 }); //used deposit of 10
-    await harber.buy(730,3,20,{ from: user1 }); //used deposit of 20
-    //buy winning team
-    await harber.buy(365,1,10,{ from: user0 }); //used deposit of 7
+    //rent losing teams
+    await harber.newRental(365,2,10,{ from: user0 }); //used deposit of 10
+    await harber.newRental(730,3,20,{ from: user1 }); //used deposit of 20
+    //rent winning team
+    await harber.newRental(365,1,10,{ from: user0 }); //used deposit of 7
     await time.increase(time.duration.weeks(1));
-    await harber.buy(730,1,20,{ from: user1 }); //used deposit of 14
+    await harber.newRental(730,1,20,{ from: user1 }); //used deposit of 14
     await time.increase(time.duration.weeks(1));
-    await harber.buy(1095,1,24,{ from: user2 }); //used deposit of 24
+    await harber.newRental(1095,1,24,{ from: user2 }); //used deposit of 24
     await time.increase(time.duration.weeks(2)); 
     // winner 1: 
     // totalcollected = 75, 
