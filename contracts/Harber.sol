@@ -25,6 +25,8 @@ interface Cash
 //TODO: have not yet tested the new check winner functions
 //TODO: replace completesets with OICash
 //TODO: change buy and depositDai and withdrawDai funcitons to actually transfer Dai form the user's address
+//TODO: replace all + 1s with safemath
+//TODO: do some research into gas costs if some of these variables are thousands of entries long and consider attempts to prevent this
 
 contract Harber {
     
@@ -51,12 +53,12 @@ contract Harber {
     Cash cash; 
 
     // UINTS ADDRESSES, BOOLS
-    address public andrewsAddress; // my whiskey fund, for my cut (TBD)
+    address public andrewsAddress; // my whiskey fund, for my 1% cut
     address[numberOfTokens] public marketAddresses; // the addresses of the various Augur binary markets. One market for each token. Initiated in the constructor and does not change.
     uint256[numberOfTokens] public price; //in dai-wei (so $100 = 100000000000000000000)
-    uint256[numberOfTokens] public collectedAndSentToAugur; // amount collected for each token, ie the sum of all owners' rent per token. Used to know how many complete
+    uint256[numberOfTokens] public collectedPerMarket; // amount collected for each token, ie the sum of all owners' rent per token. Used to know how many complete
     // sets to sell for each market (since there is one market per token) 
-    uint256 public totalCollected; // an easy way to track the above across all tokens. It is used for a) if there is an invalid outcome and it pays everyone back the amount of: ((total funds available * amount paid by user) / totalCollected). totalCollected is slightly higher than total funds available due to augur fees. And b) upon market resolution, it sells complete sets of Augur equal to totalCollected.
+    uint256 public totalCollected; // an easy way to track the above across all tokens.
     uint256[numberOfTokens] public timeLastCollected; // used to determine the rent due. Rent is due for the period (now - timeLastCollected), at which point timeLastCollected is set to now.
     uint256[numberOfTokens] public timeAcquired; // when a token was bought. used only for front end
     uint256[numberOfTokens] public currentOwnerIndex; // tracks the position of the current owner in the previousOwnerTracker mapping
@@ -64,7 +66,7 @@ contract Harber {
   
     // winning outcome variables
     bool public doneAndDusted = false;
-    uint256 public winningOutcome = 99; //start with invalid winning outcome
+    uint256 public winningOutcome = 42069; //start with invalid winning outcome
     uint256 public marketExpectedResolutionTime; //so the function to manually set the winner can only be called long after it should have resolved via Augur. Must be public so others can verify it is accurate. 
 
     //  STRUCTS
@@ -77,14 +79,11 @@ contract Harber {
     mapping (uint256 => mapping (uint256 => purchase) ) public previousOwnerTracker; //keeps track of all previous owners of a token, including the price, so that if the current owner's deposit runs out, ownership can be reverted to a previous owner with the previous price. Index 0 is NOT used, this tells the contract to foreclose. This does NOT keep a reliable list of all owners, if it reverts to a previous owner then the next owner will overwrite the owner that was in that slot. The variable currentOwnerIndex is used to track the location of the current owner. 
     mapping (uint256 => mapping (uint256 => address) ) public ownerTracker; //used to keep hold of all the owners, for payout, similar to previousOwnerTracker except that the pointer to the current position never decrements
     mapping (uint256 => mapping (address => uint256) ) public timeHeld; //this is the key variable that tracks the total amount of time each user has held it for. It is key because this is used to determine the proportion of the pot to be sent to each winning address
+    mapping (address => uint256) public totalTimeHeld; //sums all the timeHelds for each token. Not required, but saves on gas when paying out
     mapping (uint256 => mapping (address => uint256) ) public deposits; //keeps track of all the deposits for each token, for each owner. Unused deposits are not returned automatically when there is a new buyer. They can be withdrawn manually however. Unused deposits are returned automatically upon resolution of the market
     mapping (address => uint256) public testDaiBalances;
     mapping (uint256 => mapping (address => bool)) public everOwned; //this is required to prevent the ownerTracker variable being incremented unless a completely new user buys the token. 
-    mapping (address => uint256) public rentPaid; //keeps track of all the rent paid by each user. So that it can be returned in case of an invalid market outcome. Only required in this instance. 
-
-    // ENUMS
-    enum ownedState { Foreclosed, Owned }
-    ownedState[numberOfTokens] public state;
+    mapping (address => uint256) public collectedPerUser; //keeps track of all the rent paid by each user. So that it can be returned in case of an invalid market outcome. Only required in this instance. 
 
     ////////////// CONSTRUCTOR //////////////
     constructor(address _andrewsAddress, address _addressOfToken, address _addressOfCashContract, address[numberOfTokens] memory _addressesOfMarkets, address _addressOfCompleteSetsContract, address _addressOfMainAugurContract, uint _marketExpectedResolutionTime) public {
@@ -98,7 +97,6 @@ contract Harber {
         {
             currentOwnerIndex[i]=0;
             numberOfOwners[i]=0;
-            state[i] = ownedState.Foreclosed;
             market[i] = IMarket(_addressesOfMarkets[i]);
         }
 
@@ -116,17 +114,12 @@ contract Harber {
     event LogBuy(address indexed owner, uint256 indexed price);
     event LogPriceChange(uint256 indexed newPrice);
     event LogForeclosure(address indexed prevOwner);
-    event LogRentCollection(uint256 indexed collected);
+    event LogRentCollection(uint256 indexed collectedPerMarket);
     event LogFinalised(uint256 indexed winningOutcome, uint256 indexed daiAvailableToDistribute);
     event LogReturnToPreviousOwner(uint256 indexed tokenId, address indexed previousOwner);
 
 
     ////////////// MODIFIERS //////////////
-    modifier onlyOwner(uint256 _tokenId) {
-        require(msg.sender == team.ownerOf(_tokenId), "Not owner");
-        _;
-    }
-
     modifier notCompleted() {
         require(doneAndDusted == false);
         _;
@@ -263,7 +256,7 @@ contract Harber {
         if (usingAugur == true)
         {
             for (uint i=0; i<numberOfTokens; i++) {
-                uint256 _setsToSell =collectedAndSentToAugur[i].div(100);
+                uint256 _setsToSell =collectedPerMarket[i].div(100);
                 completeSets.publicSellCompleteSets(market[i], _setsToSell);
             } 
         } 
@@ -367,19 +360,12 @@ contract Harber {
     // the two arguments are testing variables. They are ignored when usingAugur is set to true. 
     // it is required to test the correct response to different winners. 
     {
-        // final rent collection before it is locked down
-        for (uint i=0; i < numberOfTokens; i++) {
-            _collectRent(i);
-        }
-
+        //do a final rent collection before the contract is locked down
+        collectRentAllTokens();
         //first check if all X markets have all resolved one way or the other
-        bool _haveAllAugurMarketsResolved = _haveAllAugurMarketsResolved();
-
-        if (_haveAllAugurMarketsResolved) {
-
+        if (_haveAllAugurMarketsResolved()) {
             //now check if they all resolved without errors. If yes, normal payout. If no, return all funds to all users. 
-            bool _haveAllAugurMarketsResolvedWithoutErrors = _haveAllAugurMarketsResolvedWithoutErrors(_hardCodedWinner, _hardCodedInvalid);
-            if (_haveAllAugurMarketsResolvedWithoutErrors) {
+            if (_haveAllAugurMarketsResolvedWithoutErrors(_hardCodedWinner, _hardCodedInvalid)) {
                 _finaliseAndPayout();
             }
             else {
@@ -394,10 +380,8 @@ contract Harber {
     function emergencyExit() notCompleted() public 
     {
         require (now > (marketExpectedResolutionTime + 15778800), "Must wait 6 months for Augur Oracle");
-        //final rent collection before it is locked down
-        for (uint i=0; i < numberOfTokens; i++) {
-            _collectRent(i);
-        }
+        //do a final rent collection before the contract is locked down
+        collectRentAllTokens();
         _invalidMarketFinaliseAndPayout(); //returns all rent to all users
     }
 
@@ -415,22 +399,13 @@ contract Harber {
         _sendCash(andrewsAddress,_andrewsWellEarntMonies, 3);
         _daiAvailableToDistribute = _daiAvailableToDistribute.sub(_andrewsWellEarntMonies);
         
-        //get total timeHeld of all the winners
-        uint256 = _totalWinnersTimeHeld = 0;
-
-        for (uint i=0; i < numberOfOwners[winningOutcome]; i++) {
-            address _winnersAddress = ownerTracker[winningOutcome][i];
-            uint256 _winnersTimeHeld = timeHeld[winningOutcome][_winnersAddress];
-             _totalWinnersTimeHeld = _totalWinnersTimeHeld.add(_winnersTimeHeld);
-        }
-
         //do the payout
         for (uint i=0; i < numberOfOwners[winningOutcome]; i++)
         {   
             address _winnersAddress = ownerTracker[winningOutcome][i];
             uint256 _winnersTimeHeld = timeHeld[winningOutcome][_winnersAddress];
             uint256 _numerator = _daiAvailableToDistribute.mul(_winnersTimeHeld);
-            uint256 _winningsToTransfer = _numerator.div(_totalWinnersTimeHeld);
+            uint256 _winningsToTransfer = _numerator.div(totalTimeHeld);
             _sendCash(_winnersAddress,_winningsToTransfer, 1);
         }
         doneAndDusted = true;
@@ -454,9 +429,9 @@ contract Harber {
             for (uint j=0; j < numberOfOwners[i]; j++)
             {  
                 address _usersAddress = ownerTracker[i][j];
-                uint256 _numerator = _daiAvailableToDistribute.mul(rentPaid[_usersAddress]);
+                uint256 _numerator = _daiAvailableToDistribute.mul(collectedPerUser[_usersAddress]);
                 uint256 _fundsToReturn = _numerator.div(totalCollected);
-                rentPaid[_usersAddress] = 0; //same address could be across multiple tokens, don't want to pay the user more than once
+                collectedPerUser[_usersAddress] = 0; //same address could be across multiple tokens, don't want to pay the user more than once
                 if (_fundsToReturn > 0) {
                     _sendCash(_usersAddress,_fundsToReturn,1);
                 }
@@ -487,9 +462,16 @@ contract Harber {
 
     ////////////// ORDINARY COURSE OF BUSINESS FUNCTIONS //////////////
 
-    function _collectRent(uint256 _tokenId) notCompleted() public {
-        // determine rent to pay
-        if (state[_tokenId] == ownedState.Owned) {
+    //originally a modifier but changed to a function to make it easy for me to call whenever I want to keep people paying their rent
+    function collectRentAllTokens() public notCompleted() {
+       for (uint i=0; i < numberOfTokens; i++) {
+            _collectRent(i);
+        }
+    }
+
+    function _collectRent(uint256 _tokenId) public notCompleted() {
+        //only collect rent if the token is owned (ie, if owned by the contract this implies unowned)
+        if (team.ownerOf(_tokenId) != address(this)) {
             
             uint256 _rentOwed = rentOwed(_tokenId);
             address _currentOwner = team.ownerOf(_tokenId);
@@ -506,22 +488,28 @@ contract Harber {
                 _timeOfThisCollection = now;
             }
 
-            //update the rentPaid mapping. Only used for invalid outcome, so everyone can be paid back
-            rentPaid[_currentOwner] = rentPaid[_currentOwner].add(_rentOwed);
-
             //the 'important bit', where the duration the token has been held by each user is updated
+            //it is essential that timeHeld and totalTimeHeld are incremented together such that the sum of
+            //the first is equal to the second
             uint256 _timeHeldToIncrement = (_timeOfThisCollection.sub(timeLastCollected[_tokenId])); //just for readability
             timeHeld[_tokenId][_currentOwner] = timeHeld[_tokenId][_currentOwner].add(_timeHeldToIncrement);
+            totalTimeHeld[_tokenId] = totalTimeHeld[_tokenId].add(_timeHeldToIncrement);
 
-            timeLastCollected[_tokenId] = now;
+            //decrease deposit by rent owed
             deposits[_tokenId][_currentOwner] = deposits[_tokenId][_currentOwner].sub(_rentOwed);
-            collectedAndSentToAugur[_tokenId] = collectedAndSentToAugur[_tokenId].add(_rentOwed);
+
+            //it is also essential that collectedPerMarket, collectedPerUser and totalCollected are all incremented together
+            //such that the sum of the first two (individually) is equal to the third
+            collectedPerMarket[_tokenId] = collectedPerMarket[_tokenId].add(_rentOwed);
+            collectedPerUser[_currentOwner] = collectedPerUser[_currentOwner].add(_rentOwed);
             totalCollected = totalCollected.add(_rentOwed);
 
             _buyCompleteSets(_tokenId,_rentOwed);
             
             emit LogRentCollection(_rentOwed);
         }
+
+        timeLastCollected[_tokenId] = now;
     }
     
     //this function needs to be modified to actually send the Dai from the user to the contract
@@ -533,17 +521,9 @@ contract Harber {
         //the below is a testing require only, a new one will be required to ensure the 
         //user is actually paying the deposit they say they are
         require(testDaiBalances[msg.sender] >= _deposit, "Not enough DAI");
-        
         testDaiBalances[msg.sender] = testDaiBalances[msg.sender].sub(_deposit);
         deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].add(_deposit);
-
-        //update the ownerTracker and numberOfOwners variables. only for new owners.
-        if (everOwned[_tokenId][msg.sender] == false) {
-            everOwned[_tokenId][msg.sender] = true;
-            ownerTracker[_tokenId][numberOfOwners[_tokenId]] = msg.sender;
-            numberOfOwners[_tokenId] = numberOfOwners[_tokenId] + 1;
-        }
-        
+     
         address _currentOwner = team.ownerOf(_tokenId);
 
         //bought by current owner (ie, it just increases the price, token ownership does not change)
@@ -553,23 +533,23 @@ contract Harber {
         }
         //bought by different user (the normal situation)
         else
-        {
+        {   
+            // update currentOwnerIndex and previousOwnerTracker
             currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId] + 1; 
-            // currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].add(1);
-            //^^ the above line causes VM errors, I need to figure out why
             previousOwnerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
             previousOwnerTracker[_tokenId][currentOwnerIndex[_tokenId]].owner = msg.sender; 
+
+            //update the ownerTracker and numberOfOwners variables. only for new owners.
+        if (everOwned[_tokenId][msg.sender] == false) {
+            everOwned[_tokenId][msg.sender] = true;
+            ownerTracker[_tokenId][numberOfOwners[_tokenId]] = msg.sender;
+            numberOfOwners[_tokenId] = numberOfOwners[_tokenId] + 1;
         }
 
-        if(state[_tokenId] == ownedState.Foreclosed) 
-        {
-            state[_tokenId] = ownedState.Owned;
-            timeLastCollected[_tokenId] = now;
-        }
-        
-        timeAcquired[_tokenId] = now;
+            //update timeAcquired for the front end
+            timeAcquired[_tokenId] = now;
 
-        if(_currentOwner != msg.sender) {
+            //transfer token to new owner
             _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
             emit LogBuy(msg.sender, _newPrice); 
         }
@@ -577,14 +557,13 @@ contract Harber {
 
     //this will also need to be adjusted to work with the dai contract properly
     function depositDai(uint256 _dai, uint256 _tokenId) public collectRent(_tokenId) notCompleted() {
-        require(state[_tokenId] != ownedState.Foreclosed, "Foreclosed");
         testDaiBalances[msg.sender] = testDaiBalances[msg.sender].sub(_dai);
         deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].add(_dai);
     }
 
     function changePrice(uint256 _newPrice, uint256 _tokenId) public onlyOwner(_tokenId) collectRent(_tokenId) notCompleted() {
-        require(state[_tokenId] != ownedState.Foreclosed, "Foreclosed");
         require(_newPrice > price[_tokenId], "New price must be higher than current price"); 
+        require(msg.sender == team.ownerOf(_tokenId), "Not owner");
         
         //below is the only instance when price is modifed outside of the _transferTokenTo function
         price[_tokenId] = _newPrice;
@@ -592,11 +571,11 @@ contract Harber {
         emit LogPriceChange(price[_tokenId]);
     }
     
-    function withdrawDeposit(uint256 _dai, uint256 _tokenId) public onlyOwner(_tokenId) collectRent(_tokenId) notCompleted() returns (uint256) {
+    function withdrawDeposit(uint256 _dai, uint256 _tokenId) public collectRent(_tokenId) notCompleted() returns (uint256) {
         _withdrawDeposit(_dai, _tokenId);
     }
 
-    function exit(uint256 _tokenId) public onlyOwner(_tokenId) collectRent(_tokenId) notCompleted() {
+    function exit(uint256 _tokenId) public collectRent(_tokenId) notCompleted() {
         _withdrawDeposit(deposits[_tokenId][msg.sender],  _tokenId);
     }
 
@@ -620,9 +599,9 @@ contract Harber {
         while (_reverted == false)
         {
             assert(currentOwnerIndex[_tokenId] >=0);
-            //change below to use safemath
             currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId] - 1; // ownerTraker will now point to  previous owner
             uint256 _index = currentOwnerIndex[_tokenId]; //just for readability
+            address _previousOwner = previousOwnerTracker[_tokenId][_index].owner;
 
             if (_index == 0) 
             //no previous owners. price -> zero, foreclose
@@ -634,7 +613,6 @@ contract Harber {
             // previous owner still has a deposit, transfer to them, update the price to what it used to be
             {
                 address _currentOwner = team.ownerOf(_tokenId);
-                address _previousOwner = previousOwnerTracker[_tokenId][_index].owner;
                 uint256 _oldPrice = previousOwnerTracker[_tokenId][_index].price;
                 _transferTokenTo(_currentOwner, _previousOwner, _oldPrice, _tokenId);
                 _reverted = true;
@@ -645,11 +623,10 @@ contract Harber {
 
     /* internal */
     function _foreclose(uint256 _tokenId) internal {
-        // the contract becomes owner of token (aka foreclose)
         address _currentOwner = team.ownerOf(_tokenId);
+        // the contract becomes owner of token (aka foreclose)
         //third field is price, ie price goes to zero
         _transferTokenTo(_currentOwner, address(this), 0, _tokenId);
-        state[_tokenId] = ownedState.Foreclosed;
         emit LogForeclosure(_currentOwner);
     }
 
