@@ -9,11 +9,6 @@ import drizzleOptions from "./drizzleOptions";
 import BaseContainer from "./BaseContainer";
 import FrontBaseContainer from "./FrontBaseContainer";
 
-
-var url_string = window.location.href;
-var url = new URL(url_string);
-var urlId = url.searchParams.get("id");
-
 class App extends Component {
   render() {
     return (

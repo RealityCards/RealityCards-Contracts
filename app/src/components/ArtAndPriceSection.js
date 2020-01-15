@@ -29,46 +29,48 @@ var url_string = window.location.href;
 var url = new URL(url_string);
 var urlId = url.searchParams.get("id");
 
-if (urlId == 0)
-{ var teamToDisplay = team0; }
-else if (urlId == 1)
-{ var teamToDisplay = team1; }
-else if (urlId == 2)
-{ var teamToDisplay = team2; }
-else if (urlId == 3)
-{ var teamToDisplay = team3; }
-else if (urlId == 4)
-{ var teamToDisplay = team4; }
-else if (urlId == 5)
-{ var teamToDisplay = team5; }
-else if (urlId == 6)
-{ var teamToDisplay = team6; }
-else if (urlId == 7)
-{ var teamToDisplay = team7; }
-else if (urlId == 8)
-{ var teamToDisplay = team8; }
-else if (urlId == 9)
-{ var teamToDisplay = team9; }
-else if (urlId == 10)
-{ var teamToDisplay = team10; }
-else if (urlId == 11)
-{ var teamToDisplay = team11; }
-else if (urlId == 12)
-{ var teamToDisplay = team12; }
-else if (urlId == 13)
-{ var teamToDisplay = team13; }
-else if (urlId == 14)
-{ var teamToDisplay = team14; }
-else if (urlId == 15)
-{ var teamToDisplay = team15; }
-else if (urlId == 16)
-{ var teamToDisplay = team16; }
-else if (urlId == 17)
-{ var teamToDisplay = team17; }
-else if (urlId == 18)
-{ var teamToDisplay = team18; }
-else if (urlId == 19)
-{ var teamToDisplay = team19; }
+var teamToDisplay;
+
+if (urlId === 0)
+{ teamToDisplay = team0; }
+else if (urlId === 1)
+{ teamToDisplay = team1; }
+else if (urlId === 2)
+{ teamToDisplay = team2; }
+else if (urlId === 3)
+{ teamToDisplay = team3; }
+else if (urlId === 4)
+{ teamToDisplay = team4; }
+else if (urlId === 5)
+{ teamToDisplay = team5; }
+else if (urlId === 6)
+{ teamToDisplay = team6; }
+else if (urlId === 7)
+{ teamToDisplay = team7; }
+else if (urlId === 8)
+{ teamToDisplay = team8; }
+else if (urlId === 9)
+{ teamToDisplay = team9; }
+else if (urlId === 10)
+{ teamToDisplay = team10; }
+else if (urlId === 11)
+{ teamToDisplay = team11; }
+else if (urlId === 12)
+{ teamToDisplay = team12; }
+else if (urlId === 13)
+{ teamToDisplay = team13; }
+else if (urlId === 14)
+{ teamToDisplay = team14; }
+else if (urlId === 15)
+{ teamToDisplay = team15; }
+else if (urlId === 16)
+{ teamToDisplay = team16; }
+else if (urlId === 17)
+{ teamToDisplay = team17; }
+else if (urlId === 18)
+{ teamToDisplay = team18; }
+else if (urlId === 19)
+{ teamToDisplay = team19; }
 
 
 

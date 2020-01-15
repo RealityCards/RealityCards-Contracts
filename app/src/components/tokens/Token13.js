@@ -53,7 +53,10 @@ class PriceSection extends Component {
         patron = 'unowned';
       }
       // update timeHeldKey IF owner updated
-      const timeHeldKey = this.contracts.Harber.methods.timeHeld.cacheCall(urlId,patron);
+      var timeHeldKey;
+      if (patron != 'unowned') { 
+        var timeHeldKey = this.contracts.Harber.methods.timeHeld.cacheCall(urlId,patron);
+      }
       this.setState({
         currentTimeHeld: 0,
         timeHeldKey,
