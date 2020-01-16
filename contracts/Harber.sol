@@ -223,6 +223,13 @@ contract Harber {
         }
     }
 
+    /// @dev for front end and testing only
+    /// @return test dai balance
+    function getTestDaiBalance() public view returns (uint256) 
+    {
+        return testDaiBalances[msg.sender];
+    }
+
     ////////////// AUGUR FUNCTIONS //////////////
     /// @notice get test Dai to allow a user to rent tokens
     /// @dev only a relevant function on kovan 

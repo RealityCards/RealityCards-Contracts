@@ -19,7 +19,7 @@ class ActionSection extends Component {
       artworkPriceKey: context.drizzle.contracts.Harber.methods.price.cacheCall(urlId),
       rentOwedKey: context.drizzle.contracts.Harber.methods.rentOwed.cacheCall(urlId),
       totalCollectedKey: context.drizzle.contracts.Harber.methods.totalCollected.cacheCall(),
-      tokenCollectedKey: context.drizzle.contracts.Harber.methods.collectedAndSentToAugur.cacheCall(urlId),
+      tokenCollectedKey: context.drizzle.contracts.Harber.methods.collectedPerMarket.cacheCall(urlId),
       rentOwed: -1,
       combinedCollected: -1,
       combinedCollectedToken: -1,
@@ -32,7 +32,7 @@ class ActionSection extends Component {
   }
 
   getTokenCollected(props) {
-    return new this.utils.BN(props.contracts['Harber']['collectedAndSentToAugur'][this.state.tokenCollectedKey].value);
+    return new this.utils.BN(props.contracts['Harber']['collectedPerMarket'][this.state.tokenCollectedKey].value);
   }
 
   async updateCombineCollected(props) {
@@ -82,8 +82,8 @@ class ActionSection extends Component {
 
     if (this.state.rentOwedKey in this.props.contracts['Harber']['rentOwed']
     && this.state.rentOwedKey in nextProps.contracts['Harber']['rentOwed']
-    && this.state.tokenCollectedKey in this.props.contracts['Harber']['collectedAndSentToAugur']
-    && this.state.tokenCollectedKey in nextProps.contracts['Harber']['collectedAndSentToAugur']) {
+    && this.state.tokenCollectedKey in this.props.contracts['Harber']['collectedPerMarket']
+    && this.state.tokenCollectedKey in nextProps.contracts['Harber']['collectedPerMarket']) {
       if (!this.getrentOwed(this.props).eq(this.getrentOwed(nextProps)) || this.state.combinedCollectedToken === -1) {
         this.updateCombineCollectedToken(nextProps);
       }

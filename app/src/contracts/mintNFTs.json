@@ -713,12 +713,12 @@
     "1579078111693": {
       "events": {},
       "links": {},
-      "address": "0xD290b5ebdEbb436537E3b444d1dac3cEBB39eE8b",
-      "transactionHash": "0xb311f680407c20ae009c8860b65030a248bae61bec901061530c4b919d9b331c"
+      "address": "0xe72725196c3633Aa9C924f6d541804FA4c8e89f8",
+      "transactionHash": "0xe4e805b2023e40cafd14497e6777e90af66792dbc59d79552b0fe6d2bc540af9"
     }
   },
   "schemaVersion": "3.0.19",
-  "updatedAt": "2020-01-15T10:56:11.379Z",
+  "updatedAt": "2020-01-16T08:34:40.031Z",
   "networkType": "ethereum",
   "devdoc": {
     "methods": {}

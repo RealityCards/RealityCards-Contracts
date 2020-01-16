@@ -14,7 +14,7 @@ class OfflineContainer extends Component {
   
     if (this.props.web3.status === "") {
     // (this.props.web3.status === "initialized" && Object.keys(this.props.accounts).length === 0)) {
-      console.log(this.props);
+      // console.log(this.props);
       return (
         <div className="section">
         Please ensure you have metamask installed, logged in, and set to <strike>stun</strike> Kovan. If you do not have metamask please click <a href="offline/index.html">here</a> for an 'offline' version which cannot be interacted with.
