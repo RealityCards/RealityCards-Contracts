@@ -18,8 +18,8 @@ const augurCashAddress = '0xa836c1D6a35A443FD6F8d5d4A9cf5b1664bF76D6';
 // (8) 0x06b58dDf8CF8E115D01137A296fb57e522Cc441f (100 ETH)
 // (9) 0x84CAbF995E9Af67B6d73232C2D5E9fBeBEF92224 (100 ETH)
 
-// These test assume that 100 dai (in wei-dai or whatever) is sent with the getTestDai function and numberoftokens = 5, and that usingAugur = false
-// These tests do NOT reset the blockchain after each test. In retrospect this was a mistake, as it wasted a huge amount of time. harber_test2 fix this. 
+// These test assume that 100 dai (in wei-dai or whatever) is sent with the getTestDai function and numberoftokens = 20, and that usingAugur = false
+// These tests do NOT reset the blockchain after each test. In retrospect this was a mistake, as it wasted a huge amount of time. harber_test2 fixes this. 
 
 contract('HarberTests1', (accounts) => {
 
@@ -43,25 +43,31 @@ contract('HarberTests1', (accounts) => {
   beforeEach(async () => {
     token = await Token.deployed();
     harber = await Harber.deployed();
-    // cash = await Cash.deployed();
   });
 
-    it('getOwner', async () => {
-    var owner = await token.ownerOf.call(4);
-    assert.equal(owner, harber.address);
+  // check that the contract initially owns the token
+  it('getOwner', async () => {
+    var i;
+    for (i = 0; i < 20; i++) {
+      var owner = await token.ownerOf.call(i);
+      assert.equal(owner, harber.address);
+    }
   });
 
+  // check that the contract initially owns the token
   it('getName', async () => {
     var name = await token.name.call();
     assert.equal(name, 'Harber.io');
   });
 
+  //  is testDai sucesfully allocated?
   it('getTestDai and check balance', async () => {
     await harber.getTestDai({ from: user0 });
     var testDaiBalances = await harber.testDaiBalances.call(user0);
     assert.equal(testDaiBalances, 100);
   });
 
+  // check fundamentals first
   it('user 1 rent Token first time and check: various', async () => {
     user = user0;
     await harber.newRental(100,4,10,{ from: user });
@@ -80,6 +86,7 @@ contract('HarberTests1', (accounts) => {
     assert.equal(trackedAddress, user);
   });
 
+  // do the same thing- does it still work? 
   it('user 1 rent Token second time and check: various', async () => {
     user = user0;
     await harber.newRental(200,4,10,{ from: user });
@@ -97,14 +104,15 @@ contract('HarberTests1', (accounts) => {
     assert.equal(trackedAddress, user);
   });
 
+  // make sure it throws a revert when it is supposed to
   it('user 2 rent Token fail states', async () => {
     user = user1;
     await shouldFail.reverting.withMessage(harber.newRental(200,4,0,{ from: user}), "Price must be higher than current price");
     await shouldFail.reverting.withMessage(harber.newRental(300,4,0,{ from: user}), "Must deposit something");
     await shouldFail.reverting.withMessage(harber.newRental(300,4,10,{ from: user}), "Not enough DAI");
-    // await shouldFail.reverting.withMessage(harber.newRental(300,5,10,{ from: user}), "This team does not exist");
   });
 
+  // same as before, but with a different token, does it still work?
   it('user 2 rent Token first time and check: various', async () => { 
     user = user1;
     await harber.getTestDai({ from: user });
@@ -128,6 +136,7 @@ contract('HarberTests1', (accounts) => {
     assert.equal(trackedAddress, user);
   });
 
+  // repeat
   it('user 2 rent Token second time and check: various', async () => {
     user = user1;
     await harber.newRental(400,4,10,{ from: user });
@@ -144,7 +153,8 @@ contract('HarberTests1', (accounts) => {
     var trackedAddress = await harber.getOwnerTrackerAddress.call(4,newOwnerPurchaseCount1);
     assert.equal(trackedAddress, user);
   });
-////////////
+
+  //continuing the trend of lots of token rental between different users and different tokens
   it('switch back to user 1 rent Token third time and check: various', async () => {
     user = user0;
     await harber.newRental(1000,4,20,{ from: user });
@@ -163,6 +173,7 @@ contract('HarberTests1', (accounts) => {
     assert.equal(trackedAddress, user);
   });
 
+  // check changePrice is working properly- should fail
   it('changePrice function fail testing', async () => {
     user = user1;
     await shouldFail.reverting.withMessage(harber.changePrice(2000,4,{ from: user}), "Not owner");
@@ -170,6 +181,7 @@ contract('HarberTests1', (accounts) => {
     await shouldFail.reverting.withMessage(harber.changePrice(1000,4,{ from: user}), "New price must be higher than current price");
   });
 
+  // check changePrice is working properly- should work
   it('user 1 using changePrice function', async () => {
     user = user0;
     await harber.changePrice(2000,4,{ from: user });
@@ -187,6 +199,7 @@ contract('HarberTests1', (accounts) => {
     assert.equal(trackedAddress, user);
   });
 
+  // is rentOwed function correct? Perhaps the most important function!!
   it('calculateRentOwed function', async () => {
     user = user2;
     await harber.getTestDai({ from: user });
@@ -199,6 +212,7 @@ contract('HarberTests1', (accounts) => {
     assert.equal(fundsOwedActual, 10);
   });
 
+  // check these front end functions. 
   it('userDepositAbleToWithdraw and  liveDepositAbleToWithdraw function', async () => {
     user = user2;
     //due to 1 day passing from above, the userDepositAbleToWithdraw and depositAbleToWithdraw should be lower by 10 but the deposit amount should not
@@ -240,6 +254,7 @@ contract('HarberTests1', (accounts) => {
     assert.equal(userDepositAbleToWithdraw,15);
   });
 
+  // check this front end function
   it('rentalExpiryTime function', async () => {
     user = user4;
     await harber.getTestDai({ from: user });
@@ -258,6 +273,7 @@ contract('HarberTests1', (accounts) => {
 
   // at this point we are resetting things and will use second token
 
+  // test a normal instance of collectRent
   it('_collectRent function no revertPreviousOwner/foreclose', async () => {
     user = user5;
     // get total collected from all the above tets and just check that it is added to properly
@@ -310,6 +326,7 @@ contract('HarberTests1', (accounts) => {
     assert.equal(currentTime.toString(),timeLastCollected.toString());
   });
 
+  // test collectRent again, but this time it should foreclose, does it?
   it('_collectRent function with foreclose but no revertPreviousOwner', async () => {
     user = user5;
     //from the above, we currently have a price of 1095 = charge of 3 per day. We have a deposit of 39 left, 39/3= 13 days. Let's wait ten days and check it hasn't been foreclosed, then another 5 and check that it has
@@ -320,6 +337,7 @@ contract('HarberTests1', (accounts) => {
     await harber.newRental(1,1,5,{ from: user  }); 
   });
 
+  // test collectRent again, this time it should return to previous owner, does it?
   it('_collectRent function with revertPreviousOwner via calling _collect directly', async () => {
     await harber.newRental(365,1,5,{ from: user5  }); //10 deposit = 10 days
     await harber.getTestDai({ from: user6 });
@@ -388,6 +406,7 @@ contract('HarberTests1', (accounts) => {
 
 //reset token2
 
+  // these are four crucial variables that are relied on for other functions. are they what they should be?
   it('test collected, held variables and collectedAndSentToAugur and totalCollected', async () => {
     // below only needed if i commented the above to save time but no harm in keeping it here
     await harber.getTestDai({ from: user0 });
@@ -469,6 +488,7 @@ contract('HarberTests1', (accounts) => {
   });
 
   //token 3
+  // check withdrawDeposit works as it should
   it('test withdrawDeposit', async () => {
     user = user0;
     //rent then withdraw half
@@ -501,6 +521,7 @@ contract('HarberTests1', (accounts) => {
     assert.equal(price, 0);
   });
 
+  // check the exit function works as it should
   it('test exit', async () => {
     user = user0;
     //rent then withdraw half
@@ -532,6 +553,7 @@ contract('HarberTests1', (accounts) => {
   });
 
   //back to token 2
+  // test the final bit- paying out to users
   it('test finaliseAndPayout, returnDeposits', async () => {
     //below are the only combinations of users/tokens with a positive deposit
     //these are all zero if everything is commented out above token 2 stuff. 

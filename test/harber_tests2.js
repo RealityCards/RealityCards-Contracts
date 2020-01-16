@@ -71,6 +71,7 @@ beforeEach(async () => {
     mintNFTs = await MintNFTs.new(token.address, harber.address);
   });
 
+  // test the payout functions work fine, with different winners each time
   it('test complete- winner 1', async () => {
     /////// STANDARD //////
     await harber.getTestDai({ from: user0 });
@@ -106,6 +107,7 @@ beforeEach(async () => {
     assert.equal(winningsSentToUser,27);
   });
 
+  // test the payout functions work fine, with different winners each time
   it('test complete- winner 2', async () => {
     /////// STANDARD //////
     await harber.getTestDai({ from: user0 });
@@ -140,6 +142,7 @@ beforeEach(async () => {
     assert.equal(winningsSentToUser,0);
   });
 
+  // test the payout functions work fine, with different winners each time
   it('test complete- invalid', async () => {
     /////// STANDARD //////
     await harber.getTestDai({ from: user0 });
@@ -171,6 +174,7 @@ beforeEach(async () => {
     assert.equal(winningsSentToUser,24);
   });
 
+  // test the emergency Exit function works
   it('test emergencyExit', async () => {
     /////// STANDARD //////
     await harber.getTestDai({ from: user0 });
