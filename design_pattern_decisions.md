@@ -1,26 +1,24 @@
-This document intends to specify exactly what each variable, and function, is meant to do, and steps I have taken to ensure it does exactly that.
+# DESIGN DECISIONS
 
-TODO: tests on kovan version
+This document serves as a explanation for why it was written the way it was. The rationale and description of almost all functions and variables are given below. 
 
--   Ensure deposits variable is never more than the dai balance of the contract
+This also serves as a 'self audit'. 
 
--   Try and change price/withdraw deposit if not owner
+## MODIFIERS
 
-MODIFIERS
-
-notCompleted
+#### notCompleted
 
 -   This locks down the entire contract when the winnings have been paid out to all users. 
 
 -   It should be on every public function
 
-collectRent
+#### collectRent
 
 -   This should be on all 'ordinary course of business' public functions (except _collectRent itself, obviously)
 
 -   Rent is also required to be collected upon market resolution, but the function collectRentAllTokens is used instead of this modifier.
 
-FUNCTIONS
+## FUNCTIONS
 
 Functions that are only used in tests and/or the front end are not listed.
 
@@ -74,7 +72,7 @@ There are four 'ordinary course of business' internal functions which the above 
 
 4.  _transferTokenTo
 
-Constructor
+#### Constructor
 
 -   This initialises the following contract variables:
 
@@ -94,9 +92,9 @@ Constructor
 
 -   marketExpectedResolutionTime where the expected timestamp of when the markets should begin to resolve. This must be set, to prevent people calling emergencyExit prematurely
 
-View Functions
+### View Functions
 
-rentOwed
+#### rentOwed
 
 -   Returns the rent owed but not paid for a specific token. 
 
@@ -108,7 +106,7 @@ rentOwed
 
 Functions that interact with Augur- all internal
 
-buyCompleteSets
+#### buyCompleteSets
 
 -   Takes the rentOwed, divides it by 100 (because 1 complete set costs 100 wei-dai) and buys complete sets from augur
 
@@ -118,13 +116,13 @@ buyCompleteSets
 
 -   It is only called at the very end of the collectRent function. This function will reduce rentOwed to the maximum of whatever deposit the user has. So deposits needs to be accurate to the dai the contract holds at all times- see the deposits section
 
-sellCompleteSets
+#### sellCompleteSets
 
 -   This is only called once, upon market resolution, within the finaliseAndPayout (or invalidFinaliseAndPayout) function. Must be internal to ensure this is the case
 
 -   For each token, collectedAndSentToAugur divided by 100 (as per buyCompleteSets) is sold. It is essential that this variable matches the actual sets bought. See collectedAndSentToAugur section.
 
-haveAllAugurMarketsResolved
+#### haveAllAugurMarketsResolved
 
 -   Should be internal and called only once by getWinner
 
@@ -138,7 +136,7 @@ haveAllAugurMarketsResolved
 
 -   If there are three teams, numberOfTokens = 3. _resolvedOutcomesCount will be incremented three times, and equal 3. So = is correct, not <=
 
-haveAllAugurMarketsResolvedWithoutErrors
+#### haveAllAugurMarketsResolvedWithoutErrors
 
 -   Should be internal and called only once by getWinner 
 
@@ -158,7 +156,7 @@ haveAllAugurMarketsResolvedWithoutErrors
 
 -   This function also sets the winningOutcome variable.
 
-sendCash
+#### sendCash
 
 -   Very simple function, consolidates all the instances of sending Dai to users. Should be internal and called by these functions only:
 
@@ -172,9 +170,9 @@ sendCash
 
 -   It uses the cash variable, whose type is the Dai Contract. It is initialised in the constructor.
 
-Market resolution functions
+### Market resolution functions
 
-complete
+#### complete
 
 -   This must be manually called to complete the competition. It is not called from anywhere within the contract. Must be public. 
 
@@ -200,7 +198,7 @@ complete
 
 -   It is ok to call this function multiple times, until such time that _haveAllAugurMarketsResolved returns true. It should then do the appropriate payouts, and then not be run again. This is achieved via the notCompleted modifier.
 
-emergencyExit
+#### emergencyExit
 
 -   An 'emergency; function for one of the following two cases:
 
@@ -218,7 +216,7 @@ emergencyExit
 
 -   It can only be called if 6 months have passed after the Augur markets should have ended. The variable marketExpectedResolutionTime must be set correctly!!
 
-_finaliseAndPayout
+#### _finaliseAndPayout
 
 -   Can only be called by complete, must be internal
 
@@ -296,7 +294,7 @@ _invalidMarketFinaliseAndPayout
 
 -   rentPaid does not track how much each user paid in rent for each token. It is not an array of size numberOfTokens. If a user pays rent on multiple tokens, this variable will include the sum of all amounts, it will not list the different amounts separately. The point is that rentPaid must be reduced to zero every time a payment is made, because the for loops WILL return to the same value if the user has paid rent on two tokens.
 
-_returnDeposits
+#### _returnDeposits
 
 -   Should return all unused deposits to all users. 
 
@@ -308,9 +306,9 @@ _returnDeposits
 
 -   It is essential that the sum of the unused deposits as per the deposits variable is correct and not more than the Dai amount in the contract at the time the function is run. See the deposits section for how this is ensured
 
-Ordinary course of business functions- public
+### Ordinary course of business functions- public
 
-_collectRent
+#### _collectRent
 
 -   This function should do the following:
 
@@ -344,7 +342,7 @@ _collectRent
 
 -   For the 'market resolution' functions (which are: emergencyExit and complete) it is a called via the collectRentAllTokens functions which collects rent for every token.
 
-Buy
+#### Buy
 
 -   This function should transfer ownership to a new user, after ensuring the following
 
@@ -374,13 +372,13 @@ Buy
 
 -   Transfer the token to the new owner via the _transferTokenTo function.
 
-depositDai
+#### depositDai
 
 -   Public, should do what it says on the tin
 
 -   Should have modifiers: notCompleted and collectRent
 
-changePrice
+#### changePrice
 
 -   Public, should do what it says on the tin
 
@@ -390,13 +388,13 @@ changePrice
 
 -   This function is the only function where the price is changed, apart from buy, and revertToPreviousOwner
 
-withdrawDeposit
+#### withdrawDeposit
 
 -   Public, should do what it says on the tin
 
 -   Should have modifiers: notCompleted and collectRent
 
-exit
+#### exit
 
 -   Public, should withdraw entire deposit and foreclose. I.e. have identical functionality to withdrawDeposit if the full deposit balance was trying to be withdrawn
 
@@ -404,7 +402,7 @@ exit
 
 Ordinary course of business functions- internal
 
-_withdrawDeposit
+#### _withdrawDeposit
 
 -   Internal, called either by exit or withdrawDeposit
 
@@ -412,7 +410,7 @@ _withdrawDeposit
 
 -   If the deposit zero falls to zero, call returnToPreviousOwner
 
-returnToPreviousOwner
+#### returnToPreviousOwner
 
 -   Should check if the previous owner has a deposit. If no, go back to the previous owner again. Keep repeating this until a previous owner with a deposit is found, or it runs out of previous owners
 
@@ -426,13 +424,13 @@ returnToPreviousOwner
 
 -   Decrement currentOwnerIndex and check whether it is equal to zero
 
-Foreclose
+#### Foreclose
 
 -   Should return ownership of the token to the contract and set its price to zero. 
 
 -   Called only by returnToPreviousOwner
 
-_transferTokenTo
+#### _transferTokenTo
 
 -   Transfers the ERC721 token and updates the price
 
@@ -442,9 +440,9 @@ _transferTokenTo
 
 -   Buy, foreclose and _revertToPreviousOwner
 
-KEY VARIABLES
+## KEY VARIABLES
 
-Overview of key variables:
+### Overview of key variables:
 
 -   collectedPerMarket, collectedPerUser and totalCollected. 
 
@@ -472,13 +470,13 @@ Overview of key variables:
 
 -   The former tracks how long each user has held each token for, to determine each user's share of the winnings. The latter sums all the timeHelds for each token
 
-numberOfTokens
+#### numberOfTokens
 
 -   The number of teams/outcomes. It is a constant and should never change. Various functions use this variable in for loops [for (uint i=0; i<numberOfTokens; i++)]. These loops use less than- not less than or equal- therefore, when this function is set, do not use programmer counting. So if there are three teams, numberOfTokens should equal 3, not 2 as implied by programmer counting. The loop will run three times- on 0, 1, and 2. 
 
 -   100% of such loops should be written this way.
 
-deposits
+#### deposits
 
 -   Tracks the deposits for each user, per token. 
 
@@ -512,7 +510,7 @@ collectedPerMarket, collectedPerUser and totalCollected. 
 
 -   This forms the denominator when there is an invalid outcome and rent is returned to the user
 
-market
+#### market
 
 -   A variable of type 'Market', the augur contract for each market. 
 
@@ -612,7 +610,7 @@ numberOfOwners and ownerTracker
 
 -   If no, add the new user to ownerTracker and increment numberOfOwners, in that order.
 
-timeHeld and _timeOfThisCollection
+#### timeHeld and _timeOfThisCollection
 
 -   timeHeld should  track the how long each user has held each token for. Should NOT track how long the contract itself has owned it for, this should count as 'unowned'.
 
@@ -638,11 +636,11 @@ timeHeld and _timeOfThisCollection
 
 -   timeLastCollected is mentioned in its own section
 
-everOwned
+#### everOwned
 
 -   A mapping which keeps track of whether or not each user has ever owned a specific token. It is used only within the buy function to ensure that ownerTracker is updated only when there is a new owner (as opposed to a previous owner buying it back off someone else)
 
-Price
+#### Price
 
 -   Keeps track of the current price of each token. Array, size equal to numberOfTokens
 
@@ -650,7 +648,7 @@ Price
 
 -   This is only in changePrice function
 
-doneAndDusted
+#### doneAndDusted
 
 -   Bool, set to false at contract initiation. 
 
@@ -670,7 +668,7 @@ doneAndDusted
 
 -   This does mean that token ownership can never change after payouts have been made, the final owner will be stuck with it forever. Perhaps this can be altered in a future version.
 
-timeLastCollected
+#### timeLastCollected
 
 -   As it says on the tin, keeps track of the the timestamp of most recent rental payment for each token. This information is needed for two reasons
 
@@ -682,7 +680,7 @@ timeLastCollected
 
 -   It is set to the current timestamp whenever collectRent is called. It is the only part of this function that is run even if the token is currently unowned. This is correct- the new owner should only start paying from the time they began to own it.
 
-timeAcquired
+#### timeAcquired
 
 -   This should keep a record of the timestamp when each new user first purchases each token. It is required only for the front end, when it displays how long the token was purchased for. 
 
