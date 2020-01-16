@@ -232,7 +232,7 @@ contract Harber {
 
     ////////////// AUGUR FUNCTIONS //////////////
     /// @notice get test Dai to allow a user to rent tokens
-    /// @dev only a relevant function on kovan 
+    /// @dev only a relevant function on kovan, that is why safeMath is not required
     /// @dev instead of the user getting testDai to his account, it is generated here and and allocated to the user
     function getTestDai() public 
     {
@@ -241,6 +241,7 @@ contract Harber {
             testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
         }
         else {
+            // must be 100 for harbertests1 and 2 but the above for 3
             testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100;
         }
     }
@@ -270,6 +271,7 @@ contract Harber {
     }
 
     // * internal * 
+    /// @notice THIS FUNCTION HAS NOT BEEN TESTED ON AUGUR YET
     /// @notice checks if all X (x = number of tokens = number of teams) markets have resolved to either yes, no, or invalid
     /// @return true if yes, false if no
     function _haveAllAugurMarketsResolved() internal returns(bool) 
@@ -297,6 +299,7 @@ contract Harber {
     }
 
     // * internal * 
+    /// @notice THIS FUNCTION HAS NOT BEEN TESTED ON AUGUR YET
     /// @notice checks if all markets have resolved without conflicts or errors
     /// @return true if yes, false if no
     /// @dev this function will also set the winningOutcome variable
@@ -316,14 +319,14 @@ contract Harber {
             //return true if there is 1 winner and 0 invalid and [number of tokens - 1] losers. Anything else, return false. 
             for (uint i=0; i<numberOfTokens; i++) {
                 if (market[i].getWinningPayoutNumerator(0) > 0) {
-                    _invalidOutcomesCount = _invalidOutcomesCount + 1;
+                    _invalidOutcomesCount = _invalidOutcomesCount.add(1);
                 }
                 if (market[i].getWinningPayoutNumerator(1) > 0) {
                     winningOutcome = i; // <- the winning outcome (a global variable) is set here
-                    _winningOutcomesCount = _winningOutcomesCount + 1;
+                    _winningOutcomesCount = _winningOutcomesCount.add(1);
                 }
                 if (market[i].getWinningPayoutNumerator(2) > 0) {
-                    _losingOutcomesCount = _losingOutcomesCount + 1;
+                    _losingOutcomesCount = _losingOutcomesCount.add(1);
                 }
             }
 
@@ -555,7 +558,7 @@ contract Harber {
         else
         {   
             // update currentOwnerIndex and previousOwnerTracker
-            currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId] + 1; 
+            currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].add(1); 
             previousOwnerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
             previousOwnerTracker[_tokenId][currentOwnerIndex[_tokenId]].owner = msg.sender; 
 
@@ -563,7 +566,7 @@ contract Harber {
         if (everOwned[_tokenId][msg.sender] == false) {
             everOwned[_tokenId][msg.sender] = true;
             ownerTracker[_tokenId][numberOfOwners[_tokenId]] = msg.sender;
-            numberOfOwners[_tokenId] = numberOfOwners[_tokenId] + 1;
+            numberOfOwners[_tokenId] = numberOfOwners[_tokenId].add(1);
         }
 
             //update timeAcquired for the front end
@@ -627,7 +630,7 @@ contract Harber {
         while (_reverted == false)
         {
             assert(currentOwnerIndex[_tokenId] >=0);
-            currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId] - 1; // ownerTraker will now point to  previous owner
+            currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].sub(1); // ownerTraker will now point to  previous owner
             uint256 _index = currentOwnerIndex[_tokenId]; //just for readability
             address _previousOwner = previousOwnerTracker[_tokenId][_index].owner;
 
