@@ -75,16 +75,29 @@ contract Harber {
     uint256[numberOfTokens] public numberOfOwners; //used to cycle through ownerTracker during finalse & payout. Since you can't find the size of a mapping. If the value is 5, it means there are 5 owners. Ie it is not doing programming counting. 
   
     // winning outcome variables
-    bool doneAndDusted = false;
-    bool marketsResolved = false;
     uint256 winningOutcome = 42069; //start with invalid winning outcome
     uint256 public marketExpectedResolutionTime; //so the function to manually set the winner can only be called long after it should have resolved via Augur. Must be public so others can verify it is accurate. 
 
-    // DoS Resistance variables
-    uint256 finalStep = 0;
-    uint256 returnDepositsCyclesCompleted = 0;
-    bool returnDepositsComplete = false;
-
+    // Market resolution variables
+    // step1:
+    bool marketsResolved = false; // must be false for step1, true for step2
+    bool marketsResolvedWithoutErrors = false; // set in step 1. If true, normal payout. If false, return all funds
+    // step 2:
+    uint256 loopsRequired =0; // for returnDeposits and returnAllFunds functions
+    bool loopsRequiredComplete = false; // must be false for step2, true for step3
+    // step 3:
+    uint256 returnDepositsLoopsCompleted = 0;
+    bool returnDepositsComplete = false; // must be false for step3, true for step4
+    // step 4:
+    bool sellCompleteSetsComplete = false; // must be false for step4, true for step5
+    // step 5:
+    uint256 daiAvailableToDistribute = 0;
+    bool getDaiAvailableToDistributeComplete = false; // must be false for step5, true for step6
+    // step 6:
+    uint256 payoutWinningsLoopsCompleted = 0;
+    uint256 returnAllFundsLoopsCompleted = 0;
+    bool doneAndDusted = false; // must be false for step6
+    
     //  STRUCTS
     struct purchase {
         address owner;
@@ -132,6 +145,7 @@ contract Harber {
     event LogForeclosure(address indexed prevOwner);
     event LogRentCollection(uint256 indexed collectedPerMarket);
     event LogFinalised(uint256 indexed winningOutcome, uint256 indexed daiAvailableToDistribute);
+    event LogFundsReturned(uint256 indexed daiAvailableToDistribute);
     event LogReturnToPreviousOwner(uint256 indexed tokenId, address indexed previousOwner);
 
 
@@ -379,141 +393,51 @@ contract Harber {
 
     ////////////// MARKET RESOLUTION FUNCTIONS ////////////// 
 
-    /// @notice to end the compeition- determine the winning team and make the payout to winners
-    /// @dev this can be called by anyone, at any time. 
+    /// @notice the first of six functions which must be called, one after the other, to conclude the competition
+    /// @notice this function checks whether the Augur markets have resolved, and if yes, whether they resolved correct or not
+    /// @dev these six functions are done seperately because if they were done at once, the gas cost could easily cross the block limit
+    /// @dev can be called by anyone 
+    /// @dev can be called multiple times, but only once after markets have indeed resolved
     /// @dev the two arguments passed are for testing only
-    function complete(uint256 _hardCodedWinner, bool _hardCodedInvalid) notResolved() public  
+    function step1checkMarketsResolved(uint256 _hardCodedWinner, bool _hardCodedInvalid) public  
     {
-        //first check if all X markets have all resolved one way or the other
-        if (_haveAllAugurMarketsResolved()) {
-            //now check if they all resolved without errors. If yes, normal payout. If no, return all funds to all users. 
-            if (_haveAllAugurMarketsResolvedWithoutErrors(_hardCodedWinner, _hardCodedInvalid)) {
-                _finaliseAndPayout();
-            }
-            else {
-                _invalidMarketFinaliseAndPayout();
-            }
-        }
-    }
-
-    /// @notice sets the winner as invalid, which returns all funds to all users. Anyone can call this. 
-    /// @notice ... emergency function in case the augur markets never resolve for whatever reason or the complete function doesn't work
-    /// @notice can only be called 6 months after augur markets should have ended 
-    function emergencyExit() notResolved() public 
-    {
-        require (now > (marketExpectedResolutionTime + 15778800), "Must wait 6 months for Augur Oracle");
-        //do a final rent collection before the contract is locked down
-        collectRentAllTokens();
-        _invalidMarketFinaliseAndPayout(); //returns all rent to all users
-    }
-
-    // * internal * 
-    /// @notice payout winnings
-    function _finaliseAndPayout() internal
-    {
-        //do a final rent collection before the contract is locked down
-        collectRentAllTokens();
-        //return unused deposits
-        _returnDeposits();
-        // get the dai back from Augur
-        _sellCompleteSets();
-        // the Dai returned to distribute will not be known in advance due to fees, so I cannot hard code the figure to payout to winners. So I will just get the dai balance of the contract. 
-        uint256 _daiAvailableToDistribute = getContractsCashBalance();
-        //payout to me
-        uint256 _andrewsWellEarntMonies = _daiAvailableToDistribute.div(100);
-        _sendCash(andrewsAddress,_andrewsWellEarntMonies, 3);
-        _daiAvailableToDistribute = _daiAvailableToDistribute.sub(_andrewsWellEarntMonies);
-        
-        //do the payout
-        for (uint i=0; i < numberOfOwners[winningOutcome]; i++)
-        {   
-            address _winnersAddress = ownerTracker[winningOutcome][i];
-            uint256 _winnersTimeHeld = timeHeld[winningOutcome][_winnersAddress];
-            uint256 _numerator = _daiAvailableToDistribute.mul(_winnersTimeHeld);
-            uint256 _winningsToTransfer = _numerator.div(totalTimeHeld[winningOutcome]);
-            _sendCash(_winnersAddress,_winningsToTransfer, 1);
-        }
-        doneAndDusted = true;
-        emit LogFinalised(winningOutcome,_daiAvailableToDistribute);
-    }
-
-    // * internal * 
-    /// @notice return all funds to all users 
-    function _invalidMarketFinaliseAndPayout() internal
-    {
-        //do a final rent collection before the contract is locked down
-        collectRentAllTokens();
-        //return unused deposits
-        _returnDeposits();
-        // get the dai back from Augur
-        _sellCompleteSets();
-        // the Dai returned to distribute will not be known in advance due to fees, so I cannot hard code the figure to payout to winners. So I will just get the dai balance of the contract. 
-        //no payout to me, I don't deserve it if we get to this point
-        uint256 _daiAvailableToDistribute = getContractsCashBalance();
-
-        for (uint i=0; i < numberOfTokens; i++) 
-        {  
-            for (uint j=0; j < numberOfOwners[i]; j++)
-            {  
-                address _usersAddress = ownerTracker[i][j];
-                uint256 _numerator = _daiAvailableToDistribute.mul(collectedPerUser[_usersAddress]);
-                uint256 _fundsToReturn = _numerator.div(totalCollected);
-                collectedPerUser[_usersAddress] = 0; //same address could be across multiple tokens, don't want to pay the user more than once
-                if (_fundsToReturn > 0) {
-                    _sendCash(_usersAddress,_fundsToReturn,1);
-                }
-            }
-        }
-        doneAndDusted = true;
-        emit LogFinalised(winningOutcome,_daiAvailableToDistribute);
-    }
-
-    // * internal * 
-    /// @notice return all unused deposits upon resolution
-    function _returnDeposits() internal
-    {
-        for (uint i=0; i < numberOfTokens; i++) 
-        {  
-            for (uint j=0; j < numberOfOwners[i]; j++)
-            {  
-                address _thisUsersAddress = ownerTracker[i][j];
-                uint256 _depositToReturn = deposits[i][_thisUsersAddress];
-                deposits[i][_thisUsersAddress] = 0;
-
-                if (_depositToReturn > 0) {
-                    _sendCash(_thisUsersAddress,_depositToReturn, 0);
-                }
-            }
-        }
-    }
-
-    ////////////// DoS RESISTANT MARKET RESOLUTION FUNCTIONS ////////////// 
-
-    function checkMarketsResolved(uint256 _hardCodedWinner, bool _hardCodedInvalid) notResolved() public  
-    {
+        require(marketsResolved == false, "This function should only be completed once");
         // first check if all X markets have all resolved one way or the other
         if (_haveAllAugurMarketsResolved()) {
             // do a final rent collection before the contract is locked down
             collectRentAllTokens();
             // lock everything down
             marketsResolved = true;
-            //now check if they all resolved without errors. If yes, normal payout. If no, return all funds to all users. 
+             // now check if they all resolved without errors. 
             if (_haveAllAugurMarketsResolvedWithoutErrors(_hardCodedWinner, _hardCodedInvalid)) {
-                finalStep = 1;
-            }
-            else {
-                finalStep = 2;;
+                marketsResolvedWithoutErrors = true;
             }
         }
     }
 
-    function _DOSRreturnDeposits(uint256 _numberOfLoopsToDo) public
+    /// @notice Emergency function in case the augur markets never resolve for whatever reason
+    /// @notice can only be called 6 months after augur markets should have ended 
+    /// @dev marketsResolvedWithoutErrors will remain false so if this is called, all funds are returned
+    function step1BemergencyExit(uint256 _numberOfLoopsToDo) public 
+    {
+        require(marketsResolved == false, "This function should only be completed once");
+        require (now > (marketExpectedResolutionTime + 15778800), "Must wait 6 months for Augur Oracle");
+        //do a final rent collection before the contract is locked down
+        collectRentAllTokens();
+        // lock everything down
+        marketsResolved = true;
+    }
+
+    /// @notice the second of six functions which must be called, one after the other, to conclude the competition
+    /// @dev this function gets the required number of loops needed in the returnDeposits and returnAllFunds functions. We get it once only to save gas. 
+    /// @dev can be called by anyone, but only once
+    function step2getLoopsRequired() public
     {
         require(marketsResolved == true, "Markets must resolve first");
-        require(returnDepositsComplete == false, "Deposits already returned");
-        //get the total number of cycles required
-        //move this into its own function, called internally, and create anew bool for whether its set
-        //if it is just return the variable instead of doing the maths
+        // the below is not actually necessary for this function but nobody likes a combo breaker
+        require(loopsRequiredComplete == false, "This function should only be completed once"); 
+
+        //get the total number of loops required for returnDeposits or returnAllFunds
         uint256 _loopsRequired = 0;
         for (uint i=0; i < numberOfTokens; i++) 
         {  
@@ -523,15 +447,28 @@ contract Harber {
             }
         }
 
+        loopsRequired = _loopsRequired;
+        loopsRequiredComplete = true;
+    }
+
+    /// @notice the third of six functions which must be called, one after the other, to conclude the competition
+    /// @notice returns unused deposits to all users
+    /// @dev the _numberOfLoopsToDo argument allows this function to be completed over multiple txs, protecting against denial of service attacks
+    /// @dev trying to return all deposits to all users at once could easily hit the block limit
+    /// @dev can be called by anyone, but only once (all the way through)
+    function step3returnDeposits(uint256 _numberOfLoopsToDo) public
+    {
+        require(loopsRequiredComplete == true, "Must call getLoopsRequired first");
+        require(returnDepositsComplete == false, "Deposits already returned");
+
         uint256 _currentLoop = 0;
-        uint256 _startAtLoop = returnDepositsCyclesCompleted;
-        uint256 _endAtLoop = returnDepositsCyclesCompleted.add(_numberOfLoopsToDo);
+        uint256 _startAtLoop = returnDepositsLoopsCompleted;
+        uint256 _endAtLoop = returnDepositsLoopsCompleted.add(_numberOfLoopsToDo);
 
         for (uint i=0; i < numberOfTokens; i++) 
         {  
             for (uint j=0; j < numberOfOwners[i]; j++)
             { 
-                //you need to be sure AF about this if line, are the comparisons correct? 
                 if (_currentLoop >= _startAtLoop && _currentLoop < _endAtLoop) {
                     address _thisUsersAddress = ownerTracker[i][j];
                     uint256 _depositToReturn = deposits[i][_thisUsersAddress];
@@ -541,18 +478,134 @@ contract Harber {
                         _sendCash(_thisUsersAddress,_depositToReturn, 0);
                     }
 
-                    returnDepositsCyclesCompleted = returnDepositsCyclesCompleted.add(1);
+                    returnDepositsLoopsCompleted = returnDepositsLoopsCompleted.add(1);
                 }
                 _currentLoop = _currentLoop.add(1);
             }
         }
 
-        //be certain this is correct as well
-        if (_endAtLoop>=_loopsRequired) {
-            bool returnDepositsComplete = true;
+        if (_endAtLoop>=loopsRequired) {
+            returnDepositsComplete = true;
         }
     }
 
+    /// @notice the fourth of six functions which must be called, one after the other, to conclude the competition
+    /// @dev gets funds back from Augur
+    /// @dev can be called by anyone, but only once 
+    function step4sellCompleteSets() public
+    {
+        require(returnDepositsComplete == true, "Must return deposits first");
+        require(sellCompleteSetsComplete == false, "Cant sell complete sets twice");
+
+        _sellCompleteSets();
+
+        sellCompleteSetsComplete = true;
+    }
+
+    /// @notice the fifth of six functions which must be called, one after the other, to conclude the competition
+    /// @notice gets the available funds for distribution and pays me my 1%
+    /// @dev the figure cannot be hard coded in advance because of Augur fees 
+    /// @dev can be called by anyone, but only once
+    function step5getDaiAvailableToDistribute() public
+    {
+        require(sellCompleteSetsComplete == true, "Must sell complete sets first");
+        require(getDaiAvailableToDistributeComplete == false, "Cant call this twice");
+
+        daiAvailableToDistribute = getContractsCashBalance();
+
+        //only pay me if markets resolved correctly. If not I don't deserve shit
+        if (marketsResolvedWithoutErrors) {
+            uint256 _andrewsWellEarntMonies = daiAvailableToDistribute.div(100);
+            _sendCash(andrewsAddress,_andrewsWellEarntMonies, 3);
+            daiAvailableToDistribute = daiAvailableToDistribute.sub(_andrewsWellEarntMonies);
+        }
+
+        getDaiAvailableToDistributeComplete = true;
+    }
+
+    /// @notice the final of six functions which must be called, one after the other, to conclude the competition
+    /// @notice determines whether markets resolved correctly- if yes, payout winnings, if not, return all funds
+    /// @dev can be called by anyone, but only once (all the way through)
+    /// @dev _numberOfLoopsToDo and _hardCodedWinner are testing variables only
+    function step6complete(uint256 _numberOfLoopsToDo, uint256 _hardCodedWinner, bool _hardCodedInvalid) public
+    {
+        require(getDaiAvailableToDistributeComplete == true, "Must call getDaiAvailableToDistribute first");
+        require(doneAndDusted == false, "Winnings already paid or funds returned"); 
+
+        if (marketsResolvedWithoutErrors) {
+                _payoutWinnings(_numberOfLoopsToDo);
+            }
+            else {
+                _returnAllFunds(_numberOfLoopsToDo);
+            }
+    }
+
+    // * internal * 
+    /// @notice pays winnings to the winners
+    /// @dev must be internal and only called by step6complete
+    function _payoutWinnings(uint256 _numberOfLoopsToDo) internal
+    {
+        uint256 _currentLoop = 0;
+        uint256 _startAtLoop = payoutWinningsLoopsCompleted;
+        uint256 _endAtLoop = payoutWinningsLoopsCompleted.add(_numberOfLoopsToDo);
+
+        for (uint i=0; i < numberOfOwners[winningOutcome]; i++)
+        {   
+            if (_currentLoop >= _startAtLoop && _currentLoop < _endAtLoop) {   
+                address _winnersAddress = ownerTracker[winningOutcome][i];
+                uint256 _winnersTimeHeld = timeHeld[winningOutcome][_winnersAddress];
+                uint256 _numerator = daiAvailableToDistribute.mul(_winnersTimeHeld);
+                uint256 _winningsToTransfer = _numerator.div(totalTimeHeld[winningOutcome]);
+
+                if (_winningsToTransfer > 0) {
+                    _sendCash(_winnersAddress,_winningsToTransfer, 1);
+                }
+
+                payoutWinningsLoopsCompleted = payoutWinningsLoopsCompleted.add(1);
+            }
+            _currentLoop = _currentLoop.add(1);
+        }
+
+        if (_endAtLoop>=numberOfOwners[winningOutcome]) {
+            doneAndDusted = true;
+        }
+        emit LogFinalised(winningOutcome,daiAvailableToDistribute);
+    }
+
+    // * internal * 
+    /// @notice returns all funds to users in case of invalid outcome
+    /// @dev must be internal and only called by step6complete or emergencyExit
+    function _returnAllFunds(uint256 _numberOfLoopsToDo) internal
+    {
+        uint256 _currentLoop = 0;
+        uint256 _startAtLoop = returnAllFundsLoopsCompleted;
+        uint256 _endAtLoop = returnAllFundsLoopsCompleted.add(_numberOfLoopsToDo);
+
+        for (uint i=0; i < numberOfTokens; i++) 
+        {  
+            for (uint j=0; j < numberOfOwners[i]; j++)
+            { 
+                if (_currentLoop >= _startAtLoop && _currentLoop < _endAtLoop) {
+                    address _usersAddress = ownerTracker[i][j];
+                    uint256 _numerator = daiAvailableToDistribute.mul(collectedPerUser[_usersAddress]);
+                    uint256 _fundsToReturn = _numerator.div(totalCollected);
+                    collectedPerUser[_usersAddress] = 0; //same address could be across multiple tokens, don't want to pay the user more than once
+
+                    if (_fundsToReturn > 0) {
+                        _sendCash(_usersAddress,_fundsToReturn,1);
+                    }
+
+                    returnAllFundsLoopsCompleted = returnAllFundsLoopsCompleted.add(1);
+                }
+                _currentLoop = _currentLoop.add(1);
+            }
+        }
+
+        if (_endAtLoop>=loopsRequired) {
+            doneAndDusted = true;
+        }
+        emit LogFundsReturned(daiAvailableToDistribute);
+    }
 
     ////////////// ORDINARY COURSE OF BUSINESS FUNCTIONS //////////////
 
