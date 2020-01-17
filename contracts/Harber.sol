@@ -326,7 +326,7 @@ contract Harber {
     /// @dev the reason there are two functions (haveAllAugurMarketsResolved and haveAllAugurMarketsResolvedWithoutErrors) is simply to ensure that the contract does not interpret
     /// @dev ... a delay in one of the market's resolving as an 'error' and refunding everyone prematurely
     /// @dev the two arguments this function takes are for testing only. They are not used when usingAugur is set to true
-    function _haveAllAugurMarketsResolvedWithoutErrors(uint256 _hardCodedWinner, bool _hardCodedInvalid) internal returns(bool) 
+    function _haveAllAugurMarketsResolvedWithoutErrors(uint256 _hardCodedWinner, bool _hardCodedResolvedCorrectly) internal returns(bool) 
     {   
         if (usingAugur) {
             _hardCodedWinner = 69420; //just to make it obvious that this is not a relevant variable at this point
@@ -359,7 +359,7 @@ contract Harber {
         //if in testing mode, return the supplied arguments
         else {
             winningOutcome = _hardCodedWinner;
-            return _hardCodedInvalid;
+            return _hardCodedResolvedCorrectly;
             }
         }
 
@@ -393,13 +393,39 @@ contract Harber {
 
     ////////////// MARKET RESOLUTION FUNCTIONS ////////////// 
 
+    /// @notice calls all six completion functions
+    /// @dev all functions can be called individually to protect against denial of service attacks
+    /// @dev this function is therefore not required, it exists for convenince. 
+    function complete(uint256 _numberOfLoopsToDo,uint256 _hardCodedWinner, bool _hardCodedResolvedCorrectly) public  
+    {
+        step1checkMarketsResolved(_hardCodedWinner,_hardCodedResolvedCorrectly);
+        step2getLoopsRequired();
+        step3returnDeposits(_numberOfLoopsToDo);
+        step4sellCompleteSets();
+        step5getDaiAvailableToDistribute();
+        step6complete(_numberOfLoopsToDo);
+    }
+
+    /// @notice calls all six completion functions but returns all funds instead of paying to winners
+    /// @dev all functions can be called individually to protect against denial of service attacks
+    /// @dev this function is therefore not required, it exists for convenince.
+    function emergencyExit(uint256 _numberOfLoopsToDo) public  
+    {
+        step1BemergencyExit();
+        step2getLoopsRequired();
+        step3returnDeposits(_numberOfLoopsToDo);
+        step4sellCompleteSets();
+        step5getDaiAvailableToDistribute();
+        step6complete(_numberOfLoopsToDo);
+    }
+
     /// @notice the first of six functions which must be called, one after the other, to conclude the competition
     /// @notice this function checks whether the Augur markets have resolved, and if yes, whether they resolved correct or not
     /// @dev these six functions are done seperately because if they were done at once, the gas cost could easily cross the block limit
     /// @dev can be called by anyone 
     /// @dev can be called multiple times, but only once after markets have indeed resolved
     /// @dev the two arguments passed are for testing only
-    function step1checkMarketsResolved(uint256 _hardCodedWinner, bool _hardCodedInvalid) public  
+    function step1checkMarketsResolved(uint256 _hardCodedWinner, bool _hardCodedResolvedCorrectly) public  
     {
         require(marketsResolved == false, "This function should only be completed once");
         // first check if all X markets have all resolved one way or the other
@@ -409,7 +435,7 @@ contract Harber {
             // lock everything down
             marketsResolved = true;
              // now check if they all resolved without errors. 
-            if (_haveAllAugurMarketsResolvedWithoutErrors(_hardCodedWinner, _hardCodedInvalid)) {
+            if (_haveAllAugurMarketsResolvedWithoutErrors(_hardCodedWinner, _hardCodedResolvedCorrectly)) {
                 marketsResolvedWithoutErrors = true;
             }
         }
@@ -418,7 +444,7 @@ contract Harber {
     /// @notice Emergency function in case the augur markets never resolve for whatever reason
     /// @notice can only be called 6 months after augur markets should have ended 
     /// @dev marketsResolvedWithoutErrors will remain false so if this is called, all funds are returned
-    function step1BemergencyExit(uint256 _numberOfLoopsToDo) public 
+    function step1BemergencyExit() public 
     {
         require(marketsResolved == false, "This function should only be completed once");
         require (now > (marketExpectedResolutionTime + 15778800), "Must wait 6 months for Augur Oracle");
@@ -527,7 +553,7 @@ contract Harber {
     /// @notice determines whether markets resolved correctly- if yes, payout winnings, if not, return all funds
     /// @dev can be called by anyone, but only once (all the way through)
     /// @dev _numberOfLoopsToDo and _hardCodedWinner are testing variables only
-    function step6complete(uint256 _numberOfLoopsToDo, uint256 _hardCodedWinner, bool _hardCodedInvalid) public
+    function step6complete(uint256 _numberOfLoopsToDo) public
     {
         require(getDaiAvailableToDistributeComplete == true, "Must call getDaiAvailableToDistribute first");
         require(doneAndDusted == false, "Winnings already paid or funds returned"); 

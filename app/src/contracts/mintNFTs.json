@@ -719,12 +719,12 @@
     "1579246705873": {
       "events": {},
       "links": {},
-      "address": "0xfFe8d883e9bcF934DD61C5fc7084E610800C95B3",
-      "transactionHash": "0xc6562373ccc2376692c12b13e11806fab6b46277e92b6a3c8218d710f318e4ae"
+      "address": "0x7CfC3AaF53d0CdA962bC85b1213301319B7EC99F",
+      "transactionHash": "0x4da47c3f261d8179bc28356ba8637e3ed06545815bc7bf36d498852e37c81dab"
     }
   },
   "schemaVersion": "3.0.19",
-  "updatedAt": "2020-01-17T07:41:36.154Z",
+  "updatedAt": "2020-01-17T09:49:53.370Z",
   "networkType": "ethereum",
   "devdoc": {
     "methods": {}

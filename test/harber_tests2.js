@@ -17,7 +17,7 @@ const delay = duration => new Promise(resolve => setTimeout(resolve, duration));
 // (8) 0x06b58dDf8CF8E115D01137A296fb57e522Cc441f (100 ETH)
 // (9) 0x84CAbF995E9Af67B6d73232C2D5E9fBeBEF92224 (100 ETH)
 
-// These test assume that 100 dai (in wei-dai or whatever) is sent with the getTestDai function and numberoftokens = 5
+// These test assume that 100 dai (in wei-dai or whatever) is sent with the getTestDai function and numberoftokens >= 5
 
 contract('HarberTests2', (accounts) => {
 
@@ -70,7 +70,7 @@ beforeEach(async () => {
     harber = await Harber.new(andrewsAddress, token.address, augurCashAddress, augurMarketAddress,augurShareTokenAddress, augurMainAddress, marketedExpectedResolutionTime);
     mintNFTs = await MintNFTs.new(token.address, harber.address);
   });
-
+   
   // test the payout functions work fine, with different winners each time
   it('test complete- winner 1', async () => {
     /////// STANDARD //////
@@ -94,7 +94,14 @@ beforeEach(async () => {
     // total days: 22
     // time: 0: 7 days 1: 1: 7 days: 8 days
     ////////////////////////
-    await harber.complete(1, true);
+    var loops = 100;
+    await harber.step1checkMarketsResolved(1, true); 
+    await harber.step2getLoopsRequired(); 
+    await harber.step3returnDeposits(loops); 
+    await harber.step4sellCompleteSets(); 
+    await harber.step5getDaiAvailableToDistribute(); 
+    await harber.step6complete(loops);
+    ////////////////////////
     // total deposits = 75, check:
     var totalCollected = await harber.totalCollected.call();
     assert.equal(totalCollected,75);
@@ -130,7 +137,14 @@ beforeEach(async () => {
     // total days: 22
     // time: 0: 7 days 1: 1: 7 days: 8 days
     ////////////////////////
-    await harber.complete(2, true);
+    var loops = 100;
+    await harber.step1checkMarketsResolved(2, true); 
+    await harber.step2getLoopsRequired(); 
+    await harber.step3returnDeposits(loops); 
+    await harber.step4sellCompleteSets(); 
+    await harber.step5getDaiAvailableToDistribute(); 
+    await harber.step6complete(loops);
+    ////////////////////////
     // total deposits = 75, check:
     var totalCollected = await harber.totalCollected.call();
     assert.equal(totalCollected,75);
@@ -165,7 +179,14 @@ beforeEach(async () => {
     // total days: 22
     // time: 0: 7 days 1: 1: 7 days: 8 days
     ////////////////////////
-    await harber.complete(1, false);
+    var loops = 100;
+    await harber.step1checkMarketsResolved(1, false); 
+    await harber.step2getLoopsRequired(); 
+    await harber.step3returnDeposits(loops); 
+    await harber.step4sellCompleteSets(); 
+    await harber.step5getDaiAvailableToDistribute(); 
+    await harber.step6complete(loops);
+    ////////////////////////
     var winningsSentToUser = await harber.winningsSentToUser.call(user0);
     assert.equal(winningsSentToUser,17);
     var winningsSentToUser = await harber.winningsSentToUser.call(user1);
@@ -197,7 +218,14 @@ beforeEach(async () => {
     // total days: 22
     // time: 0: 7 days 1: 1: 7 days: 8 days
     ////////////////////////
-    await harber.emergencyExit();
+    var loops = 100;
+    await harber.step1BemergencyExit(); 
+    await harber.step2getLoopsRequired(); 
+    await harber.step3returnDeposits(loops); 
+    await harber.step4sellCompleteSets(); 
+    await harber.step5getDaiAvailableToDistribute(); 
+    await harber.step6complete(loops);
+    ////////////////////////
     var winningsSentToUser = await harber.winningsSentToUser.call(user0);
     assert.equal(winningsSentToUser,17);
     var winningsSentToUser = await harber.winningsSentToUser.call(user1);

@@ -65223,12 +65223,12 @@
         }
       },
       "links": {},
-      "address": "0x071FaEE0d32e420C88295802a65758a924B56262",
-      "transactionHash": "0xf231840204b792fd1ae241696635514fb8b2c170a49333c9b79055011d8d7d7d"
+      "address": "0x9929df6ecf561779067CC18f3EF9bc9aeaF642E2",
+      "transactionHash": "0x6694a1e003ae0bf48569e68791967f9d9641a686de179930aa9072911ddf4dc1"
     }
   },
   "schemaVersion": "3.0.19",
-  "updatedAt": "2020-01-17T07:41:36.128Z",
+  "updatedAt": "2020-01-17T09:49:53.354Z",
   "networkType": "ethereum",
   "devdoc": {
     "author": "Andrew Stanger",

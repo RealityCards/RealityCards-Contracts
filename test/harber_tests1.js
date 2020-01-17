@@ -577,7 +577,13 @@ contract('HarberTests1', (accounts) => {
     var deposit = await harber.deposits.call(3,user2);
     assert.equal(deposit, 3); //3
     //set the winner manually
-    await harber.complete(2, true); 
+    var loops = 100;
+    await harber.step1checkMarketsResolved(2, true); 
+    await harber.step2getLoopsRequired(); 
+    await harber.step3returnDeposits(loops); 
+    await harber.step4sellCompleteSets(); 
+    await harber.step5getDaiAvailableToDistribute(); 
+    await harber.step6complete(loops); 
     var totalCollected = await harber.totalCollected.call();
     //check that the correct deposit was returned
     var depositReturned = await harber.depositReturnedToUser.call(user0);
