@@ -405,32 +405,6 @@ contract Harber {
 
     ////////////// MARKET RESOLUTION FUNCTIONS ////////////// 
 
-    /// @notice calls all six completion functions
-    /// @dev all functions can be called individually to protect against denial of service attacks
-    /// @dev this function is therefore not required, it exists for convenince. 
-    function complete(uint256 _numberOfLoopsToDo,uint256 _hardCodedWinner, bool _hardCodedResolvedCorrectly) public  
-    {
-        step1checkMarketsResolved(_hardCodedWinner,_hardCodedResolvedCorrectly);
-        step2getLoopsRequired();
-        step3returnDeposits(_numberOfLoopsToDo);
-        step4sellCompleteSets();
-        step5getDaiAvailableToDistribute();
-        step6complete(_numberOfLoopsToDo);
-    }
-
-    /// @notice calls all six completion functions but returns all funds instead of paying to winners
-    /// @dev all functions can be called individually to protect against denial of service attacks
-    /// @dev this function is therefore not required, it exists for convenince.
-    function emergencyExit(uint256 _numberOfLoopsToDo) public  
-    {
-        step1BemergencyExit();
-        step2getLoopsRequired();
-        step3returnDeposits(_numberOfLoopsToDo);
-        step4sellCompleteSets();
-        step5getDaiAvailableToDistribute();
-        step6complete(_numberOfLoopsToDo);
-    }
-
     /// @notice the first of six functions which must be called, one after the other, to conclude the competition
     /// @notice this function checks whether the Augur markets have resolved, and if yes, whether they resolved correct or not
     /// @dev these six functions are done seperately because if they were done at once, the gas cost could easily cross the block limit
@@ -453,13 +427,24 @@ contract Harber {
         }
     }
 
-    /// @notice Emergency function in case the augur markets never resolve for whatever reason
+    /// @notice emergency function in case the augur markets never resolve for whatever reason
+    /// @notice returns all funds to all users
     /// @notice can only be called 6 months after augur markets should have ended 
-    /// @dev marketsResolvedWithoutErrors will remain false so if this is called, all funds are returned
     function step1BemergencyExit() public 
     {
         require(marketsResolved == false, "This function should only be completed once");
-        require (now > (marketExpectedResolutionTime + 15778800), "Must wait 6 months for Augur Oracle");
+        require(now > (marketExpectedResolutionTime + 15778800), "Must wait 6 months for Augur Oracle");
+        //do a final rent collection before the contract is locked down
+        collectRentAllTokens();
+        // lock everything down
+        marketsResolved = true;
+    }
+
+    /// @notice Same as above, except that only I can call it, and I can call it whenever
+    function step1CcircuitBraker() public 
+    {
+        require(marketsResolved == false, "This function should only be completed once");
+        require(msg.sender == andrewsAddress, "Only Andrew can call this");
         //do a final rent collection before the contract is locked down
         collectRentAllTokens();
         // lock everything down

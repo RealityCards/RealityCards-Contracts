@@ -1,0 +1,3 @@
+As of 18th January 2020, the contract is deployed to kovan, with this address 0xc97c2d096f07b2235a80c16537893395fb185c00d5ea5f37b46eb4715200dccc
+
+The site Harber.io connects to the contract at this address. This can be verified by making a transaction via the front end and seeing which address is interacted with.
