@@ -46,14 +46,15 @@ contract Harber {
     //Also equals number of markets on augur
     uint256 constant numberOfTokens = 20;
 
-    //TESTING VARIABLES
-    bool constant usingAugur = false; //if false, none of the augur contracts are interacted with. Required false for ganache testing. Must be true in production :)
-    uint256 a = 0;
-    uint256 b = 0;
-    uint256 c = 0;
-    // these are in lieu of interacting with ERC20 token contract, for tests
+    // TESTING VARIABLES
+    // if usingAugur false, none of the augur contracts are interacted with. Required false for ganache testing. // must be true in production :)
+    bool constant usingAugur = false; 
+    // below are in lieu of interacting with ERC20 token contract, for tests
     mapping (address => uint256) public winningsSentToUser;
     mapping (address => uint256) public depositReturnedToUser;
+    // harber_tests1 was written for 100 wei dai and annual rental prices
+    // other tests and production use 100 dai and daily rental prices
+    bool constant usingTests1 =false;
     
     // CONTRACT VARIABLES
     IERC721Full public team; // ERC721 NFT.
@@ -185,7 +186,12 @@ contract Harber {
             return price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(1 days);
         }
         else {
-            return price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(365 days);
+            if(usingTests1) {
+                return price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(365 days);
+            }
+            else {
+                return price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(1 days);
+            }
         }
     }
 
@@ -231,7 +237,9 @@ contract Harber {
             pps = price[_tokenId].div(24 hours);
         }
         else {
-            pps = price[_tokenId].div(365 days);
+            if(usingTests1) {
+                pps = price[_tokenId].div(365 days);
+            }
         }
         if (pps == 0)
         {
@@ -261,8 +269,12 @@ contract Harber {
             testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
         }
         else {
-            // must be 100 for harbertests1 and 2 but the above for 3
-            testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100;
+            if(usingTests1) {
+                testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100;
+            }
+            else {
+                testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
+            }
         }
     }
 
