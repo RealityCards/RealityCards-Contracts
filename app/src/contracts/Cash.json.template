@@ -63770,12 +63770,11 @@
     "42": {
       "links": {},
       "address": "0x0802563FB6CfA1f07363D3aBf529F7b3999096f6",
-      "transactionHash": "0xdcaf3c08f680ef10bfdc6cb823414e72ccb5e6da7e74663c6cef920cdb181d72",
-      "events": {}
+      "transactionHash": "0xdcaf3c08f680ef10bfdc6cb823414e72ccb5e6da7e74663c6cef920cdb181d72"
     }
   },
   "schemaVersion": "3.0.19",
-  "updatedAt": "2020-01-21T04:56:53.722Z",
+  "updatedAt": "2020-01-21T04:32:45.721Z",
   "networkType": "ethereum",
   "devdoc": {
     "methods": {},

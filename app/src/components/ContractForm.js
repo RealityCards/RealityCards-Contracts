@@ -46,9 +46,14 @@ class ContractForm extends Component {
     event.preventDefault();
     let args = this.props.sendArgs;
     const convertedInputs = this.inputs.map((input, index) => {
+      // console.log(this.state[input.name]);
       if (input.name == "_tokenId")
       {
         return urlId;
+      }
+      if (input.name == "_amount")
+      {
+        return 100000000000000000000;
       }
       else if (input.type === 'bytes32') {
         return this.utils.toHex(this.state[input.name])
@@ -100,7 +105,7 @@ class ContractForm extends Component {
             : input.name;
           // check if input type is struct and if so loop out struct fields as well
           
-          if (input.name != "_tokenId")
+          if (input.name != "_tokenId" && input.name != "_amount")
           {
             // console.log(input.name);
           return (
@@ -115,6 +120,7 @@ class ContractForm extends Component {
             />
           );
           }
+
         })}
         <Button
           variant="contained"

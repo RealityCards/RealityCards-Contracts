@@ -3,7 +3,7 @@ import React, { Component, Fragment } from "react";
 import PropTypes from "prop-types";
 import moment from "moment"
 
-import FaucetForm from "./ContractForm";
+import ContractForm from "./ContractForm";
 
 var url_string = window.location.href;
 var url = new URL(url_string);
@@ -29,8 +29,9 @@ class TestDaiFaucetSection extends Component {
     <div className="section" style={{margin: '0px'}}>
         {window.ethereum !== undefined ? (
           <Fragment>
-          {/* <FaucetForm buttonText="Get $100 test DAI" contract="Harber" method="getTestDai" /> */}
-          <FaucetForm buttonText="Faucet" contract="Cash" method="faucet"  labels={["Faucet request"]} />
+          {/* <ContractForm buttonText="Get $100 test DAI" contract="Harber" method="getTestDai" /> */}
+          {/* <ContractForm buttonText="Get $100 test DAI" contract="Cash" method="faucet"  labels={["Faucet request"]} /> */}
+          <ContractForm buttonText="Get $100 test DAI" contract="Cash" method="faucet" />
           </Fragment>
         ) : (
           <Fragment>

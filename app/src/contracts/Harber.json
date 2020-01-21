@@ -64765,8 +64765,8 @@
         }
       },
       "links": {},
-      "address": "0x8911d4Ab0DbDD0387ed0DB98131Cd10d7e40350f",
-      "transactionHash": "0x78c8c89257206a26e10cdc0eb6e954b14f0859aa45c44af35c658f3c529adefb"
+      "address": "0xE76D4289251cEF6a2BAAd1e664EA1c15BB3ea11e",
+      "transactionHash": "0x9a17d362c6f83aad4dcb3de391438b74632933007216ae67f41bf96117349ad1"
     },
     "1576478953050": {
       "events": {
@@ -66738,7 +66738,7 @@
     }
   },
   "schemaVersion": "3.0.19",
-  "updatedAt": "2020-01-20T11:17:50.560Z",
+  "updatedAt": "2020-01-21T04:56:53.668Z",
   "networkType": "ethereum",
   "devdoc": {
     "author": "Andrew Stanger",

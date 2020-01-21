@@ -1,4 +1,5 @@
 import Harber from "./contracts/Harber.json";
+import Cash from "./contracts/Cash.json";
 import ERC721Full from "./contracts/ERC721Full.json";
 
 // todo: read env var for fallback
@@ -14,7 +15,8 @@ const options = {
   },
   contracts: [
     Harber, 
-    ERC721Full
+    ERC721Full,
+    Cash
   ],
   syncAlways: true,
   polls: {

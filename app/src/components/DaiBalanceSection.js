@@ -3,11 +3,9 @@ import React, { Component, Fragment } from "react";
 import PropTypes from "prop-types";
 import moment from "moment";
 import ContractData from "./ContractData";
-import { getUSDValue } from "../Actions";
 
-var url_string = window.location.href;
-var url = new URL(url_string);
-var urlId = url.searchParams.get("id");
+var address = '0x34A971cA2fd6DA2Ce2969D716dF922F17aAA1dB0';
+
 
 class DaiBalanceSection extends Component {
     constructor(props, context) {
@@ -16,38 +14,26 @@ class DaiBalanceSection extends Component {
       this.contracts = context.drizzle.contracts;
       this.state = {
         USD: -1,
-        testDaiBalanceKey: context.drizzle.contracts.Harber.methods.getTestDaiBalance.cacheCall(),
-        // artworkPriceKey: context.drizzle.contracts.Harber.methods.price.cacheCall(urlId),
+        daiBalanceKey: context.drizzle.contracts.Cash.methods.balanceOf.cacheCall(address),
+        daiBalance: -1,
         patron: null,
-        // patronKey: context.drizzle.contracts.ERC721Full.methods.ownerOf.cacheCall(urlId),
-        // timeAcquiredKey: context.drizzle.contracts.Harber.methods.timeAcquired.cacheCall(urlId),
-        timeHeldKey: null,
-        currentTimeHeld: 0,
-        currentTimeHeldHumanized: ""
       };
     }
-    
 
-    async updateTestDaiBalance(props) {
-      const testDaiBalance = this.getTestDaiBalance(props);
-      // update timeHeldKey IF owner updated
-      const testDaiBalanceKey = this.contracts.Harber.methods.getTestDaiBalance.cacheCall();
-      this.setState({
-        // currentTimeHeld: 0,
-        // timeHeldKey,
-        // patron
-      });
+    async updateDaiBalance(props) {
+      var daiBalance = this.getBalanceOf(props);
+      this.setState({daiBalance});
     }
 
-    getTestDaiBalance(props) {
-      return props.contracts['Harber']['timeAcqtestDaiBalancesuired'][this.state.testDaiBalanceKey].value;
+    getBalanceOf(props) {
+      return props.contracts['Cash']['balanceOf'][this.state.daiBalanceKey].value;
     }
 
     async componentWillUpdate(nextProps, nextState) {
-      if (this.state.testDaiBalanceKey in this.props.contracts['Harber']['testDaiBalances']
-      && this.state.testDaiBalanceKey in nextProps.contracts['Harber']['testDaiBalances']) {
-        if(this.getTestDaiBalance(this.props) !== this.getTestDaiBalance(nextProps) || this.state.patron === null) {
-          this.updateTestDaiBalance(nextProps);
+      if (this.state.daiBalanceKey in this.props.contracts['Cash']['balanceOf']
+      && this.state.daiBalanceKey in nextProps.contracts['Cash']['balanceOf']) {
+        if(this.getBalanceOf(this.props) !== this.getBalanceOf(nextProps) || this.state.daiBalance === null) {
+          this.updateDaiBalance(nextProps);
         }
       }
     }
@@ -56,7 +42,8 @@ class DaiBalanceSection extends Component {
 
       return (
         <Fragment>
-        <h2>Current TestDai Balance: $<ContractData contract="Harber" method="getTestDaiBalance" toEth />   </h2>
+        <h2>Your Dai Balance: $<ContractData contract="Cash" method="balanceOf" methodArgs={[address]} toEth />   </h2>
+        {/* <h2>Your Dai Balance: {this.state.daiBalance}   </h2> */}
         </Fragment>
       )
     }
