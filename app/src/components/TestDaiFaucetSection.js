@@ -4,6 +4,7 @@ import PropTypes from "prop-types";
 import moment from "moment"
 
 import ContractForm from "./ContractForm";
+import ApproveForm from "./ApproveForm";
 
 var url_string = window.location.href;
 var url = new URL(url_string);
@@ -32,6 +33,7 @@ class TestDaiFaucetSection extends Component {
           {/* <ContractForm buttonText="Get $100 test DAI" contract="Harber" method="getTestDai" /> */}
           {/* <ContractForm buttonText="Get $100 test DAI" contract="Cash" method="faucet"  labels={["Faucet request"]} /> */}
           <ContractForm buttonText="Get $100 test DAI" contract="Cash" method="faucet" />
+          <ApproveForm buttonText="Approve" contract="Cash" method="approve" />
           </Fragment>
         ) : (
           <Fragment>

@@ -38,9 +38,11 @@ const augurMainAddress = '0x62214e5c919332AC17c5e5127383B84378Ef9C1d';
 const marketedExpectedResolutionTime = 0;
 
 module.exports = function(deployer, network) {
-
-  async function getCashContractInstance() {
+  if(network === "rinkeby" || network === "mainnet") {
+    async function getCashContractInstance() {
     cash = await Cash.at(augurCashAddress);
+    }
+    getCashContractInstance();
   }
 
   //deploy the token contract (which Harber needs the address of)
@@ -51,5 +53,5 @@ module.exports = function(deployer, network) {
     //deploy mintNFTs, which does what it says on the tin
     return deployer.deploy(mintNFTs, Token.address, deployedHarber.address );
   });
-  getCashContractInstance();
+  
 };

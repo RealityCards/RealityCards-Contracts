@@ -8,6 +8,8 @@ var address;
 
 class DaiBalanceSection extends Component {
     constructor(props, context) {
+      // console.log(context.drizzle.web3);
+      // console.log(props.contracts.Harber);
       address = context.drizzle.web3.givenProvider.selectedAddress;
       super();
       this.utils = context.drizzle.web3.utils;

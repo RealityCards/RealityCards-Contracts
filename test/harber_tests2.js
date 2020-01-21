@@ -69,9 +69,6 @@ beforeEach(async () => {
     harber = await Harber.new(andrewsAddress, token.address, augurCashAddress, augurMarketAddress,augurShareTokenAddress, augurMainAddress, marketedExpectedResolutionTime);
     mintNFTs = await MintNFTs.new(token.address, harber.address);
     /////// SETUP //////
-    await harber.getTestDai({ from: user0 });
-    await harber.getTestDai({ from: user1 });
-    await harber.getTestDai({ from: user2 });
     //rent losing teams
     await harber.newRental(web3.utils.toWei('1', 'ether'),2,web3.utils.toWei('10', 'ether'),{ from: user0 }); //used deposit of 10
     await harber.newRental(web3.utils.toWei('2', 'ether'),3,web3.utils.toWei('20', 'ether'),{ from: user1 }); //used deposit of 20

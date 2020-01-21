@@ -34,11 +34,8 @@ contract('HarberTests1', (accounts) => {
   user5 = accounts[5];
   user6 = accounts[6];
   user7 = accounts[7];
-  user8 = accounts[89];
+  user8 = accounts[8];
   var newOwnerPurchaseCount1 = 0;
-
-  // var andrewsAddress = '0x34A971cA2fd6DA2Ce2969D716dF922F17aAA1dB0';
-  var andrewsAddress = accounts[9];
   
   beforeEach(async () => {
     token = await Token.deployed();
@@ -60,13 +57,6 @@ contract('HarberTests1', (accounts) => {
     assert.equal(name, 'Harber.io');
   });
 
-  //  is testDai sucesfully allocated?
-  it('getTestDai and check balance', async () => {
-    await harber.getTestDai({ from: user0 });
-    var testDaiBalances = await harber.testDaiBalances.call(user0);
-    assert.equal(testDaiBalances, 100);
-  });
-
   // check fundamentals first
   it('user 1 rent Token first time and check: various', async () => {
     user = user0;
@@ -74,8 +64,6 @@ contract('HarberTests1', (accounts) => {
     newOwnerPurchaseCount1++;
     var price = await harber.price.call(4);
     assert.equal(price, 100);
-    var testDaiBalances = await harber.testDaiBalances.call(user);
-    assert.equal(testDaiBalances, 90);
     var deposit = await harber.deposits.call(4,user);
     assert.equal(deposit, 10);
     var owner = await token.ownerOf.call(4);
@@ -92,8 +80,6 @@ contract('HarberTests1', (accounts) => {
     await harber.newRental(200,4,10,{ from: user });
     var price = await harber.price.call(4);
     assert.equal(price, 200);
-    var testDaiBalances = await harber.testDaiBalances.call(user);
-    assert.equal(testDaiBalances, 80);
     var deposit = await harber.deposits.call(4,user);
     assert.equal(deposit, 20); //<------------
     var owner = await token.ownerOf.call(4);
@@ -109,13 +95,11 @@ contract('HarberTests1', (accounts) => {
     user = user1;
     await shouldFail.reverting.withMessage(harber.newRental(200,4,0,{ from: user}), "Price must be higher than current price");
     await shouldFail.reverting.withMessage(harber.newRental(300,4,0,{ from: user}), "Must deposit something");
-    await shouldFail.reverting.withMessage(harber.newRental(300,4,10,{ from: user}), "Not enough DAI");
   });
 
   // same as before, but with a different token, does it still work?
   it('user 2 rent Token first time and check: various', async () => { 
     user = user1;
-    await harber.getTestDai({ from: user });
     await harber.newRental(300,4,10,{ from: user  });
     newOwnerPurchaseCount1++;
     //  check user0 deposit is still there
@@ -124,8 +108,6 @@ contract('HarberTests1', (accounts) => {
     //
     var price = await harber.price.call(4);
     assert.equal(price, 300);
-    var testDaiBalances = await harber.testDaiBalances.call(user);
-    assert.equal(testDaiBalances, 90);
     var deposit = await harber.deposits.call(4,user);
     assert.equal(deposit, 10);
     var owner = await token.ownerOf.call(4);
@@ -142,8 +124,6 @@ contract('HarberTests1', (accounts) => {
     await harber.newRental(400,4,10,{ from: user });
     var price = await harber.price.call(4);
     assert.equal(price, 400);
-    var testDaiBalances = await harber.testDaiBalances.call(user);
-    assert.equal(testDaiBalances, 80);
     var deposit = await harber.deposits.call(4,user);
     assert.equal(deposit, 20);
     var owner = await token.ownerOf.call(4);
@@ -161,8 +141,6 @@ contract('HarberTests1', (accounts) => {
     newOwnerPurchaseCount1++;
     var price = await harber.price.call(4);
     assert.equal(price, 1000);
-    var testDaiBalances = await harber.testDaiBalances.call(user);
-    assert.equal(testDaiBalances, 60);
     var deposit = await harber.deposits.call(4,user);
     assert.equal(deposit, 40);
     var owner = await token.ownerOf.call(4);
@@ -187,8 +165,6 @@ contract('HarberTests1', (accounts) => {
     await harber.changePrice(2000,4,{ from: user });
     var price = await harber.price.call(4);
     assert.equal(price, 2000);
-    var testDaiBalances = await harber.testDaiBalances.call(user);
-    assert.equal(testDaiBalances, 60);
     var deposit = await harber.deposits.call(4,user);
     assert.equal(deposit, 40);
     var owner = await token.ownerOf.call(4);
@@ -202,7 +178,6 @@ contract('HarberTests1', (accounts) => {
   // is rentOwed function correct? Perhaps the most important function!!
   it('calculateRentOwed function', async () => {
     user = user2;
-    await harber.getTestDai({ from: user });
     await harber.newRental(3650,4,30,{ from: user  });
     newOwnerPurchaseCount1++;
     var fundsOwedActual = await harber.rentOwed.call(4);
@@ -231,7 +206,6 @@ contract('HarberTests1', (accounts) => {
     assert.equal(userDepositAbleToWithdraw,15);
     assert.equal(depositAbleToWithdraw,15);
     //switch user, rent, increment time. user2 deposit and userDepositAbleToWithdraw should not change but depositAbleToWithdraw should 
-    await harber.getTestDai({ from: user3 });
     await harber.newRental(7300,4,100,{ from: user3  });
     newOwnerPurchaseCount1++;
     var price = await harber.price.call(4);
@@ -257,7 +231,6 @@ contract('HarberTests1', (accounts) => {
   // check this front end function
   it('rentalExpiryTime function', async () => {
     user = user4;
-    await harber.getTestDai({ from: user });
     await harber.newRental(31536000,4,100,{ from: user  }); //price = number of seconds in a year so that deposit = number of seconds we expect it to last for. 
     await harber._collectRent(4);
     newOwnerPurchaseCount1++;
@@ -278,7 +251,6 @@ contract('HarberTests1', (accounts) => {
     user = user5;
     // get total collected from all the above tets and just check that it is added to properly
     var totalCollectedSoFar = await harber.totalCollected.call(); 
-    await harber.getTestDai({ from: user });
     await harber.newRental(365,1,20,{ from: user  });
     // var timeAcquired = await harber.timeAcquired.call(1); 
     // var currentTime = await time.latest();
@@ -340,9 +312,7 @@ contract('HarberTests1', (accounts) => {
   // test collectRent again, this time it should return to previous owner, does it?
   it('_collectRent function with revertPreviousOwner via calling _collect directly', async () => {
     await harber.newRental(365,1,5,{ from: user5  }); //10 deposit = 10 days
-    await harber.getTestDai({ from: user6 });
     await harber.newRental(730,1,20,{ from: user6  }); //20 deposit = 10 days
-    await harber.getTestDai({ from: user7 });
     await harber.newRental(1095,1,30,{ from: user7  }); //30 deposit = 10 days
     //check deposits
     var deposit = await harber.deposits.call(1,user5); 
@@ -408,11 +378,6 @@ contract('HarberTests1', (accounts) => {
 
   // these are four crucial variables that are relied on for other functions. are they what they should be?
   it('test collected, held variables and collectedAndSentToAugur and totalCollected', async () => {
-    // below only needed if i commented the above to save time but no harm in keeping it here
-    await harber.getTestDai({ from: user0 });
-    await harber.getTestDai({ from: user1 });
-    await harber.getTestDai({ from: user2 });
-    await harber.getTestDai({ from: user3 });
     // first get totalCollected from all of the above and just check it increments properly from now on. And check collectedAndSentToAugur is zero
     var totalCollectedAtStart = await harber.totalCollected.call();
     var collectedAndSentToAugur = await harber.collectedPerMarket.call(2);
@@ -444,10 +409,8 @@ contract('HarberTests1', (accounts) => {
     await time.increase(time.duration.weeks(2));
     await harber._collectRent(2); //1: 14 days, 2: 0 days
     await time.increase(time.duration.weeks(1)); 
-    await harber.getTestDai({ from: user3 }); 
     await harber.newRental(1095,2,42,{ from: user3  }); //1: 21`days, 3: 14 days total
     await time.increase(time.duration.weeks(1)); //21 here
-    await harber.getTestDai({ from: user4 });
     await harber.newRental(1460,2,12,{ from: user4  }); //1: 21 days, 3: 
     await time.increase(time.duration.weeks(1));
     await harber._collectRent(2); //revert to user 3

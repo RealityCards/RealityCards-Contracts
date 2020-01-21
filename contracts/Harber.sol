@@ -30,7 +30,7 @@ interface Cash
 
 //TODO: have not yet tested the new check winner functions
 //TODO: replace completesets with OICash
-//TODO: change rent and depositDai and withdrawDai funcitons to actually transfer Dai form the user's address
+//TODO: change front end to only approve the same amount that is being sent
 
 /// @title Harber
 /// @author Andrew Stanger
@@ -108,7 +108,6 @@ contract Harber {
     mapping (uint256 => mapping (address => uint256) ) public timeHeld; //this is the key variable that tracks the total amount of time each user has held it for. It is key because this is used to determine the proportion of the pot to be sent to each winning address
     mapping (uint256 => uint256) public totalTimeHeld; //sums all the timeHelds for each token. Not required, but saves on gas when paying out
     mapping (uint256 => mapping (address => uint256) ) public deposits; //keeps track of all the deposits for each token, for each owner. Unused deposits are not returned automatically when there is a new buyer. They can be withdrawn manually however. Unused deposits are returned automatically upon resolution of the market
-    mapping (address => uint256) public testDaiBalances;
     mapping (uint256 => mapping (address => bool)) public everOwned; //this is required to prevent the ownerTracker variable being incremented unless a completely new user buys the token. 
     mapping (address => uint256) public collectedPerUser; //keeps track of all the rent paid by each user. So that it can be returned in case of an invalid market outcome. Only required in this instance. 
 
@@ -248,33 +247,7 @@ contract Harber {
         }
     }
 
-    /// @dev for front end and testing only
-    /// @return test dai balance
-    function getTestDaiBalance() public view returns (uint256) 
-    {
-        return testDaiBalances[msg.sender];
-    }
-
-    ////////////// AUGUR FUNCTIONS //////////////
-    /// @notice get test Dai to allow a user to rent tokens
-    /// @dev only a relevant function on kovan, that is why safeMath is not required
-    /// @dev instead of the user getting testDai to his account, it is generated here and and allocated to the user
-    function getTestDai() public 
-    {
-        if (usingAugur == true) {
-            cash.faucet(100000000000000000000);
-            testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
-        }
-        else {
-            if(usingTests1) {
-                testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100;
-            }
-            else {
-                testDaiBalances[msg.sender]= testDaiBalances[msg.sender] + 100000000000000000000;
-            }
-        }
-    }
-
+    ////////////// AUGUR + CASH FUNCTIONS //////////////
     // * internal * 
     /// @notice buy complete sets from Augur
     function _buyCompleteSets(uint256 _tokenId, uint256 _rentOwed) internal 
@@ -373,7 +346,7 @@ contract Harber {
         }
 
     // * internal * 
-    /// @notice common function for all DAI transfers
+    /// @notice common function for all outgoing DAI transfers
     /// @param _reason param is for testing only
     function _sendCash(address _to, uint256 _amount, uint256 _reason) internal {  
         if (usingAugur) {
@@ -387,6 +360,14 @@ contract Harber {
             }
             
         }
+    }
+
+    // * internal * 
+    /// @notice common function for all incoming DAI transfers
+    function _receiveCash(address _from, uint256 _amount) internal {  
+        if (usingAugur) {
+            cash.transferFrom(_from, address(this), _amount);
+        } 
     }
 
     // * internal * 
@@ -689,10 +670,8 @@ contract Harber {
         require(_newPrice > price[_tokenId], "Price must be higher than current price");
         require(_deposit > 0, "Must deposit something");
 
-        // the below is a testing require only, a new one will be required to ensure the 
-        // ...user is actually paying the deposit they say they are
-        require(testDaiBalances[msg.sender] >= _deposit, "Not enough DAI");
-        testDaiBalances[msg.sender] = testDaiBalances[msg.sender].sub(_deposit);
+        // get the Dai from the user and add to their deposits balance
+        _receiveCash(msg.sender, _deposit);
         deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].add(_deposit);
      
         address _currentOwner = team.ownerOf(_tokenId);
@@ -729,7 +708,7 @@ contract Harber {
     /// @notice add new dai deposit to an existing rental
     // *** this will also need to be adjusted to work with the dai contract properly
     function depositDai(uint256 _dai, uint256 _tokenId) public collectRent(_tokenId) notResolved() {
-        testDaiBalances[msg.sender] = testDaiBalances[msg.sender].sub(_dai);
+        _receiveCash(msg.sender, _dai);
         deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].add(_dai);
     }
 
@@ -762,8 +741,6 @@ contract Harber {
         require(deposits[_tokenId][msg.sender] >= _dai, 'Withdrawing too much');
 
         deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].sub(_dai);
-        testDaiBalances[msg.sender] = testDaiBalances[msg.sender].add(_dai);
-        //return the dai
         _sendCash(msg.sender, _dai, 0);
 
         if(deposits[_tokenId][msg.sender] == 0) {
