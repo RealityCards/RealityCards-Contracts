@@ -1,6 +1,8 @@
 pragma solidity ^0.5.0;
 
-contract Cash 
+import './Cash.sol';
+
+contract CashMockup is Cash
 {
 
 mapping (address => uint256) balances;
@@ -38,5 +40,4 @@ function transferFrom(address _from, address _to, uint256 _amount) external retu
     balances[_to] = balances[_to] + _amount;
     return true;
 }
-
 }

@@ -31,6 +31,7 @@ interface Cash
 //TODO: have not yet tested the new check winner functions
 //TODO: replace completesets with OICash
 //TODO: change front end to only approve the same amount that is being sent
+//TODO: remove andrewsAddress from Token contract deployment
 
 /// @title Harber
 /// @author Andrew Stanger
@@ -345,35 +346,40 @@ contract Harber {
             }
         }
 
+    ////////////// DAI CONTRACT FUNCTIONS ////////////// 
+
     // * internal * 
     /// @notice common function for all outgoing DAI transfers
     /// @param _reason param is for testing only
-    function _sendCash(address _to, uint256 _amount, uint256 _reason) internal {  
-        if (usingAugur) {
-            cash.transfer(_to,_amount);
-        } else {
-            // using different variables if the cash is sent for different reasons. Allows for more granular testing. 
-            if (_reason == 0) { //0 = returned unused deposits at market resolution, or calling withdraw deposit, or calling exit
-                depositReturnedToUser[_to] = depositReturnedToUser[_to].add(_amount);
-            } else { //1 = winnings paid out or invalid outcome
-                winningsSentToUser[_to] = winningsSentToUser[_to].add(_amount);
-            }
+    function _sendCash(address _to, uint256 _amount, uint256 _reason) internal { 
+        cash.transfer(_to,_amount); 
+        // if (usingAugur) {
+        //     cash.transfer(_to,_amount);
+        // } else {
+        //     // using different variables if the cash is sent for different reasons. Allows for more granular testing. 
+        //     if (_reason == 0) { //0 = returned unused deposits at market resolution, or calling withdraw deposit, or calling exit
+        //         depositReturnedToUser[_to] = depositReturnedToUser[_to].add(_amount);
+        //     } else { //1 = winnings paid out or invalid outcome
+        //         winningsSentToUser[_to] = winningsSentToUser[_to].add(_amount);
+        //     }
             
-        }
+        // }
     }
 
     // * internal * 
     /// @notice common function for all incoming DAI transfers
     function _receiveCash(address _from, uint256 _amount) internal {  
-        if (usingAugur) {
-            cash.transferFrom(_from, address(this), _amount);
-        } 
+        cash.transferFrom(_from, address(this), _amount);
+        // if (usingAugur) {
+        //     cash.transferFrom(_from, address(this), _amount);
+        // } 
     }
 
     // * internal * 
     /// @return DAI balance of the contract
     /// @dev if usingAugur = false, totalCollected is returned instead
-    function getContractsCashBalance() internal view returns (uint256) {
+    /// @dev this is used to know how much exists to payout to winners
+    function _getContractsCashBalance() internal view returns (uint256) {
         if (usingAugur) {
             return cash.balanceOf(address(this));
         } else {
@@ -512,7 +518,7 @@ contract Harber {
         require(sellCompleteSetsComplete == true, "Must sell complete sets first");
         require(getDaiAvailableToDistributeComplete == false, "Cant call this twice");
 
-        daiAvailableToDistribute = getContractsCashBalance();
+        daiAvailableToDistribute = _getContractsCashBalance();
 
         //only pay me if markets resolved correctly. If not I don't deserve shit
         if (marketsResolvedWithoutErrors) {
