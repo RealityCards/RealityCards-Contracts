@@ -31,9 +31,6 @@ interface Cash
 //TODO: have not yet tested the new check winner functions
 //TODO: replace completesets with OICash
 //TODO: change rent and depositDai and withdrawDai funcitons to actually transfer Dai form the user's address
-//TODO: replace all + 1s with safemath
-//TODO: do some research into gas costs if some of these variables are thousands of entries long and consider attempts to prevent this
-//TODO: write new tests so that you can get rid of the 100 and the 365 days nonsense
 
 /// @title Harber
 /// @author Andrew Stanger
@@ -43,7 +40,7 @@ contract Harber {
     using SafeMath for uint256;
 
     // NUMBER OF TOKENS
-    //Also equals number of markets on augur
+    // also equals number of markets on augur
     uint256 constant numberOfTokens = 20;
 
     // TESTING VARIABLES
@@ -84,7 +81,7 @@ contract Harber {
     bool marketsResolved = false; // must be false for step1, true for step2
     bool marketsResolvedWithoutErrors = false; // set in step 1. If true, normal payout. If false, return all funds
     // step 2:
-    uint256 loopsRequired =0; // for returnDeposits and returnAllFunds functions
+    uint256 loopsRequired = 0; // for returnDeposits and returnAllFunds functions
     bool loopsRequiredComplete = false; // must be false for step2, true for step3
     // step 3:
     uint256 returnDepositsLoopsCompleted = 0;

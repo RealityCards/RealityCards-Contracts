@@ -8190,8 +8190,8 @@
         }
       },
       "links": {},
-      "address": "0x310bB24BF0Ec6ae8E1138c2Bc157BD9E53525843",
-      "transactionHash": "0xf798887a9f2aa3517aa5cecc405593edd43e28fa9d599206d1fb862b82b97cf4"
+      "address": "0x5b553BD2BE45663de232Dd727D20A7c0570217eB",
+      "transactionHash": "0x7c2ab04cdfdfe193182de842c321ca0b35a0c0301e97cc565f2ec2a85a912192"
     },
     "1576134734968": {
       "events": {
@@ -10232,10 +10232,95 @@
       "links": {},
       "address": "0x42B701acbBc31541FD3b9383272e91289A854f99",
       "transactionHash": "0x637f27e642e52cdce84d6f316e37b445cd705fb9f65411e0cf10264df47c10f3"
+    },
+    "1579317575125": {
+      "events": {
+        "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "approved",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "tokenId",
+              "type": "uint256"
+            }
+          ],
+          "name": "Approval",
+          "type": "event",
+          "signature": "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"
+        },
+        "0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "operator",
+              "type": "address"
+            },
+            {
+              "indexed": false,
+              "internalType": "bool",
+              "name": "approved",
+              "type": "bool"
+            }
+          ],
+          "name": "ApprovalForAll",
+          "type": "event",
+          "signature": "0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31"
+        },
+        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "from",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "to",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "tokenId",
+              "type": "uint256"
+            }
+          ],
+          "name": "Transfer",
+          "type": "event",
+          "signature": "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+        }
+      },
+      "links": {},
+      "address": "0x6686B726e8D08D2A6BB8c03E6F89aEAB38cbd063",
+      "transactionHash": "0x72ad38bdf4123f426369b28618a525183390cbba291e4d917558cc601f1afd1e"
     }
   },
   "schemaVersion": "3.0.19",
-  "updatedAt": "2020-01-17T09:49:53.380Z",
+  "updatedAt": "2020-01-20T11:17:50.624Z",
   "networkType": "ethereum",
   "devdoc": {
     "details": "see https://github.com/ethereum/EIPs/blob/master/EIPS/eip-721.md",

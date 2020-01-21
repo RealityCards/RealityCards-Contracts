@@ -2,7 +2,7 @@
 var Harber = artifacts.require("./Harber.sol");
 var mintNFTs = artifacts.require("./mintNFTs.sol");
 var Token = artifacts.require("./ERC721Full.sol");
-// var localCash = artifacts.require("./Cash.sol");
+var Cash = artifacts.require("./Cash.sol");
 
 // production:
 // const andrewsAddress = '0x34a971ca2fd6da2ce2969d716df922f17aaa1db0'; 
@@ -39,6 +39,10 @@ const marketedExpectedResolutionTime = 0;
 
 module.exports = function(deployer, network) {
 
+  async function getCashContractInstance() {
+    cash = await Cash.at(augurCashAddress);
+  }
+
   //deploy the token contract (which Harber needs the address of)
   deployer.deploy(Token, "Harber.io", "HARB", andrewsAddress).then((deployedToken) => {
     //deploy Harber (which mint NFTs needs the address of)
@@ -47,5 +51,5 @@ module.exports = function(deployer, network) {
     //deploy mintNFTs, which does what it says on the tin
     return deployer.deploy(mintNFTs, Token.address, deployedHarber.address );
   });
-
+  getCashContractInstance();
 };

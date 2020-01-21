@@ -29,7 +29,8 @@ class TestDaiFaucetSection extends Component {
     <div className="section" style={{margin: '0px'}}>
         {window.ethereum !== undefined ? (
           <Fragment>
-          <FaucetForm buttonText="Get $100 test DAI" contract="Harber" method="getTestDai" />
+          {/* <FaucetForm buttonText="Get $100 test DAI" contract="Harber" method="getTestDai" /> */}
+          <FaucetForm buttonText="Faucet" contract="Cash" method="faucet"  labels={["Faucet request"]} />
           </Fragment>
         ) : (
           <Fragment>
