@@ -4,11 +4,11 @@ import PropTypes from "prop-types";
 import moment from "moment";
 import ContractData from "./ContractData";
 
-var address = '0x34A971cA2fd6DA2Ce2969D716dF922F17aAA1dB0';
-
+var address;
 
 class DaiBalanceSection extends Component {
     constructor(props, context) {
+      address = context.drizzle.web3.givenProvider.selectedAddress;
       super();
       this.utils = context.drizzle.web3.utils;
       this.contracts = context.drizzle.contracts;
