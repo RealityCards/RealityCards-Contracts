@@ -19,7 +19,7 @@ function balanceOf(address _owner) public view returns (uint256)
 
 function faucet(uint256 _amount) external
 {
-    balances[msg.sender] = _amount;
+    balances[msg.sender] = balances[msg.sender] + _amount;
 }
 
 function transfer(address _to, uint256 _amount) external returns (bool)

@@ -61538,8 +61538,131 @@
         }
       },
       "links": {},
-      "address": "0xc092396cE34Ac149f751EAB12E2D1379313C4D98",
-      "transactionHash": "0xe5e85209474ab7ee294c00b028a8fb85a0b7831e236083160b14d9d1d30f8f26"
+      "address": "0x876Fe83d8aFD518ABd864AD8e88565a1b9542912",
+      "transactionHash": "0x807a8d58c0d114c743d28951e89d9dcc3244735648dd4a1281fa40142cbd5876"
+    },
+    "69420": {
+      "events": {
+        "0x4f79409f494e81c38036d80aa8a6507c2cb08d90bfb2fead5519447646b3497e": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "price",
+              "type": "uint256"
+            }
+          ],
+          "name": "LogBuy",
+          "type": "event",
+          "signature": "0x4f79409f494e81c38036d80aa8a6507c2cb08d90bfb2fead5519447646b3497e"
+        },
+        "0xaec4660fb36dce4768bdbe4e8e3291cf849dc4af665b9e32e041c2b2c2a457ae": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "winningOutcome",
+              "type": "uint256"
+            },
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "daiAvailableToDistribute",
+              "type": "uint256"
+            }
+          ],
+          "name": "LogFinalised",
+          "type": "event",
+          "signature": "0xaec4660fb36dce4768bdbe4e8e3291cf849dc4af665b9e32e041c2b2c2a457ae"
+        },
+        "0x6d6bbefef62d4cb6d0e3a4dd306a71d3632319b1e03659513df86b247dd657fe": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "prevOwner",
+              "type": "address"
+            }
+          ],
+          "name": "LogForeclosure",
+          "type": "event",
+          "signature": "0x6d6bbefef62d4cb6d0e3a4dd306a71d3632319b1e03659513df86b247dd657fe"
+        },
+        "0x27c045f6b0fb193165b1e937514e394a92ea7d7d64be1f7f98ee0a199cc29786": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "daiAvailableToDistribute",
+              "type": "uint256"
+            }
+          ],
+          "name": "LogFundsReturned",
+          "type": "event",
+          "signature": "0x27c045f6b0fb193165b1e937514e394a92ea7d7d64be1f7f98ee0a199cc29786"
+        },
+        "0x854d6511a28585103049c7770618450f7c9aeb580c69db2913d63869663f4751": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "newPrice",
+              "type": "uint256"
+            }
+          ],
+          "name": "LogPriceChange",
+          "type": "event",
+          "signature": "0x854d6511a28585103049c7770618450f7c9aeb580c69db2913d63869663f4751"
+        },
+        "0x6ab0172416aeaedce744fba85809be02ae7a61ff89203ff71a33291dc9f310f4": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "collectedPerMarket",
+              "type": "uint256"
+            }
+          ],
+          "name": "LogRentCollection",
+          "type": "event",
+          "signature": "0x6ab0172416aeaedce744fba85809be02ae7a61ff89203ff71a33291dc9f310f4"
+        },
+        "0xdcd7d049706cf89eb40b5726d483d3aa2001e43b729f0f411cdda43c2fe59f52": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "tokenId",
+              "type": "uint256"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "previousOwner",
+              "type": "address"
+            }
+          ],
+          "name": "LogReturnToPreviousOwner",
+          "type": "event",
+          "signature": "0xdcd7d049706cf89eb40b5726d483d3aa2001e43b729f0f411cdda43c2fe59f52"
+        }
+      },
+      "links": {},
+      "address": "0xfFe8d883e9bcF934DD61C5fc7084E610800C95B3",
+      "transactionHash": "0x4e7ff7ffc47fdde4fc2f4291f25a8e0ef44fa0f875fcebdafcc52d7666e97137"
     },
     "1576478953050": {
       "events": {
@@ -63752,12 +63875,258 @@
         }
       },
       "links": {},
-      "address": "0x23C0c4DdeE9364Ce5eCaF37494b546492F5fEF3c",
-      "transactionHash": "0xc9ea083b3680d9356746337efc9301b25a982d66ffa540e640ac6788dbd2057e"
+      "address": "0x0606988F30A76ae7e273Bc7B436D4b8b1043BBfA",
+      "transactionHash": "0x6ff26dd8a223093c1bd000bb687e463e1be986a9ddd0b4d64977e15bb39611bc"
+    },
+    "1579674696710": {
+      "events": {
+        "0x4f79409f494e81c38036d80aa8a6507c2cb08d90bfb2fead5519447646b3497e": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "price",
+              "type": "uint256"
+            }
+          ],
+          "name": "LogBuy",
+          "type": "event",
+          "signature": "0x4f79409f494e81c38036d80aa8a6507c2cb08d90bfb2fead5519447646b3497e"
+        },
+        "0xaec4660fb36dce4768bdbe4e8e3291cf849dc4af665b9e32e041c2b2c2a457ae": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "winningOutcome",
+              "type": "uint256"
+            },
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "daiAvailableToDistribute",
+              "type": "uint256"
+            }
+          ],
+          "name": "LogFinalised",
+          "type": "event",
+          "signature": "0xaec4660fb36dce4768bdbe4e8e3291cf849dc4af665b9e32e041c2b2c2a457ae"
+        },
+        "0x6d6bbefef62d4cb6d0e3a4dd306a71d3632319b1e03659513df86b247dd657fe": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "prevOwner",
+              "type": "address"
+            }
+          ],
+          "name": "LogForeclosure",
+          "type": "event",
+          "signature": "0x6d6bbefef62d4cb6d0e3a4dd306a71d3632319b1e03659513df86b247dd657fe"
+        },
+        "0x27c045f6b0fb193165b1e937514e394a92ea7d7d64be1f7f98ee0a199cc29786": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "daiAvailableToDistribute",
+              "type": "uint256"
+            }
+          ],
+          "name": "LogFundsReturned",
+          "type": "event",
+          "signature": "0x27c045f6b0fb193165b1e937514e394a92ea7d7d64be1f7f98ee0a199cc29786"
+        },
+        "0x854d6511a28585103049c7770618450f7c9aeb580c69db2913d63869663f4751": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "newPrice",
+              "type": "uint256"
+            }
+          ],
+          "name": "LogPriceChange",
+          "type": "event",
+          "signature": "0x854d6511a28585103049c7770618450f7c9aeb580c69db2913d63869663f4751"
+        },
+        "0x6ab0172416aeaedce744fba85809be02ae7a61ff89203ff71a33291dc9f310f4": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "collectedPerMarket",
+              "type": "uint256"
+            }
+          ],
+          "name": "LogRentCollection",
+          "type": "event",
+          "signature": "0x6ab0172416aeaedce744fba85809be02ae7a61ff89203ff71a33291dc9f310f4"
+        },
+        "0xdcd7d049706cf89eb40b5726d483d3aa2001e43b729f0f411cdda43c2fe59f52": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "tokenId",
+              "type": "uint256"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "previousOwner",
+              "type": "address"
+            }
+          ],
+          "name": "LogReturnToPreviousOwner",
+          "type": "event",
+          "signature": "0xdcd7d049706cf89eb40b5726d483d3aa2001e43b729f0f411cdda43c2fe59f52"
+        }
+      },
+      "links": {},
+      "address": "0xeba20a6C775aef2DbD20D92221eC7AB1cd2901dB",
+      "transactionHash": "0xe061d5439e64e31ed857d134aa73a9aa9cef60766c8c741d10f70c511503966c"
+    },
+    "1579676125775": {
+      "events": {
+        "0x4f79409f494e81c38036d80aa8a6507c2cb08d90bfb2fead5519447646b3497e": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "owner",
+              "type": "address"
+            },
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "price",
+              "type": "uint256"
+            }
+          ],
+          "name": "LogBuy",
+          "type": "event",
+          "signature": "0x4f79409f494e81c38036d80aa8a6507c2cb08d90bfb2fead5519447646b3497e"
+        },
+        "0xaec4660fb36dce4768bdbe4e8e3291cf849dc4af665b9e32e041c2b2c2a457ae": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "winningOutcome",
+              "type": "uint256"
+            },
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "daiAvailableToDistribute",
+              "type": "uint256"
+            }
+          ],
+          "name": "LogFinalised",
+          "type": "event",
+          "signature": "0xaec4660fb36dce4768bdbe4e8e3291cf849dc4af665b9e32e041c2b2c2a457ae"
+        },
+        "0x6d6bbefef62d4cb6d0e3a4dd306a71d3632319b1e03659513df86b247dd657fe": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "prevOwner",
+              "type": "address"
+            }
+          ],
+          "name": "LogForeclosure",
+          "type": "event",
+          "signature": "0x6d6bbefef62d4cb6d0e3a4dd306a71d3632319b1e03659513df86b247dd657fe"
+        },
+        "0x27c045f6b0fb193165b1e937514e394a92ea7d7d64be1f7f98ee0a199cc29786": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "daiAvailableToDistribute",
+              "type": "uint256"
+            }
+          ],
+          "name": "LogFundsReturned",
+          "type": "event",
+          "signature": "0x27c045f6b0fb193165b1e937514e394a92ea7d7d64be1f7f98ee0a199cc29786"
+        },
+        "0x854d6511a28585103049c7770618450f7c9aeb580c69db2913d63869663f4751": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "newPrice",
+              "type": "uint256"
+            }
+          ],
+          "name": "LogPriceChange",
+          "type": "event",
+          "signature": "0x854d6511a28585103049c7770618450f7c9aeb580c69db2913d63869663f4751"
+        },
+        "0x6ab0172416aeaedce744fba85809be02ae7a61ff89203ff71a33291dc9f310f4": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "collectedPerMarket",
+              "type": "uint256"
+            }
+          ],
+          "name": "LogRentCollection",
+          "type": "event",
+          "signature": "0x6ab0172416aeaedce744fba85809be02ae7a61ff89203ff71a33291dc9f310f4"
+        },
+        "0xdcd7d049706cf89eb40b5726d483d3aa2001e43b729f0f411cdda43c2fe59f52": {
+          "anonymous": false,
+          "inputs": [
+            {
+              "indexed": true,
+              "internalType": "uint256",
+              "name": "tokenId",
+              "type": "uint256"
+            },
+            {
+              "indexed": true,
+              "internalType": "address",
+              "name": "previousOwner",
+              "type": "address"
+            }
+          ],
+          "name": "LogReturnToPreviousOwner",
+          "type": "event",
+          "signature": "0xdcd7d049706cf89eb40b5726d483d3aa2001e43b729f0f411cdda43c2fe59f52"
+        }
+      },
+      "links": {},
+      "address": "0xfFe8d883e9bcF934DD61C5fc7084E610800C95B3",
+      "transactionHash": "0x4e7ff7ffc47fdde4fc2f4291f25a8e0ef44fa0f875fcebdafcc52d7666e97137"
     }
   },
   "schemaVersion": "3.0.19",
-  "updatedAt": "2020-01-21T13:35:51.896Z",
+  "updatedAt": "2020-01-22T07:07:12.661Z",
   "networkType": "ethereum",
   "devdoc": {
     "author": "Andrew Stanger",
