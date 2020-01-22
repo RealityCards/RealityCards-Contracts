@@ -2,7 +2,6 @@
 var Harber = artifacts.require("./Harber.sol");
 var mintNFTs = artifacts.require("./mintNFTs.sol");
 var Token = artifacts.require("./ERC721Full.sol");
-// var Cash = artifacts.require("./Cash.sol");
 var CashMockup = artifacts.require("./CashMockup.sol");
 
 // production:
@@ -46,11 +45,11 @@ module.exports = function (deployer, network) {
   if (network === "kovan" || network === "develsopment") {
 
     //cash contract already exists, so just point to its address
-    async function getCashContractInstance() {
-      cash = await Cash.at(augurCashAddressKovan);
-    }
+    // async function getCashContractInstance() {
+    //   cash = await CashMockup.at(augurCashAddressKovan);
+    // }
 
-    getCashContractInstance();
+    // getCashContractInstance();
 
     //deploy the token contract (which Harber needs the address of)
     deployer.deploy(Token, "Harber.io", "HARB", andrewsAddress).then((deployedToken) => {

@@ -1377,14 +1377,14 @@
     "42": {
       "events": {},
       "links": {},
-      "address": "0x47c355862889330093d77855fbA36dBD6beaEe6B",
-      "transactionHash": "0xa7fbf2b4a276cd719dc7bdc08464688cc049edcdf8a4f3c101355ad742b53dbf"
+      "address": "0x6e723984Ae349F6aAee6f628A47bFC258215DB9F",
+      "transactionHash": "0xb7490f312ced1d8b00f3a962b1f0d6724e0f249127bf2c7d32715acba356e0fe"
     },
     "69420": {
       "events": {},
       "links": {},
-      "address": "0x87cd01E6D223FbA6800b38CF47b6d1A80f3D9dF3",
-      "transactionHash": "0xef5a1c87c3b5470858e0563bf287d195d23f2b697a9d5040aa39b83c75443de3"
+      "address": "0x9E70ce676A4D72DFa40D07692f44Aa644c9E6D5d",
+      "transactionHash": "0x137cf7fc092506b64f67577ba5fdfd4ad099411aac8e04fe0fafce3397223b5a"
     },
     "1576134734968": {
       "events": {},
@@ -1574,7 +1574,7 @@
     }
   },
   "schemaVersion": "3.0.19",
-  "updatedAt": "2020-01-22T07:07:12.708Z",
+  "updatedAt": "2020-01-22T08:08:52.646Z",
   "networkType": "ethereum",
   "devdoc": {
     "methods": {}

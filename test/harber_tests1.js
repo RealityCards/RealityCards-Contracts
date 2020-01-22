@@ -2,7 +2,7 @@ const { BN, shouldFail, ether, expectEvent, balance, time } = require('openzeppe
 
 const Token = artifacts.require('./ERC721Full.sol');
 const Harber = artifacts.require('./Harber.sol');
-// const Cash = artifacts.require('./Cash.sol');
+var CashMockup = artifacts.require("./CashMockup.sol");
 
 const delay = duration => new Promise(resolve => setTimeout(resolve, duration));
 const augurCashAddress = '0xa836c1D6a35A443FD6F8d5d4A9cf5b1664bF76D6';
@@ -34,12 +34,14 @@ contract('HarberTests1', (accounts) => {
   user5 = accounts[5];
   user6 = accounts[6];
   user7 = accounts[7];
-  user8 = accounts[8];
+  userx = accounts[9];
   var newOwnerPurchaseCount1 = 0;
+  var burnAddress = '0x000000000000000000000000000000000000dead';
   
   beforeEach(async () => {
     token = await Token.deployed();
     harber = await Harber.deployed();
+    cashMockup = await CashMockup.deployed();
   });
 
   // check that the contract initially owns the token
@@ -60,6 +62,8 @@ contract('HarberTests1', (accounts) => {
   // check fundamentals first
   it('user 1 rent Token first time and check: various', async () => {
     user = user0;
+    await cashMockup.faucet(100,{ from: user });
+    await cashMockup.approve(harber.address, 100,{ from: user });
     await harber.newRental(100,4,10,{ from: user });
     newOwnerPurchaseCount1++;
     var price = await harber.price.call(4);
@@ -100,6 +104,8 @@ contract('HarberTests1', (accounts) => {
   // same as before, but with a different token, does it still work?
   it('user 2 rent Token first time and check: various', async () => { 
     user = user1;
+    await cashMockup.faucet(100,{ from: user });
+    await cashMockup.approve(harber.address, 100,{ from: user });
     await harber.newRental(300,4,10,{ from: user  });
     newOwnerPurchaseCount1++;
     //  check user0 deposit is still there
@@ -178,6 +184,8 @@ contract('HarberTests1', (accounts) => {
   // is rentOwed function correct? Perhaps the most important function!!
   it('calculateRentOwed function', async () => {
     user = user2;
+    await cashMockup.faucet(100,{ from: user });
+    await cashMockup.approve(harber.address, 100,{ from: user });
     await harber.newRental(3650,4,30,{ from: user  });
     newOwnerPurchaseCount1++;
     var fundsOwedActual = await harber.rentOwed.call(4);
@@ -206,6 +214,8 @@ contract('HarberTests1', (accounts) => {
     assert.equal(userDepositAbleToWithdraw,15);
     assert.equal(depositAbleToWithdraw,15);
     //switch user, rent, increment time. user2 deposit and userDepositAbleToWithdraw should not change but depositAbleToWithdraw should 
+    await cashMockup.faucet(100,{ from: user3 });
+    await cashMockup.approve(harber.address, 100,{ from: user3 });
     await harber.newRental(7300,4,100,{ from: user3  });
     newOwnerPurchaseCount1++;
     var price = await harber.price.call(4);
@@ -231,6 +241,8 @@ contract('HarberTests1', (accounts) => {
   // check this front end function
   it('rentalExpiryTime function', async () => {
     user = user4;
+    await cashMockup.faucet(100,{ from: user });
+    await cashMockup.approve(harber.address, 100,{ from: user });
     await harber.newRental(31536000,4,100,{ from: user  }); //price = number of seconds in a year so that deposit = number of seconds we expect it to last for. 
     await harber._collectRent(4);
     newOwnerPurchaseCount1++;
@@ -251,6 +263,8 @@ contract('HarberTests1', (accounts) => {
     user = user5;
     // get total collected from all the above tets and just check that it is added to properly
     var totalCollectedSoFar = await harber.totalCollected.call(); 
+    await cashMockup.faucet(100,{ from: user });
+    await cashMockup.approve(harber.address, 100,{ from: user });
     await harber.newRental(365,1,20,{ from: user  });
     // var timeAcquired = await harber.timeAcquired.call(1); 
     // var currentTime = await time.latest();
@@ -312,7 +326,11 @@ contract('HarberTests1', (accounts) => {
   // test collectRent again, this time it should return to previous owner, does it?
   it('_collectRent function with revertPreviousOwner via calling _collect directly', async () => {
     await harber.newRental(365,1,5,{ from: user5  }); //10 deposit = 10 days
+    await cashMockup.faucet(100,{ from: user6 });
+    await cashMockup.approve(harber.address, 100,{ from: user6 });
     await harber.newRental(730,1,20,{ from: user6  }); //20 deposit = 10 days
+    await cashMockup.faucet(100,{ from: user7 });
+    await cashMockup.approve(harber.address, 100,{ from: user7 });
     await harber.newRental(1095,1,30,{ from: user7  }); //30 deposit = 10 days
     //check deposits
     var deposit = await harber.deposits.call(1,user5); 
@@ -409,8 +427,12 @@ contract('HarberTests1', (accounts) => {
     await time.increase(time.duration.weeks(2));
     await harber._collectRent(2); //1: 14 days, 2: 0 days
     await time.increase(time.duration.weeks(1)); 
+    await cashMockup.faucet(100,{ from: user3 });
+    await cashMockup.approve(harber.address, 100,{ from: user3 });
     await harber.newRental(1095,2,42,{ from: user3  }); //1: 21`days, 3: 14 days total
     await time.increase(time.duration.weeks(1)); //21 here
+    await cashMockup.faucet(100,{ from: user4 });
+    await cashMockup.approve(harber.address, 100,{ from: user4 });
     await harber.newRental(1460,2,12,{ from: user4  }); //1: 21 days, 3: 
     await time.increase(time.duration.weeks(1));
     await harber._collectRent(2); //revert to user 3
@@ -518,8 +540,24 @@ contract('HarberTests1', (accounts) => {
   //back to token 2
   // test the final bit- paying out to users
   it('test finaliseAndPayout, returnDeposits', async () => {
+    // first set all user balances to zero so we can check how much is sent easily
+    await cashMockup.resetBalance(user0);
+    await cashMockup.resetBalance(user1);
+    await cashMockup.resetBalance(user2);
+    await cashMockup.resetBalance(user3);
+    await cashMockup.resetBalance(user4);
+    await cashMockup.resetBalance(user5);
+    await cashMockup.resetBalance(user6);
+    await cashMockup.resetBalance(user7);
+    //get our bearings
+    var totalCollected = await harber.totalCollected.call();
+    difference = (totalCollected - 273);
+    assert.isBelow(difference,2);
+    var contractBalance = await cashMockup.balanceOf.call(harber.address);
+    difference = (contractBalance - 557);
+    assert.isBelow(difference,2);
+    //leaving 284 in deposits as below:
     //below are the only combinations of users/tokens with a positive deposit
-    //these are all zero if everything is commented out above token 2 stuff. 
     var deposit = await harber.deposits.call(4,user0);
     assert.equal(deposit, 40); //40
     var deposit = await harber.deposits.call(4,user1);
@@ -539,51 +577,66 @@ contract('HarberTests1', (accounts) => {
     assert.equal(deposit, 13); //13
     var deposit = await harber.deposits.call(3,user2);
     assert.equal(deposit, 3); //3
+    // sum of the above = 284
     //set the winner manually
     var loops = 100;
     await harber.step1checkMarketsResolved(2, true); 
     await harber.step2getLoopsRequired(); 
     await harber.step3returnDeposits(loops); 
+    // after deposits are returned, balance of contract should equal totalCollected
+    var totalCollected = await harber.totalCollected.call();
+    var contractBalance = await cashMockup.balanceOf.call(harber.address);
+    assert.equal(toString(contractBalance), toString(totalCollected));
+    //check deposits returned
+    var depositReturned = await cashMockup.balanceOf.call(user0);
+    assert.equal(depositReturned, 40);
+    var depositReturned = await cashMockup.balanceOf.call(user1);
+    assert.equal(depositReturned, 20);
+    var depositReturned = await cashMockup.balanceOf.call(user2);
+    assert.equal(depositReturned, 18);
+    var depositReturned = await cashMockup.balanceOf.call(user3);
+    assert.equal(depositReturned, 70);
+    var depositReturned = await cashMockup.balanceOf.call(user4);
+    assert.equal(depositReturned, 0); //0 not 100 from above, due to the _collect within setWinner that had not been called on token4 for ages
+    var depositReturned = await cashMockup.balanceOf.call(user5);
+    assert.equal(depositReturned, 11);
+    var depositReturned = await cashMockup.balanceOf.call(user6);
+    assert.equal(depositReturned, 12);
+    var depositReturned = await cashMockup.balanceOf.call(user7);
+    assert.equal(depositReturned, 0); //0 not 13 from above, due to the _collect within setWinner that had not been called on token3 for ages
+    //clear all balances again for testing purposes
+    await cashMockup.resetBalance(user0);
+    await cashMockup.resetBalance(user1);
+    await cashMockup.resetBalance(user2);
+    await cashMockup.resetBalance(user3);
+    await cashMockup.resetBalance(user4);
+    await cashMockup.resetBalance(user5);
+    await cashMockup.resetBalance(user6);
+    await cashMockup.resetBalance(user7);
+    //finish the payout
     await harber.step4sellCompleteSets(); 
     await harber.step5getDaiAvailableToDistribute(); 
     await harber.step6complete(loops); 
     var totalCollected = await harber.totalCollected.call();
-    //check that the correct deposit was returned
-    var depositReturned = await harber.depositReturnedToUser.call(user0);
-    assert.equal(depositReturned,68); //40 + 14 from withdrawDeposit + 14 from exit
-    var depositReturned = await harber.depositReturnedToUser.call(user1);
-    assert.equal(depositReturned,42); //20 + 10 from withdraw + 12 from exit()
-    var depositReturned = await harber.depositReturnedToUser.call(user2);
-    assert.equal(depositReturned,38); // 15 + 3 from above, + 10 from withdraw + 10 exit
-    var depositReturned = await harber.depositReturnedToUser.call(user3);
-    assert.equal(depositReturned,70);
-    var depositReturned = await harber.depositReturnedToUser.call(user4);
-    assert.equal(depositReturned,0);  //0 not 100 from above, due to the _collect within setWinner that had not been called on token4 for ages
-    var depositReturned = await harber.depositReturnedToUser.call(user5);
-    assert.equal(depositReturned,11);
-    var depositReturned = await harber.depositReturnedToUser.call(user6);
-    assert.equal(depositReturned,12);
-    var depositReturned = await harber.depositReturnedToUser.call(user7);
-    assert.equal(depositReturned,0); //0 not 13 from above, due to the _collect within setWinner that had not been called on token3 for ages
     // total time held for winning token is 64 days users:
     // 0 14 days
     // 1 26 days
     // 2 7 days
     // 3 14 days
     // 4 3 days
-    var user0Winnings = await harber.winningsSentToUser.call(user0);
+    var user0Winnings = await cashMockup.balanceOf.call(user0);
     var difference = Math.abs(user0Winnings - ((totalCollected.toNumber()*14)/64));
     assert.isBelow(difference,2); 
-    var user1Winnings = await harber.winningsSentToUser.call(user1);
+    var user1Winnings = await cashMockup.balanceOf.call(user1);
     var difference = Math.abs(user1Winnings - ((totalCollected.toNumber()*26)/64));
     assert.isBelow(difference,2);
-    var user2Winnings = await harber.winningsSentToUser.call(user2);
+    var user2Winnings = await cashMockup.balanceOf.call(user2);
     var difference = Math.abs(user2Winnings - ((totalCollected.toNumber()*7)/64));
     assert.isBelow(difference,2); 
-    var user3Winnings = await harber.winningsSentToUser.call(user3);
+    var user3Winnings = await cashMockup.balanceOf.call(user3);
     var difference = Math.abs(user3Winnings - ((totalCollected.toNumber()*14)/64));
     assert.isBelow(difference,2);
-    var user4Winnings = await harber.winningsSentToUser.call(user4);
+    var user4Winnings = await cashMockup.balanceOf.call(user4);
     var difference = Math.abs(user4Winnings - ((totalCollected.toNumber()*3)/64));
     assert.isBelow(difference,2);
   });

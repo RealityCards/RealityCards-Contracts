@@ -5,11 +5,6 @@ import Input from '@material-ui/core/Input';
 import InputAdornment from '@material-ui/core/InputAdornment';
 import Button from '@material-ui/core/Button';
 
-// todo: show ux when transacted
-var url_string = window.location.href;
-var url = new URL(url_string);
-var urlId = url.searchParams.get("id");
-
 class ContractForm extends Component {
   constructor(props, context) {
     super(props);
@@ -53,7 +48,8 @@ class ContractForm extends Component {
       }
       if (input.name == "_amount")
       {
-        return (2^256 - 1);
+        var stfu = toString(new this.utils.BN(100));
+        return 100000000000000000000;
       }
       else if (input.type === 'bytes32') {
         return this.utils.toHex(this.state[input.name])

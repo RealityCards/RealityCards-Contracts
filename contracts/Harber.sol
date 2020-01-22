@@ -31,6 +31,8 @@ interface Cash
 //TODO: have not yet tested the new check winner functions
 //TODO: replace completesets with OICash
 //TODO: change front end to only approve the same amount that is being sent
+// ^ will also need to figure out how to pass this number in the correct format because decimal
+// ^ does not seem to work for more than 100 dai, it needs big number
 //TODO: remove andrewsAddress from Token contract deployment
 
 /// @title Harber
@@ -52,7 +54,7 @@ contract Harber {
     mapping (address => uint256) public depositReturnedToUser;
     // harber_tests1 was written for 100 wei dai and annual rental prices
     // other tests and production use 100 dai and daily rental prices
-    bool constant usingTests1 =false;
+    bool constant usingTests1 =true;
     
     // CONTRACT VARIABLES
     IERC721Full public team; // ERC721 NFT.
@@ -132,10 +134,8 @@ contract Harber {
         completeSets = ShareToken(_addressOfCompleteSetsContract);
         marketExpectedResolutionTime = _marketExpectedResolutionTime;
         
-        //approve augur contract to transfer this contract's dai
-        if (usingAugur == true) {
-            cash.approve(_addressOfMainAugurContract,(2**256)-1);
-        }
+        //approve Augur contract to transfer this contract's dai
+        cash.approve(_addressOfMainAugurContract,(2**256)-1);
     } 
 
     event LogBuy(address indexed owner, uint256 indexed price);
@@ -248,7 +248,7 @@ contract Harber {
         }
     }
 
-    ////////////// AUGUR + CASH FUNCTIONS //////////////
+    ////////////// AUGUR FUNCTIONS //////////////
     // * internal * 
     /// @notice buy complete sets from Augur
     function _buyCompleteSets(uint256 _tokenId, uint256 _rentOwed) internal 
@@ -353,38 +353,19 @@ contract Harber {
     /// @param _reason param is for testing only
     function _sendCash(address _to, uint256 _amount, uint256 _reason) internal { 
         cash.transfer(_to,_amount); 
-        // if (usingAugur) {
-        //     cash.transfer(_to,_amount);
-        // } else {
-        //     // using different variables if the cash is sent for different reasons. Allows for more granular testing. 
-        //     if (_reason == 0) { //0 = returned unused deposits at market resolution, or calling withdraw deposit, or calling exit
-        //         depositReturnedToUser[_to] = depositReturnedToUser[_to].add(_amount);
-        //     } else { //1 = winnings paid out or invalid outcome
-        //         winningsSentToUser[_to] = winningsSentToUser[_to].add(_amount);
-        //     }
-            
-        // }
     }
 
     // * internal * 
     /// @notice common function for all incoming DAI transfers
     function _receiveCash(address _from, uint256 _amount) internal {  
         cash.transferFrom(_from, address(this), _amount);
-        // if (usingAugur) {
-        //     cash.transferFrom(_from, address(this), _amount);
-        // } 
     }
 
     // * internal * 
     /// @return DAI balance of the contract
-    /// @dev if usingAugur = false, totalCollected is returned instead
     /// @dev this is used to know how much exists to payout to winners
     function _getContractsCashBalance() internal view returns (uint256) {
-        if (usingAugur) {
-            return cash.balanceOf(address(this));
-        } else {
-            return totalCollected;
-        }
+        return cash.balanceOf(address(this));
     }
 
     ////////////// MARKET RESOLUTION FUNCTIONS ////////////// 
