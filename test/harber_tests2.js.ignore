@@ -3,6 +3,7 @@ const { BN, shouldFail, ether, expectEvent, balance, time } = require('openzeppe
 const Token = artifacts.require('./ERC721Full.sol');
 const Harber = artifacts.require('./Harber.sol');
 const MintNFTs = artifacts.require("./mintNFTs.sol");
+var CashMockup = artifacts.require("./CashMockup.sol");
 
 const delay = duration => new Promise(resolve => setTimeout(resolve, duration));
 
@@ -65,10 +66,17 @@ const augurMainAddress = '0x62214e5c919332AC17c5e5127383B84378Ef9C1d';
 const marketedExpectedResolutionTime = 0;
 
 beforeEach(async () => {
+    cash =  await CashMockup.new();
     token = await Token.new("Harber.io", "HARB", andrewsAddress);
-    harber = await Harber.new(andrewsAddress, token.address, augurCashAddress, augurMarketAddress,augurShareTokenAddress, augurMainAddress, marketedExpectedResolutionTime);
+    harber = await Harber.new(andrewsAddress, token.address, cash.address, augurMarketAddress,augurShareTokenAddress, augurMainAddress, marketedExpectedResolutionTime);
     mintNFTs = await MintNFTs.new(token.address, harber.address);
     /////// SETUP //////
+    await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user0 });
+    await cash.approve(harber.address, web3.utils.toWei('100', 'ether'),{ from: user0 });
+    await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user1 });
+    await cash.approve(harber.address, web3.utils.toWei('100', 'ether'),{ from: user1 });
+    await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user2 });
+    await cash.approve(harber.address, web3.utils.toWei('100', 'ether'),{ from: user2 });
     //rent losing teams
     await harber.newRental(web3.utils.toWei('1', 'ether'),2,web3.utils.toWei('10', 'ether'),{ from: user0 }); //used deposit of 10
     await harber.newRental(web3.utils.toWei('2', 'ether'),3,web3.utils.toWei('20', 'ether'),{ from: user1 }); //used deposit of 20
