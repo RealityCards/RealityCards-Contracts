@@ -48,8 +48,6 @@ contract Harber {
     /// TESTING VARIABLES
     /// @dev if usingAugur false, none of the augur contracts are interacted with. Required false for ganache testing. 
     bool constant public usingAugur = false; //MUST BE TRUE IN PROUDCTION
-    /// @dev harber_tests1 was written for annual rental prices, other tests and production use daily rental prices; annual rental is used when this is set to false
-    bool constant public dailyRental = false; //MUST BE TRUE IN PROUDCTION
     
     /// CONTRACT VARIABLES
     /// ERC721:
@@ -195,12 +193,7 @@ contract Harber {
     /// @dev called in collectRent function, and various other view functions 
     function rentOwed(uint256 _tokenId) public view returns (uint256 augurFundsDue) 
     {
-        if(!dailyRental) {
-            return price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(365 days);
-        }
-        else {
-            return price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(1 days);
-        }
+        return price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(1 days);
     }
 
     /// @dev for front end only
@@ -241,12 +234,7 @@ contract Harber {
     function rentalExpiryTime(uint256 _tokenId) public view returns (uint256) 
     {
         uint256 pps;
-        if (!dailyRental) {
-            pps = price[_tokenId].div(365 days);
-        }
-        else {
-            pps = price[_tokenId].div(1 days);
-        }
+        pps = price[_tokenId].div(1 days);
         if (pps == 0) {
             return now; //if price is so low that pps = 0 just return current time as a fallback
         }
@@ -584,6 +572,7 @@ contract Harber {
     /// @notice collects rent for a specific token
     /// @dev also updates calculates and updates how long the current user has held the token for
     function _collectRent(uint256 _tokenId) public notResolved() {
+        require(_tokenId < numberOfTokens, "This team does not exist");
         //only collect rent if the token is owned (ie, if owned by the contract this implies unowned)
         if (team.ownerOf(_tokenId) != address(this)) {
             
@@ -628,7 +617,6 @@ contract Harber {
     
     /// @notice to rent a token
     function newRental(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) public collectRent(_tokenId) notResolved() {
-        require(_tokenId < numberOfTokens, "This team does not exist");
         require(_newPrice > price[_tokenId], "Price must be higher than current price");
         require(_deposit > 0, "Must deposit something");
 
