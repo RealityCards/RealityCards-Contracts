@@ -1,10 +1,16 @@
-pragma solidity ^0.5.0;
+pragma solidity 0.5.13;
 
-// import './Cash.sol';
+import "./utils/SafeMath.sol";
 
-// contract CashMockup is Cash
+// this is only for ganache testing. Public chain deployments will use the existing dai contract. 
+
 contract CashMockup
+
+
+
 {
+
+    using SafeMath for uint256;
 
 mapping (address => uint256) balances;
 mapping (address => mapping (address => uint256 ) ) allowances;
@@ -22,14 +28,14 @@ function balanceOf(address _owner) public view returns (uint256)
 
 function faucet(uint256 _amount) external
 {
-    balances[msg.sender] = balances[msg.sender] + _amount;
+    balances[msg.sender] = balances[msg.sender].add(_amount);
 }
 
 function transfer(address _to, uint256 _amount) external returns (bool)
 {   
     require (balances[msg.sender] >= _amount, "Insufficient balance");
-    balances[msg.sender] = balances[msg.sender] - _amount;
-    balances[_to] = balances[_to] + _amount;
+    balances[msg.sender] = balances[msg.sender].sub(_amount);
+    balances[_to] = balances[_to].add(_amount);
     return true;
 }
 
@@ -37,8 +43,8 @@ function transferFrom(address _from, address _to, uint256 _amount) external retu
 {
     require (allowances[msg.sender][_from] >= _amount, "Insufficient approval");
     require (balances[_from] >= _amount, "Insufficient balance");
-    balances[_from] = balances[_from] - _amount;
-    balances[_to] = balances[_to] + _amount;
+    balances[_from] = balances[_from].sub(_amount);
+    balances[_to] = balances[_to].add(_amount);
     return true;
 }
 

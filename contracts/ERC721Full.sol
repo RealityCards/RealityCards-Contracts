@@ -1,4 +1,4 @@
-pragma solidity ^0.5.0;
+pragma solidity 0.5.13;
 
 import "./ERC721.sol";
 import "./ERC721Enumerable.sol";
@@ -12,7 +12,7 @@ import "./ERC721Metadata.sol";
  */
 contract ERC721Full is ERC721, ERC721Enumerable, ERC721Metadata {
 
-    address andrewsAddress;
+    address private andrewsAddress;
 
     constructor (string memory name, string memory symbol, address _andrewsAddress) public ERC721Metadata(name, symbol) {
         andrewsAddress = _andrewsAddress;

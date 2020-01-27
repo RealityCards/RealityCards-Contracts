@@ -1,5 +1,4 @@
-pragma solidity ^0.5.0;
-
+pragma solidity 0.5.13;
 /**
  * @title ERC721 token receiver interface
  * @dev Interface for any contract that wants to support safeTransfers

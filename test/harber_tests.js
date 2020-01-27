@@ -520,7 +520,7 @@ contract('HarberTests', (accounts) => {
     });
 
     // check withdrawDeposit works as it should
-    it('test withdrawDeposit', async () => {
+    it('test withdrawDeposit- should pass', async () => {
       //setup
       user = user0;
       await cash.faucet(web3.utils.toWei('100', 'ether'), { from: user });
@@ -541,6 +541,19 @@ contract('HarberTests', (accounts) => {
       var owner = await token.ownerOf.call(0);
       assert.equal(owner, harber.address);
     });
+
+    it('test withdrawDeposit with failures', async () => {
+      //setup
+      user = user0;
+      await cash.faucet(web3.utils.toWei('100', 'ether'), { from: user });
+      await cash.approve(harber.address, web3.utils.toWei('100', 'ether'), { from: user });
+      await harber.newRental(web3.utils.toWei('1', 'ether'), 0, web3.utils.toWei('10', 'ether'), { from: user });
+      //withdraw too much
+      await shouldFail.reverting.withMessage(harber.withdrawDeposit(web3.utils.toWei('11', 'ether'),0,{ from: user}), "Withdrawing too much");
+      //wrong user trying to withdraw
+      await shouldFail.reverting.withMessage(harber.withdrawDeposit(web3.utils.toWei('1', 'ether'),0,{ from: user1}), "Withdrawing too much");
+    });
+
 
     // check the exit function works as it should
     it('test exit', async () => {
@@ -663,7 +676,6 @@ contract('HarberTests', (accounts) => {
     ////////////////////////
     // total deposits = 75, check:
     var totalCollected = await harber.totalCollected.call();
-    console.log(totalCollected);
     var totalCollectedShouldBe = web3.utils.toWei('75', 'ether');
     var difference = (totalCollected.toString()-totalCollectedShouldBe.toString());
     assert.isBelow(difference/totalCollected,0.00001);

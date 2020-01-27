@@ -1,4 +1,4 @@
-pragma solidity ^0.5.0;
+pragma solidity 0.5.13;
 import "./interfaces/IERC721Full.sol";
 import "./utils/SafeMath.sol";
 
@@ -53,9 +53,9 @@ contract Harber {
     /// ERC721:
     IERC721Full public team;
     /// Augur contracts:
-    IMarket[numberOfTokens] market;
-    ShareToken completeSets;
-    Cash cash; 
+    IMarket[numberOfTokens] public market;
+    ShareToken public completeSets;
+    Cash public cash; 
 
     /// UINTS, ADDRESSES, BOOLS
     /// @dev my whiskey fund, for my 1% cut
@@ -81,27 +81,27 @@ contract Harber {
   
     /// WINNING OUTCOME VARIABLES
     /// @dev start with invalid winning outcome
-    uint256 winningOutcome = 42069; 
+    uint256 public winningOutcome = 42069; 
     //// @dev so the function to manually set the winner can only be called long after 
     /// @dev ...it should have resolved via Augur. Must be public so others can verify it is accurate. 
     uint256 public marketExpectedResolutionTime; 
 
     /// MARKET RESOLUTION VARIABLES
     /// @dev step1:
-    bool marketsResolved = false; // must be false for step1, true for step2
-    bool marketsResolvedWithoutErrors = false; // set in step 1. If true, normal payout. If false, return all funds
+    bool public marketsResolved = false; // must be false for step1, true for step2
+    bool public marketsResolvedWithoutErrors = false; // set in step 1. If true, normal payout. If false, return all funds
     /// @dev step 2:
-    uint256 loopsRequired = 0; // for returnDeposits and returnAllFunds functions
-    bool step2Complete = false; // must be false for step2, true for step3
+    uint256 public loopsRequired = 0; // for returnDeposits and returnAllFunds functions
+    bool public step2Complete = false; // must be false for step2, true for step3
     /// @dev step 3:
-    uint256 step3LoopsCompleted = 0;
-    bool step3Complete = false; // must be false for step3, true for step4
+    uint256 public step3LoopsCompleted = 0;
+    bool public step3Complete = false; // must be false for step3, true for step4
     /// @dev step 4:
-    bool step4Complete = false; // must be false for step4, true for step5
+    bool public step4Complete = false; // must be false for step4, true for step5
     /// @dev step 5:
-    uint256 daiAvailableToDistribute = 0;
-    uint256 step5LoopsCompleted = 0;
-    bool step5Complete = false; // must be false for step5
+    uint256 public daiAvailableToDistribute = 0;
+    uint256 public step5LoopsCompleted = 0;
+    bool public step5Complete = false; // must be false for step5
     
     ///  STRUCTS
     struct purchase {
@@ -591,8 +591,9 @@ contract Harber {
                 _timeOfThisCollection = now;
             }
 
-            //decrease deposit by rent owed
+            //decrease deposit by rent owed and buy complete sets
             deposits[_tokenId][_currentOwner] = deposits[_tokenId][_currentOwner].sub(_rentOwed);
+            _buyCompleteSets(_tokenId,_rentOwed);
 
             //the 'important bit', where the duration the token has been held by each user is updated
             //it is essential that timeHeld and totalTimeHeld are incremented together such that the sum of
@@ -606,8 +607,6 @@ contract Harber {
             collectedPerMarket[_tokenId] = collectedPerMarket[_tokenId].add(_rentOwed);
             collectedPerUser[_currentOwner] = collectedPerUser[_currentOwner].add(_rentOwed);
             totalCollected = totalCollected.add(_rentOwed);
-
-            _buyCompleteSets(_tokenId,_rentOwed);
             
             emit LogRentCollection(_rentOwed);
         }

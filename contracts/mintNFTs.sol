@@ -1,4 +1,4 @@
-pragma solidity ^0.5.0;
+pragma solidity 0.5.13;
 import "./interfaces/IERC721Full.sol";
 
 //this is done in a seperate contract. Originally it was within Harber.sol, but 

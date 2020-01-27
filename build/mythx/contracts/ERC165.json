@@ -1,0 +1,1590 @@
+{
+    "compiler": {
+        "name": "solc",
+        "version": "0.5.13+commit.5b0b510c.Emscripten.clang"
+    },
+    "updatedAt": "2020-01-27T10:10:43.216Z",
+    "sources": {
+        "/Users/mcplums/Repos/Harber/contracts/ERC165.sol": {
+            "contracts": [
+                {
+                    "contractName": "ERC165",
+                    "bytecode": "0x",
+                    "deployedBytecode": "0x",
+                    "sourceMap": "",
+                    "deployedSourceMap": ""
+                }
+            ],
+            "ast": {
+                "absolutePath": "/Users/mcplums/Repos/Harber/contracts/ERC165.sol",
+                "exportedSymbols": {
+                    "ERC165": [
+                        50
+                    ]
+                },
+                "id": 51,
+                "nodeType": "SourceUnit",
+                "nodes": [
+                    {
+                        "id": 1,
+                        "literals": [
+                            "solidity",
+                            "0.5",
+                            ".13"
+                        ],
+                        "nodeType": "PragmaDirective",
+                        "src": "0:23:0"
+                    },
+                    {
+                        "absolutePath": "/Users/mcplums/Repos/Harber/contracts/interfaces/IERC165.sol",
+                        "file": "./interfaces/IERC165.sol",
+                        "id": 2,
+                        "nodeType": "ImportDirective",
+                        "scope": 51,
+                        "sourceUnit": 61,
+                        "src": "25:34:0",
+                        "symbolAliases": [],
+                        "unitAlias": ""
+                    },
+                    {
+                        "baseContracts": [
+                            {
+                                "arguments": null,
+                                "baseName": {
+                                    "contractScope": null,
+                                    "id": 3,
+                                    "name": "IERC165",
+                                    "nodeType": "UserDefinedTypeName",
+                                    "referencedDeclaration": 60,
+                                    "src": "186:7:0",
+                                    "typeDescriptions": {
+                                        "typeIdentifier": "t_contract$_IERC165_$60",
+                                        "typeString": "contract IERC165"
+                                    }
+                                },
+                                "id": 4,
+                                "nodeType": "InheritanceSpecifier",
+                                "src": "186:7:0"
+                            }
+                        ],
+                        "contractDependencies": [
+                            60
+                        ],
+                        "contractKind": "contract",
+                        "documentation": "@title ERC165\n@author Matt Condon (@shrugs)\n@dev Implements ERC165 using a lookup table.",
+                        "fullyImplemented": true,
+                        "id": 50,
+                        "linearizedBaseContracts": [
+                            50,
+                            60
+                        ],
+                        "name": "ERC165",
+                        "nodeType": "ContractDefinition",
+                        "nodes": [
+                            {
+                                "constant": true,
+                                "id": 7,
+                                "name": "_INTERFACE_ID_ERC165",
+                                "nodeType": "VariableDeclaration",
+                                "scope": 50,
+                                "src": "200:57:0",
+                                "stateVariable": true,
+                                "storageLocation": "default",
+                                "typeDescriptions": {
+                                    "typeIdentifier": "t_bytes4",
+                                    "typeString": "bytes4"
+                                },
+                                "typeName": {
+                                    "id": 5,
+                                    "name": "bytes4",
+                                    "nodeType": "ElementaryTypeName",
+                                    "src": "200:6:0",
+                                    "typeDescriptions": {
+                                        "typeIdentifier": "t_bytes4",
+                                        "typeString": "bytes4"
+                                    }
+                                },
+                                "value": {
+                                    "argumentTypes": null,
+                                    "hexValue": "30783031666663396137",
+                                    "id": 6,
+                                    "isConstant": false,
+                                    "isLValue": false,
+                                    "isPure": true,
+                                    "kind": "number",
+                                    "lValueRequested": false,
+                                    "nodeType": "Literal",
+                                    "src": "247:10:0",
+                                    "subdenomination": null,
+                                    "typeDescriptions": {
+                                        "typeIdentifier": "t_rational_33540519_by_1",
+                                        "typeString": "int_const 33540519"
+                                    },
+                                    "value": "0x01ffc9a7"
+                                },
+                                "visibility": "private"
+                            },
+                            {
+                                "constant": false,
+                                "id": 11,
+                                "name": "_supportedInterfaces",
+                                "nodeType": "VariableDeclaration",
+                                "scope": 50,
+                                "src": "446:52:0",
+                                "stateVariable": true,
+                                "storageLocation": "default",
+                                "typeDescriptions": {
+                                    "typeIdentifier": "t_mapping$_t_bytes4_$_t_bool_$",
+                                    "typeString": "mapping(bytes4 => bool)"
+                                },
+                                "typeName": {
+                                    "id": 10,
+                                    "keyType": {
+                                        "id": 8,
+                                        "name": "bytes4",
+                                        "nodeType": "ElementaryTypeName",
+                                        "src": "454:6:0",
+                                        "typeDescriptions": {
+                                            "typeIdentifier": "t_bytes4",
+                                            "typeString": "bytes4"
+                                        }
+                                    },
+                                    "nodeType": "Mapping",
+                                    "src": "446:23:0",
+                                    "typeDescriptions": {
+                                        "typeIdentifier": "t_mapping$_t_bytes4_$_t_bool_$",
+                                        "typeString": "mapping(bytes4 => bool)"
+                                    },
+                                    "valueType": {
+                                        "id": 9,
+                                        "name": "bool",
+                                        "nodeType": "ElementaryTypeName",
+                                        "src": "464:4:0",
+                                        "typeDescriptions": {
+                                            "typeIdentifier": "t_bool",
+                                            "typeString": "bool"
+                                        }
+                                    }
+                                },
+                                "value": null,
+                                "visibility": "private"
+                            },
+                            {
+                                "body": {
+                                    "id": 18,
+                                    "nodeType": "Block",
+                                    "src": "640:57:0",
+                                    "statements": [
+                                        {
+                                            "expression": {
+                                                "argumentTypes": null,
+                                                "arguments": [
+                                                    {
+                                                        "argumentTypes": null,
+                                                        "id": 15,
+                                                        "name": "_INTERFACE_ID_ERC165",
+                                                        "nodeType": "Identifier",
+                                                        "overloadedDeclarations": [],
+                                                        "referencedDeclaration": 7,
+                                                        "src": "669:20:0",
+                                                        "typeDescriptions": {
+                                                            "typeIdentifier": "t_bytes4",
+                                                            "typeString": "bytes4"
+                                                        }
+                                                    }
+                                                ],
+                                                "expression": {
+                                                    "argumentTypes": [
+                                                        {
+                                                            "typeIdentifier": "t_bytes4",
+                                                            "typeString": "bytes4"
+                                                        }
+                                                    ],
+                                                    "id": 14,
+                                                    "name": "_registerInterface",
+                                                    "nodeType": "Identifier",
+                                                    "overloadedDeclarations": [],
+                                                    "referencedDeclaration": 49,
+                                                    "src": "650:18:0",
+                                                    "typeDescriptions": {
+                                                        "typeIdentifier": "t_function_internal_nonpayable$_t_bytes4_$returns$__$",
+                                                        "typeString": "function (bytes4)"
+                                                    }
+                                                },
+                                                "id": 16,
+                                                "isConstant": false,
+                                                "isLValue": false,
+                                                "isPure": false,
+                                                "kind": "functionCall",
+                                                "lValueRequested": false,
+                                                "names": [],
+                                                "nodeType": "FunctionCall",
+                                                "src": "650:40:0",
+                                                "typeDescriptions": {
+                                                    "typeIdentifier": "t_tuple$__$",
+                                                    "typeString": "tuple()"
+                                                }
+                                            },
+                                            "id": 17,
+                                            "nodeType": "ExpressionStatement",
+                                            "src": "650:40:0"
+                                        }
+                                    ]
+                                },
+                                "documentation": "@dev A contract implementing SupportsInterfaceWithLookup\nimplement ERC165 itself",
+                                "id": 19,
+                                "implemented": true,
+                                "kind": "constructor",
+                                "modifiers": [],
+                                "name": "",
+                                "nodeType": "FunctionDefinition",
+                                "parameters": {
+                                    "id": 12,
+                                    "nodeType": "ParameterList",
+                                    "parameters": [],
+                                    "src": "628:2:0"
+                                },
+                                "returnParameters": {
+                                    "id": 13,
+                                    "nodeType": "ParameterList",
+                                    "parameters": [],
+                                    "src": "640:0:0"
+                                },
+                                "scope": 50,
+                                "src": "616:81:0",
+                                "stateMutability": "nonpayable",
+                                "superFunction": null,
+                                "visibility": "internal"
+                            },
+                            {
+                                "body": {
+                                    "id": 30,
+                                    "nodeType": "Block",
+                                    "src": "864:57:0",
+                                    "statements": [
+                                        {
+                                            "expression": {
+                                                "argumentTypes": null,
+                                                "baseExpression": {
+                                                    "argumentTypes": null,
+                                                    "id": 26,
+                                                    "name": "_supportedInterfaces",
+                                                    "nodeType": "Identifier",
+                                                    "overloadedDeclarations": [],
+                                                    "referencedDeclaration": 11,
+                                                    "src": "881:20:0",
+                                                    "typeDescriptions": {
+                                                        "typeIdentifier": "t_mapping$_t_bytes4_$_t_bool_$",
+                                                        "typeString": "mapping(bytes4 => bool)"
+                                                    }
+                                                },
+                                                "id": 28,
+                                                "indexExpression": {
+                                                    "argumentTypes": null,
+                                                    "id": 27,
+                                                    "name": "interfaceId",
+                                                    "nodeType": "Identifier",
+                                                    "overloadedDeclarations": [],
+                                                    "referencedDeclaration": 21,
+                                                    "src": "902:11:0",
+                                                    "typeDescriptions": {
+                                                        "typeIdentifier": "t_bytes4",
+                                                        "typeString": "bytes4"
+                                                    }
+                                                },
+                                                "isConstant": false,
+                                                "isLValue": true,
+                                                "isPure": false,
+                                                "lValueRequested": false,
+                                                "nodeType": "IndexAccess",
+                                                "src": "881:33:0",
+                                                "typeDescriptions": {
+                                                    "typeIdentifier": "t_bool",
+                                                    "typeString": "bool"
+                                                }
+                                            },
+                                            "functionReturnParameters": 25,
+                                            "id": 29,
+                                            "nodeType": "Return",
+                                            "src": "874:40:0"
+                                        }
+                                    ]
+                                },
+                                "documentation": "@dev implement supportsInterface(bytes4) using a lookup table",
+                                "id": 31,
+                                "implemented": true,
+                                "kind": "function",
+                                "modifiers": [],
+                                "name": "supportsInterface",
+                                "nodeType": "FunctionDefinition",
+                                "parameters": {
+                                    "id": 22,
+                                    "nodeType": "ParameterList",
+                                    "parameters": [
+                                        {
+                                            "constant": false,
+                                            "id": 21,
+                                            "name": "interfaceId",
+                                            "nodeType": "VariableDeclaration",
+                                            "scope": 31,
+                                            "src": "815:18:0",
+                                            "stateVariable": false,
+                                            "storageLocation": "default",
+                                            "typeDescriptions": {
+                                                "typeIdentifier": "t_bytes4",
+                                                "typeString": "bytes4"
+                                            },
+                                            "typeName": {
+                                                "id": 20,
+                                                "name": "bytes4",
+                                                "nodeType": "ElementaryTypeName",
+                                                "src": "815:6:0",
+                                                "typeDescriptions": {
+                                                    "typeIdentifier": "t_bytes4",
+                                                    "typeString": "bytes4"
+                                                }
+                                            },
+                                            "value": null,
+                                            "visibility": "internal"
+                                        }
+                                    ],
+                                    "src": "814:20:0"
+                                },
+                                "returnParameters": {
+                                    "id": 25,
+                                    "nodeType": "ParameterList",
+                                    "parameters": [
+                                        {
+                                            "constant": false,
+                                            "id": 24,
+                                            "name": "",
+                                            "nodeType": "VariableDeclaration",
+                                            "scope": 31,
+                                            "src": "858:4:0",
+                                            "stateVariable": false,
+                                            "storageLocation": "default",
+                                            "typeDescriptions": {
+                                                "typeIdentifier": "t_bool",
+                                                "typeString": "bool"
+                                            },
+                                            "typeName": {
+                                                "id": 23,
+                                                "name": "bool",
+                                                "nodeType": "ElementaryTypeName",
+                                                "src": "858:4:0",
+                                                "typeDescriptions": {
+                                                    "typeIdentifier": "t_bool",
+                                                    "typeString": "bool"
+                                                }
+                                            },
+                                            "value": null,
+                                            "visibility": "internal"
+                                        }
+                                    ],
+                                    "src": "857:6:0"
+                                },
+                                "scope": 50,
+                                "src": "788:133:0",
+                                "stateMutability": "view",
+                                "superFunction": 59,
+                                "visibility": "external"
+                            },
+                            {
+                                "body": {
+                                    "id": 48,
+                                    "nodeType": "Block",
+                                    "src": "1057:101:0",
+                                    "statements": [
+                                        {
+                                            "expression": {
+                                                "argumentTypes": null,
+                                                "arguments": [
+                                                    {
+                                                        "argumentTypes": null,
+                                                        "commonType": {
+                                                            "typeIdentifier": "t_bytes4",
+                                                            "typeString": "bytes4"
+                                                        },
+                                                        "id": 39,
+                                                        "isConstant": false,
+                                                        "isLValue": false,
+                                                        "isPure": false,
+                                                        "lValueRequested": false,
+                                                        "leftExpression": {
+                                                            "argumentTypes": null,
+                                                            "id": 37,
+                                                            "name": "interfaceId",
+                                                            "nodeType": "Identifier",
+                                                            "overloadedDeclarations": [],
+                                                            "referencedDeclaration": 33,
+                                                            "src": "1075:11:0",
+                                                            "typeDescriptions": {
+                                                                "typeIdentifier": "t_bytes4",
+                                                                "typeString": "bytes4"
+                                                            }
+                                                        },
+                                                        "nodeType": "BinaryOperation",
+                                                        "operator": "!=",
+                                                        "rightExpression": {
+                                                            "argumentTypes": null,
+                                                            "hexValue": "30786666666666666666",
+                                                            "id": 38,
+                                                            "isConstant": false,
+                                                            "isLValue": false,
+                                                            "isPure": true,
+                                                            "kind": "number",
+                                                            "lValueRequested": false,
+                                                            "nodeType": "Literal",
+                                                            "src": "1090:10:0",
+                                                            "subdenomination": null,
+                                                            "typeDescriptions": {
+                                                                "typeIdentifier": "t_rational_4294967295_by_1",
+                                                                "typeString": "int_const 4294967295"
+                                                            },
+                                                            "value": "0xffffffff"
+                                                        },
+                                                        "src": "1075:25:0",
+                                                        "typeDescriptions": {
+                                                            "typeIdentifier": "t_bool",
+                                                            "typeString": "bool"
+                                                        }
+                                                    }
+                                                ],
+                                                "expression": {
+                                                    "argumentTypes": [
+                                                        {
+                                                            "typeIdentifier": "t_bool",
+                                                            "typeString": "bool"
+                                                        }
+                                                    ],
+                                                    "id": 36,
+                                                    "name": "require",
+                                                    "nodeType": "Identifier",
+                                                    "overloadedDeclarations": [
+                                                        78,
+                                                        79
+                                                    ],
+                                                    "referencedDeclaration": 78,
+                                                    "src": "1067:7:0",
+                                                    "typeDescriptions": {
+                                                        "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
+                                                        "typeString": "function (bool) pure"
+                                                    }
+                                                },
+                                                "id": 40,
+                                                "isConstant": false,
+                                                "isLValue": false,
+                                                "isPure": false,
+                                                "kind": "functionCall",
+                                                "lValueRequested": false,
+                                                "names": [],
+                                                "nodeType": "FunctionCall",
+                                                "src": "1067:34:0",
+                                                "typeDescriptions": {
+                                                    "typeIdentifier": "t_tuple$__$",
+                                                    "typeString": "tuple()"
+                                                }
+                                            },
+                                            "id": 41,
+                                            "nodeType": "ExpressionStatement",
+                                            "src": "1067:34:0"
+                                        },
+                                        {
+                                            "expression": {
+                                                "argumentTypes": null,
+                                                "id": 46,
+                                                "isConstant": false,
+                                                "isLValue": false,
+                                                "isPure": false,
+                                                "lValueRequested": false,
+                                                "leftHandSide": {
+                                                    "argumentTypes": null,
+                                                    "baseExpression": {
+                                                        "argumentTypes": null,
+                                                        "id": 42,
+                                                        "name": "_supportedInterfaces",
+                                                        "nodeType": "Identifier",
+                                                        "overloadedDeclarations": [],
+                                                        "referencedDeclaration": 11,
+                                                        "src": "1111:20:0",
+                                                        "typeDescriptions": {
+                                                            "typeIdentifier": "t_mapping$_t_bytes4_$_t_bool_$",
+                                                            "typeString": "mapping(bytes4 => bool)"
+                                                        }
+                                                    },
+                                                    "id": 44,
+                                                    "indexExpression": {
+                                                        "argumentTypes": null,
+                                                        "id": 43,
+                                                        "name": "interfaceId",
+                                                        "nodeType": "Identifier",
+                                                        "overloadedDeclarations": [],
+                                                        "referencedDeclaration": 33,
+                                                        "src": "1132:11:0",
+                                                        "typeDescriptions": {
+                                                            "typeIdentifier": "t_bytes4",
+                                                            "typeString": "bytes4"
+                                                        }
+                                                    },
+                                                    "isConstant": false,
+                                                    "isLValue": true,
+                                                    "isPure": false,
+                                                    "lValueRequested": true,
+                                                    "nodeType": "IndexAccess",
+                                                    "src": "1111:33:0",
+                                                    "typeDescriptions": {
+                                                        "typeIdentifier": "t_bool",
+                                                        "typeString": "bool"
+                                                    }
+                                                },
+                                                "nodeType": "Assignment",
+                                                "operator": "=",
+                                                "rightHandSide": {
+                                                    "argumentTypes": null,
+                                                    "hexValue": "74727565",
+                                                    "id": 45,
+                                                    "isConstant": false,
+                                                    "isLValue": false,
+                                                    "isPure": true,
+                                                    "kind": "bool",
+                                                    "lValueRequested": false,
+                                                    "nodeType": "Literal",
+                                                    "src": "1147:4:0",
+                                                    "subdenomination": null,
+                                                    "typeDescriptions": {
+                                                        "typeIdentifier": "t_bool",
+                                                        "typeString": "bool"
+                                                    },
+                                                    "value": "true"
+                                                },
+                                                "src": "1111:40:0",
+                                                "typeDescriptions": {
+                                                    "typeIdentifier": "t_bool",
+                                                    "typeString": "bool"
+                                                }
+                                            },
+                                            "id": 47,
+                                            "nodeType": "ExpressionStatement",
+                                            "src": "1111:40:0"
+                                        }
+                                    ]
+                                },
+                                "documentation": "@dev internal method for registering an interface",
+                                "id": 49,
+                                "implemented": true,
+                                "kind": "function",
+                                "modifiers": [],
+                                "name": "_registerInterface",
+                                "nodeType": "FunctionDefinition",
+                                "parameters": {
+                                    "id": 34,
+                                    "nodeType": "ParameterList",
+                                    "parameters": [
+                                        {
+                                            "constant": false,
+                                            "id": 33,
+                                            "name": "interfaceId",
+                                            "nodeType": "VariableDeclaration",
+                                            "scope": 49,
+                                            "src": "1028:18:0",
+                                            "stateVariable": false,
+                                            "storageLocation": "default",
+                                            "typeDescriptions": {
+                                                "typeIdentifier": "t_bytes4",
+                                                "typeString": "bytes4"
+                                            },
+                                            "typeName": {
+                                                "id": 32,
+                                                "name": "bytes4",
+                                                "nodeType": "ElementaryTypeName",
+                                                "src": "1028:6:0",
+                                                "typeDescriptions": {
+                                                    "typeIdentifier": "t_bytes4",
+                                                    "typeString": "bytes4"
+                                                }
+                                            },
+                                            "value": null,
+                                            "visibility": "internal"
+                                        }
+                                    ],
+                                    "src": "1027:20:0"
+                                },
+                                "returnParameters": {
+                                    "id": 35,
+                                    "nodeType": "ParameterList",
+                                    "parameters": [],
+                                    "src": "1057:0:0"
+                                },
+                                "scope": 50,
+                                "src": "1000:158:0",
+                                "stateMutability": "nonpayable",
+                                "superFunction": null,
+                                "visibility": "internal"
+                            }
+                        ],
+                        "scope": 51,
+                        "src": "167:993:0"
+                    }
+                ],
+                "src": "0:1160:0"
+            },
+            "legacyAST": {
+                "attributes": {
+                    "absolutePath": "/Users/mcplums/Repos/Harber/contracts/ERC165.sol",
+                    "exportedSymbols": {
+                        "ERC165": [
+                            50
+                        ]
+                    }
+                },
+                "children": [
+                    {
+                        "attributes": {
+                            "literals": [
+                                "solidity",
+                                "0.5",
+                                ".13"
+                            ]
+                        },
+                        "id": 1,
+                        "name": "PragmaDirective",
+                        "src": "0:23:0"
+                    },
+                    {
+                        "attributes": {
+                            "SourceUnit": 61,
+                            "absolutePath": "/Users/mcplums/Repos/Harber/contracts/interfaces/IERC165.sol",
+                            "file": "./interfaces/IERC165.sol",
+                            "scope": 51,
+                            "symbolAliases": [
+                                null
+                            ],
+                            "unitAlias": ""
+                        },
+                        "id": 2,
+                        "name": "ImportDirective",
+                        "src": "25:34:0"
+                    },
+                    {
+                        "attributes": {
+                            "contractDependencies": [
+                                60
+                            ],
+                            "contractKind": "contract",
+                            "documentation": "@title ERC165\n@author Matt Condon (@shrugs)\n@dev Implements ERC165 using a lookup table.",
+                            "fullyImplemented": true,
+                            "linearizedBaseContracts": [
+                                50,
+                                60
+                            ],
+                            "name": "ERC165",
+                            "scope": 51
+                        },
+                        "children": [
+                            {
+                                "attributes": {
+                                    "arguments": null
+                                },
+                                "children": [
+                                    {
+                                        "attributes": {
+                                            "contractScope": null,
+                                            "name": "IERC165",
+                                            "referencedDeclaration": 60,
+                                            "type": "contract IERC165"
+                                        },
+                                        "id": 3,
+                                        "name": "UserDefinedTypeName",
+                                        "src": "186:7:0"
+                                    }
+                                ],
+                                "id": 4,
+                                "name": "InheritanceSpecifier",
+                                "src": "186:7:0"
+                            },
+                            {
+                                "attributes": {
+                                    "constant": true,
+                                    "name": "_INTERFACE_ID_ERC165",
+                                    "scope": 50,
+                                    "stateVariable": true,
+                                    "storageLocation": "default",
+                                    "type": "bytes4",
+                                    "visibility": "private"
+                                },
+                                "children": [
+                                    {
+                                        "attributes": {
+                                            "name": "bytes4",
+                                            "type": "bytes4"
+                                        },
+                                        "id": 5,
+                                        "name": "ElementaryTypeName",
+                                        "src": "200:6:0"
+                                    },
+                                    {
+                                        "attributes": {
+                                            "argumentTypes": null,
+                                            "hexvalue": "30783031666663396137",
+                                            "isConstant": false,
+                                            "isLValue": false,
+                                            "isPure": true,
+                                            "lValueRequested": false,
+                                            "subdenomination": null,
+                                            "token": "number",
+                                            "type": "int_const 33540519",
+                                            "value": "0x01ffc9a7"
+                                        },
+                                        "id": 6,
+                                        "name": "Literal",
+                                        "src": "247:10:0"
+                                    }
+                                ],
+                                "id": 7,
+                                "name": "VariableDeclaration",
+                                "src": "200:57:0"
+                            },
+                            {
+                                "attributes": {
+                                    "constant": false,
+                                    "name": "_supportedInterfaces",
+                                    "scope": 50,
+                                    "stateVariable": true,
+                                    "storageLocation": "default",
+                                    "type": "mapping(bytes4 => bool)",
+                                    "value": null,
+                                    "visibility": "private"
+                                },
+                                "children": [
+                                    {
+                                        "attributes": {
+                                            "type": "mapping(bytes4 => bool)"
+                                        },
+                                        "children": [
+                                            {
+                                                "attributes": {
+                                                    "name": "bytes4",
+                                                    "type": "bytes4"
+                                                },
+                                                "id": 8,
+                                                "name": "ElementaryTypeName",
+                                                "src": "454:6:0"
+                                            },
+                                            {
+                                                "attributes": {
+                                                    "name": "bool",
+                                                    "type": "bool"
+                                                },
+                                                "id": 9,
+                                                "name": "ElementaryTypeName",
+                                                "src": "464:4:0"
+                                            }
+                                        ],
+                                        "id": 10,
+                                        "name": "Mapping",
+                                        "src": "446:23:0"
+                                    }
+                                ],
+                                "id": 11,
+                                "name": "VariableDeclaration",
+                                "src": "446:52:0"
+                            },
+                            {
+                                "attributes": {
+                                    "documentation": "@dev A contract implementing SupportsInterfaceWithLookup\nimplement ERC165 itself",
+                                    "implemented": true,
+                                    "isConstructor": true,
+                                    "kind": "constructor",
+                                    "modifiers": [
+                                        null
+                                    ],
+                                    "name": "",
+                                    "scope": 50,
+                                    "stateMutability": "nonpayable",
+                                    "superFunction": null,
+                                    "visibility": "internal"
+                                },
+                                "children": [
+                                    {
+                                        "attributes": {
+                                            "parameters": [
+                                                null
+                                            ]
+                                        },
+                                        "children": [],
+                                        "id": 12,
+                                        "name": "ParameterList",
+                                        "src": "628:2:0"
+                                    },
+                                    {
+                                        "attributes": {
+                                            "parameters": [
+                                                null
+                                            ]
+                                        },
+                                        "children": [],
+                                        "id": 13,
+                                        "name": "ParameterList",
+                                        "src": "640:0:0"
+                                    },
+                                    {
+                                        "children": [
+                                            {
+                                                "children": [
+                                                    {
+                                                        "attributes": {
+                                                            "argumentTypes": null,
+                                                            "isConstant": false,
+                                                            "isLValue": false,
+                                                            "isPure": false,
+                                                            "isStructConstructorCall": false,
+                                                            "lValueRequested": false,
+                                                            "names": [
+                                                                null
+                                                            ],
+                                                            "type": "tuple()",
+                                                            "type_conversion": false
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "attributes": {
+                                                                    "argumentTypes": [
+                                                                        {
+                                                                            "typeIdentifier": "t_bytes4",
+                                                                            "typeString": "bytes4"
+                                                                        }
+                                                                    ],
+                                                                    "overloadedDeclarations": [
+                                                                        null
+                                                                    ],
+                                                                    "referencedDeclaration": 49,
+                                                                    "type": "function (bytes4)",
+                                                                    "value": "_registerInterface"
+                                                                },
+                                                                "id": 14,
+                                                                "name": "Identifier",
+                                                                "src": "650:18:0"
+                                                            },
+                                                            {
+                                                                "attributes": {
+                                                                    "argumentTypes": null,
+                                                                    "overloadedDeclarations": [
+                                                                        null
+                                                                    ],
+                                                                    "referencedDeclaration": 7,
+                                                                    "type": "bytes4",
+                                                                    "value": "_INTERFACE_ID_ERC165"
+                                                                },
+                                                                "id": 15,
+                                                                "name": "Identifier",
+                                                                "src": "669:20:0"
+                                                            }
+                                                        ],
+                                                        "id": 16,
+                                                        "name": "FunctionCall",
+                                                        "src": "650:40:0"
+                                                    }
+                                                ],
+                                                "id": 17,
+                                                "name": "ExpressionStatement",
+                                                "src": "650:40:0"
+                                            }
+                                        ],
+                                        "id": 18,
+                                        "name": "Block",
+                                        "src": "640:57:0"
+                                    }
+                                ],
+                                "id": 19,
+                                "name": "FunctionDefinition",
+                                "src": "616:81:0"
+                            },
+                            {
+                                "attributes": {
+                                    "documentation": "@dev implement supportsInterface(bytes4) using a lookup table",
+                                    "implemented": true,
+                                    "isConstructor": false,
+                                    "kind": "function",
+                                    "modifiers": [
+                                        null
+                                    ],
+                                    "name": "supportsInterface",
+                                    "scope": 50,
+                                    "stateMutability": "view",
+                                    "superFunction": 59,
+                                    "visibility": "external"
+                                },
+                                "children": [
+                                    {
+                                        "children": [
+                                            {
+                                                "attributes": {
+                                                    "constant": false,
+                                                    "name": "interfaceId",
+                                                    "scope": 31,
+                                                    "stateVariable": false,
+                                                    "storageLocation": "default",
+                                                    "type": "bytes4",
+                                                    "value": null,
+                                                    "visibility": "internal"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "attributes": {
+                                                            "name": "bytes4",
+                                                            "type": "bytes4"
+                                                        },
+                                                        "id": 20,
+                                                        "name": "ElementaryTypeName",
+                                                        "src": "815:6:0"
+                                                    }
+                                                ],
+                                                "id": 21,
+                                                "name": "VariableDeclaration",
+                                                "src": "815:18:0"
+                                            }
+                                        ],
+                                        "id": 22,
+                                        "name": "ParameterList",
+                                        "src": "814:20:0"
+                                    },
+                                    {
+                                        "children": [
+                                            {
+                                                "attributes": {
+                                                    "constant": false,
+                                                    "name": "",
+                                                    "scope": 31,
+                                                    "stateVariable": false,
+                                                    "storageLocation": "default",
+                                                    "type": "bool",
+                                                    "value": null,
+                                                    "visibility": "internal"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "attributes": {
+                                                            "name": "bool",
+                                                            "type": "bool"
+                                                        },
+                                                        "id": 23,
+                                                        "name": "ElementaryTypeName",
+                                                        "src": "858:4:0"
+                                                    }
+                                                ],
+                                                "id": 24,
+                                                "name": "VariableDeclaration",
+                                                "src": "858:4:0"
+                                            }
+                                        ],
+                                        "id": 25,
+                                        "name": "ParameterList",
+                                        "src": "857:6:0"
+                                    },
+                                    {
+                                        "children": [
+                                            {
+                                                "attributes": {
+                                                    "functionReturnParameters": 25
+                                                },
+                                                "children": [
+                                                    {
+                                                        "attributes": {
+                                                            "argumentTypes": null,
+                                                            "isConstant": false,
+                                                            "isLValue": true,
+                                                            "isPure": false,
+                                                            "lValueRequested": false,
+                                                            "type": "bool"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "attributes": {
+                                                                    "argumentTypes": null,
+                                                                    "overloadedDeclarations": [
+                                                                        null
+                                                                    ],
+                                                                    "referencedDeclaration": 11,
+                                                                    "type": "mapping(bytes4 => bool)",
+                                                                    "value": "_supportedInterfaces"
+                                                                },
+                                                                "id": 26,
+                                                                "name": "Identifier",
+                                                                "src": "881:20:0"
+                                                            },
+                                                            {
+                                                                "attributes": {
+                                                                    "argumentTypes": null,
+                                                                    "overloadedDeclarations": [
+                                                                        null
+                                                                    ],
+                                                                    "referencedDeclaration": 21,
+                                                                    "type": "bytes4",
+                                                                    "value": "interfaceId"
+                                                                },
+                                                                "id": 27,
+                                                                "name": "Identifier",
+                                                                "src": "902:11:0"
+                                                            }
+                                                        ],
+                                                        "id": 28,
+                                                        "name": "IndexAccess",
+                                                        "src": "881:33:0"
+                                                    }
+                                                ],
+                                                "id": 29,
+                                                "name": "Return",
+                                                "src": "874:40:0"
+                                            }
+                                        ],
+                                        "id": 30,
+                                        "name": "Block",
+                                        "src": "864:57:0"
+                                    }
+                                ],
+                                "id": 31,
+                                "name": "FunctionDefinition",
+                                "src": "788:133:0"
+                            },
+                            {
+                                "attributes": {
+                                    "documentation": "@dev internal method for registering an interface",
+                                    "implemented": true,
+                                    "isConstructor": false,
+                                    "kind": "function",
+                                    "modifiers": [
+                                        null
+                                    ],
+                                    "name": "_registerInterface",
+                                    "scope": 50,
+                                    "stateMutability": "nonpayable",
+                                    "superFunction": null,
+                                    "visibility": "internal"
+                                },
+                                "children": [
+                                    {
+                                        "children": [
+                                            {
+                                                "attributes": {
+                                                    "constant": false,
+                                                    "name": "interfaceId",
+                                                    "scope": 49,
+                                                    "stateVariable": false,
+                                                    "storageLocation": "default",
+                                                    "type": "bytes4",
+                                                    "value": null,
+                                                    "visibility": "internal"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "attributes": {
+                                                            "name": "bytes4",
+                                                            "type": "bytes4"
+                                                        },
+                                                        "id": 32,
+                                                        "name": "ElementaryTypeName",
+                                                        "src": "1028:6:0"
+                                                    }
+                                                ],
+                                                "id": 33,
+                                                "name": "VariableDeclaration",
+                                                "src": "1028:18:0"
+                                            }
+                                        ],
+                                        "id": 34,
+                                        "name": "ParameterList",
+                                        "src": "1027:20:0"
+                                    },
+                                    {
+                                        "attributes": {
+                                            "parameters": [
+                                                null
+                                            ]
+                                        },
+                                        "children": [],
+                                        "id": 35,
+                                        "name": "ParameterList",
+                                        "src": "1057:0:0"
+                                    },
+                                    {
+                                        "children": [
+                                            {
+                                                "children": [
+                                                    {
+                                                        "attributes": {
+                                                            "argumentTypes": null,
+                                                            "isConstant": false,
+                                                            "isLValue": false,
+                                                            "isPure": false,
+                                                            "isStructConstructorCall": false,
+                                                            "lValueRequested": false,
+                                                            "names": [
+                                                                null
+                                                            ],
+                                                            "type": "tuple()",
+                                                            "type_conversion": false
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "attributes": {
+                                                                    "argumentTypes": [
+                                                                        {
+                                                                            "typeIdentifier": "t_bool",
+                                                                            "typeString": "bool"
+                                                                        }
+                                                                    ],
+                                                                    "overloadedDeclarations": [
+                                                                        78,
+                                                                        79
+                                                                    ],
+                                                                    "referencedDeclaration": 78,
+                                                                    "type": "function (bool) pure",
+                                                                    "value": "require"
+                                                                },
+                                                                "id": 36,
+                                                                "name": "Identifier",
+                                                                "src": "1067:7:0"
+                                                            },
+                                                            {
+                                                                "attributes": {
+                                                                    "argumentTypes": null,
+                                                                    "commonType": {
+                                                                        "typeIdentifier": "t_bytes4",
+                                                                        "typeString": "bytes4"
+                                                                    },
+                                                                    "isConstant": false,
+                                                                    "isLValue": false,
+                                                                    "isPure": false,
+                                                                    "lValueRequested": false,
+                                                                    "operator": "!=",
+                                                                    "type": "bool"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "attributes": {
+                                                                            "argumentTypes": null,
+                                                                            "overloadedDeclarations": [
+                                                                                null
+                                                                            ],
+                                                                            "referencedDeclaration": 33,
+                                                                            "type": "bytes4",
+                                                                            "value": "interfaceId"
+                                                                        },
+                                                                        "id": 37,
+                                                                        "name": "Identifier",
+                                                                        "src": "1075:11:0"
+                                                                    },
+                                                                    {
+                                                                        "attributes": {
+                                                                            "argumentTypes": null,
+                                                                            "hexvalue": "30786666666666666666",
+                                                                            "isConstant": false,
+                                                                            "isLValue": false,
+                                                                            "isPure": true,
+                                                                            "lValueRequested": false,
+                                                                            "subdenomination": null,
+                                                                            "token": "number",
+                                                                            "type": "int_const 4294967295",
+                                                                            "value": "0xffffffff"
+                                                                        },
+                                                                        "id": 38,
+                                                                        "name": "Literal",
+                                                                        "src": "1090:10:0"
+                                                                    }
+                                                                ],
+                                                                "id": 39,
+                                                                "name": "BinaryOperation",
+                                                                "src": "1075:25:0"
+                                                            }
+                                                        ],
+                                                        "id": 40,
+                                                        "name": "FunctionCall",
+                                                        "src": "1067:34:0"
+                                                    }
+                                                ],
+                                                "id": 41,
+                                                "name": "ExpressionStatement",
+                                                "src": "1067:34:0"
+                                            },
+                                            {
+                                                "children": [
+                                                    {
+                                                        "attributes": {
+                                                            "argumentTypes": null,
+                                                            "isConstant": false,
+                                                            "isLValue": false,
+                                                            "isPure": false,
+                                                            "lValueRequested": false,
+                                                            "operator": "=",
+                                                            "type": "bool"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "attributes": {
+                                                                    "argumentTypes": null,
+                                                                    "isConstant": false,
+                                                                    "isLValue": true,
+                                                                    "isPure": false,
+                                                                    "lValueRequested": true,
+                                                                    "type": "bool"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "attributes": {
+                                                                            "argumentTypes": null,
+                                                                            "overloadedDeclarations": [
+                                                                                null
+                                                                            ],
+                                                                            "referencedDeclaration": 11,
+                                                                            "type": "mapping(bytes4 => bool)",
+                                                                            "value": "_supportedInterfaces"
+                                                                        },
+                                                                        "id": 42,
+                                                                        "name": "Identifier",
+                                                                        "src": "1111:20:0"
+                                                                    },
+                                                                    {
+                                                                        "attributes": {
+                                                                            "argumentTypes": null,
+                                                                            "overloadedDeclarations": [
+                                                                                null
+                                                                            ],
+                                                                            "referencedDeclaration": 33,
+                                                                            "type": "bytes4",
+                                                                            "value": "interfaceId"
+                                                                        },
+                                                                        "id": 43,
+                                                                        "name": "Identifier",
+                                                                        "src": "1132:11:0"
+                                                                    }
+                                                                ],
+                                                                "id": 44,
+                                                                "name": "IndexAccess",
+                                                                "src": "1111:33:0"
+                                                            },
+                                                            {
+                                                                "attributes": {
+                                                                    "argumentTypes": null,
+                                                                    "hexvalue": "74727565",
+                                                                    "isConstant": false,
+                                                                    "isLValue": false,
+                                                                    "isPure": true,
+                                                                    "lValueRequested": false,
+                                                                    "subdenomination": null,
+                                                                    "token": "bool",
+                                                                    "type": "bool",
+                                                                    "value": "true"
+                                                                },
+                                                                "id": 45,
+                                                                "name": "Literal",
+                                                                "src": "1147:4:0"
+                                                            }
+                                                        ],
+                                                        "id": 46,
+                                                        "name": "Assignment",
+                                                        "src": "1111:40:0"
+                                                    }
+                                                ],
+                                                "id": 47,
+                                                "name": "ExpressionStatement",
+                                                "src": "1111:40:0"
+                                            }
+                                        ],
+                                        "id": 48,
+                                        "name": "Block",
+                                        "src": "1057:101:0"
+                                    }
+                                ],
+                                "id": 49,
+                                "name": "FunctionDefinition",
+                                "src": "1000:158:0"
+                            }
+                        ],
+                        "id": 50,
+                        "name": "ContractDefinition",
+                        "src": "167:993:0"
+                    }
+                ],
+                "id": 51,
+                "name": "SourceUnit",
+                "src": "0:1160:0"
+            },
+            "id": 0,
+            "source": "pragma solidity 0.5.13;\n\nimport \"./interfaces/IERC165.sol\";\n\n/**\n * @title ERC165\n * @author Matt Condon (@shrugs)\n * @dev Implements ERC165 using a lookup table.\n */\ncontract ERC165 is IERC165 {\n    bytes4 private constant _INTERFACE_ID_ERC165 = 0x01ffc9a7;\n    /*\n     * 0x01ffc9a7 ===\n     *     bytes4(keccak256('supportsInterface(bytes4)'))\n     */\n\n    /**\n     * @dev a mapping of interface id to whether or not it's supported\n     */\n    mapping(bytes4 => bool) private _supportedInterfaces;\n\n    /**\n     * @dev A contract implementing SupportsInterfaceWithLookup\n     * implement ERC165 itself\n     */\n    constructor () internal {\n        _registerInterface(_INTERFACE_ID_ERC165);\n    }\n\n    /**\n     * @dev implement supportsInterface(bytes4) using a lookup table\n     */\n    function supportsInterface(bytes4 interfaceId) external view returns (bool) {\n        return _supportedInterfaces[interfaceId];\n    }\n\n    /**\n     * @dev internal method for registering an interface\n     */\n    function _registerInterface(bytes4 interfaceId) internal {\n        require(interfaceId != 0xffffffff);\n        _supportedInterfaces[interfaceId] = true;\n    }\n}"
+        },
+        "/Users/mcplums/Repos/Harber/contracts/interfaces/IERC165.sol": {
+            "contracts": [
+                {
+                    "contractName": "IERC165",
+                    "bytecode": "0x",
+                    "deployedBytecode": "0x",
+                    "sourceMap": "",
+                    "deployedSourceMap": ""
+                }
+            ],
+            "ast": {
+                "absolutePath": "/Users/mcplums/Repos/Harber/contracts/interfaces/IERC165.sol",
+                "exportedSymbols": {
+                    "IERC165": [
+                        60
+                    ]
+                },
+                "id": 61,
+                "nodeType": "SourceUnit",
+                "nodes": [
+                    {
+                        "id": 52,
+                        "literals": [
+                            "solidity",
+                            "^",
+                            "0.5",
+                            ".0"
+                        ],
+                        "nodeType": "PragmaDirective",
+                        "src": "0:23:1"
+                    },
+                    {
+                        "baseContracts": [],
+                        "contractDependencies": [],
+                        "contractKind": "interface",
+                        "documentation": "@title IERC165\n@dev https://github.com/ethereum/EIPs/blob/master/EIPS/eip-165.md",
+                        "fullyImplemented": false,
+                        "id": 60,
+                        "linearizedBaseContracts": [
+                            60
+                        ],
+                        "name": "IERC165",
+                        "nodeType": "ContractDefinition",
+                        "nodes": [
+                            {
+                                "body": null,
+                                "documentation": "@notice Query if a contract implements an interface\n@param interfaceId The interface identifier, as specified in ERC-165\n@dev Interface identification is specified in ERC-165. This function\nuses less than 30,000 gas.",
+                                "id": 59,
+                                "implemented": false,
+                                "kind": "function",
+                                "modifiers": [],
+                                "name": "supportsInterface",
+                                "nodeType": "FunctionDefinition",
+                                "parameters": {
+                                    "id": 55,
+                                    "nodeType": "ParameterList",
+                                    "parameters": [
+                                        {
+                                            "constant": false,
+                                            "id": 54,
+                                            "name": "interfaceId",
+                                            "nodeType": "VariableDeclaration",
+                                            "scope": 59,
+                                            "src": "432:18:1",
+                                            "stateVariable": false,
+                                            "storageLocation": "default",
+                                            "typeDescriptions": {
+                                                "typeIdentifier": "t_bytes4",
+                                                "typeString": "bytes4"
+                                            },
+                                            "typeName": {
+                                                "id": 53,
+                                                "name": "bytes4",
+                                                "nodeType": "ElementaryTypeName",
+                                                "src": "432:6:1",
+                                                "typeDescriptions": {
+                                                    "typeIdentifier": "t_bytes4",
+                                                    "typeString": "bytes4"
+                                                }
+                                            },
+                                            "value": null,
+                                            "visibility": "internal"
+                                        }
+                                    ],
+                                    "src": "431:20:1"
+                                },
+                                "returnParameters": {
+                                    "id": 58,
+                                    "nodeType": "ParameterList",
+                                    "parameters": [
+                                        {
+                                            "constant": false,
+                                            "id": 57,
+                                            "name": "",
+                                            "nodeType": "VariableDeclaration",
+                                            "scope": 59,
+                                            "src": "475:4:1",
+                                            "stateVariable": false,
+                                            "storageLocation": "default",
+                                            "typeDescriptions": {
+                                                "typeIdentifier": "t_bool",
+                                                "typeString": "bool"
+                                            },
+                                            "typeName": {
+                                                "id": 56,
+                                                "name": "bool",
+                                                "nodeType": "ElementaryTypeName",
+                                                "src": "475:4:1",
+                                                "typeDescriptions": {
+                                                    "typeIdentifier": "t_bool",
+                                                    "typeString": "bool"
+                                                }
+                                            },
+                                            "value": null,
+                                            "visibility": "internal"
+                                        }
+                                    ],
+                                    "src": "474:6:1"
+                                },
+                                "scope": 60,
+                                "src": "405:76:1",
+                                "stateMutability": "view",
+                                "superFunction": null,
+                                "visibility": "external"
+                            }
+                        ],
+                        "scope": 61,
+                        "src": "120:363:1"
+                    }
+                ],
+                "src": "0:483:1"
+            },
+            "legacyAST": {
+                "attributes": {
+                    "absolutePath": "/Users/mcplums/Repos/Harber/contracts/interfaces/IERC165.sol",
+                    "exportedSymbols": {
+                        "IERC165": [
+                            60
+                        ]
+                    }
+                },
+                "children": [
+                    {
+                        "attributes": {
+                            "literals": [
+                                "solidity",
+                                "^",
+                                "0.5",
+                                ".0"
+                            ]
+                        },
+                        "id": 52,
+                        "name": "PragmaDirective",
+                        "src": "0:23:1"
+                    },
+                    {
+                        "attributes": {
+                            "baseContracts": [
+                                null
+                            ],
+                            "contractDependencies": [
+                                null
+                            ],
+                            "contractKind": "interface",
+                            "documentation": "@title IERC165\n@dev https://github.com/ethereum/EIPs/blob/master/EIPS/eip-165.md",
+                            "fullyImplemented": false,
+                            "linearizedBaseContracts": [
+                                60
+                            ],
+                            "name": "IERC165",
+                            "scope": 61
+                        },
+                        "children": [
+                            {
+                                "attributes": {
+                                    "body": null,
+                                    "documentation": "@notice Query if a contract implements an interface\n@param interfaceId The interface identifier, as specified in ERC-165\n@dev Interface identification is specified in ERC-165. This function\nuses less than 30,000 gas.",
+                                    "implemented": false,
+                                    "isConstructor": false,
+                                    "kind": "function",
+                                    "modifiers": [
+                                        null
+                                    ],
+                                    "name": "supportsInterface",
+                                    "scope": 60,
+                                    "stateMutability": "view",
+                                    "superFunction": null,
+                                    "visibility": "external"
+                                },
+                                "children": [
+                                    {
+                                        "children": [
+                                            {
+                                                "attributes": {
+                                                    "constant": false,
+                                                    "name": "interfaceId",
+                                                    "scope": 59,
+                                                    "stateVariable": false,
+                                                    "storageLocation": "default",
+                                                    "type": "bytes4",
+                                                    "value": null,
+                                                    "visibility": "internal"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "attributes": {
+                                                            "name": "bytes4",
+                                                            "type": "bytes4"
+                                                        },
+                                                        "id": 53,
+                                                        "name": "ElementaryTypeName",
+                                                        "src": "432:6:1"
+                                                    }
+                                                ],
+                                                "id": 54,
+                                                "name": "VariableDeclaration",
+                                                "src": "432:18:1"
+                                            }
+                                        ],
+                                        "id": 55,
+                                        "name": "ParameterList",
+                                        "src": "431:20:1"
+                                    },
+                                    {
+                                        "children": [
+                                            {
+                                                "attributes": {
+                                                    "constant": false,
+                                                    "name": "",
+                                                    "scope": 59,
+                                                    "stateVariable": false,
+                                                    "storageLocation": "default",
+                                                    "type": "bool",
+                                                    "value": null,
+                                                    "visibility": "internal"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "attributes": {
+                                                            "name": "bool",
+                                                            "type": "bool"
+                                                        },
+                                                        "id": 56,
+                                                        "name": "ElementaryTypeName",
+                                                        "src": "475:4:1"
+                                                    }
+                                                ],
+                                                "id": 57,
+                                                "name": "VariableDeclaration",
+                                                "src": "475:4:1"
+                                            }
+                                        ],
+                                        "id": 58,
+                                        "name": "ParameterList",
+                                        "src": "474:6:1"
+                                    }
+                                ],
+                                "id": 59,
+                                "name": "FunctionDefinition",
+                                "src": "405:76:1"
+                            }
+                        ],
+                        "id": 60,
+                        "name": "ContractDefinition",
+                        "src": "120:363:1"
+                    }
+                ],
+                "id": 61,
+                "name": "SourceUnit",
+                "src": "0:483:1"
+            },
+            "id": 1,
+            "source": "pragma solidity ^0.5.0;\n\n/**\n * @title IERC165\n * @dev https://github.com/ethereum/EIPs/blob/master/EIPS/eip-165.md\n */\ninterface IERC165 {\n    /**\n     * @notice Query if a contract implements an interface\n     * @param interfaceId The interface identifier, as specified in ERC-165\n     * @dev Interface identification is specified in ERC-165. This function\n     * uses less than 30,000 gas.\n     */\n    function supportsInterface(bytes4 interfaceId) external view returns (bool);\n}"
+        }
+    }
+}
