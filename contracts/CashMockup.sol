@@ -12,8 +12,8 @@ contract CashMockup
 
     using SafeMath for uint256;
 
-mapping (address => uint256) balances;
-mapping (address => mapping (address => uint256 ) ) allowances;
+mapping (address => uint256) public balances;
+mapping (address => mapping (address => uint256 ) ) public allowances;
 
 function approve(address _spender, uint256 _amount) external returns (bool)
 {

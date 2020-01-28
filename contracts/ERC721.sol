@@ -16,7 +16,7 @@ contract ERC721 is ERC165, IERC721 {
     using Address for address;
     using Counters for Counters.Counter;
 
-    bool private init = false;
+    bool public init = false;
 
     // Equals to `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`
     // which can be also obtained as `IERC721Receiver(0).onERC721Received.selector`
@@ -135,7 +135,7 @@ contract ERC721 is ERC165, IERC721 {
      * @param tokenId uint256 ID of the token to be transferred
      */
     function transferFrom(address from, address to, uint256 tokenId) public {
-        require(_isApprovedOrOwner(msg.sender, tokenId));
+        require(_isApprovedOrOwner(msg.sender));
 
         _transferFrom(from, to, tokenId);
     }
@@ -185,17 +185,14 @@ contract ERC721 is ERC165, IERC721 {
     /**
      * @dev Returns whether the given spender can transfer a given token ID
      * @param spender address of the spender to query
-     * @param tokenId uint256 ID of the token to be transferred
      * @return bool whether the msg.sender is approved for the given token ID,
      * is an operator of the owner, or is the owner of the token
      */
-    function _isApprovedOrOwner(address spender, uint256 tokenId) internal view returns (bool) {
+    function _isApprovedOrOwner(address spender) internal view returns (bool) {
         // address owner = ownerOf(tokenId);
         // return (spender == owner || getApproved(tokenId) == spender || isApprovedForAll(owner, spender));
 
         // MODIFIED:
-        // Below is just to suppress the compilation warning in truffle
-        // tokenId  = 2;
         // Only the steward is allowed to transfer
         return (spender == steward); 
     }

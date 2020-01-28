@@ -28,7 +28,6 @@ interface Cash
     function transferFrom(address _from, address _to, uint256 _amount) external returns (bool);
 }
 
-//TODO: have not yet tested the new check winner functions
 //TODO: replace completesets with OICash
 //TODO: change front end to only approve the same amount that is being sent
 // ^ will also need to figure out how to pass this number in the correct format because decimal
@@ -62,16 +61,16 @@ contract Harber {
     address public andrewsAddress; 
     /// @dev the addresses of the various Augur binary markets. One market for each token. Initiated in the constructor and does not change.
     address[numberOfTokens] public marketAddresses; 
-    /// @dev in dai-wei (so $100 = 100000000000000000000)
+    /// @dev in attodai (so $100 = 100000000000000000000)
     uint256[numberOfTokens] public price; 
     /// @dev amount collected for each token, ie the sum of all owners' rent per token. Used to know how many complete
     /// @dev ...sets to sell for each market (since there is one market per token)
     uint256[numberOfTokens] public collectedPerMarket; 
-    /// @dev an easy way to track the above across all tokens.
+    /// @dev an easy way to track the above across all tokens. It should always increment at the same time as the above increments. 
     uint256 public totalCollected; 
     /// @dev used to determine the rent due. Rent is due for the period (now - timeLastCollected), at which point timeLastCollected is set to now.
     uint256[numberOfTokens] public timeLastCollected; 
-    /// @dev when a token was bought. used only for front end
+    /// @dev when a token was bought. used only for front end 'owned since' section. Rent collection only needs timeLastCollected.
     uint256[numberOfTokens] public timeAcquired; 
     /// @dev tracks the position of the current owner in the previousOwnerTracker mapping
     uint256[numberOfTokens] public currentOwnerIndex; 
@@ -91,16 +90,16 @@ contract Harber {
     bool public marketsResolved = false; // must be false for step1, true for step2
     bool public marketsResolvedWithoutErrors = false; // set in step 1. If true, normal payout. If false, return all funds
     /// @dev step 2:
-    uint256 public loopsRequired = 0; // for returnDeposits and returnAllFunds functions
+    uint256 public loopsRequired; // for returnDeposits and returnAllFunds functions
     bool public step2Complete = false; // must be false for step2, true for step3
     /// @dev step 3:
-    uint256 public step3LoopsCompleted = 0;
+    uint256 public step3LoopsCompleted;
     bool public step3Complete = false; // must be false for step3, true for step4
     /// @dev step 4:
     bool public step4Complete = false; // must be false for step4, true for step5
     /// @dev step 5:
-    uint256 public daiAvailableToDistribute = 0;
-    uint256 public step5LoopsCompleted = 0;
+    uint256 public daiAvailableToDistribute;
+    uint256 public step5LoopsCompleted;
     bool public step5Complete = false; // must be false for step5
     
     ///  STRUCTS
@@ -119,7 +118,7 @@ contract Harber {
     mapping (uint256 => mapping (uint256 => address) ) public ownerTracker; 
     /// @dev this is the key variable that tracks the total amount of time each user has held it for. It is key because this is used to determine the proportion of the pot to be sent to each winning address    
     mapping (uint256 => mapping (address => uint256) ) public timeHeld;
-    /// @dev sums all the timeHelds for each token. Not required, but saves on gas when paying out
+    /// @dev sums all the timeHelds for each token. Not required, but saves on gas when paying out. Should always increment at the same time as timeHeld
     mapping (uint256 => uint256) public totalTimeHeld; 
     /// @dev keeps track of all the deposits for each token, for each owner. Unused deposits are not returned automatically when there is a new buyer. 
     /// @dev they can be withdrawn manually however. Unused deposits are returned automatically upon resolution of the market
@@ -164,14 +163,14 @@ contract Harber {
 
     ////////////// MODIFIERS //////////////
     /// @notice prevents functions from being interacted with after the end of the competition 
-    /// @dev should be on all public functions
+    /// @dev should be on all public 'ordinary course of business' functions
     modifier notResolved() {
         require(marketsResolved == false);
         _;
     }
 
     /// @notice collect Rent
-    /// @dev should be on all 'ordinary course of business' functions
+    /// @dev should be on all public 'ordinary course of business' functions except the collect rent ones obviously.
     modifier collectRent(uint256 _tokenId) {
        _collectRent(_tokenId); 
        _;
@@ -210,7 +209,7 @@ contract Harber {
     }
 
     /// @dev for front end only
-    /// @return how much the current user (regardless of whether or not they own it) has deposited
+    /// @return how much the current user has deposited
     function userDepositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) 
     {
         uint256 _rentOwed = rentOwed(_tokenId);
@@ -255,7 +254,7 @@ contract Harber {
     }
 
     // * internal *
-    /// @notice buy complete sets from Augur
+    /// @notice sell complete sets from Augur
     function _sellCompleteSets() internal 
     {
         if (usingAugur == true) {
@@ -570,7 +569,7 @@ contract Harber {
     }
 
     /// @notice collects rent for a specific token
-    /// @dev also updates calculates and updates how long the current user has held the token for
+    /// @dev also calculates and updates how long the current user has held the token for
     function _collectRent(uint256 _tokenId) public notResolved() {
         require(_tokenId < numberOfTokens, "This team does not exist");
         //only collect rent if the token is owned (ie, if owned by the contract this implies unowned)
