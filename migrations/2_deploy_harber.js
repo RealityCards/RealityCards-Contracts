@@ -42,7 +42,7 @@ module.exports = function (deployer, network) {
   if (network === "kovan" || network === "develsopment") {
 
     //deploy the token contract (which Harber needs the address of)
-    deployer.deploy(Token, "Harber.io", "HARB", andrewsAddress).then((deployedToken) => {
+    deployer.deploy(Token, "Harber.io", "HARB").then((deployedToken) => {
       //deploy Harber (which mint NFTs needs the address of)
       return deployer.deploy(Harber, andrewsAddress, deployedToken.address, augurCashAddress, augurMarketAddress, augurShareTokenAddress, augurMainAddress, marketedExpectedResolutionTime);
     }).then((deployedHarber) => {
@@ -50,11 +50,13 @@ module.exports = function (deployer, network) {
       return deployer.deploy(mintNFTs, Token.address, deployedHarber.address);
     });
 
+    
+
   } else if (network === "development") {
     //deploy the cash contract
     deployer.deploy(CashMockup).then((deployedCash) => {
       //deploy the token contract (which Harber needs the address of)
-      return deployer.deploy(Token, "Harber.io", "HARB", andrewsAddress).then((deployedToken) => {
+      return deployer.deploy(Token, "Harber.io", "HARB").then((deployedToken) => {
         //deploy Harber (which mint NFTs needs the address of)
         return deployer.deploy(Harber, andrewsAddress, deployedToken.address, deployedCash.address, augurMarketAddress, augurShareTokenAddress, augurMainAddress, marketedExpectedResolutionTime);
       }).then((deployedHarber) => {

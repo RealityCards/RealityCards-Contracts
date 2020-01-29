@@ -12,16 +12,11 @@ import "./ERC721Metadata.sol";
  */
 contract ERC721Full is ERC721, ERC721Enumerable, ERC721Metadata {
 
-    address private andrewsAddress;
+    constructor (string memory name, string memory symbol) public ERC721Metadata(name, symbol) {
 
-    constructor (string memory name, string memory symbol, address _andrewsAddress) public ERC721Metadata(name, symbol) {
-        andrewsAddress = _andrewsAddress;
-        // setup();
     }
 
     function setup(address _originalOwner) public {
-        //consider the token setup here being modified such that it enforces a match between the token ID on augur and the token ID here. Ie, use the getMarketOutcomes function within the main Augur contract to get the 'name' of each outcome, and then pass this name over to the _mint process. 
-        //also, note that token 0 is not used, since this refers to an invalid outcome within Augur
         require(!init, "Already initialized");
         init = true;
 
