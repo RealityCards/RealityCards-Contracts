@@ -56,7 +56,7 @@ module.exports = function (deployer, network) {
     //deploy the cash contract
     deployer.deploy(CashMockup).then((deployedCash) => {
       //deploy the token contract (which Harber needs the address of)
-      return deployer.deploy(Token, "Harber.io", "HARB").then((deployedToken) => {
+      return deployer.deploy(Token, "Harber.io", "HARB" ).then((deployedToken) => {
         //deploy Harber (which mint NFTs needs the address of)
         return deployer.deploy(Harber, andrewsAddress, deployedToken.address, deployedCash.address, augurMarketAddress, augurShareTokenAddress, augurMainAddress, marketedExpectedResolutionTime);
       }).then((deployedHarber) => {

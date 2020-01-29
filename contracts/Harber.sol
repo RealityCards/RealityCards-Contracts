@@ -42,7 +42,7 @@ contract Harber {
 
     /// NUMBER OF TOKENS
     /// @dev also equals number of markets on augur
-    uint256 constant numberOfTokens = 20;
+    uint256 constant public numberOfTokens = 20;
 
     /// TESTING VARIABLES
     /// @dev if usingAugur false, none of the augur contracts are interacted with. Required false for ganache testing. 
@@ -609,7 +609,7 @@ contract Harber {
             
             emit LogRentCollection(_rentOwed);
         }
-
+         
         timeLastCollected[_tokenId] = now;
     }
     
@@ -673,23 +673,28 @@ contract Harber {
     /// @notice withdraw deposit
     /// @dev do not need to be the current owner
     function withdrawDeposit(uint256 _dai, uint256 _tokenId) public collectRent(_tokenId) notResolved() returns (uint256) {
-        _withdrawDeposit(_dai, _tokenId);
+        // if statement needed because deposit may have just reduced to zero following _collectRent function
+        if (deposits[_tokenId][msg.sender] > 0) {
+            _withdrawDeposit(_dai, _tokenId);
+        }
     }
 
     /// @notice withdraw full deposit
     /// @dev do not need to be the current owner
     function exit(uint256 _tokenId) public collectRent(_tokenId) notResolved() {
-        _withdrawDeposit(deposits[_tokenId][msg.sender],  _tokenId);
+        // if statement needed because deposit may have just reduced to zero following _collectRent function
+        if (deposits[_tokenId][msg.sender] > 0) {
+            _withdrawDeposit(deposits[_tokenId][msg.sender],  _tokenId);
+        }
     }
 
     /* internal */
     /// @notice actually withdraw the deposit
     function _withdrawDeposit(uint256 _dai, uint256 _tokenId) internal {
         require(deposits[_tokenId][msg.sender] >= _dai, 'Withdrawing too much');
-
         deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].sub(_dai);
         _sendCash(msg.sender, _dai);
-
+         
         if(deposits[_tokenId][msg.sender] == 0) {
             _revertToPreviousOwner(_tokenId);
         }
@@ -699,6 +704,7 @@ contract Harber {
     /// @notice if a users deposit runs out, either return to previous owner or foreclose
     function _revertToPreviousOwner(uint256 _tokenId) internal {
         bool _reverted = false;
+        
         while (_reverted == false)
         {
             assert(currentOwnerIndex[_tokenId] >=0);
@@ -721,7 +727,8 @@ contract Harber {
                 _reverted = true;
                 emit LogReturnToPreviousOwner(_tokenId,_previousOwner);
             }
-        }       
+        }   
+          
     }
 
     /* internal */
