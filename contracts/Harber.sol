@@ -30,6 +30,9 @@ interface Cash
 
 //TODO: replace completesets with OICash
 //TODO: change front end to only approve the same amount that is being sent
+//TODO: look into calculating the number of loops and DoS attacks
+//TODO: I dont think dai deposited via the deposit dai function is returned in return
+// all deposits?
 // ^ will also need to figure out how to pass this number in the correct format because decimal
 // ^ does not seem to work for more than 100 dai, it needs big number
 
@@ -74,9 +77,6 @@ contract Harber {
     uint256[numberOfTokens] public timeAcquired; 
     /// @dev tracks the position of the current owner in the previousOwnerTracker mapping
     uint256[numberOfTokens] public currentOwnerIndex; 
-    /// @dev used to cycle through ownerTracker during finalse & payout. Since you can't find the size of a mapping. 
-    /// @dev if the value is 5, it means there are 5 owners. Ie it is not doing programming counting. 
-    uint256[numberOfTokens] public numberOfOwners; 
   
     /// WINNING OUTCOME VARIABLES
     /// @dev start with invalid winning outcome
@@ -90,17 +90,9 @@ contract Harber {
     bool public marketsResolved = false; // must be false for step1, true for step2
     bool public marketsResolvedWithoutErrors = false; // set in step 1. If true, normal payout. If false, return all funds
     /// @dev step 2:
-    uint256 public loopsRequired; // for returnDeposits and returnAllFunds functions
-    bool public step2Complete = false; // must be false for step2, true for step3
-    /// @dev step 3:
-    uint256 public step3LoopsCompleted;
-    bool public step3Complete = false; // must be false for step3, true for step4
-    /// @dev step 4:
-    bool public step4Complete = false; // must be false for step4, true for step5
-    /// @dev step 5:
+    bool public step2Complete = false; // must be false for step2, true for complete
+    /// @dev complete:
     uint256 public daiAvailableToDistribute;
-    uint256 public step5LoopsCompleted;
-    bool public step5Complete = false; // must be false for step5
     
     ///  STRUCTS
     struct purchase {
@@ -114,17 +106,13 @@ contract Harber {
     /// @dev this does NOT keep a reliable list of all owners, if it reverts to a previous owner then the next owner will overwrite the owner that was in that slot.
     /// @dev the variable currentOwnerIndex is used to track the location of the current owner. 
     mapping (uint256 => mapping (uint256 => purchase) ) public previousOwnerTracker;  
-    /// @dev used to keep hold of all the owners, for payout, similar to previousOwnerTracker except that the pointer to the current position never decrements
-    mapping (uint256 => mapping (uint256 => address) ) public ownerTracker; 
-    /// @dev this is the key variable that tracks the total amount of time each user has held it for. It is key because this is used to determine the proportion of the pot to be sent to each winning address    
+    /// @dev used to keep hold of all the owners, for payout, similar to previousOwnerTracker except that the pointer to the current position never decrements   
     mapping (uint256 => mapping (address => uint256) ) public timeHeld;
     /// @dev sums all the timeHelds for each token. Not required, but saves on gas when paying out. Should always increment at the same time as timeHeld
     mapping (uint256 => uint256) public totalTimeHeld; 
     /// @dev keeps track of all the deposits for each token, for each owner. Unused deposits are not returned automatically when there is a new buyer. 
     /// @dev they can be withdrawn manually however. Unused deposits are returned automatically upon resolution of the market
     mapping (uint256 => mapping (address => uint256) ) public deposits; 
-    /// @dev this is required to prevent the ownerTracker variable being incremented unless a completely new user buys the token. 
-    mapping (uint256 => mapping (address => bool)) public everOwned; 
     /// @dev keeps track of all the rent paid by each user. So that it can be returned in case of an invalid market outcome. Only required in this instance. 
     mapping (address => uint256) public collectedPerUser;
 
@@ -141,10 +129,9 @@ contract Harber {
         completeSets = ShareToken(_addressOfCompleteSetsContract);
 
         // initialise arrays
-        for (uint i=0; i<numberOfTokens; i++)
+        for (uint i = 0; i < numberOfTokens; i++)
         {
             currentOwnerIndex[i]=0;
-            numberOfOwners[i]=0;
             market[i] = IMarket(_addressesOfMarkets[i]);
         }
      
@@ -258,7 +245,7 @@ contract Harber {
     function _sellCompleteSets() internal 
     {
         if (usingAugur == true) {
-            for (uint i=0; i<numberOfTokens; i++) {
+            for (uint i = 0; i < numberOfTokens; i++) {
                 uint256 _setsToSell =collectedPerMarket[i].div(100);
                 completeSets.publicSellCompleteSets(market[i], _setsToSell);
             } 
@@ -274,7 +261,7 @@ contract Harber {
         if (usingAugur) {
             uint256 _resolvedOutcomesCount = 0;
 
-            for (uint i=0; i<numberOfTokens; i++) {
+            for (uint i = 0; i < numberOfTokens; i++) {
                 // binary market has three outcomes: 0 (invalid), 1 (yes), 2 (no)
                 if (market[i].getWinningPayoutNumerator(0) > 0 || market[i].getWinningPayoutNumerator(1) > 0 || market[i].getWinningPayoutNumerator(2) > 0  ) {
                     _resolvedOutcomesCount = _resolvedOutcomesCount.add(1);
@@ -305,7 +292,7 @@ contract Harber {
             uint256 _winningOutcomesCount = 0;
             uint256 _invalidOutcomesCount = 0;
 
-            for (uint i=0; i<numberOfTokens; i++) {
+            for (uint i = 0; i < numberOfTokens; i++) {
                 if (market[i].getWinningPayoutNumerator(0) > 0) {
                     _invalidOutcomesCount = _invalidOutcomesCount.add(1);
                 }
@@ -351,9 +338,10 @@ contract Harber {
 
     ////////////// MARKET RESOLUTION FUNCTIONS ////////////// 
 
-    /// @notice the first of five functions which must be called, one after the other, to conclude the competition
+    /// @notice the first of two functions which must be called, one after the other, to conclude the competition
+    /// @notice winnings can be paid out (or funds returned) only when these two steps are completed
     /// @notice this function checks whether the Augur markets have resolved, and if yes, whether they resolved correct or not
-    /// @dev these five functions are done seperately because if they were done at once, the gas cost could easily cross the block limit
+    /// @dev they are split into two sections due to the presence of step1BemergencyExit and step1CcircuitBreaker
     /// @dev can be called by anyone 
     /// @dev can be called multiple times, but only once after markets have indeed resolved
     /// @dev the two arguments passed are for testing only
@@ -366,7 +354,8 @@ contract Harber {
             collectRentAllTokens();
             // lock everything down
             marketsResolved = true;
-             // now check if they all resolved without errors. 
+             // now check if they all resolved without errors. It is set to false upon contract initialisation 
+             // this function also sets winningOutcome if there is one
             if (_haveAllAugurMarketsResolvedWithoutErrors(_hardCodedWinner, _hardCodedResolvedCorrectly)) {
                 marketsResolvedWithoutErrors = true;
             }
@@ -385,84 +374,28 @@ contract Harber {
     }
 
     /// @notice Same as above, except that only I can call it, and I can call it whenever
+    /// @notice to be clear, this only allows me to return all funds. I can not set a winner. 
     function step1CcircuitBreaker() public 
     {
         require(marketsResolved == false, "step1 can only be completed once");
-        require(msg.sender == andrewsAddress, "Only Andrew, First of His Name and Breaker of Chains, can call this");
+        require(msg.sender == andrewsAddress, "Only owner can call this");
         collectRentAllTokens();
         marketsResolved = true;
     }
 
-    /// @notice the second of five functions which must be called, one after the other, to conclude the competition
-    /// @dev this function gets the required number of loops needed in the returnDeposits and returnAllFunds functions. We get it once only to save gas. 
-    /// @dev can be called by anyone, but only once
-    function step2getLoopsRequired() public
-    {
-        require(marketsResolved == true, "step1 must be completed first");
-        require(step2Complete == false, "step2 should only be run once"); 
-
-        //get the total number of loops required for returnDeposits or returnAllFunds
-        uint256 _loopsRequired = 0;
-        for (uint i=0; i < numberOfTokens; i++) 
-        {  
-            for (uint j=0; j < numberOfOwners[i]; j++)
-            {  
-                _loopsRequired = _loopsRequired.add(1);
-            }
-        }
-
-        loopsRequired = _loopsRequired;
-        step2Complete = true;
-    }
-
-    /// @notice the third of five functions which must be called, one after the other, to conclude the competition
-    /// @notice returns unused deposits to all users
-    /// @dev the _numberOfLoopsToDo argument allows this function to be completed over multiple txs, protecting against denial of service attacks
-    /// @dev trying to return all deposits to all users at once could easily hit the block limit
-    /// @dev can be called by anyone, but only once (all the way through)
-    function step3returnDeposits(uint256 _numberOfLoopsToDo) public
-    {
-        require(step2Complete == true, "step2 must be completed first");
-        require(step3Complete == false, "step3 should only be run once");
-
-        uint256 _currentLoop = 0;
-        uint256 _startAtLoop = step3LoopsCompleted;
-        uint256 _endAtLoop = step3LoopsCompleted.add(_numberOfLoopsToDo);
-
-        for (uint i=0; i < numberOfTokens; i++) 
-        {  
-            for (uint j=0; j < numberOfOwners[i]; j++)
-            { 
-                if (_currentLoop >= _startAtLoop && _currentLoop < _endAtLoop) {
-                    address _thisUsersAddress = ownerTracker[i][j];
-                    uint256 _depositToReturn = deposits[i][_thisUsersAddress];
-                    deposits[i][_thisUsersAddress] = 0;
-
-                    if (_depositToReturn > 0) {
-                        _sendCash(_thisUsersAddress,_depositToReturn);
-                    }
-
-                    step3LoopsCompleted = step3LoopsCompleted.add(1);
-                }
-                _currentLoop = _currentLoop.add(1);
-            }
-        }
-
-        if (_endAtLoop>=loopsRequired) {
-            step3Complete = true;
-        }
-    }
-
-    /// @notice the fourth of five functions which must be called, one after the other, to conclude the competition
+    /// @notice the second of the two functions which must be called, one after the other, to conclude the competition
     /// @dev gets funds back from Augur, gets the available funds for distribution and pays me my 1%
     /// @dev can be called by anyone, but only once 
-    function step4sellCompleteSetsAndPayAndrew() public
+    function step2sellCompleteSetsAndPayAndrew() public
     {
-        require(step3Complete == true, "step3 must be completed first");
-        require(step4Complete == false, "step4 should only be run once");
+        require(marketsResolved == true, "step1 must be completed first");
+        require(step2Complete == false, "step2 should only be run once");
 
+        uint256 _balanceBefore = _getContractsCashBalance();
         _sellCompleteSets();
-        daiAvailableToDistribute = _getContractsCashBalance();
+        uint256 _balanceAfter = _getContractsCashBalance();
+        //daiAvailableToDistribute therefore does not include unused deposits
+        daiAvailableToDistribute = _balanceAfter.sub(_balanceBefore);
 
         //only pay me if markets resolved correctly. If not I don't deserve shit
         if (marketsResolvedWithoutErrors) {
@@ -471,91 +404,70 @@ contract Harber {
             daiAvailableToDistribute = daiAvailableToDistribute.sub(_andrewsWellEarntMonies);
         }
 
-        step4Complete = true;
+        step2Complete = true;
     }
 
-    /// @notice the final of five functions which must be called, one after the other, to conclude the competition
-    /// @notice determines whether markets resolved correctly- if yes, payout winnings, if not, return all funds
-    /// @dev can be called by anyone, but only once (all the way through)
-    /// @dev _numberOfLoopsToDo and _hardCodedWinner are testing variables only
-    function step5complete(uint256 _numberOfLoopsToDo) public
+    /// @notice the final function of the competition resolution process. Pays out winnings, or returns funds, as necessary
+    /// @dev pulls dai to users
+    function complete() public
     {
-        require(step4Complete == true, "step4 must be completed first");
-        require(step5Complete == false, "step5 should only be run once"); 
+        require(step2Complete == true, "step2 must be completed first");
 
         if (marketsResolvedWithoutErrors) {
-                _payoutWinnings(_numberOfLoopsToDo);
+                _payoutWinnings();
             }
             else {
-                _returnAllFunds(_numberOfLoopsToDo);
+                _returnRent();
             }
     }
 
-    // * internal * 
+     // * internal * 
     /// @notice pays winnings to the winners
-    /// @dev must be internal and only called by step5complete
-    function _payoutWinnings(uint256 _numberOfLoopsToDo) internal
+    /// @dev must be internal and only called by complete
+    function _payoutWinnings() internal
     {
-        uint256 _currentLoop = 0;
-        uint256 _startAtLoop = step5LoopsCompleted;
-        uint256 _endAtLoop = step5LoopsCompleted.add(_numberOfLoopsToDo);
+        uint256 _winnersTimeHeld = timeHeld[winningOutcome][msg.sender];
 
-        for (uint i=0; i < numberOfOwners[winningOutcome]; i++)
-        {   
-            if (_currentLoop >= _startAtLoop && _currentLoop < _endAtLoop) {   
-                address _winnersAddress = ownerTracker[winningOutcome][i];
-                uint256 _winnersTimeHeld = timeHeld[winningOutcome][_winnersAddress];
-                uint256 _numerator = daiAvailableToDistribute.mul(_winnersTimeHeld);
-                uint256 _winningsToTransfer = _numerator.div(totalTimeHeld[winningOutcome]);
-
-                if (_winningsToTransfer > 0) {
-                    _sendCash(_winnersAddress,_winningsToTransfer);
-                }
-
-                step5LoopsCompleted = step5LoopsCompleted.add(1);
-            }
-            _currentLoop = _currentLoop.add(1);
+        if (_winnersTimeHeld > 0) {
+            timeHeld[winningOutcome][msg.sender] = 0; // otherwise they can keep paying themselves over and over
+            uint256 _numerator = daiAvailableToDistribute.mul(_winnersTimeHeld);
+            uint256 _winningsToTransfer = _numerator.div(totalTimeHeld[winningOutcome]);
+            _sendCash(msg.sender, _winningsToTransfer);
         }
-
-        if (_endAtLoop>=numberOfOwners[winningOutcome]) {
-            step5Complete = true;
-        }
-        emit LogFinalised(winningOutcome,daiAvailableToDistribute);
     }
 
     // * internal * 
     /// @notice returns all funds to users in case of invalid outcome
-    /// @dev must be internal and only called by step5complete or emergencyExit
-    function _returnAllFunds(uint256 _numberOfLoopsToDo) internal
+    /// @dev must be internal and only called by complete
+    function _returnRent() internal
     {
-        uint256 _currentLoop = 0;
-        uint256 _startAtLoop = step5LoopsCompleted;
-        uint256 _endAtLoop = step5LoopsCompleted.add(_numberOfLoopsToDo);
+        uint256 _rentCollected = collectedPerUser[msg.sender];
 
-        for (uint i=0; i < numberOfTokens; i++) 
-        {  
-            for (uint j=0; j < numberOfOwners[i]; j++)
-            { 
-                if (_currentLoop >= _startAtLoop && _currentLoop < _endAtLoop) {
-                    address _usersAddress = ownerTracker[i][j];
-                    uint256 _numerator = daiAvailableToDistribute.mul(collectedPerUser[_usersAddress]);
-                    uint256 _fundsToReturn = _numerator.div(totalCollected);
-                    collectedPerUser[_usersAddress] = 0; //same address could be across multiple tokens, don't want to pay the user more than once
+        if (_rentCollected > 0) {
+            collectedPerUser[msg.sender] = 0; // otherwise they can keep paying themselves over and over
+            uint256 _numerator = daiAvailableToDistribute.mul(_rentCollected);
+            uint256 _rentToToReturn = _numerator.div(totalCollected);
+            _sendCash(msg.sender, _rentToToReturn);
+        }
+    }
 
-                    if (_fundsToReturn > 0) {
-                        _sendCash(_usersAddress,_fundsToReturn);
-                    }
+    /// @notice withdraw full deposit after markets have resolved
+    /// @dev the other withdraw deposit functions are locked when markets have resolved so must use this one
+    /// @dev ... which can only be called if markets have resolved. This function is also different in that it does 
+    /// @dev ... not attempt to collect rent or transfer ownership to a previous owner
+    function withdrawDepositAfterResolution() public 
+    {
+        require(marketsResolved == true, "step1 must be completed first");
+         
+        for (uint i = 0; i < numberOfTokens; i++) {
 
-                    step5LoopsCompleted = step5LoopsCompleted.add(1);
-                }
-                _currentLoop = _currentLoop.add(1);
+            uint256 _depositToReturn = deposits[i][msg.sender];
+
+            if (_depositToReturn > 0) {
+                deposits[i][msg.sender] = 0;
+                _sendCash(msg.sender, _depositToReturn);
             }
         }
-
-        if (_endAtLoop>=loopsRequired) {
-            step5Complete = true;
-        }
-        emit LogFundsReturned(daiAvailableToDistribute);
     }
 
     ////////////// ORDINARY COURSE OF BUSINESS FUNCTIONS //////////////
@@ -563,7 +475,7 @@ contract Harber {
     /// @notice collects rent for all tokens
     /// @dev makes it easy for me to call whenever I want to keep people paying their rent
     function collectRentAllTokens() public notResolved() {
-       for (uint i=0; i < numberOfTokens; i++) {
+       for (uint i = 0; i < numberOfTokens; i++) {
             _collectRent(i);
         }
     }
@@ -636,13 +548,6 @@ contract Harber {
             currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].add(1); 
             previousOwnerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
             previousOwnerTracker[_tokenId][currentOwnerIndex[_tokenId]].owner = msg.sender; 
-
-            // update the ownerTracker and numberOfOwners variables. only for new owners.
-        if (everOwned[_tokenId][msg.sender] == false) {
-            everOwned[_tokenId][msg.sender] = true;
-            ownerTracker[_tokenId][numberOfOwners[_tokenId]] = msg.sender;
-            numberOfOwners[_tokenId] = numberOfOwners[_tokenId].add(1);
-        }
 
             //update timeAcquired for the front end
             timeAcquired[_tokenId] = now;

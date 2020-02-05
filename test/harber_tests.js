@@ -30,8 +30,7 @@ contract('HarberTests', (accounts) => {
   user5 = accounts[5];
   user6 = accounts[6];
   user7 = accounts[7];
-  userx = accounts[9];
-  var andrewsAddress = '0x34A971cA2fd6DA2Ce2969D716dF922F17aAA1dB0';
+  andrewsAddress = accounts[9];
 
   const augurMarketAddress = [
     '0xA830e8A271909b2407985F95921E5dD4AD1d859A',
@@ -428,6 +427,8 @@ contract('HarberTests', (accounts) => {
       assert.equal(price, web3.utils.toWei('0', 'ether'));
     });
 
+
+
     // these are four crucial variables that are relied on for other functions. are they what they should be?
     it('test timeHeld and totalTimeHeld', async () => {
       //same as previous but this time check that time is correct
@@ -641,12 +642,8 @@ contract('HarberTests', (accounts) => {
     // total days: 22 = 1900800 seconds
     // time: 0: 10 days (604800) 
     ////////////////////////
-    var loops = 100;
     await harber.step1checkMarketsResolved(1, true); 
-    await harber.step2getLoopsRequired(); 
-    await harber.step3returnDeposits(loops); 
-    await harber.step4sellCompleteSetsAndPayAndrew(); 
-    await harber.step5complete(loops);
+    await harber.step2sellCompleteSetsAndPayAndrew(); 
     ////////////////////////
     // total deposits = 75, check:
     var totalCollected = await harber.totalCollected.call();
@@ -655,20 +652,23 @@ contract('HarberTests', (accounts) => {
     assert.isBelow(difference/totalCollected,0.00001);
     //knock off 1% that was sent to me so use 74.25 below
     //check user0 winnings
+    await harber.complete({ from: user0 });
     var winningsSentToUser = await cash.balanceOf.call(user0);
     var winningsShouldBe = ether('74.25').mul(new BN('604800')).div(new BN('61900800'));
     assert.equal(toString(winningsSentToUser),toString(winningsShouldBe));
     //check user1 winnings
+    await harber.complete({ from: user1 });
     var winningsSentToUser = await cash.balanceOf.call(user1);
     var winningsShouldBe = ether('74.25').mul(new BN('604800')).div(new BN('61900800'));
     assert.equal(toString(winningsSentToUser),toString(winningsShouldBe));
     //check user2 winnings
+    await harber.complete({ from: user2 });
     var winningsSentToUser = await cash.balanceOf.call(user2);
     var winningsShouldBe = ether('74.25').mul(new BN('691200')).div(new BN('61900800'));
     assert.equal(toString(winningsSentToUser),toString(winningsShouldBe));
   });
 
-  // // test the payout functions work fine, with different winners each time
+  // test the payout functions work fine, with different winners each time
   it('test complete- winner 2', async () => {
     /////// SETUP //////
     await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user0 });
@@ -698,12 +698,8 @@ contract('HarberTests', (accounts) => {
     // total days: 22 = 1900800 seconds
     // time: 0: 10 days (604800) 
     ////////////////////////
-    var loops = 100;
     await harber.step1checkMarketsResolved(2, true); 
-    await harber.step2getLoopsRequired(); 
-    await harber.step3returnDeposits(loops); 
-    await harber.step4sellCompleteSetsAndPayAndrew(); 
-    await harber.step5complete(loops);
+    await harber.step2sellCompleteSetsAndPayAndrew(); 
     ////////////////////////
     // total deposits = 75, check:
     var totalCollected = await harber.totalCollected.call();
@@ -712,20 +708,23 @@ contract('HarberTests', (accounts) => {
     assert.isBelow(difference/totalCollected,0.00001);
     //knock off 1% that was sent to me so use 74.25 below
     //check user0 winnings
+    await harber.complete({ from: user0 });
     var winningsSentToUser = await cash.balanceOf.call(user0);
     var winningsShouldBe = ether('74.25');
     assert.equal(toString(winningsSentToUser),toString(winningsShouldBe));
     //check user1 winnings
+    await harber.complete({ from: user1 });
     var winningsSentToUser = await cash.balanceOf.call(user1);
     var winningsShouldBe = ether('0');
     assert.equal(toString(winningsSentToUser),toString(winningsShouldBe));
     //check user2 winnings
+    await harber.complete({ from: user2 });
     var winningsSentToUser = await cash.balanceOf.call(user2);
     var winningsShouldBe = ether('0');
     assert.equal(toString(winningsSentToUser),toString(winningsShouldBe));
   });
 
-  // // test the payout functions work fine, with different winners each time
+  // test the payout functions work fine, with different winners each time
   it('test complete- invalid', async () => {
     /////// SETUP //////
     await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user0 });
@@ -755,28 +754,27 @@ contract('HarberTests', (accounts) => {
     // total days: 22 = 1900800 seconds
     // time: 0: 10 days (604800) 
     ////////////////////////
-    var loops = 100;
-    await harber.step1BemergencyExit(); 
-    await harber.step2getLoopsRequired(); 
-    await harber.step3returnDeposits(loops); 
-    await harber.step4sellCompleteSetsAndPayAndrew(); 
-    await harber.step5complete(loops);
+    await harber.step1checkMarketsResolved(2, false); //the 2 is irrelevant
+    await harber.step2sellCompleteSetsAndPayAndrew(); 
     ////////////////////////
     //check user0 winnings 
+    await harber.complete({ from: user0 });
     var winningsSentToUser = await cash.balanceOf.call(user0);
     var winningsShouldBe = ether('17');
     assert.equal(toString(winningsSentToUser),toString(winningsShouldBe));
-    //check user0 winnings 
+    //check user1 winnings 
+    await harber.complete({ from: user1 });
     var winningsSentToUser = await cash.balanceOf.call(user1);
     var winningsShouldBe = ether('34');
     assert.equal(toString(winningsSentToUser),toString(winningsShouldBe));
-    //check user0 winnings 
+    //check user2 winnings 
+    await harber.complete({ from: user2 });
     var winningsSentToUser = await cash.balanceOf.call(user2);
     var winningsShouldBe = ether('24');
     assert.equal(toString(winningsSentToUser),toString(winningsShouldBe));
   });
 
-  // // test the emergency Exit function works
+  // test the emergency Exit function works
   it('test emergencyExit', async () => {
     /////// SETUP //////
     await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user0 });
@@ -806,12 +804,8 @@ contract('HarberTests', (accounts) => {
     // total days: 22 = 1900800 seconds
     // time: 0: 10 days (604800) 
     ////////////////////////
-    var loops = 100;
-    await harber.step1checkMarketsResolved(1, true); 
-    await harber.step2getLoopsRequired(); 
-    await harber.step3returnDeposits(loops); 
-    await harber.step4sellCompleteSetsAndPayAndrew(); 
-    await harber.step5complete(loops);
+    await harber.step1BemergencyExit(); 
+    await harber.step2sellCompleteSetsAndPayAndrew(); 
     ////////////////////////
     //check user0 winnings 
     var winningsSentToUser = await cash.balanceOf.call(user0);
@@ -826,5 +820,119 @@ contract('HarberTests', (accounts) => {
     var winningsShouldBe = ether('24');
     assert.equal(toString(winningsSentToUser),toString(winningsShouldBe));
   });
+
+    // test the circuit breaker works
+    it('test circuit breaker', async () => {
+      /////// SETUP //////
+      await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user0 });
+      await cash.approve(harber.address, web3.utils.toWei('100', 'ether'),{ from: user0 });
+      await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user1 });
+      await cash.approve(harber.address, web3.utils.toWei('100', 'ether'),{ from: user1 });
+      await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user2 });
+      await cash.approve(harber.address, web3.utils.toWei('100', 'ether'),{ from: user2 });
+      //rent losing teams
+      await harber.newRental(web3.utils.toWei('1', 'ether'),2,web3.utils.toWei('10', 'ether'),{ from: user0 }); //used deposit of 10
+      await harber.newRental(web3.utils.toWei('2', 'ether'),3,web3.utils.toWei('20', 'ether'),{ from: user1 }); //used deposit of 20
+      //rent winning team
+      await harber.newRental(web3.utils.toWei('1', 'ether'),1,web3.utils.toWei('10', 'ether'),{ from: user0 }); //used deposit of 7
+      await time.increase(time.duration.weeks(1));
+      await harber.newRental(web3.utils.toWei('2', 'ether'),1,web3.utils.toWei('20', 'ether'),{ from: user1 }); //used deposit of 14
+      await time.increase(time.duration.weeks(1));
+      await harber.newRental(web3.utils.toWei('3', 'ether'),1,web3.utils.toWei('24', 'ether'),{ from: user2 }); //used deposit of 24
+      await time.increase(time.duration.weeks(2)); 
+      // winner 1: 
+      // totalcollected = 75, 
+      // paid: 0: 17, 1: 34, 2: 30
+      // total days: 22 = 1900800 seconds
+      // time: 0: 7 days (604800) 1: 7 days 2: 8 days (691200)
+      // winner 2: 
+      // totalcollected = 75, 
+      // paid: 0: 10
+      // total days: 22 = 1900800 seconds
+      // time: 0: 10 days (604800) 
+      ////////////////////////
+      await harber.step1CcircuitBreaker({ from: andrewsAddress} ); 
+      await harber.step2sellCompleteSetsAndPayAndrew(); 
+      ////////////////////////
+      //check user0 winnings 
+      var winningsSentToUser = await cash.balanceOf.call(user0);
+      var winningsShouldBe = ether('17');
+      assert.equal(toString(winningsSentToUser),toString(winningsShouldBe));
+      //check user0 winnings 
+      var winningsSentToUser = await cash.balanceOf.call(user1);
+      var winningsShouldBe = ether('34');
+      assert.equal(toString(winningsSentToUser),toString(winningsShouldBe));
+      //check user0 winnings 
+      var winningsSentToUser = await cash.balanceOf.call(user2);
+      var winningsShouldBe = ether('24');
+      assert.equal(toString(winningsSentToUser),toString(winningsShouldBe));
+    });
+
+    it('test return deposits work- before step2sellCompleteSetsAndPayAndrew', async () => {
+    /////// SETUP //////
+    // await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user0 });
+    // await cash.approve(harber.address, web3.utils.toWei('100', 'ether'),{ from: user0 });
+    // await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user1 });
+    // await cash.approve(harber.address, web3.utils.toWei('100', 'ether'),{ from: user1 });
+    // await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user2 });
+    // await cash.approve(harber.address, web3.utils.toWei('100', 'ether'),{ from: user2 });
+    // //rent losing teams
+    // await harber.newRental(web3.utils.toWei('1', 'ether'),2,web3.utils.toWei('10', 'ether'),{ from: user0 }); //used deposit of 10
+    // await harber.newRental(web3.utils.toWei('2', 'ether'),3,web3.utils.toWei('20', 'ether'),{ from: user1 }); //used deposit of 20
+    // //rent winning team
+    // await harber.newRental(web3.utils.toWei('1', 'ether'),1,web3.utils.toWei('10', 'ether'),{ from: user0 }); //used deposit of 7
+    // await time.increase(time.duration.weeks(1));
+    // await harber.newRental(web3.utils.toWei('2', 'ether'),1,web3.utils.toWei('20', 'ether'),{ from: user1 }); //used deposit of 14
+    // await time.increase(time.duration.weeks(1));
+    // await harber.newRental(web3.utils.toWei('3', 'ether'),1,web3.utils.toWei('24', 'ether'),{ from: user2 }); //used deposit of 24
+    // await time.increase(time.duration.weeks(2)); 
+    // // winner 1: 
+    // // totalcollected = 75, 
+    // // paid: 0: 17, 1: 34, 2: 30
+    // // total days: 22 = 1900800 seconds
+    // // time: 0: 7 days (604800) 1: 7 days 2: 8 days (691200)
+    // // winner 2: 
+    // // totalcollected = 75, 
+    // // paid: 0: 10
+    // // total days: 22 = 1900800 seconds
+    // // time: 0: 10 days (604800) 
+    // ////////////////////////
+    // await harber.step1checkMarketsResolved(1, true); 
+    // await harber.withdrawDepositAfterResolution({ from: user0 });
+
+
+
+
+
+
+
+
+
+
+
+    // await harber.step2sellCompleteSetsAndPayAndrew(); 
+    // ////////////////////////
+    // // total deposits = 75, check:
+    // var totalCollected = await harber.totalCollected.call();
+    // var totalCollectedShouldBe = web3.utils.toWei('75', 'ether');
+    // var difference = (totalCollected.toString()-totalCollectedShouldBe.toString());
+    // assert.isBelow(difference/totalCollected,0.00001);
+    // //knock off 1% that was sent to me so use 74.25 below
+    // //check user0 winnings
+    // await harber.complete({ from: user0 });
+    // var winningsSentToUser = await cash.balanceOf.call(user0);
+    // var winningsShouldBe = ether('74.25').mul(new BN('604800')).div(new BN('61900800'));
+    // assert.equal(toString(winningsSentToUser),toString(winningsShouldBe));
+    // //check user1 winnings
+    // await harber.complete({ from: user1 });
+    // var winningsSentToUser = await cash.balanceOf.call(user1);
+    // var winningsShouldBe = ether('74.25').mul(new BN('604800')).div(new BN('61900800'));
+    // assert.equal(toString(winningsSentToUser),toString(winningsShouldBe));
+    // //check user2 winnings
+    // await harber.complete({ from: user2 });
+    // var winningsSentToUser = await cash.balanceOf.call(user2);
+    // var winningsShouldBe = ether('74.25').mul(new BN('691200')).div(new BN('61900800'));
+    // assert.equal(toString(winningsSentToUser),toString(winningsShouldBe));
+    });
 
 });

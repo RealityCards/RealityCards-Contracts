@@ -7,9 +7,8 @@
     "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "chain": "ganache-cli -e 10000 -m 'sustain seek diet attend ready neutral damage join food extra monkey usage'",
-    "moving_chain": "ganache-cli -e 10000 -b 3 -m 'sustain seek diet attend ready neutral damage join food extra monkey usage'"
+    "chain": "ganache-cli -m 'defense ready lady corn other ride rapid collect avocado tongue price nut' -l 10000000",
+    "prettier": "prettier --write contracts/Harber.sol"
   },
   "repository": {
     "type": "git",
@@ -23,12 +22,16 @@
   },
   "homepage": "https://github.com/truffle-box/drizzle-box#readme",
   "dependencies": {
+    "acorn": "^7.1.0",
     "openzeppelin-solidity": "^2.1.1",
     "openzeppelin-test-helpers": "^0.2.0",
+    "truffle-contract": "^4.0.31",
     "truffle-hdwallet-provider": "^1.0.17",
     "truffle-security": "^1.6.1"
   },
   "devDependencies": {
-    "eth-gas-reporter": "^0.1.12"
+    "eth-gas-reporter": "^0.1.12",
+    "prettier": "^1.19.1",
+    "prettier-plugin-solidity": "^1.0.0-alpha.37"
   }
 }
