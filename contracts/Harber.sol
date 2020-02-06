@@ -31,6 +31,7 @@ interface Cash
 //TODO: replace completesets with OICash
 //TODO: change front end to only approve the same amount that is being sent
 //TODO: look into calculating the number of loops and DoS attacks
+//TODO: finish testing given the new market resolution, and update design_patterns to take it
 //TODO: I dont think dai deposited via the deposit dai function is returned in return
 // all deposits?
 // ^ will also need to figure out how to pass this number in the correct format because decimal
@@ -61,7 +62,7 @@ contract Harber {
 
     /// UINTS, ADDRESSES, BOOLS
     /// @dev my whiskey fund, for my 1% cut
-    address public andrewsAddress; 
+    address private andrewsAddress; 
     /// @dev the addresses of the various Augur binary markets. One market for each token. Initiated in the constructor and does not change.
     address[numberOfTokens] public marketAddresses; 
     /// @dev in attodai (so $100 = 100000000000000000000)
@@ -75,7 +76,7 @@ contract Harber {
     uint256[numberOfTokens] public timeLastCollected; 
     /// @dev when a token was bought. used only for front end 'owned since' section. Rent collection only needs timeLastCollected.
     uint256[numberOfTokens] public timeAcquired; 
-    /// @dev tracks the position of the current owner in the previousOwnerTracker mapping
+    /// @dev tracks the position of the current owner in the ownerTracker mapping
     uint256[numberOfTokens] public currentOwnerIndex; 
   
     /// WINNING OUTCOME VARIABLES
@@ -105,8 +106,8 @@ contract Harber {
     /// @dev ...ownership can be reverted to a previous owner with the previous price. Index 0 is NOT used, this tells the contract to foreclose.
     /// @dev this does NOT keep a reliable list of all owners, if it reverts to a previous owner then the next owner will overwrite the owner that was in that slot.
     /// @dev the variable currentOwnerIndex is used to track the location of the current owner. 
-    mapping (uint256 => mapping (uint256 => purchase) ) public previousOwnerTracker;  
-    /// @dev used to keep hold of all the owners, for payout, similar to previousOwnerTracker except that the pointer to the current position never decrements   
+    mapping (uint256 => mapping (uint256 => purchase) ) public ownerTracker;  
+    /// @dev used to keep hold of all the owners, for payout, similar to ownerTracker except that the pointer to the current position never decrements   
     mapping (uint256 => mapping (address => uint256) ) public timeHeld;
     /// @dev sums all the timeHelds for each token. Not required, but saves on gas when paying out. Should always increment at the same time as timeHeld
     mapping (uint256 => uint256) public totalTimeHeld; 
@@ -121,7 +122,7 @@ contract Harber {
     {
         marketExpectedResolutionTime = _marketExpectedResolutionTime;
         andrewsAddress = _andrewsAddress;
-        marketAddresses = _addressesOfMarkets; //this is to make the market addresses public so users can check the actual augur markets for themselves
+        marketAddresses = _addressesOfMarkets; // this is to make the market addresses public so users can check the actual augur markets for themselves
         
         // external contract variables:
         team = IERC721Full(_addressOfToken);
@@ -129,13 +130,12 @@ contract Harber {
         completeSets = ShareToken(_addressOfCompleteSetsContract);
 
         // initialise arrays
-        for (uint i = 0; i < numberOfTokens; i++)
-        {
+        for (uint i = 0; i < numberOfTokens; i++) {
             currentOwnerIndex[i]=0;
             market[i] = IMarket(_addressesOfMarkets[i]);
         }
      
-        //approve Augur contract to transfer this contract's dai
+        // approve Augur contract to transfer this contract's dai
         cash.approve(_addressOfMainAugurContract,(2**256)-1);
     } 
 
@@ -165,27 +165,23 @@ contract Harber {
 
     ////////////// VIEW FUNCTIONS //////////////
     /// @dev used in testing only
-    function getOwnerTrackerPrice(uint256 _tokenId, uint256 _index) public view returns (uint256)
-    {
-        return (previousOwnerTracker[_tokenId][_index].price);
+    function getOwnerTrackerPrice(uint256 _tokenId, uint256 _index) public view returns (uint256) {
+        return (ownerTracker[_tokenId][_index].price);
     }
 
     /// @dev used in testing only
-    function getOwnerTrackerAddress(uint256 _tokenId, uint256 _index) public view returns (address)
-    {
-        return (previousOwnerTracker[_tokenId][_index].owner);
+    function getOwnerTrackerAddress(uint256 _tokenId, uint256 _index) public view returns (address) {
+        return (ownerTracker[_tokenId][_index].owner);
     }
 
     /// @dev called in collectRent function, and various other view functions 
-    function rentOwed(uint256 _tokenId) public view returns (uint256 augurFundsDue) 
-    {
+    function rentOwed(uint256 _tokenId) public view returns (uint256 augurFundsDue) {
         return price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(1 days);
     }
 
     /// @dev for front end only
     /// @return how much the current owner has deposited
-    function liveDepositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) 
-    {
+    function liveDepositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) {
         uint256 _rentOwed = rentOwed(_tokenId);
         address _currentOwner = team.ownerOf(_tokenId);
         if(_rentOwed >= deposits[_tokenId][_currentOwner]) {
@@ -197,19 +193,16 @@ contract Harber {
 
     /// @dev for front end only
     /// @return how much the current user has deposited
-    function userDepositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) 
-    {
+    function userDepositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) {
         uint256 _rentOwed = rentOwed(_tokenId);
         address _currentOwner = team.ownerOf(_tokenId);
 
-        if(_currentOwner == msg.sender)
-        {
-            if(_rentOwed >= deposits[_tokenId][msg.sender]) 
-        {
-            return 0;
-        } else {
-            return deposits[_tokenId][msg.sender].sub(_rentOwed);
-        }
+        if(_currentOwner == msg.sender) {
+            if(_rentOwed >= deposits[_tokenId][msg.sender]) {
+                return 0;
+            } else {
+                return deposits[_tokenId][msg.sender].sub(_rentOwed);
+            }
         } else {
             return deposits[_tokenId][msg.sender];
         }
@@ -217,8 +210,7 @@ contract Harber {
 
     /// @dev for front end only
     /// @return estimated rental expiry time
-    function rentalExpiryTime(uint256 _tokenId) public view returns (uint256) 
-    {
+    function rentalExpiryTime(uint256 _tokenId) public view returns (uint256) {
         uint256 pps;
         pps = price[_tokenId].div(1 days);
         if (pps == 0) {
@@ -232,8 +224,7 @@ contract Harber {
     ////////////// AUGUR FUNCTIONS //////////////
     // * internal * 
     /// @notice buy complete sets from Augur
-    function _buyCompleteSets(uint256 _tokenId, uint256 _rentOwed) internal 
-    {
+    function _buyCompleteSets(uint256 _tokenId, uint256 _rentOwed) internal {
         if (usingAugur == true) {
             uint256 _setsToBuy =_rentOwed.div(100);
             completeSets.publicBuyCompleteSets(market[_tokenId], _setsToBuy);
@@ -242,8 +233,7 @@ contract Harber {
 
     // * internal *
     /// @notice sell complete sets from Augur
-    function _sellCompleteSets() internal 
-    {
+    function _sellCompleteSets() internal {
         if (usingAugur == true) {
             for (uint i = 0; i < numberOfTokens; i++) {
                 uint256 _setsToSell =collectedPerMarket[i].div(100);
@@ -256,8 +246,7 @@ contract Harber {
     /// @notice THIS FUNCTION HAS NOT BEEN TESTED ON AUGUR YET
     /// @notice checks if all X (x = number of tokens = number of teams) markets have resolved to either yes, no, or invalid
     /// @return true if yes, false if no
-    function _haveAllAugurMarketsResolved() internal returns(bool) 
-    {   
+    function _haveAllAugurMarketsResolved() internal returns(bool) {   
         if (usingAugur) {
             uint256 _resolvedOutcomesCount = 0;
 
@@ -274,8 +263,8 @@ contract Harber {
                 return false;
             }
         }
-        //hard code 'yes' for testing
         else {
+            //hard code 'yes' for testing
             return true;
         }
     }
@@ -286,8 +275,7 @@ contract Harber {
     /// @return true if yes, false if no
     /// @dev this function will also set the winningOutcome variable
     /// @dev the two arguments this function takes are for testing only. They are not used when usingAugur is set to true
-    function _haveAllAugurMarketsResolvedWithoutErrors(uint256 _hardCodedWinner, bool _hardCodedResolvedCorrectly) internal returns(bool) 
-    {   
+    function _haveAllAugurMarketsResolvedWithoutErrors(uint256 _hardCodedWinner, bool _hardCodedResolvedCorrectly) internal returns(bool) {   
         if (usingAugur) {
             uint256 _winningOutcomesCount = 0;
             uint256 _invalidOutcomesCount = 0;
@@ -308,8 +296,8 @@ contract Harber {
                 return false;
             }
         }
-        //if in testing mode, return the supplied arguments
         else {
+            //if in testing mode, return the supplied arguments
             winningOutcome = _hardCodedWinner;
             return _hardCodedResolvedCorrectly;
             }
@@ -345,8 +333,7 @@ contract Harber {
     /// @dev can be called by anyone 
     /// @dev can be called multiple times, but only once after markets have indeed resolved
     /// @dev the two arguments passed are for testing only
-    function step1checkMarketsResolved(uint256 _hardCodedWinner, bool _hardCodedResolvedCorrectly) public  
-    {
+    function step1checkMarketsResolved(uint256 _hardCodedWinner, bool _hardCodedResolvedCorrectly) public {
         require(marketsResolved == false, "step1 can only be completed once");
         // first check if all X markets have all resolved one way or the other
         if (_haveAllAugurMarketsResolved()) {
@@ -365,8 +352,7 @@ contract Harber {
     /// @notice emergency function in case the augur markets never resolve for whatever reason
     /// @notice returns all funds to all users
     /// @notice can only be called 6 months after augur markets should have ended 
-    function step1BemergencyExit() public 
-    {
+    function step1BemergencyExit() public  {
         require(marketsResolved == false, "step1 can only be completed once");
         require(now > (marketExpectedResolutionTime + 15778800), "Must wait 6 months for Augur Oracle");
         collectRentAllTokens();
@@ -375,8 +361,7 @@ contract Harber {
 
     /// @notice Same as above, except that only I can call it, and I can call it whenever
     /// @notice to be clear, this only allows me to return all funds. I can not set a winner. 
-    function step1CcircuitBreaker() public 
-    {
+    function step1CcircuitBreaker() public {
         require(marketsResolved == false, "step1 can only be completed once");
         require(msg.sender == andrewsAddress, "Only owner can call this");
         collectRentAllTokens();
@@ -386,18 +371,17 @@ contract Harber {
     /// @notice the second of the two functions which must be called, one after the other, to conclude the competition
     /// @dev gets funds back from Augur, gets the available funds for distribution and pays me my 1%
     /// @dev can be called by anyone, but only once 
-    function step2sellCompleteSetsAndPayAndrew() public
-    {
+    function step2sellCompleteSetsAndPayAndrew() public {
         require(marketsResolved == true, "step1 must be completed first");
         require(step2Complete == false, "step2 should only be run once");
 
         uint256 _balanceBefore = _getContractsCashBalance();
         _sellCompleteSets();
         uint256 _balanceAfter = _getContractsCashBalance();
-        //daiAvailableToDistribute therefore does not include unused deposits
+        // daiAvailableToDistribute therefore does not include unused deposits
         daiAvailableToDistribute = _balanceAfter.sub(_balanceBefore);
 
-        //only pay me if markets resolved correctly. If not I don't deserve shit
+        // only pay me if markets resolved correctly. If not I don't deserve shit
         if (marketsResolvedWithoutErrors) {
             uint256 _andrewsWellEarntMonies = daiAvailableToDistribute.div(100);
             _sendCash(andrewsAddress,_andrewsWellEarntMonies);
@@ -408,9 +392,8 @@ contract Harber {
     }
 
     /// @notice the final function of the competition resolution process. Pays out winnings, or returns funds, as necessary
-    /// @dev pulls dai to users
-    function complete() public
-    {
+    /// @dev users pull dai into their account. Replaces previous push vesion which required looping over unbounded mapping.
+    function complete() public {
         require(step2Complete == true, "step2 must be completed first");
 
         if (marketsResolvedWithoutErrors) {
@@ -424,8 +407,7 @@ contract Harber {
      // * internal * 
     /// @notice pays winnings to the winners
     /// @dev must be internal and only called by complete
-    function _payoutWinnings() internal
-    {
+    function _payoutWinnings() internal {
         uint256 _winnersTimeHeld = timeHeld[winningOutcome][msg.sender];
 
         if (_winnersTimeHeld > 0) {
@@ -439,8 +421,7 @@ contract Harber {
     // * internal * 
     /// @notice returns all funds to users in case of invalid outcome
     /// @dev must be internal and only called by complete
-    function _returnRent() internal
-    {
+    function _returnRent() internal {
         uint256 _rentCollected = collectedPerUser[msg.sender];
 
         if (_rentCollected > 0) {
@@ -455,8 +436,7 @@ contract Harber {
     /// @dev the other withdraw deposit functions are locked when markets have resolved so must use this one
     /// @dev ... which can only be called if markets have resolved. This function is also different in that it does 
     /// @dev ... not attempt to collect rent or transfer ownership to a previous owner
-    function withdrawDepositAfterResolution() public 
-    {
+    function withdrawDepositAfterResolution() public {
         require(marketsResolved == true, "step1 must be completed first");
          
         for (uint i = 0; i < numberOfTokens; i++) {
@@ -536,23 +516,20 @@ contract Harber {
      
         address _currentOwner = team.ownerOf(_tokenId);
 
-        // bought by current owner (ie, it just increases the price, token ownership does not change)
-        if(_currentOwner == msg.sender)
-        {
+        if (_currentOwner == msg.sender) {
+            // bought by current owner (ie, it just increases the price, token ownership does not change)
             changePrice(_newPrice, _tokenId);
-        }
-        // bought by different user (the normal situation)
-        else
-        {   
-            // update currentOwnerIndex and previousOwnerTracker
+        } else {   
+            // bought by different user (the normal situation)
+            // update currentOwnerIndex and ownerTracker
             currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].add(1); 
-            previousOwnerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
-            previousOwnerTracker[_tokenId][currentOwnerIndex[_tokenId]].owner = msg.sender; 
+            ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
+            ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].owner = msg.sender; 
 
-            //update timeAcquired for the front end
+            // update timeAcquired for the front end
             timeAcquired[_tokenId] = now;
 
-            //transfer token to new owner
+            // transfer token to new owner
             _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
             emit LogBuy(msg.sender, _newPrice); 
         }
@@ -569,16 +546,16 @@ contract Harber {
         require(_newPrice > price[_tokenId], "New price must be higher than current price"); 
         require(msg.sender == team.ownerOf(_tokenId), "Not owner");
         
-        //below is the only instance when price is modifed outside of the _transferTokenTo function
+        // below is the only instance when price is modifed outside of the _transferTokenTo function
         price[_tokenId] = _newPrice;
-        previousOwnerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
+        ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
         emit LogPriceChange(price[_tokenId]);
     }
     
     /// @notice withdraw deposit
     /// @dev do not need to be the current owner
     function withdrawDeposit(uint256 _dai, uint256 _tokenId) public collectRent(_tokenId) notResolved() returns (uint256) {
-        // if statement needed because deposit may have just reduced to zero following _collectRent function
+        // if statement needed because deposit may have just reduced to zero following _collectRent modifier
         if (deposits[_tokenId][msg.sender] > 0) {
             _withdrawDeposit(_dai, _tokenId);
         }
@@ -587,7 +564,7 @@ contract Harber {
     /// @notice withdraw full deposit
     /// @dev do not need to be the current owner
     function exit(uint256 _tokenId) public collectRent(_tokenId) notResolved() {
-        // if statement needed because deposit may have just reduced to zero following _collectRent function
+        // if statement needed because deposit may have just reduced to zero following _collectRent modifier
         if (deposits[_tokenId][msg.sender] > 0) {
             _withdrawDeposit(deposits[_tokenId][msg.sender],  _tokenId);
         }
@@ -610,24 +587,20 @@ contract Harber {
     function _revertToPreviousOwner(uint256 _tokenId) internal {
         bool _reverted = false;
         
-        while (_reverted == false)
-        {
+        while (_reverted == false) {
             assert(currentOwnerIndex[_tokenId] >=0);
-            currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].sub(1); // ownerTraker will now point to  previous owner
-            uint256 _index = currentOwnerIndex[_tokenId]; //just for readability
-            address _previousOwner = previousOwnerTracker[_tokenId][_index].owner;
+            currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].sub(1); // currentOwnerIndex will now point to  previous owner
+            uint256 _index = currentOwnerIndex[_tokenId]; // just for readability
+            address _previousOwner = ownerTracker[_tokenId][_index].owner;
 
-            if (_index == 0) 
             //no previous owners. price -> zero, foreclose
-            {
+            if (_index == 0) {
                 _foreclose(_tokenId);
                 _reverted = true;
-            }
-            else if (deposits[_tokenId][_previousOwner] > 0)
-            // previous owner still has a deposit, transfer to them, update the price to what it used to be
-            {
+            } else if (deposits[_tokenId][_previousOwner] > 0) {
+                // previous owner still has a deposit, transfer to them, update the price to what it used to be
                 address _currentOwner = team.ownerOf(_tokenId);
-                uint256 _oldPrice = previousOwnerTracker[_tokenId][_index].price;
+                uint256 _oldPrice = ownerTracker[_tokenId][_index].price;
                 _transferTokenTo(_currentOwner, _previousOwner, _oldPrice, _tokenId);
                 _reverted = true;
                 emit LogReturnToPreviousOwner(_tokenId,_previousOwner);
@@ -640,7 +613,7 @@ contract Harber {
     /// @notice return token to the contract and return price to zero
     function _foreclose(uint256 _tokenId) internal {
         address _currentOwner = team.ownerOf(_tokenId);
-        //third field is price, ie price goes to zero
+        // third field is price, ie price goes to zero
         _transferTokenTo(_currentOwner, address(this), 0, _tokenId);
         emit LogForeclosure(_currentOwner);
     }
