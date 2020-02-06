@@ -225,7 +225,7 @@ contract Harber {
     // * internal * 
     /// @notice buy complete sets from Augur
     function _buyCompleteSets(uint256 _tokenId, uint256 _rentOwed) internal {
-        if (usingAugur == true) {
+        if (usingAugur == false) {
             uint256 _setsToBuy =_rentOwed.div(100);
             completeSets.publicBuyCompleteSets(market[_tokenId], _setsToBuy);
         } 
@@ -234,7 +234,7 @@ contract Harber {
     // * internal *
     /// @notice sell complete sets from Augur
     function _sellCompleteSets() internal {
-        if (usingAugur == true) {
+        if (usingAugur == false) {
             for (uint i = 0; i < numberOfTokens; i++) {
                 uint256 _setsToSell =collectedPerMarket[i].div(100);
                 completeSets.publicSellCompleteSets(market[i], _setsToSell);

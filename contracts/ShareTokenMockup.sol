@@ -14,16 +14,38 @@ interface Cash
     function transferFromNoApproval(address _from, address _to, uint256 _amount) external returns (bool);
 }
 
+contract IMarket 
+{
+    function getWinningPayoutNumerator(uint256 _outcome) external view returns (uint256) 
+    {
+        return 0;
+    }
+}
+
+
 contract ShareTokenMockup
 
 {
-
     using SafeMath for uint256;
     Cash public cash;
+    IMarket[20] public market;
+
+    constructor(address _addressOfCashContract) public 
+    {
+        cash = Cash(_addressOfCashContract);
+    }
 
     function publicBuyCompleteSets(IMarket _market, uint256 _amount) external returns (bool)
-    {
-        cash.transferFromNoApproval(msg.sender, address(this),_amount);
+    { 
+        cash.transferFromNoApproval(msg.sender, address(this), _amount);
+        return true;
     }
+
+    function publicSellCompleteSets(IMarket _market, uint256 _amount) external returns (uint256 _creatorFee, uint256 _reportingFee)
+    { 
+        // uint _balance = cash.balanceOf(address(this);)
+        cash.transferFromNoApproval(address(this), msg.sender, _amount);
+    }
+
 
 }

