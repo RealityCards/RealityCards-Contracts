@@ -37,14 +37,15 @@ contract ShareTokenMockup
 
     function publicBuyCompleteSets(IMarket _market, uint256 _amount) external returns (bool)
     { 
-        cash.transferFromNoApproval(msg.sender, address(this), _amount);
+        uint _amountToBuy = _amount.mul(100);
+        cash.transferFromNoApproval(msg.sender, address(this), _amountToBuy);
         return true;
     }
 
     function publicSellCompleteSets(IMarket _market, uint256 _amount) external returns (uint256 _creatorFee, uint256 _reportingFee)
     { 
-        // uint _balance = cash.balanceOf(address(this);)
-        cash.transferFromNoApproval(address(this), msg.sender, _amount);
+        uint _amountToSell = _amount.mul(100);
+        cash.transferFromNoApproval(address(this), msg.sender, _amountToSell);
     }
 
 
