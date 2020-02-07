@@ -1,47 +1,48 @@
 {
-  "contractName": "Cash",
+  "contractName": "ShareTokenMockup",
   "abi": [
     {
-      "constant": false,
       "inputs": [
         {
           "internalType": "address",
-          "name": "_spender",
+          "name": "_addressOfCashContract",
           "type": "address"
-        },
-        {
-          "internalType": "uint256",
-          "name": "_amount",
-          "type": "uint256"
-        }
-      ],
-      "name": "approve",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
         }
       ],
       "payable": false,
       "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "cash",
+      "outputs": [
+        {
+          "internalType": "contract Cash",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
       "type": "function"
     },
     {
       "constant": true,
       "inputs": [
         {
-          "internalType": "address",
-          "name": "_ownesr",
-          "type": "address"
-        }
-      ],
-      "name": "balanceOf",
-      "outputs": [
-        {
           "internalType": "uint256",
           "name": "",
           "type": "uint256"
+        }
+      ],
+      "name": "market",
+      "outputs": [
+        {
+          "internalType": "contract IMarket",
+          "name": "",
+          "type": "address"
         }
       ],
       "payable": false,
@@ -52,23 +53,8 @@
       "constant": false,
       "inputs": [
         {
-          "internalType": "uint256",
-          "name": "_amount",
-          "type": "uint256"
-        }
-      ],
-      "name": "faucet",
-      "outputs": [],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_to",
+          "internalType": "contract IMarket",
+          "name": "_market",
           "type": "address"
         },
         {
@@ -77,7 +63,7 @@
           "type": "uint256"
         }
       ],
-      "name": "transfer",
+      "name": "publicBuyCompleteSets",
       "outputs": [
         {
           "internalType": "bool",
@@ -93,13 +79,8 @@
       "constant": false,
       "inputs": [
         {
-          "internalType": "address",
-          "name": "_from",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "_to",
+          "internalType": "contract IMarket",
+          "name": "_market",
           "type": "address"
         },
         {
@@ -108,43 +89,17 @@
           "type": "uint256"
         }
       ],
-      "name": "transferFrom",
+      "name": "publicSellCompleteSets",
       "outputs": [
         {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
-        }
-      ],
-      "payable": false,
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "constant": false,
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "_from",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "_to",
-          "type": "address"
+          "internalType": "uint256",
+          "name": "_creatorFee",
+          "type": "uint256"
         },
         {
           "internalType": "uint256",
-          "name": "_amount",
+          "name": "_reportingFee",
           "type": "uint256"
-        }
-      ],
-      "name": "transferFromNoApproval",
-      "outputs": [
-        {
-          "internalType": "bool",
-          "name": "",
-          "type": "bool"
         }
       ],
       "payable": false,
@@ -152,11 +107,11 @@
       "type": "function"
     }
   ],
-  "metadata": "{\"compiler\":{\"version\":\"0.5.13+commit.5b0b510c\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"_spender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"approve\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"address\",\"name\":\"_ownesr\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"faucet\",\"outputs\":[],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"_to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"transfer\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"_from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"address\",\"name\":\"_from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"transferFromNoApproval\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"methods\":{}},\"userdoc\":{\"methods\":{}}},\"settings\":{\"compilationTarget\":{\"/Users/mcplums/Repos/Harber/contracts/mockups/ShareTokenMockup.sol\":\"Cash\"},\"evmVersion\":\"petersburg\",\"libraries\":{},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/mcplums/Repos/Harber/contracts/mockups/ShareTokenMockup.sol\":{\"keccak256\":\"0x925ee8fbac0e5e4c05bd84465ce016f92ab426f9fd78439454d70c66272cbd5f\",\"urls\":[\"bzz-raw://72be85bfa905c59d7c2a9986ed877951fbbb1caf56322b62fbf8c9bcfe22cc57\",\"dweb:/ipfs/QmZQb8Lj4EUu42AEgP8SizL6Ht5tSsVHuJYU3oHrfknkou\"]},\"/Users/mcplums/Repos/Harber/contracts/utils/SafeMath.sol\":{\"keccak256\":\"0x9a60c1d9745cc9061518f083183488c8f3f52ce541acb7fe0691b0a88772b499\",\"urls\":[\"bzz-raw://b0a235bc27e0eceb0902791d80e8a7c24caebecd4b929ad522274c671c6b1c08\",\"dweb:/ipfs/Qmet5DrxLSV1a67weapvSr6Yo4sWjBf7269kr45rT9U9Jc\"]}},\"version\":1}",
-  "bytecode": "0x",
-  "deployedBytecode": "0x",
-  "sourceMap": "",
-  "deployedSourceMap": "",
+  "metadata": "{\"compiler\":{\"version\":\"0.5.13+commit.5b0b510c\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_addressOfCashContract\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"constant\":true,\"inputs\":[],\"name\":\"cash\",\"outputs\":[{\"internalType\":\"contract Cash\",\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":true,\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"market\",\"outputs\":[{\"internalType\":\"contract IMarket\",\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"contract IMarket\",\"name\":\"_market\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"publicBuyCompleteSets\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"constant\":false,\"inputs\":[{\"internalType\":\"contract IMarket\",\"name\":\"_market\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"publicSellCompleteSets\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"_creatorFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_reportingFee\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"methods\":{}},\"userdoc\":{\"methods\":{}}},\"settings\":{\"compilationTarget\":{\"/Users/mcplums/Repos/Harber/contracts/mockups/ShareTokenMockup.sol\":\"ShareTokenMockup\"},\"evmVersion\":\"petersburg\",\"libraries\":{},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/mcplums/Repos/Harber/contracts/mockups/ShareTokenMockup.sol\":{\"keccak256\":\"0x925ee8fbac0e5e4c05bd84465ce016f92ab426f9fd78439454d70c66272cbd5f\",\"urls\":[\"bzz-raw://72be85bfa905c59d7c2a9986ed877951fbbb1caf56322b62fbf8c9bcfe22cc57\",\"dweb:/ipfs/QmZQb8Lj4EUu42AEgP8SizL6Ht5tSsVHuJYU3oHrfknkou\"]},\"/Users/mcplums/Repos/Harber/contracts/utils/SafeMath.sol\":{\"keccak256\":\"0x9a60c1d9745cc9061518f083183488c8f3f52ce541acb7fe0691b0a88772b499\",\"urls\":[\"bzz-raw://b0a235bc27e0eceb0902791d80e8a7c24caebecd4b929ad522274c671c6b1c08\",\"dweb:/ipfs/Qmet5DrxLSV1a67weapvSr6Yo4sWjBf7269kr45rT9U9Jc\"]}},\"version\":1}",
+  "bytecode": "0x608060405234801561001057600080fd5b506040516106173803806106178339818101604052602081101561003357600080fd5b8101908080519060200190929190505050806000806101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff16021790555050610583806100946000396000f3fe608060405234801561001057600080fd5b506004361061004c5760003560e01c806328861d2214610051578063961be391146100bf578063abb60c8014610109578063ad16158e1461016f575b600080fd5b61007d6004803603602081101561006757600080fd5b81019080803590602001909291905050506101d8565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b6100c761020b565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b6101556004803603604081101561011f57600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff16906020019092919080359060200190929190505050610230565b604051808215151515815260200191505060405180910390f35b6101bb6004803603604081101561018557600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff1690602001909291908035906020019092919050505061036c565b604051808381526020018281526020019250505060405180910390f35b600181601481106101e557fe5b016000915054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565b6000806102476064846104a790919063ffffffff16565b90506000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16633d5f28c83330846040518463ffffffff1660e01b8152600401808473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018281526020019350505050602060405180830381600087803b15801561032557600080fd5b505af1158015610339573d6000803e3d6000fd5b505050506040513d602081101561034f57600080fd5b810190808051906020019092919050505050600191505092915050565b60008060006103856064856104a790919063ffffffff16565b90506000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16633d5f28c83033846040518463ffffffff1660e01b8152600401808473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018281526020019350505050602060405180830381600087803b15801561046357600080fd5b505af1158015610477573d6000803e3d6000fd5b505050506040513d602081101561048d57600080fd5b810190808051906020019092919050505050509250929050565b6000808314156104ba5760009050610527565b60008284029050828482816104cb57fe5b0414610522576040517f08c379a000000000000000000000000000000000000000000000000000000000815260040180806020018281038252602181526020018061052e6021913960400191505060405180910390fd5b809150505b9291505056fe536166654d6174683a206d756c7469706c69636174696f6e206f766572666c6f77a265627a7a72315820020eccb29268511ae0d496217db47723606a3ed2f362fb98283e6976374ab93564736f6c634300050d0032",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b506004361061004c5760003560e01c806328861d2214610051578063961be391146100bf578063abb60c8014610109578063ad16158e1461016f575b600080fd5b61007d6004803603602081101561006757600080fd5b81019080803590602001909291905050506101d8565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b6100c761020b565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b6101556004803603604081101561011f57600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff16906020019092919080359060200190929190505050610230565b604051808215151515815260200191505060405180910390f35b6101bb6004803603604081101561018557600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff1690602001909291908035906020019092919050505061036c565b604051808381526020018281526020019250505060405180910390f35b600181601481106101e557fe5b016000915054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565b6000806102476064846104a790919063ffffffff16565b90506000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16633d5f28c83330846040518463ffffffff1660e01b8152600401808473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018281526020019350505050602060405180830381600087803b15801561032557600080fd5b505af1158015610339573d6000803e3d6000fd5b505050506040513d602081101561034f57600080fd5b810190808051906020019092919050505050600191505092915050565b60008060006103856064856104a790919063ffffffff16565b90506000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16633d5f28c83033846040518463ffffffff1660e01b8152600401808473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018281526020019350505050602060405180830381600087803b15801561046357600080fd5b505af1158015610477573d6000803e3d6000fd5b505050506040513d602081101561048d57600080fd5b810190808051906020019092919050505050509250929050565b6000808314156104ba5760009050610527565b60008284029050828482816104cb57fe5b0414610522576040517f08c379a000000000000000000000000000000000000000000000000000000000815260040180806020018281038252602181526020018061052e6021913960400191505060405180910390fd5b809150505b9291505056fe536166654d6174683a206d756c7469706c69636174696f6e206f766572666c6f77a265627a7a72315820020eccb29268511ae0d496217db47723606a3ed2f362fb98283e6976374ab93564736f6c634300050d0032",
+  "sourceMap": "777:755:16:-;;;896:108;8:9:-1;5:2;;;30:1;27;20:12;5:2;896:108:16;;;;;;;;;;;;;;;13:2:-1;8:3;5:11;2:2;;;29:1;26;19:12;2:2;896:108:16;;;;;;;;;;;;;;;;974:22;962:4;;:35;;;;;;;;;;;;;;;;;;896:108;777:755;;;;;;",
+  "deployedSourceMap": "777:755:16:-;;;;8:9:-1;5:2;;;30:1;27;20:12;5:2;777:755:16;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;864:25;;;;;;13:2:-1;8:3;5:11;2:2;;;29:1;26;19:12;2:2;864:25:16;;;;;;;;;;;;;;;;;:::i;:::-;;;;;;;;;;;;;;;;;;;;;;;842:16;;;:::i;:::-;;;;;;;;;;;;;;;;;;;;;;;1010:246;;;;;;13:2:-1;8:3;5:11;2:2;;;29:1;26;19:12;2:2;1010:246:16;;;;;;;;;;;;;;;;;;;;;;;;;;;;:::i;:::-;;;;;;;;;;;;;;;;;;;;;;;1262:266;;;;;;13:2:-1;8:3;5:11;2:2;;;29:1;26;19:12;2:2;1262:266:16;;;;;;;;;;;;;;;;;;;;;;;;;;;;:::i;:::-;;;;;;;;;;;;;;;;;;;;;;;;;864:25;;;;;;;;;;;;;;;;;;;;;;;:::o;842:16::-;;;;;;;;;;;;;:::o;1010:246::-;1093:4;1114:17;1134:16;1146:3;1134:7;:11;;:16;;;;:::i;:::-;1114:36;;1160:4;;;;;;;;;;;:27;;;1188:10;1208:4;1215:12;1160:68;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;8:9:-1;5:2;;;30:1;27;20:12;5:2;1160:68:16;;;;8:9:-1;5:2;;;45:16;42:1;39;24:38;77:16;74:1;67:27;5:2;1160:68:16;;;;;;;13:2:-1;8:3;5:11;2:2;;;29:1;26;19:12;2:2;1160:68:16;;;;;;;;;;;;;;;;;1245:4;1238:11;;;1010:246;;;;:::o;1262:266::-;1346:19;1367:21;1405:18;1426:16;1438:3;1426:7;:11;;:16;;;;:::i;:::-;1405:37;;1452:4;;;;;;;;;;;:27;;;1488:4;1495:10;1507:13;1452:69;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;8:9:-1;5:2;;;30:1;27;20:12;5:2;1452:69:16;;;;8:9:-1;5:2;;;45:16;42:1;39;24:38;77:16;74:1;67:27;5:2;1452:69:16;;;;;;;13:2:-1;8:3;5:11;2:2;;;29:1;26;19:12;2:2;1452:69:16;;;;;;;;;;;;;;;;;1262:266;;;;;;:::o;2159:459:19:-;2217:7;2463:1;2458;:6;2454:45;;;2487:1;2480:8;;;;2454:45;2509:9;2525:1;2521;:5;2509:17;;2553:1;2548;2544;:5;;;;;;:10;2536:56;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;2610:1;2603:8;;;2159:459;;;;;:::o",
   "source": "pragma solidity 0.5.13;\n\nimport \"./../utils/SafeMath.sol\";\n\n// this is only for ganache testing. Public chain deployments will use the existing Augur contract. \n\ninterface Cash \n{\n    function approve(address _spender, uint256 _amount) external returns (bool);\n    function balanceOf(address _ownesr) external view returns (uint256);\n    function faucet(uint256 _amount) external;\n    function transfer(address _to, uint256 _amount) external returns (bool);\n    function transferFrom(address _from, address _to, uint256 _amount) external returns (bool);\n    function transferFromNoApproval(address _from, address _to, uint256 _amount) external returns (bool);\n}\n\ninterface IMarket \n{\n    function getWinningPayoutNumerator(uint256 _outcome) external view returns (uint256);\n}\n\ncontract ShareTokenMockup\n\n{\n    using SafeMath for uint256;\n    Cash public cash;\n    IMarket[20] public market;\n\n    constructor(address _addressOfCashContract) public \n    {\n        cash = Cash(_addressOfCashContract);\n    }\n\n    function publicBuyCompleteSets(IMarket _market, uint256 _amount) external returns (bool)\n    { \n        uint _amountToBuy = _amount.mul(100);\n        cash.transferFromNoApproval(msg.sender, address(this), _amountToBuy);\n        return true;\n    }\n\n    function publicSellCompleteSets(IMarket _market, uint256 _amount) external returns (uint256 _creatorFee, uint256 _reportingFee)\n    { \n        uint _amountToSell = _amount.mul(100);\n        cash.transferFromNoApproval(address(this), msg.sender, _amountToSell);\n    }\n\n\n}",
   "sourcePath": "/Users/mcplums/Repos/Harber/contracts/mockups/ShareTokenMockup.sol",
   "ast": {
@@ -3874,21 +3829,16 @@
     "version": "0.5.13+commit.5b0b510c.Emscripten.clang"
   },
   "networks": {
-    "42": {
-      "links": {},
-      "address": "0x31996b3E027Bf9b8b77056f3833F32A9ffbe90f9",
-      "transactionHash": "0xdcaf3c08f680ef10bfdc6cb823414e72ccb5e6da7e74663c6cef920cdb181d72",
-      "events": {}
-    },
-    "69420": {
+    "1580865675087": {
       "events": {},
       "links": {},
-      "address": "0xDbD1205b5378D490c9c466C2144d45e9f60465A8",
-      "transactionHash": "0xc2bed94ce54f06d30edaa3ab825d2009bd586016c050589782f9c2cb3f837b07"
+      "address": "0x2a205c6E80cf2bf47D3D866C566973BfA3Dcd26a",
+      "transactionHash": "0xbbc66c04e24a67ce1c13ea916675f8404a59213bb0c8c66672a9e06026946610"
     }
   },
   "schemaVersion": "3.0.19",
-  "updatedAt": "2020-02-07T06:54:48.711Z",
+  "updatedAt": "2020-02-07T07:02:02.306Z",
+  "networkType": "ethereum",
   "devdoc": {
     "methods": {}
   },
