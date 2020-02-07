@@ -48,10 +48,6 @@ contract Harber {
     /// @dev also equals number of markets on augur
     uint256 constant public numberOfTokens = 20;
 
-    /// TESTING VARIABLES
-    /// @dev if usingAugur false, none of the augur contracts are interacted with. Required false for ganache testing. 
-    bool constant public usingAugur = false; //MUST BE TRUE IN PROUDCTION
-    
     /// CONTRACT VARIABLES
     /// ERC721:
     IERC721Full public team;
@@ -147,7 +143,6 @@ contract Harber {
     event LogFundsReturned(uint256 indexed daiAvailableToDistribute);
     event LogReturnToPreviousOwner(uint256 indexed tokenId, address indexed previousOwner);
 
-
     ////////////// MODIFIERS //////////////
     /// @notice prevents functions from being interacted with after the end of the competition 
     /// @dev should be on all public 'ordinary course of business' functions
@@ -192,7 +187,7 @@ contract Harber {
     }
 
     /// @dev for front end only
-    /// @return how much the current user has deposited
+    /// @return how much the current user has deposited (note: user not owner)
     function userDepositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) {
         uint256 _rentOwed = rentOwed(_tokenId);
         address _currentOwner = team.ownerOf(_tokenId);
@@ -225,21 +220,17 @@ contract Harber {
     // * internal * 
     /// @notice buy complete sets from Augur
     function _buyCompleteSets(uint256 _tokenId, uint256 _rentOwed) internal {
-        if (usingAugur == false) {
-            uint256 _setsToBuy =_rentOwed.div(100);
-            completeSets.publicBuyCompleteSets(market[_tokenId], _setsToBuy);
-        } 
+        uint256 _setsToBuy =_rentOwed.div(100);
+        completeSets.publicBuyCompleteSets(market[_tokenId], _setsToBuy);
     }
 
     // * internal *
     /// @notice sell complete sets from Augur
     function _sellCompleteSets() internal {
-        if (usingAugur == false) {
             for (uint i = 0; i < numberOfTokens; i++) {
                 uint256 _setsToSell =collectedPerMarket[i].div(100);
                 completeSets.publicSellCompleteSets(market[i], _setsToSell);
             } 
-        } 
     }
 
     // * internal * 
@@ -247,25 +238,19 @@ contract Harber {
     /// @notice checks if all X (x = number of tokens = number of teams) markets have resolved to either yes, no, or invalid
     /// @return true if yes, false if no
     function _haveAllAugurMarketsResolved() internal returns(bool) {   
-        if (usingAugur) {
-            uint256 _resolvedOutcomesCount = 0;
+        uint256 _resolvedOutcomesCount = 0;
 
-            for (uint i = 0; i < numberOfTokens; i++) {
-                // binary market has three outcomes: 0 (invalid), 1 (yes), 2 (no)
-                if (market[i].getWinningPayoutNumerator(0) > 0 || market[i].getWinningPayoutNumerator(1) > 0 || market[i].getWinningPayoutNumerator(2) > 0  ) {
-                    _resolvedOutcomesCount = _resolvedOutcomesCount.add(1);
-                }
-            }
-
-            if (_resolvedOutcomesCount == numberOfTokens) {
-                return true;
-            } else {
-                return false;
+        for (uint i = 0; i < numberOfTokens; i++) {
+            // binary market has three outcomes: 0 (invalid), 1 (yes), 2 (no)
+            if (market[i].getWinningPayoutNumerator(0) > 0 || market[i].getWinningPayoutNumerator(1) > 0 || market[i].getWinningPayoutNumerator(2) > 0  ) {
+                _resolvedOutcomesCount = _resolvedOutcomesCount.add(1);
             }
         }
-        else {
-            //hard code 'yes' for testing
+
+        if (_resolvedOutcomesCount == numberOfTokens) {
             return true;
+        } else {
+            return false;
         }
     }
 
@@ -274,34 +259,26 @@ contract Harber {
     /// @notice checks if all markets have resolved without conflicts or errors
     /// @return true if yes, false if no
     /// @dev this function will also set the winningOutcome variable
-    /// @dev the two arguments this function takes are for testing only. They are not used when usingAugur is set to true
-    function _haveAllAugurMarketsResolvedWithoutErrors(uint256 _hardCodedWinner, bool _hardCodedResolvedCorrectly) internal returns(bool) {   
-        if (usingAugur) {
-            uint256 _winningOutcomesCount = 0;
-            uint256 _invalidOutcomesCount = 0;
+    function _haveAllAugurMarketsResolvedWithoutErrors() internal returns(bool) {   
+        uint256 _winningOutcomesCount = 0;
+        uint256 _invalidOutcomesCount = 0;
 
-            for (uint i = 0; i < numberOfTokens; i++) {
-                if (market[i].getWinningPayoutNumerator(0) > 0) {
-                    _invalidOutcomesCount = _invalidOutcomesCount.add(1);
-                }
-                if (market[i].getWinningPayoutNumerator(1) > 0) {
-                    winningOutcome = i; // <- the winning outcome (a global variable) is set here
-                    _winningOutcomesCount = _winningOutcomesCount.add(1);
-                }
+        for (uint i = 0; i < numberOfTokens; i++) {
+            if (market[i].getWinningPayoutNumerator(0) > 0) {
+                _invalidOutcomesCount = _invalidOutcomesCount.add(1);
             }
-
-            if (_winningOutcomesCount == 1 && _invalidOutcomesCount == 0) {
-                return true;
-            } else {
-                return false;
+            if (market[i].getWinningPayoutNumerator(1) > 0) {
+                winningOutcome = i; // <- the winning outcome (a global variable) is set here
+                _winningOutcomesCount = _winningOutcomesCount.add(1);
             }
         }
-        else {
-            //if in testing mode, return the supplied arguments
-            winningOutcome = _hardCodedWinner;
-            return _hardCodedResolvedCorrectly;
-            }
+
+        if (_winningOutcomesCount == 1 && _invalidOutcomesCount == 0) {
+            return true;
+        } else {
+            return false;
         }
+    }
 
     ////////////// DAI CONTRACT FUNCTIONS ////////////// 
 
@@ -333,7 +310,7 @@ contract Harber {
     /// @dev can be called by anyone 
     /// @dev can be called multiple times, but only once after markets have indeed resolved
     /// @dev the two arguments passed are for testing only
-    function step1checkMarketsResolved(uint256 _hardCodedWinner, bool _hardCodedResolvedCorrectly) public {
+    function step1checkMarketsResolved() public {
         require(marketsResolved == false, "step1 can only be completed once");
         // first check if all X markets have all resolved one way or the other
         if (_haveAllAugurMarketsResolved()) {
@@ -343,7 +320,7 @@ contract Harber {
             marketsResolved = true;
              // now check if they all resolved without errors. It is set to false upon contract initialisation 
              // this function also sets winningOutcome if there is one
-            if (_haveAllAugurMarketsResolvedWithoutErrors(_hardCodedWinner, _hardCodedResolvedCorrectly)) {
+            if (_haveAllAugurMarketsResolvedWithoutErrors()) {
                 marketsResolvedWithoutErrors = true;
             }
         }
@@ -606,7 +583,6 @@ contract Harber {
                 emit LogReturnToPreviousOwner(_tokenId,_previousOwner);
             }
         }   
-          
     }
 
     /* internal */
