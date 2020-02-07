@@ -135,13 +135,19 @@ contract Harber {
         cash.approve(_addressOfMainAugurContract,(2**256)-1);
     } 
 
-    event LogBuy(address indexed owner, uint256 indexed price);
+    event LogNewRental(address indexed newOwner, uint256 indexed newPrice);
     event LogPriceChange(uint256 indexed newPrice);
     event LogForeclosure(address indexed prevOwner);
-    event LogRentCollection(uint256 indexed collectedPerMarket);
-    event LogFinalised(uint256 indexed winningOutcome, uint256 indexed daiAvailableToDistribute);
+    event LogRentCollection(uint256 indexed rentCollected);
     event LogFundsReturned(uint256 indexed daiAvailableToDistribute);
     event LogReturnToPreviousOwner(uint256 indexed tokenId, address indexed previousOwner);
+    event LogDepositWithdrawal(uint256 indexed daiWithdrawn, uint256 indexed tokenId);
+    event LogExit(uint256 indexed tokenId);
+    event LogStep1Complete(bool indexed didAugurMarketsResolve, uint256 indexed winningOutcome, bool indexed didAugurMarketsResolveCorrectly);
+    event LogStep2Complete(uint256 indexed daiAvailableToDistribute);
+    event LogWinningsPaid(address indexed paidTo, uint256 indexed amountPaid);
+    event LogRentReturned(address indexed returnedTo, uint256 indexed amountReturned);
+    event LogDepositWithdrawalAfterResolution(address indexed returnedTo, uint256 indexed amountReturned);
 
     ////////////// MODIFIERS //////////////
     /// @notice prevents functions from being interacted with after the end of the competition 
@@ -274,8 +280,10 @@ contract Harber {
         }
 
         if (_winningOutcomesCount == 1 && _invalidOutcomesCount == 0) {
+            emit LogStep1Complete(true, winningOutcome, true);
             return true;
         } else {
+            emit LogStep1Complete(true, winningOutcome, false);
             return false;
         }
     }
@@ -311,7 +319,7 @@ contract Harber {
     /// @dev can be called multiple times, but only once after markets have indeed resolved
     /// @dev the two arguments passed are for testing only
     function step1checkMarketsResolved() public {
-        require(marketsResolved == false, "step1 can only be completed once");
+        require(marketsResolved == false, "Step1 can only be completed once");
         // first check if all X markets have all resolved one way or the other
         if (_haveAllAugurMarketsResolved()) {
             // do a final rent collection before the contract is locked down
@@ -330,27 +338,29 @@ contract Harber {
     /// @notice returns all funds to all users
     /// @notice can only be called 6 months after augur markets should have ended 
     function step1BemergencyExit() public  {
-        require(marketsResolved == false, "step1 can only be completed once");
+        require(marketsResolved == false, "Step1 can only be completed once");
         require(now > (marketExpectedResolutionTime + 15778800), "Must wait 6 months for Augur Oracle");
         collectRentAllTokens();
         marketsResolved = true;
+        emit LogStep1Complete(false, winningOutcome, false);
     }
 
     /// @notice Same as above, except that only I can call it, and I can call it whenever
     /// @notice to be clear, this only allows me to return all funds. I can not set a winner. 
     function step1CcircuitBreaker() public {
-        require(marketsResolved == false, "step1 can only be completed once");
+        require(marketsResolved == false, "Step1 can only be completed once");
         require(msg.sender == andrewsAddress, "Only owner can call this");
         collectRentAllTokens();
         marketsResolved = true;
+        emit LogStep1Complete(false, winningOutcome, false);
     }
 
     /// @notice the second of the two functions which must be called, one after the other, to conclude the competition
     /// @dev gets funds back from Augur, gets the available funds for distribution and pays me my 1%
     /// @dev can be called by anyone, but only once 
     function step2sellCompleteSetsAndPayAndrew() public {
-        require(marketsResolved == true, "step1 must be completed first");
-        require(step2Complete == false, "step2 should only be run once");
+        require(marketsResolved == true, "Must wait for market resolution");
+        require(step2Complete == false, "Step2 should only be run once");
 
         uint256 _balanceBefore = _getContractsCashBalance();
         _sellCompleteSets();
@@ -366,12 +376,13 @@ contract Harber {
         }
 
         step2Complete = true;
+        emit LogStep2Complete(daiAvailableToDistribute);
     }
 
     /// @notice the final function of the competition resolution process. Pays out winnings, or returns funds, as necessary
     /// @dev users pull dai into their account. Replaces previous push vesion which required looping over unbounded mapping.
     function complete() public {
-        require(step2Complete == true, "step2 must be completed first");
+        require(step2Complete == true, "Step2 must be completed first");
 
         if (marketsResolvedWithoutErrors) {
                 _payoutWinnings();
@@ -392,6 +403,7 @@ contract Harber {
             uint256 _numerator = daiAvailableToDistribute.mul(_winnersTimeHeld);
             uint256 _winningsToTransfer = _numerator.div(totalTimeHeld[winningOutcome]);
             _sendCash(msg.sender, _winningsToTransfer);
+            emit LogWinningsPaid(msg.sender, _winningsToTransfer);
         }
     }
 
@@ -406,6 +418,7 @@ contract Harber {
             uint256 _numerator = daiAvailableToDistribute.mul(_rentCollected);
             uint256 _rentToToReturn = _numerator.div(totalCollected);
             _sendCash(msg.sender, _rentToToReturn);
+            emit LogRentReturned(msg.sender, _rentToToReturn);
         }
     }
 
@@ -423,6 +436,7 @@ contract Harber {
             if (_depositToReturn > 0) {
                 deposits[i][msg.sender] = 0;
                 _sendCash(msg.sender, _depositToReturn);
+                emit LogDepositWithdrawalAfterResolution(msg.sender, _depositToReturn);
             }
         }
     }
@@ -475,7 +489,6 @@ contract Harber {
             collectedPerMarket[_tokenId] = collectedPerMarket[_tokenId].add(_rentOwed);
             collectedPerUser[_currentOwner] = collectedPerUser[_currentOwner].add(_rentOwed);
             totalCollected = totalCollected.add(_rentOwed);
-            
             emit LogRentCollection(_rentOwed);
         }
          
@@ -508,7 +521,7 @@ contract Harber {
 
             // transfer token to new owner
             _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
-            emit LogBuy(msg.sender, _newPrice); 
+            emit LogNewRental(msg.sender, _newPrice); 
         }
     }
 
@@ -535,6 +548,7 @@ contract Harber {
         // if statement needed because deposit may have just reduced to zero following _collectRent modifier
         if (deposits[_tokenId][msg.sender] > 0) {
             _withdrawDeposit(_dai, _tokenId);
+            emit LogDepositWithdrawal(_dai, _tokenId);
         }
     }
 
@@ -544,6 +558,7 @@ contract Harber {
         // if statement needed because deposit may have just reduced to zero following _collectRent modifier
         if (deposits[_tokenId][msg.sender] > 0) {
             _withdrawDeposit(deposits[_tokenId][msg.sender],  _tokenId);
+            emit LogExit(_tokenId);
         }
     }
 
@@ -596,6 +611,7 @@ contract Harber {
 
     /* internal */
     /// @notice transfer ERC 721 between users
+    /// @dev there is no event emitted as this is handled in ERC721.sol
     function _transferTokenTo(address _currentOwner, address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
         team.transferFrom(_currentOwner, _newOwner, _tokenId);
         price[_tokenId] = _newPrice;
