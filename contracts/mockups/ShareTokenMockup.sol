@@ -1,6 +1,6 @@
 pragma solidity 0.5.13;
 
-import "./utils/SafeMath.sol";
+import "./../utils/SafeMath.sol";
 
 // this is only for ganache testing. Public chain deployments will use the existing Augur contract. 
 
@@ -14,14 +14,10 @@ interface Cash
     function transferFromNoApproval(address _from, address _to, uint256 _amount) external returns (bool);
 }
 
-contract IMarket 
+interface IMarket 
 {
-    function getWinningPayoutNumerator(uint256 _outcome) external view returns (uint256) 
-    {
-        return 0;
-    }
+    function getWinningPayoutNumerator(uint256 _outcome) external view returns (uint256);
 }
-
 
 contract ShareTokenMockup
 
@@ -37,14 +33,15 @@ contract ShareTokenMockup
 
     function publicBuyCompleteSets(IMarket _market, uint256 _amount) external returns (bool)
     { 
-        cash.transferFromNoApproval(msg.sender, address(this), _amount);
+        uint _amountToBuy = _amount.mul(100);
+        cash.transferFromNoApproval(msg.sender, address(this), _amountToBuy);
         return true;
     }
 
     function publicSellCompleteSets(IMarket _market, uint256 _amount) external returns (uint256 _creatorFee, uint256 _reportingFee)
     { 
-        // uint _balance = cash.balanceOf(address(this);)
-        cash.transferFromNoApproval(address(this), msg.sender, _amount);
+        uint _amountToSell = _amount.mul(100);
+        cash.transferFromNoApproval(address(this), msg.sender, _amountToSell);
     }
 
 

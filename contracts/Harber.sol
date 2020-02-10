@@ -81,10 +81,6 @@ contract Harber {
     /// @dev also equals number of markets on augur
     uint256 constant public numberOfTokens = 20;
 
-    /// TESTING VARIABLES
-    /// @dev if usingAugur false, none of the augur contracts are interacted with. Required false for ganache testing. 
-    bool constant public usingAugur = false; //MUST BE TRUE IN PROUDCTION
-    
     /// CONTRACT VARIABLES
     /// ERC721:
     IERC721Full public team;
@@ -175,14 +171,19 @@ contract Harber {
     // Nothing wrong here, just a suggestion as a potential user:
     // Would users benefit if they knew which token these events are related to?
     // Example: I see log for price change but I cannot identify which token it relates to.
-    event LogBuy(address indexed owner, uint256 indexed price);
+    event LogNewRental(address indexed newOwner, uint256 indexed newPrice);
     event LogPriceChange(uint256 indexed newPrice);
     event LogForeclosure(address indexed prevOwner);
-    event LogRentCollection(uint256 indexed collectedPerMarket);
-    event LogFinalised(uint256 indexed winningOutcome, uint256 indexed daiAvailableToDistribute);
+    event LogRentCollection(uint256 indexed rentCollected);
     event LogFundsReturned(uint256 indexed daiAvailableToDistribute);
     event LogReturnToPreviousOwner(uint256 indexed tokenId, address indexed previousOwner);
-
+    event LogDepositWithdrawal(uint256 indexed daiWithdrawn, uint256 indexed tokenId);
+    event LogExit(uint256 indexed tokenId);
+    event LogStep1Complete(bool indexed didAugurMarketsResolve, uint256 indexed winningOutcome, bool indexed didAugurMarketsResolveCorrectly);
+    event LogStep2Complete(uint256 indexed daiAvailableToDistribute);
+    event LogWinningsPaid(address indexed paidTo, uint256 indexed amountPaid);
+    event LogRentReturned(address indexed returnedTo, uint256 indexed amountReturned);
+    event LogDepositWithdrawalAfterResolution(address indexed returnedTo, uint256 indexed amountReturned);
 
     ////////////// MODIFIERS //////////////
     /// @notice prevents functions from being interacted with after the end of the competition 
@@ -264,7 +265,7 @@ contract Harber {
     }
 
     /// @dev for front end only
-    /// @return how much the current user has deposited
+    /// @return how much the current user has deposited (note: user not owner)
     function userDepositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) {
         uint256 _rentOwed = rentOwed(_tokenId);
         address _currentOwner = team.ownerOf(_tokenId);
@@ -297,21 +298,17 @@ contract Harber {
     // * internal * 
     /// @notice buy complete sets from Augur
     function _buyCompleteSets(uint256 _tokenId, uint256 _rentOwed) internal {
-        if (usingAugur == false) {
-            uint256 _setsToBuy =_rentOwed.div(100);
-            completeSets.publicBuyCompleteSets(market[_tokenId], _setsToBuy);
-        } 
+        uint256 _setsToBuy =_rentOwed.div(100);
+        completeSets.publicBuyCompleteSets(market[_tokenId], _setsToBuy);
     }
 
     // * internal *
     /// @notice sell complete sets from Augur
     function _sellCompleteSets() internal {
-        if (usingAugur == false) {
             for (uint i = 0; i < numberOfTokens; i++) {
                 uint256 _setsToSell =collectedPerMarket[i].div(100);
                 completeSets.publicSellCompleteSets(market[i], _setsToSell);
             } 
-        } 
     }
 
     // * internal * 
@@ -319,27 +316,19 @@ contract Harber {
     /// @notice checks if all X (x = number of tokens = number of teams) markets have resolved to either yes, no, or invalid
     /// @return true if yes, false if no
     function _haveAllAugurMarketsResolved() internal returns(bool) {   
-        if (usingAugur) {
-            uint256 _resolvedOutcomesCount = 0;
+        uint256 _resolvedOutcomesCount = 0;
 
-            for (uint i = 0; i < numberOfTokens; i++) {
-                // binary market has three outcomes: 0 (invalid), 1 (yes), 2 (no)
-                if (market[i].getWinningPayoutNumerator(0) > 0 || market[i].getWinningPayoutNumerator(1) > 0 || market[i].getWinningPayoutNumerator(2) > 0  ) {
-                    _resolvedOutcomesCount = _resolvedOutcomesCount.add(1);
-                }
-            }
-
-            // Suggestion: This could be simplified as:
-            // return (_resolvedOutcomesCount == numberOfTokens);
-            if (_resolvedOutcomesCount == numberOfTokens) {
-                return true;
-            } else {
-                return false;
+        for (uint i = 0; i < numberOfTokens; i++) {
+            // binary market has three outcomes: 0 (invalid), 1 (yes), 2 (no)
+            if (market[i].getWinningPayoutNumerator(0) > 0 || market[i].getWinningPayoutNumerator(1) > 0 || market[i].getWinningPayoutNumerator(2) > 0  ) {
+                _resolvedOutcomesCount = _resolvedOutcomesCount.add(1);
             }
         }
-        else {
-            //hard code 'yes' for testing
+
+        if (_resolvedOutcomesCount == numberOfTokens) {
             return true;
+        } else {
+            return false;
         }
     }
 
@@ -348,36 +337,28 @@ contract Harber {
     /// @notice checks if all markets have resolved without conflicts or errors
     /// @return true if yes, false if no
     /// @dev this function will also set the winningOutcome variable
-    /// @dev the two arguments this function takes are for testing only. They are not used when usingAugur is set to true
-    function _haveAllAugurMarketsResolvedWithoutErrors(uint256 _hardCodedWinner, bool _hardCodedResolvedCorrectly) internal returns(bool) {   
-        if (usingAugur) {
-            uint256 _winningOutcomesCount = 0;
-            uint256 _invalidOutcomesCount = 0;
+    function _haveAllAugurMarketsResolvedWithoutErrors() internal returns(bool) {   
+        uint256 _winningOutcomesCount = 0;
+        uint256 _invalidOutcomesCount = 0;
 
-            for (uint i = 0; i < numberOfTokens; i++) {
-                if (market[i].getWinningPayoutNumerator(0) > 0) {
-                    _invalidOutcomesCount = _invalidOutcomesCount.add(1);
-                }
-                if (market[i].getWinningPayoutNumerator(1) > 0) {
-                    winningOutcome = i; // <- the winning outcome (a global variable) is set here
-                    _winningOutcomesCount = _winningOutcomesCount.add(1);
-                }
+        for (uint i = 0; i < numberOfTokens; i++) {
+            if (market[i].getWinningPayoutNumerator(0) > 0) {
+                _invalidOutcomesCount = _invalidOutcomesCount.add(1);
             }
-
-            // Nothing wrong here, but you could just do:
-            // return (_winningOutcomesCount == 1 && _invalidOutcomesCount == 0);
-            if (_winningOutcomesCount == 1 && _invalidOutcomesCount == 0) {
-                return true;
-            } else {
-                return false;
+            if (market[i].getWinningPayoutNumerator(1) > 0) {
+                winningOutcome = i; // <- the winning outcome (a global variable) is set here
+                _winningOutcomesCount = _winningOutcomesCount.add(1);
             }
         }
-        else {
-            //if in testing mode, return the supplied arguments
-            winningOutcome = _hardCodedWinner;
-            return _hardCodedResolvedCorrectly;
-            }
+
+        if (_winningOutcomesCount == 1 && _invalidOutcomesCount == 0) {
+            emit LogStep1Complete(true, winningOutcome, true);
+            return true;
+        } else {
+            emit LogStep1Complete(true, winningOutcome, false);
+            return false;
         }
+    }
 
     /*
     I noted by the defined interface above (Cash), that some of the DAI functions return bool.
@@ -424,8 +405,8 @@ contract Harber {
     /// @dev can be called by anyone 
     /// @dev can be called multiple times, but only once after markets have indeed resolved
     /// @dev the two arguments passed are for testing only
-    function step1checkMarketsResolved(uint256 _hardCodedWinner, bool _hardCodedResolvedCorrectly) public {
-        require(marketsResolved == false, "step1 can only be completed once");
+    function step1checkMarketsResolved() public {
+        require(marketsResolved == false, "Step1 can only be completed once");
         // first check if all X markets have all resolved one way or the other
         if (_haveAllAugurMarketsResolved()) {
             // do a final rent collection before the contract is locked down
@@ -434,7 +415,7 @@ contract Harber {
             marketsResolved = true;
              // now check if they all resolved without errors. It is set to false upon contract initialisation 
              // this function also sets winningOutcome if there is one
-            if (_haveAllAugurMarketsResolvedWithoutErrors(_hardCodedWinner, _hardCodedResolvedCorrectly)) {
+            if (_haveAllAugurMarketsResolvedWithoutErrors()) {
                 marketsResolvedWithoutErrors = true;
             }
         }
@@ -444,27 +425,29 @@ contract Harber {
     /// @notice returns all funds to all users
     /// @notice can only be called 6 months after augur markets should have ended 
     function step1BemergencyExit() public  {
-        require(marketsResolved == false, "step1 can only be completed once");
+        require(marketsResolved == false, "Step1 can only be completed once");
         require(now > (marketExpectedResolutionTime + 15778800), "Must wait 6 months for Augur Oracle");
         collectRentAllTokens();
         marketsResolved = true;
+        emit LogStep1Complete(false, winningOutcome, false);
     }
 
     /// @notice Same as above, except that only I can call it, and I can call it whenever
     /// @notice to be clear, this only allows me to return all funds. I can not set a winner. 
     function step1CcircuitBreaker() public {
-        require(marketsResolved == false, "step1 can only be completed once");
+        require(marketsResolved == false, "Step1 can only be completed once");
         require(msg.sender == andrewsAddress, "Only owner can call this");
         collectRentAllTokens();
         marketsResolved = true;
+        emit LogStep1Complete(false, winningOutcome, false);
     }
 
     /// @notice the second of the two functions which must be called, one after the other, to conclude the competition
     /// @dev gets funds back from Augur, gets the available funds for distribution and pays me my 1%
     /// @dev can be called by anyone, but only once 
     function step2sellCompleteSetsAndPayAndrew() public {
-        require(marketsResolved == true, "step1 must be completed first");
-        require(step2Complete == false, "step2 should only be run once");
+        require(marketsResolved == true, "Must wait for market resolution");
+        require(step2Complete == false, "Step2 should only be run once");
 
         uint256 _balanceBefore = _getContractsCashBalance();
         _sellCompleteSets();
@@ -488,12 +471,13 @@ contract Harber {
         }
 
         step2Complete = true;
+        emit LogStep2Complete(daiAvailableToDistribute);
     }
 
     /// @notice the final function of the competition resolution process. Pays out winnings, or returns funds, as necessary
     /// @dev users pull dai into their account. Replaces previous push vesion which required looping over unbounded mapping.
     function complete() public {
-        require(step2Complete == true, "step2 must be completed first");
+        require(step2Complete == true, "Step2 must be completed first");
 
         if (marketsResolvedWithoutErrors) {
                 _payoutWinnings();
@@ -514,6 +498,7 @@ contract Harber {
             uint256 _numerator = daiAvailableToDistribute.mul(_winnersTimeHeld);
             uint256 _winningsToTransfer = _numerator.div(totalTimeHeld[winningOutcome]);
             _sendCash(msg.sender, _winningsToTransfer);
+            emit LogWinningsPaid(msg.sender, _winningsToTransfer);
         }
     }
 
@@ -528,6 +513,7 @@ contract Harber {
             uint256 _numerator = daiAvailableToDistribute.mul(_rentCollected);
             uint256 _rentToToReturn = _numerator.div(totalCollected);
             _sendCash(msg.sender, _rentToToReturn);
+            emit LogRentReturned(msg.sender, _rentToToReturn);
         }
     }
 
@@ -545,6 +531,7 @@ contract Harber {
             if (_depositToReturn > 0) {
                 deposits[i][msg.sender] = 0;
                 _sendCash(msg.sender, _depositToReturn);
+                emit LogDepositWithdrawalAfterResolution(msg.sender, _depositToReturn);
             }
         }
     }
@@ -598,7 +585,6 @@ contract Harber {
             collectedPerMarket[_tokenId] = collectedPerMarket[_tokenId].add(_rentOwed);
             collectedPerUser[_currentOwner] = collectedPerUser[_currentOwner].add(_rentOwed);
             totalCollected = totalCollected.add(_rentOwed);
-            
             emit LogRentCollection(_rentOwed);
         }
          /*
@@ -644,7 +630,7 @@ contract Harber {
 
             // transfer token to new owner
             _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
-            emit LogBuy(msg.sender, _newPrice); 
+            emit LogNewRental(msg.sender, _newPrice); 
         }
     }
 
@@ -676,6 +662,7 @@ contract Harber {
         // if statement needed because deposit may have just reduced to zero following _collectRent modifier
         if (deposits[_tokenId][msg.sender] > 0) {
             _withdrawDeposit(_dai, _tokenId);
+            emit LogDepositWithdrawal(_dai, _tokenId);
         }
     }
 
@@ -685,6 +672,7 @@ contract Harber {
         // if statement needed because deposit may have just reduced to zero following _collectRent modifier
         if (deposits[_tokenId][msg.sender] > 0) {
             _withdrawDeposit(deposits[_tokenId][msg.sender],  _tokenId);
+            emit LogExit(_tokenId);
         }
     }
 
@@ -742,7 +730,6 @@ contract Harber {
                 emit LogReturnToPreviousOwner(_tokenId,_previousOwner);
             }
         }   
-          
     }
 
     /* internal */
@@ -756,6 +743,7 @@ contract Harber {
 
     /* internal */
     /// @notice transfer ERC 721 between users
+    /// @dev there is no event emitted as this is handled in ERC721.sol
     function _transferTokenTo(address _currentOwner, address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
         team.transferFrom(_currentOwner, _newOwner, _tokenId);
         price[_tokenId] = _newPrice;
