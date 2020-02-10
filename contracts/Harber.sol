@@ -709,7 +709,6 @@ contract Harber {
         If possible, avoid calls to external contract's inside the while loop.
         Maybe you can adds some controls to figure out what needs to be executed
         (foreclose or owner transfer) and execute that after the while is finished.
-        Considering you're using this in the 
         */
         while (_reverted == false) {
             assert(currentOwnerIndex[_tokenId] >=0);
