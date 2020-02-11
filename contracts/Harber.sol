@@ -33,12 +33,14 @@ interface Cash
     - For your public functions, if possible, consider using the "external" visibility intead.
       External functions are costs less gas than public ones (not referring to the ones defined as "view").
       https://ethereum.stackexchange.com/questions/19380/external-vs-public-best-practices
+      ^^ DONE where possible. Also changed one function (_collectRent) from public to internal. 
     - Make sure you check the params that are passed to your functions, especially public, external and
       internal functions (the ones that another contract (including inheritance) can eventually call in
       contract your.
       A couple of things you should check are for your params, at least:
         * arguments are in range (array indexes passed between 0 .. array.lenght - for example)
         * addresses are valid (different than 0 => `require(paramAddress != address(0));`
+      ^^ DONE 
     - Consider using the pattern "Check-Effects-Interactions Pattern" in your functions
       https://solidity.readthedocs.io/en/latest/security-considerations.html#use-the-checks-effects-interactions-pattern.
       The objective is to use the following sequence to decrease potential exploits:
@@ -46,6 +48,7 @@ interface Cash
         2. update internal state;
         3. and then call external contract's functions.
         4. Emit events (not part of this pattern, but a general recommendation)
+      ^^ DONE 
       I made a couple more specific comments in some functions below where you call external contract prior to
       updating your internal state.
       PS: I understand you trust DAI and Augur contracts, but one never know if those contracts are completelly
@@ -56,22 +59,23 @@ interface Cash
     - Consider using inheritance to break your contract into smaller ones. Your contract is not simple, with lots
       of (cool) functionalities. I know that compared with other types of software (non-blockchain),
       approx. 600 lines of code are big at all. But if possible, you should try to modularize your contracts.
+    ^^ I will consider for future implementations
     - By using inheritance, and depending on how you structure your contract, you could potentially be able to
     split the code that's currently being used for testing reasons. You could have a TestContract (MockHarber?)
     that inherits from your main contract (Harber), and implements the testing/mock logic needed in your unit tests.
+    ^^ DONE, there are now no testing variables in the main contract
     */
 
 //TODO: replace completesets with OICash
 //TODO: update design pattens to take into account the recent changes
 //TODO: change front end to only approve the same amount that is being sent
-//TODO: I dont think dai deposited via the deposit dai function is returned in return
-// all deposits?
+//TODO: add test where someone calls exit and they are not the current owner
+//TODO: add tests where current owner calls newRental twice
 // ^ will also need to figure out how to pass this number in the correct format because decimal
 // ^ does not seem to work for more than 100 dai, it needs big number
 
 /// @title Harber
 /// @author Andrew Stanger
-/// @dev ensure usingAugur is set to false upon local testing and true on kovan or mainnet
 contract Harber {
 
     using SafeMath for uint256;
@@ -120,6 +124,8 @@ contract Harber {
     bool public marketsResolvedWithoutErrors = false; // set in step 1. If true, normal payout. If false, return all funds
     /// @dev step 2:
     bool public step2Complete = false; // must be false for step2, true for complete
+    /// @dev step 3:
+    bool public step3Complete = false; // must be false for step2, true for complete
     /// @dev complete:
     uint256 public daiAvailableToDistribute;
     
@@ -167,70 +173,37 @@ contract Harber {
         cash.approve(_addressOfMainAugurContract,(2**256)-1);
     } 
 
-    // Nothing wrong here, just a suggestion as a potential user:
-    // Would users benefit if they knew which token these events are related to?
-    // Example: I see log for price change but I cannot identify which token it relates to.
-    event LogNewRental(address indexed newOwner, uint256 indexed newPrice);
-    event LogPriceChange(uint256 indexed newPrice);
-    event LogForeclosure(address indexed prevOwner);
-    event LogRentCollection(uint256 indexed rentCollected);
-    event LogFundsReturned(uint256 indexed daiAvailableToDistribute);
+    event LogNewRental(address indexed newOwner, uint256 indexed newPrice, uint256 indexed tokenId);
+    event LogPriceChange(uint256 indexed newPrice, uint256 indexed tokenId);
+    event LogForeclosure(address indexed prevOwner, uint256 indexed tokenId);
+    event LogRentCollection(uint256 indexed rentCollected, uint256 indexed tokenId);
     event LogReturnToPreviousOwner(uint256 indexed tokenId, address indexed previousOwner);
     event LogDepositWithdrawal(uint256 indexed daiWithdrawn, uint256 indexed tokenId, address indexed returnedTo);
+    event LogDepositIncreased(uint256 indexed daiDeposited, uint256 indexed tokenId, address indexed sentBy);
     event LogExit(uint256 indexed tokenId);
     event LogStep1Complete(bool indexed didAugurMarketsResolve, uint256 indexed winningOutcome, bool indexed didAugurMarketsResolveCorrectly);
     event LogStep2Complete(uint256 indexed daiAvailableToDistribute);
     event LogWinningsPaid(address indexed paidTo, uint256 indexed amountPaid);
     event LogRentReturned(address indexed returnedTo, uint256 indexed amountReturned);
+    event LogAndrewPaid(uint256 indexed additionsToWhiskeyFund);
 
     ////////////// MODIFIERS //////////////
     /// @notice prevents functions from being interacted with after the end of the competition 
-    /// @dev should be on all public 'ordinary course of business' functions
+    /// @dev should be on all public/external 'ordinary course of business' functions
     modifier notResolved() {
         require(marketsResolved == false);
         _;
     }
 
-    /*
-    modifier: collectRent
-    I noted you're using this modifier not to check the arguments passed to the function,
-    but to execute logic by invoking _collectRent. Modifiers are generally used for validation instead
-    of logic, but nothing prevents you from doing this.
-    However, you may reevalute this strategy, because I noted that in most functions that you're using
-    this modifier, you also have other validations (requires) going on. For example, NewRental:
+    /// @notice checks the team exists
+    modifier tokenExists(uint256 _tokenId) {
+        require(_tokenId  >= 0 && _tokenId < numberOfTokens, "This token does not exist");
+       _;
+    }
 
-        function newRental(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) public collectRent(_tokenId) notResolved() {
-        require(_newPrice > price[_tokenId], "Price must be higher than current price");
-        require(_deposit > 0, "Must deposit something");
-        ...
-
-
-    You're collection payment in this modifier, which costs approx. 44K gas units (based on eth-gas-reported you're using),
-    and after executing it, the function NewRental executes 02 more validations. In case one of these validations failed,
-    the state will be reversed (so no worries about state inconsistency), but the gas needed to execute "collectRent"
-    was charged any way. If you think about providing the less expensive execution as possible to your users, you may
-    want to invoke "_collectRent" after all checks were executed, to avoid unnecessary processing/gas consumption.
-    So with the function newRental (shown above), you could consider changing it to something like this:
-
-        function newRental(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) public notResolved() {
-        require(_newPrice > price[_tokenId], "Price must be higher than current price");
-        require(_deposit > 0, "Must deposit something");
-
-        _collectRent(_tokenId);
-        ...
-
-    PS: I noted you're using this modifier (and collecting rent) in the following functions:
-        *newRental
-        *depositDai
-        * changePrice
-        * withdrawDeposit
-        *exit
-    */
-
-    /// @notice collect Rent
-    /// @dev should be on all public 'ordinary course of business' functions except the collect rent ones obviously.
-    modifier collectRent(uint256 _tokenId) {
-       _collectRent(_tokenId); 
+    /// @notice what it says on the tin
+    modifier amountNotZero(uint256 _dai) {
+        require(_dai  > 0, "Amount must be above zero");
        _;
     }
 
@@ -323,11 +296,8 @@ contract Harber {
             }
         }
 
-        if (_resolvedOutcomesCount == numberOfTokens) {
-            return true;
-        } else {
-            return false;
-        }
+        // returns true if all resolved, false otherwise
+        return (_resolvedOutcomesCount == numberOfTokens);
     }
 
     // * internal * 
@@ -349,42 +319,21 @@ contract Harber {
             }
         }
 
-        if (_winningOutcomesCount == 1 && _invalidOutcomesCount == 0) {
-            emit LogStep1Complete(true, winningOutcome, true);
-            return true;
-        } else {
-            emit LogStep1Complete(true, winningOutcome, false);
-            return false;
-        }
+        return (_winningOutcomesCount == 1 && _invalidOutcomesCount == 0);
     }
-
-    /*
-    I noted by the defined interface above (Cash), that some of the DAI functions return bool.
-    I'm not familiar with the DAI contract, but I assume it returns "true" if the execution was
-    successful, otherwise false.
-    Consider returning the result of the DAI contract's in these internal DAI functions below.
-    By doing so, you can check if the execution was successful or not in the functions that
-    intercat with DAI contracts.
-    Another option is to change your functions below to use require.
-    Example:
-        function _sendCash(address _to, uint256 _amount) internal { 
-            require(cash.transfer(_to,_amount)); 
-        }
-    In this case, you'd be reverting your process in case the DAI function returns false.
-    */
 
     ////////////// DAI CONTRACT FUNCTIONS ////////////// 
 
     // * internal * 
     /// @notice common function for all outgoing DAI transfers
     function _sendCash(address _to, uint256 _amount) internal { 
-        cash.transfer(_to,_amount); 
+        require(cash.transfer(_to,_amount)); 
     }
 
     // * internal * 
     /// @notice common function for all incoming DAI transfers
     function _receiveCash(address _from, uint256 _amount) internal {  
-        cash.transferFrom(_from, address(this), _amount);
+        require(cash.transferFrom(_from, address(this), _amount));
     }
 
     // * internal * 
@@ -396,14 +345,14 @@ contract Harber {
 
     ////////////// MARKET RESOLUTION FUNCTIONS ////////////// 
 
-    /// @notice the first of two functions which must be called, one after the other, to conclude the competition
+    /// @notice the first of three functions which must be called, one after the other, to conclude the competition
     /// @notice winnings can be paid out (or funds returned) only when these two steps are completed
     /// @notice this function checks whether the Augur markets have resolved, and if yes, whether they resolved correct or not
     /// @dev they are split into two sections due to the presence of step1BemergencyExit and step1CcircuitBreaker
     /// @dev can be called by anyone 
     /// @dev can be called multiple times, but only once after markets have indeed resolved
     /// @dev the two arguments passed are for testing only
-    function step1checkMarketsResolved() public {
+    function step1checkMarketsResolved() external {
         require(marketsResolved == false, "Step1 can only be completed once");
         // first check if all X markets have all resolved one way or the other
         if (_haveAllAugurMarketsResolved()) {
@@ -411,18 +360,19 @@ contract Harber {
             collectRentAllTokens();
             // lock everything down
             marketsResolved = true;
-             // now check if they all resolved without errors. It is set to false upon contract initialisation 
-             // this function also sets winningOutcome if there is one
+            // now check if they all resolved without errors. It is set to false upon contract initialisation 
+            // this function also sets winningOutcome if there is one
             if (_haveAllAugurMarketsResolvedWithoutErrors()) {
                 marketsResolvedWithoutErrors = true;
             }
+            emit LogStep1Complete(true, winningOutcome, marketsResolvedWithoutErrors);
         }
     }
 
     /// @notice emergency function in case the augur markets never resolve for whatever reason
     /// @notice returns all funds to all users
     /// @notice can only be called 6 months after augur markets should have ended 
-    function step1BemergencyExit() public  {
+    function step1BemergencyExit() external  {
         require(marketsResolved == false, "Step1 can only be completed once");
         require(now > (marketExpectedResolutionTime + 15778800), "Must wait 6 months for Augur Oracle");
         collectRentAllTokens();
@@ -432,7 +382,7 @@ contract Harber {
 
     /// @notice Same as above, except that only I can call it, and I can call it whenever
     /// @notice to be clear, this only allows me to return all funds. I can not set a winner. 
-    function step1CcircuitBreaker() public {
+    function step1CcircuitBreaker() external {
         require(marketsResolved == false, "Step1 can only be completed once");
         require(msg.sender == andrewsAddress, "Only owner can call this");
         collectRentAllTokens();
@@ -440,42 +390,42 @@ contract Harber {
         emit LogStep1Complete(false, winningOutcome, false);
     }
 
-    /// @notice the second of the two functions which must be called, one after the other, to conclude the competition
+    /// @notice the second of the three functions which must be called, one after the other, to conclude the competition
     /// @dev gets funds back from Augur, gets the available funds for distribution and pays me my 1%
     /// @dev can be called by anyone, but only once 
-    function step2sellCompleteSetsAndPayAndrew() public {
+    function step2sellCompleteSets() external {
         require(marketsResolved == true, "Must wait for market resolution");
         require(step2Complete == false, "Step2 should only be run once");
+        step2Complete = true;
 
         uint256 _balanceBefore = _getContractsCashBalance();
         _sellCompleteSets();
         uint256 _balanceAfter = _getContractsCashBalance();
         // daiAvailableToDistribute therefore does not include unused deposits
         daiAvailableToDistribute = _balanceAfter.sub(_balanceBefore);
+        emit LogStep2Complete(daiAvailableToDistribute);
+    }
 
-        // only pay me if markets resolved correctly. If not I don't deserve shit
+    /// @notice the final of the three functions which must be called, one after the other, to conclude the competition
+    /// @notice pays me my 1% if markets resolved correctly. If not I don't deserve shit
+    /// @dev this was originally included within step3 but it was modifed so that ineraction with Dai contract happened at the end
+    function step3payAndrew() external {
+        require(step2Complete == true, "Must wait for market resolution");
+        require(step3Complete == false, "Step3 should only be run once");       
+        step3Complete = true;
+
         if (marketsResolvedWithoutErrors) {
             uint256 _andrewsWellEarntMonies = daiAvailableToDistribute.div(100);
-            /*
-            Although you trust DAI contracts, a security recommendation is to always modify all
-            of your contract's internal state before executing external code.
-            I'd considering modifying your logic to set "step2Complete" before calling _sendCash.
-            Maybe you could do this before checking if the markets resolved without errors.
-            Then, I'd just invert the 02 lines below. First set "daiAvailableToDistribute", and then
-            invoke _sendCash.
-            */ 
-            _sendCash(andrewsAddress,_andrewsWellEarntMonies);
             daiAvailableToDistribute = daiAvailableToDistribute.sub(_andrewsWellEarntMonies);
-        }
-
-        step2Complete = true;
-        emit LogStep2Complete(daiAvailableToDistribute);
+            _sendCash(andrewsAddress,_andrewsWellEarntMonies);
+            emit LogAndrewPaid(_andrewsWellEarntMonies);
+        }     
     }
 
     /// @notice the final function of the competition resolution process. Pays out winnings, or returns funds, as necessary
     /// @dev users pull dai into their account. Replaces previous push vesion which required looping over unbounded mapping.
-    function complete() public {
-        require(step2Complete == true, "Step2 must be completed first");
+    function complete() external {
+        require(step3Complete == true, "Step3 must be completed first");
 
         if (marketsResolvedWithoutErrors) {
                 _payoutWinnings();
@@ -519,7 +469,7 @@ contract Harber {
     /// @dev the other withdraw deposit functions are locked when markets have resolved so must use this one
     /// @dev ... which can only be called if markets have resolved. This function is also different in that it does 
     /// @dev ... not attempt to collect rent or transfer ownership to a previous owner
-    function withdrawDepositAfterResolution() public {
+    function withdrawDepositAfterResolution() external {
         require(marketsResolved == true, "step1 must be completed first");
          
         for (uint i = 0; i < numberOfTokens; i++) {
@@ -537,7 +487,8 @@ contract Harber {
     ////////////// ORDINARY COURSE OF BUSINESS FUNCTIONS //////////////
 
     /// @notice collects rent for all tokens
-    /// @dev makes it easy for me to call whenever I want to keep people paying their rent
+    /// @dev makes it easy for me to call whenever I want to keep people paying their rent, thus cannot be internal
+    /// @dev cannot be external because it is called within the step1 functions, therefore public
     function collectRentAllTokens() public notResolved() {
        for (uint i = 0; i < numberOfTokens; i++) {
             _collectRent(i);
@@ -546,7 +497,9 @@ contract Harber {
 
     /// @notice collects rent for a specific token
     /// @dev also calculates and updates how long the current user has held the token for
-    function _collectRent(uint256 _tokenId) public notResolved() {
+    /// @dev called frequently internally, so cant be external. 
+    /// @dev is not a problem if called externally, but making internal to save gas
+    function _collectRent(uint256 _tokenId) internal notResolved() {
         //only collect rent if the token is owned (ie, if owned by the contract this implies unowned)
         if (team.ownerOf(_tokenId) != address(this)) {
             
@@ -565,10 +518,8 @@ contract Harber {
                 _timeOfThisCollection = now;
             }
 
-            // decrease deposit by rent owed and buy complete sets
+            // decrease deposit by rent owed
             deposits[_tokenId][_currentOwner] = deposits[_tokenId][_currentOwner].sub(_rentOwed);
-            // Consider moving this external call execution to the end of this function.
-            _buyCompleteSets(_tokenId,_rentOwed);
 
             // the 'important bit', where the duration the token has been held by each user is updated
             // it is essential that timeHeld and totalTimeHeld are incremented together such that the sum of
@@ -582,42 +533,34 @@ contract Harber {
             collectedPerMarket[_tokenId] = collectedPerMarket[_tokenId].add(_rentOwed);
             collectedPerUser[_currentOwner] = collectedPerUser[_currentOwner].add(_rentOwed);
             totalCollected = totalCollected.add(_rentOwed);
-            emit LogRentCollection(_rentOwed);
+
+            _buyCompleteSets(_tokenId,_rentOwed);
+            emit LogRentCollection(_rentOwed, _tokenId);
         }
-         /*
-         1. Considering setting this before the external call (_buyCompleteSets)
-         2. This is more of a question without fully/deeply understanding your project:
-            Should you set timeLastCollected out of the IF above? I mean, if you're not colleting rent,
-            because the IF above is not valid, should you update this variable?
-         */
+
+        // timeLastCollected is updated regardless of whether the token is owned, so that the clock starts ticking
+        // ... when the first owner buys it, because this function is run before ownership changes upon calling
+        // ... newRental
         timeLastCollected[_tokenId] = now;
     }
     
     /// @notice to rent a token
-    function newRental(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) public collectRent(_tokenId) notResolved() {
+    function newRental(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) external tokenExists(_tokenId) amountNotZero(_deposit) notResolved() {
         require(_newPrice > price[_tokenId], "Price must be higher than current price");
-        require(_deposit > 0, "Must deposit something");
-        require(_tokenId  >= 0 && _tokenId < numberOfTokens, "This team does not exist");
 
-        // get the Dai from the user and add to their deposits balance
-        _receiveCash(msg.sender, _deposit);
-        deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].add(_deposit);
-     
+        _collectRent(_tokenId);
         address _currentOwner = team.ownerOf(_tokenId);
 
         if (_currentOwner == msg.sender) {
-            // bought by current owner (ie, it just increases the price, token ownership does not change)
-            /* I noted that "changePrice" also executes the modifier "collectRent", which is also executed
-            by this function newRental. Consider avoiding double execution to avoid gas consumption (not
-            so sure about side effects in your logic).
-            If you can't really work around that, you can create an internal function (_changePrice?) where
-            the logic of "changePrice" leaves, and then, you can invoke _changePrice here without executing
-            again "collectRent", and have "changePrice" function declaration as it is, and just invoking
-            "_changePrice".
-            */
-            changePrice(_newPrice, _tokenId);
+            // bought by current owner (ie, token ownership does not change, so it is as if the current owner
+            // ... called changePrice and depositDai seperately)
+            _changePrice(_newPrice, _tokenId);
+            _depositDai(_deposit, _tokenId);
         } else {   
             // bought by different user (the normal situation)
+            // deposits are updated via depositDai function if _currentOwner = msg.sender that is why 
+            // ... the below is here
+            deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].add(_deposit);
             // update currentOwnerIndex and ownerTracker
             currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].add(1); 
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
@@ -628,36 +571,49 @@ contract Harber {
 
             // transfer token to new owner
             _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
-            emit LogNewRental(msg.sender, _newPrice); 
+            // get the Dai from the user and add to their deposits balance
+            _receiveCash(msg.sender, _deposit);
+            emit LogNewRental(msg.sender, _newPrice, _tokenId); 
         }
     }
 
     /// @notice add new dai deposit to an existing rental
-    function depositDai(uint256 _dai, uint256 _tokenId) public collectRent(_tokenId) notResolved() {
-        // Consider changing the state before executing the external contract.
-        // If you're able to check if the DAI execution was successful or not, and
-        // revert in case of unsuccessful execution, your state will be reverted anyway.
-        _receiveCash(msg.sender, _dai);
+    function depositDai(uint256 _dai, uint256 _tokenId) external amountNotZero(_dai) tokenExists(_tokenId) notResolved() {
+        _collectRent(_tokenId);
+        _depositDai(_dai, _tokenId);
+    }
+
+    /// @dev depositDai is split into two, because it needs to be called direct from newRental
+    /// @dev ... without collecing rent first (otherwise it would be collected twice, possibly causing logic errors)
+    function _depositDai(uint256 _dai, uint256 _tokenId) internal {
         deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].add(_dai);
-        // Not sure if relevant to your use case: Would it be interesting for external
-        // parties know about a new deposit? If so, consider emitting an event.
+        _receiveCash(msg.sender, _dai);
+        emit LogDepositIncreased(_dai, _tokenId, msg.sender);
     }
 
     /// @notice increase the price of an existing rental
-    function changePrice(uint256 _newPrice, uint256 _tokenId) public collectRent(_tokenId) notResolved() {
+    /// @dev can't be external because also called within newRental
+    function changePrice(uint256 _newPrice, uint256 _tokenId) public tokenExists(_tokenId) notResolved() {
         require(_newPrice > price[_tokenId], "New price must be higher than current price"); 
         require(msg.sender == team.ownerOf(_tokenId), "Not owner");
-        
+        _collectRent(_tokenId);
+        _changePrice(_newPrice, _tokenId);
+    }
+
+    /// @dev changePrice is split into two, because it needs to be called direct from newRental
+    /// @dev ... without collecing rent first (otherwise it would be collected twice, possibly causing logic errors)
+    function _changePrice(uint256 _newPrice, uint256 _tokenId) internal {
         // below is the only instance when price is modifed outside of the _transferTokenTo function
         price[_tokenId] = _newPrice;
         ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
-        emit LogPriceChange(price[_tokenId]);
+        emit LogPriceChange(price[_tokenId], _tokenId);
     }
     
     /// @notice withdraw deposit
     /// @dev do not need to be the current owner
-    function withdrawDeposit(uint256 _dai, uint256 _tokenId) public collectRent(_tokenId) notResolved() returns (uint256) {
-        // if statement needed because deposit may have just reduced to zero following _collectRent modifier
+    function withdrawDeposit(uint256 _dai, uint256 _tokenId) external amountNotZero(_dai) tokenExists(_tokenId) notResolved() returns (uint256) {
+        _collectRent(_tokenId);
+        // if statement needed because deposit may have just reduced to zero following _collectRent 
         if (deposits[_tokenId][msg.sender] > 0) {
             _withdrawDeposit(_dai, _tokenId);
             emit LogDepositWithdrawal(_dai, _tokenId, msg.sender);
@@ -666,7 +622,8 @@ contract Harber {
 
     /// @notice withdraw full deposit
     /// @dev do not need to be the current owner
-    function exit(uint256 _tokenId) public collectRent(_tokenId) notResolved() {
+    function exit(uint256 _tokenId) external tokenExists(_tokenId) notResolved() {
+        _collectRent(_tokenId);
         // if statement needed because deposit may have just reduced to zero following _collectRent modifier
         if (deposits[_tokenId][msg.sender] > 0) {
             _withdrawDeposit(deposits[_tokenId][msg.sender],  _tokenId);
@@ -679,54 +636,45 @@ contract Harber {
     function _withdrawDeposit(uint256 _dai, uint256 _tokenId) internal {
         require(deposits[_tokenId][msg.sender] >= _dai, 'Withdrawing too much');
         deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].sub(_dai);
-        _sendCash(msg.sender, _dai);
-        
-        /*
-        1. What if the user that's withdrawing is not the owner? Do you need to execute "_revertToPreviousOwner"?
-        2. What if "_revertToPreviousOwner" fails (an external call reverts or it runs out of gas)?
-        In such case, the user funds would be locked, and s/he wouldn't be able to withdraw it
-        because the function always fail.
-        Consider if it would be possible to split these functionalities (withdraw and rever to previous owner).
-        I'm not sure if possible/applicable considering what you want to accomplish with your platform,
-        but maybe you could have another function that would allow the current owner to renounce ownership,
-        which would invoke "_revertToPreviousOwner). After the current owner stepped back, than it would be
-        possible to withdraw the funds (you may need to add a check to validate if sender is the token owner).
-        */
-        if(deposits[_tokenId][msg.sender] == 0) {
+        address _currentOwner = team.ownerOf(_tokenId);
+        if(_currentOwner == msg.sender && deposits[_tokenId][msg.sender] == 0) {
             _revertToPreviousOwner(_tokenId);
         }
+        _sendCash(msg.sender, _dai);
     }
 
     /* internal */
     /// @notice if a users deposit runs out, either return to previous owner or foreclose
     function _revertToPreviousOwner(uint256 _tokenId) internal {
-        // Make sure you check if _tokenId is valid.
         bool _reverted = false;
-        
-        /*
-        If possible, avoid calls to external contract's inside the while loop.
-        Maybe you can adds some controls to figure out what needs to be executed
-        (foreclose or owner transfer) and execute that after the while is finished.
-        */
+        bool _toForeclose = false;
+        uint256 _index;
+        address _previousOwner;
+
         while (_reverted == false) {
             assert(currentOwnerIndex[_tokenId] >=0);
             currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].sub(1); // currentOwnerIndex will now point to  previous owner
-            uint256 _index = currentOwnerIndex[_tokenId]; // just for readability
-            address _previousOwner = ownerTracker[_tokenId][_index].owner;
+            _index = currentOwnerIndex[_tokenId]; // just for readability
+            _previousOwner = ownerTracker[_tokenId][_index].owner;
 
-            //no previous owners. price -> zero, foreclose
+            //if no previous owners. price -> zero, foreclose
+            //if previous owner still has a deposit, transfer to them, update the price to what it used to be
             if (_index == 0) {
-                _foreclose(_tokenId);
+                _toForeclose = true;
                 _reverted = true;
             } else if (deposits[_tokenId][_previousOwner] > 0) {
-                // previous owner still has a deposit, transfer to them, update the price to what it used to be
+                _reverted = true;
+            }         
+        }   
+
+        if (_toForeclose) {
+                _foreclose(_tokenId);
+            } else {
                 address _currentOwner = team.ownerOf(_tokenId);
                 uint256 _oldPrice = ownerTracker[_tokenId][_index].price;
                 _transferTokenTo(_currentOwner, _previousOwner, _oldPrice, _tokenId);
-                _reverted = true;
-                emit LogReturnToPreviousOwner(_tokenId,_previousOwner);
+                emit LogReturnToPreviousOwner(_tokenId, _previousOwner);
             }
-        }   
     }
 
     /* internal */
@@ -735,13 +683,14 @@ contract Harber {
         address _currentOwner = team.ownerOf(_tokenId);
         // third field is price, ie price goes to zero
         _transferTokenTo(_currentOwner, address(this), 0, _tokenId);
-        emit LogForeclosure(_currentOwner);
+        emit LogForeclosure(_currentOwner, _tokenId);
     }
 
     /* internal */
     /// @notice transfer ERC 721 between users
     /// @dev there is no event emitted as this is handled in ERC721.sol
     function _transferTokenTo(address _currentOwner, address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
+        require(_currentOwner != address(0) && _newOwner != address(0) , "Cannot send to/from zero address");
         team.transferFrom(_currentOwner, _newOwner, _tokenId);
         price[_tokenId] = _newPrice;
     }

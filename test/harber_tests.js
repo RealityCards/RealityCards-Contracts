@@ -143,9 +143,10 @@ contract('HarberTests', (accounts) => {
       await harber.newRental(web3.utils.toWei('1', 'ether'), 4, web3.utils.toWei('10', 'ether'), { from: user });
       await harber.newRental(web3.utils.toWei('2', 'ether'),4,web3.utils.toWei('10', 'ether'),{ from: user });
       // tests
-      await shouldFail.reverting.withMessage(harber.newRental(web3.utils.toWei('2', 'ether'),4,web3.utils.toWei('0', 'ether'),{ from: user}), "Price must be higher than current price");
-      await shouldFail.reverting.withMessage(harber.newRental(web3.utils.toWei('3', 'ether'),4,web3.utils.toWei('0', 'ether'),{ from: user}), "Must deposit something");
-      await shouldFail.reverting.withMessage(harber.newRental(web3.utils.toWei('3', 'ether'),20,web3.utils.toWei('0', 'ether'),{ from: user}), "This team does not exist");
+      await shouldFail.reverting.withMessage(harber.newRental(web3.utils.toWei('2', 'ether'),4,web3.utils.toWei('0', 'ether'),{ from: user}), "Amount must be above zero");
+      await shouldFail.reverting.withMessage(harber.newRental(web3.utils.toWei('2', 'ether'),4,web3.utils.toWei('1', 'ether'),{ from: user}), "Price must be higher than current price");
+      await shouldFail.reverting.withMessage(harber.newRental(web3.utils.toWei('3', 'ether'),4,web3.utils.toWei('0', 'ether'),{ from: user}), "Amount must be above zero");
+      await shouldFail.reverting.withMessage(harber.newRental(web3.utils.toWei('3', 'ether'),20,web3.utils.toWei('0', 'ether'),{ from: user}), "This token does not exist");
       await shouldFail.reverting.withMessage(harber.newRental(web3.utils.toWei('3', 'ether'),4,web3.utils.toWei('100', 'ether'),{ from: user}), "Insufficient balance");
     });
 
@@ -278,14 +279,14 @@ contract('HarberTests', (accounts) => {
     });
 
     // test a normal instance of collectRent
-    it('_collectRent function no revertPreviousOwner/foreclose', async () => {
+    it(' function no revertPreviousOwner/foreclose', async () => {
       // setup
       user = user0;
       await cash.faucet(web3.utils.toWei('100', 'ether'), { from: user });
       await cash.approve(harber.address, web3.utils.toWei('100', 'ether'), { from: user });
       await harber.newRental(web3.utils.toWei('1', 'ether'), 4, web3.utils.toWei('100', 'ether'), { from: user });
       await time.increase(time.duration.weeks(1));
-      await harber._collectRent(4);
+      await harber.collectRentAllTokens();
       // tests
       //test deposits
       var deposit = await harber.deposits.call(4,user); 
@@ -306,7 +307,7 @@ contract('HarberTests', (accounts) => {
       assert.equal(currentTime.toString(),timeLastCollected.toString());
       //wait a week and repeat the above
       await time.increase(time.duration.weeks(1));
-      await harber._collectRent(4);
+      await harber.collectRentAllTokens();
       //test deposits
       var deposit = await harber.deposits.call(4,user); 
       var depositShouldBe = web3.utils.toWei('86', 'ether');
@@ -329,14 +330,14 @@ contract('HarberTests', (accounts) => {
     });
 
     // test collectRent again, but this time it should foreclose, does it?
-    it('_collectRent function with foreclose but no revertPreviousOwner', async () => {
+    it('collectRentAllTokens function with foreclose but no revertPreviousOwner', async () => {
       // setup
       user = user0;
       await cash.faucet(web3.utils.toWei('100', 'ether'), { from: user });
       await cash.approve(harber.address, web3.utils.toWei('100', 'ether'), { from: user });
       await harber.newRental(web3.utils.toWei('1', 'ether'), 1, web3.utils.toWei('6', 'ether'), { from: user });
       await time.increase(time.duration.weeks(1));
-      await harber._collectRent(1);
+      await harber.collectRentAllTokens();
       //test
       //owned by contract address = foreclosed
       var owner = await token.ownerOf.call(1);
@@ -344,7 +345,7 @@ contract('HarberTests', (accounts) => {
     });
 
     // test collectRent again, this time it should return to previous owner, does it?
-    it('_collectRent function with revertPreviousOwner via calling _collect directly', async () => {
+    it('collectRentAllTokens function with revertPreviousOwner via calling _collect directly', async () => {
       // setup
       user = user0;
       await cash.faucet(web3.utils.toWei('100', 'ether'), { from: user });
@@ -389,21 +390,21 @@ contract('HarberTests', (accounts) => {
       var trackedAddress = await harber.getOwnerTrackerAddress.call(0,3);
       assert.equal(trackedAddress, user2);
       await time.increase(time.duration.days(3));
-      await harber._collectRent(0);
+      await harber.collectRentAllTokens();
       // should not have reverted
       var owner = await token.ownerOf.call(0);
       assert.equal(owner, user2);
       var price = await harber.price.call(0);
       assert.equal(price, web3.utils.toWei('3', 'ether'));
       await time.increase(time.duration.days(3));
-      await harber._collectRent(0);
+      await harber.collectRentAllTokens();
       // should have reverted
       var owner = await token.ownerOf.call(0);
       assert.equal(owner, user1);
       var price = await harber.price.call(0);
       assert.equal(price, web3.utils.toWei('2', 'ether'));
       await time.increase(time.duration.days(11));
-      await harber._collectRent(0);
+      await harber.collectRentAllTokens();
       // should have reverted again
       var owner = await token.ownerOf.call(0);
       assert.equal(owner, user0);
@@ -421,7 +422,7 @@ contract('HarberTests', (accounts) => {
       assert.equal(price, web3.utils.toWei('100', 'ether'));
       //revert again
       await time.increase(time.duration.days(14));
-      await harber._collectRent(0);
+      await harber.collectRentAllTokens();
       //check it is back with u0 again
       var owner = await token.ownerOf.call(0);
       assert.equal(owner, user0);
@@ -429,7 +430,7 @@ contract('HarberTests', (accounts) => {
       assert.equal(price, web3.utils.toWei('1', 'ether'));
       //check foreclose
       await time.increase(time.duration.days(14));
-      await harber._collectRent(0);
+      await harber.collectRentAllTokens();
       var owner = await token.ownerOf.call(0);
       assert.equal(owner, harber.address);
       var price = await harber.price.call(0);
@@ -456,77 +457,78 @@ contract('HarberTests', (accounts) => {
       await harber.newRental(web3.utils.toWei('3', 'ether'), 0, web3.utils.toWei('12', 'ether'), { from: user });
       //tests
       await time.increase(time.duration.days(3));
-      await harber._collectRent(0);
+      await harber.collectRentAllTokens();
       // u2 3 days
       var timeHeld = await harber.timeHeld.call(0, user2);
       var timeHeldShouldBe = time.duration.days(3);
-      var difference = Math.abs(timeHeld - timeHeldShouldBe);
+      var difference = (timeHeld.toString() - timeHeldShouldBe.toString()); 
       assert.isBelow(difference,2);
       await time.increase(time.duration.days(3));
-      await harber._collectRent(0);
+      await harber.collectRentAllTokens();
       // u2 one more day
       var timeHeld = await harber.timeHeld.call(0, user2);
       var timeHeldShouldBe = time.duration.days(4);
-      var difference = Math.abs(timeHeld - timeHeldShouldBe); 
+      var difference = (timeHeld.toString() - timeHeldShouldBe.toString()); 
       assert.isBelow(difference,2);
       await time.increase(time.duration.days(3));
-      await harber._collectRent(0);
+      await harber.collectRentAllTokens();
       // u2 still 4 days, u1 3 days
       var timeHeld = await harber.timeHeld.call(0, user2);
       var timeHeldShouldBe = time.duration.days(4);
-      var difference = Math.abs(timeHeld - timeHeldShouldBe); 
-      assert.isBelow(difference,2);
+      var difference = (timeHeld.toString() - timeHeldShouldBe.toString()); 
+      assert.isBelow(difference/timeHeld,2);
       var timeHeld = await harber.timeHeld.call(0, user1);
       var timeHeldShouldBe = time.duration.days(3);
-      var difference = Math.abs(timeHeld - timeHeldShouldBe); 
-      assert.isBelow(difference,2);
+      var difference = (timeHeld.toString() - timeHeldShouldBe.toString()); 
+      assert.isBelow(difference/timeHeld,0.00001);
       await time.increase(time.duration.days(3));
-      await harber._collectRent(0);
+      await harber.collectRentAllTokens();
       // u1 5 days
       var timeHeld = await harber.timeHeld.call(0, user1);
       var timeHeldShouldBe = time.duration.days(5);
-      var difference = Math.abs(timeHeld - timeHeldShouldBe); 
-      assert.isBelow(difference,2);
+      var difference = (timeHeld.toString() - timeHeldShouldBe.toString()); 
+      assert.isBelow(difference/timeHeld,0.00001);
       await time.increase(time.duration.days(1));
-      await harber._collectRent(0);
+      await harber.collectRentAllTokens();
       // u1 5 days, u0 1 day
       var timeHeld = await harber.timeHeld.call(0, user1);
       var timeHeldShouldBe = time.duration.days(5);
-      var difference = Math.abs(timeHeld - timeHeldShouldBe); 
-      assert.isBelow(difference,2);
+      var difference = (timeHeld.toString() - timeHeldShouldBe.toString()); 
+      assert.isBelow(difference/timeHeld,0.00001);
       var timeHeld = await harber.timeHeld.call(0, user0);
       var timeHeldShouldBe = time.duration.days(1);
-      var difference = Math.abs(timeHeld - timeHeldShouldBe); 
-      assert.isBelow(difference,3);
+      var difference = (timeHeld.toString() - timeHeldShouldBe.toString()); 
+      assert.isBelow(difference/timeHeld,0.0001);
       // buy again, check the new owner, then revert again
       user = user5;
       await cash.faucet(web3.utils.toWei('100', 'ether'), { from: user });
       await cash.approve(harber.address, web3.utils.toWei('100', 'ether'), { from: user });
       await harber.newRental(web3.utils.toWei('10', 'ether'), 0, web3.utils.toWei('10', 'ether'), { from: user });
       await time.increase(time.duration.days(2));
-      await harber._collectRent(0);
+      await harber.collectRentAllTokens();
       var timeHeld = await harber.timeHeld.call(0, user5);
       var timeHeldShouldBe = time.duration.days(1);
-      var difference = Math.abs(timeHeld - timeHeldShouldBe); 
-      assert.isBelow(difference,2)
+      var difference = (timeHeld.toString() - timeHeldShouldBe.toString()); 
+      assert.isBelow(difference/timeHeld,0.0001);
       await time.increase(time.duration.days(7));
-      await harber._collectRent(0);
+      await harber.collectRentAllTokens();
       // u0 8 days
       var timeHeld = await harber.timeHeld.call(0, user0);
       var timeHeldShouldBe = time.duration.days(8);
-      var difference = Math.abs(timeHeld - timeHeldShouldBe); 
-      assert.isBelow(difference,3)
+      var difference = (timeHeld.toString() - timeHeldShouldBe.toString()); 
+      assert.isBelow(difference/timeHeld,0.0001);
       await time.increase(time.duration.days(7));
-      await harber._collectRent(0);
+      await harber.collectRentAllTokens();
       // u0 10 days
       var timeHeld = await harber.timeHeld.call(0, user0);
       var timeHeldShouldBe = time.duration.days(10);
       var difference = Math.abs(timeHeld - timeHeldShouldBe); 
-      assert.isBelow(difference,2)
+      assert.isBelow(difference/timeHeld,0.0001);
       // check total collected
       var totalTimeHeldShouldBe = time.duration.days(20);
       var totalTimeHeld = await harber.totalTimeHeld.call(0);
-      assert.equal(totalTimeHeldShouldBe.toString(), totalTimeHeld.toString());
+      var difference = Math.abs(totalTimeHeld - totalTimeHeldShouldBe);
+      assert.isBelow(difference/timeHeld,0.0001);
     });
 
     // check withdrawDeposit works as it should
@@ -655,7 +657,8 @@ contract('HarberTests', (accounts) => {
     await market3.setResult(2);
     ////////////////////////
     await harber.step1checkMarketsResolved(); 
-    await harber.step2sellCompleteSetsAndPayAndrew(); 
+    await harber.step2sellCompleteSets(); 
+    await harber.step3payAndrew(); 
     ////////////////////////
     // total deposits = 75, check:
     var totalCollected = await harber.totalCollected.call();
@@ -721,7 +724,8 @@ contract('HarberTests', (accounts) => {
     await market2.setResult(1);
     await market3.setResult(2);
     await harber.step1checkMarketsResolved(); 
-    await harber.step2sellCompleteSetsAndPayAndrew(); 
+    await harber.step2sellCompleteSets(); 
+    await harber.step3payAndrew(); 
     ////////////////////////
     // total deposits = 75, check:
     var totalCollected = await harber.totalCollected.call();
@@ -784,7 +788,8 @@ contract('HarberTests', (accounts) => {
     await market2.setResult(1);
     await market3.setResult(2);
     await harber.step1checkMarketsResolved(); 
-    await harber.step2sellCompleteSetsAndPayAndrew(); 
+    await harber.step2sellCompleteSets(); 
+    await harber.step3payAndrew(); 
     ////////////////////////
     //check user0 winnings 
     await harber.complete({ from: user0 });
@@ -840,7 +845,8 @@ contract('HarberTests', (accounts) => {
     await cash.resetBalance(user2);
     ////////////////////////
     await harber.step1BemergencyExit(); 
-    await harber.step2sellCompleteSetsAndPayAndrew(); 
+    await harber.step2sellCompleteSets(); 
+    await harber.step3payAndrew(); 
     ////////////////////////
     //check user0 winnings 
     await harber.complete({ from: user0 });
@@ -896,7 +902,8 @@ contract('HarberTests', (accounts) => {
     await cash.resetBalance(user2);
     ////////////////////////
     await harber.step1CcircuitBreaker({ from: andrewsAddress} ); 
-    await harber.step2sellCompleteSetsAndPayAndrew(); 
+    await harber.step2sellCompleteSets(); 
+    await harber.step3payAndrew(); 
     ////////////////////////
     //check user0 winnings 
     await harber.complete({ from: user0 });
@@ -952,7 +959,8 @@ contract('HarberTests', (accounts) => {
     await market2.setResult(2);
     await market3.setResult(2);
     await harber.step1checkMarketsResolved(); 
-    await harber.step2sellCompleteSetsAndPayAndrew(); 
+    await harber.step2sellCompleteSets(); 
+    await harber.step3payAndrew(); 
     await harber.complete({ from: user0 });
     await harber.complete({ from: user1 });
     await harber.complete({ from: user2 });
@@ -988,7 +996,7 @@ contract('HarberTests', (accounts) => {
     });
 
 
-  it('test return deposits work (before payout but after step2sellCompleteSetsAndPayAndrew)', async () => {
+  it('test return deposits work (before payout but after step2sellCompleteSets)', async () => {
     /////// SETUP //////
     await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user0 });
     await cash.approve(harber.address, web3.utils.toWei('100', 'ether'),{ from: user0 });
@@ -1022,7 +1030,8 @@ contract('HarberTests', (accounts) => {
     await market2.setResult(2);
     await market3.setResult(2);
     await harber.step1checkMarketsResolved(); 
-    await harber.step2sellCompleteSetsAndPayAndrew(); 
+    await harber.step2sellCompleteSets(); 
+    await harber.step3payAndrew(); 
     /////// THIS TEST //////
     // reset cash balances
     await cash.resetBalance(user0);
@@ -1054,7 +1063,7 @@ contract('HarberTests', (accounts) => {
     assert.equal(depositReturnedToUser.toString(),depositReturnedShouldBe.toString());
     });
 
-  it('test return deposits work before step2sellCompleteSetsAndPayAndrew)', async () => {
+  it('test return deposits work before step2sellCompleteSets)', async () => {
     /////// SETUP //////
     await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user0 });
     await cash.approve(harber.address, web3.utils.toWei('100', 'ether'),{ from: user0 });
@@ -1142,7 +1151,7 @@ contract('HarberTests', (accounts) => {
     await market2.setResult(2);
     await market3.setResult(2);
     await harber.step1checkMarketsResolved();
-    await shouldFail.reverting.withMessage(harber.step2sellCompleteSetsAndPayAndrew(), "Must wait for market resolution");
+    await shouldFail.reverting.withMessage(harber.step2sellCompleteSets(), "Must wait for market resolution");
     });
 
 });
