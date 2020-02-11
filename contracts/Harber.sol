@@ -28,6 +28,39 @@ interface Cash
     function transferFrom(address _from, address _to, uint256 _amount) external returns (bool);
 }
 
+    /*
+     GENERAL RECOMMENDATIONS:
+    - For your public functions, if possible, consider using the "external" visibility intead.
+      External functions are costs less gas than public ones (not referring to the ones defined as "view").
+      https://ethereum.stackexchange.com/questions/19380/external-vs-public-best-practices
+    - Make sure you check the params that are passed to your functions, especially public, external and
+      internal functions (the ones that another contract (including inheritance) can eventually call in
+      contract your.
+      A couple of things you should check are for your params, at least:
+        * arguments are in range (array indexes passed between 0 .. array.lenght - for example)
+        * addresses are valid (different than 0 => `require(paramAddress != address(0));`
+    - Consider using the pattern "Check-Effects-Interactions Pattern" in your functions
+      https://solidity.readthedocs.io/en/latest/security-considerations.html#use-the-checks-effects-interactions-pattern.
+      The objective is to use the following sequence to decrease potential exploits:
+        1. validate the arguments of your functions;
+        2. update internal state;
+        3. and then call external contract's functions.
+        4. Emit events (not part of this pattern, but a general recommendation)
+      I made a couple more specific comments in some functions below where you call external contract prior to
+      updating your internal state.
+      PS: I understand you trust DAI and Augur contracts, but one never know if those contracts are completelly
+      bug/exploit-free. So it's always good not to trust on external contracts, specially the ones that you do not
+      develop on your own. 'Trust no external contract, you must!', Baby Yoda ;-)
+
+    NOT SURE YET ABOUT SUGGESTING:
+    - Consider using inheritance to break your contract into smaller ones. Your contract is not simple, with lots
+      of (cool) functionalities. I know that compared with other types of software (non-blockchain),
+      approx. 600 lines of code are big at all. But if possible, you should try to modularize your contracts.
+    - By using inheritance, and depending on how you structure your contract, you could potentially be able to
+    split the code that's currently being used for testing reasons. You could have a TestContract (MockHarber?)
+    that inherits from your main contract (Harber), and implements the testing/mock logic needed in your unit tests.
+    */
+
 //TODO: replace completesets with OICash
 //TODO: update design pattens to take into account the recent changes
 //TODO: change front end to only approve the same amount that is being sent
@@ -134,6 +167,9 @@ contract Harber {
         cash.approve(_addressOfMainAugurContract,(2**256)-1);
     } 
 
+    // Nothing wrong here, just a suggestion as a potential user:
+    // Would users benefit if they knew which token these events are related to?
+    // Example: I see log for price change but I cannot identify which token it relates to.
     event LogNewRental(address indexed newOwner, uint256 indexed newPrice);
     event LogPriceChange(uint256 indexed newPrice);
     event LogForeclosure(address indexed prevOwner);
@@ -154,6 +190,42 @@ contract Harber {
         require(marketsResolved == false);
         _;
     }
+
+    /*
+    modifier: collectRent
+    I noted you're using this modifier not to check the arguments passed to the function,
+    but to execute logic by invoking _collectRent. Modifiers are generally used for validation instead
+    of logic, but nothing prevents you from doing this.
+    However, you may reevalute this strategy, because I noted that in most functions that you're using
+    this modifier, you also have other validations (requires) going on. For example, NewRental:
+
+        function newRental(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) public collectRent(_tokenId) notResolved() {
+        require(_newPrice > price[_tokenId], "Price must be higher than current price");
+        require(_deposit > 0, "Must deposit something");
+        ...
+
+
+    You're collection payment in this modifier, which costs approx. 44K gas units (based on eth-gas-reported you're using),
+    and after executing it, the function NewRental executes 02 more validations. In case one of these validations failed,
+    the state will be reversed (so no worries about state inconsistency), but the gas needed to execute "collectRent"
+    was charged any way. If you think about providing the less expensive execution as possible to your users, you may
+    want to invoke "_collectRent" after all checks were executed, to avoid unnecessary processing/gas consumption.
+    So with the function newRental (shown above), you could consider changing it to something like this:
+
+        function newRental(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) public notResolved() {
+        require(_newPrice > price[_tokenId], "Price must be higher than current price");
+        require(_deposit > 0, "Must deposit something");
+
+        _collectRent(_tokenId);
+        ...
+
+    PS: I noted you're using this modifier (and collecting rent) in the following functions:
+        *newRental
+        *depositDai
+        * changePrice
+        * withdrawDeposit
+        *exit
+    */
 
     /// @notice collect Rent
     /// @dev should be on all public 'ordinary course of business' functions except the collect rent ones obviously.
@@ -286,6 +358,21 @@ contract Harber {
         }
     }
 
+    /*
+    I noted by the defined interface above (Cash), that some of the DAI functions return bool.
+    I'm not familiar with the DAI contract, but I assume it returns "true" if the execution was
+    successful, otherwise false.
+    Consider returning the result of the DAI contract's in these internal DAI functions below.
+    By doing so, you can check if the execution was successful or not in the functions that
+    intercat with DAI contracts.
+    Another option is to change your functions below to use require.
+    Example:
+        function _sendCash(address _to, uint256 _amount) internal { 
+            require(cash.transfer(_to,_amount)); 
+        }
+    In this case, you'd be reverting your process in case the DAI function returns false.
+    */
+
     ////////////// DAI CONTRACT FUNCTIONS ////////////// 
 
     // * internal * 
@@ -369,6 +456,14 @@ contract Harber {
         // only pay me if markets resolved correctly. If not I don't deserve shit
         if (marketsResolvedWithoutErrors) {
             uint256 _andrewsWellEarntMonies = daiAvailableToDistribute.div(100);
+            /*
+            Although you trust DAI contracts, a security recommendation is to always modify all
+            of your contract's internal state before executing external code.
+            I'd considering modifying your logic to set "step2Complete" before calling _sendCash.
+            Maybe you could do this before checking if the markets resolved without errors.
+            Then, I'd just invert the 02 lines below. First set "daiAvailableToDistribute", and then
+            invoke _sendCash.
+            */ 
             _sendCash(andrewsAddress,_andrewsWellEarntMonies);
             daiAvailableToDistribute = daiAvailableToDistribute.sub(_andrewsWellEarntMonies);
         }
@@ -472,6 +567,7 @@ contract Harber {
 
             // decrease deposit by rent owed and buy complete sets
             deposits[_tokenId][_currentOwner] = deposits[_tokenId][_currentOwner].sub(_rentOwed);
+            // Consider moving this external call execution to the end of this function.
             _buyCompleteSets(_tokenId,_rentOwed);
 
             // the 'important bit', where the duration the token has been held by each user is updated
@@ -488,7 +584,12 @@ contract Harber {
             totalCollected = totalCollected.add(_rentOwed);
             emit LogRentCollection(_rentOwed);
         }
-         
+         /*
+         1. Considering setting this before the external call (_buyCompleteSets)
+         2. This is more of a question without fully/deeply understanding your project:
+            Should you set timeLastCollected out of the IF above? I mean, if you're not colleting rent,
+            because the IF above is not valid, should you update this variable?
+         */
         timeLastCollected[_tokenId] = now;
     }
     
@@ -506,6 +607,14 @@ contract Harber {
 
         if (_currentOwner == msg.sender) {
             // bought by current owner (ie, it just increases the price, token ownership does not change)
+            /* I noted that "changePrice" also executes the modifier "collectRent", which is also executed
+            by this function newRental. Consider avoiding double execution to avoid gas consumption (not
+            so sure about side effects in your logic).
+            If you can't really work around that, you can create an internal function (_changePrice?) where
+            the logic of "changePrice" leaves, and then, you can invoke _changePrice here without executing
+            again "collectRent", and have "changePrice" function declaration as it is, and just invoking
+            "_changePrice".
+            */
             changePrice(_newPrice, _tokenId);
         } else {   
             // bought by different user (the normal situation)
@@ -525,8 +634,13 @@ contract Harber {
 
     /// @notice add new dai deposit to an existing rental
     function depositDai(uint256 _dai, uint256 _tokenId) public collectRent(_tokenId) notResolved() {
+        // Consider changing the state before executing the external contract.
+        // If you're able to check if the DAI execution was successful or not, and
+        // revert in case of unsuccessful execution, your state will be reverted anyway.
         _receiveCash(msg.sender, _dai);
         deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].add(_dai);
+        // Not sure if relevant to your use case: Would it be interesting for external
+        // parties know about a new deposit? If so, consider emitting an event.
     }
 
     /// @notice increase the price of an existing rental
@@ -566,7 +680,18 @@ contract Harber {
         require(deposits[_tokenId][msg.sender] >= _dai, 'Withdrawing too much');
         deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].sub(_dai);
         _sendCash(msg.sender, _dai);
-         
+        
+        /*
+        1. What if the user that's withdrawing is not the owner? Do you need to execute "_revertToPreviousOwner"?
+        2. What if "_revertToPreviousOwner" fails (an external call reverts or it runs out of gas)?
+        In such case, the user funds would be locked, and s/he wouldn't be able to withdraw it
+        because the function always fail.
+        Consider if it would be possible to split these functionalities (withdraw and rever to previous owner).
+        I'm not sure if possible/applicable considering what you want to accomplish with your platform,
+        but maybe you could have another function that would allow the current owner to renounce ownership,
+        which would invoke "_revertToPreviousOwner). After the current owner stepped back, than it would be
+        possible to withdraw the funds (you may need to add a check to validate if sender is the token owner).
+        */
         if(deposits[_tokenId][msg.sender] == 0) {
             _revertToPreviousOwner(_tokenId);
         }
@@ -575,8 +700,14 @@ contract Harber {
     /* internal */
     /// @notice if a users deposit runs out, either return to previous owner or foreclose
     function _revertToPreviousOwner(uint256 _tokenId) internal {
+        // Make sure you check if _tokenId is valid.
         bool _reverted = false;
         
+        /*
+        If possible, avoid calls to external contract's inside the while loop.
+        Maybe you can adds some controls to figure out what needs to be executed
+        (foreclose or owner transfer) and execute that after the while is finished.
+        */
         while (_reverted == false) {
             assert(currentOwnerIndex[_tokenId] >=0);
             currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].sub(1); // currentOwnerIndex will now point to  previous owner
