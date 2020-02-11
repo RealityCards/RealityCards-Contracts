@@ -35,8 +35,7 @@ contract('HarberTests', (accounts) => {
   user8 = accounts[8];
   andrewsAddress = accounts[9];
 
-  const augurShareTokenAddress = '0x63cbfEb0Cf1EE91Ca1689d8dbBa143bbf8Fd0fd1';
-  const augurMainAddress = '0x62214e5c919332AC17c5e5127383B84378Ef9C1d';
+  const augurMainAddress = '0x62214e5c919332AC17c5e5127383B84378Ef9C1d'; // this can be anything 
   const marketedExpectedResolutionTime = 0;
 
   beforeEach(async () => {
@@ -45,7 +44,6 @@ contract('HarberTests', (accounts) => {
     market1 = await MarketMockup.new();
     market2 = await MarketMockup.new();
     market3 = await MarketMockup.new();
-
 
     const augurMarketAddress = [
       market0.address,

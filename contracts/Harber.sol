@@ -29,9 +29,8 @@ interface Cash
 }
 
 //TODO: replace completesets with OICash
+//TODO: update design pattens to take into account the recent changes
 //TODO: change front end to only approve the same amount that is being sent
-//TODO: look into calculating the number of loops and DoS attacks
-//TODO: finish testing given the new market resolution, and update design_patterns to take it
 //TODO: I dont think dai deposited via the deposit dai function is returned in return
 // all deposits?
 // ^ will also need to figure out how to pass this number in the correct format because decimal
@@ -103,7 +102,7 @@ contract Harber {
     /// @dev this does NOT keep a reliable list of all owners, if it reverts to a previous owner then the next owner will overwrite the owner that was in that slot.
     /// @dev the variable currentOwnerIndex is used to track the location of the current owner. 
     mapping (uint256 => mapping (uint256 => purchase) ) public ownerTracker;  
-    /// @dev used to keep hold of all the owners, for payout, similar to ownerTracker except that the pointer to the current position never decrements   
+    /// @dev how many seconds each user has held each token for, for determining winnings  
     mapping (uint256 => mapping (address => uint256) ) public timeHeld;
     /// @dev sums all the timeHelds for each token. Not required, but saves on gas when paying out. Should always increment at the same time as timeHeld
     mapping (uint256 => uint256) public totalTimeHeld; 
@@ -141,13 +140,12 @@ contract Harber {
     event LogRentCollection(uint256 indexed rentCollected);
     event LogFundsReturned(uint256 indexed daiAvailableToDistribute);
     event LogReturnToPreviousOwner(uint256 indexed tokenId, address indexed previousOwner);
-    event LogDepositWithdrawal(uint256 indexed daiWithdrawn, uint256 indexed tokenId);
+    event LogDepositWithdrawal(uint256 indexed daiWithdrawn, uint256 indexed tokenId, address indexed returnedTo);
     event LogExit(uint256 indexed tokenId);
     event LogStep1Complete(bool indexed didAugurMarketsResolve, uint256 indexed winningOutcome, bool indexed didAugurMarketsResolveCorrectly);
     event LogStep2Complete(uint256 indexed daiAvailableToDistribute);
     event LogWinningsPaid(address indexed paidTo, uint256 indexed amountPaid);
     event LogRentReturned(address indexed returnedTo, uint256 indexed amountReturned);
-    event LogDepositWithdrawalAfterResolution(address indexed returnedTo, uint256 indexed amountReturned);
 
     ////////////// MODIFIERS //////////////
     /// @notice prevents functions from being interacted with after the end of the competition 
@@ -436,7 +434,7 @@ contract Harber {
             if (_depositToReturn > 0) {
                 deposits[i][msg.sender] = 0;
                 _sendCash(msg.sender, _depositToReturn);
-                emit LogDepositWithdrawalAfterResolution(msg.sender, _depositToReturn);
+                emit LogDepositWithdrawal(_depositToReturn, i, msg.sender);
             }
         }
     }
@@ -454,7 +452,6 @@ contract Harber {
     /// @notice collects rent for a specific token
     /// @dev also calculates and updates how long the current user has held the token for
     function _collectRent(uint256 _tokenId) public notResolved() {
-        require(_tokenId < numberOfTokens, "This team does not exist");
         //only collect rent if the token is owned (ie, if owned by the contract this implies unowned)
         if (team.ownerOf(_tokenId) != address(this)) {
             
@@ -469,23 +466,23 @@ contract Harber {
                 _revertToPreviousOwner(_tokenId);
                 
             } else  {
-                //normal collection
+                // normal collection
                 _timeOfThisCollection = now;
             }
 
-            //decrease deposit by rent owed and buy complete sets
+            // decrease deposit by rent owed and buy complete sets
             deposits[_tokenId][_currentOwner] = deposits[_tokenId][_currentOwner].sub(_rentOwed);
             _buyCompleteSets(_tokenId,_rentOwed);
 
-            //the 'important bit', where the duration the token has been held by each user is updated
-            //it is essential that timeHeld and totalTimeHeld are incremented together such that the sum of
-            //the first is equal to the second
+            // the 'important bit', where the duration the token has been held by each user is updated
+            // it is essential that timeHeld and totalTimeHeld are incremented together such that the sum of
+            // the first is equal to the second
             uint256 _timeHeldToIncrement = (_timeOfThisCollection.sub(timeLastCollected[_tokenId])); //just for readability
             timeHeld[_tokenId][_currentOwner] = timeHeld[_tokenId][_currentOwner].add(_timeHeldToIncrement);
             totalTimeHeld[_tokenId] = totalTimeHeld[_tokenId].add(_timeHeldToIncrement);
 
-            //it is also essential that collectedPerMarket, collectedPerUser and totalCollected are all incremented together
-            //such that the sum of the first two (individually) is equal to the third
+            // it is also essential that collectedPerMarket, collectedPerUser and totalCollected are all incremented together
+            // such that the sum of the first two (individually) is equal to the third
             collectedPerMarket[_tokenId] = collectedPerMarket[_tokenId].add(_rentOwed);
             collectedPerUser[_currentOwner] = collectedPerUser[_currentOwner].add(_rentOwed);
             totalCollected = totalCollected.add(_rentOwed);
@@ -499,6 +496,7 @@ contract Harber {
     function newRental(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) public collectRent(_tokenId) notResolved() {
         require(_newPrice > price[_tokenId], "Price must be higher than current price");
         require(_deposit > 0, "Must deposit something");
+        require(_tokenId  >= 0 && _tokenId < numberOfTokens, "This team does not exist");
 
         // get the Dai from the user and add to their deposits balance
         _receiveCash(msg.sender, _deposit);
@@ -548,7 +546,7 @@ contract Harber {
         // if statement needed because deposit may have just reduced to zero following _collectRent modifier
         if (deposits[_tokenId][msg.sender] > 0) {
             _withdrawDeposit(_dai, _tokenId);
-            emit LogDepositWithdrawal(_dai, _tokenId);
+            emit LogDepositWithdrawal(_dai, _tokenId, msg.sender);
         }
     }
 
