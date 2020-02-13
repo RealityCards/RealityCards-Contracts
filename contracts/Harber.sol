@@ -28,44 +28,6 @@ interface Cash
     function transferFrom(address _from, address _to, uint256 _amount) external returns (bool);
 }
 
-    /*
-     GENERAL RECOMMENDATIONS:
-    - For your public functions, if possible, consider using the "external" visibility intead.
-      External functions are costs less gas than public ones (not referring to the ones defined as "view").
-      https://ethereum.stackexchange.com/questions/19380/external-vs-public-best-practices
-      ^^ DONE where possible. Also changed one function (_collectRent) from public to internal. 
-    - Make sure you check the params that are passed to your functions, especially public, external and
-      internal functions (the ones that another contract (including inheritance) can eventually call in
-      contract your.
-      A couple of things you should check are for your params, at least:
-        * arguments are in range (array indexes passed between 0 .. array.lenght - for example)
-        * addresses are valid (different than 0 => `require(paramAddress != address(0));`
-      ^^ DONE 
-    - Consider using the pattern "Check-Effects-Interactions Pattern" in your functions
-      https://solidity.readthedocs.io/en/latest/security-considerations.html#use-the-checks-effects-interactions-pattern.
-      The objective is to use the following sequence to decrease potential exploits:
-        1. validate the arguments of your functions;
-        2. update internal state;
-        3. and then call external contract's functions.
-        4. Emit events (not part of this pattern, but a general recommendation)
-      ^^ DONE 
-      I made a couple more specific comments in some functions below where you call external contract prior to
-      updating your internal state.
-      PS: I understand you trust DAI and Augur contracts, but one never know if those contracts are completelly
-      bug/exploit-free. So it's always good not to trust on external contracts, specially the ones that you do not
-      develop on your own. 'Trust no external contract, you must!', Baby Yoda ;-)
-
-    NOT SURE YET ABOUT SUGGESTING:
-    - Consider using inheritance to break your contract into smaller ones. Your contract is not simple, with lots
-      of (cool) functionalities. I know that compared with other types of software (non-blockchain),
-      approx. 600 lines of code are big at all. But if possible, you should try to modularize your contracts.
-    ^^ I will consider for future implementations
-    - By using inheritance, and depending on how you structure your contract, you could potentially be able to
-    split the code that's currently being used for testing reasons. You could have a TestContract (MockHarber?)
-    that inherits from your main contract (Harber), and implements the testing/mock logic needed in your unit tests.
-    ^^ DONE, there are now no testing variables in the main contract
-    */
-
 //TODO: replace completesets with OICash
 //TODO: update design pattens to take into account the recent changes
 //TODO: change front end to only approve the same amount that is being sent
@@ -295,7 +257,6 @@ contract Harber {
                 _resolvedOutcomesCount = _resolvedOutcomesCount.add(1);
             }
         }
-
         // returns true if all resolved, false otherwise
         return (_resolvedOutcomesCount == numberOfTokens);
     }
@@ -391,7 +352,7 @@ contract Harber {
     }
 
     /// @notice the second of the three functions which must be called, one after the other, to conclude the competition
-    /// @dev gets funds back from Augur, gets the available funds for distribution and pays me my 1%
+    /// @dev gets funds back from Augur, gets the available funds for distribution
     /// @dev can be called by anyone, but only once 
     function step2sellCompleteSets() external {
         require(marketsResolved == true, "Must wait for market resolution");
@@ -558,26 +519,25 @@ contract Harber {
             _depositDai(_deposit, _tokenId);
         } else {   
             // bought by different user (the normal situation)
-            // deposits are updated via depositDai function if _currentOwner = msg.sender that is why 
-            // ... the below is here
+            // deposits are updated via depositDai function if _currentOwner = msg.sender 
+            // therefore deposits only updated inside this else section
             deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].add(_deposit);
             // update currentOwnerIndex and ownerTracker
             currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].add(1); 
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].owner = msg.sender; 
-
             // update timeAcquired for the front end
             timeAcquired[_tokenId] = now;
-
-            // transfer token to new owner
             _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
-            // get the Dai from the user and add to their deposits balance
             _receiveCash(msg.sender, _deposit);
             emit LogNewRental(msg.sender, _newPrice, _tokenId); 
         }
     }
 
     /// @notice add new dai deposit to an existing rental
+    /// @dev it is possible a user's deposit could be reduced to zero following _collectRent
+    /// @dev they would then increase their deposit despite no longer owning it
+    /// @dev this is ok, they can withdraw via withdrawDeposit. 
     function depositDai(uint256 _dai, uint256 _tokenId) external amountNotZero(_dai) tokenExists(_tokenId) notResolved() {
         _collectRent(_tokenId);
         _depositDai(_dai, _tokenId);
@@ -632,7 +592,7 @@ contract Harber {
     }
 
     /* internal */
-    /// @notice actually withdraw the deposit
+    /// @notice actually withdraw the deposit and call _revertToPreviousOwner if necessary
     function _withdrawDeposit(uint256 _dai, uint256 _tokenId) internal {
         require(deposits[_tokenId][msg.sender] >= _dai, 'Withdrawing too much');
         deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].sub(_dai);

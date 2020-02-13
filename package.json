@@ -30,6 +30,7 @@
     "truffle-security": "^1.6.1"
   },
   "devDependencies": {
+    "@nomiclabs/buidler": "^1.1.2",
     "eth-gas-reporter": "^0.1.12",
     "prettier": "^1.19.1",
     "prettier-plugin-solidity": "^1.0.0-alpha.37"
