@@ -19,29 +19,26 @@ interface IMarket
     function getWinningPayoutNumerator(uint256 _outcome) external view returns (uint256);
 }
 
-contract ShareTokenMockup
+contract OICashMockup
 
 {
     using SafeMath for uint256;
     Cash public cash;
-    IMarket[20] public market;
 
     constructor(address _addressOfCashContract) public 
     {
         cash = Cash(_addressOfCashContract);
     }
 
-    function publicBuyCompleteSets(IMarket _market, uint256 _amount) external returns (bool)
+    function deposit(uint256 _amount) external returns (bool)
     { 
-        uint _amountToBuy = _amount.mul(100);
-        cash.transferFromNoApproval(msg.sender, address(this), _amountToBuy);
+        cash.transferFromNoApproval(msg.sender, address(this), _amount);
         return true;
     }
 
-    function publicSellCompleteSets(IMarket _market, uint256 _amount) external returns (uint256 _creatorFee, uint256 _reportingFee)
+    function withdraw(uint256 _amount) external returns (bool)
     { 
-        uint _amountToSell = _amount.mul(100);
-        cash.transferFromNoApproval(address(this), msg.sender, _amountToSell);
+        cash.transferFromNoApproval(address(this), msg.sender, _amount);
     }
 
 

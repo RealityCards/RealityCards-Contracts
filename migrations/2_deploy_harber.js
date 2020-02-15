@@ -4,7 +4,7 @@ var mintNFTs = artifacts.require("./mintNFTs.sol");
 var Token = artifacts.require("./ERC721Full.sol");
 var CashMockup = artifacts.require("./mockups/CashMockup.sol");
 var MarketMockup = artifacts.require("./mockups/MarketMockup.sol");
-var ShareTokenMockup = artifacts.require("./mockups/ShareTokenMockup.sol");
+var OICashMockup = artifacts.require("./mockups/OICashMockup.sol");
 
 // variables
 const marketedExpectedResolutionTime = 0;
@@ -34,14 +34,14 @@ const augurMarketAddressKovan = [
   '0xA830e8A271909b2407985F95921E5dD4AD1d859A',
   '0xA830e8A271909b2407985F95921E5dD4AD1d859A'
 ];
-const augurShareTokenAddressKovan = '0x63cbfEb0Cf1EE91Ca1689d8dbBa143bbf8Fd0fd1';
+const augurOICashAddressKovan = '0x63cbfEb0Cf1EE91Ca1689d8dbBa143bbf8Fd0fd1';
 const augurMainAddressKovan = '0x62214e5c919332AC17c5e5127383B84378Ef9C1d';
 
 module.exports = function (deployer, network) {
 
   if (network === "kovan") {
     deployer.deploy(Token, "Harber.io", "HARB").then((deployedToken) => {
-      return deployer.deploy(Harber, andrewsAddress, deployedToken.address, augurCashAddressKovan, augurMarketAddressKovan, augurShareTokenAddressKovan, augurMainAddressKovan, marketedExpectedResolutionTime);
+      return deployer.deploy(Harber, andrewsAddress, deployedToken.address, augurCashAddressKovan, augurMarketAddressKovan, augurOICashAddressKovan, augurMainAddressKovan, marketedExpectedResolutionTime);
     }).then((deployedHarber) => {
       return deployer.deploy(mintNFTs, Token.address, deployedHarber.address);
     });
@@ -50,9 +50,9 @@ module.exports = function (deployer, network) {
       deployer.deploy(CashMockup).then((deployedCash) => {
         return deployer.deploy(MarketMockup).then((deployedMarket) => {
           const augurMarketAddressLocal = [deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address ];
-          return deployer.deploy(ShareTokenMockup, deployedCash.address).then((deployedShareToken) => {
+          return deployer.deploy(OICashMockup, deployedCash.address).then((deployedOICash) => {
             return deployer.deploy(Token, "Harber.io", "HARB" ).then((deployedToken) => {
-              return deployer.deploy(Harber, andrewsAddress, deployedToken.address, deployedCash.address, augurMarketAddressLocal, deployedShareToken.address, augurMainAddressKovan, marketedExpectedResolutionTime).then((deployedHarber) => {
+              return deployer.deploy(Harber, andrewsAddress, deployedToken.address, deployedCash.address, augurMarketAddressLocal, deployedOICash.address, augurMainAddressKovan, marketedExpectedResolutionTime).then((deployedHarber) => {
                 return deployer.deploy(mintNFTs, Token.address, deployedHarber.address);
               });
             });

@@ -9,14 +9,6 @@ interface IMarket
     function getWinningPayoutNumerator(uint256 _outcome) external view returns (uint256);
 }
 
-/// @title Augur ShareToken interface
-/// @notice used for buying and selling complete sets
-interface ShareToken 
-{
-    function publicBuyCompleteSets(IMarket _market, uint256 _amount) external returns (bool)  ;
-    function publicSellCompleteSets(IMarket _market, uint256 _amount) external returns (uint256 _creatorFee, uint256 _reportingFee) ;
-}
-
 /// @title Dai contract interface
 /// @notice Various cash functions
 interface Cash 
@@ -26,6 +18,14 @@ interface Cash
     function faucet(uint256 _amount) external;
     function transfer(address _to, uint256 _amount) external returns (bool);
     function transferFrom(address _from, address _to, uint256 _amount) external returns (bool);
+}
+
+/// @title Augur OICash interface
+/// @notice adding or removing open interest to secure the Augur Oracle
+interface OICash
+{
+    function deposit(uint256 _amount) external returns (bool);
+    function withdraw(uint256 _amount) external returns (bool);
 }
 
 //TODO: replace completesets with OICash
@@ -51,7 +51,7 @@ contract Harber {
     IERC721Full public team;
     /// Augur contracts:
     IMarket[numberOfTokens] public market;
-    ShareToken public completeSets;
+    OICash public augur;
     Cash public cash; 
 
     /// UINTS, ADDRESSES, BOOLS
@@ -61,9 +61,6 @@ contract Harber {
     address[numberOfTokens] public marketAddresses; 
     /// @dev in attodai (so $100 = 100000000000000000000)
     uint256[numberOfTokens] public price; 
-    /// @dev amount collected for each token, ie the sum of all owners' rent per token. Used to know how many complete
-    /// @dev ...sets to sell for each market (since there is one market per token)
-    uint256[numberOfTokens] public collectedPerMarket; 
     /// @dev an easy way to track the above across all tokens. It should always increment at the same time as the above increments. 
     uint256 public totalCollected; 
     /// @dev used to determine the rent due. Rent is due for the period (now - timeLastCollected), at which point timeLastCollected is set to now.
@@ -114,7 +111,7 @@ contract Harber {
     mapping (address => uint256) public collectedPerUser;
 
     ////////////// CONSTRUCTOR //////////////
-    constructor(address _andrewsAddress, address _addressOfToken, address _addressOfCashContract, address[numberOfTokens] memory _addressesOfMarkets, address _addressOfCompleteSetsContract, address _addressOfMainAugurContract, uint _marketExpectedResolutionTime) public 
+    constructor(address _andrewsAddress, address _addressOfToken, address _addressOfCashContract, address[numberOfTokens] memory _addressesOfMarkets, address _addressOfOICashContract, address _addressOfMainAugurContract, uint _marketExpectedResolutionTime) public 
     {
         marketExpectedResolutionTime = _marketExpectedResolutionTime;
         andrewsAddress = _andrewsAddress;
@@ -123,7 +120,7 @@ contract Harber {
         // external contract variables:
         team = IERC721Full(_addressOfToken);
         cash = Cash(_addressOfCashContract);
-        completeSets = ShareToken(_addressOfCompleteSetsContract);
+        augur = OICash(_addressOfOICashContract);
 
         // initialise arrays
         for (uint i = 0; i < numberOfTokens; i++) {
@@ -229,26 +226,22 @@ contract Harber {
 
     ////////////// AUGUR FUNCTIONS //////////////
     // * internal * 
-    /// @notice buy complete sets from Augur
-    function _buyCompleteSets(uint256 _tokenId, uint256 _rentOwed) internal {
-        uint256 _setsToBuy =_rentOwed.div(100);
-        completeSets.publicBuyCompleteSets(market[_tokenId], _setsToBuy);
+    /// @notice send the Dai to Augur
+    function _augurDeposit(uint256 _rentOwed) internal {
+        augur.deposit(_rentOwed);
     }
 
     // * internal *
-    /// @notice sell complete sets from Augur
-    function _sellCompleteSets() internal {
-            for (uint i = 0; i < numberOfTokens; i++) {
-                uint256 _setsToSell =collectedPerMarket[i].div(100);
-                completeSets.publicSellCompleteSets(market[i], _setsToSell);
-            } 
+    /// @notice receive the Dai back from Augur
+    function _augurWithdraw() internal {
+        augur.withdraw(totalCollected);
     }
 
     // * internal * 
     /// @notice THIS FUNCTION HAS NOT BEEN TESTED ON AUGUR YET
     /// @notice checks if all X (x = number of tokens = number of teams) markets have resolved to either yes, no, or invalid
     /// @return true if yes, false if no
-    function _haveAllAugurMarketsResolved() internal returns(bool) {   
+    function _haveAllAugurMarketsResolved() internal view returns(bool) {   
         uint256 _resolvedOutcomesCount = 0;
 
         for (uint i = 0; i < numberOfTokens; i++) {
@@ -354,13 +347,13 @@ contract Harber {
     /// @notice the second of the three functions which must be called, one after the other, to conclude the competition
     /// @dev gets funds back from Augur, gets the available funds for distribution
     /// @dev can be called by anyone, but only once 
-    function step2sellCompleteSets() external {
+    function step2withdrawFromAugur() external {
         require(marketsResolved == true, "Must wait for market resolution");
         require(step2Complete == false, "Step2 should only be run once");
         step2Complete = true;
 
         uint256 _balanceBefore = _getContractsCashBalance();
-        _sellCompleteSets();
+        _augurWithdraw();
         uint256 _balanceAfter = _getContractsCashBalance();
         // daiAvailableToDistribute therefore does not include unused deposits
         daiAvailableToDistribute = _balanceAfter.sub(_balanceBefore);
@@ -489,13 +482,12 @@ contract Harber {
             timeHeld[_tokenId][_currentOwner] = timeHeld[_tokenId][_currentOwner].add(_timeHeldToIncrement);
             totalTimeHeld[_tokenId] = totalTimeHeld[_tokenId].add(_timeHeldToIncrement);
 
-            // it is also essential that collectedPerMarket, collectedPerUser and totalCollected are all incremented together
+            // it is also essential that collectedPerUser and totalCollected are all incremented together
             // such that the sum of the first two (individually) is equal to the third
-            collectedPerMarket[_tokenId] = collectedPerMarket[_tokenId].add(_rentOwed);
             collectedPerUser[_currentOwner] = collectedPerUser[_currentOwner].add(_rentOwed);
             totalCollected = totalCollected.add(_rentOwed);
 
-            _buyCompleteSets(_tokenId,_rentOwed);
+            _augurDeposit(_rentOwed);
             emit LogRentCollection(_rentOwed, _tokenId);
         }
 
@@ -508,8 +500,9 @@ contract Harber {
     /// @notice to rent a token
     function newRental(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) external tokenExists(_tokenId) amountNotZero(_deposit) notResolved() {
         require(_newPrice > price[_tokenId], "Price must be higher than current price");
-
+        
         _collectRent(_tokenId);
+        // require(1==2, "STFU");
         address _currentOwner = team.ownerOf(_tokenId);
 
         if (_currentOwner == msg.sender) {

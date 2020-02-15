@@ -11,7 +11,7 @@ const Token = artifacts.require('./ERC721Full.sol');
 const Harber = artifacts.require('./Harber.sol');
 var CashMockup = artifacts.require("./mockups/CashMockup.sol");
 var MarketMockup = artifacts.require("./mockups/MarketMockup.sol");
-var ShareTokenMockup = artifacts.require("./mockups/ShareTokenMockup.sol");
+var OICashMockup = artifacts.require("./mockups/OICashMockup.sol");
 const MintNFTs = artifacts.require("./mintNFTs.sol");
 
 const delay = duration => new Promise(resolve => setTimeout(resolve, duration));
@@ -68,9 +68,9 @@ contract('HarberTests', (accounts) => {
       market3.address
     ];
 
-    sharetoken = await ShareTokenMockup.new(cash.address);
+    augur = await OICashMockup.new(cash.address);
     token = await Token.new("Harber.io", "HARB");
-    harber = await Harber.new(andrewsAddress, token.address, cash.address, augurMarketAddress, sharetoken.address, augurMainAddress, marketedExpectedResolutionTime);
+    harber = await Harber.new(andrewsAddress, token.address, cash.address, augurMarketAddress, augur.address, augurMainAddress, marketedExpectedResolutionTime);
     mintNFTs = await MintNFTs.new(token.address, harber.address);
   });
 
@@ -293,11 +293,6 @@ contract('HarberTests', (accounts) => {
       var depositShouldBe = web3.utils.toWei('93', 'ether');
       var difference = (deposit.toString()-depositShouldBe.toString());
       assert.isBelow(difference/deposit,0.00001);
-      //test collectedAndSentToAugur
-      var collectedAndSentToAugur = await harber.collectedPerMarket.call(4); 
-      var collectedAndSentToAugurShouldBe = web3.utils.toWei('7', 'ether');
-      var difference = (collectedAndSentToAugurShouldBe.toString()-collectedAndSentToAugur.toString());
-      assert.isBelow(difference/collectedAndSentToAugur,0.00001);
       //test totalCollected. 
       var totalCollected = await harber.totalCollected.call();
       assert.equal(totalCollected,web3.utils.toWei('7', 'ether'));
@@ -313,11 +308,6 @@ contract('HarberTests', (accounts) => {
       var depositShouldBe = web3.utils.toWei('86', 'ether');
       var difference = (deposit.toString()-depositShouldBe.toString());
       assert.isBelow(difference/deposit,0.00001);
-      //test collectedAndSentToAugur
-      var collectedAndSentToAugur = await harber.collectedPerMarket.call(4); 
-      var collectedAndSentToAugurShouldBe = web3.utils.toWei('14', 'ether');
-      var difference = (collectedAndSentToAugurShouldBe.toString()-collectedAndSentToAugur.toString());
-      assert.isBelow(difference/collectedAndSentToAugur,0.00001);
       //test totalCollected. 
       var totalCollected = await harber.totalCollected.call();
       var totalCollectedShouldBe = web3.utils.toWei('20', 'ether');
@@ -657,7 +647,7 @@ contract('HarberTests', (accounts) => {
     await market3.setResult(2);
     ////////////////////////
     await harber.step1checkMarketsResolved(); 
-    await harber.step2sellCompleteSets(); 
+    await harber.step2withdrawFromAugur(); 
     await harber.step3payAndrew(); 
     ////////////////////////
     // total deposits = 75, check:
@@ -724,7 +714,7 @@ contract('HarberTests', (accounts) => {
     await market2.setResult(1);
     await market3.setResult(2);
     await harber.step1checkMarketsResolved(); 
-    await harber.step2sellCompleteSets(); 
+    await harber.step2withdrawFromAugur(); 
     await harber.step3payAndrew(); 
     ////////////////////////
     // total deposits = 75, check:
@@ -788,7 +778,7 @@ contract('HarberTests', (accounts) => {
     await market2.setResult(1);
     await market3.setResult(2);
     await harber.step1checkMarketsResolved(); 
-    await harber.step2sellCompleteSets(); 
+    await harber.step2withdrawFromAugur(); 
     await harber.step3payAndrew(); 
     ////////////////////////
     //check user0 winnings 
@@ -845,7 +835,7 @@ contract('HarberTests', (accounts) => {
     await cash.resetBalance(user2);
     ////////////////////////
     await harber.step1BemergencyExit(); 
-    await harber.step2sellCompleteSets(); 
+    await harber.step2withdrawFromAugur(); 
     await harber.step3payAndrew(); 
     ////////////////////////
     //check user0 winnings 
@@ -902,7 +892,7 @@ contract('HarberTests', (accounts) => {
     await cash.resetBalance(user2);
     ////////////////////////
     await harber.step1CcircuitBreaker({ from: andrewsAddress} ); 
-    await harber.step2sellCompleteSets(); 
+    await harber.step2withdrawFromAugur(); 
     await harber.step3payAndrew(); 
     ////////////////////////
     //check user0 winnings 
@@ -959,7 +949,7 @@ contract('HarberTests', (accounts) => {
     await market2.setResult(2);
     await market3.setResult(2);
     await harber.step1checkMarketsResolved(); 
-    await harber.step2sellCompleteSets(); 
+    await harber.step2withdrawFromAugur(); 
     await harber.step3payAndrew(); 
     await harber.complete({ from: user0 });
     await harber.complete({ from: user1 });
@@ -996,7 +986,7 @@ contract('HarberTests', (accounts) => {
     });
 
 
-  it('test return deposits work (before payout but after step2sellCompleteSets)', async () => {
+  it('test return deposits work (before payout but after step2withdrawFromAugur)', async () => {
     /////// SETUP //////
     await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user0 });
     await cash.approve(harber.address, web3.utils.toWei('100', 'ether'),{ from: user0 });
@@ -1030,7 +1020,7 @@ contract('HarberTests', (accounts) => {
     await market2.setResult(2);
     await market3.setResult(2);
     await harber.step1checkMarketsResolved(); 
-    await harber.step2sellCompleteSets(); 
+    await harber.step2withdrawFromAugur(); 
     await harber.step3payAndrew(); 
     /////// THIS TEST //////
     // reset cash balances
@@ -1063,7 +1053,7 @@ contract('HarberTests', (accounts) => {
     assert.equal(depositReturnedToUser.toString(),depositReturnedShouldBe.toString());
     });
 
-  it('test return deposits work before step2sellCompleteSets)', async () => {
+  it('test return deposits work before step2withdrawFromAugur)', async () => {
     /////// SETUP //////
     await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user0 });
     await cash.approve(harber.address, web3.utils.toWei('100', 'ether'),{ from: user0 });
@@ -1151,7 +1141,7 @@ contract('HarberTests', (accounts) => {
     await market2.setResult(2);
     await market3.setResult(2);
     await harber.step1checkMarketsResolved();
-    await shouldFail.reverting.withMessage(harber.step2sellCompleteSets(), "Must wait for market resolution");
+    await shouldFail.reverting.withMessage(harber.step2withdrawFromAugur(), "Must wait for market resolution");
     });
 
   it('check exit does not revert to previous owner if not the current owner', async () => {
@@ -1205,7 +1195,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
   await market2.setResult(2);
   await market3.setResult(2);
   await harber.step1checkMarketsResolved(); 
-  await harber.step2sellCompleteSets(); 
+  await harber.step2withdrawFromAugur(); 
   await harber.step3payAndrew(); 
   await harber.complete({ from: user0 });
   await harber.complete({ from: user1 });
