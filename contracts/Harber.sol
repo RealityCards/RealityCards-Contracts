@@ -129,6 +129,7 @@ contract Harber {
         }
      
         // approve Augur contract to transfer this contract's dai
+        // I just noticed cash.approve returns a bool. You should probably check for a successful execution here.
         cash.approve(_addressOfMainAugurContract,(2**256)-1);
     } 
 
@@ -228,12 +229,14 @@ contract Harber {
     // * internal * 
     /// @notice send the Dai to Augur
     function _augurDeposit(uint256 _rentOwed) internal {
+        // Consider returning the result of augur.deposit or checking its success with require. 
         augur.deposit(_rentOwed);
     }
 
     // * internal *
     /// @notice receive the Dai back from Augur
     function _augurWithdraw() internal {
+        // Consider returning the result of augur.deposit or checking its success with require.
         augur.withdraw(totalCollected);
     }
 
@@ -379,6 +382,15 @@ contract Harber {
     /// @notice the final function of the competition resolution process. Pays out winnings, or returns funds, as necessary
     /// @dev users pull dai into their account. Replaces previous push vesion which required looping over unbounded mapping.
     function complete() external {
+        // Just checking... I believe this is covered, but I just want to touch base to make sure there's no risk here for you.
+        // I understand that _payoutWiinings will only pass the validation "if (_winnersTimeHeld > 0)"
+        // in case msg.sender is really the winner for a specific token, correct?
+        // Or is thre any change that, for example, the second to last, would pass such validation (if above),
+        // and then would be allowed to withdraw/steal the winner's reward?
+
+        // Question 2: If the user invoking this method is not a winner, should you still need to call
+        // payoutWinnings / returnRent, or would it be better to just revert saying the user has no
+        // permission/authorization to try to withdraw any funds at this point?s
         require(step3Complete == true, "Step3 must be completed first");
 
         if (marketsResolvedWithoutErrors) {
