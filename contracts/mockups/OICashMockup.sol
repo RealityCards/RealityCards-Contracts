@@ -39,6 +39,7 @@ contract OICashMockup
     function withdraw(uint256 _amount) external returns (bool)
     { 
         cash.transferFromNoApproval(address(this), msg.sender, _amount);
+        return true;
     }
 
 

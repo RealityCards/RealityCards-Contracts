@@ -730,15 +730,9 @@ contract('HarberTests', (accounts) => {
     var difference = (winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user1 winnings
-    await harber.complete({ from: user1 });
-    var winningsSentToUser = await cash.balanceOf.call(user1);
-    var difference = (winningsSentToUser.toString() - winningsShouldBe.toString());
-    assert.isBelow(difference/winningsSentToUser,0.00001);
+    await shouldFail.reverting.withMessage(harber.complete({ from: user1 }), "You are not a winner, or winnings already paid");
     //check user2 winnings
-    await harber.complete({ from: user2 });
-    var winningsSentToUser = await cash.balanceOf.call(user2);
-    var difference = (winningsSentToUser.toString() - winningsShouldBe.toString());
-    assert.isBelow(difference/winningsSentToUser,0.00001);
+    await shouldFail.reverting.withMessage(harber.complete({ from: user2 }), "You are not a winner, or winnings already paid");
   });
 
   it('test complete- invalid', async () => {
@@ -799,6 +793,8 @@ contract('HarberTests', (accounts) => {
     var winningsShouldBe = ether('24');
     var difference = (winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
+    //check user5 winnings, should fail cos didn't pay any rent
+    await shouldFail.reverting.withMessage(harber.complete({ from: user5 }), "You paid no rent, or rent already returned");
   });
 
   // test the emergency Exit function works

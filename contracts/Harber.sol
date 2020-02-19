@@ -28,10 +28,7 @@ interface OICash
     function withdraw(uint256 _amount) external returns (bool);
 }
 
-//TODO: update design pattens to take into account the recent changes
 //TODO: change front end to only approve the same amount that is being sent
-//TODO: add test where someone calls exit and they are not the current owner
-//TODO: add tests where current owner calls newRental twice
 // ^ will also need to figure out how to pass this number in the correct format because decimal
 // ^ does not seem to work for more than 100 dai, it needs big number
 
@@ -128,8 +125,7 @@ contract Harber {
         }
      
         // approve Augur contract to transfer this contract's dai
-        // I just noticed cash.approve returns a bool. You should probably check for a successful execution here.
-        cash.approve(_addressOfMainAugurContract,(2**256)-1);
+        require(cash.approve(_addressOfMainAugurContract,(2**256)-1));
     } 
 
     event LogNewRental(address indexed newOwner, uint256 indexed newPrice, uint256 indexed tokenId);
@@ -167,6 +163,11 @@ contract Harber {
     }
 
     ////////////// VIEW FUNCTIONS //////////////
+    /// @dev called in collectRent function, and various other view functions 
+    function rentOwed(uint256 _tokenId) public view returns (uint256 augurFundsDue) {
+        return price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(1 days);
+    }
+
     /// @dev used in testing only
     function getOwnerTrackerPrice(uint256 _tokenId, uint256 _index) public view returns (uint256) {
         return (ownerTracker[_tokenId][_index].price);
@@ -175,11 +176,6 @@ contract Harber {
     /// @dev used in testing only
     function getOwnerTrackerAddress(uint256 _tokenId, uint256 _index) public view returns (address) {
         return (ownerTracker[_tokenId][_index].owner);
-    }
-
-    /// @dev called in collectRent function, and various other view functions 
-    function rentOwed(uint256 _tokenId) public view returns (uint256 augurFundsDue) {
-        return price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(1 days);
     }
 
     /// @dev for front end only
@@ -228,15 +224,13 @@ contract Harber {
     // * internal * 
     /// @notice send the Dai to Augur
     function _augurDeposit(uint256 _rentOwed) internal {
-        // Consider returning the result of augur.deposit or checking its success with require. 
-        augur.deposit(_rentOwed);
+        require(augur.deposit(_rentOwed), "Augur deposit failed");
     }
 
     // * internal *
     /// @notice receive the Dai back from Augur
     function _augurWithdraw() internal {
-        // Consider returning the result of augur.deposit or checking its success with require.
-        augur.withdraw(totalCollected);
+        require(augur.withdraw(totalCollected), "Augur withdraw failed");
     }
 
     // * internal * 
@@ -283,13 +277,13 @@ contract Harber {
     // * internal * 
     /// @notice common function for all outgoing DAI transfers
     function _sendCash(address _to, uint256 _amount) internal { 
-        require(cash.transfer(_to,_amount)); 
+        require(cash.transfer(_to,_amount), "Cash transfer failed"); 
     }
 
     // * internal * 
     /// @notice common function for all incoming DAI transfers
     function _receiveCash(address _from, uint256 _amount) internal {  
-        require(cash.transferFrom(_from, address(this), _amount));
+        require(cash.transferFrom(_from, address(this), _amount), "Cash transfer failed");
     }
 
     // * internal * 
@@ -353,7 +347,7 @@ contract Harber {
         require(marketsResolved == true, "Must wait for market resolution");
         require(step2Complete == false, "Step2 should only be run once");
         step2Complete = true;
-
+        
         uint256 _balanceBefore = _getContractsCashBalance();
         _augurWithdraw();
         uint256 _balanceAfter = _getContractsCashBalance();
@@ -381,29 +375,20 @@ contract Harber {
     /// @notice the final function of the competition resolution process. Pays out winnings, or returns funds, as necessary
     /// @dev users pull dai into their account. Replaces previous push vesion which required looping over unbounded mapping.
     function complete() external {
-        // Just checking... I believe this is covered, but I just want to touch base to make sure there's no risk here for you.
-        // I understand that _payoutWiinings will only pass the validation "if (_winnersTimeHeld > 0)"
-        // in case msg.sender is really the winner for a specific token, correct?
-        // Or is thre any change that, for example, the second to last, would pass such validation (if above),
-        // and then would be allowed to withdraw/steal the winner's reward?
-
-        // Question 2: If the user invoking this method is not a winner, should you still need to call
-        // payoutWinnings / returnRent, or would it be better to just revert saying the user has no
-        // permission/authorization to try to withdraw any funds at this point?s
         require(step3Complete == true, "Step3 must be completed first");
 
         if (marketsResolvedWithoutErrors) {
-                _payoutWinnings();
+                require(_payoutWinnings(), "You are not a winner, or winnings already paid");
             }
             else {
-                _returnRent();
+                require(_returnRent(), "You paid no rent, or rent already returned");
             }
     }
 
      // * internal * 
     /// @notice pays winnings to the winners
     /// @dev must be internal and only called by complete
-    function _payoutWinnings() internal {
+    function _payoutWinnings() internal returns (bool) {
         uint256 _winnersTimeHeld = timeHeld[winningOutcome][msg.sender];
 
         if (_winnersTimeHeld > 0) {
@@ -412,13 +397,16 @@ contract Harber {
             uint256 _winningsToTransfer = _numerator.div(totalTimeHeld[winningOutcome]);
             _sendCash(msg.sender, _winningsToTransfer);
             emit LogWinningsPaid(msg.sender, _winningsToTransfer);
+            return true;
+        } else {
+            return false;
         }
     }
 
     // * internal * 
     /// @notice returns all funds to users in case of invalid outcome
     /// @dev must be internal and only called by complete
-    function _returnRent() internal {
+    function _returnRent() internal returns (bool) {
         uint256 _rentCollected = collectedPerUser[msg.sender];
 
         if (_rentCollected > 0) {
@@ -427,6 +415,9 @@ contract Harber {
             uint256 _rentToToReturn = _numerator.div(totalCollected);
             _sendCash(msg.sender, _rentToToReturn);
             emit LogRentReturned(msg.sender, _rentToToReturn);
+            return true;
+        } else {
+            return false;
         }
     }
 
