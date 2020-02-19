@@ -28,7 +28,6 @@ interface OICash
     function withdraw(uint256 _amount) external returns (bool);
 }
 
-//TODO: replace completesets with OICash
 //TODO: update design pattens to take into account the recent changes
 //TODO: change front end to only approve the same amount that is being sent
 //TODO: add test where someone calls exit and they are not the current owner
