@@ -1136,8 +1136,10 @@ contract('HarberTests', (accounts) => {
     await market1.setResult(1);
     await market2.setResult(2);
     await market3.setResult(2);
-    await harber.step1checkMarketsResolved();
+    await shouldFail.reverting.withMessage(harber.step1checkMarketsResolved(), "Markets have not resolved yet");
     await shouldFail.reverting.withMessage(harber.step2withdrawFromAugur(), "Must wait for market resolution");
+    await shouldFail.reverting.withMessage(harber.step3payAndrew(), "Step2 must be completed first");
+    await shouldFail.reverting.withMessage(harber.complete(), "Step3 must be completed first");
     });
 
   it('check exit does not revert to previous owner if not the current owner', async () => {
