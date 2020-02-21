@@ -45,7 +45,7 @@ contract Harber {
 
     /// CONTRACT VARIABLES
     /// ERC721:
-    IERC721Full public team;
+    IERC721Full public token;
     /// Augur contracts:
     IMarket[numberOfTokens] public market;
     OICash public augur;
@@ -116,7 +116,7 @@ contract Harber {
         marketAddresses = _addressesOfMarkets; 
         
         // external contract variables:
-        team = IERC721Full(_addressOfToken);
+        token = IERC721Full(_addressOfToken);
         cash = Cash(_addressOfCashContract);
         augur = OICash(_addressOfOICashContract);
 
@@ -152,7 +152,7 @@ contract Harber {
         _;
     }
 
-    /// @notice checks the team exists
+    /// @notice checks the token exists
     modifier tokenExists(uint256 _tokenId) {
         require(_tokenId  >= 0 && _tokenId < numberOfTokens, "This token does not exist");
        _;
@@ -184,7 +184,7 @@ contract Harber {
     /// @return how much the current owner has deposited
     function liveDepositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) {
         uint256 _rentOwed = rentOwed(_tokenId);
-        address _currentOwner = team.ownerOf(_tokenId);
+        address _currentOwner = token.ownerOf(_tokenId);
         if(_rentOwed >= deposits[_tokenId][_currentOwner]) {
             return 0;
         } else {
@@ -196,7 +196,7 @@ contract Harber {
     /// @return how much the current user has deposited (note: user not owner)
     function userDepositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) {
         uint256 _rentOwed = rentOwed(_tokenId);
-        address _currentOwner = team.ownerOf(_tokenId);
+        address _currentOwner = token.ownerOf(_tokenId);
 
         if(_currentOwner == msg.sender) {
             if(_rentOwed >= deposits[_tokenId][msg.sender]) {
@@ -237,7 +237,7 @@ contract Harber {
 
     // * internal * 
     /// @notice THIS FUNCTION HAS NOT BEEN TESTED ON AUGUR YET
-    /// @notice checks if all X (x = number of tokens = number of teams) markets have resolved to either yes, no, or invalid
+    /// @notice checks if all X (x = number of tokens = number of tokens) markets have resolved to either yes, no, or invalid
     /// @return true if yes, false if no
     function _haveAllAugurMarketsResolved() internal view returns(bool) {   
         uint256 _resolvedOutcomesCount = 0;
@@ -442,7 +442,7 @@ contract Harber {
         
         _collectRent(_tokenId);
         // require(1==2, "STFU");
-        address _currentOwner = team.ownerOf(_tokenId);
+        address _currentOwner = token.ownerOf(_tokenId);
 
         if (_currentOwner == msg.sender) {
             // bought by current owner (ie, token ownership does not change, so it is as if the current owner
@@ -479,7 +479,7 @@ contract Harber {
     /// @dev can't be external because also called within newRental
     function changePrice(uint256 _newPrice, uint256 _tokenId) public tokenExists(_tokenId) notResolved() {
         require(_newPrice > price[_tokenId], "New price must be higher than current price"); 
-        require(msg.sender == team.ownerOf(_tokenId), "Not owner");
+        require(msg.sender == token.ownerOf(_tokenId), "Not owner");
         _collectRent(_tokenId);
         _changePrice(_newPrice, _tokenId);
     }
@@ -514,10 +514,10 @@ contract Harber {
     /// @dev is not a problem if called externally, but making internal over public to save gas
     function _collectRent(uint256 _tokenId) internal notResolved() {
         //only collect rent if the token is owned (ie, if owned by the contract this implies unowned)
-        if (team.ownerOf(_tokenId) != address(this)) {
+        if (token.ownerOf(_tokenId) != address(this)) {
             
             uint256 _rentOwed = rentOwed(_tokenId);
-            address _currentOwner = team.ownerOf(_tokenId);
+            address _currentOwner = token.ownerOf(_tokenId);
             uint256 _timeOfThisCollection;
             
             if (_rentOwed >= deposits[_tokenId][_currentOwner]) {
@@ -577,7 +577,7 @@ contract Harber {
     function _withdrawDeposit(uint256 _dai, uint256 _tokenId) internal {
         require(deposits[_tokenId][msg.sender] >= _dai, 'Withdrawing too much');
         deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].sub(_dai);
-        address _currentOwner = team.ownerOf(_tokenId);
+        address _currentOwner = token.ownerOf(_tokenId);
         if(_currentOwner == msg.sender && deposits[_tokenId][msg.sender] == 0) {
             _revertToPreviousOwner(_tokenId);
         }
@@ -610,7 +610,7 @@ contract Harber {
         if (_toForeclose) {
                 _foreclose(_tokenId);
             } else {
-                address _currentOwner = team.ownerOf(_tokenId);
+                address _currentOwner = token.ownerOf(_tokenId);
                 uint256 _oldPrice = ownerTracker[_tokenId][_index].price;
                 _transferTokenTo(_currentOwner, _previousOwner, _oldPrice, _tokenId);
                 emit LogReturnToPreviousOwner(_tokenId, _previousOwner);
@@ -619,7 +619,7 @@ contract Harber {
 
     /// @notice return token to the contract and return price to zero
     function _foreclose(uint256 _tokenId) internal {
-        address _currentOwner = team.ownerOf(_tokenId);
+        address _currentOwner = token.ownerOf(_tokenId);
         // third field is price, ie price goes to zero
         _transferTokenTo(_currentOwner, address(this), 0, _tokenId);
         emit LogForeclosure(_currentOwner, _tokenId);
@@ -629,7 +629,7 @@ contract Harber {
     /// @dev there is no event emitted as this is handled in ERC721.sol
     function _transferTokenTo(address _currentOwner, address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
         require(_currentOwner != address(0) && _newOwner != address(0) , "Cannot send to/from zero address");
-        team.transferFrom(_currentOwner, _newOwner, _tokenId);
+        token.transferFrom(_currentOwner, _newOwner, _tokenId);
         price[_tokenId] = _newPrice;
     }
 }
