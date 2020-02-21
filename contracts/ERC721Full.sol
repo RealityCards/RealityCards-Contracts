@@ -21,8 +21,8 @@ contract ERC721Full is ERC721, ERC721Enumerable, ERC721Metadata {
         init = true;
 
         steward = _originalOwner; //only the steward can make transfers
-        // address _originalOwner = _originalOwner;
         // mint NFT for each outcome
+        // these URIs are NOT the production URIs and will need to be changed
         _mint(_originalOwner, 0); // mint
         _setTokenURI(0, "https://en.wikipedia.org/wiki/Manchester_United_F.C.");
         _mint(_originalOwner, 1); // mint

@@ -662,6 +662,8 @@ contract('HarberTests', (accounts) => {
     var winningsShouldBe = ether('74.25').mul(new BN('604800')).div(new BN('1900800'));
     var difference = (winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
+    //check user0 cant withdraw again
+    await shouldFail.reverting.withMessage(harber.complete({ from: user0 }), "You are not a winner, or winnings already paid");
     //check user1 winnings
     await harber.complete({ from: user1 });
     var winningsSentToUser = await cash.balanceOf.call(user1);
@@ -781,6 +783,8 @@ contract('HarberTests', (accounts) => {
     var winningsShouldBe = ether('17');
     var difference = (winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
+    //check user0 cant withdraw again
+    await shouldFail.reverting.withMessage(harber.complete({ from: user0 }), "You paid no rent, or rent already returned");
     //check user1 winnings 
     await harber.complete({ from: user1 });
     var winningsSentToUser = await cash.balanceOf.call(user1);
@@ -1228,6 +1232,32 @@ it('test payouts (incl deposit returned) when newRental called again by existing
   var depositReturnedShouldBe = web3.utils.toWei('0', 'ether');
   assert.equal(depositReturnedToUser.toString(),depositReturnedShouldBe.toString());
   });
+
+  it('test correct modifers are on all the external ordinary course of business functions', async () => {
+    /////// SETUP //////
+    user = user0;
+    await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user });
+    await cash.approve(harber.address, web3.utils.toWei('100', 'ether'),{ from: user });
+    //check amoutNotZero
+    await shouldFail.reverting.withMessage(harber.newRental(web3.utils.toWei('2', 'ether'),4,web3.utils.toWei('0', 'ether'),{ from: user}), "Amount must be above zero");
+    await shouldFail.reverting.withMessage(harber.depositDai(web3.utils.toWei('0', 'ether'),4,{ from: user}), "Amount must be above zero");
+    await shouldFail.reverting.withMessage(harber.withdrawDeposit(web3.utils.toWei('0', 'ether'),4,{ from: user}), "Amount must be above zero");
+    //check tokenExists
+    await shouldFail.reverting.withMessage(harber.newRental(web3.utils.toWei('2', 'ether'),24,web3.utils.toWei('0', 'ether'),{ from: user}), "This token does not exist");
+    await shouldFail.reverting.withMessage(harber.depositDai(web3.utils.toWei('2', 'ether'),24,{ from: user}), "This token does not exist");
+    await shouldFail.reverting.withMessage(harber.withdrawDeposit(web3.utils.toWei('2', 'ether'),24,{ from: user}), "This token does not exist");
+    await shouldFail.reverting.withMessage(harber.changePrice(web3.utils.toWei('2', 'ether'),24,{ from: user}), "This token does not exist");
+    await shouldFail.reverting.withMessage(harber.exit(24,{ from: user}), "This token does not exist");
+    //check notResolved
+    await harber.step1BemergencyExit();
+    await shouldFail.reverting.withMessage(harber.newRental(web3.utils.toWei('2', 'ether'),4,web3.utils.toWei('1', 'ether'),{ from: user}), "Markets have resolved already");
+    await shouldFail.reverting.withMessage(harber.depositDai(web3.utils.toWei('2', 'ether'),4,{ from: user}), "Markets have resolved already");
+    await shouldFail.reverting.withMessage(harber.withdrawDeposit(web3.utils.toWei('2', 'ether'),4,{ from: user}), "Markets have resolved already");
+    await shouldFail.reverting.withMessage(harber.changePrice(web3.utils.toWei('2', 'ether'),4,{ from: user}), "Markets have resolved already");
+    await shouldFail.reverting.withMessage(harber.exit(4,{ from: user}), "Markets have resolved already");
+    await shouldFail.reverting.withMessage(harber.collectRentAllTokens({ from: user}), "Markets have resolved already");
+    });
+
 });
 
 

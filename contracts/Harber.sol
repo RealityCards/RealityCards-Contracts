@@ -40,6 +40,7 @@ contract Harber {
 
     /// NUMBER OF TOKENS
     /// @dev also equals number of markets on augur
+    /// @dev not set in the constructor because so many other variables need it for initating.  
     uint256 constant public numberOfTokens = 20;
 
     /// CONTRACT VARIABLES
@@ -109,9 +110,10 @@ contract Harber {
     ////////////// CONSTRUCTOR //////////////
     constructor(address _andrewsAddress, address _addressOfToken, address _addressOfCashContract, address[numberOfTokens] memory _addressesOfMarkets, address _addressOfOICashContract, address _addressOfMainAugurContract, uint _marketExpectedResolutionTime) public 
     {
+        //assign arguments to relevant variables
         marketExpectedResolutionTime = _marketExpectedResolutionTime;
         andrewsAddress = _andrewsAddress;
-        marketAddresses = _addressesOfMarkets; // this is to make the market addresses public so users can check the actual augur markets for themselves
+        marketAddresses = _addressesOfMarkets; 
         
         // external contract variables:
         team = IERC721Full(_addressOfToken);
@@ -146,7 +148,7 @@ contract Harber {
     /// @notice prevents functions from being interacted with after the end of the competition 
     /// @dev should be on all public/external 'ordinary course of business' functions
     modifier notResolved() {
-        require(marketsResolved == false);
+        require(marketsResolved == false, "Markets have resolved already");
         _;
     }
 
