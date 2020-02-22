@@ -34,7 +34,7 @@ contract ERC721 is ERC165, IERC721 {
     // Mapping from owner to operator approvals
     mapping (address => mapping (address => bool)) private _operatorApprovals;
 
-    address public steward;
+    address public harberContract;
 
     bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
     /*
@@ -193,8 +193,8 @@ contract ERC721 is ERC165, IERC721 {
         // return (spender == owner || getApproved(tokenId) == spender || isApprovedForAll(owner, spender));
 
         // MODIFIED:
-        // Only the steward is allowed to transfer
-        return (spender == steward); 
+        // Only Harber is allowed to transfer
+        return (spender == harberContract); 
     }
 
     /**

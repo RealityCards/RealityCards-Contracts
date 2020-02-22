@@ -37,38 +37,38 @@
   "metadata": "{\"compiler\":{\"version\":\"0.5.13+commit.5b0b510c\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_addressOfToken\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_harberContractAddress\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"constant\":true,\"inputs\":[],\"name\":\"team\",\"outputs\":[{\"internalType\":\"contract IERC721Full\",\"name\":\"\",\"type\":\"address\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"methods\":{}},\"userdoc\":{\"methods\":{}}},\"settings\":{\"compilationTarget\":{\"/Users/mcplums/Repos/Harber/contracts/mintNFTs.sol\":\"mintNFTs\"},\"evmVersion\":\"petersburg\",\"libraries\":{},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/mcplums/Repos/Harber/contracts/interfaces/IERC165.sol\":{\"keccak256\":\"0x4b43c3fdcec006f40e6893834528c05328542eb3552b6c60036e31c2d3bff8a8\",\"urls\":[\"bzz-raw://c404e6e1e5fc26ed6da7ab503e9f95c2d7337f2ac6ca26920631b035d55d703f\",\"dweb:/ipfs/QmbQxxG11uvrAWGbh2C2nLq4ZqXeNeCrZmbVvAsuzqnwa8\"]},\"/Users/mcplums/Repos/Harber/contracts/interfaces/IERC721.sol\":{\"keccak256\":\"0x3f422de8b84f5378d0add4c0d46803f8be208e886073433dcbb21e16b3136f8b\",\"urls\":[\"bzz-raw://64ecf4f5cc9fe5fb999b0f24c1f6601e24722ee5cc48a47db4726f1b3e0cceb9\",\"dweb:/ipfs/QmYVbPC4JcLQmLNGzJ6qLvrJyPnTgaHjyiThWi4qeVC3GC\"]},\"/Users/mcplums/Repos/Harber/contracts/interfaces/IERC721Enumerable.sol\":{\"keccak256\":\"0xb31fa85191d81aee169612e203ed8316fb4ca9f204f3c2993a10da884dc495e3\",\"urls\":[\"bzz-raw://57cd791e83cd03ec609c2429df336483500caf110c08f563399136487a9b89bd\",\"dweb:/ipfs/QmVZYvSqaFKbKGkXfYAy7kceqEAWecppuCXSRMuLaS17Tz\"]},\"/Users/mcplums/Repos/Harber/contracts/interfaces/IERC721Full.sol\":{\"keccak256\":\"0xc0a1c3e6130dfa50688cadea26ad27a953dacdf3dcde6efe4e1051b8d3cad78e\",\"urls\":[\"bzz-raw://b3e5000462118df08cf1149aa5bc37e731baecddae7d2a3a73f5c7957e5a88b7\",\"dweb:/ipfs/QmWGfQv1w65RusmWentdzuSZ1oXJB7JSTAqVK5q9dEsZX9\"]},\"/Users/mcplums/Repos/Harber/contracts/interfaces/IERC721Metadata.sol\":{\"keccak256\":\"0x07f5833ba3a2074949d49626ea9006bef14dcc0047a4bda159cd430900b84a7d\",\"urls\":[\"bzz-raw://3d820a2a746275cc83e375cda8812e4de3878b9e91d9096af71886d68c76cbd1\",\"dweb:/ipfs/QmRtVhog9PJnVRpwPCXyKuCZyC1tczd28bNM3ords6QEDE\"]},\"/Users/mcplums/Repos/Harber/contracts/mintNFTs.sol\":{\"keccak256\":\"0x3ef70c98b62933c2e2ffe14fe1b8d1cfb4525349d5bf75578fe8064171f079c0\",\"urls\":[\"bzz-raw://d89a02b64aaebab477734303a5f56f2036b6b96bf1631633853e0657bd1847cf\",\"dweb:/ipfs/QmNn5243UrnG2aSk4HRFYnDzt5ZUG65BBMPHCTqRZjcbqk\"]}},\"version\":1}",
   "bytecode": "0x608060405234801561001057600080fd5b506040516102253803806102258339818101604052604081101561003357600080fd5b810190808051906020019092919080519060200190929190505050816000806101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff1602179055506000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff166366d38203826040518263ffffffff1660e01b8152600401808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001915050600060405180830381600087803b15801561012e57600080fd5b505af1158015610142573d6000803e3d6000fd5b50505050505060cf806101566000396000f3fe6080604052348015600f57600080fd5b506004361060285760003560e01c806385f2aef214602d575b600080fd5b60336075565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff168156fea265627a7a72315820253c835f170fb8e11fef205d3766c0b72a4d787a74707f0c7aeebeefe141b8e364736f6c634300050d0032",
   "deployedBytecode": "0x6080604052348015600f57600080fd5b506004361060285760003560e01c806385f2aef214602d575b600080fd5b60336075565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff168156fea265627a7a72315820253c835f170fb8e11fef205d3766c0b72a4d787a74707f0c7aeebeefe141b8e364736f6c634300050d0032",
-  "sourceMap": "202:406:14:-;;;298:308;8:9:-1;5:2;;;30:1;27;20:12;5:2;298:308:14;;;;;;;;;;;;;;;13:2:-1;8:3;5:11;2:2;;;29:1;26;19:12;2:2;298:308:14;;;;;;;;;;;;;;;;;;;;;;;;;432:15;413:4;;:35;;;;;;;;;;;;;;;;;;565:4;;;;;;;;;;;:10;;;576:22;565:34;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;8:9:-1;5:2;;;30:1;27;20:12;5:2;565:34:14;;;;8:9:-1;5:2;;;45:16;42:1;39;24:38;77:16;74:1;67:27;5:2;565:34:14;;;;298:308;;202:406;;;;;;",
-  "deployedSourceMap": "202:406:14:-;;;;8:9:-1;5:2;;;30:1;27;20:12;5:2;202:406:14;;;;;;;;;;;;;;;;;;;253:23;;;:::i;:::-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;:::o",
+  "sourceMap": "202:406:13:-;;;298:308;8:9:-1;5:2;;;30:1;27;20:12;5:2;298:308:13;;;;;;;;;;;;;;;13:2:-1;8:3;5:11;2:2;;;29:1;26;19:12;2:2;298:308:13;;;;;;;;;;;;;;;;;;;;;;;;;432:15;413:4;;:35;;;;;;;;;;;;;;;;;;565:4;;;;;;;;;;;:10;;;576:22;565:34;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;8:9:-1;5:2;;;30:1;27;20:12;5:2;565:34:13;;;;8:9:-1;5:2;;;45:16;42:1;39;24:38;77:16;74:1;67:27;5:2;565:34:13;;;;298:308;;202:406;;;;;;",
+  "deployedSourceMap": "202:406:13:-;;;;8:9:-1;5:2;;;30:1;27;20:12;5:2;202:406:13;;;;;;;;;;;;;;;;;;;253:23;;;:::i;:::-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;:::o",
   "source": "pragma solidity 0.5.13;\nimport \"./interfaces/IERC721Full.sol\";\n\n//this is done in a seperate contract. Originally it was within Harber.sol, but \n//deployment used over 10m gas so I had to seperate it. \ncontract mintNFTs {\n\n    // CONTRACT VARIABLES\n    IERC721Full public team; // ERC721 NFT.\n\n    constructor(address _addressOfToken, address _harberContractAddress) public {\n        //initialise ERC721s\n        team = IERC721Full(_addressOfToken);\n\n        //mint the NFTs and pass the Harber contract address so the contract is set as the original owner\n        team.setup(_harberContractAddress);\n    }\n}\n",
   "sourcePath": "/Users/mcplums/Repos/Harber/contracts/mintNFTs.sol",
   "ast": {
     "absolutePath": "/Users/mcplums/Repos/Harber/contracts/mintNFTs.sol",
     "exportedSymbols": {
       "mintNFTs": [
-        3911
+        3595
       ]
     },
-    "id": 3912,
+    "id": 3596,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 3887,
+        "id": 3571,
         "literals": [
           "solidity",
           "0.5",
           ".13"
         ],
         "nodeType": "PragmaDirective",
-        "src": "0:23:14"
+        "src": "0:23:13"
       },
       {
         "absolutePath": "/Users/mcplums/Repos/Harber/contracts/interfaces/IERC721Full.sol",
         "file": "./interfaces/IERC721Full.sol",
-        "id": 3888,
+        "id": 3572,
         "nodeType": "ImportDirective",
-        "scope": 3912,
-        "sourceUnit": 3847,
-        "src": "24:38:14",
+        "scope": 3596,
+        "sourceUnit": 3531,
+        "src": "24:38:13",
         "symbolAliases": [],
         "unitAlias": ""
       },
@@ -78,35 +78,35 @@
         "contractKind": "contract",
         "documentation": null,
         "fullyImplemented": true,
-        "id": 3911,
+        "id": 3595,
         "linearizedBaseContracts": [
-          3911
+          3595
         ],
         "name": "mintNFTs",
         "nodeType": "ContractDefinition",
         "nodes": [
           {
             "constant": false,
-            "id": 3890,
+            "id": 3574,
             "name": "team",
             "nodeType": "VariableDeclaration",
-            "scope": 3911,
-            "src": "253:23:14",
+            "scope": 3595,
+            "src": "253:23:13",
             "stateVariable": true,
             "storageLocation": "default",
             "typeDescriptions": {
-              "typeIdentifier": "t_contract$_IERC721Full_$3846",
+              "typeIdentifier": "t_contract$_IERC721Full_$3530",
               "typeString": "contract IERC721Full"
             },
             "typeName": {
               "contractScope": null,
-              "id": 3889,
+              "id": 3573,
               "name": "IERC721Full",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 3846,
-              "src": "253:11:14",
+              "referencedDeclaration": 3530,
+              "src": "253:11:13",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_IERC721Full_$3846",
+                "typeIdentifier": "t_contract$_IERC721Full_$3530",
                 "typeString": "contract IERC721Full"
               }
             },
@@ -115,28 +115,28 @@
           },
           {
             "body": {
-              "id": 3909,
+              "id": 3593,
               "nodeType": "Block",
-              "src": "374:232:14",
+              "src": "374:232:13",
               "statements": [
                 {
                   "expression": {
                     "argumentTypes": null,
-                    "id": 3901,
+                    "id": 3585,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
                     "lValueRequested": false,
                     "leftHandSide": {
                       "argumentTypes": null,
-                      "id": 3897,
+                      "id": 3581,
                       "name": "team",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 3890,
-                      "src": "413:4:14",
+                      "referencedDeclaration": 3574,
+                      "src": "413:4:13",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_contract$_IERC721Full_$3846",
+                        "typeIdentifier": "t_contract$_IERC721Full_$3530",
                         "typeString": "contract IERC721Full"
                       }
                     },
@@ -147,12 +147,12 @@
                       "arguments": [
                         {
                           "argumentTypes": null,
-                          "id": 3899,
+                          "id": 3583,
                           "name": "_addressOfToken",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 3892,
-                          "src": "432:15:14",
+                          "referencedDeclaration": 3576,
+                          "src": "432:15:13",
                           "typeDescriptions": {
                             "typeIdentifier": "t_address",
                             "typeString": "address"
@@ -166,18 +166,18 @@
                             "typeString": "address"
                           }
                         ],
-                        "id": 3898,
+                        "id": 3582,
                         "name": "IERC721Full",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3846,
-                        "src": "420:11:14",
+                        "referencedDeclaration": 3530,
+                        "src": "420:11:13",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_type$_t_contract$_IERC721Full_$3846_$",
+                          "typeIdentifier": "t_type$_t_contract$_IERC721Full_$3530_$",
                           "typeString": "type(contract IERC721Full)"
                         }
                       },
-                      "id": 3900,
+                      "id": 3584,
                       "isConstant": false,
                       "isLValue": false,
                       "isPure": false,
@@ -185,21 +185,21 @@
                       "lValueRequested": false,
                       "names": [],
                       "nodeType": "FunctionCall",
-                      "src": "420:28:14",
+                      "src": "420:28:13",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_contract$_IERC721Full_$3846",
+                        "typeIdentifier": "t_contract$_IERC721Full_$3530",
                         "typeString": "contract IERC721Full"
                       }
                     },
-                    "src": "413:35:14",
+                    "src": "413:35:13",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_IERC721Full_$3846",
+                      "typeIdentifier": "t_contract$_IERC721Full_$3530",
                       "typeString": "contract IERC721Full"
                     }
                   },
-                  "id": 3902,
+                  "id": 3586,
                   "nodeType": "ExpressionStatement",
-                  "src": "413:35:14"
+                  "src": "413:35:13"
                 },
                 {
                   "expression": {
@@ -207,12 +207,12 @@
                     "arguments": [
                       {
                         "argumentTypes": null,
-                        "id": 3906,
+                        "id": 3590,
                         "name": "_harberContractAddress",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3894,
-                        "src": "576:22:14",
+                        "referencedDeclaration": 3578,
+                        "src": "576:22:13",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
                           "typeString": "address"
@@ -228,32 +228,32 @@
                       ],
                       "expression": {
                         "argumentTypes": null,
-                        "id": 3903,
+                        "id": 3587,
                         "name": "team",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3890,
-                        "src": "565:4:14",
+                        "referencedDeclaration": 3574,
+                        "src": "565:4:13",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_contract$_IERC721Full_$3846",
+                          "typeIdentifier": "t_contract$_IERC721Full_$3530",
                           "typeString": "contract IERC721Full"
                         }
                       },
-                      "id": 3905,
+                      "id": 3589,
                       "isConstant": false,
                       "isLValue": false,
                       "isPure": false,
                       "lValueRequested": false,
                       "memberName": "setup",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 3733,
-                      "src": "565:10:14",
+                      "referencedDeclaration": 3417,
+                      "src": "565:10:13",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_external_nonpayable$_t_address_$returns$__$",
                         "typeString": "function (address) external"
                       }
                     },
-                    "id": 3907,
+                    "id": 3591,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -261,36 +261,36 @@
                     "lValueRequested": false,
                     "names": [],
                     "nodeType": "FunctionCall",
-                    "src": "565:34:14",
+                    "src": "565:34:13",
                     "typeDescriptions": {
                       "typeIdentifier": "t_tuple$__$",
                       "typeString": "tuple()"
                     }
                   },
-                  "id": 3908,
+                  "id": 3592,
                   "nodeType": "ExpressionStatement",
-                  "src": "565:34:14"
+                  "src": "565:34:13"
                 }
               ]
             },
             "documentation": null,
-            "id": 3910,
+            "id": 3594,
             "implemented": true,
             "kind": "constructor",
             "modifiers": [],
             "name": "",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 3895,
+              "id": 3579,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3892,
+                  "id": 3576,
                   "name": "_addressOfToken",
                   "nodeType": "VariableDeclaration",
-                  "scope": 3910,
-                  "src": "310:23:14",
+                  "scope": 3594,
+                  "src": "310:23:13",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -298,10 +298,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3891,
+                    "id": 3575,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "310:7:14",
+                    "src": "310:7:13",
                     "stateMutability": "nonpayable",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
@@ -313,11 +313,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 3894,
+                  "id": 3578,
                   "name": "_harberContractAddress",
                   "nodeType": "VariableDeclaration",
-                  "scope": 3910,
-                  "src": "335:30:14",
+                  "scope": 3594,
+                  "src": "335:30:13",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -325,10 +325,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3893,
+                    "id": 3577,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "335:7:14",
+                    "src": "335:7:13",
                     "stateMutability": "nonpayable",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
@@ -339,55 +339,55 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "309:57:14"
+              "src": "309:57:13"
             },
             "returnParameters": {
-              "id": 3896,
+              "id": 3580,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "374:0:14"
+              "src": "374:0:13"
             },
-            "scope": 3911,
-            "src": "298:308:14",
+            "scope": 3595,
+            "src": "298:308:13",
             "stateMutability": "nonpayable",
             "superFunction": null,
             "visibility": "public"
           }
         ],
-        "scope": 3912,
-        "src": "202:406:14"
+        "scope": 3596,
+        "src": "202:406:13"
       }
     ],
-    "src": "0:609:14"
+    "src": "0:609:13"
   },
   "legacyAST": {
     "absolutePath": "/Users/mcplums/Repos/Harber/contracts/mintNFTs.sol",
     "exportedSymbols": {
       "mintNFTs": [
-        3911
+        3595
       ]
     },
-    "id": 3912,
+    "id": 3596,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 3887,
+        "id": 3571,
         "literals": [
           "solidity",
           "0.5",
           ".13"
         ],
         "nodeType": "PragmaDirective",
-        "src": "0:23:14"
+        "src": "0:23:13"
       },
       {
         "absolutePath": "/Users/mcplums/Repos/Harber/contracts/interfaces/IERC721Full.sol",
         "file": "./interfaces/IERC721Full.sol",
-        "id": 3888,
+        "id": 3572,
         "nodeType": "ImportDirective",
-        "scope": 3912,
-        "sourceUnit": 3847,
-        "src": "24:38:14",
+        "scope": 3596,
+        "sourceUnit": 3531,
+        "src": "24:38:13",
         "symbolAliases": [],
         "unitAlias": ""
       },
@@ -397,35 +397,35 @@
         "contractKind": "contract",
         "documentation": null,
         "fullyImplemented": true,
-        "id": 3911,
+        "id": 3595,
         "linearizedBaseContracts": [
-          3911
+          3595
         ],
         "name": "mintNFTs",
         "nodeType": "ContractDefinition",
         "nodes": [
           {
             "constant": false,
-            "id": 3890,
+            "id": 3574,
             "name": "team",
             "nodeType": "VariableDeclaration",
-            "scope": 3911,
-            "src": "253:23:14",
+            "scope": 3595,
+            "src": "253:23:13",
             "stateVariable": true,
             "storageLocation": "default",
             "typeDescriptions": {
-              "typeIdentifier": "t_contract$_IERC721Full_$3846",
+              "typeIdentifier": "t_contract$_IERC721Full_$3530",
               "typeString": "contract IERC721Full"
             },
             "typeName": {
               "contractScope": null,
-              "id": 3889,
+              "id": 3573,
               "name": "IERC721Full",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 3846,
-              "src": "253:11:14",
+              "referencedDeclaration": 3530,
+              "src": "253:11:13",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_IERC721Full_$3846",
+                "typeIdentifier": "t_contract$_IERC721Full_$3530",
                 "typeString": "contract IERC721Full"
               }
             },
@@ -434,28 +434,28 @@
           },
           {
             "body": {
-              "id": 3909,
+              "id": 3593,
               "nodeType": "Block",
-              "src": "374:232:14",
+              "src": "374:232:13",
               "statements": [
                 {
                   "expression": {
                     "argumentTypes": null,
-                    "id": 3901,
+                    "id": 3585,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
                     "lValueRequested": false,
                     "leftHandSide": {
                       "argumentTypes": null,
-                      "id": 3897,
+                      "id": 3581,
                       "name": "team",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 3890,
-                      "src": "413:4:14",
+                      "referencedDeclaration": 3574,
+                      "src": "413:4:13",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_contract$_IERC721Full_$3846",
+                        "typeIdentifier": "t_contract$_IERC721Full_$3530",
                         "typeString": "contract IERC721Full"
                       }
                     },
@@ -466,12 +466,12 @@
                       "arguments": [
                         {
                           "argumentTypes": null,
-                          "id": 3899,
+                          "id": 3583,
                           "name": "_addressOfToken",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 3892,
-                          "src": "432:15:14",
+                          "referencedDeclaration": 3576,
+                          "src": "432:15:13",
                           "typeDescriptions": {
                             "typeIdentifier": "t_address",
                             "typeString": "address"
@@ -485,18 +485,18 @@
                             "typeString": "address"
                           }
                         ],
-                        "id": 3898,
+                        "id": 3582,
                         "name": "IERC721Full",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3846,
-                        "src": "420:11:14",
+                        "referencedDeclaration": 3530,
+                        "src": "420:11:13",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_type$_t_contract$_IERC721Full_$3846_$",
+                          "typeIdentifier": "t_type$_t_contract$_IERC721Full_$3530_$",
                           "typeString": "type(contract IERC721Full)"
                         }
                       },
-                      "id": 3900,
+                      "id": 3584,
                       "isConstant": false,
                       "isLValue": false,
                       "isPure": false,
@@ -504,21 +504,21 @@
                       "lValueRequested": false,
                       "names": [],
                       "nodeType": "FunctionCall",
-                      "src": "420:28:14",
+                      "src": "420:28:13",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_contract$_IERC721Full_$3846",
+                        "typeIdentifier": "t_contract$_IERC721Full_$3530",
                         "typeString": "contract IERC721Full"
                       }
                     },
-                    "src": "413:35:14",
+                    "src": "413:35:13",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_IERC721Full_$3846",
+                      "typeIdentifier": "t_contract$_IERC721Full_$3530",
                       "typeString": "contract IERC721Full"
                     }
                   },
-                  "id": 3902,
+                  "id": 3586,
                   "nodeType": "ExpressionStatement",
-                  "src": "413:35:14"
+                  "src": "413:35:13"
                 },
                 {
                   "expression": {
@@ -526,12 +526,12 @@
                     "arguments": [
                       {
                         "argumentTypes": null,
-                        "id": 3906,
+                        "id": 3590,
                         "name": "_harberContractAddress",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3894,
-                        "src": "576:22:14",
+                        "referencedDeclaration": 3578,
+                        "src": "576:22:13",
                         "typeDescriptions": {
                           "typeIdentifier": "t_address",
                           "typeString": "address"
@@ -547,32 +547,32 @@
                       ],
                       "expression": {
                         "argumentTypes": null,
-                        "id": 3903,
+                        "id": 3587,
                         "name": "team",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3890,
-                        "src": "565:4:14",
+                        "referencedDeclaration": 3574,
+                        "src": "565:4:13",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_contract$_IERC721Full_$3846",
+                          "typeIdentifier": "t_contract$_IERC721Full_$3530",
                           "typeString": "contract IERC721Full"
                         }
                       },
-                      "id": 3905,
+                      "id": 3589,
                       "isConstant": false,
                       "isLValue": false,
                       "isPure": false,
                       "lValueRequested": false,
                       "memberName": "setup",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 3733,
-                      "src": "565:10:14",
+                      "referencedDeclaration": 3417,
+                      "src": "565:10:13",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_external_nonpayable$_t_address_$returns$__$",
                         "typeString": "function (address) external"
                       }
                     },
-                    "id": 3907,
+                    "id": 3591,
                     "isConstant": false,
                     "isLValue": false,
                     "isPure": false,
@@ -580,36 +580,36 @@
                     "lValueRequested": false,
                     "names": [],
                     "nodeType": "FunctionCall",
-                    "src": "565:34:14",
+                    "src": "565:34:13",
                     "typeDescriptions": {
                       "typeIdentifier": "t_tuple$__$",
                       "typeString": "tuple()"
                     }
                   },
-                  "id": 3908,
+                  "id": 3592,
                   "nodeType": "ExpressionStatement",
-                  "src": "565:34:14"
+                  "src": "565:34:13"
                 }
               ]
             },
             "documentation": null,
-            "id": 3910,
+            "id": 3594,
             "implemented": true,
             "kind": "constructor",
             "modifiers": [],
             "name": "",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 3895,
+              "id": 3579,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3892,
+                  "id": 3576,
                   "name": "_addressOfToken",
                   "nodeType": "VariableDeclaration",
-                  "scope": 3910,
-                  "src": "310:23:14",
+                  "scope": 3594,
+                  "src": "310:23:13",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -617,10 +617,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3891,
+                    "id": 3575,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "310:7:14",
+                    "src": "310:7:13",
                     "stateMutability": "nonpayable",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
@@ -632,11 +632,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 3894,
+                  "id": 3578,
                   "name": "_harberContractAddress",
                   "nodeType": "VariableDeclaration",
-                  "scope": 3910,
-                  "src": "335:30:14",
+                  "scope": 3594,
+                  "src": "335:30:13",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -644,10 +644,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3893,
+                    "id": 3577,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "335:7:14",
+                    "src": "335:7:13",
                     "stateMutability": "nonpayable",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
@@ -658,26 +658,26 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "309:57:14"
+              "src": "309:57:13"
             },
             "returnParameters": {
-              "id": 3896,
+              "id": 3580,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "374:0:14"
+              "src": "374:0:13"
             },
-            "scope": 3911,
-            "src": "298:308:14",
+            "scope": 3595,
+            "src": "298:308:13",
             "stateMutability": "nonpayable",
             "superFunction": null,
             "visibility": "public"
           }
         ],
-        "scope": 3912,
-        "src": "202:406:14"
+        "scope": 3596,
+        "src": "202:406:13"
       }
     ],
-    "src": "0:609:14"
+    "src": "0:609:13"
   },
   "compiler": {
     "name": "solc",
@@ -687,90 +687,30 @@
     "42": {
       "events": {},
       "links": {},
-      "address": "0xBc7fb730aDBC4179e047b4e9cB12EF6fF3Ec7F9e",
-      "transactionHash": "0x8363193eb32517fb31bcc0778a9426c35c34e03ca2cb89e4755deb8527364ec9"
+      "address": "0x6C979E9f4e38379C7Ad42C71CA6B21dD6CC4FE10",
+      "transactionHash": "0x25244a8bc1b33f02ec82db1ba4258ba45927561b953a21d29378accd152c3459"
     },
-    "69420": {
+    "69421": {
       "events": {},
       "links": {},
-      "address": "0xeB6f9aec65cb53a98173F5E42B0927fc327249f2",
-      "transactionHash": "0xdbfb9289e25700e64e0608043b1224dfcb8c245d7158dfabea9d92b4875a7513"
+      "address": "0x10D34d4fFb39dae5879B0E0b0B6EA9E8671B7662",
+      "transactionHash": "0x500a948d3a6d58f16551a140c7aa8ba505d462d926ff95da481a9905b58ff0f4"
     },
-    "1578631730619": {
+    "1582282296489": {
       "events": {},
       "links": {},
-      "address": "0x772dB7221304FcDd14D4303b0c3bD5D416a84eed",
-      "transactionHash": "0x14d93aa9310c999398e0dc4e32d504c6577925aa45730f9bcd3a0b8794f00309"
+      "address": "0x9E70ce676A4D72DFa40D07692f44Aa644c9E6D5d",
+      "transactionHash": "0xeb1e4581dcac423de02b06eb3d13030f2b4750ceddbb162ff35a078f8c902157"
     },
-    "1578894658407": {
+    "1582282536304": {
       "events": {},
       "links": {},
-      "address": "0x31996b3E027Bf9b8b77056f3833F32A9ffbe90f9",
-      "transactionHash": "0x64cba7c9a71dbd3d78e39db5f0f009472897a7a5994c7fee7cf7da27526e6fd6"
-    },
-    "1578896611026": {
-      "events": {},
-      "links": {},
-      "address": "0xfFe8d883e9bcF934DD61C5fc7084E610800C95B3",
-      "transactionHash": "0xc6562373ccc2376692c12b13e11806fab6b46277e92b6a3c8218d710f318e4ae"
-    },
-    "1579078111693": {
-      "events": {},
-      "links": {},
-      "address": "0xe72725196c3633Aa9C924f6d541804FA4c8e89f8",
-      "transactionHash": "0xe4e805b2023e40cafd14497e6777e90af66792dbc59d79552b0fe6d2bc540af9"
-    },
-    "1579246705873": {
-      "events": {},
-      "links": {},
-      "address": "0x7CfC3AaF53d0CdA962bC85b1213301319B7EC99F",
-      "transactionHash": "0x4da47c3f261d8179bc28356ba8637e3ed06545815bc7bf36d498852e37c81dab"
-    },
-    "1579317575125": {
-      "events": {},
-      "links": {},
-      "address": "0xC8aE79D684c396017d79d30191fa28326d059eeC",
-      "transactionHash": "0xd04e2eb82d3141dbb3059f4ffecee8b9c556f75d6dcfc163290a48f19e820f58"
-    },
-    "1579597556903": {
-      "events": {},
-      "links": {},
-      "address": "0x013D7F877160E2BCeD1E2Cb7aa511D1093A7D77B",
-      "transactionHash": "0x84d0bf73d06fe67f2532fed3355737f2b1c9dd9ee99149652f3dbb25c27acbfe"
-    },
-    "1579607485454": {
-      "events": {},
-      "links": {},
-      "address": "0x701c40Caa0f6FFE83Ad556A4E6A7bF1f2BbF215d",
-      "transactionHash": "0xf5424720446f9a1f4be20aa1ae448adfeb43a4dddcb71394382c66ab52ffd3e5"
-    },
-    "1579674696710": {
-      "events": {},
-      "links": {},
-      "address": "0xD81c1D1D2Fd3ddafB78a2F216F2A85d06D3F5106",
-      "transactionHash": "0x6526bccf78a4fe955caab5638d2cb1ed94fbe5d2ca7aa1d577f3d1bb31151381"
-    },
-    "1579676125775": {
-      "events": {},
-      "links": {},
-      "address": "0xE14EBa08D16dEB1639D3ae23a5E8e779d5BA83DE",
-      "transactionHash": "0x7e8d458e0b9aa4660f172d0afd94b6f5c91b38dc50b69c04739aebc9d56ca159"
-    },
-    "1580378033879": {
-      "events": {},
-      "links": {},
-      "address": "0xA894FF6f79A1c0749f60FfB96F8b998DE8674785",
-      "transactionHash": "0xc0bb5935a7e39f33566a595d10fcd3e8ca7f36c75e5fafa9ace2d3b0177d091a"
-    },
-    "1580865675087": {
-      "events": {},
-      "links": {},
-      "address": "0x23D7F07087e52FF6a34F6dDc14d5F0E481761034",
-      "transactionHash": "0x41ceda25bdabbdebb138b3de5d541b45ff21313a258d7964b4e33994fc7c7ec5"
+      "address": "0x9E70ce676A4D72DFa40D07692f44Aa644c9E6D5d",
+      "transactionHash": "0xeb1e4581dcac423de02b06eb3d13030f2b4750ceddbb162ff35a078f8c902157"
     }
   },
   "schemaVersion": "3.0.19",
-  "updatedAt": "2020-02-07T07:02:02.285Z",
+  "updatedAt": "2020-02-21T11:05:06.613Z",
   "networkType": "ethereum",
   "devdoc": {
     "methods": {}

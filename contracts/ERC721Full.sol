@@ -20,7 +20,7 @@ contract ERC721Full is ERC721, ERC721Enumerable, ERC721Metadata {
         require(!init, "Already initialized");
         init = true;
 
-        steward = _originalOwner; //only the steward can make transfers
+        harberContract = _originalOwner; //only the harber.sol contract can make transfers
         // mint NFT for each outcome
         // these URIs are NOT the production URIs and will need to be changed
         _mint(_originalOwner, 0); // mint
