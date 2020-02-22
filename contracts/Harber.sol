@@ -58,8 +58,6 @@ contract Harber {
     address[numberOfTokens] public marketAddresses; 
     /// @dev in attodai (so $100 = 100000000000000000000)
     uint256[numberOfTokens] public price; 
-    /// @dev for front end only, for calculating implied odds
-    uint256 public sumOfAllPrices; 
     /// @dev an easy way to track the above across all tokens. It should always increment at the same time as the above increments. 
     uint256 public totalCollected; 
     /// @dev used to determine the rent due. Rent is due for the period (now - timeLastCollected), at which point timeLastCollected is set to now.
@@ -569,10 +567,6 @@ contract Harber {
     /// @dev changePrice is split into two, because it needs to be called direct from newRental
     /// @dev ... without collecing rent first (otherwise it would be collected twice, possibly causing logic errors)
     function _changePrice(uint256 _newPrice, uint256 _tokenId) internal {
-        //  update sumOfAllPrices for front end
-        uint256 _currentPrice = price[_tokenId];
-        uint256 _priceIncrease = _newPrice.sub(_currentPrice);
-        sumOfAllPrices = sumOfAllPrices.add(_priceIncrease);
         // below is the only instance when price is modifed outside of the _transferTokenTo function
         price[_tokenId] = _newPrice;
         ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
@@ -635,14 +629,6 @@ contract Harber {
     /// @dev there is no event emitted as this is handled in ERC721.sol
     function _transferTokenTo(address _currentOwner, address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
         require(_currentOwner != address(0) && _newOwner != address(0) , "Cannot send to/from zero address");
-        uint256 _currentPrice = price[_tokenId];
-        if (_currentPrice > _newPrice) {
-            uint256 _priceDecrease = _currentPrice.sub(_newPrice); 
-            sumOfAllPrices = sumOfAllPrices.sub(_priceDecrease);
-        } else {
-            uint256 _priceIncrease = _newPrice.sub(_currentPrice); 
-            sumOfAllPrices = sumOfAllPrices.add(_priceIncrease);
-        }
         price[_tokenId] = _newPrice;
         token.transferFrom(_currentOwner, _newOwner, _tokenId);
     }
