@@ -11,7 +11,6 @@ const marketedExpectedResolutionTime = 0;
 const andrewsAddress = '0x34A971cA2fd6DA2Ce2969D716dF922F17aAA1dB0';
 
 // KOVAN ADDRESSES
-const augurCashAddressKovan = '0x0802563FB6CfA1f07363D3aBf529F7b3999096f6';
 const augurMarketAddressKovan = [
   '0xA830e8A271909b2407985F95921E5dD4AD1d859A',
   '0xA830e8A271909b2407985F95921E5dD4AD1d859A',
@@ -34,8 +33,9 @@ const augurMarketAddressKovan = [
   '0xA830e8A271909b2407985F95921E5dD4AD1d859A',
   '0xA830e8A271909b2407985F95921E5dD4AD1d859A'
 ];
-const augurOICashAddressKovan = '0x63cbfEb0Cf1EE91Ca1689d8dbBa143bbf8Fd0fd1';
-const augurMainAddressKovan = '0x62214e5c919332AC17c5e5127383B84378Ef9C1d';
+const augurCashAddressKovan = '0x86309723166C177591960E5A9a5ecb7056564331';
+const augurOICashAddressKovan = '0xbD41281dE5E4cA62602ed7c134f46d831A340B78';
+const augurMainAddressKovan = '0x98976c6B72858DF90751Bc327353bB9F46a4Aa5D';
 
 module.exports = function (deployer, network) {
 

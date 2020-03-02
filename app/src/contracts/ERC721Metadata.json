@@ -464,7 +464,7 @@
         "id": 1163,
         "nodeType": "ImportDirective",
         "scope": 1287,
-        "sourceUnit": 3554,
+        "sourceUnit": 3492,
         "src": "48:42:4",
         "symbolAliases": [],
         "unitAlias": ""
@@ -525,10 +525,10 @@
               "id": 1169,
               "name": "IERC721Metadata",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 3553,
+              "referencedDeclaration": 3491,
               "src": "158:15:4",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_IERC721Metadata_$3553",
+                "typeIdentifier": "t_contract$_IERC721Metadata_$3491",
                 "typeString": "contract IERC721Metadata"
               }
             },
@@ -540,9 +540,9 @@
         "contractDependencies": [
           50,
           580,
-          3383,
-          3491,
-          3553
+          3321,
+          3429,
+          3491
         ],
         "contractKind": "contract",
         "documentation": null,
@@ -550,11 +550,11 @@
         "id": 1286,
         "linearizedBaseContracts": [
           1286,
-          3553,
-          580,
           3491,
+          580,
+          3429,
           50,
-          3383
+          3321
         ],
         "name": "ERC721Metadata",
         "nodeType": "ContractDefinition",
@@ -1007,7 +1007,7 @@
             "scope": 1286,
             "src": "1016:83:4",
             "stateMutability": "view",
-            "superFunction": 3540,
+            "superFunction": 3478,
             "visibility": "external"
           },
           {
@@ -1086,7 +1086,7 @@
             "scope": 1286,
             "src": "1207:87:4",
             "stateMutability": "view",
-            "superFunction": 3545,
+            "superFunction": 3483,
             "visibility": "external"
           },
           {
@@ -1160,10 +1160,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        4257,
-                        4258
+                        4195,
+                        4196
                       ],
-                      "referencedDeclaration": 4257,
+                      "referencedDeclaration": 4195,
                       "src": "1576:7:4",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
@@ -1312,7 +1312,7 @@
             "scope": 1286,
             "src": "1493:151:4",
             "stateMutability": "view",
-            "superFunction": 3552,
+            "superFunction": 3490,
             "visibility": "external"
           },
           {
@@ -1386,10 +1386,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        4257,
-                        4258
+                        4195,
+                        4196
                       ],
-                      "referencedDeclaration": 4257,
+                      "referencedDeclaration": 4195,
                       "src": "1958:7:4",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
@@ -1621,7 +1621,7 @@
                         "name": "super",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 4291,
+                        "referencedDeclaration": 4229,
                         "src": "2381:5:4",
                         "typeDescriptions": {
                           "typeIdentifier": "t_super$_ERC721Metadata_$1286",
@@ -1990,7 +1990,7 @@
         "id": 1163,
         "nodeType": "ImportDirective",
         "scope": 1287,
-        "sourceUnit": 3554,
+        "sourceUnit": 3492,
         "src": "48:42:4",
         "symbolAliases": [],
         "unitAlias": ""
@@ -2051,10 +2051,10 @@
               "id": 1169,
               "name": "IERC721Metadata",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 3553,
+              "referencedDeclaration": 3491,
               "src": "158:15:4",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_IERC721Metadata_$3553",
+                "typeIdentifier": "t_contract$_IERC721Metadata_$3491",
                 "typeString": "contract IERC721Metadata"
               }
             },
@@ -2066,9 +2066,9 @@
         "contractDependencies": [
           50,
           580,
-          3383,
-          3491,
-          3553
+          3321,
+          3429,
+          3491
         ],
         "contractKind": "contract",
         "documentation": null,
@@ -2076,11 +2076,11 @@
         "id": 1286,
         "linearizedBaseContracts": [
           1286,
-          3553,
-          580,
           3491,
+          580,
+          3429,
           50,
-          3383
+          3321
         ],
         "name": "ERC721Metadata",
         "nodeType": "ContractDefinition",
@@ -2533,7 +2533,7 @@
             "scope": 1286,
             "src": "1016:83:4",
             "stateMutability": "view",
-            "superFunction": 3540,
+            "superFunction": 3478,
             "visibility": "external"
           },
           {
@@ -2612,7 +2612,7 @@
             "scope": 1286,
             "src": "1207:87:4",
             "stateMutability": "view",
-            "superFunction": 3545,
+            "superFunction": 3483,
             "visibility": "external"
           },
           {
@@ -2686,10 +2686,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        4257,
-                        4258
+                        4195,
+                        4196
                       ],
-                      "referencedDeclaration": 4257,
+                      "referencedDeclaration": 4195,
                       "src": "1576:7:4",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
@@ -2838,7 +2838,7 @@
             "scope": 1286,
             "src": "1493:151:4",
             "stateMutability": "view",
-            "superFunction": 3552,
+            "superFunction": 3490,
             "visibility": "external"
           },
           {
@@ -2912,10 +2912,10 @@
                       "name": "require",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [
-                        4257,
-                        4258
+                        4195,
+                        4196
                       ],
-                      "referencedDeclaration": 4257,
+                      "referencedDeclaration": 4195,
                       "src": "1958:7:4",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_require_pure$_t_bool_$returns$__$",
@@ -3147,7 +3147,7 @@
                         "name": "super",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 4291,
+                        "referencedDeclaration": 4229,
                         "src": "2381:5:4",
                         "typeDescriptions": {
                           "typeIdentifier": "t_super$_ERC721Metadata_$1286",
@@ -3485,7 +3485,7 @@
   },
   "networks": {},
   "schemaVersion": "3.0.19",
-  "updatedAt": "2020-02-21T10:47:37.951Z",
+  "updatedAt": "2020-02-25T02:54:46.243Z",
   "devdoc": {
     "methods": {
       "approve(address,uint256)": {
