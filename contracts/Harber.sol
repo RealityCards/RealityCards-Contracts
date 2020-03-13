@@ -80,8 +80,6 @@ contract Harber {
     bool public marketsResolvedWithoutErrors = false; // set in step 1. If true, normal payout. If false, return all funds
     /// @dev step 2:
     bool public step2Complete = false; // must be false for step2, true for complete
-    /// @dev step 3:
-    bool public step3Complete = false; // must be false for step2, true for complete
     /// @dev complete:
     uint256 public daiAvailableToDistribute;
     
@@ -142,7 +140,6 @@ contract Harber {
     event LogStep2Complete(uint256 indexed daiAvailableToDistribute);
     event LogWinningsPaid(address indexed paidTo, uint256 indexed amountPaid);
     event LogRentReturned(address indexed returnedTo, uint256 indexed amountReturned);
-    event LogAndrewPaid(uint256 indexed additionsToWhiskeyFund);
 
     ////////////// MODIFIERS //////////////
     /// @notice prevents functions from being interacted with after the end of the competition 
@@ -297,7 +294,7 @@ contract Harber {
 
     ////////////// MARKET RESOLUTION FUNCTIONS ////////////// 
 
-    /// @notice the first of three functions which must be called, one after the other, to conclude the competition
+    /// @notice the first of two functions which must be called, one after the other, to conclude the competition
     /// @notice winnings can be paid out (or funds returned) only when these two steps are completed
     /// @notice this function checks whether the Augur markets have resolved, and if yes, whether they resolved correct or not
     /// @dev they are split into two sections due to the presence of step1BemergencyExit and step1CcircuitBreaker
@@ -338,7 +335,7 @@ contract Harber {
         emit LogStep1Complete(false, winningOutcome, false);
     }
 
-    /// @notice the second of the three functions which must be called, one after the other, to conclude the competition
+    /// @notice the second of the two functions which must be called, one after the other, to conclude the competition
     /// @dev gets funds back from Augur, gets the available funds for distribution
     /// @dev can be called by anyone, but only once 
     function step2withdrawFromAugur() external {
@@ -353,26 +350,10 @@ contract Harber {
         emit LogStep2Complete(daiAvailableToDistribute);
     }
 
-    /// @notice the final of the three functions which must be called, one after the other, to conclude the competition
-    /// @notice pays me my 1% if markets resolved correctly. If not I don't deserve shit
-    /// @dev this was originally included within step3 but it was modifed so that ineraction with Dai contract happened at the end
-    function step3payAndrew() external {
-        require(step2Complete == true, "Step2 must be completed first");
-        require(step3Complete == false, "Step3 should only be run once");       
-        step3Complete = true;
-
-        if (marketsResolvedWithoutErrors) {
-            uint256 _andrewsWellEarntMonies = daiAvailableToDistribute.div(100);
-            daiAvailableToDistribute = daiAvailableToDistribute.sub(_andrewsWellEarntMonies);
-            _sendCash(andrewsAddress,_andrewsWellEarntMonies);
-            emit LogAndrewPaid(_andrewsWellEarntMonies);
-        }     
-    }
-
     /// @notice the final function of the competition resolution process. Pays out winnings, or returns funds, as necessary
     /// @dev users pull dai into their ac   count. 
     function complete() external {
-        require(step3Complete == true, "Step3 must be completed first");
+        require(step2Complete == true, "Step2 must be completed first");
         if (marketsResolvedWithoutErrors) {
             _payoutWinnings();
         } else {
