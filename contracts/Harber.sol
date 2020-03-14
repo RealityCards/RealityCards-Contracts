@@ -76,10 +76,12 @@ contract Harber {
 
     /// MARKET RESOLUTION VARIABLES
     /// @dev step1:
-    bool public marketsResolved = false; // must be false for step1, true for step2
-    bool public marketsResolvedWithoutErrors = false; // set in step 1. If true, normal payout. If false, return all funds
-    /// @dev step 2:
-    bool public step2Complete = false; // must be false for step2, true for complete
+    bool public marketsEnded = false;
+    /// @dev step2:
+    bool public step2Complete = false; // must be false for step2, true for step3
+    bool public marketsResolvedWithoutErrors = false; // set in step 2. If true, normal payout. If false, return all funds
+    /// @dev step 3:
+    bool public step3Complete = false; // must be false for step3, true for complete
     /// @dev complete:
     uint256 public daiAvailableToDistribute;
     
@@ -136,16 +138,17 @@ contract Harber {
     event LogDepositWithdrawal(uint256 indexed daiWithdrawn, uint256 indexed tokenId, address indexed returnedTo);
     event LogDepositIncreased(uint256 indexed daiDeposited, uint256 indexed tokenId, address indexed sentBy);
     event LogExit(uint256 indexed tokenId);
-    event LogStep1Complete(bool indexed didAugurMarketsResolve, uint256 indexed winningOutcome, bool indexed didAugurMarketsResolveCorrectly);
-    event LogStep2Complete(uint256 indexed daiAvailableToDistribute);
+    event LogStep1Complete(bool indexed didTheEventFinish);
+    event LogStep2Complete(bool indexed didAugurMarketsResolve, uint256 indexed winningOutcome, bool indexed didAugurMarketsResolveCorrectly);
+    event LogStep3Complete(uint256 indexed daiAvailableToDistribute);
     event LogWinningsPaid(address indexed paidTo, uint256 indexed amountPaid);
     event LogRentReturned(address indexed returnedTo, uint256 indexed amountReturned);
 
     ////////////// MODIFIERS //////////////
     /// @notice prevents functions from being interacted with after the end of the competition 
     /// @dev should be on all public/external 'ordinary course of business' functions
-    modifier notResolved() {
-        require(marketsResolved == false, "Markets have resolved already");
+    modifier notEnded() {
+        require(marketsEnded == false, "Markets have ended already");
         _;
     }
 
@@ -294,66 +297,76 @@ contract Harber {
 
     ////////////// MARKET RESOLUTION FUNCTIONS ////////////// 
 
-    /// @notice the first of two functions which must be called, one after the other, to conclude the competition
-    /// @notice winnings can be paid out (or funds returned) only when these two steps are completed
-    /// @notice this function checks whether the Augur markets have resolved, and if yes, whether they resolved correct or not
-    /// @dev they are split into two sections due to the presence of step1BemergencyExit and step1CcircuitBreaker
+    /// @notice the first of three functions which must be called, one after the other, to conclude the competition
+    /// @notice winnings can be paid out (or funds returned) only when these three steps are completed
+    /// @notice this function checks whether the competition has ended (1 hour grace), if so closes down all 'ordinary course of business' functions
     /// @dev can be called by anyone 
-    function step1checkMarketsResolved() external {
-        require(marketsResolved == false, "Step1 can only be completed once");
-        // first check if all X markets have all resolved one way or the other
-        require(_haveAllAugurMarketsResolved(), "Markets have not resolved yet");
+    function step1checkMarketsEnded() external {
+        require(marketsEnded == false, "Step1 can only be completed once");
+        require(marketExpectedResolutionTime < (now - 3600), "Markets have not finished yet");
         // do a final rent collection before the contract is locked down
         collectRentAllTokens();
         // lock everything down
-        marketsResolved = true;
+        marketsEnded = true;
+        emit LogStep1Complete(true);
+    }
+
+    /// @notice the second of three functions which must be called, one after the other, to conclude the competition
+    /// @notice this function checks whether the Augur markets have resolved, and if yes, whether they resolved correct or not
+    /// @dev can be called by anyone 
+    function step2checkMarketsResolved() external {
+        require(marketsEnded == true, "Must wait for markets to end");
+        require(step2Complete == false, "Step2 can only be completed once");
+        // first check if all X markets have all resolved one way or the other
+        require(_haveAllAugurMarketsResolved(), "Markets have not resolved yet");
+        step2Complete = true;
         // now check if they all resolved without errors. It is set to false upon contract initialisation 
         if (_haveAllAugurMarketsResolvedWithoutErrors()) {
             marketsResolvedWithoutErrors = true;
         }
-        emit LogStep1Complete(true, winningOutcome, marketsResolvedWithoutErrors);
+        emit LogStep2Complete(true, winningOutcome, marketsResolvedWithoutErrors);
     }
 
     /// @notice emergency function in case the augur markets never resolve for whatever reason
     /// @notice returns all funds to all users
     /// @notice can only be called 6 months after augur markets should have ended 
-    function step1BemergencyExit() external  {
-        require(marketsResolved == false, "Step1 can only be completed once");
+    function step2BemergencyExit() external  {
+        require(marketsEnded == true, "Must wait for markets to end");
+        require(step2Complete == false, "Step2 can only be completed once");
         require(now > (marketExpectedResolutionTime + 15778800), "Must wait 6 months for Augur Oracle");
-        collectRentAllTokens();
-        marketsResolved = true;
-        emit LogStep1Complete(false, winningOutcome, false);
+        step2Complete = true;
+        emit LogStep2Complete(false, winningOutcome, false);
     }
 
     /// @notice Same as above, except that only I can call it, and I can call it whenever
     /// @notice to be clear, this only allows me to return all funds. I can not set a winner. 
-    function step1CcircuitBreaker() external {
-        require(marketsResolved == false, "Step1 can only be completed once");
+    function step2CcircuitBreaker() external {
+        require(marketsEnded == true, "Must wait for markets to end");
+        require(step2Complete == false, "Step2 can only be completed once");
         require(msg.sender == andrewsAddress, "Only owner can call this");
-        collectRentAllTokens();
-        marketsResolved = true;
-        emit LogStep1Complete(false, winningOutcome, false);
+        step2Complete = true;
+        emit LogStep2Complete(false, winningOutcome, false);
     }
 
     /// @notice the second of the two functions which must be called, one after the other, to conclude the competition
     /// @dev gets funds back from Augur, gets the available funds for distribution
     /// @dev can be called by anyone, but only once 
-    function step2withdrawFromAugur() external {
-        require(marketsResolved == true, "Must wait for market resolution");
-        require(step2Complete == false, "Step2 should only be run once");
-        step2Complete = true;
+    function step3withdrawFromAugur() external {
+        require(step2Complete == true, "Must wait for market resolution");
+        require(step3Complete == false, "Step3 should only be run once");
+        step3Complete = true;
         uint256 _balanceBefore = _getContractsCashBalance();
         _augurWithdraw();
         uint256 _balanceAfter = _getContractsCashBalance();
         // daiAvailableToDistribute therefore does not include unused deposits
         daiAvailableToDistribute = _balanceAfter.sub(_balanceBefore);
-        emit LogStep2Complete(daiAvailableToDistribute);
+        emit LogStep3Complete(daiAvailableToDistribute);
     }
 
     /// @notice the final function of the competition resolution process. Pays out winnings, or returns funds, as necessary
     /// @dev users pull dai into their ac   count. 
     function complete() external {
-        require(step2Complete == true, "Step2 must be completed first");
+        require(step3Complete == true, "Step3 must be completed first");
         if (marketsResolvedWithoutErrors) {
             _payoutWinnings();
         } else {
@@ -392,7 +405,7 @@ contract Harber {
     /// @dev ... which can only be called if markets have resolved. This function is also different in that it does 
     /// @dev ... not attempt to collect rent or transfer ownership to a previous owner
     function withdrawDepositAfterResolution() external {
-        require(marketsResolved == true, "step1 must be completed first");
+        require(step2Complete == true, "step1 must be completed first");
          
         for (uint i = 0; i < numberOfTokens; i++) {
 
@@ -411,14 +424,14 @@ contract Harber {
     /// @notice collects rent for all tokens
     /// @dev makes it easy for me to call whenever I want to keep people paying their rent, thus cannot be internal
     /// @dev cannot be external because it is called within the step1 functions, therefore public
-    function collectRentAllTokens() public notResolved() {
+    function collectRentAllTokens() public notEnded() {
        for (uint i = 0; i < numberOfTokens; i++) {
             _collectRent(i);
         }
     }
     
     /// @notice to rent a token
-    function newRental(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) external tokenExists(_tokenId) amountNotZero(_deposit) notResolved() {
+    function newRental(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) external tokenExists(_tokenId) amountNotZero(_deposit) notEnded() {
         require(_newPrice > price[_tokenId], "Price must be higher than current price");
         
         _collectRent(_tokenId);
@@ -451,14 +464,14 @@ contract Harber {
     /// @dev it is possible a user's deposit could be reduced to zero following _collectRent
     /// @dev they would then increase their deposit despite no longer owning it
     /// @dev this is ok, they can still withdraw via withdrawDeposit. 
-    function depositDai(uint256 _dai, uint256 _tokenId) external amountNotZero(_dai) tokenExists(_tokenId) notResolved() {
+    function depositDai(uint256 _dai, uint256 _tokenId) external amountNotZero(_dai) tokenExists(_tokenId) notEnded() {
         _collectRent(_tokenId);
         _depositDai(_dai, _tokenId);
     }
 
     /// @notice increase the price of an existing rental
     /// @dev can't be external because also called within newRental
-    function changePrice(uint256 _newPrice, uint256 _tokenId) public tokenExists(_tokenId) notResolved() {
+    function changePrice(uint256 _newPrice, uint256 _tokenId) public tokenExists(_tokenId) notEnded() {
         require(_newPrice > price[_tokenId], "New price must be higher than current price"); 
         require(msg.sender == token.ownerOf(_tokenId), "Not owner");
         _collectRent(_tokenId);
@@ -467,7 +480,7 @@ contract Harber {
     
     /// @notice withdraw deposit
     /// @dev do not need to be the current owner
-    function withdrawDeposit(uint256 _dai, uint256 _tokenId) external amountNotZero(_dai) tokenExists(_tokenId) notResolved() returns (uint256) {
+    function withdrawDeposit(uint256 _dai, uint256 _tokenId) external amountNotZero(_dai) tokenExists(_tokenId) notEnded() returns (uint256) {
         _collectRent(_tokenId);
         // if statement needed because deposit may have just reduced to zero following _collectRent 
         if (deposits[_tokenId][msg.sender] > 0) {
@@ -478,7 +491,7 @@ contract Harber {
 
     /// @notice withdraw full deposit
     /// @dev do not need to be the current owner
-    function exit(uint256 _tokenId) external tokenExists(_tokenId) notResolved() {
+    function exit(uint256 _tokenId) external tokenExists(_tokenId) notEnded() {
         _collectRent(_tokenId);
         // if statement needed because deposit may have just reduced to zero following _collectRent modifier
         if (deposits[_tokenId][msg.sender] > 0) {
@@ -493,7 +506,7 @@ contract Harber {
     /// @dev also calculates and updates how long the current user has held the token for
     /// @dev called frequently internally, so cant be external. 
     /// @dev is not a problem if called externally, but making internal over public to save gas
-    function _collectRent(uint256 _tokenId) internal notResolved() {
+    function _collectRent(uint256 _tokenId) internal notEnded() {
         //only collect rent if the token is owned (ie, if owned by the contract this implies unowned)
         if (token.ownerOf(_tokenId) != address(this)) {
             
