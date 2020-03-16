@@ -582,23 +582,25 @@ contract Harber {
     function _revertToPreviousOwner(uint256 _tokenId) internal {
         bool _reverted = false;
         bool _toForeclose = false;
+        uint256 _loopCount = 0;
         uint256 _index;
         address _previousOwner;
 
         while (_reverted == false) {
-            assert(currentOwnerIndex[_tokenId] >=0);
             currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].sub(1); // currentOwnerIndex will now point to  previous owner
             _index = currentOwnerIndex[_tokenId]; // just for readability
             _previousOwner = ownerTracker[_tokenId][_index].owner;
 
-            //if no previous owners. price -> zero, foreclose
-            //if previous owner still has a deposit, transfer to them, update the price to what it used to be
+            // if no previous owners. price -> zero, foreclose
+            // if previous owner still has a deposit, transfer to them, update the price to what it used to be
+            // loop max ten times before just assigning it to that owner, to prevent block limit
             if (_index == 0) {
                 _toForeclose = true;
                 _reverted = true;
-            } else if (deposits[_tokenId][_previousOwner] > 0) {
+            } else if ( (deposits[_tokenId][_previousOwner] > 0) || _loopCount > 9 ) {
                 _reverted = true;
-            }         
+            }  
+            _loopCount = _loopCount.add(1);
         }   
 
         if (_toForeclose) {
