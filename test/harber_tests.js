@@ -283,7 +283,7 @@ contract('HarberTests', (accounts) => {
     });
 
     // test a normal instance of collectRent
-    it(' function no revertPreviousOwner/foreclose', async () => {
+    it('function no revertPreviousOwner/foreclose', async () => {
       // setup
       user = user0;
       await cash.faucet(web3.utils.toWei('100', 'ether'), { from: user });
@@ -1309,11 +1309,11 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await harber.newRental(web3.utils.toWei('9', 'ether'),2,web3.utils.toWei('1', 'ether'),{ from: user2 });
     await harber.newRental(web3.utils.toWei('10', 'ether'),2,web3.utils.toWei('1', 'ether'),{ from: user3 });
     await harber.newRental(web3.utils.toWei('20', 'ether'),2,web3.utils.toWei('1', 'ether'),{ from: user2 });
-    await harber.newRental(web3.utils.toWei('30', 'ether'),2,web3.utils.toWei('1', 'ether'),{ from: user3 });
-    await harber.newRental(web3.utils.toWei('40', 'ether'),2,web3.utils.toWei('1', 'ether'),{ from: user2 });
-    await harber.newRental(web3.utils.toWei('50', 'ether'),2,web3.utils.toWei('1', 'ether'),{ from: user3 });
-    await harber.newRental(web3.utils.toWei('60', 'ether'),2,web3.utils.toWei('1', 'ether'),{ from: user2 });
-    await harber.newRental(web3.utils.toWei('70', 'ether'),2,web3.utils.toWei('1', 'ether'),{ from: user3 });
+    await harber.newRental(web3.utils.toWei('30', 'ether'),2,web3.utils.toWei('2', 'ether'),{ from: user3 });
+    await harber.newRental(web3.utils.toWei('40', 'ether'),2,web3.utils.toWei('3', 'ether'),{ from: user2 });
+    await harber.newRental(web3.utils.toWei('50', 'ether'),2,web3.utils.toWei('4', 'ether'),{ from: user3 });
+    await harber.newRental(web3.utils.toWei('60', 'ether'),2,web3.utils.toWei('5', 'ether'),{ from: user2 });
+    await harber.newRental(web3.utils.toWei('70', 'ether'),2,web3.utils.toWei('6', 'ether'),{ from: user3 });
     // user 2 and 3 exit, it should return to one of them NOT return to user 0 or 1 
     await harber.exit(2,{ from: user2 });
     await harber.exit(2,{ from: user3 });
@@ -1331,6 +1331,13 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await harber.newRental(web3.utils.toWei('1', 'ether'),2,web3.utils.toWei('1', 'ether'),{ from: user0 });
     await shouldFail.reverting.withMessage(harber.newRental(web3.utils.toWei('1.05', 'ether'),2,web3.utils.toWei('1', 'ether'),{ from: user0}), "Price must be at least 10% higher than current price");
     await harber.newRental(web3.utils.toWei('1.1', 'ether'),2,web3.utils.toWei('1', 'ether'),{ from: user0 });
+    });
+
+  it('check that cannot deposit less than 1 hous rent', async () => {
+    await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user0 });
+    await cash.approve(harber.address, web3.utils.toWei('100', 'ether'),{ from: user0 });
+    await shouldFail.reverting.withMessage(harber.newRental(web3.utils.toWei('25', 'ether'),2,web3.utils.toWei('1', 'ether'),{ from: user0}), "You must deposit enough to cover one hour's rent");
+    await harber.newRental(web3.utils.toWei('24', 'ether'),2,web3.utils.toWei('1', 'ether'),{ from: user0 });
     });
 
 });

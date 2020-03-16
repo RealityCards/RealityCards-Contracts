@@ -433,7 +433,9 @@ contract Harber {
     /// @notice to rent a token
     function newRental(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) external tokenExists(_tokenId) amountNotZero(_deposit) notEnded() {
         uint256 _currentPricePlusTenPercent = price[_tokenId].mul(11).div(10);
+        uint256 _oneHoursDeposit = _newPrice.div(24);
         require(_newPrice >= _currentPricePlusTenPercent, "Price must be at least 10% higher than current price");
+        require(_deposit >= _oneHoursDeposit, "You must deposit enough to cover one hour's rent");
         
         _collectRent(_tokenId);
         address _currentOwner = token.ownerOf(_tokenId);
