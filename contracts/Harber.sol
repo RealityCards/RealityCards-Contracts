@@ -419,7 +419,7 @@ contract Harber {
         }
     }
 
-    ////////////// ORDINARY COURSE OF BUSINESS FUNCTIONS- EXTERNALS //////////////
+    ////////////// ORDINARY COURSE OF BUSINESS FUNCTIONS- EXTERNAL //////////////
 
     /// @notice collects rent for all tokens
     /// @dev makes it easy for me to call whenever I want to keep people paying their rent, thus cannot be internal
@@ -432,10 +432,10 @@ contract Harber {
     
     /// @notice to rent a token
     function newRental(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) external tokenExists(_tokenId) amountNotZero(_deposit) notEnded() {
-        require(_newPrice > price[_tokenId], "Price must be higher than current price");
+        uint256 _currentPricePlusTenPercent = price[_tokenId].mul(11).div(10);
+        require(_newPrice >= _currentPricePlusTenPercent, "Price must be at least 10% higher than current price");
         
         _collectRent(_tokenId);
-        // require(1==2, "STFU");
         address _currentOwner = token.ownerOf(_tokenId);
 
         if (_currentOwner == msg.sender) {
