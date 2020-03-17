@@ -257,7 +257,7 @@ contract Harber {
     /// @notice checks if all markets have resolved without conflicts or errors
     /// @return true if yes, false if no
     /// @dev this function will also set the winningOutcome variable
-    function _haveAllAugurMarketsResolvedWithoutErrors() internal returns(bool) {   
+    function _getWinnerAndCheckIfMarketsResolvedWithoutErrors() internal returns(bool) {   
         uint256 _winningOutcomesCount = 0;
         uint256 _invalidOutcomesCount = 0;
 
@@ -321,7 +321,7 @@ contract Harber {
         require(_haveAllAugurMarketsResolved(), "Markets have not resolved yet");
         step2Complete = true;
         // now check if they all resolved without errors. It is set to false upon contract initialisation 
-        if (_haveAllAugurMarketsResolvedWithoutErrors()) {
+        if (_getWinnerAndCheckIfMarketsResolvedWithoutErrors()) {
             marketsResolvedWithoutErrors = true;
         }
         emit LogStep2Complete(true, winningOutcome, marketsResolvedWithoutErrors);

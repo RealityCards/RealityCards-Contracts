@@ -5,9 +5,12 @@ Harber
 ### Team members 
 Andrew Stanger- [LinkedIn](https://www.linkedin.com/in/andrew-stanger-351a3a170/) 
 ### What project are you building 
-Harber is an entirely new form of prediction market. It is completely unlike the existing prediction market solutions (Augur, Gnosis Sight, Omen etc) in that it creates a market in outcomes using NFTs- you no longer put money on a team, you *own* the team. 
+Harber is an entirely new form of prediction market. It is completely unlike the existing prediction market solutions in that it creates a market in outcomes using NFTs- you no longer put money on a team, you *own* the team. 
 
 ![](https://i.imgur.com/BWo1Re2.png)
+### Gnosis integration
+Harber will be built on top of Omen. All interaction with Harber will involve a transaction through an Omen market maker, increasing Omen trading volumes and thus increasing the incentive to provide liquidity to the Omen platform. 
+
 ### Why did you decide to build it 
 My experience of existing prediction markets is that they are confusing (with concepts such as 'shares' and 'complete sets') and not very *fun*. To put it another way- the UX could be improved.
 
@@ -28,7 +31,7 @@ $9k for personal living expenses and freelancer costs. Additional funding may be
 Friederike Ernst's presentation titled 'A prediction market is not a prediction market is not a prediction market' at EthCC in Paris, Feb 2020. 
 ## Your Proposal 
 
-### Phase 1- Harberger Tax rules
+### Phase 1- MVP- Harberger Tax rules
 
 Phase 1 is the 'main' Harber product. There will be a contract specific to an event- for example, the 19/20 English Premier League. Each event will have only a single winner. There is one NFT for each team- i.e. in the case of the English Premier League, there will be 20 tokens. At contract initiation, each NFT will have a price of zero and will be owned by the contract itself. Any user is free to 'rent' a team/NFT at any time- in order to do this, they set a daily rental price (in Dai) and deposit Dai to fund the rent. If a token is already owned, no problem- just set a higher rental price and you will immediately become the new owner. If your deposit runs out, ownership reverts to the previous owner, at the previous price.
 
@@ -84,9 +87,8 @@ It is my intention for there to be various markets running simultaneously for th
 ### Phase 3- ???
 
 Phase 3 does not form part of this grant. I do not request funding, nor propose a timeline for Phase 3 work. I mention it here only to highlight the potential of this project. Ideas include:
-* perpetual tokens- the same token will pay out multiple times, not just on a single occasion as in the above examples. For example, instead of a token paying out if Manchester United wins the 19/20 Premier League, it pays out *every year* if they win that year.  
-* decentralising market creation. Currently, there is no ability for users to create their own markets. Further, users could also choose which Oracle to use (as with Omen).
-* incentivising liquidity providers. There is currently zero incentive to provide liquidity to Harber (as opposed to taking a position, for which there is the incentive of winning DAI). 
+* perpetual tokens- the same token will pay out multiple times, not just on a single occasion as in the above examples. For example, instead of a token paying out if Manchester United wins the 19/20 Premier League, it pays out *every year* if they win that year. 
+* deeper integration with Omen, such as allowing users to create their own markets, and allowing markets which are dependant on two or more different outcomes (i.e. the very thing Conditional Tokens are designed for)
 
 ### Team description
 I am the only team member (although I have employed the help of freelancers on Upwork for the front end). I am a former Deloitte Chartered Accountant/Financial Analyst working in the City of London and Cambridge. I fell in love with Ethereum and decided to quit my job and change career. I joined the Consensys Solidity Bootcamp in November 2019. Harber began as my final project for this bootcamp. 
@@ -97,10 +99,8 @@ I am actively seeking a co-founder.
 **Phase 1**  			
 
 I have been working on this project full time since November 2019, and as such, Phase 1 is already complete- both the back end (including extensive tests) and front end, with the following exceptions:
-* formal code audit (and implementing any necessary changes)
+* refactor code to integrate Omen (currently it uses Augur)
 * front end is designed and has a full React implementation, but needs some love prior to mainnet deployment (such as implementing Consensys' Rimble UI for input validation and transaction flow). There is one additional page ('my account') that needs both a design and implementation. 
-
-Further, Harber currently uses Augur as an Oracle, however I would seek the advice of the Gnosis team here- perhaps they would suggest alternatives (such as https://realit.io/).
 
 Links to already completed work:\
 [All contracts](https://github.com/mcplums/Harber/tree/master/contracts)\
@@ -110,7 +110,7 @@ Links to already completed work:\
 
 The project is already online at [harber.io](https://www.harber.io) (on Kovan).
 
-Deliverables: audited contracts, fully feature complete front end.
+Deliverables: completed contracts, fully feature complete front end. Hopefully Phase 1 would be ready not too long after April 16th, the current estimated release date of Omen.
 
 Cost: $3k. $2k one month's living expenses, $1k additional freelancer costs. Costs may be higher due to legal expenses- again, I seek the counsel of Gnosis' legal advisors here.
 
@@ -118,6 +118,6 @@ Cost: $3k. $2k one month's living expenses, $1k additional freelancer costs. Cos
 
 Phase 1 has taken four months of full time work to get to the above point. Phase 2 will be considerably quicker, due to a) my increased familiarity with Ethereum and b) much of the front end design and implementation will carry over to Phase 2. I therefore estimate two months for this phase (i.e. completion in June 2020- in time for the Olympics). From an engineering standpoint, the primary hurdle will be the randomness required when allocating NFTs to lottery ticket holders. I am aware of the complexity of randomness in Ethereum. I will be seeking the advice of Justin Drake, a personal friend and Eth 2.0 researcher, who is an expert in this area. He is already advising the PoolTogether project on this point.
 
-Deliverables: audited contracts, fully feature complete front end.
+Deliverables: completed contracts, fully feature complete front end.
 
 Cost: $6k. $4k two month's living expenses, $2k freelancer costs.
