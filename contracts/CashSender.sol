@@ -4,6 +4,12 @@ import './interfaces/ICash.sol';
 import './interfaces/IDaiVat.sol';
 import "./utils/SafeMath.sol";
 
+/// @title CashSender
+/// @author Forecast Foundation
+/// @notice From the auditied Augur contract here:
+/// https://github.com/AugurProject/augur/blob/master/packages/augur-core/source/contracts/CashSender.sol
+/// @dev it deals with vatDai in case of an emergency shutdown
+
 contract CashSender {
     using SafeMath for uint256;
 

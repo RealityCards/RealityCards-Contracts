@@ -10,17 +10,6 @@ interface IMarket
     function getWinningPayoutNumerator(uint256 _outcome) external view returns (uint256);
 }
 
-/// @title Dai contract interface
-/// @notice Various cash functions
-interface Cash 
-{
-    function approve(address _spender, uint256 _amount) external returns (bool);
-    function balanceOf(address _ownesr) external view returns (uint256);
-    function faucet(uint256 _amount) external;
-    function transfer(address _to, uint256 _amount) external returns (bool);
-    function transferFrom(address _from, address _to, uint256 _amount) external returns (bool);
-}
-
 /// @title Augur OICash interface
 /// @notice adding or removing open interest to secure the Augur Oracle
 interface OICash
@@ -49,7 +38,7 @@ contract Harber is CashSender {
     IERC721Full public token;
     /// Augur contracts:
     IMarket[numberOfTokens] public market;
-    OICash public augur;
+    OICash public oicash;
 
     /// UINTS, ADDRESSES, BOOLS
     /// @dev my whiskey fund, for my 1% cut
@@ -117,7 +106,7 @@ contract Harber is CashSender {
         
         // external contract variables:
         token = IERC721Full(_addressOfToken);
-        augur = OICash(_addressOfOICashContract);
+        oicash = OICash(_addressOfOICashContract);
         initializeCashSender(_addressOfVatDaiContract, _addressOfCashContract);
 
         // initialise arrays
@@ -226,13 +215,13 @@ contract Harber is CashSender {
     // * internal * 
     /// @notice send the Dai to Augur
     function _augurDeposit(uint256 _rentOwed) internal {
-        require(augur.deposit(_rentOwed), "Augur deposit failed");
+        require(oicash.deposit(_rentOwed), "Augur deposit failed");
     }
 
     // * internal *
     /// @notice receive the Dai back from Augur
     function _augurWithdraw() internal {
-        require(augur.withdraw(totalCollected), "Augur withdraw failed");
+        require(oicash.withdraw(totalCollected), "Augur withdraw failed");
     }
 
     // * internal * 
