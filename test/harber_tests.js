@@ -12,7 +12,7 @@ const Harber = artifacts.require('./Harber.sol');
 var CashMockup = artifacts.require("./mockups/CashMockup.sol");
 var MarketMockup = artifacts.require("./mockups/MarketMockup.sol");
 var OICashMockup = artifacts.require("./mockups/OICashMockup.sol");
-const MintNFTs = artifacts.require("./mintNFTs.sol");
+const MintNFTs = artifacts.require("./MintNFTs.sol");
 
 const delay = duration => new Promise(resolve => setTimeout(resolve, duration));
 
@@ -75,7 +75,7 @@ contract('HarberTests', (accounts) => {
     augur = await OICashMockup.new(cash.address);
     token = await Token.new("Harber.io", "HARB");
     harber = await Harber.new(andrewsAddress, token.address, cash.address, augurMarketAddress, augur.address, augurMainAddress, marketExpectedResolutionTime);
-    mintNFTs = await MintNFTs.new(token.address, harber.address);
+    MintNFTs = await MintNFTs.new(token.address, harber.address);
   });
 
   // check that the contract initially owns the token

@@ -482,7 +482,7 @@ contract Harber {
     
     /// @notice withdraw deposit
     /// @dev do not need to be the current owner
-    function withdrawDeposit(uint256 _dai, uint256 _tokenId) external amountNotZero(_dai) tokenExists(_tokenId) notEnded() returns (uint256) {
+    function withdrawDeposit(uint256 _dai, uint256 _tokenId) external amountNotZero(_dai) tokenExists(_tokenId) notEnded() {
         _collectRent(_tokenId);
         // if statement needed because deposit may have just reduced to zero following _collectRent 
         if (deposits[_tokenId][msg.sender] > 0) {

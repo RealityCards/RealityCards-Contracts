@@ -1,6 +1,6 @@
 /* globals artifacts */
 var Harber = artifacts.require("./Harber.sol");
-var mintNFTs = artifacts.require("./mintNFTs.sol");
+var MintNFTs = artifacts.require("./MintNFTs.sol");
 var Token = artifacts.require("./ERC721Full.sol");
 var CashMockup = artifacts.require("./mockups/CashMockup.sol");
 var MarketMockup = artifacts.require("./mockups/MarketMockup.sol");
@@ -43,7 +43,7 @@ module.exports = function (deployer, network) {
     deployer.deploy(Token, "Harber.io", "HARB").then((deployedToken) => {
       return deployer.deploy(Harber, andrewsAddress, deployedToken.address, augurCashAddressKovan, augurMarketAddressKovan, augurOICashAddressKovan, augurMainAddressKovan, marketedExpectedResolutionTime);
     }).then((deployedHarber) => {
-      return deployer.deploy(mintNFTs, Token.address, deployedHarber.address);
+      return deployer.deploy(MintNFTs, Token.address, deployedHarber.address);
     });
 
   } else if (network === "development") {
@@ -53,7 +53,7 @@ module.exports = function (deployer, network) {
           return deployer.deploy(OICashMockup, deployedCash.address).then((deployedOICash) => {
             return deployer.deploy(Token, "Harber.io", "HARB" ).then((deployedToken) => {
               return deployer.deploy(Harber, andrewsAddress, deployedToken.address, deployedCash.address, augurMarketAddressLocal, deployedOICash.address, augurMainAddressKovan, marketedExpectedResolutionTime).then((deployedHarber) => {
-                return deployer.deploy(mintNFTs, Token.address, deployedHarber.address);
+                return deployer.deploy(MintNFTs, Token.address, deployedHarber.address);
               });
             });
           });

@@ -4584,10 +4584,10 @@
             "id": 4,
             "source": "pragma solidity ^0.5.0;\n\nimport \"./IERC721.sol\";\n\n/**\n * @title ERC-721 Non-Fungible Token Standard, optional metadata extension\n * @dev See https://github.com/ethereum/EIPs/blob/master/EIPS/eip-721.md\n */\ncontract IERC721Metadata is IERC721 {\n    function name() external view returns (string memory);\n    function symbol() external view returns (string memory);\n    function tokenURI(uint256 tokenId) external view returns (string memory);\n}"
         },
-        "/Users/mcplums/Repos/Harber/contracts/mintNFTs.sol": {
+        "/Users/mcplums/Repos/Harber/contracts/MintNFTs.sol": {
             "contracts": [
                 {
-                    "contractName": "mintNFTs",
+                    "contractName": "MintNFTs",
                     "bytecode": "0x608060405234801561001057600080fd5b506040516102253803806102258339818101604052604081101561003357600080fd5b810190808051906020019092919080519060200190929190505050816000806101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff1602179055506000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff166366d38203826040518263ffffffff1660e01b8152600401808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001915050600060405180830381600087803b15801561012e57600080fd5b505af1158015610142573d6000803e3d6000fd5b50505050505060cf806101566000396000f3fe6080604052348015600f57600080fd5b506004361060285760003560e01c806385f2aef214602d575b600080fd5b60336075565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff168156fea265627a7a7231582036ca09f6e4d1a04519024b2a5b0125ed6102e5d872e83a35146ee9d14390114a64736f6c634300050d0032",
                     "deployedBytecode": "0x6080604052348015600f57600080fd5b506004361060285760003560e01c806385f2aef214602d575b600080fd5b60336075565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff168156fea265627a7a7231582036ca09f6e4d1a04519024b2a5b0125ed6102e5d872e83a35146ee9d14390114a64736f6c634300050d0032",
                     "sourceMap": "202:406:5:-;;;298:308;8:9:-1;5:2;;;30:1;27;20:12;5:2;298:308:5;;;;;;;;;;;;;;;13:2:-1;8:3;5:11;2:2;;;29:1;26;19:12;2:2;298:308:5;;;;;;;;;;;;;;;;;;;;;;;;;432:15;413:4;;:35;;;;;;;;;;;;;;;;;;565:4;;;;;;;;;;;:10;;;576:22;565:34;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;8:9:-1;5:2;;;30:1;27;20:12;5:2;565:34:5;;;;8:9:-1;5:2;;;45:16;42:1;39;24:38;77:16;74:1;67:27;5:2;565:34:5;;;;298:308;;202:406;;;;;;",
@@ -4595,9 +4595,9 @@
                 }
             ],
             "ast": {
-                "absolutePath": "/Users/mcplums/Repos/Harber/contracts/mintNFTs.sol",
+                "absolutePath": "/Users/mcplums/Repos/Harber/contracts/MintNFTs.sol",
                 "exportedSymbols": {
-                    "mintNFTs": [
+                    "MintNFTs": [
                         205
                     ]
                 },
@@ -4635,7 +4635,7 @@
                         "linearizedBaseContracts": [
                             205
                         ],
-                        "name": "mintNFTs",
+                        "name": "MintNFTs",
                         "nodeType": "ContractDefinition",
                         "nodes": [
                             {
@@ -4915,9 +4915,9 @@
             },
             "legacyAST": {
                 "attributes": {
-                    "absolutePath": "/Users/mcplums/Repos/Harber/contracts/mintNFTs.sol",
+                    "absolutePath": "/Users/mcplums/Repos/Harber/contracts/MintNFTs.sol",
                     "exportedSymbols": {
-                        "mintNFTs": [
+                        "MintNFTs": [
                             205
                         ]
                     }
@@ -4964,7 +4964,7 @@
                             "linearizedBaseContracts": [
                                 205
                             ],
-                            "name": "mintNFTs",
+                            "name": "MintNFTs",
                             "scope": 206
                         },
                         "children": [
@@ -5274,7 +5274,7 @@
                 "src": "0:609:5"
             },
             "id": 5,
-            "source": "pragma solidity 0.5.13;\nimport \"./interfaces/IERC721Full.sol\";\n\n//this is done in a seperate contract. Originally it was within Harber.sol, but \n//deployment used over 10m gas so I had to seperate it. \ncontract mintNFTs {\n\n    // CONTRACT VARIABLES\n    IERC721Full public team; // ERC721 NFT.\n\n    constructor(address _addressOfToken, address _harberContractAddress) public {\n        //initialise ERC721s\n        team = IERC721Full(_addressOfToken);\n\n        //mint the NFTs and pass the Harber contract address so the contract is set as the original owner\n        team.setup(_harberContractAddress);\n    }\n}\n"
+            "source": "pragma solidity 0.5.13;\nimport \"./interfaces/IERC721Full.sol\";\n\n//this is done in a seperate contract. Originally it was within Harber.sol, but \n//deployment used over 10m gas so I had to seperate it. \ncontract MintNFTs {\n\n    // CONTRACT VARIABLES\n    IERC721Full public team; // ERC721 NFT.\n\n    constructor(address _addressOfToken, address _harberContractAddress) public {\n        //initialise ERC721s\n        team = IERC721Full(_addressOfToken);\n\n        //mint the NFTs and pass the Harber contract address so the contract is set as the original owner\n        team.setup(_harberContractAddress);\n    }\n}\n"
         }
     }
 }
