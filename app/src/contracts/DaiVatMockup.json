@@ -1,0 +1,214 @@
+{
+  "contractName": "DaiVatMockup",
+  "abi": [
+    {
+      "constant": true,
+      "inputs": [],
+      "name": "live",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "payable": false,
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "metadata": "{\"compiler\":{\"version\":\"0.5.13+commit.5b0b510c\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"constant\":true,\"inputs\":[],\"name\":\"live\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"payable\":false,\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"methods\":{}},\"userdoc\":{\"methods\":{}}},\"settings\":{\"compilationTarget\":{\"/Users/mcplums/Repos/Harber/contracts/mockups/DaiVatMockup.sol\":\"DaiVatMockup\"},\"evmVersion\":\"petersburg\",\"libraries\":{},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/mcplums/Repos/Harber/contracts/mockups/DaiVatMockup.sol\":{\"keccak256\":\"0x5c9f79863979fc4ca96ed0621191bb9e7fa15a9cff9f14e7b56cd47436a583a7\",\"urls\":[\"bzz-raw://5ddf3e7cc48488c8274e58cfb6cd4bfc71bf01a409e5488f2b791d4ca143175c\",\"dweb:/ipfs/QmYYmMkVTX7d8pdcrm1VihBr5aQyQvVnSEgrHsuACqTtfL\"]}},\"version\":1}",
+  "bytecode": "0x60806040526001600055348015601457600080fd5b506084806100236000396000f3fe6080604052348015600f57600080fd5b506004361060285760003560e01c8063957aa58c14602d575b600080fd5b60336049565b6040518082815260200191505060405180910390f35b6000548156fea265627a7a72315820837d2ed8e12d1ed2360009f453046b2a5970824eea1c7a2a8c52875491eff05264736f6c634300050d0032",
+  "deployedBytecode": "0x6080604052348015600f57600080fd5b506004361060285760003560e01c8063957aa58c14602d575b600080fd5b60336049565b6040518082815260200191505060405180910390f35b6000548156fea265627a7a72315820837d2ed8e12d1ed2360009f453046b2a5970824eea1c7a2a8c52875491eff05264736f6c634300050d0032",
+  "sourceMap": "25:55:19:-;;;75:1;53:23;;25:55;8:9:-1;5:2;;;30:1;27;20:12;5:2;25:55:19;;;;;;;",
+  "deployedSourceMap": "25:55:19:-;;;;8:9:-1;5:2;;;30:1;27;20:12;5:2;25:55:19;;;;;;;;;;;;;;;;;;;53:23;;;:::i;:::-;;;;;;;;;;;;;;;;;;;;;;;:::o",
+  "source": "pragma solidity 0.5.13;\n\ncontract DaiVatMockup {\n    uint256 public live = 1; \n}",
+  "sourcePath": "/Users/mcplums/Repos/Harber/contracts/mockups/DaiVatMockup.sol",
+  "ast": {
+    "absolutePath": "/Users/mcplums/Repos/Harber/contracts/mockups/DaiVatMockup.sol",
+    "exportedSymbols": {
+      "DaiVatMockup": [
+        4241
+      ]
+    },
+    "id": 4242,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 4237,
+        "literals": [
+          "solidity",
+          "0.5",
+          ".13"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "0:23:19"
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "documentation": null,
+        "fullyImplemented": true,
+        "id": 4241,
+        "linearizedBaseContracts": [
+          4241
+        ],
+        "name": "DaiVatMockup",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "constant": false,
+            "id": 4240,
+            "name": "live",
+            "nodeType": "VariableDeclaration",
+            "scope": 4241,
+            "src": "53:23:19",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_uint256",
+              "typeString": "uint256"
+            },
+            "typeName": {
+              "id": 4238,
+              "name": "uint256",
+              "nodeType": "ElementaryTypeName",
+              "src": "53:7:19",
+              "typeDescriptions": {
+                "typeIdentifier": "t_uint256",
+                "typeString": "uint256"
+              }
+            },
+            "value": {
+              "argumentTypes": null,
+              "hexValue": "31",
+              "id": 4239,
+              "isConstant": false,
+              "isLValue": false,
+              "isPure": true,
+              "kind": "number",
+              "lValueRequested": false,
+              "nodeType": "Literal",
+              "src": "75:1:19",
+              "subdenomination": null,
+              "typeDescriptions": {
+                "typeIdentifier": "t_rational_1_by_1",
+                "typeString": "int_const 1"
+              },
+              "value": "1"
+            },
+            "visibility": "public"
+          }
+        ],
+        "scope": 4242,
+        "src": "25:55:19"
+      }
+    ],
+    "src": "0:80:19"
+  },
+  "legacyAST": {
+    "absolutePath": "/Users/mcplums/Repos/Harber/contracts/mockups/DaiVatMockup.sol",
+    "exportedSymbols": {
+      "DaiVatMockup": [
+        4241
+      ]
+    },
+    "id": 4242,
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 4237,
+        "literals": [
+          "solidity",
+          "0.5",
+          ".13"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "0:23:19"
+      },
+      {
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "documentation": null,
+        "fullyImplemented": true,
+        "id": 4241,
+        "linearizedBaseContracts": [
+          4241
+        ],
+        "name": "DaiVatMockup",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "constant": false,
+            "id": 4240,
+            "name": "live",
+            "nodeType": "VariableDeclaration",
+            "scope": 4241,
+            "src": "53:23:19",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_uint256",
+              "typeString": "uint256"
+            },
+            "typeName": {
+              "id": 4238,
+              "name": "uint256",
+              "nodeType": "ElementaryTypeName",
+              "src": "53:7:19",
+              "typeDescriptions": {
+                "typeIdentifier": "t_uint256",
+                "typeString": "uint256"
+              }
+            },
+            "value": {
+              "argumentTypes": null,
+              "hexValue": "31",
+              "id": 4239,
+              "isConstant": false,
+              "isLValue": false,
+              "isPure": true,
+              "kind": "number",
+              "lValueRequested": false,
+              "nodeType": "Literal",
+              "src": "75:1:19",
+              "subdenomination": null,
+              "typeDescriptions": {
+                "typeIdentifier": "t_rational_1_by_1",
+                "typeString": "int_const 1"
+              },
+              "value": "1"
+            },
+            "visibility": "public"
+          }
+        ],
+        "scope": 4242,
+        "src": "25:55:19"
+      }
+    ],
+    "src": "0:80:19"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.5.13+commit.5b0b510c.Emscripten.clang"
+  },
+  "networks": {
+    "1584633890772": {
+      "events": {},
+      "links": {},
+      "address": "0x071FaEE0d32e420C88295802a65758a924B56262",
+      "transactionHash": "0x463bb105505b8af522b289b5848d73b0f6708b2ade21867f2f5d8af1a04dad06"
+    }
+  },
+  "schemaVersion": "3.0.19",
+  "updatedAt": "2020-03-19T16:05:02.794Z",
+  "networkType": "ethereum",
+  "devdoc": {
+    "methods": {}
+  },
+  "userdoc": {
+    "methods": {}
+  }
+}

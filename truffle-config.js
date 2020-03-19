@@ -30,7 +30,7 @@ module.exports = {
     kovan: {
       network_id: 42,
       provider: new HDWalletProvider(mnemonic, kovanProviderUrl, 0),
-      gas: 10000000,
+      gas: 1000000000, //10m is 1000000000
       gasPrice: 1000000000, // 1 gwei
       skipDryRun: true,
     },
@@ -38,7 +38,7 @@ module.exports = {
       host: "127.0.0.1",     // Localhost (default: none)
       port: 8545,            // Standard Ethereum port (default: none)
       network_id: "*",       // Any network (default: none)
-      // gas: 10000000,
+      gas: 10000000,
       gasPrice: 100000000, // 0.1 gwei
     },
     proxy: {

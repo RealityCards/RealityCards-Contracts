@@ -8,11 +8,12 @@ const {
 } = require('openzeppelin-test-helpers');
 
 const Token = artifacts.require('./ERC721Full.sol');
-const Harber = artifacts.require('./Harber.sol');
+var Harber = artifacts.require('./Harber.sol');
 var CashMockup = artifacts.require("./mockups/CashMockup.sol");
 var MarketMockup = artifacts.require("./mockups/MarketMockup.sol");
 var OICashMockup = artifacts.require("./mockups/OICashMockup.sol");
 const MintNFTs = artifacts.require("./MintNFTs.sol");
+var DaiVatMockup = artifacts.require("./mockups/DaiVatMockup.sol");
 
 const delay = duration => new Promise(resolve => setTimeout(resolve, duration));
 
@@ -40,15 +41,13 @@ contract('HarberTests', (accounts) => {
 
   beforeEach(async () => {
     cash = await CashMockup.new();
+    daiVat = await DaiVatMockup.new();
     market0 = await MarketMockup.new();
     market1 = await MarketMockup.new();
     market2 = await MarketMockup.new();
     market3 = await MarketMockup.new();
-
     var marketExpectedResolutionTime = await time.latest();
-    // console.log("stfu1 is", marketExpectedResolutionTime);
-    // marketExpectedResolutionTime = marketExpectedResolutionTime.add(1);
-    // console.log("stfu2 is", marketExpectedResolutionTime);
+
     const augurMarketAddress = [
       market0.address,
       market1.address,
@@ -74,8 +73,8 @@ contract('HarberTests', (accounts) => {
 
     augur = await OICashMockup.new(cash.address);
     token = await Token.new("Harber.io", "HARB");
-    harber = await Harber.new(andrewsAddress, token.address, cash.address, augurMarketAddress, augur.address, augurMainAddress, marketExpectedResolutionTime);
-    MintNFTs = await MintNFTs.new(token.address, harber.address);
+    harber = await Harber.new(andrewsAddress, token.address, cash.address, daiVat.address, augurMarketAddress, augur.address, augurMainAddress, marketExpectedResolutionTime);
+    mintNFTs = await MintNFTs.new(token.address, harber.address);
   });
 
   // check that the contract initially owns the token

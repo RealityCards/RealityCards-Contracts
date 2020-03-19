@@ -5,6 +5,7 @@ var Token = artifacts.require("./ERC721Full.sol");
 var CashMockup = artifacts.require("./mockups/CashMockup.sol");
 var MarketMockup = artifacts.require("./mockups/MarketMockup.sol");
 var OICashMockup = artifacts.require("./mockups/OICashMockup.sol");
+var DaiVatMockup = artifacts.require("./mockups/DaiVatMockup.sol");
 
 // variables
 const marketedExpectedResolutionTime = 0;
@@ -48,12 +49,14 @@ module.exports = function (deployer, network) {
 
   } else if (network === "development") {
       deployer.deploy(CashMockup).then((deployedCash) => {
-        return deployer.deploy(MarketMockup).then((deployedMarket) => {
-          const augurMarketAddressLocal = [deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address ];
-          return deployer.deploy(OICashMockup, deployedCash.address).then((deployedOICash) => {
-            return deployer.deploy(Token, "Harber.io", "HARB" ).then((deployedToken) => {
-              return deployer.deploy(Harber, andrewsAddress, deployedToken.address, deployedCash.address, augurMarketAddressLocal, deployedOICash.address, augurMainAddressKovan, marketedExpectedResolutionTime).then((deployedHarber) => {
-                return deployer.deploy(MintNFTs, Token.address, deployedHarber.address);
+        return deployer.deploy(DaiVatMockup).then((deployedDaiVat) => {
+          return deployer.deploy(MarketMockup).then((deployedMarket) => {
+            const augurMarketAddressLocal = [deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address,deployedMarket.address ];
+            return deployer.deploy(OICashMockup, deployedCash.address).then((deployedOICash) => {
+              return deployer.deploy(Token, "Harber.io", "HARB" ).then((deployedToken) => {
+                return deployer.deploy(Harber, andrewsAddress, deployedToken.address, deployedCash.address, deployedDaiVat.address, augurMarketAddressLocal, deployedOICash.address, augurMainAddressKovan, marketedExpectedResolutionTime).then((deployedHarber) => {
+                  return deployer.deploy(MintNFTs, Token.address, deployedHarber.address);
+                });
               });
             });
           });

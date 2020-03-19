@@ -153,4 +153,15 @@ library SafeMath {
         require(b != 0, errorMessage);
         return a % b;
     }
+
+    /// @dev I added this one, from: https://github.com/AugurProject/augur/blob/master/packages/augur-core/source/contracts/libraries/math/SafeMathInt256.sol
+    /// @dev it is needed for CashSender and was not in the base SafeMath.sol
+    function min(uint256 a, uint256 b) internal pure returns (uint256) {
+        if (a <= b) {
+            return a;
+        } else {
+            return b;
+        }
+    }
+
 }
