@@ -18,10 +18,6 @@ interface OICash
     function withdraw(uint256 _amount) external returns (bool);
 }
 
-//TODO: change front end to only approve the same amount that is being sent
-// ^ will also need to figure out how to pass this number in the correct format because decimal
-// ^ does not seem to work for more than 100 dai, it needs big number
-
 /// @title Harber
 /// @author Andrew Stanger
 contract Harber is CashSender {
