@@ -1,3 +1,5 @@
+
+[draft- not yet submitted]
 ## Project Overview
 ![harber.io](https://i.imgur.com/TLvMZOC.png)
 ### Project name
@@ -5,7 +7,7 @@ Harber
 ### Team members 
 Andrew Stanger- [LinkedIn](https://www.linkedin.com/in/andrew-stanger-351a3a170/) 
 ### What project are you building 
-Harber is an entirely new form of prediction market. It is completely unlike the existing prediction market solutions in that it creates a market in outcomes using NFTs- you no longer put money on a team, you *own* the team. The MVP is already mostly complete- see a video demo [here](https://www.youtube.com/watch?v=8SL40RFZESU) 
+Harber is an entirely new form of prediction market. It is completely unlike the existing prediction market solutions in that it creates a market in outcomes using NFTs- you no longer put money on a team, you *own* the team. The MVP is already mostly complete- see a video demo [here](https://www.youtube.com/watch?v=8SL40RFZESU).
 
 ![](https://i.imgur.com/BWo1Re2.png)
 ### Gnosis integration
@@ -102,13 +104,14 @@ I am actively seeking a co-founder.
 
 I have been working on this project full time since November 2019, and as such, Phase 1 is already complete- both the back end (including extensive tests) and front end, with the following exceptions:
 * refactor code to integrate Omen (currently it uses Augur)
-* front end is designed and has a React implementation, but needs some love in various places prior to mainnet deployment
+* front end is designed and has a React implementation, but needs some love prior to mainnet deployment
 
 Links to already completed work:\
 [All contracts](https://github.com/mcplums/Harber/tree/master/contracts)\
 [Main contract- Harber.sol](https://github.com/mcplums/Harber/blob/master/contracts/Harber.sol)\
 [15 page 'self audit'](https://docs.google.com/document/d/1r7gaSrs6vHShrW3vOzEEULJSXM06OtS-kkheyhSDGGw/edit)\
 [Front end code](https://github.com/mcplums/HarberFrontEnd/)
+[Video demo](https://www.youtube.com/watch?v=8SL40RFZESU)
 
 The project is already online at [harber.io](https://www.harber.io) (on Kovan).
 
