@@ -5,7 +5,7 @@ Harber
 ### Team members 
 Andrew Stanger- [LinkedIn](https://www.linkedin.com/in/andrew-stanger-351a3a170/) 
 ### What project are you building 
-Harber is an entirely new form of prediction market. It is completely unlike the existing prediction market solutions in that it creates a market in outcomes using NFTs- you no longer put money on a team, you *own* the team. 
+Harber is an entirely new form of prediction market. It is completely unlike the existing prediction market solutions in that it creates a market in outcomes using NFTs- you no longer put money on a team, you *own* the team. The MVP is already mostly complete- see a video demo [here](https://www.youtube.com/watch?v=8SL40RFZESU) 
 
 ![](https://i.imgur.com/BWo1Re2.png)
 ### Gnosis integration
@@ -33,7 +33,7 @@ Friederike Ernst's presentation titled 'A prediction market is not a prediction 
 
 ### Phase 1- MVP- Harberger Tax rules
 
-Phase 1 is the 'main' Harber product. There will be a contract specific to an event- for example, the 19/20 English Premier League. Each event will have only a single winner. There is one NFT for each team- i.e. in the case of the English Premier League, there will be 20 tokens. At contract initiation, each NFT will have a price of zero and will be owned by the contract itself. Any user is free to 'rent' a team/NFT at any time- in order to do this, they set a daily rental price (in Dai) and deposit Dai to fund the rent. If a token is already owned, no problem- just set a higher rental price and you will immediately become the new owner. If your deposit runs out, ownership reverts to the previous owner, at the previous price.
+Phase 1 is the 'main' Harber product. There will be a contract specific to an event- for example, the 19/20 English Premier League, or the 2020 U.S. Presidential Election. Each event will have only a single winner. There is one NFT for each team- i.e. in the case of the English Premier League, there will be 20 tokens. At contract initiation, each NFT will have a price of zero and will be owned by the contract itself. Any user is free to 'rent' a team/NFT at any time- in order to do this, they set a daily rental price (in Dai) and deposit Dai to fund the rent. If a token is already owned, no problem- just set a higher rental price and you will immediately become the new owner. If your deposit runs out, ownership reverts to the previous owner, at the previous price.
 
 All rent paid among all the tokens will go into a central pot, and will be paid out to all the owners of the winning token, *in proportion to how long they have owned it*. This makes Harber completely unique among gambling products- your winnings are no longer determined by how much money you paid, but instead simply by *how long you have owned the team*. 
 
@@ -76,11 +76,13 @@ Let us use the example of the Olympics (this is my intended first use case of Ph
 * Joe wishes to buy 400 tickets at a price of 2 DAI each, and pays 800 DAI
 * Andreas wishes to buy 400 tickets at a price of 3 DAI each, and pays 1200 DAI
 
-The 1000th most expensive ticket is worth 1 DAI, so all tickets are sold at this price. Andreas receives his full allocation of 400 tickets and is returned 800 DAI. Joe also receives his full allocation of 400 tickets and is returned 400 DAI. Gavin only receives 200 of his 400 tickets, and is returned 200 DAI. Vitalik does not receive any tickets, and is returned 200 DAI.
+The 1000th most expensive ticket is worth 1 DAI, so all tickets are sold at this price. Andreas receives his full allocation of 400 tickets and is returned 800 DAI. Joe also receives his full allocation of 400 tickets and is returned 400 DAI. Gavin only receives 200 of his 400 tickets, and is returned 200 DAI. Vitalik does not receive any tickets, and is returned 200 DAI. 
+
+The 100 NFTs, each representing a country, are randomly allocated to the holders of the 1000 tickets. 
 
 There is now a total of 1000 DAI in the contract to be paid out. Assume that one of Gavin's 200 tickets wins him the USA token. Assume further, that the total number of gold medals among all 100 teams is 1000, and that USA wins 10%, or 100 of these. Gavin will therefore receive winnings of 100 DAI, 10% of the total pot, for owning this token. The remaining 900 DAI will be paid out to the owners of all the other 99 tokens. 
 
-Phase 2 has been designed to appeal to those who would not normally be interested in gambling. Using this product is more akin to a lottery than gambling- a lottery with a unique twist. Further, lottery tickets (or the NFTs themselves) would make fantastic gifts, especially for new users. 
+Phase 2 has been designed to appeal to those who would not normally be interested in gambling. Using this product is more akin to a lottery than gambling- a lottery with a unique twist. Further, lottery tickets (or the NFTs themselves) would make fantastic gifts, especially for new Ethereum users. 
 
 It is my intention for there to be various markets running simultaneously for the 'main', Phase 1 product, but there to only ever be a single lottery running at any time, in order to give the latter a feeling of something unique and special.
 
@@ -100,7 +102,7 @@ I am actively seeking a co-founder.
 
 I have been working on this project full time since November 2019, and as such, Phase 1 is already complete- both the back end (including extensive tests) and front end, with the following exceptions:
 * refactor code to integrate Omen (currently it uses Augur)
-* front end is designed and has a full React implementation, but needs some love prior to mainnet deployment (such as implementing Consensys' Rimble UI for input validation and transaction flow). There is one additional page ('my account') that needs both a design and implementation. 
+* front end is designed and has a React implementation, but needs some love in various places prior to mainnet deployment
 
 Links to already completed work:\
 [All contracts](https://github.com/mcplums/Harber/tree/master/contracts)\
@@ -116,7 +118,7 @@ Cost: $3k. $2k one month's living expenses, $1k additional freelancer costs. Cos
 
 **Phase 2**
 
-Phase 1 has taken four months of full time work to get to the above point. Phase 2 will be considerably quicker, due to a) my increased familiarity with Ethereum and b) much of the front end design and implementation will carry over to Phase 2. I therefore estimate two months for this phase (i.e. completion in June 2020- in time for the Olympics). From an engineering standpoint, the primary hurdle will be the randomness required when allocating NFTs to lottery ticket holders. I am aware of the complexity of randomness in Ethereum. I will be seeking the advice of Justin Drake, a personal friend and Eth 2.0 researcher, who is an expert in this area. He is already advising the PoolTogether project on this point.
+Phase 1 has taken four months of full time work to get to the above point. Phase 2 will be considerably quicker, due to a) my increased familiarity with Ethereum and b) much of the front end design and implementation will carry over to Phase 2. I therefore estimate two months for this phase (i.e. completion in June 2020- in time for the Olympics- although at time of going to press, this will probably be cancelled!). From an engineering standpoint, the primary hurdle will be the randomness required when allocating NFTs to lottery ticket holders. I am aware of the complexity of randomness in Ethereum. I will be seeking the advice of Justin Drake, a personal friend and Eth 2.0 researcher, who is an expert in this area. He is already advising the PoolTogether project on this point.
 
 Deliverables: completed contracts, fully feature complete front end.
 
