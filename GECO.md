@@ -110,7 +110,7 @@ Links to already completed work:\
 [All contracts](https://github.com/mcplums/Harber/tree/master/contracts)\
 [Main contract- Harber.sol](https://github.com/mcplums/Harber/blob/master/contracts/Harber.sol)\
 [15 page 'self audit'](https://docs.google.com/document/d/1r7gaSrs6vHShrW3vOzEEULJSXM06OtS-kkheyhSDGGw/edit)\
-[Front end code](https://github.com/mcplums/HarberFrontEnd/)
+[Front end code](https://github.com/mcplums/HarberFrontEnd/)\
 [Video demo](https://www.youtube.com/watch?v=8SL40RFZESU)
 
 The project is already online at [harber.io](https://www.harber.io) (on Kovan).
