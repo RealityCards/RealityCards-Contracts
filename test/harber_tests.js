@@ -17,9 +17,6 @@ var DaiVatMockup = artifacts.require("./mockups/DaiVatMockup.sol");
 
 const delay = duration => new Promise(resolve => setTimeout(resolve, duration));
 
-// These test assume that 100 dai (in wei-dai or whatever) is sent with the getTestDai function and numberoftokens = 20, and that usingAugur = false
-// These tests do NOT reset the blockchain after each test. In retrospect this was a mistake, as it wasted a huge amount of time. harber_test2 fixes this. 
-
 contract('HarberTests', (accounts) => {
 
   let token;

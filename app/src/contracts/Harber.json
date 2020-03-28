@@ -53063,8 +53063,7 @@
     }
   },
   "schemaVersion": "3.0.19",
-  "updatedAt": "2020-03-21T12:29:44.976Z",
-  "networkType": "ethereum",
+  "updatedAt": "2020-03-27T12:22:58.571Z",
   "devdoc": {
     "author": "Andrew Stanger",
     "methods": {

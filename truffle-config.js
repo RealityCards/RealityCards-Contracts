@@ -4,6 +4,8 @@ const mnemonic = 'defense ready lady corn other ride rapid collect avocado tongu
 const mainnetProviderUrl = 'https://mainnet.infura.io/v3/e811479f4c414e219e7673b6671c2aba'; 
 const rinkebyProviderUrl = 'https://rinkeby.infura.io/v3/e811479f4c414e219e7673b6671c2aba';
 const kovanProviderUrl = 'https://kovan.infura.io/v3/d460ac4e71f24d869c8b75119ebe4213';
+const ropstenProviderUrl = 'https://ropsten.infura.io/v3/e811479f4c414e219e7673b6671c2aba';
+
 
 
 
@@ -30,6 +32,20 @@ module.exports = {
     kovan: {
       network_id: 42,
       provider: new HDWalletProvider(mnemonic, kovanProviderUrl, 0),
+      gas: 10000000, //10m is 1000000000
+      gasPrice: 1000000000, // 1 gwei
+      skipDryRun: true,
+    },
+    rinkeby: {
+      network_id: 4,
+      provider: new HDWalletProvider(mnemonic, rinkebyProviderUrl, 0),
+      gas: 10000000, //10m is 1000000000
+      gasPrice: 1000000000, // 1 gwei
+      skipDryRun: true,
+    },
+    ropsten: {
+      network_id: 3,
+      provider: new HDWalletProvider(mnemonic, ropstenProviderUrl, 0),
       gas: 10000000, //10m is 1000000000
       gasPrice: 1000000000, // 1 gwei
       skipDryRun: true,
