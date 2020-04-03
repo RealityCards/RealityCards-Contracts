@@ -10,8 +10,7 @@ const {
 const Token = artifacts.require('./ERC721Full.sol');
 var Harber = artifacts.require('./Harber.sol');
 var CashMockup = artifacts.require("./mockups/CashMockup.sol");
-var MarketMockup = artifacts.require("./mockups/MarketMockup.sol");
-var OICashMockup = artifacts.require("./mockups/OICashMockup.sol");
+var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 const MintNFTs = artifacts.require("./MintNFTs.sol");
 var DaiVatMockup = artifacts.require("./mockups/DaiVatMockup.sol");
 
@@ -39,38 +38,11 @@ contract('HarberTests', (accounts) => {
   beforeEach(async () => {
     cash = await CashMockup.new();
     daiVat = await DaiVatMockup.new();
-    market0 = await MarketMockup.new();
-    market1 = await MarketMockup.new();
-    market2 = await MarketMockup.new();
-    market3 = await MarketMockup.new();
     var marketExpectedResolutionTime = await time.latest();
 
-    const augurMarketAddress = [
-      market0.address,
-      market1.address,
-      market2.address,
-      market3.address,
-      market3.address,
-      market3.address,
-      market3.address,
-      market3.address,
-      market3.address,
-      market3.address,
-      market3.address,
-      market3.address,
-      market3.address,
-      market3.address,
-      market3.address,
-      market3.address,
-      market3.address,
-      market3.address,
-      market3.address,
-      market3.address
-    ];
-
-    augur = await OICashMockup.new(cash.address);
+    realitio = await RealitioMockup.new();
     token = await Token.new("Harber.io", "HARB");
-    harber = await Harber.new(andrewsAddress, token.address, cash.address, daiVat.address, augurMarketAddress, augur.address, augurMainAddress, marketExpectedResolutionTime);
+    harber = await Harber.new(andrewsAddress, token.address, cash.address, daiVat.address, realitio.address, marketExpectedResolutionTime);
     mintNFTs = await MintNFTs.new(token.address, harber.address);
   });
 

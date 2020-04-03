@@ -3,21 +3,10 @@ import "./interfaces/IERC721Full.sol";
 import "./utils/SafeMath.sol";
 import "./CashSender.sol";
 
-// new tests to do:
-
-/// @title Augur Markets interface
-/// @notice Gets the winner of each market from Augur
-interface IMarket 
-{
-    function getWinningPayoutNumerator(uint256 _outcome) external view returns (uint256);
-}
-
-/// @title Augur OICash interface
-/// @notice adding or removing open interest to secure the Augur Oracle
-interface OICash
-{
-    function deposit(uint256 _amount) external returns (bool);
-    function withdraw(uint256 _amount) external returns (bool);
+/// @title Realit.io interface
+interface Realitio {
+    function askQuestion(uint256 template_id, string calldata question, address arbitrator, uint32 timeout, uint32 opening_ts, uint256 nonce) external payable returns (bytes32);
+    function resultFor(bytes32 question_id) external view returns (bytes32);
 }
 
 /// @title Harber
@@ -34,9 +23,8 @@ contract Harber is CashSender {
     /// CONTRACT VARIABLES
     /// ERC721:
     IERC721Full public token;
-    /// Augur contracts:
-    IMarket[numberOfTokens] public market;
-    OICash public oicash;
+    /// Realitio contract:
+    Realitio public realitio;
 
     /// UINTS, ADDRESSES, BOOLS
     /// @dev my whiskey fund, for my 1% cut
@@ -53,24 +41,24 @@ contract Harber is CashSender {
     uint256[numberOfTokens] public timeAcquired; 
     /// @dev tracks the position of the current owner in the ownerTracker mapping
     uint256[numberOfTokens] public currentOwnerIndex; 
+    /// @dev the question ID of the question on realitio
+    bytes32 public questionId;
   
     /// WINNING OUTCOME VARIABLES
     /// @dev start with invalid winning outcome
     uint256 public winningOutcome = 42069; 
     //// @dev so the function to manually set the winner can only be called long after 
     /// @dev ...it should have resolved via Augur. Must be public so others can verify it is accurate. 
-    uint256 public marketExpectedResolutionTime; 
+    uint32 public marketExpectedResolutionTime; 
 
     /// MARKET RESOLUTION VARIABLES
     /// @dev step1:
     bool public marketsEnded = false;
     /// @dev step2:
     bool public step2Complete = false; // must be false for step2, true for step3
-    bool public marketsResolvedWithoutErrors = false; // set in step 2. If true, normal payout. If false, return all funds
+    bool public questionResolvedInvalid = true; // set in step 2. If false, normal payout. If true, return all funds
     /// @dev step 3:
     bool public step3Complete = false; // must be false for step3, true for complete
-    /// @dev complete:
-    uint256 public daiAvailableToDistribute;
     
     ///  STRUCTS
     struct purchase {
@@ -97,26 +85,30 @@ contract Harber is CashSender {
     mapping (uint256 => uint256) public collectedPerToken;
 
     ////////////// CONSTRUCTOR //////////////
-    constructor(address _andrewsAddress, address _addressOfToken, address _addressOfCashContract, address _addressOfVatDaiContract, address[numberOfTokens] memory _addressesOfMarkets, address _addressOfOICashContract, address _addressOfMainAugurContract, uint _marketExpectedResolutionTime) public 
+    constructor(address _andrewsAddress, address _addressOfToken, address _addressOfCashContract, address _addressOfVatDaiContract, address _addressOfRealitioContract, uint32 _marketExpectedResolutionTime) public payable
     {
         //assign arguments to relevant variables
         marketExpectedResolutionTime = _marketExpectedResolutionTime;
         andrewsAddress = _andrewsAddress;
-        marketAddresses = _addressesOfMarkets; 
         
         // external contract variables:
         token = IERC721Full(_addressOfToken);
-        oicash = OICash(_addressOfOICashContract);
+        realitio = Realitio(_addressOfRealitioContract);
         initializeCashSender(_addressOfVatDaiContract, _addressOfCashContract);
 
         // initialise arrays
         for (uint i = 0; i < numberOfTokens; i++) {
             currentOwnerIndex[i]=0;
-            market[i] = IMarket(_addressesOfMarkets[i]);
         }
      
-        // approve Augur contract to transfer this contract's dai
-        cashApprove(_addressOfMainAugurContract,(2**256)-1);
+        // Create the question on Realitio
+        uint256 template_id = 2;
+        string memory question = 'Who will win the Premier League 20/20␟"X","Y","Z"␟news-politics␟en_US';
+        address arbitrator = 0xA6EAd513D05347138184324392d8ceb24C116118; // to change
+        uint32 timeout = 86400; // 24 hours
+        uint32 opening_ts = _marketExpectedResolutionTime;
+        uint256 nonce = 0;
+        questionId = realitio.askQuestion.value(msg.value)(template_id, question, arbitrator, timeout, opening_ts, nonce);
     } 
 
     event LogNewRental(address indexed newOwner, uint256 indexed newPrice, uint256 indexed tokenId);
@@ -129,7 +121,6 @@ contract Harber is CashSender {
     event LogExit(uint256 indexed tokenId);
     event LogStep1Complete(bool indexed didTheEventFinish);
     event LogStep2Complete(bool indexed didAugurMarketsResolve, uint256 indexed winningOutcome, bool indexed didAugurMarketsResolveCorrectly);
-    event LogStep3Complete(uint256 indexed daiAvailableToDistribute);
     event LogWinningsPaid(address indexed paidTo, uint256 indexed amountPaid);
     event LogRentReturned(address indexed returnedTo, uint256 indexed amountReturned);
 
@@ -211,56 +202,13 @@ contract Harber is CashSender {
         }
     }
 
-    ////////////// AUGUR FUNCTIONS //////////////
-    // * internal * 
-    /// @notice send the Dai to Augur
-    function _augurDeposit(uint256 _rentOwed) internal {
-        require(oicash.deposit(_rentOwed), "Augur deposit failed");
-    }
-
-    // * internal *
-    /// @notice receive the Dai back from Augur
-    function _augurWithdraw() internal {
-        require(oicash.withdraw(totalCollected), "Augur withdraw failed");
-    }
-
-    // * internal * 
-    /// @notice THIS FUNCTION HAS NOT BEEN TESTED ON AUGUR YET
-    /// @notice checks if all X (x = number of tokens = number of tokens) markets have resolved to either yes, no, or invalid
-    /// @return true if yes, false if no
-    function _haveAllAugurMarketsResolved() internal view returns(bool) {   
-        uint256 _resolvedOutcomesCount = 0;
-
-        for (uint i = 0; i < numberOfTokens; i++) {
-            // binary market has three outcomes: 0 (invalid), 1 (yes), 2 (no)
-            if (market[i].getWinningPayoutNumerator(0) > 0 || market[i].getWinningPayoutNumerator(1) > 0 || market[i].getWinningPayoutNumerator(2) > 0  ) {
-                _resolvedOutcomesCount = _resolvedOutcomesCount.add(1);
-            }
-        }
-        // returns true if all resolved, false otherwise
-        return (_resolvedOutcomesCount == numberOfTokens);
-    }
-
-    // * internal * 
-    /// @notice THIS FUNCTION HAS NOT BEEN TESTED ON AUGUR YET
-    /// @notice checks if all markets have resolved without conflicts or errors
-    /// @return true if yes, false if no
-    /// @dev this function will also set the winningOutcome variable
-    function _getWinnerAndCheckIfMarketsResolvedWithoutErrors() internal returns(bool) {   
-        uint256 _winningOutcomesCount = 0;
-        uint256 _invalidOutcomesCount = 0;
-
-        for (uint i = 0; i < numberOfTokens; i++) {
-            if (market[i].getWinningPayoutNumerator(0) > 0) {
-                _invalidOutcomesCount = _invalidOutcomesCount.add(1);
-            }
-            if (market[i].getWinningPayoutNumerator(1) > 0) {
-                winningOutcome = i; // <- the winning outcome (a global variable) is set here
-                _winningOutcomesCount = _winningOutcomesCount.add(1);
-            }
-        }
-
-        return (_winningOutcomesCount == 1 && _invalidOutcomesCount == 0);
+    ////////////// REALITIO FUNCTION //////////////
+    /// @notice gets the winning outcome from realitio
+    /// @dev the number is equivilent to tokenId
+    /// @dev this function call will revert if it has not yet resolved
+    function _getWinner() internal view returns(uint256) {
+        bytes32 _winningOutcome = realitio.resultFor(questionId);
+        return uint256(_winningOutcome);
     }
 
     ////////////// MARKET RESOLUTION FUNCTIONS ////////////// 
@@ -271,7 +219,7 @@ contract Harber is CashSender {
     /// @dev can be called by anyone 
     function step1checkMarketsEnded() external {
         require(marketsEnded == false, "Step1 can only be completed once");
-        require(marketExpectedResolutionTime < (now - 3600), "Markets have not finished yet");
+        require(marketExpectedResolutionTime < (now - 3600), "Competition has not finished yet");
         // do a final rent collection before the contract is locked down
         collectRentAllTokens();
         // lock everything down
@@ -282,17 +230,17 @@ contract Harber is CashSender {
     /// @notice the second of three functions which must be called, one after the other, to conclude the competition
     /// @notice this function checks whether the Augur markets have resolved, and if yes, whether they resolved correct or not
     /// @dev can be called by anyone 
-    function step2checkMarketsResolved() external {
-        require(marketsEnded == true, "Must wait for markets to end");
+    function step2getWinner() external {
+        require(marketsEnded == true, "Must wait for competition to end");
         require(step2Complete == false, "Step2 can only be completed once");
-        // first check if all X markets have all resolved one way or the other
-        require(_haveAllAugurMarketsResolved(), "Markets have not resolved yet");
+        // get the winner
+        winningOutcome = _getWinner();
         step2Complete = true;
-        // now check if they all resolved without errors. It is set to false upon contract initialisation 
-        if (_getWinnerAndCheckIfMarketsResolvedWithoutErrors()) {
-            marketsResolvedWithoutErrors = true;
+        // check if question resolved invalid
+        if (winningOutcome !=  ((2**256)-1)) {
+            questionResolvedInvalid = false;
         }
-        emit LogStep2Complete(true, winningOutcome, marketsResolvedWithoutErrors);
+        emit LogStep2Complete(true, winningOutcome, questionResolvedInvalid);
     }
 
     /// @notice emergency function in case the augur markets never resolve for whatever reason
@@ -316,26 +264,11 @@ contract Harber is CashSender {
         emit LogStep2Complete(false, winningOutcome, false);
     }
 
-    /// @notice the second of the two functions which must be called, one after the other, to conclude the competition
-    /// @dev gets funds back from Augur, gets the available funds for distribution
-    /// @dev can be called by anyone, but only once 
-    function step3withdrawFromAugur() external {
-        require(step2Complete == true, "Must wait for market resolution");
-        require(step3Complete == false, "Step3 should only be run once");
-        step3Complete = true;
-        uint256 _balanceBefore = cashBalance(address(this));
-        _augurWithdraw();
-        uint256 _balanceAfter = cashBalance(address(this));
-        // daiAvailableToDistribute therefore does not include unused deposits
-        daiAvailableToDistribute = _balanceAfter.sub(_balanceBefore);
-        emit LogStep3Complete(daiAvailableToDistribute);
-    }
-
     /// @notice the final function of the competition resolution process. Pays out winnings, or returns funds, as necessary
     /// @dev users pull dai into their ac   count. 
     function complete() external {
-        require(step3Complete == true, "Step3 must be completed first");
-        if (marketsResolvedWithoutErrors) {
+        require(step2Complete == true, "Step3 must be completed first");
+        if (!questionResolvedInvalid) {
             _payoutWinnings();
         } else {
              _returnRent();
@@ -349,7 +282,7 @@ contract Harber is CashSender {
         uint256 _winnersTimeHeld = timeHeld[winningOutcome][msg.sender];
         require(_winnersTimeHeld > 0, "You are not a winner, or winnings already paid");
         timeHeld[winningOutcome][msg.sender] = 0; // otherwise they can keep paying themselves over and over
-        uint256 _numerator = daiAvailableToDistribute.mul(_winnersTimeHeld);
+        uint256 _numerator = totalCollected.mul(_winnersTimeHeld);
         uint256 _winningsToTransfer = _numerator.div(totalTimeHeld[winningOutcome]);
         cashTransfer(msg.sender, _winningsToTransfer);
         emit LogWinningsPaid(msg.sender, _winningsToTransfer);
@@ -362,10 +295,8 @@ contract Harber is CashSender {
         uint256 _rentCollected = collectedPerUser[msg.sender];
         require(_rentCollected > 0, "You paid no rent, or rent already returned");
         collectedPerUser[msg.sender] = 0; // otherwise they can keep paying themselves over and over
-        uint256 _numerator = daiAvailableToDistribute.mul(_rentCollected);
-        uint256 _rentToToReturn = _numerator.div(totalCollected);
-        cashTransfer(msg.sender, _rentToToReturn);
-        emit LogRentReturned(msg.sender, _rentToToReturn);
+        cashTransfer(msg.sender, _rentCollected);
+        emit LogRentReturned(msg.sender, _rentCollected);
     }
 
     /// @notice withdraw full deposit after markets have resolved
@@ -511,7 +442,6 @@ contract Harber is CashSender {
             collectedPerToken[_tokenId] = collectedPerToken[_tokenId].add(_rentOwed);
             totalCollected = totalCollected.add(_rentOwed);
 
-            _augurDeposit(_rentOwed);
             emit LogRentCollection(_rentOwed, _tokenId);
         }
 
