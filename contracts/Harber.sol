@@ -3,6 +3,8 @@ import "./interfaces/IERC721Full.sol";
 import "./utils/SafeMath.sol";
 import "./CashSender.sol";
 
+// new tests to do:
+
 /// @title Augur Markets interface
 /// @notice Gets the winner of each market from Augur
 interface IMarket 
@@ -91,6 +93,8 @@ contract Harber is CashSender {
     mapping (uint256 => mapping (address => uint256) ) public deposits; 
     /// @dev keeps track of all the rent paid by each user. So that it can be returned in case of an invalid market outcome. Only required in this instance. 
     mapping (address => uint256) public collectedPerUser;
+    /// @dev keeps track of all the rent paid for each token. Front end only
+    mapping (uint256 => uint256) public collectedPerToken;
 
     ////////////// CONSTRUCTOR //////////////
     constructor(address _andrewsAddress, address _addressOfToken, address _addressOfCashContract, address _addressOfVatDaiContract, address[numberOfTokens] memory _addressesOfMarkets, address _addressOfOICashContract, address _addressOfMainAugurContract, uint _marketExpectedResolutionTime) public 
@@ -504,6 +508,7 @@ contract Harber is CashSender {
             // it is also essential that collectedPerUser and totalCollected are all incremented together
             // such that the sum of the first two (individually) is equal to the third
             collectedPerUser[_currentOwner] = collectedPerUser[_currentOwner].add(_rentOwed);
+            collectedPerToken[_tokenId] = collectedPerToken[_tokenId].add(_rentOwed);
             totalCollected = totalCollected.add(_rentOwed);
 
             _augurDeposit(_rentOwed);
