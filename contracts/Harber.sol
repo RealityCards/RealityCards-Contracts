@@ -1,18 +1,27 @@
 pragma solidity 0.5.13;
 import "./interfaces/IERC721Full.sol";
 import "./utils/SafeMath.sol";
-import "./CashSender.sol";
 
-/// @title Realit.io interface
+/// @title Realit.io contract interface
 interface Realitio {
     function askQuestion(uint256 template_id, string calldata question, address arbitrator, uint32 timeout, uint32 opening_ts, uint256 nonce) external payable returns (bytes32);
     function resultFor(bytes32 question_id) external view returns (bytes32);
     function isFinalized(bytes32 question_id) external view returns (bool);
 }
 
+/// @title Dai contract interface
+interface Cash 
+{
+    function approve(address _spender, uint256 _amount) external returns (bool);
+    function balanceOf(address _ownesr) external view returns (uint256);
+    function faucet(uint256 _amount) external;
+    function transfer(address _to, uint256 _amount) external returns (bool);
+    function transferFrom(address _from, address _to, uint256 _amount) external returns (bool);
+}
+
 /// @title Harber
 /// @author Andrew Stanger
-contract Harber is CashSender {
+contract Harber {
 
     using SafeMath for uint256;
 
@@ -22,10 +31,9 @@ contract Harber is CashSender {
     uint256 constant public numberOfTokens = 20;
 
     /// CONTRACT VARIABLES
-    /// ERC721:
     IERC721Full public token;
-    /// Realitio contract:
     Realitio public realitio;
+    Cash public cash; 
 
     /// UINTS, ADDRESSES, BOOLS
     /// @dev my whiskey fund, for my 1% cut
@@ -86,7 +94,7 @@ contract Harber is CashSender {
     mapping (uint256 => uint256) public collectedPerToken;
 
     ////////////// CONSTRUCTOR //////////////
-    constructor(address _andrewsAddress, address _addressOfToken, address _addressOfCashContract, address _addressOfVatDaiContract, address _addressOfRealitioContract, uint32 _marketExpectedResolutionTime) public
+    constructor(address _andrewsAddress, address _addressOfToken, address _addressOfCashContract, address _addressOfRealitioContract, uint32 _marketExpectedResolutionTime) public
     {
         //assign arguments to relevant variables
         marketExpectedResolutionTime = _marketExpectedResolutionTime;
@@ -95,7 +103,7 @@ contract Harber is CashSender {
         // external contract variables:
         token = IERC721Full(_addressOfToken);
         realitio = Realitio(_addressOfRealitioContract);
-        initializeCashSender(_addressOfVatDaiContract, _addressOfCashContract);
+        cash = Cash(_addressOfCashContract);
 
         // initialise arrays
         for (uint i = 0; i < numberOfTokens; i++) {
@@ -203,6 +211,20 @@ contract Harber is CashSender {
             return now + liveDepositAbleToWithdraw(_tokenId).div(pps);
         }
     }
+    
+    ////////////// DAI CONTRACT FUNCTIONS ////////////// 
+
+    // * internal * 
+    /// @notice common function for all outgoing DAI transfers
+    function _sendCash(address _to, uint256 _amount) internal { 
+        require(cash.transfer(_to,_amount), "Cash transfer failed"); 
+    }
+
+    // * internal * 
+    /// @notice common function for all incoming DAI transfers
+    function _receiveCash(address _from, uint256 _amount) internal {  
+        require(cash.transferFrom(_from, address(this), _amount), "Cash transfer failed");
+    }
 
     ////////////// REALITIO FUNCTIONS //////////////
     /// @dev all external calls to the Realitio contract go here
@@ -299,7 +321,7 @@ contract Harber is CashSender {
         timeHeld[winningOutcome][msg.sender] = 0; // otherwise they can keep paying themselves over and over
         uint256 _numerator = totalCollected.mul(_winnersTimeHeld);
         uint256 _winningsToTransfer = _numerator.div(totalTimeHeld[winningOutcome]);
-        cashTransfer(msg.sender, _winningsToTransfer);
+        _sendCash(msg.sender, _winningsToTransfer);
         emit LogWinningsPaid(msg.sender, _winningsToTransfer);
     }
 
@@ -310,7 +332,7 @@ contract Harber is CashSender {
         uint256 _rentCollected = collectedPerUser[msg.sender];
         require(_rentCollected > 0, "You paid no rent, or rent already returned");
         collectedPerUser[msg.sender] = 0; // otherwise they can keep paying themselves over and over
-        cashTransfer(msg.sender, _rentCollected);
+        _sendCash(msg.sender, _rentCollected);
         emit LogRentReturned(msg.sender, _rentCollected);
     }
 
@@ -327,7 +349,7 @@ contract Harber is CashSender {
 
             if (_depositToReturn > 0) {
                 deposits[i][msg.sender] = 0;
-                cashTransfer(msg.sender, _depositToReturn);
+                _sendCash(msg.sender, _depositToReturn);
                 emit LogDepositWithdrawal(_depositToReturn, i, msg.sender);
             }
         }
@@ -372,7 +394,7 @@ contract Harber is CashSender {
             // update timeAcquired for the front end
             timeAcquired[_tokenId] = now;
             _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
-            cashTransferFrom(msg.sender, address(this), _deposit);
+            _receiveCash(msg.sender, _deposit);
             emit LogNewRental(msg.sender, _newPrice, _tokenId); 
         }
     }
@@ -471,7 +493,7 @@ contract Harber is CashSender {
     /// @dev ... without collecing rent first (otherwise it would be collected twice, possibly causing logic errors)
     function _depositDai(uint256 _dai, uint256 _tokenId) internal {
         deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].add(_dai);
-        cashTransferFrom(msg.sender, address(this), _dai);
+        _receiveCash(msg.sender, _dai);
         emit LogDepositIncreased(_dai, _tokenId, msg.sender);
     }
 
@@ -492,7 +514,7 @@ contract Harber is CashSender {
         if(_currentOwner == msg.sender && deposits[_tokenId][msg.sender] == 0) {
             _revertToPreviousOwner(_tokenId);
         }
-        cashTransfer(msg.sender, _dai);
+        _sendCash(msg.sender, _dai);
     }
 
     /// @notice if a users deposit runs out, either return to previous owner or foreclose

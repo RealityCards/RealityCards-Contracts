@@ -12,7 +12,6 @@ var Harber = artifacts.require('./Harber.sol');
 var CashMockup = artifacts.require("./mockups/CashMockup.sol");
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 const MintNFTs = artifacts.require("./MintNFTs.sol");
-var DaiVatMockup = artifacts.require("./mockups/DaiVatMockup.sol");
 
 const delay = duration => new Promise(resolve => setTimeout(resolve, duration));
 
@@ -32,17 +31,12 @@ contract('HarberTests', (accounts) => {
   user8 = accounts[8];
   andrewsAddress = accounts[9];
 
-  const augurMainAddress = '0x62214e5c919332AC17c5e5127383B84378Ef9C1d'; // this can be anything 
-  
-
   beforeEach(async () => {
-    cash = await CashMockup.new();
-    daiVat = await DaiVatMockup.new();
     var marketExpectedResolutionTime = await time.latest();
-
+    cash = await CashMockup.new();
     realitio = await RealitioMockup.new();
     token = await Token.new("Harber.io", "HARB");
-    harber = await Harber.new(andrewsAddress, token.address, cash.address, daiVat.address, realitio.address, marketExpectedResolutionTime);
+    harber = await Harber.new(andrewsAddress, token.address, cash.address, realitio.address, marketExpectedResolutionTime);
     mintNFTs = await MintNFTs.new(token.address, harber.address);
   });
 
