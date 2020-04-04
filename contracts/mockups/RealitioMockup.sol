@@ -1,13 +1,10 @@
 pragma solidity 0.5.13;
 
-import "./../utils/SafeMath.sol";
-
 // this is only for ganache testing. Public chain deployments will use the existing Realitio contracts. 
 
 contract RealitioMockup
 
 {
-
     uint result = 420;
     uint stfu;
     string gtfo;
@@ -38,10 +35,12 @@ contract RealitioMockup
     // 69 = invalid
     function resultFor(bytes32 question_id) external view returns (bytes32) {
         require(result != 420);
+        require(question_id == 0x8d293509129e26299990826db10c48241be5f59f2e4f61c0c9d550e4451e1a38);
         return bytes32(result);
     }
 
     function isFinalized(bytes32 question_id) external view returns (bool) {
+        require(question_id == 0x8d293509129e26299990826db10c48241be5f59f2e4f61c0c9d550e4451e1a38);
         if (result == 420) {
             return false;
         } else {

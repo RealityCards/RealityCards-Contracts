@@ -86,7 +86,7 @@ contract Harber is CashSender {
     mapping (uint256 => uint256) public collectedPerToken;
 
     ////////////// CONSTRUCTOR //////////////
-    constructor(address _andrewsAddress, address _addressOfToken, address _addressOfCashContract, address _addressOfVatDaiContract, address _addressOfRealitioContract, uint32 _marketExpectedResolutionTime) public payable
+    constructor(address _andrewsAddress, address _addressOfToken, address _addressOfCashContract, address _addressOfVatDaiContract, address _addressOfRealitioContract, uint32 _marketExpectedResolutionTime) public
     {
         //assign arguments to relevant variables
         marketExpectedResolutionTime = _marketExpectedResolutionTime;
@@ -104,12 +104,12 @@ contract Harber is CashSender {
      
         // Create the question on Realitio
         uint256 template_id = 2;
-        string memory question = 'Who will win the Premier League 20/20␟"X","Y","Z"␟news-politics␟en_US';
+        string memory question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
         address arbitrator = 0xA6EAd513D05347138184324392d8ceb24C116118; // to change
         uint32 timeout = 86400; // 24 hours
         uint32 opening_ts = _marketExpectedResolutionTime;
         uint256 nonce = 0;
-        questionId = realitio.askQuestion.value(msg.value)(template_id, question, arbitrator, timeout, opening_ts, nonce);
+        questionId = _postQuestion(template_id, question, arbitrator, timeout, opening_ts, nonce);
     } 
 
     event LogNewRental(address indexed newOwner, uint256 indexed newPrice, uint256 indexed tokenId);
@@ -205,10 +205,15 @@ contract Harber is CashSender {
     }
 
     ////////////// REALITIO FUNCTIONS //////////////
-    /// @dev all external calls to the Realitio contract go here, except creating the question which happens in the constructor
+    /// @dev all external calls to the Realitio contract go here
+
+    /// @notice posts the question to realit.io
+    function _postQuestion(uint256 template_id, string memory question, address arbitrator, uint32 timeout, uint32 opening_ts, uint256 nonce) internal returns (bytes32) {
+        return realitio.askQuestion(template_id, question, arbitrator, timeout, opening_ts, nonce);
+    }
 
     /// @notice gets the winning outcome from realitio
-    /// @dev the number is equivilent to tokenId
+    /// @dev the returned value is equivilent to tokenId
     /// @dev this function call will revert if it has not yet resolved
     function _getWinner() internal view returns(uint256) {
         bytes32 _winningOutcome = realitio.resultFor(questionId);
@@ -345,6 +350,7 @@ contract Harber is CashSender {
         uint256 _oneHoursDeposit = _newPrice.div(24);
         require(_newPrice >= _currentPricePlusTenPercent, "Price must be at least 10% higher than current price");
         require(_deposit >= _oneHoursDeposit, "You must deposit enough to cover one hour's rent");
+        require(_newPrice >= 10000000000000000, "Minimum rental 0.01 Dai");
         
         _collectRent(_tokenId);
         address _currentOwner = token.ownerOf(_tokenId);
@@ -491,27 +497,24 @@ contract Harber is CashSender {
 
     /// @notice if a users deposit runs out, either return to previous owner or foreclose
     function _revertToPreviousOwner(uint256 _tokenId) internal {
-        bool _reverted = false;
         bool _toForeclose = false;
-        uint256 _loopCount = 0;
         uint256 _index;
         address _previousOwner;
 
-        while (_reverted == false) {
+        // loop max ten times before just assigning it to that owner, to prevent block limit
+        for (uint i=0; i < 10; i++)  {
             currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].sub(1); // currentOwnerIndex will now point to  previous owner
             _index = currentOwnerIndex[_tokenId]; // just for readability
             _previousOwner = ownerTracker[_tokenId][_index].owner;
 
             // if no previous owners. price -> zero, foreclose
             // if previous owner still has a deposit, transfer to them, update the price to what it used to be
-            // loop max ten times before just assigning it to that owner, to prevent block limit
             if (_index == 0) {
                 _toForeclose = true;
-                _reverted = true;
-            } else if ( (deposits[_tokenId][_previousOwner] > 0) || _loopCount > 9 ) {
-                _reverted = true;
+                break;
+            } else if ( deposits[_tokenId][_previousOwner] > 0) {
+                break;
             }  
-            _loopCount = _loopCount.add(1);
         }   
 
         if (_toForeclose) {
