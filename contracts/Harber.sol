@@ -7,6 +7,7 @@ import "./CashSender.sol";
 interface Realitio {
     function askQuestion(uint256 template_id, string calldata question, address arbitrator, uint32 timeout, uint32 opening_ts, uint256 nonce) external payable returns (bytes32);
     function resultFor(bytes32 question_id) external view returns (bytes32);
+    function isFinalized(bytes32 question_id) external view returns (bool);
 }
 
 /// @title Harber
@@ -53,7 +54,7 @@ contract Harber is CashSender {
 
     /// MARKET RESOLUTION VARIABLES
     /// @dev step1:
-    bool public marketsEnded = false;
+    bool public marketEnded = false;
     /// @dev step2:
     bool public step2Complete = false; // must be false for step2, true for step3
     bool public questionResolvedInvalid = true; // set in step 2. If false, normal payout. If true, return all funds
@@ -123,12 +124,13 @@ contract Harber is CashSender {
     event LogStep2Complete(bool indexed didAugurMarketsResolve, uint256 indexed winningOutcome, bool indexed didAugurMarketsResolveCorrectly);
     event LogWinningsPaid(address indexed paidTo, uint256 indexed amountPaid);
     event LogRentReturned(address indexed returnedTo, uint256 indexed amountReturned);
+    event TestingVariable(uint indexed testingVariable);
 
     ////////////// MODIFIERS //////////////
     /// @notice prevents functions from being interacted with after the end of the competition 
     /// @dev should be on all public/external 'ordinary course of business' functions
     modifier notEnded() {
-        require(marketsEnded == false, "Markets have ended already");
+        require(marketEnded == false, "Markets have ended already");
         _;
     }
 
@@ -202,7 +204,9 @@ contract Harber is CashSender {
         }
     }
 
-    ////////////// REALITIO FUNCTION //////////////
+    ////////////// REALITIO FUNCTIONS //////////////
+    /// @dev all external calls to the Realitio contract go here, except creating the question which happens in the constructor
+
     /// @notice gets the winning outcome from realitio
     /// @dev the number is equivilent to tokenId
     /// @dev this function call will revert if it has not yet resolved
@@ -211,19 +215,24 @@ contract Harber is CashSender {
         return uint256(_winningOutcome);
     }
 
+    /// @notice has the question been finalized on realitio?
+    function _isQuestionFinalized() internal view returns (bool) {
+        return realitio.isFinalized(questionId);
+    }
+
     ////////////// MARKET RESOLUTION FUNCTIONS ////////////// 
 
     /// @notice the first of three functions which must be called, one after the other, to conclude the competition
     /// @notice winnings can be paid out (or funds returned) only when these three steps are completed
     /// @notice this function checks whether the competition has ended (1 hour grace), if so closes down all 'ordinary course of business' functions
     /// @dev can be called by anyone 
-    function step1checkMarketsEnded() external {
-        require(marketsEnded == false, "Step1 can only be completed once");
-        require(marketExpectedResolutionTime < (now - 3600), "Competition has not finished yet");
+    function step1checkMarketEnded() external {
+        require(marketEnded == false, "Step1 can only be completed once");
+        require(marketExpectedResolutionTime < (now - 3600), "Market has not finished yet");
         // do a final rent collection before the contract is locked down
         collectRentAllTokens();
         // lock everything down
-        marketsEnded = true;
+        marketEnded = true;
         emit LogStep1Complete(true);
     }
 
@@ -231,9 +240,10 @@ contract Harber is CashSender {
     /// @notice this function checks whether the Augur markets have resolved, and if yes, whether they resolved correct or not
     /// @dev can be called by anyone 
     function step2getWinner() external {
-        require(marketsEnded == true, "Must wait for competition to end");
+        require(marketEnded == true, "Must wait for market to end");
         require(step2Complete == false, "Step2 can only be completed once");
-        // get the winner
+        require(_isQuestionFinalized() == true, "Must wait for question to finalize on Realitio");
+        // get the winner. This will revert if answer is not resolved.
         winningOutcome = _getWinner();
         step2Complete = true;
         // check if question resolved invalid
@@ -247,9 +257,9 @@ contract Harber is CashSender {
     /// @notice returns all funds to all users
     /// @notice can only be called 6 months after augur markets should have ended 
     function step2BemergencyExit() external  {
-        require(marketsEnded == true, "Must wait for markets to end");
+        require(marketEnded == true, "Must wait for market to end");
         require(step2Complete == false, "Step2 can only be completed once");
-        require(now > (marketExpectedResolutionTime + 15778800), "Must wait 6 months for Augur Oracle");
+        require(now > (marketExpectedResolutionTime + 2629746), "Must wait 1 month for Oracle to resolve");
         step2Complete = true;
         emit LogStep2Complete(false, winningOutcome, false);
     }
@@ -257,7 +267,7 @@ contract Harber is CashSender {
     /// @notice Same as above, except that only I can call it, and I can call it whenever
     /// @notice to be clear, this only allows me to return all funds. I can not set a winner. 
     function step2CcircuitBreaker() external {
-        require(marketsEnded == true, "Must wait for markets to end");
+        require(marketEnded == true, "Must wait for market to end");
         require(step2Complete == false, "Step2 can only be completed once");
         require(msg.sender == andrewsAddress, "Only owner can call this");
         step2Complete = true;
@@ -267,7 +277,7 @@ contract Harber is CashSender {
     /// @notice the final function of the competition resolution process. Pays out winnings, or returns funds, as necessary
     /// @dev users pull dai into their ac   count. 
     function complete() external {
-        require(step2Complete == true, "Step3 must be completed first");
+        require(step2Complete == true, "Step2 must be completed first");
         if (!questionResolvedInvalid) {
             _payoutWinnings();
         } else {
@@ -303,8 +313,8 @@ contract Harber is CashSender {
     /// @dev the other withdraw deposit functions are locked when markets have resolved so must use this one
     /// @dev ... which can only be called if markets have resolved. This function is also different in that it does 
     /// @dev ... not attempt to collect rent or transfer ownership to a previous owner
-    function withdrawDepositAfterResolution() external {
-        require(step2Complete == true, "step1 must be completed first");
+    function withdrawDepositAfterMarketEnded() external {
+        require(marketEnded == true, "step1 must be complete first");
          
         for (uint i = 0; i < numberOfTokens; i++) {
 
