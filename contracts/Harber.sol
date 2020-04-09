@@ -521,7 +521,6 @@ contract Harber {
 
     /// @notice if a users deposit runs out, either return to previous owner or foreclose
     function _revertToPreviousOwner(uint256 _tokenId) internal {
-        bool _toForeclose = false;
         uint256 _index;
         address _previousOwner;
 
@@ -534,21 +533,20 @@ contract Harber {
             // if no previous owners. price -> zero, foreclose
             // if previous owner still has a deposit, transfer to them, update the price to what it used to be
             if (_index == 0) {
-                _toForeclose = true;
+                _foreclose(_tokenId);
                 break;
-            } else if ( deposits[_tokenId][_previousOwner] > 0) {
+            } else if (deposits[_tokenId][_previousOwner] > 0) {
                 break;
             }  
         }   
 
-        if (_toForeclose) {
-                _foreclose(_tokenId);
-            } else {
-                address _currentOwner = token.ownerOf(_tokenId);
-                uint256 _oldPrice = ownerTracker[_tokenId][_index].price;
-                _transferTokenTo(_currentOwner, _previousOwner, _oldPrice, _tokenId);
-                emit LogReturnToPreviousOwner(_tokenId, _previousOwner);
-            }
+        // if the above loop did not foreclose, then transfer to previous owner
+        if (token.ownerOf(_tokenId) != address(this)) {
+            address _currentOwner = token.ownerOf(_tokenId);
+            uint256 _oldPrice = ownerTracker[_tokenId][_index].price;
+            _transferTokenTo(_currentOwner, _previousOwner, _oldPrice, _tokenId);
+            emit LogReturnToPreviousOwner(_tokenId, _previousOwner);
+        }
     }
 
     /// @notice return token to the contract and return price to zero
