@@ -43,7 +43,7 @@ contract Harber {
     uint256 public totalCollected; 
     /// @dev used to determine the rent due. Rent is due for the period (now - timeLastCollected), at which point timeLastCollected is set to now.
     uint256[numberOfTokens] public timeLastCollected; 
-    /// @dev when a token was bought. used only for front end 'owned since' section. Rent collection only needs timeLastCollected.
+    /// @dev when a token was bought. Used to enforce minimum of one hour rental, also used in front end. Rent collection does not need this, only needs timeLastCollected.
     uint256[numberOfTokens] public timeAcquired; 
     /// @dev tracks the position of the current owner in the ownerTracker mapping
     uint256[numberOfTokens] public currentOwnerIndex; 
@@ -381,16 +381,13 @@ contract Harber {
 
         address _currentOwner = token.ownerOf(_tokenId);
 
-        if (_currentOwner == msg.sender) {
-            // bought by current owner (ie, token ownership does not change, so it is as if the current owner
-            // ... called changePrice and depositDai seperately)
+        if (_currentOwner == msg.sender) { // bought by current owner- just change price
             _changePrice(_newPrice, _tokenId);
-        } else {   
-            // update currentOwnerIndex and ownerTracker
+        } else {   // bought by new user- the normal flow
+            // update internals
             currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].add(1); 
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].owner = msg.sender; 
-            // update timeAcquired for the front end
             timeAcquired[_tokenId] = now;
             _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
             emit LogNewRental(msg.sender, _newPrice, _tokenId); 
@@ -505,8 +502,8 @@ contract Harber {
     }
 
     /// @notice actually withdraw the deposit and call _revertToPreviousOwner if necessary
-    function _withdrawDeposit(uint256 _dai, uint256 _tokenId) internal {
-        require(deposits[_tokenId][msg.sender] >= _dai, 'Withdrawing too much');
+    function _withdrawDeposit(uint256 _daiToWithdraw, uint256 _tokenId) internal {
+        require(deposits[_tokenId][msg.sender] >= _daiToWithdraw, 'Withdrawing too much');
         address _currentOwner = token.ownerOf(_tokenId);
 
         // must rent for minimum of 1 hour for current owner
@@ -517,18 +514,19 @@ contract Harber {
                 uint256 _oneHoursDeposit = price[_tokenId].div(24);
                 uint256 _secondsStillToPay = _oneHour.sub(_secondsOwned);
                 uint256 _minDepositToLeave = _oneHoursDeposit.mul(_secondsStillToPay).div(1 hours);
-                if (deposits[_tokenId][msg.sender].sub(_dai) < _minDepositToLeave) {
-                    _dai = _dai.sub(_minDepositToLeave.sub(deposits[_tokenId][msg.sender].sub(_dai)));
+                if (deposits[_tokenId][msg.sender].sub(_daiToWithdraw) < _minDepositToLeave) {
+                    uint256 _depositRemainingBeforeAdjustment = deposits[_tokenId][msg.sender].sub(_daiToWithdraw);
+                    _daiToWithdraw = _daiToWithdraw.sub(_minDepositToLeave.sub(_depositRemainingBeforeAdjustment));
                 }
             }
         }
 
-        deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].sub(_dai);
+        deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].sub(_daiToWithdraw);
         
         if(_currentOwner == msg.sender && deposits[_tokenId][msg.sender] == 0) {
             _revertToPreviousOwner(_tokenId);
         }
-        _sendCash(msg.sender, _dai);
+        _sendCash(msg.sender, _daiToWithdraw);
     }
 
     /// @notice if a users deposit runs out, either return to previous owner or foreclose
