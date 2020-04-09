@@ -16,7 +16,7 @@ const realitioAddressKovan = '0x50E35A1ED424aB9C0B8C7095b3d9eC2fb791A168';
 module.exports = function (deployer, network) {
 
   if (network === "kovan") {
-    deployer.deploy(Token, "Harber.io", "HARB").then((deployedToken) => {
+    deployer.deploy(Token, "harber.io", "HARB").then((deployedToken) => {
       return deployer.deploy(Harber, andrewsAddress, deployedToken.address, augurCashAddressKovan, realitioAddressKovan, marketExpectedResolutionTime);
     }).then((deployedHarber) => {
       return deployer.deploy(MintNFTs, Token.address, deployedHarber.address);
@@ -25,10 +25,8 @@ module.exports = function (deployer, network) {
   } else if (network === "development") {
       deployer.deploy(CashMockup).then((deployedCash) => {
         return deployer.deploy(RealitioMockup).then((deployedRealitio) => {
-          return deployer.deploy(Token, "Harber.io", "HARB" ).then((deployedToken) => {
-            return deployer.deploy(Harber, andrewsAddress, deployedToken.address, deployedCash.address, deployedRealitio.address, marketExpectedResolutionTime).then((deployedHarber) => {
-              return deployer.deploy(MintNFTs, Token.address, deployedHarber.address);
-            });
+          return deployer.deploy(Token, "harber.io", "HARB" ).then((deployedToken) => {
+            return deployer.deploy(Harber, andrewsAddress, deployedToken.address, deployedCash.address, deployedRealitio.address, marketExpectedResolutionTime);
           });
         });
       });

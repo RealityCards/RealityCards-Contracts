@@ -52,6 +52,7 @@ contract Harber {
     uint256[numberOfTokens] public currentOwnerIndex; 
     /// @dev the question ID of the question on realitio
     bytes32 public questionId;
+    bool nftsMinted = false;
   
     /// WINNING OUTCOME VARIABLES
     /// @dev start with invalid winning outcome
@@ -134,7 +135,19 @@ contract Harber {
     event LogRentReturned(address indexed returnedTo, uint256 indexed amountReturned);
     event TestingVariable(uint indexed testingVariable);
 
+    ////////////// INITIAL SETUP //////////////
+    function mintNfts() public {
+        token.setup(address(this));
+        nftsMinted = true;
+    }
+
     ////////////// MODIFIERS //////////////
+    /// @notice checks the token exists
+    modifier nftsExist() {
+        require(nftsMinted, "NFTs don't exist");
+       _;
+    }
+
     /// @notice prevents functions from being interacted with after the end of the competition 
     /// @dev should be on all public/external 'ordinary course of business' functions
     modifier notEnded() {
@@ -367,7 +380,7 @@ contract Harber {
     }
     
     /// @notice to rent a token
-    function newRental(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) external tokenExists(_tokenId) amountNotZero(_deposit) notEnded() {
+    function newRental(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) external tokenExists(_tokenId) amountNotZero(_deposit) notEnded() nftsExist() {
         uint256 _currentPricePlusTenPercent = price[_tokenId].mul(11).div(10);
         uint256 _oneHoursDeposit = _newPrice.div(24);
         require(_newPrice >= _currentPricePlusTenPercent, "Price must be at least 10% higher than current price");

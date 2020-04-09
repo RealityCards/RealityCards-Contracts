@@ -11,7 +11,6 @@ const Token = artifacts.require('./ERC721Full.sol');
 var Harber = artifacts.require('./Harber.sol');
 var CashMockup = artifacts.require("./mockups/CashMockup.sol");
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
-const MintNFTs = artifacts.require("./MintNFTs.sol");
 
 const delay = duration => new Promise(resolve => setTimeout(resolve, duration));
 
@@ -37,7 +36,7 @@ contract('HarberTests', (accounts) => {
     realitio = await RealitioMockup.new();
     token = await Token.new("Harber.io", "HARB");
     harber = await Harber.new(andrewsAddress, token.address, cash.address, realitio.address, marketExpectedResolutionTime);
-    mintNFTs = await MintNFTs.new(token.address, harber.address);
+    await harber.mintNfts();
   });
 
   // check that the contract initially owns the token
@@ -1293,11 +1292,12 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await harber.newRental(web3.utils.toWei('24', 'ether'),2,web3.utils.toWei('1', 'ether'),{ from: user0 });
     });
 
-    it('check expected failure by rental price below 0.01 dai', async () => {
-      await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user0 });
-      await cash.approve(harber.address, web3.utils.toWei('100', 'ether'),{ from: user0 });
-      await shouldFail.reverting.withMessage(harber.newRental(web3.utils.toWei('0.005', 'ether'),2,web3.utils.toWei('1', 'ether'),{ from: user0}), "Minimum rental 0.01 Dai");
-      });
+  it('check expected failure by rental price below 0.01 dai', async () => {
+    await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user0 });
+    await cash.approve(harber.address, web3.utils.toWei('100', 'ether'),{ from: user0 });
+    await shouldFail.reverting.withMessage(harber.newRental(web3.utils.toWei('0.005', 'ether'),2,web3.utils.toWei('1', 'ether'),{ from: user0}), "Minimum rental 0.01 Dai");
+    });
+  
 
 });
 
