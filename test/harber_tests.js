@@ -518,7 +518,7 @@ contract('HarberTests', (accounts) => {
 
 
     // check the exit function works as it should
-    it('test exit', async () => {
+    it('test exit- more than an hours passed', async () => {
       //setup
       user = user0;
       await cash.faucet(web3.utils.toWei('100', 'ether'), { from: user });
@@ -527,6 +527,7 @@ contract('HarberTests', (accounts) => {
       var deposit = await harber.deposits.call(0,user); 
       assert.equal(deposit, web3.utils.toWei('10', 'ether')); 
       // test exit
+      await time.increase(time.duration.hours(1)); 
       await harber.exit(0,{ from: user  });
       var deposit = await harber.deposits.call(0,user); 
       assert.equal(deposit, web3.utils.toWei('0', 'ether'));
@@ -537,6 +538,7 @@ contract('HarberTests', (accounts) => {
       await cash.faucet(web3.utils.toWei('100', 'ether'), { from: user1 });
       await cash.approve(harber.address, web3.utils.toWei('100', 'ether'), { from: user1 });
       await harber.newRental(web3.utils.toWei('2', 'ether'), 0, web3.utils.toWei('10', 'ether'), { from: user1 });
+      await time.increase(time.duration.hours(1)); 
       await harber.exit(0,{ from: user1  });
       var owner = await token.ownerOf.call(0);
       assert.equal(owner, user0);
@@ -754,7 +756,7 @@ contract('HarberTests', (accounts) => {
   });
 
   // test the emergency Exit function works
-  it('test emergencyExit', async () => {
+  it('test emergencyExit: more than 1 month', async () => {
     /////// SETUP //////
     await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user0 });
     await cash.approve(harber.address, web3.utils.toWei('100', 'ether'),{ from: user0 });
@@ -787,7 +789,6 @@ contract('HarberTests', (accounts) => {
     await cash.resetBalance(user2);
     ////////////////////////
     await harber.step1checkMarketEnded(); 
-    await shouldFail.reverting.withMessage(harber.step2BemergencyExit(), "Must wait 1 month for Oracle to resolve");
     await time.increase(time.duration.weeks(24)); 
     await harber.step2BemergencyExit(); 
     ////////////////////////
@@ -809,6 +810,19 @@ contract('HarberTests', (accounts) => {
     var winningsShouldBe = ether('24');
     var difference = (winningsSentToUser.toString()-winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
+  });
+
+  it('test emergencyExit: less than 1 month', async () => {
+    /////// SETUP //////
+    await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user0 });
+    await cash.approve(harber.address, web3.utils.toWei('100', 'ether'),{ from: user0 });
+    await harber.newRental(web3.utils.toWei('1', 'ether'),2,web3.utils.toWei('10', 'ether'),{ from: user0 }); //
+    await time.increase(time.duration.weeks(3)); 
+    ////////////////////////
+    await harber.step1checkMarketEnded(); 
+    await shouldFail.reverting.withMessage(harber.step2BemergencyExit(), "Must wait 1 month for Oracle to resolve");
+    await time.increase(time.duration.weeks(1)); 
+    await harber.step2BemergencyExit();
   });
 
   // test the circuit breaker works
@@ -1082,7 +1096,6 @@ contract('HarberTests', (accounts) => {
     // not setting winner so we expect step2 to revert
     await harber.step1checkMarketEnded(); 
     await shouldFail.reverting.withMessage(harber.step2getWinner(), "Must wait for question to finalize on Realitio");
-    await shouldFail.reverting.withMessage(harber.step2BemergencyExit(), "Must wait 1 month for Oracle to resolve");
     await shouldFail.reverting.withMessage(harber.step2CcircuitBreaker(), "Only owner can call this");
     await shouldFail.reverting.withMessage(harber.complete(), "Step2 must be completed first");
     });
@@ -1266,6 +1279,8 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await harber.newRental(web3.utils.toWei('50', 'ether'),2,web3.utils.toWei('4', 'ether'),{ from: user3 });
     await harber.newRental(web3.utils.toWei('60', 'ether'),2,web3.utils.toWei('5', 'ether'),{ from: user2 });
     await harber.newRental(web3.utils.toWei('70', 'ether'),2,web3.utils.toWei('6', 'ether'),{ from: user3 });
+    // make sure owned for at least an hour
+    await time.increase(time.duration.hours(1)); 
     // user 2 and 3 exit, it should return to one of them NOT return to user 0 or 1 
     await harber.exit(2,{ from: user2 });
     await harber.exit(2,{ from: user3 });
@@ -1297,6 +1312,65 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await cash.approve(harber.address, web3.utils.toWei('100', 'ether'),{ from: user0 });
     await shouldFail.reverting.withMessage(harber.newRental(web3.utils.toWei('0.005', 'ether'),2,web3.utils.toWei('1', 'ether'),{ from: user0}), "Minimum rental 0.01 Dai");
     });
+
+  it('check exit if owned < 1 hour ', async () => {
+    await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user0 });
+    await cash.approve(harber.address, web3.utils.toWei('100', 'ether'),{ from: user0 });
+    // 12 dai an hour price, starting with 19 dai so afer 45 minutes will have 10 dai
+    await harber.newRental(web3.utils.toWei('288', 'ether'),2,web3.utils.toWei('19', 'ether'),{ from: user0 });
+    await time.increase(time.duration.seconds(2700)); //45 mins
+    // after 45 mins, deposit should be 10
+    await harber.collectRentAllTokens();
+    var depositRemaining = await harber.deposits(2,user0);
+    var depositShouldBe = web3.utils.toWei('10', 'ether');
+    var difference = (depositRemaining.toString()-depositShouldBe.toString())
+    assert.isBelow(difference/depositRemaining,0.00001);
+    ////
+    await cash.resetBalance(user0);
+    await harber.exit(2);
+    // this is effectively a call for 10 dai to be returned, but only 7 should be, because still needs to pay 3 extra for it to be owned 1 hour
+    var depositReturned = await cash.balanceOf(user0);
+    assert.equal(depositReturned-1, web3.utils.toWei('7', 'ether'))
+  });
+
+  it('check withdraw if owned < 1 hour withdrawing more than max', async () => {
+    await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user0 });
+    await cash.approve(harber.address, web3.utils.toWei('100', 'ether'),{ from: user0 });
+    // 12 dai an hour price, starting with 19 dai so afer 45 minutes will have 10 dai
+    await harber.newRental(web3.utils.toWei('288', 'ether'),2,web3.utils.toWei('19', 'ether'),{ from: user0 });
+    await time.increase(time.duration.seconds(2700)); //45 mins
+    // after 45 mins, deposit should be 10
+    await harber.collectRentAllTokens();
+    var depositRemaining = await harber.deposits(2,user0);
+    assert.equal(depositRemaining,web3.utils.toWei('10', 'ether'));
+    ////
+    await cash.resetBalance(user0);
+    await harber.withdrawDeposit(web3.utils.toWei('8', 'ether'),2);
+    // this is effectively a call for 10 dai to be returned, but only 7 should be, because still needs to pay 3 extra for it to be owned 1 hour
+    var depositReturned = await cash.balanceOf(user0);
+    var depositShouldBe = web3.utils.toWei('7', 'ether');
+    var difference = (depositReturned.toString()-depositShouldBe.toString())
+    assert.isBelow(difference/depositRemaining,0.00001);
+  });
+
+  it('check withdraw if owned < 1 hour withdrawing less than max', async () => {
+    await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user0 });
+    await cash.approve(harber.address, web3.utils.toWei('100', 'ether'),{ from: user0 });
+    // 12 dai an hour price, starting with 19 dai so afer 45 minutes will have 10 dai
+    await harber.newRental(web3.utils.toWei('288', 'ether'),2,web3.utils.toWei('19', 'ether'),{ from: user0 });
+    await time.increase(time.duration.seconds(2700)); //45 mins
+    // after 45 mins, deposit should be 10
+    await harber.collectRentAllTokens();
+    var depositRemaining = await harber.deposits(2,user0);
+    assert.equal(depositRemaining,web3.utils.toWei('10', 'ether'));
+    ////
+    await cash.resetBalance(user0);
+    await harber.withdrawDeposit(web3.utils.toWei('6', 'ether'),2);
+    // this is effectively a call for 10 dai to be returned, but only 7 should be, because still needs to pay 3 extra for it to be owned 1 hour
+    var depositReturned = await cash.balanceOf(user0);
+    assert.equal(depositReturned, web3.utils.toWei('6', 'ether'))
+  });
+    
   
 
 });

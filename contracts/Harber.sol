@@ -163,12 +163,12 @@ contract Harber {
     }
 
     /// @dev used in testing only
-    function getOwnerTrackerPrice(uint256 _tokenId, uint256 _index) public view returns (uint256) {
+    function getOwnerTrackerPrice(uint256 _tokenId, uint256 _index) external view returns (uint256) {
         return (ownerTracker[_tokenId][_index].price);
     }
 
     /// @dev used in testing only
-    function getOwnerTrackerAddress(uint256 _tokenId, uint256 _index) public view returns (address) {
+    function getOwnerTrackerAddress(uint256 _tokenId, uint256 _index) external view returns (address) {
         return (ownerTracker[_tokenId][_index].owner);
     }
 
@@ -186,7 +186,7 @@ contract Harber {
 
     /// @dev for front end only
     /// @return how much the current user has deposited (note: user not owner)
-    function userDepositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) {
+    function userDepositAbleToWithdraw(uint256 _tokenId) external view returns (uint256) {
         uint256 _rentOwed = rentOwed(_tokenId);
         address _currentOwner = token.ownerOf(_tokenId);
 
@@ -203,7 +203,7 @@ contract Harber {
 
     /// @dev for front end only
     /// @return estimated rental expiry time
-    function rentalExpiryTime(uint256 _tokenId) public view returns (uint256) {
+    function rentalExpiryTime(uint256 _tokenId) external view returns (uint256) {
         uint256 pps;
         pps = price[_tokenId].div(1 days);
         if (pps == 0) {
@@ -257,7 +257,7 @@ contract Harber {
     /// @dev can be called by anyone 
     function step1checkMarketEnded() external {
         require(marketEnded == false, "Step1 can only be completed once");
-        require(marketExpectedResolutionTime < (now - 3600), "Market has not finished yet");
+        require(marketExpectedResolutionTime < (now - 1 hours), "Market has not finished yet");
         // do a final rent collection before the contract is locked down
         collectRentAllTokens();
         // lock everything down
@@ -288,7 +288,7 @@ contract Harber {
     function step2BemergencyExit() external  {
         require(marketEnded == true, "Must wait for market to end");
         require(step2Complete == false, "Step2 can only be completed once");
-        require(now > (marketExpectedResolutionTime + 2629746), "Must wait 1 month for Oracle to resolve");
+        require(now > (marketExpectedResolutionTime + 4 weeks), "Must wait 1 month for Oracle to resolve");
         step2Complete = true;
         emit LogStep2Complete(false, winningOutcome, false);
     }
@@ -374,21 +374,18 @@ contract Harber {
         uint256 _oneHoursDeposit = _newPrice.div(24);
         require(_newPrice >= _currentPricePlusTenPercent, "Price must be at least 10% higher than current price");
         require(_deposit >= _oneHoursDeposit, "You must deposit enough to cover one hour's rent");
-        require(_newPrice >= 10000000000000000, "Minimum rental 0.01 Dai");
+        require(_newPrice >= 0.01 ether, "Minimum rental 0.01 Dai");
         
         _collectRent(_tokenId);
+        _depositDai(_deposit, _tokenId);
+
         address _currentOwner = token.ownerOf(_tokenId);
 
         if (_currentOwner == msg.sender) {
             // bought by current owner (ie, token ownership does not change, so it is as if the current owner
             // ... called changePrice and depositDai seperately)
             _changePrice(_newPrice, _tokenId);
-            _depositDai(_deposit, _tokenId);
         } else {   
-            // bought by different user (the normal situation)
-            // deposits are updated via depositDai function if _currentOwner = msg.sender 
-            // therefore deposits only updated inside this else section
-            deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].add(_deposit);
             // update currentOwnerIndex and ownerTracker
             currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].add(1); 
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
@@ -396,7 +393,6 @@ contract Harber {
             // update timeAcquired for the front end
             timeAcquired[_tokenId] = now;
             _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
-            _receiveCash(msg.sender, _deposit);
             emit LogNewRental(msg.sender, _newPrice, _tokenId); 
         }
     }
@@ -412,7 +408,7 @@ contract Harber {
 
     /// @notice increase the price of an existing rental
     /// @dev can't be external because also called within newRental
-    function changePrice(uint256 _newPrice, uint256 _tokenId) public tokenExists(_tokenId) notEnded() {
+    function changePrice(uint256 _newPrice, uint256 _tokenId) external tokenExists(_tokenId) notEnded() {
         require(_newPrice > price[_tokenId], "New price must be higher than current price"); 
         require(msg.sender == token.ownerOf(_tokenId), "Not owner");
         _collectRent(_tokenId);
@@ -511,8 +507,24 @@ contract Harber {
     /// @notice actually withdraw the deposit and call _revertToPreviousOwner if necessary
     function _withdrawDeposit(uint256 _dai, uint256 _tokenId) internal {
         require(deposits[_tokenId][msg.sender] >= _dai, 'Withdrawing too much');
-        deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].sub(_dai);
         address _currentOwner = token.ownerOf(_tokenId);
+
+        // must rent for minimum of 1 hour for current owner
+        if(_currentOwner == msg.sender) {
+            uint256 _oneHour = 3600;
+            uint256 _secondsOwned = now.sub(timeAcquired[_tokenId]);
+            if (_secondsOwned < _oneHour) { 
+                uint256 _oneHoursDeposit = price[_tokenId].div(24);
+                uint256 _secondsStillToPay = _oneHour.sub(_secondsOwned);
+                uint256 _minDepositToLeave = _oneHoursDeposit.mul(_secondsStillToPay).div(1 hours);
+                if (deposits[_tokenId][msg.sender].sub(_dai) < _minDepositToLeave) {
+                    _dai = _dai.sub(_minDepositToLeave.sub(deposits[_tokenId][msg.sender].sub(_dai)));
+                }
+            }
+        }
+
+        deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].sub(_dai);
+        
         if(_currentOwner == msg.sender && deposits[_tokenId][msg.sender] == 0) {
             _revertToPreviousOwner(_tokenId);
         }
