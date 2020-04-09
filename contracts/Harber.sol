@@ -26,7 +26,6 @@ contract Harber {
     using SafeMath for uint256;
 
     /// NUMBER OF TOKENS
-    /// @dev also equals number of markets on augur
     /// @dev not set in the constructor because so many other variables need it for initating.  
     uint256 constant public numberOfTokens = 20;
 
@@ -38,8 +37,6 @@ contract Harber {
     /// UINTS, ADDRESSES, BOOLS
     /// @dev my whiskey fund, for my 1% cut
     address private owner; 
-    /// @dev the addresses of the various Augur binary markets. One market for each token. Initiated in the constructor and does not change.
-    address[numberOfTokens] public marketAddresses; 
     /// @dev in attodai (so $100 = 100000000000000000000)
     uint256[numberOfTokens] public price; 
     /// @dev an easy way to track the above across all tokens. It should always increment at the same time as the above increments. 
@@ -57,8 +54,7 @@ contract Harber {
     /// WINNING OUTCOME VARIABLES
     /// @dev start with invalid winning outcome
     uint256 public winningOutcome = 42069; 
-    //// @dev so the function to manually set the winner can only be called long after 
-    /// @dev ...it should have resolved via Augur. Must be public so others can verify it is accurate. 
+    //// @dev when the question can be answered on Realitio. 
     uint32 public marketExpectedResolutionTime; 
 
     /// MARKET RESOLUTION VARIABLES
@@ -67,8 +63,6 @@ contract Harber {
     /// @dev step2:
     bool public step2Complete = false; // must be false for step2, true for step3
     bool public questionResolvedInvalid = true; // set in step 2. If false, normal payout. If true, return all funds
-    /// @dev step 3:
-    bool public step3Complete = false; // must be false for step3, true for complete
     
     ///  STRUCTS
     struct purchase {
@@ -125,7 +119,7 @@ contract Harber {
     event LogDepositIncreased(uint256 indexed daiDeposited, uint256 indexed tokenId, address indexed sentBy);
     event LogExit(uint256 indexed tokenId);
     event LogStep1Complete(bool indexed didTheEventFinish);
-    event LogStep2Complete(bool indexed didAugurMarketsResolve, uint256 indexed winningOutcome, bool indexed didAugurMarketsResolveCorrectly);
+    event LogStep2Complete(bool indexed didRealitioResolve, uint256 indexed winningOutcome, bool indexed didRealitioResolveInvalid);
     event LogWinningsPaid(address indexed paidTo, uint256 indexed amountPaid);
     event LogRentReturned(address indexed returnedTo, uint256 indexed amountReturned);
     event TestingVariable(uint indexed testingVariable);
@@ -164,7 +158,7 @@ contract Harber {
 
     ////////////// VIEW FUNCTIONS //////////////
     /// @dev called in collectRent function, and various other view functions 
-    function rentOwed(uint256 _tokenId) public view returns (uint256 augurFundsDue) {
+    function rentOwed(uint256 _tokenId) public view returns (uint256) {
         return price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(1 days);
     }
 
@@ -257,7 +251,7 @@ contract Harber {
 
     ////////////// MARKET RESOLUTION FUNCTIONS ////////////// 
 
-    /// @notice the first of three functions which must be called, one after the other, to conclude the competition
+    /// @notice the first of two functions which must be called, one after the other, to conclude the competition
     /// @notice winnings can be paid out (or funds returned) only when these three steps are completed
     /// @notice this function checks whether the competition has ended (1 hour grace), if so closes down all 'ordinary course of business' functions
     /// @dev can be called by anyone 
@@ -271,8 +265,8 @@ contract Harber {
         emit LogStep1Complete(true);
     }
 
-    /// @notice the second of three functions which must be called, one after the other, to conclude the competition
-    /// @notice this function checks whether the Augur markets have resolved, and if yes, whether they resolved correct or not
+    /// @notice the second of two functions which must be called, one after the other, to conclude the competition
+    /// @notice this function checks whether the Realitio question has resolved, and if yes, gets the winner
     /// @dev can be called by anyone 
     function step2getWinner() external {
         require(marketEnded == true, "Must wait for market to end");
@@ -288,9 +282,9 @@ contract Harber {
         emit LogStep2Complete(true, winningOutcome, questionResolvedInvalid);
     }
 
-    /// @notice emergency function in case the augur markets never resolve for whatever reason
+    /// @notice emergency function in case the Realitio question never resolves for whatever reason, can be called by anyone
     /// @notice returns all funds to all users
-    /// @notice can only be called 6 months after augur markets should have ended 
+    /// @notice can only be called 1 month after Realitio question should have ended 
     function step2BemergencyExit() external  {
         require(marketEnded == true, "Must wait for market to end");
         require(step2Complete == false, "Step2 can only be completed once");
@@ -299,8 +293,8 @@ contract Harber {
         emit LogStep2Complete(false, winningOutcome, false);
     }
 
-    /// @notice Same as above, except that only I can call it, and I can call it whenever
-    /// @notice to be clear, this only allows me to return all funds. I can not set a winner. 
+    /// @notice Same as above, except that only owner can call it, and can be called whenever
+    /// @notice to be clear, this only allows owner to return all funds, not to set a winner
     function step2CcircuitBreaker() external {
         require(marketEnded == true, "Must wait for market to end");
         require(step2Complete == false, "Step2 can only be completed once");
