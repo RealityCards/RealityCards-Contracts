@@ -37,7 +37,7 @@ contract Harber {
 
     /// UINTS, ADDRESSES, BOOLS
     /// @dev my whiskey fund, for my 1% cut
-    address private andrewsAddress; 
+    address private owner; 
     /// @dev the addresses of the various Augur binary markets. One market for each token. Initiated in the constructor and does not change.
     address[numberOfTokens] public marketAddresses; 
     /// @dev in attodai (so $100 = 100000000000000000000)
@@ -95,22 +95,17 @@ contract Harber {
     mapping (uint256 => uint256) public collectedPerToken;
 
     ////////////// CONSTRUCTOR //////////////
-    constructor(address _andrewsAddress, address _addressOfToken, address _addressOfCashContract, address _addressOfRealitioContract, uint32 _marketExpectedResolutionTime) public
+    constructor(address _owner, IERC721Full _addressOfToken, Cash _addressOfCashContract, Realitio _addressOfRealitioContract, uint32 _marketExpectedResolutionTime) public
     {
         //assign arguments to relevant variables
         marketExpectedResolutionTime = _marketExpectedResolutionTime;
-        andrewsAddress = _andrewsAddress;
+        owner = _owner;
         
         // external contract variables:
-        token = IERC721Full(_addressOfToken);
-        realitio = Realitio(_addressOfRealitioContract);
-        cash = Cash(_addressOfCashContract);
+        token = _addressOfToken;
+        realitio = _addressOfRealitioContract;
+        cash = _addressOfCashContract;
 
-        // initialise arrays
-        for (uint i = 0; i < numberOfTokens; i++) {
-            currentOwnerIndex[i]=0;
-        }
-     
         // Create the question on Realitio
         uint256 template_id = 2;
         string memory question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
@@ -309,7 +304,7 @@ contract Harber {
     function step2CcircuitBreaker() external {
         require(marketEnded == true, "Must wait for market to end");
         require(step2Complete == false, "Step2 can only be completed once");
-        require(msg.sender == andrewsAddress, "Only owner can call this");
+        require(msg.sender == owner, "Only owner can call this");
         step2Complete = true;
         emit LogStep2Complete(false, winningOutcome, false);
     }
