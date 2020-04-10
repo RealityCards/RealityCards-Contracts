@@ -260,7 +260,9 @@ contract('HarberTests', (accounts) => {
       assert.isBelow(difference/deposit,0.00001);
       //test totalCollected. 
       var totalCollected = await harber.totalCollected.call();
-      assert.equal(totalCollected,web3.utils.toWei('7', 'ether'));
+      var totalCollectedShouldBe = web3.utils.toWei('7', 'ether');
+      var difference = (totalCollected.toString()-totalCollectedShouldBe.toString());
+      assert.isBelow(difference/deposit,0.00001);
       //test timeLastCollected
       var timeLastCollected = await harber.timeLastCollected.call(4);
       currentTime = await time.latest();
