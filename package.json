@@ -33,6 +33,7 @@
     "@nomiclabs/buidler": "^1.1.2",
     "eth-gas-reporter": "^0.1.12",
     "prettier": "^1.19.1",
-    "prettier-plugin-solidity": "^1.0.0-alpha.37"
+    "prettier-plugin-solidity": "^1.0.0-alpha.37",
+    "@openzeppelin/contracts": "^2.4.0"
   }
 }

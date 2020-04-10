@@ -1,6 +1,6 @@
 pragma solidity 0.5.13;
 
-import "./../utils/SafeMath.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
 // this is only for ganache testing. Public chain deployments will use the existing dai contract. 
 

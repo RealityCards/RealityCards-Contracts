@@ -1,6 +1,8 @@
 pragma solidity 0.5.13;
-import "./interfaces/IERC721Full.sol";
-import "./utils/SafeMath.sol";
+// import "./interfaces/IERC721Full.sol";
+// import "./utils/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721Full.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
 /// @title Realit.io contract interface
 interface Realitio {
@@ -21,7 +23,8 @@ interface Cash
 
 /// @title Harber
 /// @author Andrew Stanger
-contract Harber {
+// contract Harber  {
+contract Harber is ERC721Full {
 
     using SafeMath for uint256;
 
@@ -30,7 +33,6 @@ contract Harber {
     uint256 constant public numberOfTokens = 20;
 
     /// CONTRACT VARIABLES
-    IERC721Full public token;
     Realitio public realitio;
     Cash public cash; 
 
@@ -78,25 +80,24 @@ contract Harber {
     mapping (uint256 => mapping (uint256 => purchase) ) public ownerTracker;  
     /// @dev how many seconds each user has held each token for, for determining winnings  
     mapping (uint256 => mapping (address => uint256) ) public timeHeld;
-    /// @dev sums all the timeHelds for each token. Not required, but saves on gas when paying out. Should always increment at the same time as timeHeld
+    /// @dev sums all the timeHelds for each  Not required, but saves on gas when paying out. Should always increment at the same time as timeHeld
     mapping (uint256 => uint256) public totalTimeHeld; 
     /// @dev keeps track of all the deposits for each token, for each owner. Unused deposits are not returned automatically when there is a new buyer. 
     /// @dev they can be withdrawn manually however. Unused deposits are returned automatically upon resolution of the market
     mapping (uint256 => mapping (address => uint256) ) public deposits; 
     /// @dev keeps track of all the rent paid by each user. So that it can be returned in case of an invalid market outcome. Only required in this instance. 
     mapping (address => uint256) public collectedPerUser;
-    /// @dev keeps track of all the rent paid for each token. Front end only
+    /// @dev keeps track of all the rent paid for each  Front end only
     mapping (uint256 => uint256) public collectedPerToken;
 
     ////////////// CONSTRUCTOR //////////////
-    constructor(address _owner, IERC721Full _addressOfToken, Cash _addressOfCashContract, Realitio _addressOfRealitioContract, uint32 _marketExpectedResolutionTime) public
+    constructor(address _owner, Cash _addressOfCashContract, Realitio _addressOfRealitioContract, uint32 _marketExpectedResolutionTime) ERC721Full("HodlFactory", "HODL") public
     {
         //assign arguments to relevant variables
         marketExpectedResolutionTime = _marketExpectedResolutionTime;
         owner = _owner;
         
         // external contract variables:
-        token = _addressOfToken;
         realitio = _addressOfRealitioContract;
         cash = _addressOfCashContract;
 
@@ -125,9 +126,51 @@ contract Harber {
     event TestingVariable(uint indexed testingVariable);
 
     ////////////// INITIAL SETUP //////////////
-    function mintNfts() public {
-        token.setup(address(this));
+    function mintNfts() external {
+        require(!nftsMinted, "Already initialized");
         nftsMinted = true;
+
+        // these URIs are NOT the production URIs and will need to be changed
+        _mint(address(this), 0); 
+        _setTokenURI(0, "https://en.wikipedia.org/wiki/Manchester_United_F.C.");
+        _mint(address(this), 1); 
+        _setTokenURI(1, "https://en.wikipedia.org/wiki/Liverpool_F.C.");
+        _mint(address(this), 2);
+        _setTokenURI(2, "https://en.wikipedia.org/wiki/Leicester_City_F.C.");
+        _mint(address(this), 3); 
+        _setTokenURI(3, "https://en.wikipedia.org/wiki/Manchester_City_F.C.");
+        _mint(address(this), 4); 
+        _setTokenURI(4, "https://en.wikipedia.org/wiki/Chelsea_F.C.");
+        _mint(address(this), 5); 
+        _setTokenURI(5, "https://en.wikipedia.org/wiki/Tottenham_Hotspur_F.C.");
+        _mint(address(this), 6); 
+        _setTokenURI(6, "https://en.wikipedia.org/wiki/Wolverhampton_Wanderers_F.C.");
+        _mint(address(this), 7); 
+        _setTokenURI(7, "https://en.wikipedia.org/wiki/Sheffield_United_F.C.");
+        _mint(address(this), 8); 
+        _setTokenURI(8, "https://en.wikipedia.org/wiki/Crystal_Palace_F.C.");
+        _mint(address(this), 9); 
+        _setTokenURI(9, "https://en.wikipedia.org/wiki/Arsenal_F.C.");
+        _mint(address(this), 10); 
+        _setTokenURI(10, "https://en.wikipedia.org/wiki/Everton_F.C.");
+        _mint(address(this), 11); 
+        _setTokenURI(11, "https://en.wikipedia.org/wiki/Southampton_F.C.");
+        _mint(address(this), 12); 
+        _setTokenURI(12, "https://en.wikipedia.org/wiki/Newcastle_United_F.C.");
+        _mint(address(this), 13); 
+        _setTokenURI(13, "https://en.wikipedia.org/wiki/Brighton_%26_Hove_Albion_F.C.");
+        _mint(address(this), 14); 
+        _setTokenURI(14, "https://en.wikipedia.org/wiki/Burnley_F.C.");
+        _mint(address(this), 15); 
+        _setTokenURI(15, "https://en.wikipedia.org/wiki/West_Ham_United_F.C.");
+        _mint(address(this), 16); 
+        _setTokenURI(16, "https://en.wikipedia.org/wiki/Aston_Villa_F.C.");
+        _mint(address(this), 17); 
+        _setTokenURI(17, "https://en.wikipedia.org/wiki/Bournemouth_F.C.");
+        _mint(address(this), 18); 
+        _setTokenURI(18, "https://en.wikipedia.org/wiki/Watford_F.C.");
+        _mint(address(this), 19); 
+        _setTokenURI(19, "https://en.wikipedia.org/wiki/Norwich_City_F.C.");
     }
 
     ////////////// MODIFIERS //////////////
@@ -176,7 +219,7 @@ contract Harber {
     /// @return how much the current owner has deposited
     function liveDepositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) {
         uint256 _rentOwed = rentOwed(_tokenId);
-        address _currentOwner = token.ownerOf(_tokenId);
+        address _currentOwner = ownerOf(_tokenId);
         if(_rentOwed >= deposits[_tokenId][_currentOwner]) {
             return 0;
         } else {
@@ -188,7 +231,7 @@ contract Harber {
     /// @return how much the current user has deposited (note: user not owner)
     function userDepositAbleToWithdraw(uint256 _tokenId) external view returns (uint256) {
         uint256 _rentOwed = rentOwed(_tokenId);
-        address _currentOwner = token.ownerOf(_tokenId);
+        address _currentOwner = ownerOf(_tokenId);
 
         if(_currentOwner == msg.sender) {
             if(_rentOwed >= deposits[_tokenId][msg.sender]) {
@@ -379,7 +422,7 @@ contract Harber {
         _collectRent(_tokenId);
         _depositDai(_deposit, _tokenId);
 
-        address _currentOwner = token.ownerOf(_tokenId);
+        address _currentOwner = ownerOf(_tokenId);
 
         if (_currentOwner == msg.sender) { // bought by current owner- just change price
             _changePrice(_newPrice, _tokenId);
@@ -407,7 +450,7 @@ contract Harber {
     /// @dev can't be external because also called within newRental
     function changePrice(uint256 _newPrice, uint256 _tokenId) external tokenExists(_tokenId) notEnded() {
         require(_newPrice > price[_tokenId], "New price must be higher than current price"); 
-        require(msg.sender == token.ownerOf(_tokenId), "Not owner");
+        require(msg.sender == ownerOf(_tokenId), "Not owner");
         _collectRent(_tokenId);
         _changePrice(_newPrice, _tokenId);
     }
@@ -442,10 +485,10 @@ contract Harber {
     /// @dev is not a problem if called externally, but making internal over public to save gas
     function _collectRent(uint256 _tokenId) internal notEnded() {
         //only collect rent if the token is owned (ie, if owned by the contract this implies unowned)
-        if (token.ownerOf(_tokenId) != address(this)) {
+        if (ownerOf(_tokenId) != address(this)) {
             
             uint256 _rentOwed = rentOwed(_tokenId);
-            address _currentOwner = token.ownerOf(_tokenId);
+            address _currentOwner = ownerOf(_tokenId);
             uint256 _timeOfThisCollection;
             
             if (_rentOwed >= deposits[_tokenId][_currentOwner]) {
@@ -504,7 +547,7 @@ contract Harber {
     /// @notice actually withdraw the deposit and call _revertToPreviousOwner if necessary
     function _withdrawDeposit(uint256 _daiToWithdraw, uint256 _tokenId) internal {
         require(deposits[_tokenId][msg.sender] >= _daiToWithdraw, 'Withdrawing too much');
-        address _currentOwner = token.ownerOf(_tokenId);
+        address _currentOwner = ownerOf(_tokenId);
 
         // must rent for minimum of 1 hour for current owner
         if(_currentOwner == msg.sender) {
@@ -551,8 +594,8 @@ contract Harber {
         }   
 
         // if the above loop did not foreclose, then transfer to previous owner
-        if (token.ownerOf(_tokenId) != address(this)) {
-            address _currentOwner = token.ownerOf(_tokenId);
+        if (ownerOf(_tokenId) != address(this)) {
+            address _currentOwner = ownerOf(_tokenId);
             uint256 _oldPrice = ownerTracker[_tokenId][_index].price;
             _transferTokenTo(_currentOwner, _previousOwner, _oldPrice, _tokenId);
             emit LogReturnToPreviousOwner(_tokenId, _previousOwner);
@@ -561,7 +604,7 @@ contract Harber {
 
     /// @notice return token to the contract and return price to zero
     function _foreclose(uint256 _tokenId) internal {
-        address _currentOwner = token.ownerOf(_tokenId);
+        address _currentOwner = ownerOf(_tokenId);
         // third field is price, ie price goes to zero
         _transferTokenTo(_currentOwner, address(this), 0, _tokenId);
         emit LogForeclosure(_currentOwner, _tokenId);
@@ -572,7 +615,7 @@ contract Harber {
     function _transferTokenTo(address _currentOwner, address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
         require(_currentOwner != address(0) && _newOwner != address(0) , "Cannot send to/from zero address");
         price[_tokenId] = _newPrice;
-        token.transferFrom(_currentOwner, _newOwner, _tokenId);
+        transferFrom(_currentOwner, _newOwner, _tokenId);
     }
 }
 

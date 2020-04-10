@@ -1,7 +1,7 @@
 /* globals artifacts */
 var Harber = artifacts.require("./Harber.sol");
-var MintNFTs = artifacts.require("./MintNFTs.sol");
-var Token = artifacts.require("./ERC721Full.sol");
+// var MintNFTs = artifacts.require("./MintNFTs.sol");
+// var Token = artifacts.require("./ERC721Full.sol");
 var CashMockup = artifacts.require("./mockups/CashMockup.sol");
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 
@@ -25,9 +25,7 @@ module.exports = function (deployer, network) {
   } else if (network === "development") {
       deployer.deploy(CashMockup).then((deployedCash) => {
         return deployer.deploy(RealitioMockup).then((deployedRealitio) => {
-          return deployer.deploy(Token, "harber.io", "HARB" ).then((deployedToken) => {
-            return deployer.deploy(Harber, andrewsAddress, deployedToken.address, deployedCash.address, deployedRealitio.address, marketExpectedResolutionTime);
-          });
+            return deployer.deploy(Harber, andrewsAddress, deployedCash.address, deployedRealitio.address, marketExpectedResolutionTime);
         });
       });
     }
