@@ -23,7 +23,7 @@ interface Cash
 
 /// @title Harber
 /// @author Andrew Stanger
-// contract Harber  {
+
 contract Harber is ERC721Full {
 
     using SafeMath for uint256;
@@ -91,7 +91,7 @@ contract Harber is ERC721Full {
     mapping (uint256 => uint256) public collectedPerToken;
 
     ////////////// CONSTRUCTOR //////////////
-    constructor(address _owner, Cash _addressOfCashContract, Realitio _addressOfRealitioContract, uint32 _marketExpectedResolutionTime) ERC721Full("HodlFactory", "HODL") public
+    constructor(address _owner, Cash _addressOfCashContract, Realitio _addressOfRealitioContract, uint32 _marketExpectedResolutionTime) ERC721Full("harber.io", "HARB") public
     {
         //assign arguments to relevant variables
         marketExpectedResolutionTime = _marketExpectedResolutionTime;
@@ -402,9 +402,9 @@ contract Harber is ERC721Full {
 
     ////////////// ORDINARY COURSE OF BUSINESS FUNCTIONS- EXTERNAL //////////////
 
-    /// @notice collects rent for all tokens
-    /// @dev makes it easy for me to call whenever I want to keep people paying their rent, thus cannot be internal
-    /// @dev cannot be external because it is called within the step1 functions, therefore public
+    // /// @notice collects rent for all tokens
+    // /// @dev makes it easy for me to call whenever I want to keep people paying their rent, thus cannot be internal
+    // /// @dev cannot be external because it is called within the step1 functions, therefore public
     function collectRentAllTokens() public notEnded() {
        for (uint i = 0; i < numberOfTokens; i++) {
             _collectRent(i);
@@ -615,7 +615,16 @@ contract Harber is ERC721Full {
     function _transferTokenTo(address _currentOwner, address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
         require(_currentOwner != address(0) && _newOwner != address(0) , "Cannot send to/from zero address");
         price[_tokenId] = _newPrice;
-        transferFrom(_currentOwner, _newOwner, _tokenId);
+        _transferFrom(_currentOwner, _newOwner, _tokenId);
+    }
+
+    /////// ERC721 FUNCTION OVERRIDES ///////
+    function transferFrom(address from, address to, uint256 tokenId) public {
+        require(false, "Only the contract can make transfers");
+    }
+
+    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) public {
+        require(false, "Only the contract can make transfers");
     }
 }
 

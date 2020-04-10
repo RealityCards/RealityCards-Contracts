@@ -64,6 +64,12 @@ module.exports = {
       gasPrice: 0, // 1 gwei
     },
   },
+  solc: {
+    optimizer: {
+      enabled: true,
+      runs: 200
+    }
+  },
   mocha: {
     reporter: 'eth-gas-reporter',
     reporterOptions: {
