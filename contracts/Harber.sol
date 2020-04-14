@@ -118,7 +118,6 @@ contract Harber is ERC721Full {
     event LogReturnToPreviousOwner(uint256 indexed tokenId, address indexed previousOwner);
     event LogDepositWithdrawal(uint256 indexed daiWithdrawn, uint256 indexed tokenId, address indexed returnedTo);
     event LogDepositIncreased(uint256 indexed daiDeposited, uint256 indexed tokenId, address indexed sentBy);
-    event LogExit(uint256 indexed tokenId);
     event LogStep1Complete(bool indexed didTheEventFinish);
     event LogStep2Complete(bool indexed didRealitioResolve, uint256 indexed winningOutcome, bool indexed didRealitioResolveInvalid);
     event LogWinningsPaid(address indexed paidTo, uint256 indexed amountPaid);
@@ -174,7 +173,7 @@ contract Harber is ERC721Full {
     }
 
     ////////////// MODIFIERS //////////////
-    /// @notice checks the token exists
+    /// @notice checks the NFTs have been minted
     modifier nftsExist() {
         require(nftsMinted, "NFTs don't exist");
        _;
@@ -196,6 +195,12 @@ contract Harber is ERC721Full {
     /// @notice what it says on the tin
     modifier amountNotZero(uint256 _dai) {
         require(_dai  > 0, "Amount must be above zero");
+       _;
+    }
+
+    /// @notice what it says on the tin
+    modifier onlyTokenOwner(uint256 _tokenId) {
+        require(msg.sender == ownerOf(_tokenId), "Not owner");
        _;
     }
 
@@ -402,9 +407,9 @@ contract Harber is ERC721Full {
 
     ////////////// ORDINARY COURSE OF BUSINESS FUNCTIONS- EXTERNAL //////////////
 
-    // /// @notice collects rent for all tokens
-    // /// @dev makes it easy for me to call whenever I want to keep people paying their rent, thus cannot be internal
-    // /// @dev cannot be external because it is called within the step1 functions, therefore public
+    /// @notice collects rent for all tokens
+    /// @dev makes it easy for me to call whenever I want to keep people paying their rent, thus cannot be internal
+    /// @dev cannot be external because it is called within the step1 functions, therefore public
     function collectRentAllTokens() public notEnded() {
        for (uint i = 0; i < numberOfTokens; i++) {
             _collectRent(i);
@@ -441,40 +446,38 @@ contract Harber is ERC721Full {
     /// @dev it is possible a user's deposit could be reduced to zero following _collectRent
     /// @dev they would then increase their deposit despite no longer owning it
     /// @dev this is ok, they can still withdraw via withdrawDeposit. 
+    /// @dev can be called by anyone- you can top up someone else's deposit if you wish!
     function depositDai(uint256 _dai, uint256 _tokenId) external amountNotZero(_dai) tokenExists(_tokenId) notEnded() {
         _collectRent(_tokenId);
         _depositDai(_dai, _tokenId);
     }
 
     /// @notice increase the price of an existing rental
-    /// @dev can't be external because also called within newRental
-    function changePrice(uint256 _newPrice, uint256 _tokenId) external tokenExists(_tokenId) notEnded() {
+    function changePrice(uint256 _newPrice, uint256 _tokenId) external tokenExists(_tokenId) notEnded() onlyTokenOwner(_tokenId) {
         require(_newPrice > price[_tokenId], "New price must be higher than current price"); 
-        require(msg.sender == ownerOf(_tokenId), "Not owner");
         _collectRent(_tokenId);
         _changePrice(_newPrice, _tokenId);
     }
     
     /// @notice withdraw deposit
     /// @dev do not need to be the current owner
-    function withdrawDeposit(uint256 _dai, uint256 _tokenId) external amountNotZero(_dai) tokenExists(_tokenId) notEnded() {
+    function withdrawDeposit(uint256 _daiToWithdraw, uint256 _tokenId) public tokenExists(_tokenId) notEnded() amountNotZero(_daiToWithdraw) {
         _collectRent(_tokenId);
-        // if statement needed because deposit may have just reduced to zero following _collectRent 
-        if (deposits[_tokenId][msg.sender] > 0) {
-            _withdrawDeposit(_dai, _tokenId);
-            emit LogDepositWithdrawal(_dai, _tokenId, msg.sender);
+        uint256 _remainingDeposit = deposits[_tokenId][msg.sender];
+        // deposits may be lower (or zero) then when function called due to _collectRent 
+        if (_remainingDeposit > 0) { 
+            if (_remainingDeposit < _daiToWithdraw) {
+                _daiToWithdraw = _remainingDeposit;
+            }
+            _withdrawDeposit(_daiToWithdraw, _tokenId);
+            emit LogDepositWithdrawal(_daiToWithdraw, _tokenId, msg.sender);
         }
     }
 
     /// @notice withdraw full deposit
     /// @dev do not need to be the current owner
-    function exit(uint256 _tokenId) external tokenExists(_tokenId) notEnded() {
-        _collectRent(_tokenId);
-        // if statement needed because deposit may have just reduced to zero following _collectRent modifier
-        if (deposits[_tokenId][msg.sender] > 0) {
-            _withdrawDeposit(deposits[_tokenId][msg.sender],  _tokenId);
-            emit LogExit(_tokenId);
-        }
+    function exit(uint256 _tokenId) external {
+        withdrawDeposit(deposits[_tokenId][msg.sender],  _tokenId);
     }
 
     ////////////// ORDINARY COURSE OF BUSINESS FUNCTIONS- INTERNALS //////////////
@@ -546,7 +549,7 @@ contract Harber is ERC721Full {
 
     /// @notice actually withdraw the deposit and call _revertToPreviousOwner if necessary
     function _withdrawDeposit(uint256 _daiToWithdraw, uint256 _tokenId) internal {
-        require(deposits[_tokenId][msg.sender] >= _daiToWithdraw, 'Withdrawing too much');
+        assert(deposits[_tokenId][msg.sender] >= _daiToWithdraw);
         address _currentOwner = ownerOf(_tokenId);
 
         // must rent for minimum of 1 hour for current owner
@@ -557,9 +560,9 @@ contract Harber is ERC721Full {
                 uint256 _oneHoursDeposit = price[_tokenId].div(24);
                 uint256 _secondsStillToPay = _oneHour.sub(_secondsOwned);
                 uint256 _minDepositToLeave = _oneHoursDeposit.mul(_secondsStillToPay).div(1 hours);
-                if (deposits[_tokenId][msg.sender].sub(_daiToWithdraw) < _minDepositToLeave) {
-                    uint256 _depositRemainingBeforeAdjustment = deposits[_tokenId][msg.sender].sub(_daiToWithdraw);
-                    _daiToWithdraw = _daiToWithdraw.sub(_minDepositToLeave.sub(_depositRemainingBeforeAdjustment));
+                uint256 _depositRemaining = deposits[_tokenId][msg.sender].sub(_daiToWithdraw);
+                if (_depositRemaining < _minDepositToLeave) {
+                    _daiToWithdraw = _daiToWithdraw.sub(_minDepositToLeave.sub(_depositRemaining));
                 }
             }
         }
@@ -619,6 +622,7 @@ contract Harber is ERC721Full {
     }
 
     /////// ERC721 FUNCTION OVERRIDES ///////
+    /// @dev only the contract can transfer the NFTs
     function transferFrom(address from, address to, uint256 tokenId) public {
         require(false, "Only the contract can make transfers");
     }

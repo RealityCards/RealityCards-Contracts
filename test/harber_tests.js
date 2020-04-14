@@ -506,16 +506,27 @@ contract('HarberTests', (accounts) => {
       assert.isBelow(difference/deposit,0.00001);
     });
 
-    it('test withdrawDeposit with failures', async () => {
+    it('test withdrawDeposit- withdraw too much', async () => {
       //setup
       user = user0;
       await cash.faucet(web3.utils.toWei('100', 'ether'), { from: user });
       await cash.approve(harber.address, web3.utils.toWei('100', 'ether'), { from: user });
       await harber.newRental(web3.utils.toWei('1', 'ether'), 0, web3.utils.toWei('10', 'ether'), { from: user });
+      await time.increase(time.duration.hours(1));
+      await cash.resetBalance(user);
       //withdraw too much
-      await shouldFail.reverting.withMessage(harber.withdrawDeposit(web3.utils.toWei('11', 'ether'),0,{ from: user}), "Withdrawing too much");
-      //wrong user trying to withdraw, shouldnt be any error, simply nothing gets withdrawn
-      await harber.withdrawDeposit(web3.utils.toWei('1', 'ether'), 0, { from: user1 });
+      await harber.withdrawDeposit(web3.utils.toWei('1000', 'ether'),0,{ from: user});
+      var depositWithdrawn = await cash.balanceOf(user);
+      var depositWithdrawnShouldBe = web3.utils.toWei('10', 'ether');
+      var difference = (depositWithdrawn.toString() - depositWithdrawnShouldBe.toString());
+      assert.isBelow(difference/depositWithdrawn,0.00001);
+      //original user tries to withdraw again, there should be zero withdrawn
+      await cash.resetBalance(user);
+      var deposit = await harber.deposits.call(0, user);
+      assert.equal(deposit,0);
+      await harber.withdrawDeposit(web3.utils.toWei('1000', 'ether'),0,{ from: user});
+      var depositWithdrawn = await cash.balanceOf(user);
+      assert.equal(depositWithdrawn,0);
     });
 
     // check the exit function works as it should
@@ -1224,6 +1235,8 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await shouldFail.reverting.withMessage(harber.withdrawDeposit(web3.utils.toWei('2', 'ether'),24,{ from: user}), "This token does not exist");
     await shouldFail.reverting.withMessage(harber.changePrice(web3.utils.toWei('2', 'ether'),24,{ from: user}), "This token does not exist");
     await shouldFail.reverting.withMessage(harber.exit(24,{ from: user}), "This token does not exist");
+    //check not owner
+    await shouldFail.reverting.withMessage(harber.changePrice(web3.utils.toWei('2', 'ether'),2,{ from: user1}), "Not owner");
     //check notEnded
     await time.increase(time.duration.hours(1)); 
     await harber.step1checkMarketEnded();
@@ -1343,7 +1356,10 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     // after 45 mins, deposit should be 10
     await harber.collectRentAllTokens();
     var depositRemaining = await harber.deposits(2,user0);
-    assert.equal(depositRemaining,web3.utils.toWei('10', 'ether'));
+    var depositRemainingShouldBe = web3.utils.toWei('10', 'ether');
+    var difference = (depositRemaining.toString()-depositRemainingShouldBe.toString());
+    console.log(difference);
+    assert.isBelow(difference/depositRemaining,0.00001);
     ////
     await cash.resetBalance(user0);
     await harber.withdrawDeposit(web3.utils.toWei('8', 'ether'),2);
