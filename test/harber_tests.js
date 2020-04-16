@@ -89,7 +89,7 @@ contract('HarberTests', (accounts) => {
       assert.equal(price, web3.utils.toWei('2', 'ether'));
       var deposit = await harber.deposits.call(4, user);
       var depositShouldBe = web3.utils.toWei('20', 'ether');
-      var difference = (deposit.toString()-depositShouldBe.toString())
+      var difference = Math.abs(deposit.toString()-depositShouldBe.toString())
       assert.isBelow(difference/deposit,0.00001);
       var owner = await harber.ownerOf.call(4);
       assert.equal(owner, user);
@@ -145,13 +145,13 @@ contract('HarberTests', (accounts) => {
       assert.equal(price, web3.utils.toWei('3', 'ether'));
       var deposit = await harber.deposits.call(4,user);
       var depositShouldBe = web3.utils.toWei('20', 'ether');
-      var difference = (deposit.toString()-depositShouldBe.toString());
+      var difference = Math.abs(deposit.toString()-depositShouldBe.toString());
       assert.isBelow(difference/deposit,0.00001);
       var owner = await harber.ownerOf.call(4);
       assert.equal(owner, user);
       var trackedPrice = await harber.getOwnerTrackerPrice.call(4,1);
       var trackedPriceShouldBe = web3.utils.toWei('3', 'ether');
-      var difference = (trackedPrice.toString()-trackedPriceShouldBe.toString());
+      var difference = Math.abs(trackedPrice.toString()-trackedPriceShouldBe.toString());
       assert.isBelow(difference/trackedPrice,0.00001);
       var trackedAddress = await harber.getOwnerTrackerAddress.call(4,1);
       assert.equal(trackedAddress, user);
@@ -172,8 +172,8 @@ contract('HarberTests', (accounts) => {
       await time.increase(time.duration.days(1));
       var fundsOwedActual = await harber.rentOwed.call(4);
       var fundsOwedActualShouldBe = web3.utils.toWei('3', 'ether');
-      var difference = (fundsOwedActual.toString()-fundsOwedActualShouldBe.toString());
-      assert.isBelow(difference/fundsOwedActual,0.00001);
+      var difference = Math.abs(fundsOwedActual.toString()-fundsOwedActualShouldBe.toString());
+      assert.isBelow(difference/fundsOwedActual,0.001);
     });
 
     // check these front end functions. 
@@ -192,13 +192,13 @@ contract('HarberTests', (accounts) => {
       var depositAbleToWithdraw = await harber.liveDepositAbleToWithdraw.call(4, { from: user })
       var deposit = await harber.deposits.call(4,user);
       var depositShouldBe = web3.utils.toWei('20', 'ether');
-      var difference = (deposit.toString()-depositShouldBe.toString());
+      var difference = Math.abs(deposit.toString()-depositShouldBe.toString());
       assert.isBelow(difference/deposit,0.00001);
       var userDepositAbleToWithdrawShouldBe = web3.utils.toWei('17', 'ether');
-      var difference = (deposit.toString()-depositShouldBe.toString());
+      var difference = Math.abs(deposit.toString()-depositShouldBe.toString());
       assert.isBelow(difference/userDepositAbleToWithdrawShouldBe,0.00001);
       var depositAbleToWithdrawShouldBe = web3.utils.toWei('17', 'ether');
-      var difference = (deposit.toString()-depositShouldBe.toString());
+      var difference = Math.abs(deposit.toString()-depositShouldBe.toString());
       assert.isBelow(difference/depositAbleToWithdrawShouldBe,0.00001);
       //increment time another half day and check that deposit is the same but the other two are not
       await time.increase(time.duration.minutes(720)); //mins in half a day
@@ -206,10 +206,10 @@ contract('HarberTests', (accounts) => {
       var depositAbleToWithdraw = await harber.liveDepositAbleToWithdraw.call(4, { from: user })
       var deposit = await harber.deposits.call(4,user);
       var depositShouldBe = web3.utils.toWei('20', 'ether');
-      var difference = (deposit.toString() - depositShouldBe.toString());
+      var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
       assert.isBelow(difference/deposit,0.00001);
       var userDepositAbleToWithdrawShouldBe = web3.utils.toWei('15.5', 'ether');
-      var difference = (userDepositAbleToWithdraw.toString() - userDepositAbleToWithdrawShouldBe.toString());
+      var difference = Math.abs(userDepositAbleToWithdraw.toString() - userDepositAbleToWithdrawShouldBe.toString());
       assert.isBelow(difference/userDepositAbleToWithdrawShouldBe,0.00001);
       //switch user, rent, increment time. user1 deposit and userDepositAbleToWithdraw should not change but depositAbleToWithdraw should 
       user = user1;
@@ -219,7 +219,7 @@ contract('HarberTests', (accounts) => {
       assert.equal(deposit, 0);
       assert.equal(userDepositAbleToWithdraw,0);
       var depositAbleToWithdrawShouldBe = web3.utils.toWei('15.5', 'ether');
-      var difference = (depositAbleToWithdrawShouldBe.toString()-depositAbleToWithdraw.toString());
+      var difference = Math.abs(depositAbleToWithdrawShouldBe.toString()-depositAbleToWithdraw.toString());
       assert.isBelow(difference/userDepositAbleToWithdrawShouldBe,0.00001);
       //wait another half a day and check that nothing has changed for user since he isnt the owner
       await time.increase(time.duration.minutes(720));
@@ -239,7 +239,7 @@ contract('HarberTests', (accounts) => {
       currentTime = await time.latest();
       var expectedRentalExpiryTime = currentTime.add(time.duration.days(10)); //deposit should last ten days
       var actualRentalExpiryTime = await harber.rentalExpiryTime.call(4);
-      var difference = (actualRentalExpiryTime.toString()-expectedRentalExpiryTime.toString())
+      var difference = Math.abs(actualRentalExpiryTime.toString()-expectedRentalExpiryTime.toString())
       assert.isBelow(difference,2);
     });
 
@@ -256,12 +256,12 @@ contract('HarberTests', (accounts) => {
       //test deposits
       var deposit = await harber.deposits.call(4,user); 
       var depositShouldBe = web3.utils.toWei('93', 'ether');
-      var difference = (deposit.toString()-depositShouldBe.toString());
+      var difference = Math.abs(deposit.toString()-depositShouldBe.toString());
       assert.isBelow(difference/deposit,0.00001);
       //test totalCollected. 
       var totalCollected = await harber.totalCollected.call();
       var totalCollectedShouldBe = web3.utils.toWei('7', 'ether');
-      var difference = (totalCollected.toString()-totalCollectedShouldBe.toString());
+      var difference = Math.abs(totalCollected.toString()-totalCollectedShouldBe.toString());
       assert.isBelow(difference/deposit,0.00001);
       //test timeLastCollected
       var timeLastCollected = await harber.timeLastCollected.call(4);
@@ -273,13 +273,13 @@ contract('HarberTests', (accounts) => {
       //test deposits
       var deposit = await harber.deposits.call(4,user); 
       var depositShouldBe = web3.utils.toWei('86', 'ether');
-      var difference = (deposit.toString()-depositShouldBe.toString());
+      var difference = Math.abs(deposit.toString()-depositShouldBe.toString());
       assert.isBelow(difference/deposit,0.00001);
       //test totalCollected. 
       var totalCollected = await harber.totalCollected.call();
-      var totalCollectedShouldBe = web3.utils.toWei('20', 'ether');
-      var difference = (totalCollected.toString()-totalCollectedShouldBe.toString());
-      assert.isBelow(difference/totalCollected,0.00001);
+      var totalCollectedShouldBe = web3.utils.toWei('14', 'ether');
+      var difference = Math.abs(totalCollected.toString()-totalCollectedShouldBe.toString());
+      assert.isBelow(difference/totalCollected,0.001);
       //test timeLastCollected
       var timeLastCollected = await harber.timeLastCollected.call(4);
       currentTime = await time.latest();
@@ -320,15 +320,15 @@ contract('HarberTests', (accounts) => {
       //check deposits
       var deposit = await harber.deposits.call(0,user0); 
       var depositShouldBe = web3.utils.toWei('10', 'ether');
-      var difference = (deposit.toString()-depositShouldBe.toString());
+      var difference = Math.abs(deposit.toString()-depositShouldBe.toString());
       assert.isBelow(difference/deposit,0.00001);
       var deposit = await harber.deposits.call(0,user1); 
       var depositShouldBe = web3.utils.toWei('10', 'ether');
-      var difference = (deposit.toString()-depositShouldBe.toString());
+      var difference = Math.abs(deposit.toString()-depositShouldBe.toString());
       assert.isBelow(difference/deposit,0.00001);
       var deposit = await harber.deposits.call(0,user2); 
       var depositShouldBe = web3.utils.toWei('10', 'ether');
-      var difference = (deposit.toString()-depositShouldBe.toString());
+      var difference = Math.abs(deposit.toString()-depositShouldBe.toString());
       assert.isBelow(difference/deposit,0.00001);
       //check ownerTracker variable
       //user0
@@ -418,43 +418,43 @@ contract('HarberTests', (accounts) => {
       // u2 3 days
       var timeHeld = await harber.timeHeld.call(0, user2);
       var timeHeldShouldBe = time.duration.days(3);
-      var difference = (timeHeld.toString() - timeHeldShouldBe.toString()); 
+      var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
       assert.isBelow(difference,2);
       await time.increase(time.duration.days(3));
       await harber.collectRentAllTokens();
       // u2 one more day
       var timeHeld = await harber.timeHeld.call(0, user2);
       var timeHeldShouldBe = time.duration.days(4);
-      var difference = (timeHeld.toString() - timeHeldShouldBe.toString()); 
+      var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
       assert.isBelow(difference,2);
       await time.increase(time.duration.days(3));
       await harber.collectRentAllTokens();
       // u2 still 4 days, u1 3 days
       var timeHeld = await harber.timeHeld.call(0, user2);
       var timeHeldShouldBe = time.duration.days(4);
-      var difference = (timeHeld.toString() - timeHeldShouldBe.toString()); 
+      var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
       assert.isBelow(difference/timeHeld,2);
       var timeHeld = await harber.timeHeld.call(0, user1);
       var timeHeldShouldBe = time.duration.days(3);
-      var difference = (timeHeld.toString() - timeHeldShouldBe.toString()); 
+      var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
       assert.isBelow(difference/timeHeld,0.00001);
       await time.increase(time.duration.days(3));
       await harber.collectRentAllTokens();
       // u1 5 days
       var timeHeld = await harber.timeHeld.call(0, user1);
       var timeHeldShouldBe = time.duration.days(5);
-      var difference = (timeHeld.toString() - timeHeldShouldBe.toString()); 
+      var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
       assert.isBelow(difference/timeHeld,0.00001);
       await time.increase(time.duration.days(1));
       await harber.collectRentAllTokens();
       // u1 5 days, u0 1 day
       var timeHeld = await harber.timeHeld.call(0, user1);
       var timeHeldShouldBe = time.duration.days(5);
-      var difference = (timeHeld.toString() - timeHeldShouldBe.toString()); 
+      var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
       assert.isBelow(difference/timeHeld,0.00001);
       var timeHeld = await harber.timeHeld.call(0, user0);
       var timeHeldShouldBe = time.duration.days(1);
-      var difference = (timeHeld.toString() - timeHeldShouldBe.toString()); 
+      var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
       assert.isBelow(difference/timeHeld,0.0001);
       // buy again, check the new owner, then revert again
       user = user5;
@@ -465,14 +465,14 @@ contract('HarberTests', (accounts) => {
       await harber.collectRentAllTokens();
       var timeHeld = await harber.timeHeld.call(0, user5);
       var timeHeldShouldBe = time.duration.days(1);
-      var difference = (timeHeld.toString() - timeHeldShouldBe.toString()); 
+      var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
       assert.isBelow(difference/timeHeld,0.0001);
       await time.increase(time.duration.days(7));
       await harber.collectRentAllTokens();
       // u0 8 days
       var timeHeld = await harber.timeHeld.call(0, user0);
       var timeHeldShouldBe = time.duration.days(8);
-      var difference = (timeHeld.toString() - timeHeldShouldBe.toString()); 
+      var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
       assert.isBelow(difference/timeHeld,0.0001);
       await time.increase(time.duration.days(7));
       await harber.collectRentAllTokens();
@@ -502,7 +502,7 @@ contract('HarberTests', (accounts) => {
       await harber.withdrawDeposit(web3.utils.toWei('5', 'ether'),0,{ from: user  });
       var deposit = await harber.deposits.call(0,user); 
       var depositShouldBe = web3.utils.toWei('5', 'ether');
-      var difference = (deposit.toString()-depositShouldBe.toString());
+      var difference = Math.abs(deposit.toString()-depositShouldBe.toString());
       assert.isBelow(difference/deposit,0.00001);
     });
 
@@ -511,15 +511,15 @@ contract('HarberTests', (accounts) => {
       user = user0;
       await cash.faucet(web3.utils.toWei('100', 'ether'), { from: user });
       await cash.approve(harber.address, web3.utils.toWei('100', 'ether'), { from: user });
-      await harber.newRental(web3.utils.toWei('1', 'ether'), 0, web3.utils.toWei('10', 'ether'), { from: user });
+      await harber.newRental(web3.utils.toWei('24', 'ether'), 0, web3.utils.toWei('10', 'ether'), { from: user });
       await time.increase(time.duration.hours(1));
       await cash.resetBalance(user);
       //withdraw too much
       await harber.withdrawDeposit(web3.utils.toWei('1000', 'ether'),0,{ from: user});
       var depositWithdrawn = await cash.balanceOf(user);
-      var depositWithdrawnShouldBe = web3.utils.toWei('10', 'ether');
-      var difference = (depositWithdrawn.toString() - depositWithdrawnShouldBe.toString());
-      assert.isBelow(difference/depositWithdrawn,0.00001);
+      var depositWithdrawnShouldBe = web3.utils.toWei('9', 'ether');
+      var difference = Math.abs(depositWithdrawn.toString() - depositWithdrawnShouldBe.toString());
+      assert.isBelow(difference/depositWithdrawn,0.001);
       //original user tries to withdraw again, there should be zero withdrawn
       await cash.resetBalance(user);
       var deposit = await harber.deposits.call(0, user);
@@ -628,13 +628,13 @@ contract('HarberTests', (accounts) => {
     // total deposits = 75, check:
     var totalCollected = await harber.totalCollected.call();
     var totalCollectedShouldBe = web3.utils.toWei('75', 'ether');
-    var difference = (totalCollected.toString()-totalCollectedShouldBe.toString());
+    var difference = Math.abs(totalCollected.toString()-totalCollectedShouldBe.toString());
     assert.isBelow(difference/totalCollected,0.00001);
     //check user0 winnings
     await harber.complete({ from: user0 });
     var winningsSentToUser = await cash.balanceOf.call(user0);
     var winningsShouldBe = ether('75').mul(new BN('604800')).div(new BN('1900800'));
-    var difference = (winningsSentToUser.toString() - winningsShouldBe.toString());
+    var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user0 cant withdraw again
     await shouldFail.reverting.withMessage(harber.complete({ from: user0 }), "You are not a winner, or winnings already paid");
@@ -642,13 +642,13 @@ contract('HarberTests', (accounts) => {
     await harber.complete({ from: user1 });
     var winningsSentToUser = await cash.balanceOf.call(user1);
     var winningsShouldBe = ether('75').mul(new BN('604800')).div(new BN('1900800'));
-    var difference = (winningsSentToUser.toString() - winningsShouldBe.toString());
+    var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user2 winnings
     await harber.complete({ from: user2 });
     var winningsSentToUser = await cash.balanceOf.call(user2);
     var winningsShouldBe = ether('75').mul(new BN('691200')).div(new BN('1900800'));
-    var difference = (winningsSentToUser.toString() - winningsShouldBe.toString());
+    var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
   });
 
@@ -692,14 +692,14 @@ contract('HarberTests', (accounts) => {
     // total deposits = 75, check:
     var totalCollected = await harber.totalCollected.call();
     var totalCollectedShouldBe = web3.utils.toWei('75', 'ether');
-    var difference = (totalCollected.toString()-totalCollectedShouldBe.toString());
+    var difference = Math.abs(totalCollected.toString()-totalCollectedShouldBe.toString());
     assert.isBelow(difference/totalCollected,0.00001);
     //knock off 1% that was sent to me so use 74.25 below
     //check user0 winnings
     await harber.complete({ from: user0 });
     var winningsSentToUser = await cash.balanceOf.call(user0);
     var winningsShouldBe = ether('75');
-    var difference = (winningsSentToUser.toString() - winningsShouldBe.toString());
+    var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user1 winnings
     await shouldFail.reverting.withMessage(harber.complete({ from: user1 }), "You are not a winner, or winnings already paid");
@@ -747,7 +747,7 @@ contract('HarberTests', (accounts) => {
     await harber.complete({ from: user0 });
     var winningsSentToUser = await cash.balanceOf.call(user0);
     var winningsShouldBe = ether('17');
-    var difference = (winningsSentToUser.toString() - winningsShouldBe.toString());
+    var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user0 cant withdraw again
     await shouldFail.reverting.withMessage(harber.complete({ from: user0 }), "You paid no rent, or rent already returned");
@@ -755,13 +755,13 @@ contract('HarberTests', (accounts) => {
     await harber.complete({ from: user1 });
     var winningsSentToUser = await cash.balanceOf.call(user1);
     var winningsShouldBe = ether('34');
-    var difference = (winningsSentToUser.toString() - winningsShouldBe.toString());
+    var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user2 winnings 
     await harber.complete({ from: user2 });
     var winningsSentToUser = await cash.balanceOf.call(user2);
     var winningsShouldBe = ether('24');
-    var difference = (winningsSentToUser.toString() - winningsShouldBe.toString());
+    var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user5 winnings, should fail cos didn't pay any rent
     await shouldFail.reverting.withMessage(harber.complete({ from: user5 }), "You paid no rent, or rent already returned");
@@ -808,19 +808,19 @@ contract('HarberTests', (accounts) => {
     await harber.complete({ from: user0 });
     var winningsSentToUser = await cash.balanceOf.call(user0);
     var winningsShouldBe = ether('17');
-    var difference = (winningsSentToUser.toString()-winningsShouldBe.toString());
+    var difference = Math.abs(winningsSentToUser.toString()-winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user0 winnings 
     await harber.complete({ from: user1 });
     var winningsSentToUser = await cash.balanceOf.call(user1);
     var winningsShouldBe = ether('34');
-    var difference = (winningsSentToUser.toString()-winningsShouldBe.toString());
+    var difference = Math.abs(winningsSentToUser.toString()-winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user0 winnings 
     await harber.complete({ from: user2 });
     var winningsSentToUser = await cash.balanceOf.call(user2);
     var winningsShouldBe = ether('24');
-    var difference = (winningsSentToUser.toString()-winningsShouldBe.toString());
+    var difference = Math.abs(winningsSentToUser.toString()-winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
   });
 
@@ -877,19 +877,19 @@ contract('HarberTests', (accounts) => {
     await harber.complete({ from: user0 });
     var winningsSentToUser = await cash.balanceOf.call(user0);
     var winningsShouldBe = ether('17');
-    var difference = (winningsSentToUser.toString()-winningsShouldBe.toString());
+    var difference = Math.abs(winningsSentToUser.toString()-winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user1 winnings 
     await harber.complete({ from: user1 });
     var winningsSentToUser = await cash.balanceOf.call(user1);
     var winningsShouldBe = ether('34');
-    var difference = (winningsSentToUser.toString()-winningsShouldBe.toString());
+    var difference = Math.abs(winningsSentToUser.toString()-winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user2 winnings 
     await harber.complete({ from: user2 });
     var winningsSentToUser = await cash.balanceOf.call(user2);
     var winningsShouldBe = ether('24');
-    var difference = (winningsSentToUser.toString()-winningsShouldBe.toString());
+    var difference = Math.abs(winningsSentToUser.toString()-winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
   });
 
@@ -939,13 +939,13 @@ contract('HarberTests', (accounts) => {
     await harber.withdrawDepositAfterMarketEnded({ from: user0 });
     var depositReturnedToUser = await cash.balanceOf.call(user0);
     var depositReturnedShouldBe = web3.utils.toWei('3', 'ether');
-    var difference = (depositReturnedToUser.toString()-depositReturnedShouldBe.toString());
+    var difference = Math.abs(depositReturnedToUser.toString()-depositReturnedShouldBe.toString());
     assert.isBelow(difference/depositReturnedToUser,0.00001);
     // u1
     await harber.withdrawDepositAfterMarketEnded({ from: user1 });
     var depositReturnedToUser = await cash.balanceOf.call(user1);
     var depositReturnedShouldBe = web3.utils.toWei('6', 'ether');
-    var difference = (depositReturnedToUser.toString()-depositReturnedShouldBe.toString());
+    var difference = Math.abs(depositReturnedToUser.toString()-depositReturnedShouldBe.toString());
     assert.isBelow(difference/depositReturnedToUser,0.00001);
     // u2
     await harber.withdrawDepositAfterMarketEnded({ from: user2 });
@@ -1003,13 +1003,13 @@ contract('HarberTests', (accounts) => {
     await harber.withdrawDepositAfterMarketEnded({ from: user0 });
     var depositReturnedToUser = await cash.balanceOf.call(user0);
     var depositReturnedShouldBe = web3.utils.toWei('3', 'ether');
-    var difference = (depositReturnedToUser.toString()-depositReturnedShouldBe.toString());
+    var difference = Math.abs(depositReturnedToUser.toString()-depositReturnedShouldBe.toString());
     assert.isBelow(difference/depositReturnedToUser,0.00001);
     // u1
     await harber.withdrawDepositAfterMarketEnded({ from: user1 });
     var depositReturnedToUser = await cash.balanceOf.call(user1);
     var depositReturnedShouldBe = web3.utils.toWei('6', 'ether');
-    var difference = (depositReturnedToUser.toString()-depositReturnedShouldBe.toString());
+    var difference = Math.abs(depositReturnedToUser.toString()-depositReturnedShouldBe.toString());
     assert.isBelow(difference/depositReturnedToUser,0.00001);
     // u2
     await harber.withdrawDepositAfterMarketEnded({ from: user2 });
@@ -1067,13 +1067,13 @@ contract('HarberTests', (accounts) => {
     await harber.withdrawDepositAfterMarketEnded({ from: user0 });
     var depositReturnedToUser = await cash.balanceOf.call(user0);
     var depositReturnedShouldBe = web3.utils.toWei('3', 'ether');
-    var difference = (depositReturnedToUser.toString()-depositReturnedShouldBe.toString());
+    var difference = Math.abs(depositReturnedToUser.toString()-depositReturnedShouldBe.toString());
     assert.isBelow(difference/depositReturnedToUser,0.00001);
     // u1
     await harber.withdrawDepositAfterMarketEnded({ from: user1 });
     var depositReturnedToUser = await cash.balanceOf.call(user1);
     var depositReturnedShouldBe = web3.utils.toWei('6', 'ether');
-    var difference = (depositReturnedToUser.toString()-depositReturnedShouldBe.toString());
+    var difference = Math.abs(depositReturnedToUser.toString()-depositReturnedShouldBe.toString());
     assert.isBelow(difference/depositReturnedToUser,0.00001);
     // u2
     await harber.withdrawDepositAfterMarketEnded({ from: user2 });
@@ -1200,13 +1200,13 @@ it('test payouts (incl deposit returned) when newRental called again by existing
   await harber.withdrawDepositAfterMarketEnded({ from: user0 });
   var depositReturnedToUser = await cash.balanceOf.call(user0);
   var depositReturnedShouldBe = web3.utils.toWei('3', 'ether');
-  var difference = (depositReturnedToUser.toString()-depositReturnedShouldBe.toString());
+  var difference = Math.abs(depositReturnedToUser.toString()-depositReturnedShouldBe.toString());
   assert.isBelow(difference/depositReturnedToUser,0.00001);
   // u1
   await harber.withdrawDepositAfterMarketEnded({ from: user1 });
   var depositReturnedToUser = await cash.balanceOf.call(user1);
   var depositReturnedShouldBe = web3.utils.toWei('6', 'ether');
-  var difference = (depositReturnedToUser.toString()-depositReturnedShouldBe.toString());
+  var difference = Math.abs(depositReturnedToUser.toString()-depositReturnedShouldBe.toString());
   assert.isBelow(difference/depositReturnedToUser,0.00001);
   // u2
   await harber.withdrawDepositAfterMarketEnded({ from: user2 });
@@ -1337,7 +1337,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await harber.collectRentAllTokens();
     var depositRemaining = await harber.deposits(2,user0);
     var depositShouldBe = web3.utils.toWei('10', 'ether');
-    var difference = (depositRemaining.toString()-depositShouldBe.toString())
+    var difference = Math.abs(depositRemaining.toString()-depositShouldBe.toString())
     assert.isBelow(difference/depositRemaining,0.00001);
     ////
     await cash.resetBalance(user0);
@@ -1357,15 +1357,15 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await harber.collectRentAllTokens();
     var depositRemaining = await harber.deposits(2,user0);
     var depositRemainingShouldBe = web3.utils.toWei('10', 'ether');
-    var difference = (depositRemaining.toString()-depositRemainingShouldBe.toString());
-    assert.isBelow(difference/depositRemaining,0.00001);
+    var difference = Math.abs(depositRemaining.toString()-depositRemainingShouldBe.toString());
+    assert.isBelow(difference/depositRemaining,0.001);
     ////
     await cash.resetBalance(user0);
     await harber.withdrawDeposit(web3.utils.toWei('8', 'ether'),2);
     // this is effectively a call for 10 dai to be returned, but only 7 should be, because still needs to pay 3 extra for it to be owned 1 hour
     var depositReturned = await cash.balanceOf(user0);
     var depositShouldBe = web3.utils.toWei('7', 'ether');
-    var difference = (depositReturned.toString()-depositShouldBe.toString())
+    var difference = Math.abs(depositReturned.toString()-depositShouldBe.toString())
     assert.isBelow(difference/depositRemaining,0.00001);
   });
 
@@ -1384,7 +1384,9 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await harber.withdrawDeposit(web3.utils.toWei('6', 'ether'),2);
     // this is effectively a call for 10 dai to be returned, but only 7 should be, because still needs to pay 3 extra for it to be owned 1 hour
     var depositReturned = await cash.balanceOf(user0);
-    assert.equal(depositReturned, web3.utils.toWei('6', 'ether'))
+    var depositShouldBe = web3.utils.toWei('6', 'ether');
+    var difference = Math.abs(depositReturned.toString()-depositShouldBe.toString())
+    assert.isBelow(difference/depositRemaining,0.001);
   });
 
   it('check that users cannot transfer their NFTs', async() => {
