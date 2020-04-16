@@ -1358,7 +1358,6 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     var depositRemaining = await harber.deposits(2,user0);
     var depositRemainingShouldBe = web3.utils.toWei('10', 'ether');
     var difference = (depositRemaining.toString()-depositRemainingShouldBe.toString());
-    console.log(difference);
     assert.isBelow(difference/depositRemaining,0.00001);
     ////
     await cash.resetBalance(user0);

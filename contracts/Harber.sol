@@ -1,11 +1,10 @@
 pragma solidity 0.5.13;
-// import "./interfaces/IERC721Full.sol";
-// import "./utils/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721Full.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 /// @title Realit.io contract interface
-interface Realitio {
+interface Realitio 
+{
     function askQuestion(uint256 template_id, string calldata question, address arbitrator, uint32 timeout, uint32 opening_ts, uint256 nonce) external payable returns (bytes32);
     function resultFor(bytes32 question_id) external view returns (bytes32);
     function isFinalized(bytes32 question_id) external view returns (bool);
@@ -261,6 +260,14 @@ contract Harber is ERC721Full {
             return now + liveDepositAbleToWithdraw(_tokenId).div(pps);
         }
     }
+
+    /// @dev for front end and _payoutWinnings function
+    function getWinnings(uint256 _winningOutcome) public view returns (uint256) {
+        uint256 _winnersTimeHeld = timeHeld[_winningOutcome][msg.sender];
+        uint256 _numerator = totalCollected.mul(_winnersTimeHeld);
+        uint256 _winnings = _numerator.div(totalTimeHeld[winningOutcome]);    
+        return _winnings;    
+    }
     
     ////////////// DAI CONTRACT FUNCTIONS ////////////// 
 
@@ -366,11 +373,9 @@ contract Harber is ERC721Full {
     /// @notice pays winnings to the winners
     /// @dev must be internal and only called by complete
     function _payoutWinnings() internal {
-        uint256 _winnersTimeHeld = timeHeld[winningOutcome][msg.sender];
-        require(_winnersTimeHeld > 0, "You are not a winner, or winnings already paid");
+        uint256 _winningsToTransfer = getWinnings(winningOutcome);
+        require(_winningsToTransfer > 0, "You are not a winner, or winnings already paid");
         timeHeld[winningOutcome][msg.sender] = 0; // otherwise they can keep paying themselves over and over
-        uint256 _numerator = totalCollected.mul(_winnersTimeHeld);
-        uint256 _winningsToTransfer = _numerator.div(totalTimeHeld[winningOutcome]);
         _sendCash(msg.sender, _winningsToTransfer);
         emit LogWinningsPaid(msg.sender, _winningsToTransfer);
     }
