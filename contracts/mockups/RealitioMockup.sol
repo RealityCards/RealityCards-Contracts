@@ -6,10 +6,6 @@ contract RealitioMockup
 
 {
     uint result = 420;
-    uint stfu;
-    string gtfo;
-    address reported;
-    uint32 getrekt;
 
     function setResult(uint _result) public
     {
@@ -22,12 +18,12 @@ contract RealitioMockup
 
     function askQuestion(uint256 template_id, string calldata question, address arbitrator, uint32 timeout, uint32 opening_ts, uint256 nonce) external payable returns (bytes32) {
         // to get rid of compiler warnings:
-        stfu = template_id;
-        stfu = nonce;
-        gtfo = question;
-        reported = arbitrator;
-        getrekt = timeout;
-        getrekt = opening_ts;
+        template_id;
+        nonce;
+        question;
+        arbitrator;
+        timeout;
+        opening_ts;
         return 0x8d293509129e26299990826db10c48241be5f59f2e4f61c0c9d550e4451e1a38;
     }
 

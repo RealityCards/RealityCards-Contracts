@@ -630,10 +630,17 @@ contract Harber is ERC721Full {
     /// @dev only the contract can transfer the NFTs
     function transferFrom(address from, address to, uint256 tokenId) public {
         require(false, "Only the contract can make transfers");
+        from;
+        to;
+        tokenId;
     }
 
     function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) public {
         require(false, "Only the contract can make transfers");
+        from;
+        to;
+        tokenId;
+        _data;
     }
 }
 
