@@ -35,7 +35,7 @@ contract Harber is ERC721Full {
     Realitio public realitio;
     Cash public cash; 
 
-    /// UINTS, ADDRESSES, BOOLS
+    /// UINTS, ADDRESSES, BOOLS, CONSTS
     /// @dev my whiskey fund, for my 1% cut
     address private owner; 
     /// @dev in attodai (so $100 = 100000000000000000000)
@@ -50,7 +50,10 @@ contract Harber is ERC721Full {
     uint256[numberOfTokens] public currentOwnerIndex; 
     /// @dev the question ID of the question on realitio
     bytes32 public questionId;
+    /// @dev must be true for any functions to work (except mintNfts)
     bool nftsMinted = false;
+    /// @dev only for _revertToPreviousOwner to prevent gas limits
+    uint256 constant private MAX_ITERATIONS = 10;
   
     /// WINNING OUTCOME VARIABLES
     /// @dev start with invalid winning outcome
@@ -564,10 +567,10 @@ contract Harber is ERC721Full {
             if (_secondsOwned < _oneHour) { 
                 uint256 _oneHoursDeposit = price[_tokenId].div(24);
                 uint256 _secondsStillToPay = _oneHour.sub(_secondsOwned);
-                uint256 _minDepositToLeave = _oneHoursDeposit.mul(_secondsStillToPay).div(1 hours);
-                uint256 _depositRemaining = deposits[_tokenId][msg.sender].sub(_daiToWithdraw);
-                if (_depositRemaining < _minDepositToLeave) {
-                    _daiToWithdraw = _daiToWithdraw.sub(_minDepositToLeave.sub(_depositRemaining));
+                uint256 _minDepositToLeave = _oneHoursDeposit.mul(_secondsStillToPay).div(_oneHour);
+                uint256 _maxDaiToWithdraw = deposits[_tokenId][msg.sender].sub(_minDepositToLeave);
+                if (_maxDaiToWithdraw < _daiToWithdraw) {
+                    _daiToWithdraw = _maxDaiToWithdraw;
                 }
             }
         }
@@ -586,7 +589,7 @@ contract Harber is ERC721Full {
         address _previousOwner;
 
         // loop max ten times before just assigning it to that owner, to prevent block limit
-        for (uint i=0; i < 10; i++)  {
+        for (uint i=0; i < MAX_ITERATIONS; i++)  {
             currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].sub(1); // currentOwnerIndex will now point to  previous owner
             _index = currentOwnerIndex[_tokenId]; // just for readability
             _previousOwner = ownerTracker[_tokenId][_index].owner;
