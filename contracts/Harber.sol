@@ -1,24 +1,8 @@
 pragma solidity 0.6.6;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-
-/// @title Realit.io contract interface
-interface Realitio 
-{
-    function askQuestion(uint256 template_id, string calldata question, address arbitrator, uint32 timeout, uint32 opening_ts, uint256 nonce) external payable returns (bytes32);
-    function resultFor(bytes32 question_id) external view returns (bytes32);
-    function isFinalized(bytes32 question_id) external view returns (bool);
-}
-
-/// @title Dai contract interface
-interface Cash 
-{
-    function approve(address _spender, uint256 _amount) external returns (bool);
-    function balanceOf(address _ownesr) external view returns (uint256);
-    function faucet(uint256 _amount) external;
-    function transfer(address _to, uint256 _amount) external returns (bool);
-    function transferFrom(address _from, address _to, uint256 _amount) external returns (bool);
-}
+import "./interfaces/ICash.sol";
+import "./interfaces/IRealitio.sol";
 
 /// @title Harber
 /// @author Andrew Stanger
@@ -27,34 +11,43 @@ contract Harber is ERC721 {
 
     using SafeMath for uint256;
 
-    /// NUMBER OF TOKENS
+    ////////////////////////////////////
+    //////// VARIABLES /////////////////
+    ////////////////////////////////////
+
+    /// CONTRACT SETUP
     /// @dev not set in the constructor because so many other variables need it for initating.  
-    uint256 constant public numberOfTokens = 20;
+    uint256 constant private numberOfTokens = 20;
+    /// @dev counts how many NFTs have been minted 
+    /// @dev when nftMintCount = numberOfTokens, allNftsMinted -> true
+    uint256 private nftMintCount;
+    /// @dev must be true for any functions to work (except mintNfts)
+    bool private allNftsMinted;
+    /// @dev for circuit breaker
+    address private owner; 
+    /// @dev the question ID of the question on realitio
+    bytes32 public questionId;
+    /// @dev only for _revertToPreviousOwner to prevent gas limits
+    uint256 constant private MAX_ITERATIONS = 10;
+    enum States {NFTSNOTMINTED, OPEN, LOCKED, WITHDRAW}
+    States public state; 
 
     /// CONTRACT VARIABLES
-    Realitio public realitio;
-    Cash public cash; 
+    IRealitio public realitio;
+    ICash public cash; 
 
-    /// UINTS, ADDRESSES, BOOLS, CONSTS
-    /// @dev my whiskey fund, for my 1% cut
-    address private owner; 
+    /// NFT/USER DATA
     /// @dev in attodai (so $100 = 100000000000000000000)
     uint256[numberOfTokens] public price; 
-    /// @dev an easy way to track the above across all tokens. It should always increment at the same time as the above increments. 
-    uint256 public totalCollected; 
     /// @dev used to determine the rent due. Rent is due for the period (now - timeLastCollected), at which point timeLastCollected is set to now.
     uint256[numberOfTokens] public timeLastCollected; 
     /// @dev when a token was bought. Used to enforce minimum of one hour rental, also used in front end. Rent collection does not need this, only needs timeLastCollected.
     uint256[numberOfTokens] public timeAcquired; 
     /// @dev tracks the position of the current owner in the ownerTracker mapping
     uint256[numberOfTokens] public currentOwnerIndex; 
-    /// @dev the question ID of the question on realitio
-    bytes32 public questionId;
-    /// @dev must be true for any functions to work (except mintNfts)
-    bool nftsMinted = false;
-    /// @dev only for _revertToPreviousOwner to prevent gas limits
-    uint256 constant private MAX_ITERATIONS = 10;
-  
+    /// @dev an easy way to track the above across all tokens. It should always increment at the same time as the above increments. 
+    uint256 public totalCollected; 
+    
     /// WINNING OUTCOME VARIABLES
     /// @dev start with invalid winning outcome
     uint256 public winningOutcome = 42069; 
@@ -62,10 +55,6 @@ contract Harber is ERC721 {
     uint32 public marketExpectedResolutionTime; 
 
     /// MARKET RESOLUTION VARIABLES
-    /// @dev step1:
-    bool public marketEnded = false;
-    /// @dev step2:
-    bool public step2Complete = false; // must be false for step2, true for step3
     bool public questionResolvedInvalid = true; // set in step 2. If false, normal payout. If true, return all funds
     
     ///  STRUCTS
@@ -92,8 +81,11 @@ contract Harber is ERC721 {
     /// @dev keeps track of all the rent paid for each  Front end only
     mapping (uint256 => uint256) public collectedPerToken;
 
-    ////////////// CONSTRUCTOR //////////////
-    constructor(address _owner, Cash _addressOfCashContract, Realitio _addressOfRealitioContract, uint32 _marketExpectedResolutionTime) ERC721("harber.io", "HARB") public
+    ////////////////////////////////////
+    //////// CONSTRUCTOR ///////////////
+    ////////////////////////////////////
+
+    constructor(address _owner, ICash _addressOfCashContract, IRealitio _addressOfRealitioContract, uint32 _marketExpectedResolutionTime) ERC721("harber.io", "HARB") public
     {
         //assign arguments to relevant variables
         marketExpectedResolutionTime = _marketExpectedResolutionTime;
@@ -113,6 +105,10 @@ contract Harber is ERC721 {
         questionId = _postQuestion(template_id, question, arbitrator, timeout, opening_ts, nonce);
     } 
 
+    ////////////////////////////////////
+    //////// EVENTS ////////////////////
+    ////////////////////////////////////
+
     event LogNewRental(address indexed newOwner, uint256 indexed newPrice, uint256 indexed tokenId);
     event LogPriceChange(uint256 indexed newPrice, uint256 indexed tokenId);
     event LogForeclosure(address indexed prevOwner, uint256 indexed tokenId);
@@ -126,65 +122,25 @@ contract Harber is ERC721 {
     event LogRentReturned(address indexed returnedTo, uint256 indexed amountReturned);
     event TestingVariable(uint indexed testingVariable);
 
-    ////////////// INITIAL SETUP //////////////
-    function mintNfts() external {
-        require(!nftsMinted, "Already initialized");
-        nftsMinted = true;
+    ////////////////////////////////////
+    //////// INITIAL SETUP /////////////
+    ////////////////////////////////////
 
-        // these URIs are NOT the production URIs and will need to be changed
-        _mint(address(this), 0); 
-        _setTokenURI(0, "https://en.wikipedia.org/wiki/Manchester_United_F.C.");
-        _mint(address(this), 1); 
-        _setTokenURI(1, "https://en.wikipedia.org/wiki/Liverpool_F.C.");
-        _mint(address(this), 2);
-        _setTokenURI(2, "https://en.wikipedia.org/wiki/Leicester_City_F.C.");
-        _mint(address(this), 3); 
-        _setTokenURI(3, "https://en.wikipedia.org/wiki/Manchester_City_F.C.");
-        _mint(address(this), 4); 
-        _setTokenURI(4, "https://en.wikipedia.org/wiki/Chelsea_F.C.");
-        _mint(address(this), 5); 
-        _setTokenURI(5, "https://en.wikipedia.org/wiki/Tottenham_Hotspur_F.C.");
-        _mint(address(this), 6); 
-        _setTokenURI(6, "https://en.wikipedia.org/wiki/Wolverhampton_Wanderers_F.C.");
-        _mint(address(this), 7); 
-        _setTokenURI(7, "https://en.wikipedia.org/wiki/Sheffield_United_F.C.");
-        _mint(address(this), 8); 
-        _setTokenURI(8, "https://en.wikipedia.org/wiki/Crystal_Palace_F.C.");
-        _mint(address(this), 9); 
-        _setTokenURI(9, "https://en.wikipedia.org/wiki/Arsenal_F.C.");
-        _mint(address(this), 10); 
-        _setTokenURI(10, "https://en.wikipedia.org/wiki/Everton_F.C.");
-        _mint(address(this), 11); 
-        _setTokenURI(11, "https://en.wikipedia.org/wiki/Southampton_F.C.");
-        _mint(address(this), 12); 
-        _setTokenURI(12, "https://en.wikipedia.org/wiki/Newcastle_United_F.C.");
-        _mint(address(this), 13); 
-        _setTokenURI(13, "https://en.wikipedia.org/wiki/Brighton_%26_Hove_Albion_F.C.");
-        _mint(address(this), 14); 
-        _setTokenURI(14, "https://en.wikipedia.org/wiki/Burnley_F.C.");
-        _mint(address(this), 15); 
-        _setTokenURI(15, "https://en.wikipedia.org/wiki/West_Ham_United_F.C.");
-        _mint(address(this), 16); 
-        _setTokenURI(16, "https://en.wikipedia.org/wiki/Aston_Villa_F.C.");
-        _mint(address(this), 17); 
-        _setTokenURI(17, "https://en.wikipedia.org/wiki/Bournemouth_F.C.");
-        _mint(address(this), 18); 
-        _setTokenURI(18, "https://en.wikipedia.org/wiki/Watford_F.C.");
-        _mint(address(this), 19); 
-        _setTokenURI(19, "https://en.wikipedia.org/wiki/Norwich_City_F.C.");
+    function mintNfts(string calldata _uri) external checkState(States.NFTSNOTMINTED) {
+        _mint(address(this), nftMintCount); 
+        _setTokenURI(nftMintCount, _uri);
+        nftMintCount = nftMintCount.add(1);
+        if (nftMintCount == numberOfTokens) {
+            _incrementState();
+        }
     }
 
-    ////////////// MODIFIERS //////////////
-    /// @notice checks the NFTs have been minted
-    modifier nftsExist() {
-        require(nftsMinted, "NFTs don't exist");
-       _;
-    }
+    ////////////////////////////////////
+    /////////// MODIFIERS //////////////
+    ////////////////////////////////////
 
-    /// @notice prevents functions from being interacted with after the end of the competition 
-    /// @dev should be on all public/external 'ordinary course of business' functions
-    modifier notEnded() {
-        require(marketEnded == false, "Markets have ended already");
+    modifier checkState(States currentState) {
+        require(state == currentState, "incorrect state");
         _;
     }
 
@@ -206,7 +162,10 @@ contract Harber is ERC721 {
        _;
     }
 
-    ////////////// VIEW FUNCTIONS //////////////
+    ////////////////////////////////////
+    //////// VIEW FUNCTIONS ////////////
+    ////////////////////////////////////
+
     /// @dev called in collectRent function, and various other view functions 
     function rentOwed(uint256 _tokenId) public view returns (uint256) {
         return price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(1 days);
@@ -272,7 +231,9 @@ contract Harber is ERC721 {
         return _winnings;    
     }
     
-    ////////////// DAI CONTRACT FUNCTIONS ////////////// 
+    ////////////////////////////////////
+    ///// EXTERNAL DAI FUNCTIONS ///////
+    ////////////////////////////////////
 
     // * internal * 
     /// @notice common function for all outgoing DAI transfers
@@ -286,8 +247,9 @@ contract Harber is ERC721 {
         require(cash.transferFrom(_from, address(this), _amount), "Cash transfer failed");
     }
 
-    ////////////// REALITIO FUNCTIONS //////////////
-    /// @dev all external calls to the Realitio contract go here
+    ////////////////////////////////////
+    //// EXTERNAL REALITIO FUNCTIONS ///
+    ////////////////////////////////////
 
     /// @notice posts the question to realit.io
     function _postQuestion(uint256 template_id, string memory question, address arbitrator, uint32 timeout, uint32 opening_ts, uint256 nonce) internal returns (bytes32) {
@@ -307,64 +269,58 @@ contract Harber is ERC721 {
         return realitio.isFinalized(questionId);
     }
 
-    ////////////// MARKET RESOLUTION FUNCTIONS ////////////// 
+    ////////////////////////////////////
+    //// MARKET RESOLUTION FUNCTIONS ///
+    ////////////////////////////////////
 
     /// @notice the first of two functions which must be called, one after the other, to conclude the competition
     /// @notice winnings can be paid out (or funds returned) only when these three steps are completed
     /// @notice this function checks whether the competition has ended (1 hour grace), if so closes down all 'ordinary course of business' functions
     /// @dev can be called by anyone 
-    function step1checkMarketEnded() external {
-        require(marketEnded == false, "Step1 can only be completed once");
-        require(marketExpectedResolutionTime < (now - 1 hours), "Market has not finished yet");
+    function step1checkMarketEnded() external checkState(States.OPEN) {
+        require(marketExpectedResolutionTime < (now - 1 hours), "Market has not finished");
         // do a final rent collection before the contract is locked down
         collectRentAllTokens();
         // lock everything down
-        marketEnded = true;
+        _incrementState();
         emit LogStep1Complete(true);
     }
 
     /// @notice the second of two functions which must be called, one after the other, to conclude the competition
     /// @notice this function checks whether the Realitio question has resolved, and if yes, gets the winner
     /// @dev can be called by anyone 
-    function step2getWinner() external {
-        require(marketEnded == true, "Must wait for market to end");
-        require(step2Complete == false, "Step2 can only be completed once");
-        require(_isQuestionFinalized() == true, "Must wait for question to finalize on Realitio");
+    function step2getWinner() external checkState(States.LOCKED) {
+        require(_isQuestionFinalized() == true, "Oracle not resolved");
         // get the winner. This will revert if answer is not resolved.
         winningOutcome = _getWinner();
-        step2Complete = true;
         // check if question resolved invalid
         if (winningOutcome !=  ((2**256)-1)) {
             questionResolvedInvalid = false;
         }
+        _incrementState();
         emit LogStep2Complete(true, winningOutcome, questionResolvedInvalid);
     }
 
     /// @notice emergency function in case the Realitio question never resolves for whatever reason, can be called by anyone
     /// @notice returns all funds to all users
     /// @notice can only be called 1 month after Realitio question should have ended 
-    function step2BemergencyExit() external  {
-        require(marketEnded == true, "Must wait for market to end");
-        require(step2Complete == false, "Step2 can only be completed once");
-        require(now > (marketExpectedResolutionTime + 4 weeks), "Must wait 1 month for Oracle to resolve");
-        step2Complete = true;
+    function step2BemergencyExit() external checkState(States.LOCKED) {
+        require(now > (marketExpectedResolutionTime + 4 weeks), "Must wait 1 month");
+        _incrementState();
         emit LogStep2Complete(false, winningOutcome, false);
     }
 
     /// @notice Same as above, except that only owner can call it, and can be called whenever
     /// @notice to be clear, this only allows owner to return all funds, not to set a winner
-    function step2CcircuitBreaker() external {
-        require(marketEnded == true, "Must wait for market to end");
-        require(step2Complete == false, "Step2 can only be completed once");
+    function step2CcircuitBreaker() external checkState(States.LOCKED) {
         require(msg.sender == owner, "Only owner can call this");
-        step2Complete = true;
+        _incrementState();
         emit LogStep2Complete(false, winningOutcome, false);
     }
 
     /// @notice the final function of the competition resolution process. Pays out winnings, or returns funds, as necessary
     /// @dev users pull dai into their ac   count. 
-    function complete() external {
-        require(step2Complete == true, "Step2 must be completed first");
+    function complete() external checkState(States.WITHDRAW) {
         if (!questionResolvedInvalid) {
             _payoutWinnings();
         } else {
@@ -377,7 +333,7 @@ contract Harber is ERC721 {
     /// @dev must be internal and only called by complete
     function _payoutWinnings() internal {
         uint256 _winningsToTransfer = getWinnings(winningOutcome);
-        require(_winningsToTransfer > 0, "You are not a winner, or winnings already paid");
+        require(_winningsToTransfer > 0, "Not a winner, or winnings already paid");
         timeHeld[winningOutcome][msg.sender] = 0; // otherwise they can keep paying themselves over and over
         _sendCash(msg.sender, _winningsToTransfer);
         emit LogWinningsPaid(msg.sender, _winningsToTransfer);
@@ -388,19 +344,20 @@ contract Harber is ERC721 {
     /// @dev must be internal and only called by complete
     function _returnRent() internal {
         uint256 _rentCollected = collectedPerUser[msg.sender];
-        require(_rentCollected > 0, "You paid no rent, or rent already returned");
+        require(_rentCollected > 0, "Paid no rent, or rent already returned");
         collectedPerUser[msg.sender] = 0; // otherwise they can keep paying themselves over and over
         _sendCash(msg.sender, _rentCollected);
         emit LogRentReturned(msg.sender, _rentCollected);
     }
 
     /// @notice withdraw full deposit after markets have resolved
-    /// @dev the other withdraw deposit functions are locked when markets have resolved so must use this one
-    /// @dev ... which can only be called if markets have resolved. This function is also different in that it does 
+    /// @dev the other withdraw deposit functions are locked when markets have closed so must use this one
+    /// @dev can be called in either locked or withdraw state
+    /// @dev this function is also different in that it does 
     /// @dev ... not attempt to collect rent or transfer ownership to a previous owner
     function withdrawDepositAfterMarketEnded() external {
-        require(marketEnded == true, "step1 must be complete first");
-         
+        require(state != States.NFTSNOTMINTED, "Incorrect state");
+        require(state != States.OPEN, "Incorrect state");
         for (uint i = 0; i < numberOfTokens; i++) {
 
             uint256 _depositToReturn = deposits[i][msg.sender];
@@ -413,23 +370,26 @@ contract Harber is ERC721 {
         }
     }
 
-    ////////////// ORDINARY COURSE OF BUSINESS FUNCTIONS- EXTERNAL //////////////
+    ////////////////////////////////////
+    ///// MAIN FUNCTIONS- EXTERNAL /////
+    ////////////////////////////////////
+    /// @dev basically functions that have checkState(States.OPEN) modifier
 
     /// @notice collects rent for all tokens
     /// @dev makes it easy for me to call whenever I want to keep people paying their rent, thus cannot be internal
     /// @dev cannot be external because it is called within the step1 functions, therefore public
-    function collectRentAllTokens() public notEnded() {
+    function collectRentAllTokens() public checkState(States.OPEN) {
        for (uint i = 0; i < numberOfTokens; i++) {
             _collectRent(i);
         }
     }
     
     /// @notice to rent a token
-    function newRental(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) external tokenExists(_tokenId) amountNotZero(_deposit) notEnded() nftsExist() {
+    function newRental(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) external checkState(States.OPEN) tokenExists(_tokenId) amountNotZero(_deposit) {
         uint256 _currentPricePlusTenPercent = price[_tokenId].mul(11).div(10);
         uint256 _oneHoursDeposit = _newPrice.div(24);
-        require(_newPrice >= _currentPricePlusTenPercent, "Price must be at least 10% higher than current price");
-        require(_deposit >= _oneHoursDeposit, "You must deposit enough to cover one hour's rent");
+        require(_newPrice >= _currentPricePlusTenPercent, "Price not 10% higher");
+        require(_deposit >= _oneHoursDeposit, "One hour's rent minimum");
         require(_newPrice >= 0.01 ether, "Minimum rental 0.01 Dai");
         
         _collectRent(_tokenId);
@@ -455,21 +415,22 @@ contract Harber is ERC721 {
     /// @dev they would then increase their deposit despite no longer owning it
     /// @dev this is ok, they can still withdraw via withdrawDeposit. 
     /// @dev can be called by anyone- you can top up someone else's deposit if you wish!
-    function depositDai(uint256 _dai, uint256 _tokenId) external amountNotZero(_dai) tokenExists(_tokenId) notEnded() {
+    function depositDai(uint256 _dai, uint256 _tokenId) external checkState(States.OPEN) amountNotZero(_dai) tokenExists(_tokenId) {
         _collectRent(_tokenId);
         _depositDai(_dai, _tokenId);
     }
 
     /// @notice increase the price of an existing rental
-    function changePrice(uint256 _newPrice, uint256 _tokenId) external tokenExists(_tokenId) notEnded() onlyTokenOwner(_tokenId) {
-        require(_newPrice > price[_tokenId], "New price must be higher than current price"); 
+    function changePrice(uint256 _newPrice, uint256 _tokenId) external checkState(States.OPEN) tokenExists(_tokenId) onlyTokenOwner(_tokenId) {
+        require(_newPrice > price[_tokenId], "New price must be highe"); 
         _collectRent(_tokenId);
         _changePrice(_newPrice, _tokenId);
     }
     
     /// @notice withdraw deposit
     /// @dev do not need to be the current owner
-    function withdrawDeposit(uint256 _daiToWithdraw, uint256 _tokenId) public tokenExists(_tokenId) notEnded() amountNotZero(_daiToWithdraw) {
+    /// @dev public because called by exit
+    function withdrawDeposit(uint256 _daiToWithdraw, uint256 _tokenId) public checkState(States.OPEN) tokenExists(_tokenId) amountNotZero(_daiToWithdraw) {
         _collectRent(_tokenId);
         uint256 _remainingDeposit = deposits[_tokenId][msg.sender];
         // deposits may be lower (or zero) then when function called due to _collectRent 
@@ -484,17 +445,25 @@ contract Harber is ERC721 {
 
     /// @notice withdraw full deposit
     /// @dev do not need to be the current owner
+    /// @dev no modifiers because they are on withdrawDeposit
     function exit(uint256 _tokenId) external {
         withdrawDeposit(deposits[_tokenId][msg.sender],  _tokenId);
     }
 
-    ////////////// ORDINARY COURSE OF BUSINESS FUNCTIONS- INTERNALS //////////////
+    ////////////////////////////////////
+    ///// MAIN FUNCTIONS- INTERNAL /////
+    ////////////////////////////////////
+
+    /// @dev should only be called thrice
+    function _incrementState() internal  {
+        state = States(uint(state) + 1);
+    }
 
     /// @notice collects rent for a specific token
     /// @dev also calculates and updates how long the current user has held the token for
     /// @dev called frequently internally, so cant be external. 
     /// @dev is not a problem if called externally, but making internal over public to save gas
-    function _collectRent(uint256 _tokenId) internal notEnded() {
+    function _collectRent(uint256 _tokenId) internal {
         //only collect rent if the token is owned (ie, if owned by the contract this implies unowned)
         if (ownerOf(_tokenId) != address(this)) {
             
@@ -516,15 +485,10 @@ contract Harber is ERC721 {
             // decrease deposit by rent owed
             deposits[_tokenId][_currentOwner] = deposits[_tokenId][_currentOwner].sub(_rentOwed);
 
-            // the 'important bit', where the duration the token has been held by each user is updated
-            // it is essential that timeHeld and totalTimeHeld are incremented together such that the sum of
-            // the first is equal to the second
+            // update time held and amount collected variables
             uint256 _timeHeldToIncrement = (_timeOfThisCollection.sub(timeLastCollected[_tokenId])); //just for readability
             timeHeld[_tokenId][_currentOwner] = timeHeld[_tokenId][_currentOwner].add(_timeHeldToIncrement);
             totalTimeHeld[_tokenId] = totalTimeHeld[_tokenId].add(_timeHeldToIncrement);
-
-            // it is also essential that collectedPerUser and totalCollected are all incremented together
-            // such that the sum of the first two (individually) is equal to the third
             collectedPerUser[_currentOwner] = collectedPerUser[_currentOwner].add(_rentOwed);
             collectedPerToken[_tokenId] = collectedPerToken[_tokenId].add(_rentOwed);
             totalCollected = totalCollected.add(_rentOwed);

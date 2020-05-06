@@ -19,7 +19,8 @@ module.exports = {
       url: "http://127.0.0.1:8545"
     },
     buidlerevm: {
-      gas: 9500000,
+      gas: 10000000,
+      blockGasLimit: 10000000,
       gasPrice: 1
     } 
   }
