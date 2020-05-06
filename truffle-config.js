@@ -14,6 +14,11 @@ module.exports = {
   // to customize your Truffle configuration!
   plugins: [ "truffle-security" ],
   contracts_build_directory: path.join(__dirname, "app/src/contracts"),
+  compilers: {
+    solc: {
+      version: "0.6.6",
+    },
+  },
   networks: {
     // mainnet: {
     //   network_id: 1,
@@ -75,11 +80,6 @@ module.exports = {
     reporterOptions: {
       currency: 'USD',
       gasPrice: 5, //in gwei
-    },
-  },
-  compilers: {
-    solc: {
-      version: "0.5.13",  // ex:  "0.4.20". (Default: Truffle's installed solc)
     },
   },
 };

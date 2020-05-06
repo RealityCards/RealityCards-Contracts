@@ -1,0 +1,44 @@
+pragma solidity ^0.5.0;
+
+interface IMarket 
+{
+    function getWinningPayoutNumerator(uint256 _outcome) external view returns (uint256);
+}
+
+contract OracleExampleAugur1 {
+
+    // replace with the market's address
+    IMarket public market = IMarket(0x34A971cA2fd6DA2Ce2969D716dF922F17aAA1dB0); 
+
+    function getWinnerFromAugurBinaryMarket() public view {
+        if (market.getWinningPayoutNumerator(0) > 0) {
+            // insert logic for Invalid outcome
+        } else if (market.getWinningPayoutNumerator(1) > 0)  {
+            // insert logic for Yes outcome
+        } else if (market.getWinningPayoutNumerator(2) > 0) {
+            // insert logic for No outcome
+        } else {
+            // insert logic for market not yet settled
+        }
+    }
+}
+
+interface OICash
+{
+    function deposit(uint256 _amount) external returns (bool);
+    function withdraw(uint256 _amount) external returns (bool);
+}
+
+contract OracleExampleAugur2 {
+
+    // replace with the current contract address
+    OICash public oicash = OICash(0xbD41281dE5E4cA62602ed7c134f46d831A340B78);
+
+    function augurDeposit(uint256 _amount) public {
+        require(oicash.deposit(_amount), "Augur deposit failed");
+    }
+
+    function augurWithdraw(uint256 _amount) public {
+        require(oicash.withdraw(_amount), "Augur withdraw failed");
+    }
+}

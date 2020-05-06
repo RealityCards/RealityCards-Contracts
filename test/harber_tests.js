@@ -36,7 +36,7 @@ contract('HarberTests', (accounts) => {
     realitio = await RealitioMockup.new();
     // token = await harber.new("Harber.io", "HARB");
     harber = await Harber.new(andrewsAddress, cash.address, realitio.address, marketExpectedResolutionTime);
-    await harber.mintNfts();
+    // await harber.mintNfts();
   });
 
   // check that the contract initially owns the token

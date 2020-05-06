@@ -1,5 +1,5 @@
-pragma solidity 0.5.13;
-import "@openzeppelin/contracts/token/ERC721/ERC721Full.sol";
+pragma solidity 0.6.6;
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 /// @title Realit.io contract interface
@@ -23,7 +23,7 @@ interface Cash
 /// @title Harber
 /// @author Andrew Stanger
 
-contract Harber is ERC721Full {
+contract Harber is ERC721 {
 
     using SafeMath for uint256;
 
@@ -93,7 +93,7 @@ contract Harber is ERC721Full {
     mapping (uint256 => uint256) public collectedPerToken;
 
     ////////////// CONSTRUCTOR //////////////
-    constructor(address _owner, Cash _addressOfCashContract, Realitio _addressOfRealitioContract, uint32 _marketExpectedResolutionTime) ERC721Full("harber.io", "HARB") public
+    constructor(address _owner, Cash _addressOfCashContract, Realitio _addressOfRealitioContract, uint32 _marketExpectedResolutionTime) ERC721("harber.io", "HARB") public
     {
         //assign arguments to relevant variables
         marketExpectedResolutionTime = _marketExpectedResolutionTime;
@@ -626,19 +626,19 @@ contract Harber is ERC721Full {
     function _transferTokenTo(address _currentOwner, address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
         require(_currentOwner != address(0) && _newOwner != address(0) , "Cannot send to/from zero address");
         price[_tokenId] = _newPrice;
-        _transferFrom(_currentOwner, _newOwner, _tokenId);
+        _transfer(_currentOwner, _newOwner, _tokenId);
     }
 
     /////// ERC721 FUNCTION OVERRIDES ///////
     /// @dev only the contract can transfer the NFTs
-    function transferFrom(address from, address to, uint256 tokenId) public {
+    function transferFrom(address from, address to, uint256 tokenId) override public {
         require(false, "Only the contract can make transfers");
         from;
         to;
         tokenId;
     }
 
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) public {
+    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) override public {
         require(false, "Only the contract can make transfers");
         from;
         to;

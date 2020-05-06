@@ -1,4 +1,4 @@
-pragma solidity 0.5.13;
+pragma solidity 0.6.6;
 
 // this is only for ganache testing. Public chain deployments will use the existing Realitio contracts. 
 
