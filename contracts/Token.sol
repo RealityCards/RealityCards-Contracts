@@ -13,6 +13,7 @@ contract Token is ERC721 {
 
     constructor() ERC721("realitycards.io", "RC") public {} 
 
+    /// @dev this is deployed before RC contract so owner cannot be passed via constructor
     function setOwner() public {
         require(!ownerSet, "Owner already set");
         ownerSet = true;

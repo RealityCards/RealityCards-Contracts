@@ -148,7 +148,7 @@ contract Harber {
     ////////////////////////////////////
 
     modifier checkState(States currentState) {
-        require(state == currentState, "incorrect state");
+        require(state == currentState, "Incorrect state");
         _;
     }
 
@@ -430,7 +430,7 @@ contract Harber {
 
     /// @notice increase the price of an existing rental
     function changePrice(uint256 _newPrice, uint256 _tokenId) external checkState(States.OPEN) tokenExists(_tokenId) onlyTokenOwner(_tokenId) {
-        require(_newPrice > price[_tokenId], "New price must be highe"); 
+        require(_newPrice > price[_tokenId], "New price must be higher"); 
         _collectRent(_tokenId);
         _changePrice(_newPrice, _tokenId);
     }
