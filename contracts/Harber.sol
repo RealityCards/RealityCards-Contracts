@@ -1,13 +1,13 @@
 pragma solidity 0.6.6;
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./interfaces/ICash.sol";
 import "./interfaces/IRealitio.sol";
+import "./Token.sol";
 
 /// @title Harber
 /// @author Andrew Stanger
 
-contract Harber is ERC721 {
+contract Harber {
 
     using SafeMath for uint256;
 
@@ -33,6 +33,7 @@ contract Harber is ERC721 {
     States public state; 
 
     /// CONTRACT VARIABLES
+    Token public token;
     IRealitio public realitio;
     ICash public cash; 
 
@@ -85,13 +86,14 @@ contract Harber is ERC721 {
     //////// CONSTRUCTOR ///////////////
     ////////////////////////////////////
 
-    constructor(address _owner, ICash _addressOfCashContract, IRealitio _addressOfRealitioContract, uint32 _marketExpectedResolutionTime) ERC721("harber.io", "HARB") public
+    constructor(address _owner, Token _addressOfTokenContract, ICash _addressOfCashContract, IRealitio _addressOfRealitioContract, uint32 _marketExpectedResolutionTime)  public
     {
         //assign arguments to relevant variables
         marketExpectedResolutionTime = _marketExpectedResolutionTime;
         owner = _owner;
         
         // external contract variables:
+        token = _addressOfTokenContract;
         realitio = _addressOfRealitioContract;
         cash = _addressOfCashContract;
 
@@ -126,12 +128,18 @@ contract Harber is ERC721 {
     //////// INITIAL SETUP /////////////
     ////////////////////////////////////
 
+    /// @notice set this contract as owner of the Token contract
+    function setTokenOwner() external {
+        token.setOwner();
+    }
+
+    /// @notice mint the NFTs. Must setTokenOwner first or will revert
     function mintNfts(string calldata _uri) external checkState(States.NFTSNOTMINTED) {
-        _mint(address(this), nftMintCount); 
-        _setTokenURI(nftMintCount, _uri);
+        token.mint(address(this), nftMintCount, _uri); 
         nftMintCount = nftMintCount.add(1);
         if (nftMintCount == numberOfTokens) {
             _incrementState();
+            token.lock();
         }
     }
 
@@ -158,7 +166,7 @@ contract Harber is ERC721 {
 
     /// @notice what it says on the tin
     modifier onlyTokenOwner(uint256 _tokenId) {
-        require(msg.sender == ownerOf(_tokenId), "Not owner");
+        require(msg.sender == token.ownerOf(_tokenId), "Not owner");
        _;
     }
 
@@ -185,7 +193,7 @@ contract Harber is ERC721 {
     /// @return how much the current owner has deposited
     function liveDepositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) {
         uint256 _rentOwed = rentOwed(_tokenId);
-        address _currentOwner = ownerOf(_tokenId);
+        address _currentOwner = token.ownerOf(_tokenId);
         if(_rentOwed >= deposits[_tokenId][_currentOwner]) {
             return 0;
         } else {
@@ -197,7 +205,7 @@ contract Harber is ERC721 {
     /// @return how much the current user has deposited (note: user not owner)
     function userDepositAbleToWithdraw(uint256 _tokenId) external view returns (uint256) {
         uint256 _rentOwed = rentOwed(_tokenId);
-        address _currentOwner = ownerOf(_tokenId);
+        address _currentOwner = token.ownerOf(_tokenId);
 
         if(_currentOwner == msg.sender) {
             if(_rentOwed >= deposits[_tokenId][msg.sender]) {
@@ -395,7 +403,7 @@ contract Harber is ERC721 {
         _collectRent(_tokenId);
         _depositDai(_deposit, _tokenId);
 
-        address _currentOwner = ownerOf(_tokenId);
+        address _currentOwner = token.ownerOf(_tokenId);
 
         if (_currentOwner == msg.sender) { // bought by current owner- just change price
             _changePrice(_newPrice, _tokenId);
@@ -465,10 +473,10 @@ contract Harber is ERC721 {
     /// @dev is not a problem if called externally, but making internal over public to save gas
     function _collectRent(uint256 _tokenId) internal {
         //only collect rent if the token is owned (ie, if owned by the contract this implies unowned)
-        if (ownerOf(_tokenId) != address(this)) {
+        if (token.ownerOf(_tokenId) != address(this)) {
             
             uint256 _rentOwed = rentOwed(_tokenId);
-            address _currentOwner = ownerOf(_tokenId);
+            address _currentOwner = token.ownerOf(_tokenId);
             uint256 _timeOfThisCollection;
             
             if (_rentOwed >= deposits[_tokenId][_currentOwner]) {
@@ -522,7 +530,7 @@ contract Harber is ERC721 {
     /// @notice actually withdraw the deposit and call _revertToPreviousOwner if necessary
     function _withdrawDeposit(uint256 _daiToWithdraw, uint256 _tokenId) internal {
         assert(deposits[_tokenId][msg.sender] >= _daiToWithdraw);
-        address _currentOwner = ownerOf(_tokenId);
+        address _currentOwner = token.ownerOf(_tokenId);
 
         // must rent for minimum of 1 hour for current owner
         if(_currentOwner == msg.sender) {
@@ -569,8 +577,8 @@ contract Harber is ERC721 {
         }   
 
         // if the above loop did not foreclose, then transfer to previous owner
-        if (ownerOf(_tokenId) != address(this)) {
-            address _currentOwner = ownerOf(_tokenId);
+        if (token.ownerOf(_tokenId) != address(this)) {
+            address _currentOwner = token.ownerOf(_tokenId);
             uint256 _oldPrice = ownerTracker[_tokenId][_index].price;
             _transferTokenTo(_currentOwner, _previousOwner, _oldPrice, _tokenId);
             emit LogReturnToPreviousOwner(_tokenId, _previousOwner);
@@ -579,7 +587,7 @@ contract Harber is ERC721 {
 
     /// @notice return token to the contract and return price to zero
     function _foreclose(uint256 _tokenId) internal {
-        address _currentOwner = ownerOf(_tokenId);
+        address _currentOwner = token.ownerOf(_tokenId);
         // third field is price, ie price goes to zero
         _transferTokenTo(_currentOwner, address(this), 0, _tokenId);
         emit LogForeclosure(_currentOwner, _tokenId);
@@ -590,24 +598,8 @@ contract Harber is ERC721 {
     function _transferTokenTo(address _currentOwner, address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
         require(_currentOwner != address(0) && _newOwner != address(0) , "Cannot send to/from zero address");
         price[_tokenId] = _newPrice;
-        _transfer(_currentOwner, _newOwner, _tokenId);
+        token.transferRcOnly(_currentOwner, _newOwner, _tokenId);
     }
 
-    /////// ERC721 FUNCTION OVERRIDES ///////
-    /// @dev only the contract can transfer the NFTs
-    function transferFrom(address from, address to, uint256 tokenId) override public {
-        require(false, "Only the contract can make transfers");
-        from;
-        to;
-        tokenId;
-    }
-
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) override public {
-        require(false, "Only the contract can make transfers");
-        from;
-        to;
-        tokenId;
-        _data;
-    }
 }
 
