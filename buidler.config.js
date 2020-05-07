@@ -15,7 +15,7 @@ module.exports = {
     version: "0.6.6",
     optimizer: {
       enabled: true,
-      runs: 200
+      runs: 1
     },
   },
   networks: {

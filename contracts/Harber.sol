@@ -80,12 +80,9 @@ contract Harber is Ownable {
     mapping (address => uint256) public collectedPerUser;
     /// @dev keeps track of all the rent paid for each  Front end only
     mapping (uint256 => uint256) public collectedPerToken;
-    /// @dev stores the address to revert ownership to should this user's deposit run out
-    mapping (uint256 => mapping (address => address) ) public linkedListPrevious; 
-    /// @dev stores the address that will revert back to this user if that owner's deposit runs out
+    mapping (uint256 => mapping (address => address) ) public linkedListPrevious;
     mapping (uint256 => mapping (address => address) ) public linkedListNext;
-    /// @dev the token prices of previous owners, in case ownership reverts back to them
-    mapping (uint256 => mapping (address => uint256) ) public previousPrices; 
+    mapping (uint256 => mapping (address => uint256) ) public priceTracker; 
 
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
@@ -421,7 +418,7 @@ contract Harber is Ownable {
             // add previous owner to linkedlists
             linkedListPrevious[_tokenId][msg.sender] = _currentOwner;
             linkedListNext[_tokenId][_currentOwner] = msg.sender;
-            previousPrices[_tokenId][msg.sender] = _newPrice;
+            priceTracker[_tokenId][msg.sender] = _newPrice;
             // ownershipDetails[_tokenId][msg.sender].price = _newPrice;
             _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
             emit LogNewRental(msg.sender, _newPrice, _tokenId); 
@@ -534,7 +531,7 @@ contract Harber is Ownable {
         // below is the only instance when price is modifed outside of the _transferTokenTo function
         price[_tokenId] = _newPrice;
         // ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
-        previousPrices[_tokenId][msg.sender] = _newPrice;
+        priceTracker[_tokenId][msg.sender] = _newPrice;
         emit LogPriceChange(price[_tokenId], _tokenId);
     }
 
@@ -584,12 +581,13 @@ contract Harber is Ownable {
         address _addressToReturnTo = linkedListPrevious[_tokenId][_currentOwner];
 
         if (_addressToReturnTo != address(this)) {
-            uint256 _oldPrice = previousPrices[_tokenId][_addressToReturnTo];
+            uint256 _oldPrice = priceTracker[_tokenId][_addressToReturnTo];
             _transferTokenTo(_currentOwner, _addressToReturnTo, _oldPrice, _tokenId);
             emit LogReturnToPreviousOwner(_tokenId, _addressToReturnTo);
         } else {
             _foreclose(_tokenId);
         }
+
 
         // // loop max ten times before just assigning it to that owner, to prevent block limit
         // for (uint i=0; i < MAX_ITERATIONS; i++)  {
