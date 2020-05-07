@@ -11,13 +11,13 @@ contract Token is ERC721, Ownable {
     constructor() ERC721("realitycards.io", "RC") public {} 
 
     /// @notice mints and sets URIs
-    function mint(address _owner, uint _tokenId, string calldata _uri) external onlyOwner {
+    function mint(address _owner, uint _tokenId, string memory _uri) public onlyOwner {
         _mint(_owner, _tokenId);
         _setTokenURI(_tokenId, _uri);
     }
 
     /// @notice all transfer must pass through this function. 
-    function transferRcOnly(address _currentOwner, address _newOwner, uint256 _tokenId) external onlyOwner {
+    function transferRcOnly(address _currentOwner, address _newOwner, uint256 _tokenId) public onlyOwner {
         _transfer(_currentOwner, _newOwner, _tokenId);
     }
 

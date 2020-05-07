@@ -44,7 +44,7 @@ contract Harber is Ownable {
     /// @dev when a token was bought. Used to enforce minimum of one hour rental, also used in front end. Rent collection does not need this, only needs timeLastCollected.
     uint256[numberOfTokens] public timeAcquired; 
     /// @dev tracks the position of the current owner in the ownerTracker mapping
-    // uint256[numberOfTokens] public currentOwnerIndex; 
+    uint256[numberOfTokens] public currentOwnerIndex; 
     /// @dev an easy way to track the above across all tokens. It should always increment at the same time as the above increments. 
     uint256 public totalCollected; 
     
@@ -68,7 +68,7 @@ contract Harber is Ownable {
     /// @dev ...ownership can be reverted to a previous owner with the previous price. Index 0 is NOT used, this tells the contract to foreclose.
     /// @dev this does NOT keep a reliable list of all owners, if it reverts to a previous owner then the next owner will overwrite the owner that was in that slot.
     /// @dev the variable currentOwnerIndex is used to track the location of the current owner. 
-    // mapping (uint256 => mapping (uint256 => purchase) ) public ownerTracker;  
+    mapping (uint256 => mapping (uint256 => purchase) ) public ownerTracker;  
     /// @dev how many seconds each user has held each token for, for determining winnings  
     mapping (uint256 => mapping (address => uint256) ) public timeHeld;
     /// @dev sums all the timeHelds for each  Not required, but saves on gas when paying out. Should always increment at the same time as timeHeld
@@ -80,9 +80,6 @@ contract Harber is Ownable {
     mapping (address => uint256) public collectedPerUser;
     /// @dev keeps track of all the rent paid for each  Front end only
     mapping (uint256 => uint256) public collectedPerToken;
-    mapping (uint256 => mapping (address => address) ) public linkedListPrevious;
-    mapping (uint256 => mapping (address => address) ) public linkedListNext;
-    mapping (uint256 => mapping (address => uint256) ) public priceTracker; 
 
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
@@ -182,15 +179,15 @@ contract Harber is Ownable {
         return price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(1 days);
     }
 
-    // /// @dev used in testing only
-    // function getOwnerTrackerPrice(uint256 _tokenId, uint256 _index) external view returns (uint256) {
-    //     return (ownerTracker[_tokenId][_index].price);
-    // }
+    /// @dev used in testing only
+    function getOwnerTrackerPrice(uint256 _tokenId, uint256 _index) external view returns (uint256) {
+        return (ownerTracker[_tokenId][_index].price);
+    }
 
-    // /// @dev used in testing only
-    // function getOwnerTrackerAddress(uint256 _tokenId, uint256 _index) external view returns (address) {
-    //     return (ownerTracker[_tokenId][_index].owner);
-    // }
+    /// @dev used in testing only
+    function getOwnerTrackerAddress(uint256 _tokenId, uint256 _index) external view returns (address) {
+        return (ownerTracker[_tokenId][_index].owner);
+    }
 
     /// @dev for front end only
     /// @return how much the current owner has deposited
@@ -330,7 +327,7 @@ contract Harber is Ownable {
 
     /// @notice the final function of the competition resolution process. Pays out winnings, or returns funds, as necessary
     /// @dev users pull dai into their ac   count. 
-    function withdraw() external checkState(States.WITHDRAW) {
+    function complete() external checkState(States.WITHDRAW) {
         if (!questionResolvedInvalid) {
             _payoutWinnings();
         } else {
@@ -411,15 +408,10 @@ contract Harber is Ownable {
             _changePrice(_newPrice, _tokenId);
         } else {   // bought by new user- the normal flow
             // update internals
-            // currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].add(1); 
-            // ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
-            // ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].owner = msg.sender; 
+            currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].add(1); 
+            ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
+            ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].owner = msg.sender; 
             timeAcquired[_tokenId] = now;
-            // add previous owner to linkedlists
-            linkedListPrevious[_tokenId][msg.sender] = _currentOwner;
-            linkedListNext[_tokenId][_currentOwner] = msg.sender;
-            priceTracker[_tokenId][msg.sender] = _newPrice;
-            // ownershipDetails[_tokenId][msg.sender].price = _newPrice;
             _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
             emit LogNewRental(msg.sender, _newPrice, _tokenId); 
         }
@@ -530,8 +522,7 @@ contract Harber is Ownable {
     function _changePrice(uint256 _newPrice, uint256 _tokenId) internal {
         // below is the only instance when price is modifed outside of the _transferTokenTo function
         price[_tokenId] = _newPrice;
-        // ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
-        priceTracker[_tokenId][msg.sender] = _newPrice;
+        ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
         emit LogPriceChange(price[_tokenId], _tokenId);
     }
 
@@ -557,61 +548,40 @@ contract Harber is Ownable {
 
         deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].sub(_daiToWithdraw);
         
-        if (deposits[_tokenId][msg.sender] == 0) {
-            if (_currentOwner == msg.sender) {
-                _revertToPreviousOwner(_tokenId);
-            } else {
-                // update linked lists: get the user who would revert to this user
-                // ... and update the list so that they will revert to this user's 
-                // ... revert user instead
-                address _thisUsersNextOwner = linkedListNext[_tokenId][msg.sender];
-                address _thisUsersPreviousOwner = linkedListPrevious[_tokenId][msg.sender];
-                linkedListPrevious[_tokenId][_thisUsersNextOwner] = _thisUsersPreviousOwner;
-            }
+        if(_currentOwner == msg.sender && deposits[_tokenId][msg.sender] == 0) {
+            _revertToPreviousOwner(_tokenId);
         }
         _sendCash(msg.sender, _daiToWithdraw);
     }
 
     /// @notice if a users deposit runs out, either return to previous owner or foreclose
     function _revertToPreviousOwner(uint256 _tokenId) internal {
-        // uint256 _index;
-        // address _previousOwner;
+        uint256 _index;
+        address _previousOwner;
 
-        address _currentOwner = token.ownerOf(_tokenId);
-        address _addressToReturnTo = linkedListPrevious[_tokenId][_currentOwner];
+        // loop max ten times before just assigning it to that owner, to prevent block limit
+        for (uint i=0; i < MAX_ITERATIONS; i++)  {
+            currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].sub(1); // currentOwnerIndex will now point to  previous owner
+            _index = currentOwnerIndex[_tokenId]; // just for readability
+            _previousOwner = ownerTracker[_tokenId][_index].owner;
 
-        if (_addressToReturnTo != address(this)) {
-            uint256 _oldPrice = priceTracker[_tokenId][_addressToReturnTo];
-            _transferTokenTo(_currentOwner, _addressToReturnTo, _oldPrice, _tokenId);
-            emit LogReturnToPreviousOwner(_tokenId, _addressToReturnTo);
-        } else {
-            _foreclose(_tokenId);
-        }
-
-
-        // // loop max ten times before just assigning it to that owner, to prevent block limit
-        // for (uint i=0; i < MAX_ITERATIONS; i++)  {
-        //     currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].sub(1); // currentOwnerIndex will now point to  previous owner
-        //     _index = currentOwnerIndex[_tokenId]; // just for readability
-        //     _previousOwner = ownerTracker[_tokenId][_index].owner;
-
-        //     // if no previous owners. price -> zero, foreclose
-        //     // if previous owner still has a deposit, transfer to them, update the price to what it used to be
-        //     if (_index == 0) {
-        //         _foreclose(_tokenId);
-        //         break;
-        //     } else if (deposits[_tokenId][_previousOwner] > 0) {
-        //         break;
-        //     }  
-        // }   
+            // if no previous owners. price -> zero, foreclose
+            // if previous owner still has a deposit, transfer to them, update the price to what it used to be
+            if (_index == 0) {
+                _foreclose(_tokenId);
+                break;
+            } else if (deposits[_tokenId][_previousOwner] > 0) {
+                break;
+            }  
+        }   
 
         // if the above loop did not foreclose, then transfer to previous owner
-        // if (token.ownerOf(_tokenId) != address(this)) {
-        //     address _currentOwner = token.ownerOf(_tokenId);
-        //     uint256 _oldPrice = ownerTracker[_tokenId][_index].price;
-        //     _transferTokenTo(_currentOwner, _previousOwner, _oldPrice, _tokenId);
-        //     emit LogReturnToPreviousOwner(_tokenId, _previousOwner);
-        // }
+        if (token.ownerOf(_tokenId) != address(this)) {
+            address _currentOwner = token.ownerOf(_tokenId);
+            uint256 _oldPrice = ownerTracker[_tokenId][_index].price;
+            _transferTokenTo(_currentOwner, _previousOwner, _oldPrice, _tokenId);
+            emit LogReturnToPreviousOwner(_tokenId, _previousOwner);
+        }
     }
 
     /// @notice return token to the contract and return price to zero
