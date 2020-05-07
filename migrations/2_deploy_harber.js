@@ -24,10 +24,8 @@ module.exports = function (deployer, network) {
   } else if (network === "development") {
       deployer.deploy(CashMockup).then((deployedCash) => {
         return deployer.deploy(RealitioMockup).then((deployedRealitio) => {
-          // return deployer.deploy(Token).then((deployedToken) => {
-            return deployer.deploy(Harber, andrewsAddress, deployedToken.address, deployedCash.address, deployedRealitio.address, marketExpectedResolutionTime);
+            return deployer.deploy(Harber, andrewsAddress, deployedCash.address, deployedRealitio.address, marketExpectedResolutionTime);
           });
-        // });
       });
     }
   };

@@ -16,14 +16,12 @@ contract Harber is Ownable {
     //////// VARIABLES /////////////////
     ////////////////////////////////////
 
-    /// CONTRACT SETUP
+    ///// CONTRACT SETUP /////
     /// @dev not set in the constructor because so many other variables need it for initating.  
     uint256 constant private numberOfTokens = 20;
     /// @dev counts how many NFTs have been minted 
-    /// @dev when nftMintCount = numberOfTokens, allNftsMinted -> true
+    /// @dev when nftMintCount = numberOfTokens, INCREMENT STATE
     uint256 private nftMintCount;
-    /// @dev must be true for any functions to work (except mintNfts)
-    bool private allNftsMinted;
     /// @dev the question ID of the question on realitio
     bytes32 public questionId;
     /// @dev only for _revertToPreviousOwner to prevent gas limits
@@ -31,48 +29,14 @@ contract Harber is Ownable {
     enum States {NOTOKENCONTRACT, NFTSNOTMINTED, OPEN, LOCKED, WITHDRAW}
     States public state; 
 
-    /// CONTRACT VARIABLES
+    ///// CONTRACT VARIABLES /////
     Token public token;
     IRealitio public realitio;
     ICash public cash; 
 
-    /// NFT/USER DATA
+    ///// PRICE, DEPOSITS, RENT /////
     /// @dev in attodai (so $100 = 100000000000000000000)
     uint256[numberOfTokens] public price; 
-    /// @dev used to determine the rent due. Rent is due for the period (now - timeLastCollected), at which point timeLastCollected is set to now.
-    uint256[numberOfTokens] public timeLastCollected; 
-    /// @dev when a token was bought. Used to enforce minimum of one hour rental, also used in front end. Rent collection does not need this, only needs timeLastCollected.
-    uint256[numberOfTokens] public timeAcquired; 
-    /// @dev tracks the position of the current owner in the ownerTracker mapping
-    uint256[numberOfTokens] public currentOwnerIndex; 
-    /// @dev an easy way to track the above across all tokens. It should always increment at the same time as the above increments. 
-    uint256 public totalCollected; 
-    
-    /// WINNING OUTCOME VARIABLES
-    /// @dev start with invalid winning outcome
-    uint256 public winningOutcome = 42069; 
-    //// @dev when the question can be answered on Realitio. 
-    uint32 public marketExpectedResolutionTime; 
-
-    /// MARKET RESOLUTION VARIABLES
-    bool public questionResolvedInvalid = true; // set in step 2. If false, normal payout. If true, return all funds
-    
-    ///  STRUCTS
-    struct purchase {
-        address owner;
-        uint256 price;
-    }
-    
-    /// MAPPINGS
-    /// @dev keeps track of all previous owners of a token, including the price, so that if the current owner's deposit runs out,
-    /// @dev ...ownership can be reverted to a previous owner with the previous price. Index 0 is NOT used, this tells the contract to foreclose.
-    /// @dev this does NOT keep a reliable list of all owners, if it reverts to a previous owner then the next owner will overwrite the owner that was in that slot.
-    /// @dev the variable currentOwnerIndex is used to track the location of the current owner. 
-    mapping (uint256 => mapping (uint256 => purchase) ) public ownerTracker;  
-    /// @dev how many seconds each user has held each token for, for determining winnings  
-    mapping (uint256 => mapping (address => uint256) ) public timeHeld;
-    /// @dev sums all the timeHelds for each  Not required, but saves on gas when paying out. Should always increment at the same time as timeHeld
-    mapping (uint256 => uint256) public totalTimeHeld; 
     /// @dev keeps track of all the deposits for each token, for each owner. Unused deposits are not returned automatically when there is a new buyer. 
     /// @dev they can be withdrawn manually however. Unused deposits are returned automatically upon resolution of the market
     mapping (uint256 => mapping (address => uint256) ) public deposits; 
@@ -80,7 +44,40 @@ contract Harber is Ownable {
     mapping (address => uint256) public collectedPerUser;
     /// @dev keeps track of all the rent paid for each  Front end only
     mapping (uint256 => uint256) public collectedPerToken;
+    /// @dev an easy way to track the above across all tokens. It should always increment at the same time as the above increments. 
+    uint256 public totalCollected; 
 
+    ///// TIME /////
+    /// @dev how many seconds each user has held each token for, for determining winnings  
+    mapping (uint256 => mapping (address => uint256) ) public timeHeld;
+    /// @dev sums all the timeHelds for each  Not required, but saves on gas when paying out. Should always increment at the same time as timeHeld
+    mapping (uint256 => uint256) public totalTimeHeld; 
+    /// @dev used to determine the rent due. Rent is due for the period (now - timeLastCollected), at which point timeLastCollected is set to now.
+    uint256[numberOfTokens] public timeLastCollected; 
+    /// @dev when a token was bought. Used to enforce minimum of one hour rental, also used in front end. Rent collection does not need this, only needs timeLastCollected.
+    uint256[numberOfTokens] public timeAcquired; 
+
+    ///// PREVIOUS OWNERS /////
+    /// @dev keeps track of all previous owners of a token, including the price, so that if the current owner's deposit runs out,
+    /// @dev ...ownership can be reverted to a previous owner with the previous price. Index 0 is NOT used, this tells the contract to foreclose.
+    /// @dev this does NOT keep a reliable list of all owners, if it reverts to a previous owner then the next owner will overwrite the owner that was in that slot.
+    mapping (uint256 => mapping (uint256 => purchase) ) public ownerTracker;  
+    /// @dev tracks the position of the current owner in the ownerTracker mapping
+    uint256[numberOfTokens] public currentOwnerIndex; 
+    /// @dev the struct for ownerTracker
+    struct purchase {
+        address owner;
+        uint256 price;
+    }
+
+    ///// MARKET RESOLUTION VARIABLES /////
+    /// @dev start with invalid winning outcome
+    uint256 public winningOutcome = 42069; 
+    //// @dev when the question can be answered on Realitio. 
+    uint32 public marketExpectedResolutionTime; 
+    /// @dev set in step 2. If false, normal payout. If true, return all funds. Default true
+    bool public questionResolvedInvalid = true; 
+  
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
     ////////////////////////////////////
@@ -90,7 +87,7 @@ contract Harber is Ownable {
         // reassign ownership (because deployed using public seed)
         transferOwnership(_owner);
 
-        // assign arguments to relevant variables
+        // assign arguments to relevant public variables
         marketExpectedResolutionTime = _marketExpectedResolutionTime;
         
         // external contract variables:
@@ -282,7 +279,7 @@ contract Harber is Ownable {
     ////////////////////////////////////
 
     /// @notice the first of two functions which must be called, one after the other, to conclude the competition
-    /// @notice winnings can be paid out (or funds returned) only when these three steps are completed
+    /// @notice winnings can be paid out (or funds returned) only when these two steps are completed
     /// @notice this function checks whether the competition has ended (1 hour grace), if so closes down all 'ordinary course of business' functions
     /// @dev can be called by anyone 
     function step1checkMarketEnded() external checkState(States.OPEN) {
@@ -363,8 +360,7 @@ contract Harber is Ownable {
     /// @dev this function is also different in that it does 
     /// @dev ... not attempt to collect rent or transfer ownership to a previous owner
     function withdrawDepositAfterMarketEnded() external {
-        require(state != States.NFTSNOTMINTED, "Incorrect state");
-        require(state != States.OPEN, "Incorrect state");
+        require(state == States.LOCKED || state == States.WITHDRAW, "Incorrect state");
         for (uint i = 0; i < numberOfTokens; i++) {
 
             uint256 _depositToReturn = deposits[i][msg.sender];
