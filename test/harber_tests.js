@@ -35,11 +35,13 @@ contract('HarberTests', (accounts) => {
     var marketExpectedResolutionTime = await time.latest();
     cash = await CashMockup.new();
     realitio = await RealitioMockup.new();
-    token = await Token.new();
-    harber = await Harber.new(andrewsAddress, token.address, cash.address, realitio.address, marketExpectedResolutionTime);
-    await harber.setTokenOwner();
+    harber = await Harber.new(andrewsAddress, cash.address, realitio.address, marketExpectedResolutionTime);
+    await harber.deployTokenContract({from: andrewsAddress});
+    tokenAddress = await harber.token.call();
+    token = await Token.at(tokenAddress);
+    // await harber.setTokenOwner();
     for (i = 0; i < 20; i++) {
-      await harber.mintNfts("uri");
+      await harber.mintNfts("uri", {from: andrewsAddress});
     }
   });
 

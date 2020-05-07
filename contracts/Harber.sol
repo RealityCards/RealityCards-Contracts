@@ -1,5 +1,6 @@
 pragma solidity 0.6.6;
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/ICash.sol";
 import "./interfaces/IRealitio.sol";
 import "./Token.sol";
@@ -7,7 +8,7 @@ import "./Token.sol";
 /// @title Harber
 /// @author Andrew Stanger
 
-contract Harber {
+contract Harber is Ownable {
 
     using SafeMath for uint256;
 
@@ -23,13 +24,11 @@ contract Harber {
     uint256 private nftMintCount;
     /// @dev must be true for any functions to work (except mintNfts)
     bool private allNftsMinted;
-    /// @dev for circuit breaker
-    address private owner; 
     /// @dev the question ID of the question on realitio
     bytes32 public questionId;
     /// @dev only for _revertToPreviousOwner to prevent gas limits
     uint256 constant private MAX_ITERATIONS = 10;
-    enum States {NFTSNOTMINTED, OPEN, LOCKED, WITHDRAW}
+    enum States {NOTOKENCONTRACT, NFTSNOTMINTED, OPEN, LOCKED, WITHDRAW}
     States public state; 
 
     /// CONTRACT VARIABLES
@@ -86,14 +85,15 @@ contract Harber {
     //////// CONSTRUCTOR ///////////////
     ////////////////////////////////////
 
-    constructor(address _owner, Token _addressOfTokenContract, ICash _addressOfCashContract, IRealitio _addressOfRealitioContract, uint32 _marketExpectedResolutionTime)  public
+    constructor(address _owner, ICash _addressOfCashContract, IRealitio _addressOfRealitioContract, uint32 _marketExpectedResolutionTime) public
     {
-        //assign arguments to relevant variables
+        // reassign ownership (because deployed using public seed)
+        transferOwnership(_owner);
+
+        // assign arguments to relevant variables
         marketExpectedResolutionTime = _marketExpectedResolutionTime;
-        owner = _owner;
         
         // external contract variables:
-        token = _addressOfTokenContract;
         realitio = _addressOfRealitioContract;
         cash = _addressOfCashContract;
 
@@ -128,18 +128,18 @@ contract Harber {
     //////// INITIAL SETUP /////////////
     ////////////////////////////////////
 
-    /// @notice set this contract as owner of the Token contract
-    function setTokenOwner() external {
-        token.setOwner();
+    /// @notice deploys the ERC721 contract
+    function deployTokenContract() external checkState(States.NOTOKENCONTRACT) onlyOwner {
+        token = new Token();
+        _incrementState();
     }
 
     /// @notice mint the NFTs. Must setTokenOwner first or will revert
-    function mintNfts(string calldata _uri) external checkState(States.NFTSNOTMINTED) {
+    function mintNfts(string calldata _uri) external checkState(States.NFTSNOTMINTED) onlyOwner {
         token.mint(address(this), nftMintCount, _uri); 
         nftMintCount = nftMintCount.add(1);
         if (nftMintCount == numberOfTokens) {
             _incrementState();
-            token.lock();
         }
     }
 
@@ -318,10 +318,9 @@ contract Harber {
         emit LogStep2Complete(false, winningOutcome, false);
     }
 
-    /// @notice Same as above, except that only owner can call it, and can be called whenever
+    /// @notice Same as above, except that only owner can call it, and can be called at any time
     /// @notice to be clear, this only allows owner to return all funds, not to set a winner
-    function step2CcircuitBreaker() external checkState(States.LOCKED) {
-        require(msg.sender == owner, "Only owner can call this");
+    function step2CcircuitBreaker() external checkState(States.LOCKED) onlyOwner {
         _incrementState();
         emit LogStep2Complete(false, winningOutcome, false);
     }
