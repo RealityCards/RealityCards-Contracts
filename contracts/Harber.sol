@@ -1,13 +1,13 @@
 pragma solidity 0.6.6;
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./interfaces/ICash.sol";
 import "./interfaces/IRealitio.sol";
-import "./Token.sol";
 
 /// @title Harber
 /// @author Andrew Stanger
 
-contract Harber {
+contract Harber is ERC721 {
 
     using SafeMath for uint256;
 
@@ -15,14 +15,16 @@ contract Harber {
     //////// VARIABLES /////////////////
     ////////////////////////////////////
 
-    ///// CONTRACT SETUP /////
-    /// @dev owner
-    address private owner;
+    /// CONTRACT SETUP
     /// @dev not set in the constructor because so many other variables need it for initating.  
     uint256 constant private numberOfTokens = 20;
     /// @dev counts how many NFTs have been minted 
-    /// @dev when nftMintCount = numberOfTokens, INCREMENT STATE
+    /// @dev when nftMintCount = numberOfTokens, allNftsMinted -> true
     uint256 private nftMintCount;
+    /// @dev must be true for any functions to work (except mintNfts)
+    bool private allNftsMinted;
+    /// @dev for circuit breaker
+    address private owner; 
     /// @dev the question ID of the question on realitio
     bytes32 public questionId;
     /// @dev only for _revertToPreviousOwner to prevent gas limits
@@ -30,14 +32,47 @@ contract Harber {
     enum States {NFTSNOTMINTED, OPEN, LOCKED, WITHDRAW}
     States public state; 
 
-    ///// CONTRACT VARIABLES /////
-    Token public token;
+    /// CONTRACT VARIABLES
     IRealitio public realitio;
     ICash public cash; 
 
-    ///// PRICE, DEPOSITS, RENT /////
+    /// NFT/USER DATA
     /// @dev in attodai (so $100 = 100000000000000000000)
     uint256[numberOfTokens] public price; 
+    /// @dev used to determine the rent due. Rent is due for the period (now - timeLastCollected), at which point timeLastCollected is set to now.
+    uint256[numberOfTokens] public timeLastCollected; 
+    /// @dev when a token was bought. Used to enforce minimum of one hour rental, also used in front end. Rent collection does not need this, only needs timeLastCollected.
+    uint256[numberOfTokens] public timeAcquired; 
+    /// @dev tracks the position of the current owner in the ownerTracker mapping
+    uint256[numberOfTokens] public currentOwnerIndex; 
+    /// @dev an easy way to track the above across all tokens. It should always increment at the same time as the above increments. 
+    uint256 public totalCollected; 
+    
+    /// WINNING OUTCOME VARIABLES
+    /// @dev start with invalid winning outcome
+    uint256 public winningOutcome = 42069; 
+    //// @dev when the question can be answered on Realitio. 
+    uint32 public marketExpectedResolutionTime; 
+
+    /// MARKET RESOLUTION VARIABLES
+    bool public questionResolvedInvalid = true; // set in step 2. If false, normal payout. If true, return all funds
+    
+    ///  STRUCTS
+    struct purchase {
+        address owner;
+        uint256 price;
+    }
+    
+    /// MAPPINGS
+    /// @dev keeps track of all previous owners of a token, including the price, so that if the current owner's deposit runs out,
+    /// @dev ...ownership can be reverted to a previous owner with the previous price. Index 0 is NOT used, this tells the contract to foreclose.
+    /// @dev this does NOT keep a reliable list of all owners, if it reverts to a previous owner then the next owner will overwrite the owner that was in that slot.
+    /// @dev the variable currentOwnerIndex is used to track the location of the current owner. 
+    mapping (uint256 => mapping (uint256 => purchase) ) public ownerTracker;  
+    /// @dev how many seconds each user has held each token for, for determining winnings  
+    mapping (uint256 => mapping (address => uint256) ) public timeHeld;
+    /// @dev sums all the timeHelds for each  Not required, but saves on gas when paying out. Should always increment at the same time as timeHeld
+    mapping (uint256 => uint256) public totalTimeHeld; 
     /// @dev keeps track of all the deposits for each token, for each owner. Unused deposits are not returned automatically when there is a new buyer. 
     /// @dev they can be withdrawn manually however. Unused deposits are returned automatically upon resolution of the market
     mapping (uint256 => mapping (address => uint256) ) public deposits; 
@@ -45,61 +80,20 @@ contract Harber {
     mapping (address => uint256) public collectedPerUser;
     /// @dev keeps track of all the rent paid for each  Front end only
     mapping (uint256 => uint256) public collectedPerToken;
-    /// @dev an easy way to track the above across all tokens. It should always increment at the same time as the above increments. 
-    uint256 public totalCollected; 
 
-    ///// TIME /////
-    /// @dev how many seconds each user has held each token for, for determining winnings  
-    mapping (uint256 => mapping (address => uint256) ) public timeHeld;
-    /// @dev sums all the timeHelds for each  Not required, but saves on gas when paying out. Should always increment at the same time as timeHeld
-    mapping (uint256 => uint256) public totalTimeHeld; 
-    /// @dev used to determine the rent due. Rent is due for the period (now - timeLastCollected), at which point timeLastCollected is set to now.
-    uint256[numberOfTokens] public timeLastCollected; 
-    /// @dev when a token was bought. Used to enforce minimum of one hour rental, also used in front end. Rent collection does not need this, only needs timeLastCollected.
-    uint256[numberOfTokens] public timeAcquired; 
-
-    ///// PREVIOUS OWNERS /////
-    /// @dev keeps track of all previous owners of a token, including the price, so that if the current owner's deposit runs out,
-    /// @dev ...ownership can be reverted to a previous owner with the previous price. Index 0 is NOT used, this tells the contract to foreclose.
-    /// @dev this does NOT keep a reliable list of all owners, if it reverts to a previous owner then the next owner will overwrite the owner that was in that slot.
-    mapping (uint256 => mapping (uint256 => purchase) ) public ownerTracker;  
-    /// @dev tracks the position of the current owner in the ownerTracker mapping
-    uint256[numberOfTokens] public currentOwnerIndex; 
-    /// @dev the struct for ownerTracker
-    struct purchase {
-        address owner;
-        uint256 price;
-    }
-    // /// @dev array of all owners of a token (for front end)
-    // mapping (uint256 => address[]) public allOwners;
-
-    ///// MARKET RESOLUTION VARIABLES /////
-    /// @dev start with invalid winning outcome
-    uint256 public winningOutcome = 42069; 
-    //// @dev when the question can be answered on Realitio. 
-    uint32 public marketExpectedResolutionTime; 
-    /// @dev set in step 2. If false, normal payout. If true, return all funds. Default true
-    bool public questionResolvedInvalid = true; 
-  
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
     ////////////////////////////////////
 
-    constructor(address _owner, Token _addressOfTokenContract, ICash _addressOfCashContract, IRealitio _addressOfRealitioContract, uint32 _marketExpectedResolutionTime) public
+    constructor(address _owner, ICash _addressOfCashContract, IRealitio _addressOfRealitioContract, uint32 _marketExpectedResolutionTime) ERC721("harber.io", "HARB") public
     {
-        // assign ownership
-        owner = _owner;
-
-        // assign arguments to relevant public variables
+        //assign arguments to relevant variables
         marketExpectedResolutionTime = _marketExpectedResolutionTime;
+        owner = _owner;
         
         // external contract variables:
-        token = _addressOfTokenContract;
         realitio = _addressOfRealitioContract;
         cash = _addressOfCashContract;
-
-        // become owner of token contract
-        token.setOwner();
 
         // Create the question on Realitio
         uint256 template_id = 2;
@@ -126,15 +120,15 @@ contract Harber {
     event LogStep2Complete(bool indexed didRealitioResolve, uint256 indexed winningOutcome, bool indexed didRealitioResolveInvalid);
     event LogWinningsPaid(address indexed paidTo, uint256 indexed amountPaid);
     event LogRentReturned(address indexed returnedTo, uint256 indexed amountReturned);
-    event LogTimeHeldUpdated(uint256 indexed newTimeHeld, address indexed owner, uint256 indexed tokenId);
+    event TestingVariable(uint indexed testingVariable);
 
     ////////////////////////////////////
     //////// INITIAL SETUP /////////////
     ////////////////////////////////////
 
-    /// @notice mint the NFTs. Must setTokenOwner first or will revert
-    function mintNfts(string calldata _uri) external checkState(States.NFTSNOTMINTED) onlyOwner {
-        token.mint(address(this), nftMintCount, _uri); 
+    function mintNfts(string calldata _uri) external checkState(States.NFTSNOTMINTED) {
+        _mint(address(this), nftMintCount); 
+        _setTokenURI(nftMintCount, _uri);
         nftMintCount = nftMintCount.add(1);
         if (nftMintCount == numberOfTokens) {
             _incrementState();
@@ -145,13 +139,8 @@ contract Harber {
     /////////// MODIFIERS //////////////
     ////////////////////////////////////
 
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Not owner");
-        _;
-    }
-
     modifier checkState(States currentState) {
-        require(state == currentState, "Incorrect state");
+        require(state == currentState, "incorrect state");
         _;
     }
 
@@ -169,7 +158,7 @@ contract Harber {
 
     /// @notice what it says on the tin
     modifier onlyTokenOwner(uint256 _tokenId) {
-        require(msg.sender == token.ownerOf(_tokenId), "Not owner");
+        require(msg.sender == ownerOf(_tokenId), "Not owner");
        _;
     }
 
@@ -196,7 +185,7 @@ contract Harber {
     /// @return how much the current owner has deposited
     function liveDepositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) {
         uint256 _rentOwed = rentOwed(_tokenId);
-        address _currentOwner = token.ownerOf(_tokenId);
+        address _currentOwner = ownerOf(_tokenId);
         if(_rentOwed >= deposits[_tokenId][_currentOwner]) {
             return 0;
         } else {
@@ -208,7 +197,7 @@ contract Harber {
     /// @return how much the current user has deposited (note: user not owner)
     function userDepositAbleToWithdraw(uint256 _tokenId) external view returns (uint256) {
         uint256 _rentOwed = rentOwed(_tokenId);
-        address _currentOwner = token.ownerOf(_tokenId);
+        address _currentOwner = ownerOf(_tokenId);
 
         if(_currentOwner == msg.sender) {
             if(_rentOwed >= deposits[_tokenId][msg.sender]) {
@@ -285,7 +274,7 @@ contract Harber {
     ////////////////////////////////////
 
     /// @notice the first of two functions which must be called, one after the other, to conclude the competition
-    /// @notice winnings can be paid out (or funds returned) only when these two steps are completed
+    /// @notice winnings can be paid out (or funds returned) only when these three steps are completed
     /// @notice this function checks whether the competition has ended (1 hour grace), if so closes down all 'ordinary course of business' functions
     /// @dev can be called by anyone 
     function step1checkMarketEnded() external checkState(States.OPEN) {
@@ -321,9 +310,10 @@ contract Harber {
         emit LogStep2Complete(false, winningOutcome, false);
     }
 
-    /// @notice Same as above, except that only owner can call it, and can be called at any time
+    /// @notice Same as above, except that only owner can call it, and can be called whenever
     /// @notice to be clear, this only allows owner to return all funds, not to set a winner
-    function step2CcircuitBreaker() external checkState(States.LOCKED) onlyOwner {
+    function step2CcircuitBreaker() external checkState(States.LOCKED) {
+        require(msg.sender == owner, "Only owner can call this");
         _incrementState();
         emit LogStep2Complete(false, winningOutcome, false);
     }
@@ -366,7 +356,8 @@ contract Harber {
     /// @dev this function is also different in that it does 
     /// @dev ... not attempt to collect rent or transfer ownership to a previous owner
     function withdrawDepositAfterMarketEnded() external {
-        require(state == States.LOCKED || state == States.WITHDRAW, "Incorrect state");
+        require(state != States.NFTSNOTMINTED, "Incorrect state");
+        require(state != States.OPEN, "Incorrect state");
         for (uint i = 0; i < numberOfTokens; i++) {
 
             uint256 _depositToReturn = deposits[i][msg.sender];
@@ -404,7 +395,7 @@ contract Harber {
         _collectRent(_tokenId);
         _depositDai(_deposit, _tokenId);
 
-        address _currentOwner = token.ownerOf(_tokenId);
+        address _currentOwner = ownerOf(_tokenId);
 
         if (_currentOwner == msg.sender) { // bought by current owner- just change price
             _changePrice(_newPrice, _tokenId);
@@ -431,7 +422,7 @@ contract Harber {
 
     /// @notice increase the price of an existing rental
     function changePrice(uint256 _newPrice, uint256 _tokenId) external checkState(States.OPEN) tokenExists(_tokenId) onlyTokenOwner(_tokenId) {
-        require(_newPrice > price[_tokenId], "New price must be higher"); 
+        require(_newPrice > price[_tokenId], "New price must be highe"); 
         _collectRent(_tokenId);
         _changePrice(_newPrice, _tokenId);
     }
@@ -474,10 +465,10 @@ contract Harber {
     /// @dev is not a problem if called externally, but making internal over public to save gas
     function _collectRent(uint256 _tokenId) internal {
         //only collect rent if the token is owned (ie, if owned by the contract this implies unowned)
-        if (token.ownerOf(_tokenId) != address(this)) {
+        if (ownerOf(_tokenId) != address(this)) {
             
             uint256 _rentOwed = rentOwed(_tokenId);
-            address _currentOwner = token.ownerOf(_tokenId);
+            address _currentOwner = ownerOf(_tokenId);
             uint256 _timeOfThisCollection;
             
             if (_rentOwed >= deposits[_tokenId][_currentOwner]) {
@@ -502,7 +493,6 @@ contract Harber {
             collectedPerToken[_tokenId] = collectedPerToken[_tokenId].add(_rentOwed);
             totalCollected = totalCollected.add(_rentOwed);
 
-            emit LogTimeHeldUpdated(timeHeld[_tokenId][_currentOwner], _currentOwner, _tokenId);
             emit LogRentCollection(_rentOwed, _tokenId);
         }
 
@@ -532,7 +522,7 @@ contract Harber {
     /// @notice actually withdraw the deposit and call _revertToPreviousOwner if necessary
     function _withdrawDeposit(uint256 _daiToWithdraw, uint256 _tokenId) internal {
         assert(deposits[_tokenId][msg.sender] >= _daiToWithdraw);
-        address _currentOwner = token.ownerOf(_tokenId);
+        address _currentOwner = ownerOf(_tokenId);
 
         // must rent for minimum of 1 hour for current owner
         if(_currentOwner == msg.sender) {
@@ -579,8 +569,8 @@ contract Harber {
         }   
 
         // if the above loop did not foreclose, then transfer to previous owner
-        if (token.ownerOf(_tokenId) != address(this)) {
-            address _currentOwner = token.ownerOf(_tokenId);
+        if (ownerOf(_tokenId) != address(this)) {
+            address _currentOwner = ownerOf(_tokenId);
             uint256 _oldPrice = ownerTracker[_tokenId][_index].price;
             _transferTokenTo(_currentOwner, _previousOwner, _oldPrice, _tokenId);
             emit LogReturnToPreviousOwner(_tokenId, _previousOwner);
@@ -589,7 +579,7 @@ contract Harber {
 
     /// @notice return token to the contract and return price to zero
     function _foreclose(uint256 _tokenId) internal {
-        address _currentOwner = token.ownerOf(_tokenId);
+        address _currentOwner = ownerOf(_tokenId);
         // third field is price, ie price goes to zero
         _transferTokenTo(_currentOwner, address(this), 0, _tokenId);
         emit LogForeclosure(_currentOwner, _tokenId);
@@ -600,8 +590,24 @@ contract Harber {
     function _transferTokenTo(address _currentOwner, address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
         require(_currentOwner != address(0) && _newOwner != address(0) , "Cannot send to/from zero address");
         price[_tokenId] = _newPrice;
-        token.transferRcOnly(_currentOwner, _newOwner, _tokenId);
+        _transfer(_currentOwner, _newOwner, _tokenId);
     }
 
+    /////// ERC721 FUNCTION OVERRIDES ///////
+    /// @dev only the contract can transfer the NFTs
+    function transferFrom(address from, address to, uint256 tokenId) override public {
+        require(false, "Only the contract can make transfers");
+        from;
+        to;
+        tokenId;
+    }
+
+    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) override public {
+        require(false, "Only the contract can make transfers");
+        from;
+        to;
+        tokenId;
+        _data;
+    }
 }
 

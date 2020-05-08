@@ -16,10 +16,6 @@ module.exports = {
   contracts_build_directory: path.join(__dirname, "app/src/contracts"),
   compilers: {
     solc: {
-      optimizer: {
-        enabled: true,
-        runs: 10
-      },
       version: "0.6.6",
     },
   },
@@ -72,6 +68,12 @@ module.exports = {
       network_id: "*",       // Any network (default: none)
       gasPrice: 0, // 1 gwei
     },
+  },
+  solc: {
+    optimizer: {
+      enabled: true,
+      runs: 200
+    }
   },
   mocha: {
     reporter: 'eth-gas-reporter',

@@ -9,7 +9,6 @@ const {
 
 // const Token = artifacts.require('./ERC721Full.sol');
 var Harber = artifacts.require('./Harber.sol');
-var Token = artifacts.require('./Token.sol');
 var CashMockup = artifacts.require("./mockups/CashMockup.sol");
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 
@@ -35,26 +34,24 @@ contract('HarberTests', (accounts) => {
     var marketExpectedResolutionTime = await time.latest();
     cash = await CashMockup.new();
     realitio = await RealitioMockup.new();
-    token = await Token.new();
-    harber = await Harber.new(andrewsAddress, token.address, cash.address, realitio.address, marketExpectedResolutionTime);
-    for (i = 0; i < 20; i++) {
-      await harber.mintNfts("uri", {from: andrewsAddress});
-    }
+    // token = await harber.new("Harber.io", "HARB");
+    harber = await Harber.new(andrewsAddress, cash.address, realitio.address, marketExpectedResolutionTime);
+    await harber.mintNfts();
   });
 
   // check that the contract initially owns the token
   it('getOwner', async () => {
     var i;
     for (i = 0; i < 20; i++) {
-      var owner = await token.ownerOf.call(i);
+      var owner = await harber.ownerOf.call(i);
       assert.equal(owner, harber.address);
     }
   });
 
   // check that the contract initially owns the token
   it('getName', async () => {
-    var name = await token.name.call();
-    assert.equal(name, 'realitycards.io');
+    var name = await harber.name.call();
+    assert.equal(name, 'harber.io');
   });
 
   // check fundamentals first
@@ -69,7 +66,7 @@ contract('HarberTests', (accounts) => {
     assert.equal(price, web3.utils.toWei('1', 'ether'));
     var deposit = await harber.deposits.call(4, user);
     assert.equal(deposit, web3.utils.toWei('10', 'ether'));
-    var owner = await token.ownerOf.call(4);
+    var owner = await harber.ownerOf.call(4);
     assert.equal(owner, user);
     // 1 because nothing stored in zero
     var trackedPrice = await harber.getOwnerTrackerPrice.call(4, 1);
@@ -94,7 +91,7 @@ contract('HarberTests', (accounts) => {
       var depositShouldBe = web3.utils.toWei('20', 'ether');
       var difference = Math.abs(deposit.toString()-depositShouldBe.toString())
       assert.isBelow(difference/deposit,0.00001);
-      var owner = await token.ownerOf.call(4);
+      var owner = await harber.ownerOf.call(4);
       assert.equal(owner, user);
       var trackedPrice = await harber.getOwnerTrackerPrice.call(4, 1);
       assert.equal(trackedPrice.toString(), web3.utils.toWei('2', 'ether').toString());
@@ -112,7 +109,7 @@ contract('HarberTests', (accounts) => {
       await harber.newRental(web3.utils.toWei('2', 'ether'),4,web3.utils.toWei('10', 'ether'),{ from: user });
       // tests
       await shouldFail.reverting.withMessage(harber.newRental(web3.utils.toWei('2', 'ether'),4,web3.utils.toWei('0', 'ether'),{ from: user}), "Amount must be above zero");
-      await shouldFail.reverting.withMessage(harber.newRental(web3.utils.toWei('2', 'ether'),4,web3.utils.toWei('1', 'ether'),{ from: user}), "Price not 10% higher");
+      await shouldFail.reverting.withMessage(harber.newRental(web3.utils.toWei('2', 'ether'),4,web3.utils.toWei('1', 'ether'),{ from: user}), "Price must be at least 10% higher than current price");
       await shouldFail.reverting.withMessage(harber.newRental(web3.utils.toWei('3', 'ether'),4,web3.utils.toWei('0', 'ether'),{ from: user}), "Amount must be above zero");
       await shouldFail.reverting.withMessage(harber.newRental(web3.utils.toWei('3', 'ether'),20,web3.utils.toWei('0', 'ether'),{ from: user}), "This token does not exist");
       await shouldFail.reverting.withMessage(harber.newRental(web3.utils.toWei('3', 'ether'),4,web3.utils.toWei('100', 'ether'),{ from: user}), "Insufficient balance");
@@ -130,7 +127,7 @@ contract('HarberTests', (accounts) => {
       user = user1;
       await shouldFail.reverting.withMessage(harber.changePrice(web3.utils.toWei('3', 'ether'),4,{ from: user}), "Not owner");
       user = user0;
-      await shouldFail.reverting.withMessage(harber.changePrice(web3.utils.toWei('2', 'ether'),4,{ from: user}), "New price must be higher");
+      await shouldFail.reverting.withMessage(harber.changePrice(web3.utils.toWei('2', 'ether'),4,{ from: user}), "New price must be higher than current price");
     });
 
     // check changePrice is working properly- should work
@@ -150,7 +147,7 @@ contract('HarberTests', (accounts) => {
       var depositShouldBe = web3.utils.toWei('20', 'ether');
       var difference = Math.abs(deposit.toString()-depositShouldBe.toString());
       assert.isBelow(difference/deposit,0.00001);
-      var owner = await token.ownerOf.call(4);
+      var owner = await harber.ownerOf.call(4);
       assert.equal(owner, user);
       var trackedPrice = await harber.getOwnerTrackerPrice.call(4,1);
       var trackedPriceShouldBe = web3.utils.toWei('3', 'ether');
@@ -300,7 +297,7 @@ contract('HarberTests', (accounts) => {
       await harber.collectRentAllTokens();
       //test
       //owned by contract address = foreclosed
-      var owner = await token.ownerOf.call(1);
+      var owner = await harber.ownerOf.call(1);
       assert.equal(owner, harber.address);
     });
 
@@ -352,21 +349,21 @@ contract('HarberTests', (accounts) => {
       await time.increase(time.duration.days(3));
       await harber.collectRentAllTokens();
       // should not have reverted
-      var owner = await token.ownerOf.call(0);
+      var owner = await harber.ownerOf.call(0);
       assert.equal(owner, user2);
       var price = await harber.price.call(0);
       assert.equal(price, web3.utils.toWei('3', 'ether'));
       await time.increase(time.duration.days(3));
       await harber.collectRentAllTokens();
       // should have reverted
-      var owner = await token.ownerOf.call(0);
+      var owner = await harber.ownerOf.call(0);
       assert.equal(owner, user1);
       var price = await harber.price.call(0);
       assert.equal(price, web3.utils.toWei('2', 'ether'));
       await time.increase(time.duration.days(11));
       await harber.collectRentAllTokens();
       // should have reverted again
-      var owner = await token.ownerOf.call(0);
+      var owner = await harber.ownerOf.call(0);
       assert.equal(owner, user0);
       var price = await harber.price.call(0);
       assert.equal(price, web3.utils.toWei('1', 'ether'));
@@ -376,7 +373,7 @@ contract('HarberTests', (accounts) => {
       await cash.approve(harber.address, web3.utils.toWei('100', 'ether'), { from: user });
       await harber.newRental(web3.utils.toWei('100', 'ether'), 0, web3.utils.toWei('10', 'ether'), { from: user });
       // check stuff 
-      var owner = await token.ownerOf.call(0);
+      var owner = await harber.ownerOf.call(0);
       assert.equal(owner, user5);
       var price = await harber.price.call(0);
       assert.equal(price, web3.utils.toWei('100', 'ether'));
@@ -384,14 +381,14 @@ contract('HarberTests', (accounts) => {
       await time.increase(time.duration.days(14));
       await harber.collectRentAllTokens();
       //check it is back with u0 again
-      var owner = await token.ownerOf.call(0);
+      var owner = await harber.ownerOf.call(0);
       assert.equal(owner, user0);
       var price = await harber.price.call(0);
       assert.equal(price, web3.utils.toWei('1', 'ether'));
       //check foreclose
       await time.increase(time.duration.days(14));
       await harber.collectRentAllTokens();
-      var owner = await token.ownerOf.call(0);
+      var owner = await harber.ownerOf.call(0);
       assert.equal(owner, harber.address);
       var price = await harber.price.call(0);
       assert.equal(price, web3.utils.toWei('0', 'ether'));
@@ -440,25 +437,25 @@ contract('HarberTests', (accounts) => {
       var timeHeld = await harber.timeHeld.call(0, user1);
       var timeHeldShouldBe = time.duration.days(3);
       var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
-      assert.isBelow(difference/timeHeld,0.001);
+      assert.isBelow(difference/timeHeld,0.00001);
       await time.increase(time.duration.days(3));
       await harber.collectRentAllTokens();
       // u1 5 days
       var timeHeld = await harber.timeHeld.call(0, user1);
       var timeHeldShouldBe = time.duration.days(5);
       var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
-      assert.isBelow(difference/timeHeld,0.001);
+      assert.isBelow(difference/timeHeld,0.00001);
       await time.increase(time.duration.days(1));
       await harber.collectRentAllTokens();
       // u1 5 days, u0 1 day
       var timeHeld = await harber.timeHeld.call(0, user1);
       var timeHeldShouldBe = time.duration.days(5);
       var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
-      assert.isBelow(difference/timeHeld,0.001);
+      assert.isBelow(difference/timeHeld,0.00001);
       var timeHeld = await harber.timeHeld.call(0, user0);
       var timeHeldShouldBe = time.duration.days(1);
       var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
-      assert.isBelow(difference/timeHeld,0.001);
+      assert.isBelow(difference/timeHeld,0.0001);
       // buy again, check the new owner, then revert again
       user = user5;
       await cash.faucet(web3.utils.toWei('100', 'ether'), { from: user });
@@ -469,26 +466,26 @@ contract('HarberTests', (accounts) => {
       var timeHeld = await harber.timeHeld.call(0, user5);
       var timeHeldShouldBe = time.duration.days(1);
       var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
-      assert.isBelow(difference/timeHeld,0.001);
+      assert.isBelow(difference/timeHeld,0.0001);
       await time.increase(time.duration.days(7));
       await harber.collectRentAllTokens();
       // u0 8 days
       var timeHeld = await harber.timeHeld.call(0, user0);
       var timeHeldShouldBe = time.duration.days(8);
       var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
-      assert.isBelow(difference/timeHeld,0.001);
+      assert.isBelow(difference/timeHeld,0.0001);
       await time.increase(time.duration.days(7));
       await harber.collectRentAllTokens();
       // u0 10 days
       var timeHeld = await harber.timeHeld.call(0, user0);
       var timeHeldShouldBe = time.duration.days(10);
       var difference = Math.abs(timeHeld - timeHeldShouldBe); 
-      assert.isBelow(difference/timeHeld,0.001);
+      assert.isBelow(difference/timeHeld,0.0001);
       // check total collected
       var totalTimeHeldShouldBe = time.duration.days(20);
       var totalTimeHeld = await harber.totalTimeHeld.call(0);
       var difference = Math.abs(totalTimeHeld - totalTimeHeldShouldBe);
-      assert.isBelow(difference/timeHeld,0.001);
+      assert.isBelow(difference/timeHeld,0.0001);
     });
 
     // check withdrawDeposit works as it should
@@ -546,7 +543,7 @@ contract('HarberTests', (accounts) => {
       await harber.exit(0,{ from: user  });
       var deposit = await harber.deposits.call(0,user); 
       assert.equal(deposit, web3.utils.toWei('0', 'ether'));
-      var owner = await token.ownerOf.call(0);
+      var owner = await harber.ownerOf.call(0);
       assert.equal(owner, harber.address);
       // as above but this time it should revert instead of foreclose
       await harber.newRental(web3.utils.toWei('1', 'ether'), 0, web3.utils.toWei('10', 'ether'), { from: user });
@@ -555,7 +552,7 @@ contract('HarberTests', (accounts) => {
       await harber.newRental(web3.utils.toWei('2', 'ether'), 0, web3.utils.toWei('10', 'ether'), { from: user1 });
       await time.increase(time.duration.hours(1)); 
       await harber.exit(0,{ from: user1  });
-      var owner = await token.ownerOf.call(0);
+      var owner = await harber.ownerOf.call(0);
       assert.equal(owner, user0);
     });
 
@@ -571,7 +568,7 @@ contract('HarberTests', (accounts) => {
       await harber.exit(0,{ from: user  });
       var deposit = await harber.deposits.call(0,user); 
       assert.equal(deposit, web3.utils.toWei('0', 'ether'));
-      var owner = await token.ownerOf.call(0);
+      var owner = await harber.ownerOf.call(0);
       assert.equal(owner, harber.address);
     });
 
@@ -586,7 +583,7 @@ contract('HarberTests', (accounts) => {
       await harber.withdrawDeposit(web3.utils.toWei('5', 'ether'), 0,{ from: user  });
       var deposit = await harber.deposits.call(0,user); 
       assert.equal(deposit, web3.utils.toWei('0', 'ether'));
-      var owner = await token.ownerOf.call(0);
+      var owner = await harber.ownerOf.call(0);
       assert.equal(owner, harber.address);
     });
 
@@ -640,7 +637,7 @@ contract('HarberTests', (accounts) => {
     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user0 cant withdraw again
-    await shouldFail.reverting.withMessage(harber.complete({ from: user0 }), " Not a winner, or winnings already paid");
+    await shouldFail.reverting.withMessage(harber.complete({ from: user0 }), "You are not a winner, or winnings already paid");
     //check user1 winnings
     await harber.complete({ from: user1 });
     var winningsSentToUser = await cash.balanceOf.call(user1);
@@ -705,9 +702,9 @@ contract('HarberTests', (accounts) => {
     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user1 winnings
-    await shouldFail.reverting.withMessage(harber.complete({ from: user1 }), " Not a winner, or winnings already paid");
+    await shouldFail.reverting.withMessage(harber.complete({ from: user1 }), "You are not a winner, or winnings already paid");
     //check user2 winnings
-    await shouldFail.reverting.withMessage(harber.complete({ from: user2 }), " Not a winner, or winnings already paid");
+    await shouldFail.reverting.withMessage(harber.complete({ from: user2 }), "You are not a winner, or winnings already paid");
   });
 
   it('test complete- invalid', async () => {
@@ -753,7 +750,7 @@ contract('HarberTests', (accounts) => {
     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user0 cant withdraw again
-    await shouldFail.reverting.withMessage(harber.complete({ from: user0 }), "Paid no rent, or rent already returned");
+    await shouldFail.reverting.withMessage(harber.complete({ from: user0 }), "You paid no rent, or rent already returned");
     //check user1 winnings 
     await harber.complete({ from: user1 });
     var winningsSentToUser = await cash.balanceOf.call(user1);
@@ -767,7 +764,7 @@ contract('HarberTests', (accounts) => {
     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user5 winnings, should fail cos didn't pay any rent
-    await shouldFail.reverting.withMessage(harber.complete({ from: user5 }), "Paid no rent, or rent already returned");
+    await shouldFail.reverting.withMessage(harber.complete({ from: user5 }), "You paid no rent, or rent already returned");
   });
 
   // test the emergency Exit function works
@@ -835,7 +832,7 @@ contract('HarberTests', (accounts) => {
     await time.increase(time.duration.weeks(3)); 
     ////////////////////////
     await harber.step1checkMarketEnded(); 
-    await shouldFail.reverting.withMessage(harber.step2BemergencyExit(), "Must wait 1 month");
+    await shouldFail.reverting.withMessage(harber.step2BemergencyExit(), "Must wait 1 month for Oracle to resolve");
     await time.increase(time.duration.weeks(1)); 
     await harber.step2BemergencyExit();
   });
@@ -1057,7 +1054,7 @@ contract('HarberTests', (accounts) => {
     // set winner 1
     await realitio.setResult(1);
     // should fail before step 1:
-    await shouldFail.reverting.withMessage(harber.withdrawDepositAfterMarketEnded({ from: user0 }), "Incorrect state");
+    await shouldFail.reverting.withMessage(harber.withdrawDepositAfterMarketEnded({ from: user0 }), "step1 must be complete first");
     await harber.step1checkMarketEnded(); 
     /////// THIS TEST //////
     // reset cash balances
@@ -1110,9 +1107,9 @@ contract('HarberTests', (accounts) => {
     await time.increase(time.duration.weeks(2)); 
     // not setting winner so we expect step2 to revert
     await harber.step1checkMarketEnded(); 
-    await shouldFail.reverting.withMessage(harber.step2getWinner(), "Oracle not resolved");
-    await shouldFail.reverting.withMessage(harber.step2CcircuitBreaker(), "Not owner");
-    await shouldFail.reverting.withMessage(harber.complete(), "Incorrect state");
+    await shouldFail.reverting.withMessage(harber.step2getWinner(), "Must wait for question to finalize on Realitio");
+    await shouldFail.reverting.withMessage(harber.step2CcircuitBreaker(), "Only owner can call this");
+    await shouldFail.reverting.withMessage(harber.complete(), "Step2 must be completed first");
     });
 
     it('check expected failures with market resolution: question not resolved and market not ended', async () => {
@@ -1134,10 +1131,10 @@ contract('HarberTests', (accounts) => {
       await harber.newRental(web3.utils.toWei('3', 'ether'),1,web3.utils.toWei('24', 'ether'),{ from: user2 }); //used deposit of 24
       await time.increase(time.duration.weeks(2)); 
       // not setting winner so we expect step1 to revert
-      await shouldFail.reverting.withMessage(harber.step2getWinner(), "Incorrect state");
-      await shouldFail.reverting.withMessage(harber.step2BemergencyExit(), "Incorrect state");
-      await shouldFail.reverting.withMessage(harber.step2CcircuitBreaker(), "Incorrect state");
-      await shouldFail.reverting.withMessage(harber.complete(), "Incorrect state");
+      await shouldFail.reverting.withMessage(harber.step2getWinner(), "Must wait for market to end");
+      await shouldFail.reverting.withMessage(harber.step2BemergencyExit(), "Must wait for market to end");
+      await shouldFail.reverting.withMessage(harber.step2CcircuitBreaker(), "Must wait for market to end");
+      await shouldFail.reverting.withMessage(harber.complete(), "Step2 must be completed first");
       });
 
   it('check exit does not revert to previous owner if not the current owner', async () => {
@@ -1151,7 +1148,7 @@ contract('HarberTests', (accounts) => {
     await harber.newRental(web3.utils.toWei('2', 'ether'),1,web3.utils.toWei('20', 'ether'),{ from: user1 }); //used deposit of 14
     await harber.exit(1,{ from: user0 })
     /////// TESTS //////
-    var owner = await token.ownerOf.call(1);
+    var owner = await harber.ownerOf.call(1);
     assert.equal(owner, user1);
 });
 
@@ -1243,12 +1240,12 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     //check notEnded
     await time.increase(time.duration.hours(1)); 
     await harber.step1checkMarketEnded();
-    await shouldFail.reverting.withMessage(harber.newRental(web3.utils.toWei('2', 'ether'),4,web3.utils.toWei('1', 'ether'),{ from: user}), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.depositDai(web3.utils.toWei('2', 'ether'),4,{ from: user}), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.withdrawDeposit(web3.utils.toWei('2', 'ether'),4,{ from: user}), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.changePrice(web3.utils.toWei('2', 'ether'),4,{ from: user}), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.exit(4,{ from: user}), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.collectRentAllTokens({ from: user}), "Incorrect state");
+    await shouldFail.reverting.withMessage(harber.newRental(web3.utils.toWei('2', 'ether'),4,web3.utils.toWei('1', 'ether'),{ from: user}), "Markets have ended already");
+    await shouldFail.reverting.withMessage(harber.depositDai(web3.utils.toWei('2', 'ether'),4,{ from: user}), "Markets have ended already");
+    await shouldFail.reverting.withMessage(harber.withdrawDeposit(web3.utils.toWei('2', 'ether'),4,{ from: user}), "Markets have ended already");
+    await shouldFail.reverting.withMessage(harber.changePrice(web3.utils.toWei('2', 'ether'),4,{ from: user}), "Markets have ended already");
+    await shouldFail.reverting.withMessage(harber.exit(4,{ from: user}), "Markets have ended already");
+    await shouldFail.reverting.withMessage(harber.collectRentAllTokens({ from: user}), "Markets have ended already");
     });
 
   it('new tests following addition of step1checkMarketsEnded function', async () => {
@@ -1258,14 +1255,14 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await harber.newRental(web3.utils.toWei('1', 'ether'),2,web3.utils.toWei('10', 'ether'),{ from: user0 });
     //// TESTS ////
     // call step 2 before step 1 done
-    await shouldFail.reverting.withMessage(harber.step2getWinner(), "Incorrect state");
+    await shouldFail.reverting.withMessage(harber.step2getWinner(), "Must wait for market to end");
     //call step 1 before markets ended
-    await shouldFail.reverting.withMessage(harber.step1checkMarketEnded(), "Market has not finished");
+    await shouldFail.reverting.withMessage(harber.step1checkMarketEnded(), "Market has not finished yet");
     await time.increase(time.duration.hours(1)); 
     // call step 1 after markets ended, should work
     await harber.step1checkMarketEnded(); 
     // call step 1 twice
-    await shouldFail.reverting.withMessage(harber.step1checkMarketEnded(), "Incorrect state");
+    await shouldFail.reverting.withMessage(harber.step1checkMarketEnded(), "Step1 can only be completed once");
     });
 
   it('check that _revertToPreviousOwner does not revert more than ten times ', async () => {
@@ -1301,7 +1298,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     // user 2 and 3 exit, it should return to one of them NOT return to user 0 or 1 
     await harber.exit(2,{ from: user2 });
     await harber.exit(2,{ from: user3 });
-    var owner = await token.ownerOf.call(2);
+    var owner = await harber.ownerOf.call(2);
     assert.equal(owner, user3);
     var price = await harber.price.call(2);
     assert.equal(price, web3.utils.toWei('6', 'ether'));
@@ -1313,14 +1310,14 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user1 });
     await cash.approve(harber.address, web3.utils.toWei('100', 'ether'),{ from: user1 });
     await harber.newRental(web3.utils.toWei('1', 'ether'),2,web3.utils.toWei('1', 'ether'),{ from: user0 });
-    await shouldFail.reverting.withMessage(harber.newRental(web3.utils.toWei('1.05', 'ether'),2,web3.utils.toWei('1', 'ether'),{ from: user0}), "Price not 10% higher");
+    await shouldFail.reverting.withMessage(harber.newRental(web3.utils.toWei('1.05', 'ether'),2,web3.utils.toWei('1', 'ether'),{ from: user0}), "Price must be at least 10% higher than current price");
     await harber.newRental(web3.utils.toWei('1.1', 'ether'),2,web3.utils.toWei('1', 'ether'),{ from: user0 });
     });
 
   it('check that cannot deposit less than 1 hous rent', async () => {
     await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user0 });
     await cash.approve(harber.address, web3.utils.toWei('100', 'ether'),{ from: user0 });
-    await shouldFail.reverting.withMessage(harber.newRental(web3.utils.toWei('25', 'ether'),2,web3.utils.toWei('1', 'ether'),{ from: user0}), "One hour's rent minimum");
+    await shouldFail.reverting.withMessage(harber.newRental(web3.utils.toWei('25', 'ether'),2,web3.utils.toWei('1', 'ether'),{ from: user0}), "You must deposit enough to cover one hour's rent");
     await harber.newRental(web3.utils.toWei('24', 'ether'),2,web3.utils.toWei('1', 'ether'),{ from: user0 });
     });
 
@@ -1341,7 +1338,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     var depositRemaining = await harber.deposits(2,user0);
     var depositShouldBe = web3.utils.toWei('10', 'ether');
     var difference = Math.abs(depositRemaining.toString()-depositShouldBe.toString())
-    assert.isBelow(difference/depositRemaining,0.001);
+    assert.isBelow(difference/depositRemaining,0.00001);
     ////
     await cash.resetBalance(user0);
     await harber.exit(2);
@@ -1381,9 +1378,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     // after 45 mins, deposit should be 10
     await harber.collectRentAllTokens();
     var depositRemaining = await harber.deposits(2,user0);
-    var depositRemainingShouldBe = web3.utils.toWei('10', 'ether');
-    var difference = Math.abs(depositRemaining.toString()-depositRemainingShouldBe.toString())
-    assert.isBelow(difference/depositRemaining,0.001);
+    assert.equal(depositRemaining,web3.utils.toWei('10', 'ether'));
     ////
     await cash.resetBalance(user0);
     await harber.withdrawDeposit(web3.utils.toWei('6', 'ether'),2);
@@ -1394,139 +1389,20 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     assert.isBelow(difference/depositRemaining,0.001);
   });
 
-// this does not work for some reason so edited out the meat
   it('check that users cannot transfer their NFTs', async() => {
     user = user0;
     await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user });
     await cash.approve(harber.address, web3.utils.toWei('100', 'ether'),{ from: user });
     // 12 dai an hour price, starting with 19 dai so afer 45 minutes will have 10 dai
     await harber.newRental(web3.utils.toWei('288', 'ether'),2,web3.utils.toWei('19', 'ether'),{ from: user });
-    var owner = await token.ownerOf(2);
+    var owner = await harber.ownerOf(2);
     assert.equal(owner, user);
-    // buidler giving me shit when I try and intercept revert message so just testing revert
-    await shouldFail.reverting(token.transferFrom(user,user1,2));
-    await shouldFail.reverting(token.safeTransferFrom(user,user1,2));
-    await shouldFail.reverting(token.safeTransferFrom(user,user1,2,web3.utils.asciiToHex("123456789")));
-  });
+    await shouldFail.reverting.withMessage(harber.transferFrom(user,user1,2), "Only the contract can make transfers");
+    await shouldFail.reverting.withMessage(harber.safeTransferFrom(user,user1,2), "Only the contract can make transfers");
 
-  it('huge check state expected failures', async() => {
-    user = user0;
-    // undo the token creation from the beforeEach:
-    var marketExpectedResolutionTime = 0;
-    harber = await Harber.new(andrewsAddress, cash.address, realitio.address, marketExpectedResolutionTime);
-    // check state is 0
-    var state = await harber.state.call();
-    assert.equal(0,state);
-    // currently in state 'TOKENNOTDEPLOYED' the following should all fail 
-    await shouldFail.reverting.withMessage(harber.mintNfts(user), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.step1checkMarketEnded(), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.step2getWinner(), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.step2BemergencyExit(), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.step2CcircuitBreaker(), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.complete(), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.withdrawDepositAfterMarketEnded(), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.collectRentAllTokens(), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.newRental(0,0,0), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.depositDai(0,0), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.changePrice(0,0), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.withdrawDeposit(0,0), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.exit(0), "Incorrect state");
-    // increment state
-    await harber.deployTokenContract({from: andrewsAddress});
-    tokenAddress = await harber.token.call();
-    token = await Token.at(tokenAddress);
-    var state = await harber.state.call();
-    assert.equal(1,state);
-    // currently in state 'NFTSNOTMINTED' the following should all fail 
-    await shouldFail.reverting.withMessage(harber.deployTokenContract(), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.step1checkMarketEnded(), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.step2getWinner(), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.step2BemergencyExit(), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.step2CcircuitBreaker(), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.complete(), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.withdrawDepositAfterMarketEnded(), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.collectRentAllTokens(), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.newRental(0,0,0), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.depositDai(0,0), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.changePrice(0,0), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.withdrawDeposit(0,0), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.exit(0), "Incorrect state");
-    // increment state
-    for (i = 0; i < 20; i++) {
-      await harber.mintNfts("uri", {from: andrewsAddress});
-    }
-    var state = await harber.state.call();
-    assert.equal(2,state);
-    // currently in state 'OPEN' the following should all fail 
-    await shouldFail.reverting.withMessage(harber.mintNfts(user), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.deployTokenContract(), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.step2getWinner(), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.step2BemergencyExit(), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.step2CcircuitBreaker(), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.complete(), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.withdrawDepositAfterMarketEnded(), "Incorrect state");
-    // increment state
-    await harber.step1checkMarketEnded();
-    var state = await harber.state.call();
-    assert.equal(3,state);
-    // currently in state 'LOCKED' the following should all fail 
-    await shouldFail.reverting.withMessage(harber.mintNfts(user), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.collectRentAllTokens(), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.newRental(0,0,0), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.depositDai(0,0), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.changePrice(0,0), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.withdrawDeposit(0,0), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.exit(0), "Incorrect state");
-    // increment state
-    await realitio.setResult(1);
-    await harber.step2getWinner();
-    var state = await harber.state.call();
-    assert.equal(4,state);
-    // currently in state 'WITHDRAW' the following should all fail 
-    await shouldFail.reverting.withMessage(harber.deployTokenContract(), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.mintNfts(user), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.step1checkMarketEnded(), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.step2getWinner(), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.step2BemergencyExit(), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.step2CcircuitBreaker(), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.collectRentAllTokens(), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.newRental(0,0,0), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.depositDai(0,0), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.changePrice(0,0), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.withdrawDeposit(0,0), "Incorrect state");
-    await shouldFail.reverting.withMessage(harber.exit(0), "Incorrect state");
   });
+    
   
-  it('check onlyOwner modifier is working on Harber', async() => {
-    user = user0;
-    // undo the token creation from the beforeEach:
-    var marketExpectedResolutionTime = 0;
-    harber = await Harber.new(andrewsAddress, cash.address, realitio.address, marketExpectedResolutionTime);
-    await shouldFail.reverting.withMessage(harber.deployTokenContract(), "Not owner");
-    await harber.deployTokenContract({from: andrewsAddress});
-    await shouldFail.reverting.withMessage(harber.mintNfts(user), "Not owner");
-    for (i = 0; i < 20; i++) {
-      await harber.mintNfts("uri", {from: andrewsAddress});
-    }
-    await harber.step1checkMarketEnded();
-    await shouldFail.reverting.withMessage(harber.step2CcircuitBreaker(), "Not owner");
-  });
-
-  it('check onlyOwner modifier is working on Token', async() => {
-    user = user0;
-    // undo the token creation from the beforeEach:
-    await shouldFail.reverting.withMessage(token.mint(user, 0, user), "Not owner");
-    await shouldFail.reverting.withMessage(token.transferRcOnly(user, user, 0), "Not owner");
-  });
-
-  it('check that owner can not be changed', async() => {
-    user = user0;
-    // buidler giving me shit when I try and intercept revert message so just testing revert
-    await shouldFail.reverting(harber.transferOwnership(user));
-    await shouldFail.reverting(token.transferOwnership(user));
-  });
-
-
 
 });
 
