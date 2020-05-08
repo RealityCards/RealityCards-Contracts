@@ -1111,7 +1111,7 @@ contract('HarberTests', (accounts) => {
     // not setting winner so we expect step2 to revert
     await harber.step1checkMarketEnded(); 
     await shouldFail.reverting.withMessage(harber.step2getWinner(), "Oracle not resolved");
-    await shouldFail.reverting.withMessage(harber.step2CcircuitBreaker(), "caller is not the owner");
+    await shouldFail.reverting.withMessage(harber.step2CcircuitBreaker(), "Not owner");
     await shouldFail.reverting.withMessage(harber.complete(), "Incorrect state");
     });
 
@@ -1502,21 +1502,21 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     // undo the token creation from the beforeEach:
     var marketExpectedResolutionTime = 0;
     harber = await Harber.new(andrewsAddress, cash.address, realitio.address, marketExpectedResolutionTime);
-    await shouldFail.reverting.withMessage(harber.deployTokenContract(), "caller is not the owner");
+    await shouldFail.reverting.withMessage(harber.deployTokenContract(), "Not owner");
     await harber.deployTokenContract({from: andrewsAddress});
-    await shouldFail.reverting.withMessage(harber.mintNfts(user), "caller is not the owner");
+    await shouldFail.reverting.withMessage(harber.mintNfts(user), "Not owner");
     for (i = 0; i < 20; i++) {
       await harber.mintNfts("uri", {from: andrewsAddress});
     }
     await harber.step1checkMarketEnded();
-    await shouldFail.reverting.withMessage(harber.step2CcircuitBreaker(), "caller is not the owner");
+    await shouldFail.reverting.withMessage(harber.step2CcircuitBreaker(), "Not owner");
   });
 
   it('check onlyOwner modifier is working on Token', async() => {
     user = user0;
     // undo the token creation from the beforeEach:
-    await shouldFail.reverting.withMessage(token.mint(user, 0, user), "caller is not the owner");
-    await shouldFail.reverting.withMessage(token.transferRcOnly(user, user, 0), "caller is not the owner");
+    await shouldFail.reverting.withMessage(token.mint(user, 0, user), "Not owner");
+    await shouldFail.reverting.withMessage(token.transferRcOnly(user, user, 0), "Not owner");
   });
 
   it('check that owner can not be changed', async() => {
