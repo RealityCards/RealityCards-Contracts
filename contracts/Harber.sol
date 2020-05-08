@@ -69,6 +69,8 @@ contract Harber is Ownable {
         address owner;
         uint256 price;
     }
+    // /// @dev array of all owners of a token (for front end)
+    // mapping (uint256 => address[]) public allOwners;
 
     ///// MARKET RESOLUTION VARIABLES /////
     /// @dev start with invalid winning outcome
@@ -119,7 +121,7 @@ contract Harber is Ownable {
     event LogStep2Complete(bool indexed didRealitioResolve, uint256 indexed winningOutcome, bool indexed didRealitioResolveInvalid);
     event LogWinningsPaid(address indexed paidTo, uint256 indexed amountPaid);
     event LogRentReturned(address indexed returnedTo, uint256 indexed amountReturned);
-    event TestingVariable(uint indexed testingVariable);
+    event LogTimeHeldUpdated(uint256 indexed newTimeHeld, address indexed owner, uint256 indexed tokenId);
 
     ////////////////////////////////////
     //////// INITIAL SETUP /////////////
@@ -496,6 +498,7 @@ contract Harber is Ownable {
             collectedPerToken[_tokenId] = collectedPerToken[_tokenId].add(_rentOwed);
             totalCollected = totalCollected.add(_rentOwed);
 
+            emit LogTimeHeldUpdated(timeHeld[_tokenId][_currentOwner], _currentOwner, _tokenId);
             emit LogRentCollection(_rentOwed, _tokenId);
         }
 

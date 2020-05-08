@@ -15,11 +15,11 @@ module.exports = {
   plugins: [ "truffle-security" ],
   contracts_build_directory: path.join(__dirname, "app/src/contracts"),
   compilers: {
-    // optimizer: {
-    //   enabled: true,
-    //   runs: 10000
-    // },
     solc: {
+      optimizer: {
+        enabled: true,
+        runs: 10
+      },
       version: "0.6.6",
     },
   },
