@@ -1,23 +1,37 @@
 pragma solidity 0.6.6;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title Harber Tokens Contract
 /// @dev split into its own contract because otherwise 24kB limit is hit
 /// @author Andrew Stanger
 
-contract Token is ERC721, Ownable {
+contract Token is ERC721 {
+
+    address private owner;
+    bool ownerSet;
 
     constructor() ERC721("realitycards.io", "RC") public {} 
 
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Not owner");
+        _;
+    }
+
+    /// @notice assign ownership to RC contract
+    function setOwner() external {
+        require(!ownerSet, "Owner already set");
+        ownerSet = true;
+        owner = msg.sender;
+    }
+
     /// @notice mints and sets URIs
-    function mint(address _owner, uint _tokenId, string memory _uri) public onlyOwner {
+    function mint(address _owner, uint _tokenId, string calldata _uri) external onlyOwner {
         _mint(_owner, _tokenId);
         _setTokenURI(_tokenId, _uri);
     }
 
     /// @notice all transfer must pass through this function. 
-    function transferRcOnly(address _currentOwner, address _newOwner, uint256 _tokenId) public onlyOwner {
+    function transferRcOnly(address _currentOwner, address _newOwner, uint256 _tokenId) external onlyOwner {
         _transfer(_currentOwner, _newOwner, _tokenId);
     }
 

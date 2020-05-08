@@ -1,6 +1,5 @@
 pragma solidity 0.6.6;
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/ICash.sol";
 import "./interfaces/IRealitio.sol";
 import "./Token.sol";
@@ -8,7 +7,7 @@ import "./Token.sol";
 /// @title Harber
 /// @author Andrew Stanger
 
-contract Harber is Ownable {
+contract Harber {
 
     using SafeMath for uint256;
 
@@ -17,6 +16,8 @@ contract Harber is Ownable {
     ////////////////////////////////////
 
     ///// CONTRACT SETUP /////
+    /// @dev owner
+    address private owner;
     /// @dev not set in the constructor because so many other variables need it for initating.  
     uint256 constant private numberOfTokens = 20;
     /// @dev counts how many NFTs have been minted 
@@ -26,7 +27,7 @@ contract Harber is Ownable {
     bytes32 public questionId;
     /// @dev only for _revertToPreviousOwner to prevent gas limits
     uint256 constant private MAX_ITERATIONS = 10;
-    enum States {NOTOKENCONTRACT, NFTSNOTMINTED, OPEN, LOCKED, WITHDRAW}
+    enum States {NFTSNOTMINTED, OPEN, LOCKED, WITHDRAW}
     States public state; 
 
     ///// CONTRACT VARIABLES /////
@@ -84,17 +85,21 @@ contract Harber is Ownable {
     //////// CONSTRUCTOR ///////////////
     ////////////////////////////////////
 
-    constructor(address _owner, ICash _addressOfCashContract, IRealitio _addressOfRealitioContract, uint32 _marketExpectedResolutionTime) public
+    constructor(address _owner, Token _addressOfTokenContract, ICash _addressOfCashContract, IRealitio _addressOfRealitioContract, uint32 _marketExpectedResolutionTime) public
     {
-        // reassign ownership (because deployed using public seed)
-        transferOwnership(_owner);
+        // assign ownership
+        owner = _owner;
 
         // assign arguments to relevant public variables
         marketExpectedResolutionTime = _marketExpectedResolutionTime;
         
         // external contract variables:
+        token = _addressOfTokenContract;
         realitio = _addressOfRealitioContract;
         cash = _addressOfCashContract;
+
+        // become owner of token contract
+        token.setOwner();
 
         // Create the question on Realitio
         uint256 template_id = 2;
@@ -127,12 +132,6 @@ contract Harber is Ownable {
     //////// INITIAL SETUP /////////////
     ////////////////////////////////////
 
-    /// @notice deploys the ERC721 contract
-    function deployTokenContract() external checkState(States.NOTOKENCONTRACT) onlyOwner {
-        token = new Token();
-        _incrementState();
-    }
-
     /// @notice mint the NFTs. Must setTokenOwner first or will revert
     function mintNfts(string calldata _uri) external checkState(States.NFTSNOTMINTED) onlyOwner {
         token.mint(address(this), nftMintCount, _uri); 
@@ -145,6 +144,11 @@ contract Harber is Ownable {
     ////////////////////////////////////
     /////////// MODIFIERS //////////////
     ////////////////////////////////////
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Not owner");
+        _;
+    }
 
     modifier checkState(States currentState) {
         require(state == currentState, "Incorrect state");
