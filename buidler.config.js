@@ -12,6 +12,10 @@ task("accounts", "Prints the list of accounts", async () => {
 
 module.exports = {
   solc: {
+    optimizer: {
+      enabled: true,
+      runs: 1
+    },
     version: "0.6.6"
   },
   networks: {

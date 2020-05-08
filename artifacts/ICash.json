@@ -1,5 +1,5 @@
 {
-  "contractName": "Cash",
+  "contractName": "ICash",
   "abi": [
     {
       "inputs": [
