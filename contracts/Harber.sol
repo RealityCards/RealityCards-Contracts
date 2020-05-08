@@ -1,4 +1,5 @@
 pragma solidity 0.6.6;
+
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -49,7 +50,7 @@ contract Harber is ERC721, Ownable {
     ///// TIME /////
     /// @dev how many seconds each user has held each token for, for determining winnings  
     mapping (uint256 => mapping (address => uint256) ) public timeHeld;
-    /// @dev sums all the timeHelds for each  Not required, but saves on gas when paying out. Should always increment at the same time as timeHeld
+    /// @dev sums all the timeHelds for each. Not required, but saves on gas when paying out. Should always increment at the same time as timeHeld
     mapping (uint256 => uint256) public totalTimeHeld; 
     /// @dev used to determine the rent due. Rent is due for the period (now - timeLastCollected), at which point timeLastCollected is set to now.
     uint256[numberOfTokens] public timeLastCollected; 
@@ -60,16 +61,18 @@ contract Harber is ERC721, Ownable {
     /// @dev keeps track of all previous owners of a token, including the price, so that if the current owner's deposit runs out,
     /// @dev ...ownership can be reverted to a previous owner with the previous price. Index 0 is NOT used, this tells the contract to foreclose.
     /// @dev this does NOT keep a reliable list of all owners, if it reverts to a previous owner then the next owner will overwrite the owner that was in that slot.
-    mapping (uint256 => mapping (uint256 => purchase) ) public ownerTracker;  
+    mapping (uint256 => mapping (uint256 => rental) ) public ownerTracker;  
     /// @dev tracks the position of the current owner in the ownerTracker mapping
     uint256[numberOfTokens] public currentOwnerIndex; 
     /// @dev the struct for ownerTracker
-    struct purchase {
+    struct rental {
         address owner;
         uint256 price;
     }
-    // /// @dev array of all owners of a token (for front end)
-    // mapping (uint256 => address[]) public allOwners;
+    /// @dev array of all owners of a token (for front end)
+    mapping (uint256 => address[]) public allOwners;
+    /// @dev is the owner already in allOwners
+    mapping (uint256 => mapping (address => bool)) inAllOwners;
 
     ///// MARKET RESOLUTION VARIABLES /////
     /// @dev start with invalid winning outcome
@@ -405,6 +408,11 @@ contract Harber is ERC721, Ownable {
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].owner = msg.sender; 
             timeAcquired[_tokenId] = now;
+            // just for front end:
+            if (!inAllOwners[_tokenId][msg.sender]) {
+                allOwners[_tokenId].push(msg.sender);
+            }
+            // externals
             _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
             emit LogNewRental(msg.sender, _newPrice, _tokenId); 
         }
