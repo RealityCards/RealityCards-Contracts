@@ -57,11 +57,6 @@ contract Harber is Ownable {
     /// @dev when a token was bought. Used to enforce minimum of one hour rental, also used in front end. Rent collection does not need this, only needs timeLastCollected.
     uint256[numberOfTokens] public timeAcquired; 
 
-    ///// LEADERBOARD /////
-    mapping (uint256 => uint[10]) leaderboard; //array if integers for timeHElds
-    mapping (uint256 => mapping (uint256 => address)) leaderboardOwners; //tokenId->timeHeld->owner; looks up the owner of a specific timeHeld
-
-
     ///// PREVIOUS OWNERS /////
     /// @dev keeps track of all previous owners of a token, including the price, so that if the current owner's deposit runs out,
     /// @dev ...ownership can be reverted to a previous owner with the previous price. Index 0 is NOT used, this tells the contract to foreclose.
@@ -124,7 +119,7 @@ contract Harber is Ownable {
     event LogStep2Complete(bool indexed didRealitioResolve, uint256 indexed winningOutcome, bool indexed didRealitioResolveInvalid);
     event LogWinningsPaid(address indexed paidTo, uint256 indexed amountPaid);
     event LogRentReturned(address indexed returnedTo, uint256 indexed amountReturned);
-    event LogTimeHeldUpdated(uint256 indexed newTimeHeld, address indexed owner, uint256 indexed tokenId);
+    event TestingVariable(uint indexed testingVariable);
 
     ////////////////////////////////////
     //////// INITIAL SETUP /////////////
@@ -462,26 +457,9 @@ contract Harber is Ownable {
     ///// MAIN FUNCTIONS- INTERNAL /////
     ////////////////////////////////////
 
-    /// @dev should only be called four times
+    /// @dev should only be called thrice
     function _incrementState() internal  {
         state = States(uint(state) + 1);
-    }
-
-    function _updateLeaderboard(uint _timeHeld, address _owner, uint _tokenId) {
-        // get lowest timeHeld in the array
-        uint256 _lowestTimeHeldInLeaderboard;
-        uint256 _index;
-        for (uint i=0; i<leaderboard[_tokenId].length; i++) {
-            if (_lowestTimeHeldInLeaderboard < leaderboard[_tokenId][i]) {
-                _lowestTimeHeldInLeaderboard = leaderboard[_tokenId][i];
-                _index = i;
-            }
-        }
-        // add user to leaderboard if their timeHeld is high enough
-        if (_timeHeld > _lowestTimeHeldInLeaderboard) {
-            delete leaderboard[_tokenId][index];
-            leaderboard[_tokenId].push(_timeHeld)
-        }
     }
 
     /// @notice collects rent for a specific token
@@ -518,7 +496,6 @@ contract Harber is Ownable {
             collectedPerToken[_tokenId] = collectedPerToken[_tokenId].add(_rentOwed);
             totalCollected = totalCollected.add(_rentOwed);
 
-            emit LogTimeHeldUpdated(timeHeld[_tokenId][_currentOwner], _currentOwner, _tokenId);
             emit LogRentCollection(_rentOwed, _tokenId);
         }
 
