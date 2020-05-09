@@ -866,6 +866,7 @@ contract('RealityCardsTests', (accounts) => {
     await cash.resetBalance(user2);
     ////////////////////////
     // calling thrice to ensure it makes no difference how many times
+    await realitycards.collectRentAllTokens();
     await realitycards.circuitBreaker({ from: andrewsAddress} );
     await realitycards.circuitBreaker({ from: andrewsAddress} ); 
     await realitycards.circuitBreaker({ from: andrewsAddress} );  
@@ -1470,10 +1471,6 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     var marketExpectedResolutionTime = 0;
     realitycards = await RealityCards.new(andrewsAddress, cash.address, realitio.address, marketExpectedResolutionTime);
     await shouldFail.reverting.withMessage(realitycards.mintNfts(user), "Ownable: caller is not the owner");
-    for (i = 0; i < 20; i++) {
-      await realitycards.mintNfts("uri", {from: andrewsAddress});
-    }
-    await realitycards.step1LockContract();
     await shouldFail.reverting.withMessage(realitycards.circuitBreaker(), "Ownable: caller is not the owner");
   });
 

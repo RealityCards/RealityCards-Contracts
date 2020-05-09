@@ -317,8 +317,7 @@ contract RealityCards is ERC721, Ownable {
         }
     }
 
-    /// @notice pays winnings to the winners
-    /// @dev must be internal and only called by complete
+    /// @notice pays winnings
     function _payoutWinnings() internal {
         uint256 _winningsToTransfer = getWinnings(winningOutcome);
         require(_winningsToTransfer > 0, "Not a winner");
@@ -327,7 +326,6 @@ contract RealityCards is ERC721, Ownable {
     }
 
     /// @notice returns all funds to users in case of invalid outcome
-    /// @dev must be internal and only called by complete
     function _returnRent() internal {
         uint256 _rentCollected = collectedPerUser[msg.sender];
         require(_rentCollected > 0, "Paid no rent");
@@ -361,7 +359,6 @@ contract RealityCards is ERC721, Ownable {
     /// @dev basically functions that have checkState(States.OPEN) modifier
 
     /// @notice collects rent for all tokens
-    /// @dev makes it easy for me to call whenever I want to keep people paying their rent, thus cannot be internal
     /// @dev cannot be external because it is called within the step1 function, therefore public
     function collectRentAllTokens() public checkState(States.OPEN) {
        for (uint i = 0; i < numberOfTokens; i++) {
@@ -438,7 +435,7 @@ contract RealityCards is ERC721, Ownable {
     /// @dev do not need to be the current owner
     /// @dev no modifiers because they are on withdrawDeposit
     function exit(uint256 _tokenId) external {
-        withdrawDeposit(deposits[_tokenId][msg.sender],  _tokenId);
+        withdrawDeposit(deposits[_tokenId][msg.sender], _tokenId);
     }
 
     ////////////////////////////////////
@@ -447,7 +444,6 @@ contract RealityCards is ERC721, Ownable {
 
     /// @notice collects rent for a specific token
     /// @dev also calculates and updates how long the current user has held the token for
-    /// @dev called frequently internally, so cant be external. 
     /// @dev is not a problem if called externally, but making internal over public to save gas
     function _collectRent(uint256 _tokenId) internal {
         //only collect rent if the token is owned (ie, if owned by the contract this implies unowned)
@@ -546,7 +542,6 @@ contract RealityCards is ERC721, Ownable {
             _previousOwner = ownerTracker[_tokenId][_index].owner;
 
             // if no previous owners. price -> zero, foreclose
-            // if previous owner still has a deposit, transfer to them, update the price to what it used to be
             if (_index == 0) {
                 _foreclose(_tokenId);
                 break;
@@ -555,7 +550,7 @@ contract RealityCards is ERC721, Ownable {
             }  
         }   
 
-        // if the above loop did not foreclose, then transfer to previous owner
+        // if the above loop did not end in foreclose, then transfer to previous owner
         if (ownerOf(_tokenId) != address(this)) {
             address _currentOwner = ownerOf(_tokenId);
             uint256 _oldPrice = ownerTracker[_tokenId][_index].price;
@@ -593,9 +588,6 @@ contract RealityCards is ERC721, Ownable {
     /// @dev owner can call whenever as a circuit breaker, 
     /// @dev if there is a bug, move to WITHDRAW to lock contract and return all funds
     function circuitBreaker() external onlyOwner {
-        if (state == States.OPEN){
-            collectRentAllTokens();
-        }
         state = States.WITHDRAW;
     }
 
