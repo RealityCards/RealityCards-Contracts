@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./interfaces/ICash.sol";
 import "./interfaces/IRealitio.sol";
 
-/// @title Harber
+/// @title RealityCards
 /// @author Andrew Stanger
 
 contract RealityCards is ERC721, Ownable {
@@ -279,7 +279,7 @@ contract RealityCards is ERC721, Ownable {
     /// @notice winnings can be paid out (or funds returned) only when these three steps are completed
     /// @notice this function checks whether the competition has ended (1 hour grace), if so closes down all 'ordinary course of business' functions
     /// @dev can be called by anyone 
-    function step1checkMarketEnded() external checkState(States.OPEN) {
+    function step1LockContract() external checkState(States.OPEN) {
         require(marketExpectedResolutionTime < (now - 1 hours), "Market has not finished");
         // do a final rent collection before the contract is locked down
         collectRentAllTokens();
@@ -321,7 +321,7 @@ contract RealityCards is ERC721, Ownable {
 
     /// @notice the final function of the competition resolution process. Pays out winnings, or returns funds, as necessary
     /// @dev users pull dai into their ac   count. 
-    function complete() external checkState(States.WITHDRAW) {
+    function withdraw() external checkState(States.WITHDRAW) {
         if (!questionResolvedInvalid) {
             _payoutWinnings();
         } else {
@@ -378,7 +378,7 @@ contract RealityCards is ERC721, Ownable {
 
     /// @notice collects rent for all tokens
     /// @dev makes it easy for me to call whenever I want to keep people paying their rent, thus cannot be internal
-    /// @dev cannot be external because it is called within the step1 functions, therefore public
+    /// @dev cannot be external because it is called within the step1 function, therefore public
     function collectRentAllTokens() public checkState(States.OPEN) {
        for (uint i = 0; i < numberOfTokens; i++) {
             _collectRent(i);
@@ -460,11 +460,6 @@ contract RealityCards is ERC721, Ownable {
     ////////////////////////////////////
     ///// MAIN FUNCTIONS- INTERNAL /////
     ////////////////////////////////////
-
-    /// @dev should only be called thrice
-    function _incrementState() internal  {
-        state = States(uint(state) + 1);
-    }
 
     /// @notice collects rent for a specific token
     /// @dev also calculates and updates how long the current user has held the token for
@@ -599,6 +594,15 @@ contract RealityCards is ERC721, Ownable {
         require(_currentOwner != address(0) && _newOwner != address(0) , "Cannot send to/from zero address");
         price[_tokenId] = _newPrice;
         _transfer(_currentOwner, _newOwner, _tokenId);
+    }
+
+    ////////////////////////////////////
+    ///////// OTHER FUNCTIONS //////////
+    ////////////////////////////////////
+
+    /// @dev should only be called thrice
+    function _incrementState() internal  {
+        state = States(uint(state) + 1);
     }
 
     /////// ERC721 FUNCTION OVERRIDES ///////

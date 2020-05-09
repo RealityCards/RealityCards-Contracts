@@ -588,7 +588,7 @@ contract('RealityCardsTests', (accounts) => {
     });
 
     // test the payout functions work fine, with different winners each time
-  it('test complete- winner 1', async () => {
+  it('test withdraw- winner 1', async () => {
     /////// SETUP //////
     await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user0 });
     await cash.approve(realitycards.address, web3.utils.toWei('100', 'ether'),{ from: user0 });
@@ -622,7 +622,7 @@ contract('RealityCardsTests', (accounts) => {
     // set winner 1
     await realitio.setResult(1);
     ////////////////////////
-    await realitycards.step1checkMarketEnded(); 
+    await realitycards.step1LockContract(); 
     await realitycards.step2getWinner(); 
     ////////////////////////
     // total deposits = 75, check:
@@ -631,21 +631,21 @@ contract('RealityCardsTests', (accounts) => {
     var difference = Math.abs(totalCollected.toString()-totalCollectedShouldBe.toString());
     assert.isBelow(difference/totalCollected,0.00001);
     //check user0 winnings
-    await realitycards.complete({ from: user0 });
+    await realitycards.withdraw({ from: user0 });
     var winningsSentToUser = await cash.balanceOf.call(user0);
     var winningsShouldBe = ether('75').mul(new BN('604800')).div(new BN('1900800'));
     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user0 cant withdraw again
-    await shouldFail.reverting.withMessage(realitycards.complete({ from: user0 }), " Not a winner, or winnings already paid");
+    await shouldFail.reverting.withMessage(realitycards.withdraw({ from: user0 }), " Not a winner, or winnings already paid");
     //check user1 winnings
-    await realitycards.complete({ from: user1 });
+    await realitycards.withdraw({ from: user1 });
     var winningsSentToUser = await cash.balanceOf.call(user1);
     var winningsShouldBe = ether('75').mul(new BN('604800')).div(new BN('1900800'));
     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user2 winnings
-    await realitycards.complete({ from: user2 });
+    await realitycards.withdraw({ from: user2 });
     var winningsSentToUser = await cash.balanceOf.call(user2);
     var winningsShouldBe = ether('75').mul(new BN('691200')).div(new BN('1900800'));
     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
@@ -653,7 +653,7 @@ contract('RealityCardsTests', (accounts) => {
   });
 
   // test the payout functions work fine, with different winners each time
-  it('test complete- winner 2', async () => {
+  it('test withdraw- winner 2', async () => {
     /////// SETUP //////
     await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user0 });
     await cash.approve(realitycards.address, web3.utils.toWei('100', 'ether'),{ from: user0 });
@@ -686,7 +686,7 @@ contract('RealityCardsTests', (accounts) => {
     await cash.resetBalance(user2);
     // set winner 2
     await realitio.setResult(2);
-    await realitycards.step1checkMarketEnded(); 
+    await realitycards.step1LockContract(); 
     await realitycards.step2getWinner(); 
     ////////////////////////
     // total deposits = 75, check:
@@ -696,18 +696,18 @@ contract('RealityCardsTests', (accounts) => {
     assert.isBelow(difference/totalCollected,0.00001);
     //knock off 1% that was sent to me so use 74.25 below
     //check user0 winnings
-    await realitycards.complete({ from: user0 });
+    await realitycards.withdraw({ from: user0 });
     var winningsSentToUser = await cash.balanceOf.call(user0);
     var winningsShouldBe = ether('75');
     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user1 winnings
-    await shouldFail.reverting.withMessage(realitycards.complete({ from: user1 }), " Not a winner, or winnings already paid");
+    await shouldFail.reverting.withMessage(realitycards.withdraw({ from: user1 }), " Not a winner, or winnings already paid");
     //check user2 winnings
-    await shouldFail.reverting.withMessage(realitycards.complete({ from: user2 }), " Not a winner, or winnings already paid");
+    await shouldFail.reverting.withMessage(realitycards.withdraw({ from: user2 }), " Not a winner, or winnings already paid");
   });
 
-  it('test complete- invalid', async () => {
+  it('test withdraw- invalid', async () => {
     /////// SETUP //////
     await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user0 });
     await cash.approve(realitycards.address, web3.utils.toWei('100', 'ether'),{ from: user0 });
@@ -740,31 +740,31 @@ contract('RealityCardsTests', (accounts) => {
     await cash.resetBalance(user2);
     // set an invalid outcome
     await realitio.setResult(69);
-    await realitycards.step1checkMarketEnded(); 
+    await realitycards.step1LockContract(); 
     await realitycards.step2getWinner(); 
     ////////////////////////
     //check user0 winnings 
-    await realitycards.complete({ from: user0 });
+    await realitycards.withdraw({ from: user0 });
     var winningsSentToUser = await cash.balanceOf.call(user0);
     var winningsShouldBe = ether('17');
     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user0 cant withdraw again
-    await shouldFail.reverting.withMessage(realitycards.complete({ from: user0 }), "Paid no rent, or rent already returned");
+    await shouldFail.reverting.withMessage(realitycards.withdraw({ from: user0 }), "Paid no rent, or rent already returned");
     //check user1 winnings 
-    await realitycards.complete({ from: user1 });
+    await realitycards.withdraw({ from: user1 });
     var winningsSentToUser = await cash.balanceOf.call(user1);
     var winningsShouldBe = ether('34');
     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user2 winnings 
-    await realitycards.complete({ from: user2 });
+    await realitycards.withdraw({ from: user2 });
     var winningsSentToUser = await cash.balanceOf.call(user2);
     var winningsShouldBe = ether('24');
     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user5 winnings, should fail cos didn't pay any rent
-    await shouldFail.reverting.withMessage(realitycards.complete({ from: user5 }), "Paid no rent, or rent already returned");
+    await shouldFail.reverting.withMessage(realitycards.withdraw({ from: user5 }), "Paid no rent, or rent already returned");
   });
 
   // test the emergency Exit function works
@@ -800,24 +800,24 @@ contract('RealityCardsTests', (accounts) => {
     await cash.resetBalance(user1);
     await cash.resetBalance(user2);
     ////////////////////////
-    await realitycards.step1checkMarketEnded(); 
+    await realitycards.step1LockContract(); 
     await time.increase(time.duration.weeks(24)); 
     await realitycards.step2BemergencyExit(); 
     ////////////////////////
     //check user0 winnings 
-    await realitycards.complete({ from: user0 });
+    await realitycards.withdraw({ from: user0 });
     var winningsSentToUser = await cash.balanceOf.call(user0);
     var winningsShouldBe = ether('17');
     var difference = Math.abs(winningsSentToUser.toString()-winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user0 winnings 
-    await realitycards.complete({ from: user1 });
+    await realitycards.withdraw({ from: user1 });
     var winningsSentToUser = await cash.balanceOf.call(user1);
     var winningsShouldBe = ether('34');
     var difference = Math.abs(winningsSentToUser.toString()-winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user0 winnings 
-    await realitycards.complete({ from: user2 });
+    await realitycards.withdraw({ from: user2 });
     var winningsSentToUser = await cash.balanceOf.call(user2);
     var winningsShouldBe = ether('24');
     var difference = Math.abs(winningsSentToUser.toString()-winningsShouldBe.toString());
@@ -831,7 +831,7 @@ contract('RealityCardsTests', (accounts) => {
     await realitycards.newRental(web3.utils.toWei('1', 'ether'),2,web3.utils.toWei('10', 'ether'),{ from: user0 }); //
     await time.increase(time.duration.weeks(3)); 
     ////////////////////////
-    await realitycards.step1checkMarketEnded(); 
+    await realitycards.step1LockContract(); 
     await shouldFail.reverting.withMessage(realitycards.step2BemergencyExit(), "Must wait 1 month");
     await time.increase(time.duration.weeks(1)); 
     await realitycards.step2BemergencyExit();
@@ -870,23 +870,23 @@ contract('RealityCardsTests', (accounts) => {
     await cash.resetBalance(user1);
     await cash.resetBalance(user2);
     ////////////////////////
-    await realitycards.step1checkMarketEnded(); 
+    await realitycards.step1LockContract(); 
     await realitycards.step2CcircuitBreaker({ from: andrewsAddress} ); 
     ////////////////////////
     //check user0 winnings 
-    await realitycards.complete({ from: user0 });
+    await realitycards.withdraw({ from: user0 });
     var winningsSentToUser = await cash.balanceOf.call(user0);
     var winningsShouldBe = ether('17');
     var difference = Math.abs(winningsSentToUser.toString()-winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user1 winnings 
-    await realitycards.complete({ from: user1 });
+    await realitycards.withdraw({ from: user1 });
     var winningsSentToUser = await cash.balanceOf.call(user1);
     var winningsShouldBe = ether('34');
     var difference = Math.abs(winningsSentToUser.toString()-winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user2 winnings 
-    await realitycards.complete({ from: user2 });
+    await realitycards.withdraw({ from: user2 });
     var winningsSentToUser = await cash.balanceOf.call(user2);
     var winningsShouldBe = ether('24');
     var difference = Math.abs(winningsSentToUser.toString()-winningsShouldBe.toString());
@@ -923,11 +923,11 @@ contract('RealityCardsTests', (accounts) => {
     // time: 0: 10 days (604800) 
     // set winner 1
     await realitio.setResult(1);
-    await realitycards.step1checkMarketEnded(); 
+    await realitycards.step1LockContract(); 
     await realitycards.step2getWinner(); 
-    await realitycards.complete({ from: user0 });
-    await realitycards.complete({ from: user1 });
-    await realitycards.complete({ from: user2 });
+    await realitycards.withdraw({ from: user0 });
+    await realitycards.withdraw({ from: user1 });
+    await realitycards.withdraw({ from: user2 });
     /////// THIS TEST //////
     // reset cash balances
     await cash.resetBalance(user0);
@@ -990,7 +990,7 @@ contract('RealityCardsTests', (accounts) => {
     // time: 0: 10 days (604800) 
     // set winner 1
     await realitio.setResult(1);
-    await realitycards.step1checkMarketEnded(); 
+    await realitycards.step1LockContract(); 
     await realitycards.step2getWinner(); 
     /////// THIS TEST //////
     // reset cash balances
@@ -1055,7 +1055,7 @@ contract('RealityCardsTests', (accounts) => {
     await realitio.setResult(1);
     // should fail before step 1:
     await shouldFail.reverting.withMessage(realitycards.withdrawDepositAfterMarketEnded({ from: user0 }), "Incorrect state");
-    await realitycards.step1checkMarketEnded(); 
+    await realitycards.step1LockContract(); 
     /////// THIS TEST //////
     // reset cash balances
     await cash.resetBalance(user0);
@@ -1106,10 +1106,10 @@ contract('RealityCardsTests', (accounts) => {
     await realitycards.newRental(web3.utils.toWei('3', 'ether'),1,web3.utils.toWei('24', 'ether'),{ from: user2 }); //used deposit of 24
     await time.increase(time.duration.weeks(2)); 
     // not setting winner so we expect step2 to revert
-    await realitycards.step1checkMarketEnded(); 
+    await realitycards.step1LockContract(); 
     await shouldFail.reverting.withMessage(realitycards.step2getWinner(), "Oracle not resolved");
     await shouldFail.reverting.withMessage(realitycards.step2CcircuitBreaker(), "Ownable: caller is not the owner");
-    await shouldFail.reverting.withMessage(realitycards.complete(), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards.withdraw(), "Incorrect state");
     });
 
     it('check expected failures with market resolution: question not resolved and market not ended', async () => {
@@ -1134,7 +1134,7 @@ contract('RealityCardsTests', (accounts) => {
       await shouldFail.reverting.withMessage(realitycards.step2getWinner(), "Incorrect state");
       await shouldFail.reverting.withMessage(realitycards.step2BemergencyExit(), "Incorrect state");
       await shouldFail.reverting.withMessage(realitycards.step2CcircuitBreaker(), "Incorrect state");
-      await shouldFail.reverting.withMessage(realitycards.complete(), "Incorrect state");
+      await shouldFail.reverting.withMessage(realitycards.withdraw(), "Incorrect state");
       });
 
   it('check exit does not revert to previous owner if not the current owner', async () => {
@@ -1184,11 +1184,11 @@ it('test payouts (incl deposit returned) when newRental called again by existing
   // time: 0: 10 days (604800) 
   // set winner 1
   await realitio.setResult(1);
-  await realitycards.step1checkMarketEnded(); 
+  await realitycards.step1LockContract(); 
   await realitycards.step2getWinner(); 
-  await realitycards.complete({ from: user0 });
-  await realitycards.complete({ from: user1 });
-  await realitycards.complete({ from: user2 });
+  await realitycards.withdraw({ from: user0 });
+  await realitycards.withdraw({ from: user1 });
+  await realitycards.withdraw({ from: user2 });
   /////// THIS TEST //////
   // reset cash balances
   await cash.resetBalance(user0);
@@ -1239,7 +1239,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await shouldFail.reverting.withMessage(realitycards.changePrice(web3.utils.toWei('2', 'ether'),2,{ from: user1}), "Not owner");
     //check notEnded
     await time.increase(time.duration.hours(1)); 
-    await realitycards.step1checkMarketEnded();
+    await realitycards.step1LockContract();
     await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('2', 'ether'),4,web3.utils.toWei('1', 'ether'),{ from: user}), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards.depositDai(web3.utils.toWei('2', 'ether'),4,{ from: user}), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards.withdrawDeposit(web3.utils.toWei('2', 'ether'),4,{ from: user}), "Incorrect state");
@@ -1257,12 +1257,12 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     // call step 2 before step 1 done
     await shouldFail.reverting.withMessage(realitycards.step2getWinner(), "Incorrect state");
     //call step 1 before markets ended
-    await shouldFail.reverting.withMessage(realitycards.step1checkMarketEnded(), "Market has not finished");
+    await shouldFail.reverting.withMessage(realitycards.step1LockContract(), "Market has not finished");
     await time.increase(time.duration.hours(1)); 
     // call step 1 after markets ended, should work
-    await realitycards.step1checkMarketEnded(); 
+    await realitycards.step1LockContract(); 
     // call step 1 twice
-    await shouldFail.reverting.withMessage(realitycards.step1checkMarketEnded(), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards.step1LockContract(), "Incorrect state");
     });
 
   it('check that _revertToPreviousOwner does not revert more than ten times ', async () => {
@@ -1414,11 +1414,11 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     var state = await realitycards.state.call();
     assert.equal(0,state);
     // currently in state 'NFTSNOTMINTED' the following should all fail 
-    await shouldFail.reverting.withMessage(realitycards.step1checkMarketEnded(), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards.step1LockContract(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards.step2getWinner(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards.step2BemergencyExit(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards.step2CcircuitBreaker(), "Incorrect state");
-    await shouldFail.reverting.withMessage(realitycards.complete(), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards.withdraw(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards.withdrawDepositAfterMarketEnded(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards.collectRentAllTokens(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards.newRental(0,0,0), "Incorrect state");
@@ -1437,10 +1437,10 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await shouldFail.reverting.withMessage(realitycards.step2getWinner(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards.step2BemergencyExit(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards.step2CcircuitBreaker(), "Incorrect state");
-    await shouldFail.reverting.withMessage(realitycards.complete(), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards.withdraw(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards.withdrawDepositAfterMarketEnded(), "Incorrect state");
     // increment state
-    await realitycards.step1checkMarketEnded();
+    await realitycards.step1LockContract();
     var state = await realitycards.state.call();
     assert.equal(2,state);
     // currently in state 'LOCKED' the following should all fail 
@@ -1458,7 +1458,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     assert.equal(3,state);
     // currently in state 'WITHDRAW' the following should all fail 
     await shouldFail.reverting.withMessage(realitycards.mintNfts(user), "Incorrect state");
-    await shouldFail.reverting.withMessage(realitycards.step1checkMarketEnded(), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards.step1LockContract(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards.step2getWinner(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards.step2BemergencyExit(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards.step2CcircuitBreaker(), "Incorrect state");
@@ -1479,7 +1479,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     for (i = 0; i < 20; i++) {
       await realitycards.mintNfts("uri", {from: andrewsAddress});
     }
-    await realitycards.step1checkMarketEnded();
+    await realitycards.step1LockContract();
     await shouldFail.reverting.withMessage(realitycards.step2CcircuitBreaker(), "Ownable: caller is not the owner");
   });
 
