@@ -1,8 +1,8 @@
-# Harber.io
+# realitycards.io
 
 (--STILL IN DEVELOPMENT--)
 
-This project is live on Kovan and can be viewed at www.harber.io (you will need Kovan Eth to interact with it, some faucets are [here](https://faucet.kovan.network/) and [here](https://gitter.im/kovan-testnet/faucet), if these do not work feel free to get in touch with me on telegram (mcplums)). 
+This project is live on Kovan and can be viewed at www.realitycards.io (you will need Kovan Eth to interact with it, some faucets are [here](https://faucet.kovan.network/) and [here](https://gitter.im/kovan-testnet/faucet), if these do not work feel free to get in touch with me on telegram (mcplums)). 
 
 A short video demo can be seen [here](https://www.youtube.com/watch?v=-TpHjpKOQe8). 
 
@@ -50,13 +50,13 @@ Assuming Manchester United wins, Vitalik will receive winnings of 750 DAI (1000 
 
 ## What is going on behind the scenes?
 
-The relevant market is created on Augur prior to the contract being created. The Harber contract is passed the market's address in the constructor function. 
+The relevant market is created on Augur prior to the contract being created. The RealityCards contract is passed the market's address in the constructor function. 
 
-Whenever rent is paid (in DAI) the contract immediately uses the DAI to purchase complete sets on Augur. When the relevant market has resolved (i.e. to continue the above example, when the Premier League has finished, and the Augur market has completed its resolution process) the Harber contract will ask Augur who won. Once it knows the winner, the complete sets are sold, and the funds are paid out. 
+Whenever rent is paid (in DAI) the contract immediately uses the DAI to purchase complete sets on Augur. When the relevant market has resolved (i.e. to continue the above example, when the Premier League has finished, and the Augur market has completed its resolution process) the RealityCards contract will ask Augur who won. Once it knows the winner, the complete sets are sold, and the funds are paid out. 
 
 ## Test a local version for yourself
 
-Before trying to test locally ensure variable usingAugur is set to false in Harber.sol. Ensure ganache is running. 
+Before trying to test locally ensure variable usingAugur is set to false in RealityCards.sol. Ensure ganache is running. 
 
 To deploy, `truffle migrate` within the main project folder
 For the front end, `npm run start` within the app folder

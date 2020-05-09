@@ -9,7 +9,7 @@ import "./interfaces/IRealitio.sol";
 /// @title Harber
 /// @author Andrew Stanger
 
-contract Harber is ERC721, Ownable {
+contract RealityCards is ERC721, Ownable {
 
     using SafeMath for uint256;
 
@@ -21,7 +21,7 @@ contract Harber is ERC721, Ownable {
     /// @dev not set in the constructor because so many other variables need it for initating.  
     uint256 constant private numberOfTokens = 20;
     /// @dev counts how many NFTs have been minted 
-    /// @dev when nftMintCount = numberOfTokens, INCREMENT STATE
+    /// @dev when nftMintCount = numberOfTokens, increment state
     uint256 private nftMintCount;
     /// @dev the question ID of the question on realitio
     bytes32 public questionId;
@@ -65,14 +65,12 @@ contract Harber is ERC721, Ownable {
     /// @dev tracks the position of the current owner in the ownerTracker mapping
     uint256[numberOfTokens] public currentOwnerIndex; 
     /// @dev the struct for ownerTracker
-    struct rental {
-        address owner;
-        uint256 price;
-    }
+    struct rental { address owner;
+                    uint256 price; }
     /// @dev array of all owners of a token (for front end)
     mapping (uint256 => address[]) public allOwners;
-    /// @dev is the owner already in allOwners
-    mapping (uint256 => mapping (address => bool)) inAllOwners;
+    /// @dev preventing duplicates in allOwners
+    mapping (uint256 => mapping (address => bool)) public inAllOwners;
 
     ///// MARKET RESOLUTION VARIABLES /////
     /// @dev start with invalid winning outcome
@@ -410,6 +408,7 @@ contract Harber is ERC721, Ownable {
             timeAcquired[_tokenId] = now;
             // just for front end:
             if (!inAllOwners[_tokenId][msg.sender]) {
+                inAllOwners[_tokenId][msg.sender] = true;
                 allOwners[_tokenId].push(msg.sender);
             }
             // externals

@@ -16,7 +16,7 @@ module.exports = {
       enabled: true,
       runs: 1
     },
-    version: "0.6.6"
+    version: "0.6.6",
   },
   networks: {
     localhost: {

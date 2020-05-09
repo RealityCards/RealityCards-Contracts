@@ -1,7 +1,5 @@
 /* globals artifacts */
-var Harber = artifacts.require("./Harber.sol");
-// var MintNFTs = artifacts.require("./MintNFTs.sol");
-// var Token = artifacts.require("./ERC721Full.sol");
+var RealityCards = artifacts.require("./RealityCards.sol");
 var CashMockup = artifacts.require("./mockups/CashMockup.sol");
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 
@@ -17,7 +15,7 @@ module.exports = function (deployer, network) {
 
   if (network === "kovan") {
     deployer.deploy(Token, "harber.io", "HARB").then((deployedToken) => {
-      return deployer.deploy(Harber, andrewsAddress, deployedToken.address, augurCashAddressKovan, realitioAddressKovan, marketExpectedResolutionTime);
+      return deployer.deploy(RealityCards, andrewsAddress, deployedToken.address, augurCashAddressKovan, realitioAddressKovan, marketExpectedResolutionTime);
     }).then((deployedHarber) => {
       return deployer.deploy(MintNFTs, Token.address, deployedHarber.address);
     });
@@ -25,7 +23,7 @@ module.exports = function (deployer, network) {
   } else if (network === "development") {
       deployer.deploy(CashMockup).then((deployedCash) => {
         return deployer.deploy(RealitioMockup).then((deployedRealitio) => {
-            return deployer.deploy(Harber, andrewsAddress, deployedCash.address, deployedRealitio.address, marketExpectedResolutionTime);
+            return deployer.deploy(RealityCards, andrewsAddress, deployedCash.address, deployedRealitio.address, marketExpectedResolutionTime);
         });
       });
     }

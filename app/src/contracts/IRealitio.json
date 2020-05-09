@@ -84,26 +84,26 @@
       "type": "function"
     }
   ],
-  "metadata": "{\"compiler\":{\"version\":\"0.6.6+commit.6c089d02\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"template_id\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"question\",\"type\":\"string\"},{\"internalType\":\"address\",\"name\":\"arbitrator\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"timeout\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"opening_ts\",\"type\":\"uint32\"},{\"internalType\":\"uint256\",\"name\":\"nonce\",\"type\":\"uint256\"}],\"name\":\"askQuestion\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"question_id\",\"type\":\"bytes32\"}],\"name\":\"isFinalized\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"question_id\",\"type\":\"bytes32\"}],\"name\":\"resultFor\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"methods\":{},\"title\":\"Realit.io contract interface\"},\"userdoc\":{\"methods\":{}}},\"settings\":{\"compilationTarget\":{\"/Users/mcplums/Repos/Harber/contracts/interfaces/IRealitio.sol\":\"IRealitio\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":1},\"remappings\":[]},\"sources\":{\"/Users/mcplums/Repos/Harber/contracts/interfaces/IRealitio.sol\":{\"keccak256\":\"0x2b4b6bb722882569ca0f6ab9514ad907e540819f5c30bef7288bed5f39a238ab\",\"urls\":[\"bzz-raw://90b568db4e539bb52b4a6a5cfe6681ef491e7d79575e01b09d45c7467d1e38b8\",\"dweb:/ipfs/QmXU5W5JSbzRZrtuidyRgzHpNAhBZRd6i6fedZFrHDfXK7\"]}},\"version\":1}",
+  "metadata": "{\"compiler\":{\"version\":\"0.6.6+commit.6c089d02\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"template_id\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"question\",\"type\":\"string\"},{\"internalType\":\"address\",\"name\":\"arbitrator\",\"type\":\"address\"},{\"internalType\":\"uint32\",\"name\":\"timeout\",\"type\":\"uint32\"},{\"internalType\":\"uint32\",\"name\":\"opening_ts\",\"type\":\"uint32\"},{\"internalType\":\"uint256\",\"name\":\"nonce\",\"type\":\"uint256\"}],\"name\":\"askQuestion\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"question_id\",\"type\":\"bytes32\"}],\"name\":\"isFinalized\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"question_id\",\"type\":\"bytes32\"}],\"name\":\"resultFor\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"methods\":{},\"title\":\"Realit.io contract interface\"},\"userdoc\":{\"methods\":{}}},\"settings\":{\"compilationTarget\":{\"/Users/mcplums/Repos/RealityCards/contracts/interfaces/IRealitio.sol\":\"IRealitio\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/mcplums/Repos/RealityCards/contracts/interfaces/IRealitio.sol\":{\"keccak256\":\"0x2b4b6bb722882569ca0f6ab9514ad907e540819f5c30bef7288bed5f39a238ab\",\"urls\":[\"bzz-raw://90b568db4e539bb52b4a6a5cfe6681ef491e7d79575e01b09d45c7467d1e38b8\",\"dweb:/ipfs/QmXU5W5JSbzRZrtuidyRgzHpNAhBZRd6i6fedZFrHDfXK7\"]}},\"version\":1}",
   "bytecode": "0x",
   "deployedBytecode": "0x",
   "immutableReferences": {},
   "sourceMap": "",
   "deployedSourceMap": "",
   "source": "pragma solidity 0.6.6;\n\n/// @title Realit.io contract interface\ninterface IRealitio \n{\n    function askQuestion(uint256 template_id, string calldata question, address arbitrator, uint32 timeout, uint32 opening_ts, uint256 nonce) external payable returns (bytes32);\n    function resultFor(bytes32 question_id) external view returns (bytes32);\n    function isFinalized(bytes32 question_id) external view returns (bool);\n}",
-  "sourcePath": "/Users/mcplums/Repos/Harber/contracts/interfaces/IRealitio.sol",
+  "sourcePath": "/Users/mcplums/Repos/RealityCards/contracts/interfaces/IRealitio.sol",
   "ast": {
-    "absolutePath": "/Users/mcplums/Repos/Harber/contracts/interfaces/IRealitio.sol",
+    "absolutePath": "/Users/mcplums/Repos/RealityCards/contracts/interfaces/IRealitio.sol",
     "exportedSymbols": {
       "IRealitio": [
-        2050
+        2096
       ]
     },
-    "id": 2051,
+    "id": 2097,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 2017,
+        "id": 2063,
         "literals": [
           "solidity",
           "0.6",
@@ -118,15 +118,15 @@
         "contractDependencies": [],
         "contractKind": "interface",
         "documentation": {
-          "id": 2018,
+          "id": 2064,
           "nodeType": "StructuredDocumentation",
           "src": "24:40:3",
           "text": "@title Realit.io contract interface"
         },
         "fullyImplemented": false,
-        "id": 2050,
+        "id": 2096,
         "linearizedBaseContracts": [
-          2050
+          2096
         ],
         "name": "IRealitio",
         "nodeType": "ContractDefinition",
@@ -135,7 +135,7 @@
             "body": null,
             "documentation": null,
             "functionSelector": "762c38fd",
-            "id": 2035,
+            "id": 2081,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
@@ -143,17 +143,17 @@
             "nodeType": "FunctionDefinition",
             "overrides": null,
             "parameters": {
-              "id": 2031,
+              "id": 2077,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 2020,
+                  "id": 2066,
                   "mutability": "mutable",
                   "name": "template_id",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 2035,
+                  "scope": 2081,
                   "src": "112:19:3",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -162,7 +162,7 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 2019,
+                    "id": 2065,
                     "name": "uint256",
                     "nodeType": "ElementaryTypeName",
                     "src": "112:7:3",
@@ -176,12 +176,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 2022,
+                  "id": 2068,
                   "mutability": "mutable",
                   "name": "question",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 2035,
+                  "scope": 2081,
                   "src": "133:24:3",
                   "stateVariable": false,
                   "storageLocation": "calldata",
@@ -190,7 +190,7 @@
                     "typeString": "string"
                   },
                   "typeName": {
-                    "id": 2021,
+                    "id": 2067,
                     "name": "string",
                     "nodeType": "ElementaryTypeName",
                     "src": "133:6:3",
@@ -204,12 +204,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 2024,
+                  "id": 2070,
                   "mutability": "mutable",
                   "name": "arbitrator",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 2035,
+                  "scope": 2081,
                   "src": "159:18:3",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -218,7 +218,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 2023,
+                    "id": 2069,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "159:7:3",
@@ -233,12 +233,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 2026,
+                  "id": 2072,
                   "mutability": "mutable",
                   "name": "timeout",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 2035,
+                  "scope": 2081,
                   "src": "179:14:3",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -247,7 +247,7 @@
                     "typeString": "uint32"
                   },
                   "typeName": {
-                    "id": 2025,
+                    "id": 2071,
                     "name": "uint32",
                     "nodeType": "ElementaryTypeName",
                     "src": "179:6:3",
@@ -261,12 +261,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 2028,
+                  "id": 2074,
                   "mutability": "mutable",
                   "name": "opening_ts",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 2035,
+                  "scope": 2081,
                   "src": "195:17:3",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -275,7 +275,7 @@
                     "typeString": "uint32"
                   },
                   "typeName": {
-                    "id": 2027,
+                    "id": 2073,
                     "name": "uint32",
                     "nodeType": "ElementaryTypeName",
                     "src": "195:6:3",
@@ -289,12 +289,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 2030,
+                  "id": 2076,
                   "mutability": "mutable",
                   "name": "nonce",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 2035,
+                  "scope": 2081,
                   "src": "214:13:3",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -303,7 +303,7 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 2029,
+                    "id": 2075,
                     "name": "uint256",
                     "nodeType": "ElementaryTypeName",
                     "src": "214:7:3",
@@ -319,17 +319,17 @@
               "src": "111:117:3"
             },
             "returnParameters": {
-              "id": 2034,
+              "id": 2080,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 2033,
+                  "id": 2079,
                   "mutability": "mutable",
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 2035,
+                  "scope": 2081,
                   "src": "255:7:3",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -338,7 +338,7 @@
                     "typeString": "bytes32"
                   },
                   "typeName": {
-                    "id": 2032,
+                    "id": 2078,
                     "name": "bytes32",
                     "nodeType": "ElementaryTypeName",
                     "src": "255:7:3",
@@ -353,7 +353,7 @@
               ],
               "src": "254:9:3"
             },
-            "scope": 2050,
+            "scope": 2096,
             "src": "91:173:3",
             "stateMutability": "payable",
             "virtual": false,
@@ -363,7 +363,7 @@
             "body": null,
             "documentation": null,
             "functionSelector": "d09cc57e",
-            "id": 2042,
+            "id": 2088,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
@@ -371,17 +371,17 @@
             "nodeType": "FunctionDefinition",
             "overrides": null,
             "parameters": {
-              "id": 2038,
+              "id": 2084,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 2037,
+                  "id": 2083,
                   "mutability": "mutable",
                   "name": "question_id",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 2042,
+                  "scope": 2088,
                   "src": "288:19:3",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -390,7 +390,7 @@
                     "typeString": "bytes32"
                   },
                   "typeName": {
-                    "id": 2036,
+                    "id": 2082,
                     "name": "bytes32",
                     "nodeType": "ElementaryTypeName",
                     "src": "288:7:3",
@@ -406,17 +406,17 @@
               "src": "287:21:3"
             },
             "returnParameters": {
-              "id": 2041,
+              "id": 2087,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 2040,
+                  "id": 2086,
                   "mutability": "mutable",
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 2042,
+                  "scope": 2088,
                   "src": "332:7:3",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -425,7 +425,7 @@
                     "typeString": "bytes32"
                   },
                   "typeName": {
-                    "id": 2039,
+                    "id": 2085,
                     "name": "bytes32",
                     "nodeType": "ElementaryTypeName",
                     "src": "332:7:3",
@@ -440,7 +440,7 @@
               ],
               "src": "331:9:3"
             },
-            "scope": 2050,
+            "scope": 2096,
             "src": "269:72:3",
             "stateMutability": "view",
             "virtual": false,
@@ -450,7 +450,7 @@
             "body": null,
             "documentation": null,
             "functionSelector": "7f8d429e",
-            "id": 2049,
+            "id": 2095,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
@@ -458,17 +458,17 @@
             "nodeType": "FunctionDefinition",
             "overrides": null,
             "parameters": {
-              "id": 2045,
+              "id": 2091,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 2044,
+                  "id": 2090,
                   "mutability": "mutable",
                   "name": "question_id",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 2049,
+                  "scope": 2095,
                   "src": "367:19:3",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -477,7 +477,7 @@
                     "typeString": "bytes32"
                   },
                   "typeName": {
-                    "id": 2043,
+                    "id": 2089,
                     "name": "bytes32",
                     "nodeType": "ElementaryTypeName",
                     "src": "367:7:3",
@@ -493,17 +493,17 @@
               "src": "366:21:3"
             },
             "returnParameters": {
-              "id": 2048,
+              "id": 2094,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 2047,
+                  "id": 2093,
                   "mutability": "mutable",
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 2049,
+                  "scope": 2095,
                   "src": "411:4:3",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -512,7 +512,7 @@
                     "typeString": "bool"
                   },
                   "typeName": {
-                    "id": 2046,
+                    "id": 2092,
                     "name": "bool",
                     "nodeType": "ElementaryTypeName",
                     "src": "411:4:3",
@@ -527,31 +527,31 @@
               ],
               "src": "410:6:3"
             },
-            "scope": 2050,
+            "scope": 2096,
             "src": "346:71:3",
             "stateMutability": "view",
             "virtual": false,
             "visibility": "external"
           }
         ],
-        "scope": 2051,
+        "scope": 2097,
         "src": "64:355:3"
       }
     ],
     "src": "0:419:3"
   },
   "legacyAST": {
-    "absolutePath": "/Users/mcplums/Repos/Harber/contracts/interfaces/IRealitio.sol",
+    "absolutePath": "/Users/mcplums/Repos/RealityCards/contracts/interfaces/IRealitio.sol",
     "exportedSymbols": {
       "IRealitio": [
-        2050
+        2096
       ]
     },
-    "id": 2051,
+    "id": 2097,
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 2017,
+        "id": 2063,
         "literals": [
           "solidity",
           "0.6",
@@ -566,15 +566,15 @@
         "contractDependencies": [],
         "contractKind": "interface",
         "documentation": {
-          "id": 2018,
+          "id": 2064,
           "nodeType": "StructuredDocumentation",
           "src": "24:40:3",
           "text": "@title Realit.io contract interface"
         },
         "fullyImplemented": false,
-        "id": 2050,
+        "id": 2096,
         "linearizedBaseContracts": [
-          2050
+          2096
         ],
         "name": "IRealitio",
         "nodeType": "ContractDefinition",
@@ -583,7 +583,7 @@
             "body": null,
             "documentation": null,
             "functionSelector": "762c38fd",
-            "id": 2035,
+            "id": 2081,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
@@ -591,17 +591,17 @@
             "nodeType": "FunctionDefinition",
             "overrides": null,
             "parameters": {
-              "id": 2031,
+              "id": 2077,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 2020,
+                  "id": 2066,
                   "mutability": "mutable",
                   "name": "template_id",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 2035,
+                  "scope": 2081,
                   "src": "112:19:3",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -610,7 +610,7 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 2019,
+                    "id": 2065,
                     "name": "uint256",
                     "nodeType": "ElementaryTypeName",
                     "src": "112:7:3",
@@ -624,12 +624,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 2022,
+                  "id": 2068,
                   "mutability": "mutable",
                   "name": "question",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 2035,
+                  "scope": 2081,
                   "src": "133:24:3",
                   "stateVariable": false,
                   "storageLocation": "calldata",
@@ -638,7 +638,7 @@
                     "typeString": "string"
                   },
                   "typeName": {
-                    "id": 2021,
+                    "id": 2067,
                     "name": "string",
                     "nodeType": "ElementaryTypeName",
                     "src": "133:6:3",
@@ -652,12 +652,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 2024,
+                  "id": 2070,
                   "mutability": "mutable",
                   "name": "arbitrator",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 2035,
+                  "scope": 2081,
                   "src": "159:18:3",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -666,7 +666,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 2023,
+                    "id": 2069,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "159:7:3",
@@ -681,12 +681,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 2026,
+                  "id": 2072,
                   "mutability": "mutable",
                   "name": "timeout",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 2035,
+                  "scope": 2081,
                   "src": "179:14:3",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -695,7 +695,7 @@
                     "typeString": "uint32"
                   },
                   "typeName": {
-                    "id": 2025,
+                    "id": 2071,
                     "name": "uint32",
                     "nodeType": "ElementaryTypeName",
                     "src": "179:6:3",
@@ -709,12 +709,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 2028,
+                  "id": 2074,
                   "mutability": "mutable",
                   "name": "opening_ts",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 2035,
+                  "scope": 2081,
                   "src": "195:17:3",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -723,7 +723,7 @@
                     "typeString": "uint32"
                   },
                   "typeName": {
-                    "id": 2027,
+                    "id": 2073,
                     "name": "uint32",
                     "nodeType": "ElementaryTypeName",
                     "src": "195:6:3",
@@ -737,12 +737,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 2030,
+                  "id": 2076,
                   "mutability": "mutable",
                   "name": "nonce",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 2035,
+                  "scope": 2081,
                   "src": "214:13:3",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -751,7 +751,7 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 2029,
+                    "id": 2075,
                     "name": "uint256",
                     "nodeType": "ElementaryTypeName",
                     "src": "214:7:3",
@@ -767,17 +767,17 @@
               "src": "111:117:3"
             },
             "returnParameters": {
-              "id": 2034,
+              "id": 2080,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 2033,
+                  "id": 2079,
                   "mutability": "mutable",
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 2035,
+                  "scope": 2081,
                   "src": "255:7:3",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -786,7 +786,7 @@
                     "typeString": "bytes32"
                   },
                   "typeName": {
-                    "id": 2032,
+                    "id": 2078,
                     "name": "bytes32",
                     "nodeType": "ElementaryTypeName",
                     "src": "255:7:3",
@@ -801,7 +801,7 @@
               ],
               "src": "254:9:3"
             },
-            "scope": 2050,
+            "scope": 2096,
             "src": "91:173:3",
             "stateMutability": "payable",
             "virtual": false,
@@ -811,7 +811,7 @@
             "body": null,
             "documentation": null,
             "functionSelector": "d09cc57e",
-            "id": 2042,
+            "id": 2088,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
@@ -819,17 +819,17 @@
             "nodeType": "FunctionDefinition",
             "overrides": null,
             "parameters": {
-              "id": 2038,
+              "id": 2084,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 2037,
+                  "id": 2083,
                   "mutability": "mutable",
                   "name": "question_id",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 2042,
+                  "scope": 2088,
                   "src": "288:19:3",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -838,7 +838,7 @@
                     "typeString": "bytes32"
                   },
                   "typeName": {
-                    "id": 2036,
+                    "id": 2082,
                     "name": "bytes32",
                     "nodeType": "ElementaryTypeName",
                     "src": "288:7:3",
@@ -854,17 +854,17 @@
               "src": "287:21:3"
             },
             "returnParameters": {
-              "id": 2041,
+              "id": 2087,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 2040,
+                  "id": 2086,
                   "mutability": "mutable",
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 2042,
+                  "scope": 2088,
                   "src": "332:7:3",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -873,7 +873,7 @@
                     "typeString": "bytes32"
                   },
                   "typeName": {
-                    "id": 2039,
+                    "id": 2085,
                     "name": "bytes32",
                     "nodeType": "ElementaryTypeName",
                     "src": "332:7:3",
@@ -888,7 +888,7 @@
               ],
               "src": "331:9:3"
             },
-            "scope": 2050,
+            "scope": 2096,
             "src": "269:72:3",
             "stateMutability": "view",
             "virtual": false,
@@ -898,7 +898,7 @@
             "body": null,
             "documentation": null,
             "functionSelector": "7f8d429e",
-            "id": 2049,
+            "id": 2095,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
@@ -906,17 +906,17 @@
             "nodeType": "FunctionDefinition",
             "overrides": null,
             "parameters": {
-              "id": 2045,
+              "id": 2091,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 2044,
+                  "id": 2090,
                   "mutability": "mutable",
                   "name": "question_id",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 2049,
+                  "scope": 2095,
                   "src": "367:19:3",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -925,7 +925,7 @@
                     "typeString": "bytes32"
                   },
                   "typeName": {
-                    "id": 2043,
+                    "id": 2089,
                     "name": "bytes32",
                     "nodeType": "ElementaryTypeName",
                     "src": "367:7:3",
@@ -941,17 +941,17 @@
               "src": "366:21:3"
             },
             "returnParameters": {
-              "id": 2048,
+              "id": 2094,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 2047,
+                  "id": 2093,
                   "mutability": "mutable",
                   "name": "",
                   "nodeType": "VariableDeclaration",
                   "overrides": null,
-                  "scope": 2049,
+                  "scope": 2095,
                   "src": "411:4:3",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -960,7 +960,7 @@
                     "typeString": "bool"
                   },
                   "typeName": {
-                    "id": 2046,
+                    "id": 2092,
                     "name": "bool",
                     "nodeType": "ElementaryTypeName",
                     "src": "411:4:3",
@@ -975,14 +975,14 @@
               ],
               "src": "410:6:3"
             },
-            "scope": 2050,
+            "scope": 2096,
             "src": "346:71:3",
             "stateMutability": "view",
             "virtual": false,
             "visibility": "external"
           }
         ],
-        "scope": 2051,
+        "scope": 2097,
         "src": "64:355:3"
       }
     ],
@@ -994,7 +994,7 @@
   },
   "networks": {},
   "schemaVersion": "3.1.0",
-  "updatedAt": "2020-05-08T15:17:26.141Z",
+  "updatedAt": "2020-05-09T07:08:52.302Z",
   "devdoc": {
     "methods": {},
     "title": "Realit.io contract interface"
