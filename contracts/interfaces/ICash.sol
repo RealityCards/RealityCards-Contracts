@@ -4,6 +4,7 @@ pragma solidity 0.6.6;
 interface ICash 
 {
     function approve(address _spender, uint256 _amount) external returns (bool);
+    function allowance(address owner, address spender) external returns (uint256);
     function balanceOf(address _ownesr) external view returns (uint256);
     function faucet(uint256 _amount) external;
     function transfer(address _to, uint256 _amount) external returns (bool);

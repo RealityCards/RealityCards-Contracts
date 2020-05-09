@@ -3,6 +3,7 @@ pragma solidity 0.6.6;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@nomiclabs/buidler/console.sol";
 import "./interfaces/ICash.sol";
 import "./interfaces/IRealitio.sol";
 
@@ -79,6 +80,8 @@ contract RealityCards is ERC721, Ownable {
     uint32 public marketExpectedResolutionTime; 
     /// @dev set in step 2. If false, normal payout. If true, return all funds. Default true
     bool public questionResolvedInvalid = true; 
+    /// @dev prevent users withdrawing twice
+    mapping (address => bool) public userAlreadyWithdrawn;
 
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
@@ -171,16 +174,6 @@ contract RealityCards is ERC721, Ownable {
     /// @dev called in collectRent function, and various other view functions 
     function rentOwed(uint256 _tokenId) public view returns (uint256) {
         return price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(1 days);
-    }
-
-    /// @dev used in testing only
-    function getOwnerTrackerPrice(uint256 _tokenId, uint256 _index) external view returns (uint256) {
-        return (ownerTracker[_tokenId][_index].price);
-    }
-
-    /// @dev used in testing only
-    function getOwnerTrackerAddress(uint256 _tokenId, uint256 _index) external view returns (address) {
-        return (ownerTracker[_tokenId][_index].owner);
     }
 
     /// @dev for front end only
@@ -312,16 +305,11 @@ contract RealityCards is ERC721, Ownable {
         emit LogStep2Complete(false, winningOutcome, false);
     }
 
-    /// @notice Same as above, except that only owner can call it, and can be called whenever
-    /// @notice to be clear, this only allows owner to return all funds, not to set a winner
-    function step2CcircuitBreaker() external checkState(States.LOCKED) onlyOwner {
-        _incrementState();
-        emit LogStep2Complete(false, winningOutcome, false);
-    }
-
     /// @notice the final function of the competition resolution process. Pays out winnings, or returns funds, as necessary
-    /// @dev users pull dai into their ac   count. 
+    /// @dev users pull dai into their account. 
     function withdraw() external checkState(States.WITHDRAW) {
+        require(!userAlreadyWithdrawn[msg.sender], "Already withdrawn");
+        userAlreadyWithdrawn[msg.sender] = true;
         if (!questionResolvedInvalid) {
             _payoutWinnings();
         } else {
@@ -329,24 +317,20 @@ contract RealityCards is ERC721, Ownable {
         }
     }
 
-     // * internal * 
     /// @notice pays winnings to the winners
     /// @dev must be internal and only called by complete
     function _payoutWinnings() internal {
         uint256 _winningsToTransfer = getWinnings(winningOutcome);
-        require(_winningsToTransfer > 0, "Not a winner, or winnings already paid");
-        timeHeld[winningOutcome][msg.sender] = 0; // otherwise they can keep paying themselves over and over
+        require(_winningsToTransfer > 0, "Not a winner");
         _sendCash(msg.sender, _winningsToTransfer);
         emit LogWinningsPaid(msg.sender, _winningsToTransfer);
     }
 
-    // * internal * 
     /// @notice returns all funds to users in case of invalid outcome
     /// @dev must be internal and only called by complete
     function _returnRent() internal {
         uint256 _rentCollected = collectedPerUser[msg.sender];
-        require(_rentCollected > 0, "Paid no rent, or rent already returned");
-        collectedPerUser[msg.sender] = 0; // otherwise they can keep paying themselves over and over
+        require(_rentCollected > 0, "Paid no rent");
         _sendCash(msg.sender, _rentCollected);
         emit LogRentReturned(msg.sender, _rentCollected);
     }
@@ -601,11 +585,20 @@ contract RealityCards is ERC721, Ownable {
     ////////////////////////////////////
 
     /// @dev should only be called thrice
-    function _incrementState() internal  {
+    function _incrementState() internal {
+        assert(uint256(state) < 4);
         state = States(uint(state) + 1);
     }
 
-    /////// ERC721 FUNCTION OVERRIDES ///////
+    /// @dev owner can call whenever as a circuit breaker, 
+    /// @dev if there is a bug, move to WITHDRAW to lock contract and return all funds
+    function circuitBreaker() external onlyOwner {
+        if (state == States.OPEN){
+            collectRentAllTokens();
+        }
+        state = States.WITHDRAW;
+    }
+
     /// @dev only the contract can transfer the NFTs
     function transferFrom(address from, address to, uint256 tokenId) override public {
         require(false, "Only the contract can make transfers");
