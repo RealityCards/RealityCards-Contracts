@@ -19,8 +19,8 @@ contract RealityCards is ERC721, Ownable {
     ////////////////////////////////////
 
     ///// CONTRACT SETUP /////
-    /// @dev not set in the constructor because so many other variables need it for initating.  
-    uint256 constant private numberOfTokens = 20;
+    /// @dev = how many outcomes/teams/NFTs etc 
+    uint256 public numberOfTokens;
     /// @dev counts how many NFTs have been minted 
     /// @dev when nftMintCount = numberOfTokens, increment state
     uint256 private nftMintCount;
@@ -37,7 +37,7 @@ contract RealityCards is ERC721, Ownable {
 
     ///// PRICE, DEPOSITS, RENT /////
     /// @dev in attodai (so $100 = 100000000000000000000)
-    uint256[numberOfTokens] public price; 
+    mapping (uint256 => uint256) public price; 
     /// @dev keeps track of all the deposits for each token, for each owner
     mapping (uint256 => mapping (address => uint256) ) public deposits; 
     /// @dev keeps track of all the rent paid by each user. So that it can be returned in case of an invalid market outcome.
@@ -53,9 +53,9 @@ contract RealityCards is ERC721, Ownable {
     /// @dev sums all the timeHelds for each. Not required, but saves on gas when paying out. Should always increment at the same time as timeHeld
     mapping (uint256 => uint256) public totalTimeHeld; 
     /// @dev used to determine the rent due. Rent is due for the period (now - timeLastCollected), at which point timeLastCollected is set to now.
-    uint256[numberOfTokens] public timeLastCollected; 
+    mapping (uint256 => uint256) public timeLastCollected; 
     /// @dev when a token was bought. Used to enforce minimum of one hour rental, also used in front end. Rent collection does not need this, only needs timeLastCollected.
-    uint256[numberOfTokens] public timeAcquired; 
+    mapping (uint256 => uint256) public timeAcquired; 
 
     ///// PREVIOUS OWNERS /////
     /// @dev keeps track of all previous owners of a token, including the price, so that if the current owner's deposit runs out,
@@ -63,7 +63,7 @@ contract RealityCards is ERC721, Ownable {
     /// @dev this does NOT keep a reliable list of all owners, if it reverts to a previous owner then the next owner will overwrite the owner that was in that slot.
     mapping (uint256 => mapping (uint256 => rental) ) public ownerTracker;  
     /// @dev tracks the position of the current owner in the ownerTracker mapping
-    uint256[numberOfTokens] public currentOwnerIndex; 
+    mapping (uint256 => uint256) public currentOwnerIndex; 
     /// @dev the struct for ownerTracker
     struct rental { address owner;
                     uint256 price; }
@@ -85,12 +85,23 @@ contract RealityCards is ERC721, Ownable {
     //////// CONSTRUCTOR ///////////////
     ////////////////////////////////////
 
-    constructor(address _owner, ICash _addressOfCashContract, IRealitio _addressOfRealitioContract, uint32 _marketExpectedResolutionTime) ERC721("realitycards.io", "RC") public
+    constructor(
+        address _owner, 
+        uint256 _numberOfTokens, 
+        ICash _addressOfCashContract, 
+        IRealitio _addressOfRealitioContract, 
+        uint32 _marketExpectedResolutionTime, 
+        uint256 _templateId, 
+        string memory _question, 
+        address _arbitrator, 
+        uint32 _timeout) 
+        ERC721("realitycards.io", "RC") public
     {
         // reassign ownership (because deployed using public seed)
         transferOwnership(_owner);
 
         // assign arguments to public variables
+        numberOfTokens = _numberOfTokens;
         marketExpectedResolutionTime = _marketExpectedResolutionTime;
         
         // external contract variables:
@@ -98,13 +109,7 @@ contract RealityCards is ERC721, Ownable {
         cash = _addressOfCashContract;
 
         // Create the question on Realitio
-        uint256 template_id = 2;
-        string memory question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
-        address arbitrator = 0xA6EAd513D05347138184324392d8ceb24C116118; // to change
-        uint32 timeout = 86400; // 24 hours
-        uint32 opening_ts = _marketExpectedResolutionTime;
-        uint256 nonce = 0;
-        questionId = _postQuestion(template_id, question, arbitrator, timeout, opening_ts, nonce);
+        questionId = _postQuestion(_templateId, _question, _arbitrator, _timeout, _marketExpectedResolutionTime, 0);
     } 
 
     ////////////////////////////////////
