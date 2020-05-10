@@ -38,14 +38,13 @@ contract RealityCards is ERC721, Ownable {
     ///// PRICE, DEPOSITS, RENT /////
     /// @dev in attodai (so $100 = 100000000000000000000)
     uint256[numberOfTokens] public price; 
-    /// @dev keeps track of all the deposits for each token, for each owner. Unused deposits are not returned automatically when there is a new buyer. 
-    /// @dev they can be withdrawn manually however. Unused deposits are returned automatically upon resolution of the market
+    /// @dev keeps track of all the deposits for each token, for each owner
     mapping (uint256 => mapping (address => uint256) ) public deposits; 
-    /// @dev keeps track of all the rent paid by each user. So that it can be returned in case of an invalid market outcome. Only required in this instance. 
+    /// @dev keeps track of all the rent paid by each user. So that it can be returned in case of an invalid market outcome.
     mapping (address => uint256) public collectedPerUser;
-    /// @dev keeps track of all the rent paid for each  Front end only
+    /// @dev keeps track of all the rent paid for each token, front end only
     mapping (uint256 => uint256) public collectedPerToken;
-    /// @dev an easy way to track the above across all tokens. It should always increment at the same time as the above increments. 
+    /// @dev an easy way to track the above across all tokens
     uint256 public totalCollected; 
 
     ///// TIME /////
@@ -71,14 +70,13 @@ contract RealityCards is ERC721, Ownable {
     /// @dev array of all owners of a token (for front end)
     mapping (uint256 => address[]) public allOwners;
     /// @dev preventing duplicates in allOwners
-    mapping (uint256 => mapping (address => bool)) public inAllOwners;
+    mapping (uint256 => mapping (address => bool)) private inAllOwners;
 
     ///// MARKET RESOLUTION VARIABLES /////
-    /// @dev start with invalid winning outcome
-    uint256 public winningOutcome = 42069; 
+    uint256 public winningOutcome; 
     //// @dev when the question can be answered on Realitio. 
     uint32 public marketExpectedResolutionTime; 
-    /// @dev set in step 2. If false, normal payout. If true, return all funds. Default true
+    /// @dev If false, normal payout. If true, return all funds. Default true
     bool public questionResolvedInvalid = true; 
     /// @dev prevent users withdrawing twice
     mapping (address => bool) public userAlreadyWithdrawn;
@@ -151,13 +149,13 @@ contract RealityCards is ERC721, Ownable {
 
     /// @notice checks the token exists
     modifier tokenExists(uint256 _tokenId) {
-        require(_tokenId  >= 0 && _tokenId < numberOfTokens, "This token does not exist");
+        require(_tokenId < numberOfTokens, "This token does not exist");
        _;
     }
 
     /// @notice what it says on the tin
     modifier amountNotZero(uint256 _dai) {
-        require(_dai  > 0, "Amount must be above zero");
+        require(_dai > 0, "Amount must be above zero");
        _;
     }
 
@@ -177,7 +175,7 @@ contract RealityCards is ERC721, Ownable {
     }
 
     /// @dev for front end only
-    /// @return how much the current owner has deposited
+    /// @return how much the current owner has left of their deposit after deducting rent owed but not paid
     function liveDepositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) {
         uint256 _rentOwed = rentOwed(_tokenId);
         address _currentOwner = ownerOf(_tokenId);
@@ -189,7 +187,7 @@ contract RealityCards is ERC721, Ownable {
     }
 
     /// @dev for front end only
-    /// @return how much the current user has deposited (note: user not owner)
+    /// @return how much the user has deposited (note: user not owner)
     function userDepositAbleToWithdraw(uint256 _tokenId) external view returns (uint256) {
         uint256 _rentOwed = rentOwed(_tokenId);
         address _currentOwner = ownerOf(_tokenId);
@@ -222,7 +220,7 @@ contract RealityCards is ERC721, Ownable {
     function getWinnings(uint256 _winningOutcome) public view returns (uint256) {
         uint256 _winnersTimeHeld = timeHeld[_winningOutcome][msg.sender];
         uint256 _numerator = totalCollected.mul(_winnersTimeHeld);
-        uint256 _winnings = _numerator.div(totalTimeHeld[winningOutcome]);    
+        uint256 _winnings = _numerator.div(totalTimeHeld[_winningOutcome]);    
         return _winnings;    
     }
     
@@ -230,13 +228,11 @@ contract RealityCards is ERC721, Ownable {
     ///// EXTERNAL DAI FUNCTIONS ///////
     ////////////////////////////////////
 
-    // * internal * 
     /// @notice common function for all outgoing DAI transfers
     function _sendCash(address _to, uint256 _amount) internal { 
         require(cash.transfer(_to,_amount), "Cash transfer failed"); 
     }
 
-    // * internal * 
     /// @notice common function for all incoming DAI transfers
     function _receiveCash(address _from, uint256 _amount) internal {  
         require(cash.transferFrom(_from, address(this), _amount), "Cash transfer failed");
@@ -268,11 +264,9 @@ contract RealityCards is ERC721, Ownable {
     //// MARKET RESOLUTION FUNCTIONS ///
     ////////////////////////////////////
 
-    /// @notice the first of two functions which must be called, one after the other, to conclude the competition
-    /// @notice winnings can be paid out (or funds returned) only when these three steps are completed
-    /// @notice this function checks whether the competition has ended (1 hour grace), if so closes down all 'ordinary course of business' functions
+    /// @notice checks whether the competition has ended (1 hour grace), if so moves to LOCKED state
     /// @dev can be called by anyone 
-    function step1LockContract() external checkState(States.OPEN) {
+    function lockContract() external checkState(States.OPEN) {
         require(marketExpectedResolutionTime < (now - 1 hours), "Market has not finished");
         // do a final rent collection before the contract is locked down
         collectRentAllTokens();
@@ -280,11 +274,9 @@ contract RealityCards is ERC721, Ownable {
         _incrementState();
         emit LogStep1Complete(true);
     }
-
-    /// @notice the second of two functions which must be called, one after the other, to conclude the competition
-    /// @notice this function checks whether the Realitio question has resolved, and if yes, gets the winner
+    /// @notice checks whether the Realitio question has resolved, and if yes, gets the winner
     /// @dev can be called by anyone 
-    function step2getWinner() external checkState(States.LOCKED) {
+    function determineWinner() external checkState(States.LOCKED) {
         require(_isQuestionFinalized() == true, "Oracle not resolved");
         // get the winner. This will revert if answer is not resolved.
         winningOutcome = _getWinner();
@@ -294,15 +286,6 @@ contract RealityCards is ERC721, Ownable {
         }
         _incrementState();
         emit LogStep2Complete(true, winningOutcome, questionResolvedInvalid);
-    }
-
-    /// @notice emergency function in case the Realitio question never resolves for whatever reason, can be called by anyone
-    /// @notice returns all funds to all users
-    /// @notice can only be called 1 month after Realitio question should have ended 
-    function step2BemergencyExit() external checkState(States.LOCKED) {
-        require(now > (marketExpectedResolutionTime + 4 weeks), "Must wait 1 month");
-        _incrementState();
-        emit LogStep2Complete(false, winningOutcome, false);
     }
 
     /// @notice the final function of the competition resolution process. Pays out winnings, or returns funds, as necessary
@@ -585,9 +568,11 @@ contract RealityCards is ERC721, Ownable {
         state = States(uint(state) + 1);
     }
 
-    /// @dev owner can call whenever as a circuit breaker, 
-    /// @dev if there is a bug, move to WITHDRAW to lock contract and return all funds
-    function circuitBreaker() external onlyOwner {
+    /// @dev change state to WITHDRAW to lock contract and return all funds
+    /// @dev in case Oracle never resolves, or a bug is found 
+    function circuitBreaker() external {
+        require(msg.sender == owner() || now > (marketExpectedResolutionTime + 4 weeks), "Not owner or too early");
+        questionResolvedInvalid = true;
         state = States.WITHDRAW;
     }
 
