@@ -118,8 +118,8 @@ contract RealityCards is ERC721, Ownable {
     event LogReturnToPreviousOwner(uint256 indexed tokenId, address indexed previousOwner);
     event LogDepositWithdrawal(uint256 indexed daiWithdrawn, uint256 indexed tokenId, address indexed returnedTo);
     event LogDepositIncreased(uint256 indexed daiDeposited, uint256 indexed tokenId, address indexed sentBy);
-    event LogStep1Complete(bool indexed didTheEventFinish);
-    event LogStep2Complete(bool indexed didRealitioResolve, uint256 indexed winningOutcome, bool indexed didRealitioResolveInvalid);
+    event LogContractLocked(bool indexed didTheEventFinish);
+    event LogWinnerKnown(uint256 indexed winningOutcome);
     event LogWinningsPaid(address indexed paidTo, uint256 indexed amountPaid);
     event LogRentReturned(address indexed returnedTo, uint256 indexed amountReturned);
     event LogTimeHeldUpdated(uint256 indexed newTimeHeld, address indexed owner, uint256 indexed tokenId);
@@ -176,7 +176,7 @@ contract RealityCards is ERC721, Ownable {
 
     /// @dev for front end only
     /// @return how much the current owner has left of their deposit after deducting rent owed but not paid
-    function liveDepositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) {
+    function currentOwnerRemainingDeposit(uint256 _tokenId) public view returns (uint256) {
         uint256 _rentOwed = rentOwed(_tokenId);
         address _currentOwner = ownerOf(_tokenId);
         if(_rentOwed >= deposits[_tokenId][_currentOwner]) {
@@ -188,23 +188,16 @@ contract RealityCards is ERC721, Ownable {
 
     /// @dev for front end only
     /// @return how much the user has deposited (note: user not owner)
-    function userDepositAbleToWithdraw(uint256 _tokenId) external view returns (uint256) {
-        uint256 _rentOwed = rentOwed(_tokenId);
-        address _currentOwner = ownerOf(_tokenId);
-
-        if(_currentOwner == msg.sender) {
-            if(_rentOwed >= deposits[_tokenId][msg.sender]) {
-                return 0;
-            } else {
-                return deposits[_tokenId][msg.sender].sub(_rentOwed);
-            }
+    function userRemainingDeposit(uint256 _tokenId) external view returns (uint256) {
+        if(ownerOf(_tokenId) == msg.sender) {
+            return currentOwnerRemainingDeposit(_tokenId);
         } else {
             return deposits[_tokenId][msg.sender];
         }
     }
 
     /// @dev for front end only
-    /// @return estimated rental expiry time
+    /// @return rental expiry time given current contract state
     function rentalExpiryTime(uint256 _tokenId) external view returns (uint256) {
         uint256 pps;
         pps = price[_tokenId].div(1 days);
@@ -212,7 +205,7 @@ contract RealityCards is ERC721, Ownable {
             return now; //if price is so low that pps = 0 just return current time as a fallback
         }
         else {
-            return now + liveDepositAbleToWithdraw(_tokenId).div(pps);
+            return now + currentOwnerRemainingDeposit(_tokenId).div(pps);
         }
     }
 
@@ -270,9 +263,8 @@ contract RealityCards is ERC721, Ownable {
         require(marketExpectedResolutionTime < (now - 1 hours), "Market has not finished");
         // do a final rent collection before the contract is locked down
         collectRentAllTokens();
-        // lock everything down
         _incrementState();
-        emit LogStep1Complete(true);
+        emit LogContractLocked(true);
     }
     /// @notice checks whether the Realitio question has resolved, and if yes, gets the winner
     /// @dev can be called by anyone 
@@ -285,11 +277,10 @@ contract RealityCards is ERC721, Ownable {
             questionResolvedInvalid = false;
         }
         _incrementState();
-        emit LogStep2Complete(true, winningOutcome, questionResolvedInvalid);
+        emit LogWinnerKnown(winningOutcome);
     }
 
-    /// @notice the final function of the competition resolution process. Pays out winnings, or returns funds, as necessary
-    /// @dev users pull dai into their account. 
+    /// @notice pays out winnings, or returns funds, based on questionResolvedInvalid bool
     function withdraw() external checkState(States.WITHDRAW) {
         require(!userAlreadyWithdrawn[msg.sender], "Already withdrawn");
         userAlreadyWithdrawn[msg.sender] = true;
@@ -342,7 +333,7 @@ contract RealityCards is ERC721, Ownable {
     /// @dev basically functions that have checkState(States.OPEN) modifier
 
     /// @notice collects rent for all tokens
-    /// @dev cannot be external because it is called within the step1 function, therefore public
+    /// @dev cannot be external because it is called within the lockContract function, therefore public
     function collectRentAllTokens() public checkState(States.OPEN) {
        for (uint i = 0; i < numberOfTokens; i++) {
             _collectRent(i);
@@ -392,6 +383,7 @@ contract RealityCards is ERC721, Ownable {
     }
 
     /// @notice increase the price of an existing rental
+    /// @dev 10% price increase not required for existing owners
     function changePrice(uint256 _newPrice, uint256 _tokenId) external checkState(States.OPEN) tokenExists(_tokenId) onlyTokenOwner(_tokenId) {
         require(_newPrice > price[_tokenId], "New price must be higher"); 
         _collectRent(_tokenId);
@@ -451,7 +443,10 @@ contract RealityCards is ERC721, Ownable {
             deposits[_tokenId][_currentOwner] = deposits[_tokenId][_currentOwner].sub(_rentOwed);
 
             // update time held and amount collected variables
-            uint256 _timeHeldToIncrement = (_timeOfThisCollection.sub(timeLastCollected[_tokenId])); //just for readability
+            uint256 _timeHeldToIncrement = (_timeOfThisCollection.sub(timeLastCollected[_tokenId])); 
+            // note that if _revertToPreviousOwner was called above, _currentOwner will no longer refer to the
+            // ... actual current owner. This is correct- we are updating the variables of the user who just
+            // ... had their rent collected, not the new owner, if there is one
             timeHeld[_tokenId][_currentOwner] = timeHeld[_tokenId][_currentOwner].add(_timeHeldToIncrement);
             totalTimeHeld[_tokenId] = totalTimeHeld[_tokenId].add(_timeHeldToIncrement);
             collectedPerUser[_currentOwner] = collectedPerUser[_currentOwner].add(_rentOwed);

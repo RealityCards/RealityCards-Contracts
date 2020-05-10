@@ -173,7 +173,7 @@ contract('RealityCardsTests', (accounts) => {
     });
 
     // check these front end functions. 
-    it('userDepositAbleToWithdraw and  liveDepositAbleToWithdraw function', async () => {
+    it('userRemainingDeposit and  currentOwnerRemainingDeposit function', async () => {
       // setup from previous test
       user = user0;
       await cash.faucet(web3.utils.toWei('100', 'ether'), { from: user });
@@ -183,45 +183,45 @@ contract('RealityCardsTests', (accounts) => {
       await realitycards.changePrice(web3.utils.toWei('3', 'ether'),4,{ from: user });
       await time.increase(time.duration.days(1));
       // tests
-      //due to 1 day passing from above, the userDepositAbleToWithdraw and depositAbleToWithdraw should be lower by 10 but the deposit amount should not
-      var userDepositAbleToWithdraw = await realitycards.userDepositAbleToWithdraw.call(4, { from: user });
-      var depositAbleToWithdraw = await realitycards.liveDepositAbleToWithdraw.call(4, { from: user })
+      //due to 1 day passing from above, the userRemainingDeposit and depositAbleToWithdraw should be lower by 10 but the deposit amount should not
+      var userRemainingDeposit = await realitycards.userRemainingDeposit.call(4, { from: user });
+      var depositAbleToWithdraw = await realitycards.currentOwnerRemainingDeposit.call(4, { from: user })
       var deposit = await realitycards.deposits.call(4,user);
       var depositShouldBe = web3.utils.toWei('20', 'ether');
       var difference = Math.abs(deposit.toString()-depositShouldBe.toString());
       assert.isBelow(difference/deposit,0.00001);
-      var userDepositAbleToWithdrawShouldBe = web3.utils.toWei('17', 'ether');
+      var userRemainingDepositShouldBe = web3.utils.toWei('17', 'ether');
       var difference = Math.abs(deposit.toString()-depositShouldBe.toString());
-      assert.isBelow(difference/userDepositAbleToWithdrawShouldBe,0.00001);
+      assert.isBelow(difference/userRemainingDepositShouldBe,0.00001);
       var depositAbleToWithdrawShouldBe = web3.utils.toWei('17', 'ether');
       var difference = Math.abs(deposit.toString()-depositShouldBe.toString());
       assert.isBelow(difference/depositAbleToWithdrawShouldBe,0.00001);
       //increment time another half day and check that deposit is the same but the other two are not
       await time.increase(time.duration.minutes(720)); //mins in half a day
-      var userDepositAbleToWithdraw = await realitycards.userDepositAbleToWithdraw.call(4, { from: user });
-      var depositAbleToWithdraw = await realitycards.liveDepositAbleToWithdraw.call(4, { from: user })
+      var userRemainingDeposit = await realitycards.userRemainingDeposit.call(4, { from: user });
+      var depositAbleToWithdraw = await realitycards.currentOwnerRemainingDeposit.call(4, { from: user })
       var deposit = await realitycards.deposits.call(4,user);
       var depositShouldBe = web3.utils.toWei('20', 'ether');
       var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
       assert.isBelow(difference/deposit,0.00001);
-      var userDepositAbleToWithdrawShouldBe = web3.utils.toWei('15.5', 'ether');
-      var difference = Math.abs(userDepositAbleToWithdraw.toString() - userDepositAbleToWithdrawShouldBe.toString());
-      assert.isBelow(difference/userDepositAbleToWithdrawShouldBe,0.00001);
-      //switch user, rent, increment time. user1 deposit and userDepositAbleToWithdraw should not change but depositAbleToWithdraw should 
+      var userRemainingDepositShouldBe = web3.utils.toWei('15.5', 'ether');
+      var difference = Math.abs(userRemainingDeposit.toString() - userRemainingDepositShouldBe.toString());
+      assert.isBelow(difference/userRemainingDepositShouldBe,0.00001);
+      //switch user, rent, increment time. user1 deposit and userRemainingDeposit should not change but depositAbleToWithdraw should 
       user = user1;
-      var userDepositAbleToWithdraw = await realitycards.userDepositAbleToWithdraw.call(4, { from: user });
+      var userRemainingDeposit = await realitycards.userRemainingDeposit.call(4, { from: user });
       var deposit = await realitycards.deposits.call(4,user);
-      var depositAbleToWithdraw = await realitycards.liveDepositAbleToWithdraw.call(4, { from: user })
+      var depositAbleToWithdraw = await realitycards.currentOwnerRemainingDeposit.call(4, { from: user })
       assert.equal(deposit, 0);
-      assert.equal(userDepositAbleToWithdraw,0);
+      assert.equal(userRemainingDeposit,0);
       var depositAbleToWithdrawShouldBe = web3.utils.toWei('15.5', 'ether');
       var difference = Math.abs(depositAbleToWithdrawShouldBe.toString()-depositAbleToWithdraw.toString());
-      assert.isBelow(difference/userDepositAbleToWithdrawShouldBe,0.00001);
+      assert.isBelow(difference/userRemainingDepositShouldBe,0.00001);
       //wait another half a day and check that nothing has changed for user since he isnt the owner
       await time.increase(time.duration.minutes(720));
-      var userDepositAbleToWithdraw = await realitycards.userDepositAbleToWithdraw.call(4, { from: user });
+      var userRemainingDeposit = await realitycards.userRemainingDeposit.call(4, { from: user });
       assert.equal(deposit, 0);
-      assert.equal(userDepositAbleToWithdraw,0);
+      assert.equal(userRemainingDeposit,0);
     });
 
     // check this front end function
