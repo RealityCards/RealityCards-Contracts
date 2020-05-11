@@ -14,6 +14,9 @@ task("accounts", "Prints the list of accounts", async () => {
 });
 
 module.exports = {
+  paths: {
+    artifacts: './artifactsBuidler'
+  },
   solc: {
     optimizer: {
       enabled: true,

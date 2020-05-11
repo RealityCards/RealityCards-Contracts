@@ -13,12 +13,14 @@ module.exports = {
   // See <http://truffleframework.com/docs/advanced/configuration>
   // to customize your Truffle configuration!
   plugins: [ "truffle-security" ],
-  contracts_build_directory: path.join(__dirname, "app/src/contracts"),
+  contracts_build_directory: path.join(__dirname, "artifactsTruffle"),
   compilers: {
     solc: {
-      optimizer: {
-        enabled: true,
-        runs: 200
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 200
+        },
       },
       version: "0.6.6",
     },

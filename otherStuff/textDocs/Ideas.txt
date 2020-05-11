@@ -1,3 +1,0 @@
-The front end needs to have ways to make it seem 'cool' to be involved, perhaps leaderboards, nice overview of owners, including reverse ENS lookup. 
-
-Events where there are multiple winning tokens. Such as, each token as a US state and the state 'wins' if trump is elected.
