@@ -10,7 +10,7 @@ import "./interfaces/IRealitio.sol";
 /// @title RealityCards
 /// @author Andrew Stanger
 
-contract RealityCards is ERC721, Ownable {
+contract Harber is ERC721, Ownable {
 
     using SafeMath for uint256;
 
@@ -110,6 +110,10 @@ contract RealityCards is ERC721, Ownable {
 
         // Create the question on Realitio
         questionId = _postQuestion(_templateId, _question, _arbitrator, _timeout, _marketExpectedResolutionTime, 0);
+
+        for (uint i = 0; i < numberOfTokens; i++) {
+            mintNfts("uri");
+        }
     } 
 
     ////////////////////////////////////
@@ -134,7 +138,7 @@ contract RealityCards is ERC721, Ownable {
     //////// INITIAL SETUP /////////////
     ////////////////////////////////////
 
-    function mintNfts(string calldata _uri) external checkState(States.NFTSNOTMINTED) onlyOwner {
+    function mintNfts(string memory _uri) public checkState(States.NFTSNOTMINTED) {
         _mint(address(this), nftMintCount); 
         _setTokenURI(nftMintCount, _uri);
         nftMintCount = nftMintCount.add(1);
@@ -181,7 +185,7 @@ contract RealityCards is ERC721, Ownable {
 
     /// @dev for front end only
     /// @return how much the current owner has left of their deposit after deducting rent owed but not paid
-    function currentOwnerRemainingDeposit(uint256 _tokenId) public view returns (uint256) {
+    function liveDepositAbleToWithdraw(uint256 _tokenId) public view returns (uint256) {
         uint256 _rentOwed = rentOwed(_tokenId);
         address _currentOwner = ownerOf(_tokenId);
         if(_rentOwed >= deposits[_tokenId][_currentOwner]) {
@@ -193,9 +197,9 @@ contract RealityCards is ERC721, Ownable {
 
     /// @dev for front end only
     /// @return how much the user has deposited (note: user not owner)
-    function userRemainingDeposit(uint256 _tokenId) external view returns (uint256) {
+    function userDepositAbleToWithdraw(uint256 _tokenId) external view returns (uint256) {
         if(ownerOf(_tokenId) == msg.sender) {
-            return currentOwnerRemainingDeposit(_tokenId);
+            return liveDepositAbleToWithdraw(_tokenId);
         } else {
             return deposits[_tokenId][msg.sender];
         }
@@ -210,7 +214,7 @@ contract RealityCards is ERC721, Ownable {
             return now; //if price is so low that pps = 0 just return current time as a fallback
         }
         else {
-            return now + currentOwnerRemainingDeposit(_tokenId).div(pps);
+            return now + liveDepositAbleToWithdraw(_tokenId).div(pps);
         }
     }
 
