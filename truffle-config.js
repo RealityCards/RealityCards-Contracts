@@ -1,85 +1,81 @@
+require("dotenv").config();
+
 const path = require("path");
-const HDWalletProvider = require('truffle-hdwallet-provider');
-const mnemonic = 'defense ready lady corn other ride rapid collect avocado tongue price nut'; // pls dont steal my testnet ether 
-const mainnetProviderUrl = 'https://mainnet.infura.io/v3/e811479f4c414e219e7673b6671c2aba'; 
-const rinkebyProviderUrl = 'https://rinkeby.infura.io/v3/e811479f4c414e219e7673b6671c2aba';
-const kovanProviderUrl = 'https://kovan.infura.io/v3/d460ac4e71f24d869c8b75119ebe4213';
-const ropstenProviderUrl = 'https://ropsten.infura.io/v3/e811479f4c414e219e7673b6671c2aba';
-
-
-
+const HDWalletProvider = require("truffle-hdwallet-provider");
+const INFURA_KEY = process.env.INFURA_KEY;
+const MNEMONIC = process.env.MNEMONIC;
 
 module.exports = {
-  // See <http://truffleframework.com/docs/advanced/configuration>
-  // to customize your Truffle configuration!
-  plugins: [ "truffle-security" ],
-  contracts_build_directory: path.join(__dirname, "artifactsTruffle"),
+  plugins: ["truffle-security"],
+  contracts_build_directory: path.join(__dirname, "./artifactsTruffle"),
+  networks: {
+    develop: {
+      host: "127.0.0.1",
+      port: 8545,
+      network_id: "*",
+    },
+    mainnet: {
+      provider: () => {
+        return new HDWalletProvider(
+          MNEMONIC,
+          `https://mainnet.infura.io/v3/${INFURA_KEY}`
+        );
+      },
+      network_id: 1,
+      gas: 15000000,
+      gasPrice: 30000000000, // 30 gwei
+    },
+    ropsten: {
+      provider: () => {
+        return new HDWalletProvider(
+          MNEMONIC,
+          `https://ropsten.infura.io/v3/${INFURA_KEY}`
+        );
+      },
+      network_id: 3,
+      gas: 15000000,
+    },
+    rinkeby: {
+      provider: () => {
+        return new HDWalletProvider(
+          MNEMONIC,
+          `https://rinkeby.infura.io/v3/${INFURA_KEY}`
+        );
+      },
+      network_id: 4,
+      gas: 15000000,
+    },
+    goerli: {
+      provider: () => {
+        return new HDWalletProvider(
+          MNEMONIC,
+          `https://goerli.infura.io/v3/${INFURA_KEY}`
+        );
+      },
+      network_id: 5,
+      gas: 15000000,
+    },
+    kovan: {
+      provider: () => {
+        return new HDWalletProvider(
+          MNEMONIC,
+          `https://kovan.infura.io/v3/${INFURA_KEY}`
+        );
+      },
+      network_id: 42,
+      gas: 9000000,
+      gasPrice: 1000000000, // 1 gwei
+    },
+  },
   compilers: {
     solc: {
+      version: "0.5.13",
       settings: {
         optimizer: {
           enabled: true,
           runs: 200
         },
       },
-      version: "0.5.13",
-    },
-  },
-  networks: {
-    // mainnet: {
-    //   network_id: 1,
-    //   provider: new HDWalletProvider(mnemonic, mainnetProviderUrl, 0),
-    //   gas: 4700000,
-    //   gasPrice: 5000000000, // 5 gwei
-    //   skipDryRun: true,
-    // },
-    // rinkeby: {
-    //   network_id: 4,
-    //   provider: new HDWalletProvider(mnemonic, rinkebyProviderUrl, 0),
-    //   gas: 4700000,
-    //   gasPrice: 10000000000, // 10 gwei
-    //   skipDryRun: true,
-    // },
-    kovan: {
-      network_id: 42,
-      provider: new HDWalletProvider(mnemonic, kovanProviderUrl, 0),
-      gas: 9900000, //10m is 1000000000
-      gasPrice: 1000000000, // 1 gwei
-      skipDryRun: true,
-    },
-    rinkeby: {
-      network_id: 4,
-      provider: new HDWalletProvider(mnemonic, rinkebyProviderUrl, 0),
-      gas: 10000000, //10m is 1000000000
-      gasPrice: 1000000000, // 1 gwei
-      skipDryRun: true,
-    },
-    ropsten: {
-      network_id: 3,
-      provider: new HDWalletProvider(mnemonic, ropstenProviderUrl, 0),
-      gas: 10000000, //10m is 1000000000
-      gasPrice: 1000000000, // 1 gwei
-      skipDryRun: true,
-    },
-    development: {
-      host: "127.0.0.1",     // Localhost (default: none)
-      port: 8545,            // Standard Ethereum port (default: none)
-      network_id: "*",       // Any network (default: none)
-      gas: 10000000,
-      gasPrice: 100000000, // 0.1 gwei
-    },
-    proxy: {
-      host: "127.0.0.1",     // Localhost (default: none)
-      port: 9545,            // Standard Ethereum port (default: none)
-      network_id: "*",       // Any network (default: none)
-      gasPrice: 0, // 1 gwei
-    },
-  },
-  mocha: {
-    reporter: 'eth-gas-reporter',
-    reporterOptions: {
-      currency: 'USD',
-      gasPrice: 5, //in gwei
     },
   },
 };

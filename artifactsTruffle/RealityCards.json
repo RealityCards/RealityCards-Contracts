@@ -4426,7 +4426,7 @@
                             "name": "this",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 14222,
+                            "referencedDeclaration": 14220,
                             "src": "6692:4:1",
                             "typeDescriptions": {
                               "typeIdentifier": "t_contract$_RealityCards_$1869",
@@ -8014,7 +8014,7 @@
                                 "name": "this",
                                 "nodeType": "Identifier",
                                 "overloadedDeclarations": [],
-                                "referencedDeclaration": 14222,
+                                "referencedDeclaration": 14220,
                                 "src": "10297:4:1",
                                 "typeDescriptions": {
                                   "typeIdentifier": "t_contract$_RealityCards_$1869",
@@ -16542,7 +16542,7 @@
                           "name": "this",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 14222,
+                          "referencedDeclaration": 14220,
                           "src": "19292:4:1",
                           "typeDescriptions": {
                             "typeIdentifier": "t_contract$_RealityCards_$1869",
@@ -22679,7 +22679,7 @@
                           "name": "this",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 14222,
+                          "referencedDeclaration": 14220,
                           "src": "25022:4:1",
                           "typeDescriptions": {
                             "typeIdentifier": "t_contract$_RealityCards_$1869",
@@ -23296,7 +23296,7 @@
                             "name": "this",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 14222,
+                            "referencedDeclaration": 14220,
                             "src": "25601:4:1",
                             "typeDescriptions": {
                               "typeIdentifier": "t_contract$_RealityCards_$1869",
@@ -28322,7 +28322,7 @@
                             "name": "this",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 14222,
+                            "referencedDeclaration": 14220,
                             "src": "6692:4:1",
                             "typeDescriptions": {
                               "typeIdentifier": "t_contract$_RealityCards_$1869",
@@ -31910,7 +31910,7 @@
                                 "name": "this",
                                 "nodeType": "Identifier",
                                 "overloadedDeclarations": [],
-                                "referencedDeclaration": 14222,
+                                "referencedDeclaration": 14220,
                                 "src": "10297:4:1",
                                 "typeDescriptions": {
                                   "typeIdentifier": "t_contract$_RealityCards_$1869",
@@ -40438,7 +40438,7 @@
                           "name": "this",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 14222,
+                          "referencedDeclaration": 14220,
                           "src": "19292:4:1",
                           "typeDescriptions": {
                             "typeIdentifier": "t_contract$_RealityCards_$1869",
@@ -46575,7 +46575,7 @@
                           "name": "this",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 14222,
+                          "referencedDeclaration": 14220,
                           "src": "25022:4:1",
                           "typeDescriptions": {
                             "typeIdentifier": "t_contract$_RealityCards_$1869",
@@ -47192,7 +47192,7 @@
                             "name": "this",
                             "nodeType": "Identifier",
                             "overloadedDeclarations": [],
-                            "referencedDeclaration": 14222,
+                            "referencedDeclaration": 14220,
                             "src": "25601:4:1",
                             "typeDescriptions": {
                               "typeIdentifier": "t_contract$_RealityCards_$1869",
@@ -49628,12 +49628,12 @@
         }
       },
       "links": {},
-      "address": "0x90227237448C8F3C0EA59919788B188f3050aA17",
-      "transactionHash": "0x13e9c995357c7cafffa250ee7d53da391212a83106b1a7a06e6b853ec18a42e1"
+      "address": "0xB2870587C903aC18ABF7864123b7D91F41b8b073",
+      "transactionHash": "0x120d9ba9b27c13404e8867fcd5a3959caa93ad6fcd95ce4319aab58b8dd7c785"
     }
   },
   "schemaVersion": "3.1.0",
-  "updatedAt": "2020-05-13T13:39:12.812Z",
+  "updatedAt": "2020-05-13T15:47:48.504Z",
   "networkType": "ethereum",
   "devdoc": {
     "author": "Andrew Stanger",
