@@ -1,7 +1,7 @@
-pragma solidity 0.6.6;
+pragma solidity 0.5.13;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721Full.sol";
+import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@nomiclabs/buidler/console.sol";
 import "./interfaces/ICash.sol";
@@ -10,7 +10,7 @@ import "./interfaces/IRealitio.sol";
 /// @title RealityCards
 /// @author Andrew Stanger
 
-contract RealityCards is ERC721, Ownable {
+contract RealityCards is ERC721Full, Ownable {
 
     using SafeMath for uint256;
 
@@ -95,7 +95,7 @@ contract RealityCards is ERC721, Ownable {
         string memory _question, 
         address _arbitrator, 
         uint32 _timeout) 
-        ERC721("realitycards.io", "RC") public
+        ERC721Full("realitycards.io", "RC") public
     {
         // reassign ownership (because deployed using public seed)
         transferOwnership(_owner);
@@ -134,7 +134,7 @@ contract RealityCards is ERC721, Ownable {
     //////// INITIAL SETUP /////////////
     ////////////////////////////////////
 
-    function mintNfts(string calldata _uri) external checkState(States.NFTSNOTMINTED) onlyOwner {
+    function mintNfts(string calldata _uri) external checkState(States.NFTSNOTMINTED) {
         _mint(address(this), nftMintCount); 
         _setTokenURI(nftMintCount, _uri);
         nftMintCount = nftMintCount.add(1);
@@ -555,7 +555,7 @@ contract RealityCards is ERC721, Ownable {
     function _transferTokenTo(address _currentOwner, address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
         require(_currentOwner != address(0) && _newOwner != address(0) , "Cannot send to/from zero address");
         price[_tokenId] = _newPrice;
-        _transfer(_currentOwner, _newOwner, _tokenId);
+        _transferFrom(_currentOwner, _newOwner, _tokenId);
     }
 
     ////////////////////////////////////
@@ -577,14 +577,14 @@ contract RealityCards is ERC721, Ownable {
     }
 
     /// @dev only the contract can transfer the NFTs
-    function transferFrom(address from, address to, uint256 tokenId) override public {
+    function transferFrom(address from, address to, uint256 tokenId) public {
         require(false, "Only the contract can make transfers");
         from;
         to;
         tokenId;
     }
 
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) override public {
+    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) public {
         require(false, "Only the contract can make transfers");
         from;
         to;

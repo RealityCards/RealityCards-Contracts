@@ -22,7 +22,7 @@ module.exports = {
           runs: 200
         },
       },
-      version: "0.6.6",
+      version: "0.5.13",
     },
   },
   networks: {

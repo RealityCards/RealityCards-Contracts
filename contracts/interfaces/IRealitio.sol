@@ -1,4 +1,4 @@
-pragma solidity 0.6.6;
+pragma solidity 0.5.13;
 
 /// @title Realit.io contract interface
 interface IRealitio 
