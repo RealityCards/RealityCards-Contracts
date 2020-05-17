@@ -22,7 +22,7 @@ module.exports = {
         );
       },
       network_id: 1,
-      gas: 15000000,
+      gas: 9990243,
       gasPrice: 30000000000, // 30 gwei
     },
     ropsten: {

@@ -2,6 +2,7 @@
   "contractName": "IRealitio",
   "abi": [
     {
+      "constant": false,
       "inputs": [
         {
           "internalType": "uint256",
@@ -42,10 +43,12 @@
           "type": "bytes32"
         }
       ],
+      "payable": true,
       "stateMutability": "payable",
       "type": "function"
     },
     {
+      "constant": true,
       "inputs": [
         {
           "internalType": "bytes32",
@@ -61,10 +64,12 @@
           "type": "bool"
         }
       ],
+      "payable": false,
       "stateMutability": "view",
       "type": "function"
     },
     {
+      "constant": true,
       "inputs": [
         {
           "internalType": "bytes32",
@@ -80,6 +85,7 @@
           "type": "bytes32"
         }
       ],
+      "payable": false,
       "stateMutability": "view",
       "type": "function"
     }

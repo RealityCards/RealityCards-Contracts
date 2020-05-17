@@ -418,6 +418,18 @@ contract RealityCards is ERC721Full, Ownable {
         withdrawDeposit(deposits[_tokenId][msg.sender], _tokenId);
     }
 
+    /// @notice withdraw full deposit for all tokens
+    /// @dev do not need to be the current owner
+    /// @dev no modifiers because they are on withdrawDeposit
+    function exitAll() external {
+        for (uint i = 0; i < numberOfTokens; i++) {
+            uint256 _remainingDeposit = deposits[i][msg.sender];
+            if (_remainingDeposit > 0) { 
+                withdrawDeposit(_remainingDeposit, i);
+            }
+        }
+    }
+
     ////////////////////////////////////
     ///// MAIN FUNCTIONS- INTERNAL /////
     ////////////////////////////////////

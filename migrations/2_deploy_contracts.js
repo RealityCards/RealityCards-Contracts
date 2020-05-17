@@ -6,7 +6,7 @@ var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 // variables
 var marketExpectedResolutionTime = 0;
 var andrewsAddress = '0x34A971cA2fd6DA2Ce2969D716dF922F17aAA1dB0';
-var numberOfTokensTest = 20;
+var numberOfTokensTest = 2;
 var numberOfTokensMain = 2;
 var templateId = 2;
 var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';

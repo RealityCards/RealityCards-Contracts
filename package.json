@@ -8,7 +8,7 @@
   },
   "scripts": {
     "chain": "ganache-cli -m 'defense ready lady corn other ride rapid collect avocado tongue price nut' -l 10000000",
-    "prettier": "prettier --write contracts/Harber.sol"
+    "prettier": "prettier --write contracts/RealityCards.sol"
   },
   "repository": {
     "type": "git",

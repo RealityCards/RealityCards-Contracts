@@ -3,10 +3,12 @@
   "abi": [
     {
       "inputs": [],
+      "payable": false,
       "stateMutability": "nonpayable",
       "type": "constructor"
     },
     {
+      "constant": true,
       "inputs": [
         {
           "internalType": "bytes4",
@@ -22,6 +24,7 @@
           "type": "bool"
         }
       ],
+      "payable": false,
       "stateMutability": "view",
       "type": "function"
     }
