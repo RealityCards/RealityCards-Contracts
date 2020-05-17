@@ -1373,12 +1373,12 @@
     "42": {
       "events": {},
       "links": {},
-      "address": "0xEC30b44D78Ac75e05aE365A2079cf655F556F7F8",
-      "transactionHash": "0x6cbc101659cae6928cdd86fab8996c0fdc5f913b494ef873c2f829d73148ead5"
+      "address": "0x501Ab331c578a6eb1913Af72d7FC3c2c9F98c558",
+      "transactionHash": "0xe066c9deb5bcfbbbb7cfecb16a8cce0814ea36a513bd9f9f17a46ce5b09a4451"
     }
   },
   "schemaVersion": "3.1.0",
-  "updatedAt": "2020-05-13T15:47:48.526Z",
+  "updatedAt": "2020-05-17T12:24:37.511Z",
   "networkType": "ethereum",
   "devdoc": {
     "methods": {}

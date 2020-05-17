@@ -20,14 +20,26 @@ const realitioAddressKovan = '0x50E35A1ED424aB9C0B8C7095b3d9eC2fb791A168';
 // MAINNET ADDRESSES
 const daiAddressMainnet = '0x6b175474e89094c44da98b954eedeac495271d0f';
 
-module.exports = function (deployer, network) {
+module.exports = async (deployer, network) => {
 
   if (network === "kovan") {
-    deployer.deploy(RealityCards, andrewsAddress, numberOfTokensTest, augurCashAddressKovan, realitioAddressKovan, marketExpectedResolutionTime, templateId, question, arbitrator, timeout);
+    deployer.deploy(RealityCards, andrewsAddress, numberOfTokensTest, augurCashAddressKovan, realitioAddressKovan, marketExpectedResolutionTime, templateId, question, arbitrator, timeout).then(async () => {
+      instance = await RealityCards.deployed();
+    for (i = 0; i < numberOfTokensMain; i++) {
+      await instance.mintNfts("uri");
+    }
+    });
+    
+
 
   } else if (network === "mainnet") {
     deployer.deploy(RealitioMockup).then((deployedRealitio) => {
-      return deployer.deploy(RealityCards, andrewsAddress, numberOfTokensMain, daiAddressMainnet, deployedRealitio.address, marketExpectedResolutionTime, templateId, question, arbitrator, timeout);
+      return deployer.deploy(RealityCards, andrewsAddress, numberOfTokensMain, daiAddressMainnet, deployedRealitio.address, marketExpectedResolutionTime, templateId, question, arbitrator, timeout).then(async () => {
+        instance = await RealityCards.deployed();
+      for (i = 0; i < numberOfTokensMain; i++) {
+        await instance.mintNfts("uri");
+      }
+      });
     });
 
   } else if (network === "development") {
