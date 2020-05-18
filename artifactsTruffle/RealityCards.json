@@ -50499,12 +50499,12 @@
         }
       },
       "links": {},
-      "address": "0xa4304Be7ac38f1301E2ea0A6c5CD783Fb0e23501",
-      "transactionHash": "0xf06a1bcd8d48b189844e917637bf9a96df57fbfaf89120d36311f8b6e06be1b0"
+      "address": "0x3f4ba482a314C8ac10F45cF61123fE0d8Cce2308",
+      "transactionHash": "0xc2a88057ae56a25f71558676e9a52ed7d3d3af7bef01c66c632444e58e07e19a"
     }
   },
   "schemaVersion": "3.1.0",
-  "updatedAt": "2020-05-17T12:24:37.482Z",
+  "updatedAt": "2020-05-18T12:24:49.595Z",
   "networkType": "ethereum",
   "devdoc": {
     "author": "Andrew Stanger",

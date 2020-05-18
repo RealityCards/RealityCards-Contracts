@@ -34,9 +34,8 @@ module.exports = async (deployer, network) => {
   } else if (network === "mainnet") {
     deployer.deploy(RealityCards, andrewsAddress, numberOfTokensMain, daiAddressMainnet, realitioAddressMainnet, marketExpectedResolutionTime, templateId, question, arbitrator, timeout).then(async () => {
         instance = await RealityCards.deployed();
-      for (i = 0; i < numberOfTokensMain; i++) {
-        await instance.mintNfts("uri");
-      }
+        await instance.mintNfts("https://raw.githubusercontent.com/RealityCards/RealityCards-Contracts/master/nftmetadata/bitcoinPrice/token1.json");
+        await instance.mintNfts("https://raw.githubusercontent.com/RealityCards/RealityCards-Contracts/master/nftmetadata/bitcoinPrice/token2.json");
       });
 
   } else if (network === "development") {
