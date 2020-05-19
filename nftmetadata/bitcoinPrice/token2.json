@@ -1,7 +1,12 @@
 {
+    //ERC721 wallet data:
     "name": "Bitcoin to be < $10k May 2st",
     "description": "Bitcoin to be < $10k May 2st",
-    "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Bitcoin.svg/1920px-Bitcoin.svg.png",
-    "affiliation": "realitycards.io"
+    "image": "https://www.realitycards.io/images/bitcoin/bitcoin.png",
+    "affiliation": "realitycards.io",
+    //App data:
+    "eventName": "What will the Bitcoin price be at midday UTC May 21st 2020",
+    "outcomeName": "< $10k",
+    "imageApp": "/images/bitcoin/bitcoin.png"
   }
   
