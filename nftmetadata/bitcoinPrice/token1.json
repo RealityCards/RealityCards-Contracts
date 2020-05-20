@@ -1,7 +1,8 @@
 {
   "name": "Bitcoin to be > $10k May 21st",
-  "description": "Bitcoin to be > $10k May 21st",
+  "description": "Description TBD",
   "image": "https://cdn.realitycards.io/images/bitcoin/bitcoin.png",
+  "imageApp": "https://cdn.realitycards.io/images/bitcoin/bitcoin.png",
   "imageSize": 130,
   "affiliation": "realitycards.io",
   "eventName": "What will the Bitcoin price be at midday UTC May 21st 2020",
