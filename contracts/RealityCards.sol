@@ -271,14 +271,15 @@ contract RealityCards is ERC721Full, Ownable {
         _incrementState();
         emit LogContractLocked(true);
     }
+
     /// @notice checks whether the Realitio question has resolved, and if yes, gets the winner
     /// @dev can be called by anyone 
     function determineWinner() external checkState(States.LOCKED) {
         require(_isQuestionFinalized() == true, "Oracle not resolved");
         // get the winner. This will revert if answer is not resolved.
         winningOutcome = _getWinner();
-        // check if question resolved invalid
-        if (winningOutcome !=  ((2**256)-1)) {
+        // check if question resolved invalid or if zero winners
+        if (winningOutcome !=  ((2**256)-1) && totalTimeHeld[winningOutcome] > 0) {
             questionResolvedInvalid = false;
         }
         _incrementState();
