@@ -1392,18 +1392,33 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     assert.isBelow(difference/depositRemaining,0.001);
   });
 
-  it('check that users cannot transfer their NFTs', async() => {
+  it('check that users cannot transfer their NFTs until withdraw state', async() => {
     user = user0;
     await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user });
     await cash.approve(realitycards.address, web3.utils.toWei('100', 'ether'),{ from: user });
-    // 12 dai an hour price, starting with 19 dai so afer 45 minutes will have 10 dai
-    await realitycards.newRental(web3.utils.toWei('288', 'ether'),2,web3.utils.toWei('19', 'ether'),{ from: user });
+    await realitycards.newRental(web3.utils.toWei('1', 'ether'),2,web3.utils.toWei('100', 'ether'),{ from: user });
     var owner = await realitycards.ownerOf(2);
     assert.equal(owner, user);
-    // buidler giving me shit when I try and intercept revert message so just testing revert
+    // buidler giving me shit when I try and intercept revert message so just testing revert, in OPEN state
     await shouldFail.reverting(realitycards.transferFrom(user,user1,2));
     await shouldFail.reverting(realitycards.safeTransferFrom(user,user1,2));
     await shouldFail.reverting(realitycards.safeTransferFrom(user,user1,2,web3.utils.asciiToHex("123456789")));
+    await time.increase(time.duration.days(1)); 
+    await realitycards.lockContract();
+    // should fail cos LOCKED
+    await shouldFail.reverting(realitycards.transferFrom(user,user1,2));
+    await shouldFail.reverting(realitycards.safeTransferFrom(user,user1,2));
+    await shouldFail.reverting(realitycards.safeTransferFrom(user,user1,2,web3.utils.asciiToHex("123456789")));
+    await realitio.setResult(1);
+    await realitycards.determineWinner();
+    // these shoudl all fail cos wrong owner:
+    var owner = await realitycards.ownerOf(2);
+    assert.equal(owner, user);
+    await shouldFail.reverting(realitycards.transferFrom(user,user1,2,{from: user1}));
+    await shouldFail.reverting(realitycards.safeTransferFrom(user1,user1,2,{from: user1}));
+    // these should not
+    await realitycards.transferFrom(user,user1,2,{from: user});
+    await realitycards.safeTransferFrom(user1,user,2,{from: user1});
   });
 
   it('huge check state expected failures', async() => {

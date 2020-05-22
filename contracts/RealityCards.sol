@@ -588,20 +588,17 @@ contract RealityCards is ERC721Full, Ownable {
         state = States.WITHDRAW;
     }
 
-    /// @dev only the contract can transfer the NFTs
-    function transferFrom(address from, address to, uint256 tokenId) public {
-        require(false, "Only the contract can make transfers");
-        from;
-        to;
-        tokenId;
+    /// @dev transfers only possible in withdraw state, so override the existing functions
+    function transferFrom(address from, address to, uint256 tokenId) public checkState(States.WITHDRAW) {
+        require (ownerOf(tokenId) == msg.sender, "Not owner");
+        _transferFrom(from, to, tokenId);
     }
 
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) public {
-        require(false, "Only the contract can make transfers");
-        from;
-        to;
-        tokenId;
+    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) public checkState(States.WITHDRAW) {
+        require (ownerOf(tokenId) == msg.sender, "Not owner");
+        _transferFrom(from, to, tokenId);
         _data;
     }
+
 }
 
