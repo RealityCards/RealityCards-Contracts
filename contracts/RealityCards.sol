@@ -583,7 +583,7 @@ contract RealityCards is ERC721Full, Ownable {
     /// @dev change state to WITHDRAW to lock contract and return all funds
     /// @dev in case Oracle never resolves, or a bug is found 
     function circuitBreaker() external {
-        require(msg.sender == owner() || now > (marketExpectedResolutionTime + 4 weeks), "Not owner or too early");
+        require(now > (marketExpectedResolutionTime + 4 weeks), "Too early");
         questionResolvedInvalid = true;
         state = States.WITHDRAW;
     }

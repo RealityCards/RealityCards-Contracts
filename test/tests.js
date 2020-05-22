@@ -831,7 +831,7 @@ contract('RealityCardsTests', (accounts) => {
     await realitycards.newRental(web3.utils.toWei('1', 'ether'),2,web3.utils.toWei('10', 'ether'),{ from: user0 }); //
     await time.increase(time.duration.weeks(3)); 
     ////////////////////////
-    await shouldFail.reverting.withMessage(realitycards.circuitBreaker(), "Not owner or too early");
+    await shouldFail.reverting.withMessage(realitycards.circuitBreaker(), "Too early");
     await time.increase(time.duration.weeks(1)); 
     await realitycards.circuitBreaker();
   });
@@ -854,6 +854,7 @@ contract('RealityCardsTests', (accounts) => {
     await realitycards.newRental(web3.utils.toWei('2', 'ether'),1,web3.utils.toWei('20', 'ether'),{ from: user1 }); //used deposit of 14
     await time.increase(time.duration.weeks(1));
     await realitycards.newRental(web3.utils.toWei('3', 'ether'),1,web3.utils.toWei('24', 'ether'),{ from: user2 }); //used deposit of 24
+    await shouldFail.reverting.withMessage(realitycards.circuitBreaker(), "Too early");
     await time.increase(time.duration.weeks(2)); 
     // winner 1: 
     // totalcollected = 75, 
@@ -1466,7 +1467,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
   
   it('check onlyOwner modifier is working', async() => {
     user = user0;
-    await shouldFail.reverting.withMessage(realitycards.circuitBreaker(), "Not owner or too early");
+    await shouldFail.reverting.withMessage(realitycards.circuitBreaker(), "Too early");
   });
 
   it('check that owner can not be changed', async() => {
@@ -1508,7 +1509,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     realitycards = await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketExpectedResolutionTime, templateId, question, arbitrator, timeout);
     // should work while im the owner
     await realitycards.renounceOwnership({from: andrewsAddress});
-    await shouldFail.reverting.withMessage(realitycards.circuitBreaker({from: andrewsAddress}), "Not owner or too early");
+    await shouldFail.reverting.withMessage(realitycards.circuitBreaker({from: andrewsAddress}), "Too early");
   });
 
   it('check getWinnings with different winners', async () => {
