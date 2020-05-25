@@ -206,12 +206,7 @@ contract RealityCards is ERC721Full, Ownable {
     function rentalExpiryTime(uint256 _tokenId) external view returns (uint256) {
         uint256 pps;
         pps = price[_tokenId].div(1 days);
-        if (pps == 0) {
-            return now; //if price is so low that pps = 0 just return current time as a fallback
-        }
-        else {
-            return now + currentOwnerRemainingDeposit(_tokenId).div(pps);
-        }
+        return now + currentOwnerRemainingDeposit(_tokenId).div(pps);
     }
 
     /// @dev for front end and _payoutWinnings function
