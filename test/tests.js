@@ -20,6 +20,8 @@ contract('RealityCardsTests', (accounts) => {
   var numberOfTokens = 20;
   var templateId = 2;
   var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
+  var questionId = '0x8d293509129e26299990826db10c48241be5f59f2e4f61c0c9d550e4451e1a38';
+  var useExistingQuestion = true;
   var arbitrator = "0xA6EAd513D05347138184324392d8ceb24C116118";
   var timeout = 86400;
 
@@ -38,7 +40,7 @@ contract('RealityCardsTests', (accounts) => {
     var marketExpectedResolutionTime = await time.latest();
     cash = await CashMockup.new();
     realitio = await RealitioMockup.new();
-    realitycards = await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketExpectedResolutionTime, templateId, question, arbitrator, timeout);
+    realitycards = await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketExpectedResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout);
     for (i = 0; i < 20; i++) {
       await realitycards.mintNfts("uri", {from: andrewsAddress});
     }
@@ -1425,7 +1427,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     user = user0;
     // undo beforeEach
     marketExpectedResolutionTime = 0;
-    realitycards = await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketExpectedResolutionTime, templateId, question, arbitrator, timeout); 
+    realitycards = await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketExpectedResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout); 
     // check state is 0
     var state = await realitycards.state.call();
     assert.equal(0,state);
@@ -1521,7 +1523,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     user = user0;
     // undo the token creation from the beforeEach:
     marketExpectedResolutionTime = await time.latest();
-    realitycards = await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketExpectedResolutionTime, templateId, question, arbitrator, timeout);
+    realitycards = await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketExpectedResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout);
     // should work while im the owner
     await realitycards.renounceOwnership({from: andrewsAddress});
     await shouldFail.reverting.withMessage(realitycards.circuitBreaker({from: andrewsAddress}), "Too early");

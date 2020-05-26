@@ -93,6 +93,8 @@ contract RealityCards is ERC721Full, Ownable {
         uint32 _marketExpectedResolutionTime, 
         uint256 _templateId, 
         string memory _question, 
+        bytes32 _questionId,
+        bool _useExistingQuestion,
         address _arbitrator, 
         uint32 _timeout) 
         ERC721Full("realitycards.io", "RC") public
@@ -108,8 +110,12 @@ contract RealityCards is ERC721Full, Ownable {
         realitio = _addressOfRealitioContract;
         cash = _addressOfCashContract;
 
-        // Create the question on Realitio
-        questionId = _postQuestion(_templateId, _question, _arbitrator, _timeout, _marketExpectedResolutionTime, 0);
+        // Create the question on Realitio or pass the questionId
+        if (_useExistingQuestion) {
+            questionId = _questionId;
+        } else {
+            questionId = _postQuestion(_templateId, _question, _arbitrator, _timeout, _marketExpectedResolutionTime, 0);
+        }
     } 
 
     ////////////////////////////////////
