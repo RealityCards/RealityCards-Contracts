@@ -10,7 +10,7 @@ var numberOfTokensTest = 2;
 var numberOfTokensMain = 2;
 var templateId = 2;
 var question = 'What will the ether price be at 1pm UTC May 29th 2020? ␟"Above $200","Below $200"␟crypto␟en_US';
-var questionId = '0xa1addab1dcb7b73cd2a513dd5c34130bd946adb82e42f2c8205a0c7c09ddab2b';
+var questionId = '0xc8dae2bccb46477df016e190ae986d5feadd8600f445991c6b8bbe8fe70598bd';
 var arbitrator = "0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D"; //kleros 4lyfe
 var timeout = 43200; // 86400 = 1 day
 var useExistingQuestion = true;
@@ -26,12 +26,7 @@ const realitioAddressMainnet = '0x325a2e0F3CCA2ddbaeBB4DfC38Df8D19ca165b47';
 module.exports = async (deployer, network) => {
 
   if (network === "kovan") {
-    deployer.deploy(RealityCards, andrewsAddress, numberOfTokensTest, augurCashAddressKovan, realitioAddressKovan, marketExpectedResolutionTime, templateId, question, arbitrator, timeout).then(async () => {
-      instance = await RealityCards.deployed();
-    for (i = 0; i < numberOfTokensMain; i++) {
-      await instance.mintNfts("uri");
-    }
-    });
+    deployer.deploy(RealityCards, andrewsAddress, numberOfTokensTest, augurCashAddressKovan, realitioAddressKovan, marketExpectedResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout);
     
   } else if (network === "mainnet") {
     deployer.deploy(RealityCards, andrewsAddress, numberOfTokensMain, daiAddressMainnet, realitioAddressMainnet, marketExpectedResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout);

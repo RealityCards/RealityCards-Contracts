@@ -110,8 +110,12 @@ contract RealityCards is ERC721Full, Ownable {
         realitio = _addressOfRealitioContract;
         cash = _addressOfCashContract;
 
-        // Create the question on Realitio or pass the questionId
+        // create the question on Realitio or pass the questionId
         if (_useExistingQuestion) {
+            // check you are passing the correct ID
+            bytes32 _myQuestionContentHash = keccak256(abi.encodePacked(_templateId, _marketExpectedResolutionTime, _question));
+            bytes32 _existingQuestionContentHash = _getHashExistingQuestion(_questionId);
+            require(_myQuestionContentHash == _existingQuestionContentHash, "Content hash does not match");
             questionId = _questionId;
         } else {
             questionId = _postQuestion(_templateId, _question, _arbitrator, _timeout, _marketExpectedResolutionTime, 0);
@@ -244,6 +248,11 @@ contract RealityCards is ERC721Full, Ownable {
     /// @notice posts the question to realit.io
     function _postQuestion(uint256 template_id, string memory question, address arbitrator, uint32 timeout, uint32 opening_ts, uint256 nonce) internal returns (bytes32) {
         return realitio.askQuestion(template_id, question, arbitrator, timeout, opening_ts, nonce);
+    }
+
+    /// @notice gets an existing question's content hash
+    function _getHashExistingQuestion(bytes32 _questionId) internal view returns (bytes32) {
+        return realitio.getContentHash(_questionId);
     }
 
     /// @notice gets the winning outcome from realitio

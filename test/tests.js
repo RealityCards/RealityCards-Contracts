@@ -20,8 +20,8 @@ contract('RealityCardsTests', (accounts) => {
   var numberOfTokens = 20;
   var templateId = 2;
   var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
-  var questionId = '0x8d293509129e26299990826db10c48241be5f59f2e4f61c0c9d550e4451e1a38';
-  var useExistingQuestion = true;
+  var questionId = '0xb5358101b5dfdf6918d344b751898ad5a3d1738f57c49124edf019ba61bf8f44';
+  var useExistingQuestion = false;
   var arbitrator = "0xA6EAd513D05347138184324392d8ceb24C116118";
   var timeout = 86400;
 
@@ -1632,6 +1632,31 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user5 winnings, should fail cos didn't pay any rent
     await shouldFail.reverting.withMessage(realitycards.withdraw({ from: user5 }), "Paid no rent");
+  });
+
+  it('check useExistingQuestion', async () => {
+    // someone else deploys question to realitio
+    var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
+    var useExistingQuestion = false;
+    var arbitrator = "0xA6EAd513D05347138184324392d8ceb24C116118";
+    var timeout = 86400;
+    var templateId = 2;
+    var marketExpectedResolutionTime = 69420; 
+    await realitio.askQuestion(templateId,question,arbitrator,timeout,marketExpectedResolutionTime,0);
+    var actualId = await realitio.actualQuestionId.call();
+    // change question
+    question = 'Test 7␟"X","Y","Z"␟news-politics␟en_US';
+    var useExistingQuestion = true;
+    marketExpectedResolutionTime = 69420;
+    // redeply with useExistingQuestion true it should revert because question is changed
+    await shouldFail.reverting.withMessage(RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketExpectedResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout), "Content hash does not match");
+    // try again with correct question but made up question Id should fail again
+    questionId = '0xb5358101b5dfdf6918d344b751898ad5a3d1738f57c49124edf019ba61bf8f45';
+    var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
+    await shouldFail.reverting.withMessage(RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketExpectedResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout), "Content hash does not match");
+    // now use correct question Id, should work
+    questionId = actualId;
+    await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketExpectedResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout);
   });
 
 
