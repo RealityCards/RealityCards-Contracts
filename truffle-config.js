@@ -22,8 +22,9 @@ module.exports = {
         );
       },
       network_id: 1,
-      gas: 6000000,
+      gas: 8000000,
       gasPrice: 35000000000, // 20 gwei
+      networkCheckTimeout:6000,
     },
     ropsten: {
       provider: () => {
@@ -65,6 +66,7 @@ module.exports = {
       network_id: 42,
       gas: 9000000,
       gasPrice: 1000000000, // 1 gwei
+      networkCheckTimeout:6000,
     },
   },
   compilers: {

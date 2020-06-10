@@ -1,3 +1,5 @@
 .env
 node_modules/
+artifactsBuidler/
+artifactsTruffle/
 .DS_Store

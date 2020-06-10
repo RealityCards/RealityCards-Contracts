@@ -23,7 +23,7 @@ contract RealityCards is ERC721Full, Ownable {
     uint256 public numberOfTokens;
     /// @dev counts how many NFTs have been minted 
     /// @dev when nftMintCount = numberOfTokens, increment state
-    uint256 private nftMintCount;
+    uint256 public nftMintCount;
     /// @dev the question ID of the question on realitio
     bytes32 public questionId;
     /// @dev only for _revertToPreviousOwner to prevent gas limits
