@@ -1,20 +1,14 @@
-# realitycards.io
+<img src="https://www.realitycards.io/static/media/logo_vert_light.01e76e21.svg" alt="drawing" width="400"/>
 
-(--STILL IN DEVELOPMENT--)
+Live now: www.realitycards.io 
 
-This project is live on Kovan and can be viewed at www.realitycards.io (you will need Kovan Eth to interact with it, some faucets are [here](https://faucet.kovan.network/) and [here](https://gitter.im/kovan-testnet/faucet), if these do not work feel free to get in touch with me on telegram (mcplums)). 
-
-A short video demo can be seen [here](https://www.youtube.com/watch?v=-TpHjpKOQe8). 
-
-Nov 2019 - Jan 2020 Consensys Bootcamp Final Project
-
-Harber = Prediction Markets + Non Fungible Tokens + Harberger Taxes
+Reality Cards is a prediction market based on ERC721 NFTs, on the Ethereum blockchain. 
 
 *If you think Manchester United will win the Premier League- instead of simply putting money on Manchester United, rent the Manchester United token instead.*
 
-At the end of the season/competition/tournament, all holders of the winning NFT will receive a split of the total rental payments in proportion to how long they have held the token. Token ownership changes via modified Harberger Tax rules. Augur v2 is used as an Oracle. All rental payments sent to the contract are used to purchase complete sets on the relevant Augur market. Tokens are fully ERC721 compliant (and can be viewed in any ERC721 wallet) with the exception that only the contract can modify the owner. 
+At the end of the season/competition/tournament, all holders of the winning NFT will receive a split of the total rental payments in proportion to how long they have held the token. Token ownership changes via modified Harberger Tax rules. Tokens are fully ERC721 compliant (and can be viewed in any ERC721 wallet) with the exception that only the contract can modify the owner. 
 
-This project began as a fork of Simon de la Rouviere's brilliant project [ThisArtworkIsAlwaysOnSale](https://thisartworkisalwaysonsale.com/).
+This project began as a fork of Simon de la Rouviere's project [ThisArtworkIsAlwaysOnSale](https://thisartworkisalwaysonsale.com/). It began life as my (Andrew Stanger's) final project for the Nov 2019 - Jan 2020 Consensys Academy Bootcamp.
 
 ## How does it work?
 
@@ -26,7 +20,7 @@ If a user's deposit balance runs out, then token ownership reverts to the previo
 
 Upon market resolution, all holders of the winning NFT will receive a split of the total rental payments from all 20 tokens in proportion to how long they have held the winning token. 
 
-Users are free to withdraw any unused deposits at any time. Upon market resolution, all unused deposits are automatically returned to the user. 
+Users are free to withdraw any unused deposits at any time. 
 
 ## Example flow
 
@@ -46,18 +40,16 @@ Upon market resolution:
 
 Let us assume a total of 850 DAI was paid in rent among all the other 19 tokens. There is now 1000 DAI in the contract. 
 
-Assuming Manchester United wins, Vitalik will receive winnings of 750 DAI (1000 * (3 months / 4 months ) ) and Gavin will receive winnings of 250 DAI (1000 * (1 months / 4 months ) ). Winnings will be slightly lower in reality due to Augur fees. 
+Assuming Manchester United wins, Vitalik will receive winnings of 750 DAI (1000 * (3 months / 4 months ) ) and Gavin will receive winnings of 250 DAI (1000 * (1 months / 4 months ) ). There are currently no fees, so 100% of rent is returned to winners.
 
 ## What is going on behind the scenes?
 
-The relevant market is created on Augur prior to the contract being created. The RealityCards contract is passed the market's address in the constructor function. 
+A 'question' is created on the oracle service realit.io when the contract is created. At the end of the event, the contract queries realit.io to find out who won, and then pays out accordingly. Dai paid in rent is held by the contract for the duration, it is not sent anywhere. 
 
-Whenever rent is paid (in DAI) the contract immediately uses the DAI to purchase complete sets on Augur. When the relevant market has resolved (i.e. to continue the above example, when the Premier League has finished, and the Augur market has completed its resolution process) the RealityCards contract will ask Augur who won. Once it knows the winner, the complete sets are sold, and the funds are paid out. 
+## Has this project been audited?
 
-## Test a local version for yourself
+Yes, see [here](https://www.ditcraft.io/audits/realitycards).
 
-Before trying to test locally ensure variable usingAugur is set to false in RealityCards.sol. Ensure ganache is running. 
+## I have more questions
 
-To deploy, `truffle migrate` within the main project folder
-For the front end, `npm run start` within the app folder
-To run tests, `truffle test` within the main project folder
+Please see the FAQ on the site [here](https://www.realitycards.io/faq). We have a telegram group [here](https://t.me/realitycards). If you wish to get in touch with me directly, please add me on telegram [here](https://t.me/andrewstanger).
