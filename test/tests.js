@@ -1495,31 +1495,6 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await shouldFail.reverting(realitycards.transferOwnership(user));
   });
 
-  it('check allOwners', async() => {
-    user = user0;
-    await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user });
-    await cash.approve(realitycards.address, web3.utils.toWei('100', 'ether'),{ from: user });
-    await realitycards.newRental(web3.utils.toWei('10', 'ether'),2,web3.utils.toWei('10', 'ether'),{ from: user });
-    user = user1;
-    await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user });
-    await cash.approve(realitycards.address, web3.utils.toWei('100', 'ether'),{ from: user });
-    await realitycards.newRental(web3.utils.toWei('20', 'ether'),2,web3.utils.toWei('10', 'ether'),{ from: user });
-    user = user2;
-    await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user });
-    await cash.approve(realitycards.address, web3.utils.toWei('100', 'ether'),{ from: user });
-    await realitycards.newRental(web3.utils.toWei('30', 'ether'),2,web3.utils.toWei('10', 'ether'),{ from: user });
-    await realitycards.newRental(web3.utils.toWei('40', 'ether'),2,web3.utils.toWei('10', 'ether'),{ from: user1 })
-    // the test
-    var allOwners = await realitycards.allOwners.call(2,0);
-    assert.equal(allOwners,user0);
-    var allOwners = await realitycards.allOwners.call(2,1);
-    assert.equal(allOwners,user1);
-    var allOwners = await realitycards.allOwners.call(2,2);
-    assert.equal(allOwners,user2);
-    // check it didn't add user2 a second time
-    var allOwners = await shouldFail.reverting(realitycards.allOwners.call(2,3));
-  });
-
   it('check renounce ownership works', async() => {
     user = user0;
     // undo the token creation from the beforeEach:

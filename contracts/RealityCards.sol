@@ -67,13 +67,9 @@ contract RealityCards is ERC721Full, Ownable {
     /// @dev the struct for ownerTracker
     struct rental { address owner;
                     uint256 price; }
-    /// @dev array of all owners of a token (for front end)
-    mapping (uint256 => address[]) public allOwners;
-    /// @dev preventing duplicates in allOwners
-    mapping (uint256 => mapping (address => bool)) private inAllOwners;
 
     ///// MARKET RESOLUTION VARIABLES /////
-    uint256 public winningOutcome; 
+    uint256 public winningOutcome = 69; // start with non-existent outcome. Nice.
     //// @dev when the question can be answered on Realitio. 
     uint32 public marketExpectedResolutionTime; 
     /// @dev If false, normal payout. If true, return all funds. Default true
@@ -99,7 +95,7 @@ contract RealityCards is ERC721Full, Ownable {
         uint32 _timeout) 
         ERC721Full("realitycards.io", "RC") public
     {
-        // reassign ownership (because deployed using public seed)
+        // reassign ownership
         transferOwnership(_owner);
 
         // assign arguments to public variables
@@ -138,7 +134,6 @@ contract RealityCards is ERC721Full, Ownable {
     event LogWinningsPaid(address indexed paidTo, uint256 indexed amountPaid);
     event LogRentReturned(address indexed returnedTo, uint256 indexed amountReturned);
     event LogTimeHeldUpdated(uint256 indexed newTimeHeld, address indexed owner, uint256 indexed tokenId);
-
 
     ////////////////////////////////////
     //////// INITIAL SETUP /////////////
@@ -228,7 +223,7 @@ contract RealityCards is ERC721Full, Ownable {
     }
     
     ////////////////////////////////////
-    ///// EXTERNAL DAI FUNCTIONS ///////
+    ///////  DAI CONTRACT CALLS  ///////
     ////////////////////////////////////
 
     /// @notice common function for all outgoing DAI transfers
@@ -242,7 +237,7 @@ contract RealityCards is ERC721Full, Ownable {
     }
 
     ////////////////////////////////////
-    //// EXTERNAL REALITIO FUNCTIONS ///
+    ////// REALITIO CONTRACT CALLS /////
     ////////////////////////////////////
 
     /// @notice posts the question to realit.io
@@ -377,11 +372,6 @@ contract RealityCards is ERC721Full, Ownable {
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].owner = msg.sender; 
             timeAcquired[_tokenId] = now;
-            // just for front end:
-            if (!inAllOwners[_tokenId][msg.sender]) {
-                inAllOwners[_tokenId][msg.sender] = true;
-                allOwners[_tokenId].push(msg.sender);
-            }
             // externals
             _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
             emit LogNewRental(msg.sender, _newPrice, _tokenId); 
@@ -492,7 +482,7 @@ contract RealityCards is ERC721Full, Ownable {
     }
 
     /// @dev depositDai is split into two, because it needs to be called direct from newRental
-    /// @dev ... without collecing rent first (otherwise it would be collected twice, possibly causing logic errors)
+    /// @dev ... without collecting rent first (otherwise it would be collected twice, possibly causing logic errors)
     function _depositDai(uint256 _dai, uint256 _tokenId) internal {
         deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].add(_dai);
         _receiveCash(msg.sender, _dai);
@@ -500,7 +490,7 @@ contract RealityCards is ERC721Full, Ownable {
     }
 
     /// @dev changePrice is split into two, because it needs to be called direct from newRental
-    /// @dev ... without collecing rent first (otherwise it would be collected twice, possibly causing logic errors)
+    /// @dev ... without collecting rent first (otherwise it would be collected twice, possibly causing logic errors)
     function _changePrice(uint256 _newPrice, uint256 _tokenId) internal {
         // below is the only instance when price is modifed outside of the _transferTokenTo function
         price[_tokenId] = _newPrice;
