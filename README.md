@@ -1,6 +1,6 @@
-<img src="https://www.realitycards.io/static/media/logo_vert_light.01e76e21.svg" alt="drawing" width="400"/>
+# Reality Cards
 
-Live now: www.realitycards.io 
+In private beta at: www.realitycards.io (if you would like a token, please contact me [here](https://t.me/andrewstanger)). 
 
 Reality Cards is a prediction market based on ERC721 NFTs, on the Ethereum blockchain. 
 
