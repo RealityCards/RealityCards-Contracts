@@ -24,7 +24,7 @@ module.exports = {
       },
       network_id: 1,
       gas: 10000000,
-      gasPrice: 48000000000, // 20 gwei
+      gasPrice: 50000000000, // 20 gwei
       networkCheckTimeout: 12000,
     },
     ropsten: {

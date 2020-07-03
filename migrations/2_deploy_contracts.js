@@ -17,6 +17,12 @@ else if (market === "etherprice")
     var numberOfTokens = 6;
     var question = 'What will the USD price of Ether be closest to at the end of June 2020 UTC per coinmarketcap.com?␟"$175","$200","$225","$250","$275","$300"␟crypto␟en_US';
 }
+else if (market === "compoundprice")
+{
+    var marketExpectedResolutionTime = 1596240000; //08/01/2020 @ 12:00am (UTC)
+    var numberOfTokens = 2;
+    var question = 'What will the USD price of the Compound token (COMP) be at the end of July 2020 UTC per coinmarketcap.com?␟"Below $200","Above $200"␟crypto␟en_US';
+}
 
 // variables common
 var templateId = 2;
@@ -40,47 +46,56 @@ const realitioAddressMainnet = '0x325a2e0F3CCA2ddbaeBB4DfC38Df8D19ca165b47';
 
 module.exports = async (deployer, network) => {
 
-    if (network === "kovan") {
+    if (network === "kovan") 
+    {
         deployer.deploy(RealityCards, andrewsAddress, numberOfTokens, augurCashAddressKovan, realitioAddressKovan, marketExpectedResolutionTimeTest, templateId, question, questionId, useExistingQuestion, arbitrator, timeoutTest).then(async () => {
-        instance = await RealityCards.deployed();
-            
-        if (market === "etherPrice")
-        {
-            await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPremier/token0.json");
-            await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPremier/token1.json");
-            await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPremier/token2.json");
-            await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPremier/token3.json");
-            await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPremier/token4.json");
-            await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPremier/token5.json");
-        } 
-        else if (market === "pres")
-        {
-            await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/presElection/token0.json");
-            await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/presElection/token1.json");
-            await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/presElection/token2.json");
-        }
-
+            instance = await RealityCards.deployed();
+                
+            if (market === "etherprice")
+            {
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPremier/token0.json");
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPremier/token1.json");
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPremier/token2.json");
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPremier/token3.json");
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPremier/token4.json");
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPremier/token5.json");
+            } 
+            else if (market === "pres")
+            {
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/presElection/token0.json");
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/presElection/token1.json");
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/presElection/token2.json");
+            }
+            else if (market === "compoundprice")
+            {
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/compoundPrice/token0.json");
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/compoundPrice/token1.json");
+            }
         });
   } else if (network === "mainnet") {
     deployer.deploy(RealityCards, andrewsAddress, numberOfTokens, daiAddressMainnet, realitioAddressMainnet, marketExpectedResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout).then(async () => {
         instance = await RealityCards.deployed();
         
-        if (market === "etherPrice")
-        {
-            await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPremier/token0.json");
-            await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPremier/token1.json");
-            await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPremier/token2.json");
-            await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPremier/token3.json");
-            await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPremier/token4.json");
-            await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPremier/token5.json");
-        } 
-        else if (market === "pres")
-        {
-            await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/presElection/token0.json");
-            await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/presElection/token1.json");
-            await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/presElection/token2.json");
-        }
-
+            if (market === "etherPrice")
+            {
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPremier/token0.json");
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPremier/token1.json");
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPremier/token2.json");
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPremier/token3.json");
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPremier/token4.json");
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPremier/token5.json");
+            } 
+            else if (market === "pres")
+            {
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/presElection/token0.json");
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/presElection/token1.json");
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/presElection/token2.json");
+            }
+            else if (market === "compoundprice")
+            {
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/compoundPrice/token0.json");
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/compoundPrice/token1.json");
+            }
       });
 
   } else if (network === "development") {
