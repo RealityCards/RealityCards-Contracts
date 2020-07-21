@@ -10,6 +10,7 @@ if (market === "pres")
     var marketExpectedResolutionTime = 1604491200; //11/04/2020 @ 12:00pm (UTC)
     var numberOfTokens = 3;
     var question = 'Who will win the 2020 US General Election?␟"Donald Trump","Joe Biden","Neither or no election"␟politics␟en_US';
+    var tokenName = 'PresElection';
 } 
 else if (market === "etherprice")
 {
@@ -48,7 +49,7 @@ module.exports = async (deployer, network) => {
 
     if (network === "kovan") 
     {
-        deployer.deploy(RealityCards, andrewsAddress, numberOfTokens, augurCashAddressKovan, realitioAddressKovan, marketExpectedResolutionTimeTest, templateId, question, questionId, useExistingQuestion, arbitrator, timeoutTest).then(async () => {
+        deployer.deploy(RealityCards, andrewsAddress, numberOfTokens, augurCashAddressKovan, realitioAddressKovan, marketExpectedResolutionTimeTest, templateId, question, questionId, useExistingQuestion, arbitrator, timeoutTest, tokenName).then(async () => {
             instance = await RealityCards.deployed();
                 
             if (market === "etherprice")
@@ -73,7 +74,7 @@ module.exports = async (deployer, network) => {
             }
         });
   } else if (network === "mainnet") {
-    deployer.deploy(RealityCards, andrewsAddress, numberOfTokens, daiAddressMainnet, realitioAddressMainnet, marketExpectedResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout).then(async () => {
+    deployer.deploy(RealityCards, andrewsAddress, numberOfTokens, daiAddressMainnet, realitioAddressMainnet, marketExpectedResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName).then(async () => {
         instance = await RealityCards.deployed();
         
             if (market === "etherPrice")

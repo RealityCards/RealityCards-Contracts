@@ -24,6 +24,7 @@ contract('RealityCardsTests', (accounts) => {
   var useExistingQuestion = false;
   var arbitrator = "0xA6EAd513D05347138184324392d8ceb24C116118";
   var timeout = 86400;
+  var tokenName = 'PresElection';
 
   user0 = accounts[0];
   user1 = accounts[1];
@@ -41,7 +42,7 @@ contract('RealityCardsTests', (accounts) => {
     var marketExpectedResolutionTime = await time.latest();
     cash = await CashMockup.new();
     realitio = await RealitioMockup.new();
-    realitycards = await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketExpectedResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout);
+    realitycards = await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketExpectedResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName);
     for (i = 0; i < 20; i++) {
       await realitycards.mintNfts("uri", {from: andrewsAddress});
     }
@@ -59,7 +60,7 @@ contract('RealityCardsTests', (accounts) => {
   // check that the contract initially owns the token
   it('getName', async () => {
     var name = await realitycards.name.call();
-    assert.equal(name, 'realitycards.io');
+    assert.equal(name, 'PresElection');
   });
 
   // check fundamentals first
@@ -1423,7 +1424,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     user = user0;
     // undo beforeEach
     marketExpectedResolutionTime = 0;
-    realitycards = await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketExpectedResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout); 
+    realitycards = await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketExpectedResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName); 
     // check state is 0
     var state = await realitycards.state.call();
     assert.equal(0,state);
@@ -1494,7 +1495,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     user = user0;
     // undo the token creation from the beforeEach:
     marketExpectedResolutionTime = await time.latest();
-    realitycards = await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketExpectedResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout);
+    realitycards = await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketExpectedResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName);
     // should work while im the owner
     await realitycards.renounceOwnership({from: andrewsAddress});
     await shouldFail.reverting.withMessage(realitycards.circuitBreaker({from: andrewsAddress}), "Too early");
@@ -1620,14 +1621,14 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     var useExistingQuestion = true;
     marketExpectedResolutionTime = 69420;
     // redeply with useExistingQuestion true it should revert because question is changed
-    await shouldFail.reverting.withMessage(RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketExpectedResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout), "Content hash does not match");
+    await shouldFail.reverting.withMessage(RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketExpectedResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName), "Content hash does not match");
     // try again with correct question but made up question Id should fail again
     questionId = '0xb5358101b5dfdf6918d344b751898ad5a3d1738f57c49124edf019ba61bf8f45';
     var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
-    await shouldFail.reverting.withMessage(RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketExpectedResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout), "Content hash does not match");
+    await shouldFail.reverting.withMessage(RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketExpectedResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName), "Content hash does not match");
     // now use correct question Id, should work
     questionId = actualId;
-    await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketExpectedResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout);
+    await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketExpectedResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName);
   });
 
 

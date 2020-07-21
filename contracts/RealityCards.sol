@@ -91,8 +91,9 @@ contract RealityCards is ERC721Full, Ownable {
         bytes32 _questionId,
         bool _useExistingQuestion,
         address _arbitrator, 
-        uint32 _timeout) 
-        ERC721Full("realitycards.io", "RC") public
+        uint32 _timeout,
+        string memory _tokenName) 
+        ERC721Full(_tokenName, "RC") public
     {
         // reassign ownership
         transferOwnership(_owner);
