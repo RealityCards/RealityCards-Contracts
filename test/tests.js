@@ -1166,9 +1166,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
   await realitycards.newRental(web3.utils.toWei('1', 'ether'),2,web3.utils.toWei('10', 'ether'),{ from: user0 }); //used deposit of 10
   await realitycards.newRental(web3.utils.toWei('2', 'ether'),3,web3.utils.toWei('20', 'ether'),{ from: user1 }); //used deposit of 20
   //rent winning team
-  await realitycards.newRental(web3.utils.toWei('0.1', 'ether'),1,web3.utils.toWei('5', 'ether'),{ from: user0 }); 
-  // AND AGAIN SAME OWNER
-  await realitycards.newRental(web3.utils.toWei('1', 'ether'),1,web3.utils.toWei('5', 'ether'),{ from: user0 }); //used deposit of 7
+  await realitycards.newRental(web3.utils.toWei('1', 'ether'),1,web3.utils.toWei('10', 'ether'),{ from: user0 }); //used deposit of 7
   await time.increase(time.duration.weeks(1));
   await realitycards.newRental(web3.utils.toWei('2', 'ether'),1,web3.utils.toWei('20', 'ether'),{ from: user1 }); //used deposit of 14
   await time.increase(time.duration.weeks(1));
@@ -1322,10 +1320,10 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await realitycards.newRental(web3.utils.toWei('24', 'ether'),2,web3.utils.toWei('1', 'ether'),{ from: user0 });
     });
 
-  it('check expected failure by rental price below 0.01 dai', async () => {
+  it('check expected failure by rental price below 1 dai', async () => {
     await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user0 });
     await cash.approve(realitycards.address, web3.utils.toWei('100', 'ether'),{ from: user0 });
-    await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('0.005', 'ether'),2,web3.utils.toWei('1', 'ether'),{ from: user0}), "Minimum rental 0.01 Dai");
+    await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('0.005', 'ether'),2,web3.utils.toWei('1', 'ether'),{ from: user0}), "Minimum rental 1 Dai");
     });
 
   it('check exit if owned < 1 hour ', async () => {
