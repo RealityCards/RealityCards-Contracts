@@ -433,6 +433,14 @@ contract RealityCards is ERC721Full, Ownable {
         }
     }
 
+    /// @notice ability to add liqudity to the pot without being able to win. 
+    function sponsor(uint256 _dai) external {
+        _receiveCash(msg.sender, _dai);
+        // just so user can get it back if invalid outcome
+        collectedPerUser[msg.sender] = collectedPerUser[msg.sender].add(_dai); 
+        totalCollected = totalCollected.add(_dai);
+    }
+
     ////////////////////////////////////
     ///// MAIN FUNCTIONS- INTERNAL /////
     ////////////////////////////////////
