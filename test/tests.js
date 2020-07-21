@@ -1793,6 +1793,33 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('241', 'ether'),2,0,{ from: user0 }), "One hour's rent minimum");
   });
 
+   it('test withdrawwithdrawWinningsAndDeposit', async () => {
+    /////// SETUP //////
+    await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user0 });
+    await cash.approve(realitycards.address, web3.utils.toWei('100', 'ether'),{ from: user0 });
+    await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user1 });
+    await cash.approve(realitycards.address, web3.utils.toWei('100', 'ether'),{ from: user1 });
+    //rent losing teams
+    await realitycards.newRental(web3.utils.toWei('1', 'ether'),0,web3.utils.toWei('10', 'ether'),{ from: user0 }); //used deposit of 10
+    //rent winning team
+    await realitycards.newRental(web3.utils.toWei('1', 'ether'),1,web3.utils.toWei('10', 'ether'),{ from: user1 }); //used deposit of 7
+    await time.increase(time.duration.weeks(1));
+    // winnings = 14
+    await cash.resetBalance(user0);
+    await cash.resetBalance(user1);
+    // set winner 1
+    await realitio.setResult(1);
+    ////////////////////////
+    await realitycards.lockContract(); 
+    await realitycards.determineWinner(); 
+    ////////////////////////
+    await realitycards.withdrawWinningsAndDeposit({ from: user1 });
+    var totalWithdrawn = await cash.balanceOf.call(user1);
+    var withdrawnShouldBe = ether('17');
+    var difference = Math.abs(totalWithdrawn.toString() - withdrawnShouldBe.toString());
+    assert.isBelow(difference/totalWithdrawn,0.00001);
+  });
+
 });
 
 

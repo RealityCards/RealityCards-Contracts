@@ -288,7 +288,8 @@ contract RealityCards is ERC721Full, Ownable {
     }
 
     /// @notice pays out winnings, or returns funds
-    function withdraw() external checkState(States.WITHDRAW) {
+    /// @dev public because called by withdrawWinningsAndDeposit
+    function withdraw() public checkState(States.WITHDRAW) {
         require(!userAlreadyWithdrawn[msg.sender], "Already withdrawn");
         userAlreadyWithdrawn[msg.sender] = true;
         if (totalTimeHeld[winningOutcome] > 0) {
@@ -317,9 +318,8 @@ contract RealityCards is ERC721Full, Ownable {
     /// @notice withdraw full deposit after markets have resolved
     /// @dev the other withdraw deposit functions are locked when markets have closed so must use this one
     /// @dev can be called in either locked or withdraw state
-    /// @dev this function is also different in that it does 
-    /// @dev ... not attempt to collect rent or transfer ownership to a previous owner
-    function withdrawDepositAfterMarketEnded() external {
+    /// @dev public because called by withdrawWinningsAndDeposit
+    function withdrawDepositAfterMarketEnded() public {
         require(state != States.NFTSNOTMINTED, "Incorrect state");
         require(state != States.OPEN, "Incorrect state");
         for (uint i = 0; i < numberOfTokens; i++) {
@@ -332,6 +332,12 @@ contract RealityCards is ERC721Full, Ownable {
                 emit LogDepositWithdrawal(_depositToReturn, i, msg.sender);
             }
         }
+    }
+
+    /// @notice allows users to withdraw winnings and deposit in a single tx
+    function withdrawWinningsAndDeposit() external {
+        withdraw();
+        withdrawDepositAfterMarketEnded();
     }
 
     ////////////////////////////////////
