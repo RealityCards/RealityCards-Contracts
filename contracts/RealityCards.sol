@@ -27,7 +27,8 @@ contract RealityCards is ERC721Full, Ownable {
     /// @dev the question ID of the question on realitio
     bytes32 public questionId;
     /// @dev only for _revertToPreviousOwner to prevent gas limits
-    uint256 constant private MAX_ITERATIONS = 10;
+    uint256 public constant UNRESOLVED_OUTCOME_RESULT = 2**256 - 1;
+    uint256 public constant MAX_ITERATIONS = 10;
     enum States {NFTSNOTMINTED, OPEN, LOCKED, WITHDRAW}
     States public state; 
 
@@ -69,11 +70,9 @@ contract RealityCards is ERC721Full, Ownable {
                     uint256 price; }
 
     ///// MARKET RESOLUTION VARIABLES /////
-    uint256 public winningOutcome = 69; // start with non-existent outcome. Nice.
+    uint256 public winningOutcome = UNRESOLVED_OUTCOME_RESULT; 
     //// @dev when the question can be answered on Realitio. 
     uint32 public marketExpectedResolutionTime; 
-    /// @dev If false, normal payout. If true, return all funds. Default true
-    bool public questionResolvedInvalid = true; 
     /// @dev prevent users withdrawing twice
     mapping (address => bool) public userAlreadyWithdrawn;
 
@@ -283,19 +282,15 @@ contract RealityCards is ERC721Full, Ownable {
         require(_isQuestionFinalized() == true, "Oracle not resolved");
         // get the winner. This will revert if answer is not resolved.
         winningOutcome = _getWinner();
-        // check if question resolved invalid or if zero winners
-        if (winningOutcome !=  ((2**256)-1) && totalTimeHeld[winningOutcome] > 0) {
-            questionResolvedInvalid = false;
-        }
         _incrementState();
         emit LogWinnerKnown(winningOutcome);
     }
 
-    /// @notice pays out winnings, or returns funds, based on questionResolvedInvalid bool
+    /// @notice pays out winnings, or returns funds
     function withdraw() external checkState(States.WITHDRAW) {
         require(!userAlreadyWithdrawn[msg.sender], "Already withdrawn");
         userAlreadyWithdrawn[msg.sender] = true;
-        if (!questionResolvedInvalid) {
+        if (totalTimeHeld[winningOutcome] > 0) {
             _payoutWinnings();
         } else {
              _returnRent();
@@ -585,7 +580,6 @@ contract RealityCards is ERC721Full, Ownable {
     /// @dev in case Oracle never resolves, or a bug is found 
     function circuitBreaker() external {
         require(now > (marketExpectedResolutionTime + 4 weeks), "Too early");
-        questionResolvedInvalid = true;
         state = States.WITHDRAW;
     }
 
