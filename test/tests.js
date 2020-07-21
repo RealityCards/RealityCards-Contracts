@@ -114,9 +114,7 @@ contract('RealityCardsTests', (accounts) => {
       await realitycards.newRental(web3.utils.toWei('1', 'ether'), 4, web3.utils.toWei('10', 'ether'), { from: user });
       await realitycards.newRental(web3.utils.toWei('2', 'ether'),4,web3.utils.toWei('10', 'ether'),{ from: user });
       // tests
-      await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('2', 'ether'),4,web3.utils.toWei('0', 'ether'),{ from: user}), "Amount must be above zero");
       await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('2', 'ether'),4,web3.utils.toWei('1', 'ether'),{ from: user}), "Price not 10% higher");
-      await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('3', 'ether'),4,web3.utils.toWei('0', 'ether'),{ from: user}), "Amount must be above zero");
       await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('3', 'ether'),20,web3.utils.toWei('0', 'ether'),{ from: user}), "This token does not exist");
       await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('3', 'ether'),4,web3.utils.toWei('100', 'ether'),{ from: user}), "Insufficient balance");
     });
@@ -1230,7 +1228,6 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await cash.faucet(web3.utils.toWei('100', 'ether'),{ from: user });
     await cash.approve(realitycards.address, web3.utils.toWei('100', 'ether'),{ from: user });
     //check amoutNotZero
-    await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('2', 'ether'),4,web3.utils.toWei('0', 'ether'),{ from: user}), "Amount must be above zero");
     await shouldFail.reverting.withMessage(realitycards.depositDai(web3.utils.toWei('0', 'ether'),4,{ from: user}), "Amount must be above zero");
     await shouldFail.reverting.withMessage(realitycards.withdrawDeposit(web3.utils.toWei('0', 'ether'),4,{ from: user}), "Amount must be above zero");
     //check tokenExists
@@ -1781,6 +1778,20 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await shouldFail.reverting.withMessage(realitycards.withdraw({ from: user3 }), "Not a winner");
     await shouldFail.reverting.withMessage(realitycards.withdraw({ from: user7 }), "Not a winner");
     await shouldFail.reverting.withMessage(realitycards.withdraw({ from: user9 }), "Not a winner");
+  });
+
+  it('check you can rent a card with zero new deposit if you already have a balance', async () => {
+    /////// SETUP //////
+    await cash.faucet(web3.utils.toWei('100000000', 'ether'),{ from: user0 });
+    await cash.approve(realitycards.address, web3.utils.toWei('100000000', 'ether'),{ from: user0 });
+    await cash.faucet(web3.utils.toWei('100000000', 'ether'),{ from: user1 });
+    await cash.approve(realitycards.address, web3.utils.toWei('100000000', 'ether'),{ from: user1 });
+    await realitycards.newRental(web3.utils.toWei('1', 'ether'),2,web3.utils.toWei('10', 'ether'),{ from: user0 });
+    await realitycards.newRental(web3.utils.toWei('2', 'ether'),2,web3.utils.toWei('10', 'ether'),{ from: user1 });
+    // user0 rents it back, with no increase in deposit
+    await realitycards.newRental(web3.utils.toWei('24', 'ether'),2,0,{ from: user0 });
+    // should still fail if user 1 rents it back with insufficient deposit
+    await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('241', 'ether'),2,0,{ from: user0 }), "One hour's rent minimum");
   });
 
 });

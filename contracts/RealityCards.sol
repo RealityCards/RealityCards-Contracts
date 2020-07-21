@@ -347,11 +347,11 @@ contract RealityCards is ERC721Full, Ownable {
     }
     
     /// @notice to rent a token
-    function newRental(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) external checkState(States.OPEN) tokenExists(_tokenId) amountNotZero(_deposit) {
+    function newRental(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) external checkState(States.OPEN) tokenExists(_tokenId) {
         uint256 _currentPricePlusTenPercent = price[_tokenId].mul(11).div(10);
         uint256 _oneHoursDeposit = _newPrice.div(24);
         require(_newPrice >= _currentPricePlusTenPercent, "Price not 10% higher");
-        require(_deposit >= _oneHoursDeposit, "One hour's rent minimum");
+        require(_deposit + deposits[_tokenId][msg.sender] >= _oneHoursDeposit, "One hour's rent minimum");
         require(_newPrice >= 0.01 ether, "Minimum rental 0.01 Dai");
         
         _collectRent(_tokenId);
