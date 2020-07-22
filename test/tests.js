@@ -39,10 +39,11 @@ contract('RealityCardsTests', (accounts) => {
   andrewsAddress = accounts[9];
 
   beforeEach(async () => {
-    var marketExpectedResolutionTime = await time.latest();
+    var marketLockingTime = await time.latest();
+    var oracleResolutionTime = await time.latest();
     cash = await CashMockup.new();
     realitio = await RealitioMockup.new();
-    realitycards = await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketExpectedResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName);
+    realitycards = await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName);
     for (i = 0; i < 20; i++) {
       await realitycards.mintNfts("uri", {from: andrewsAddress});
     }
@@ -622,7 +623,7 @@ contract('RealityCardsTests', (accounts) => {
     // set winner 1
     await realitio.setResult(1);
     ////////////////////////
-    await realitycards.lockContract(); 
+    await realitycards.lockMarket(); 
     await realitycards.determineWinner(); 
     ////////////////////////
     // total deposits = 75, check:
@@ -688,7 +689,7 @@ contract('RealityCardsTests', (accounts) => {
     await cash.resetBalance(user2);
     // set winner 2
     await realitio.setResult(2);
-    await realitycards.lockContract(); 
+    await realitycards.lockMarket(); 
     await realitycards.determineWinner(); 
     ////////////////////////
     // total deposits = 75, check:
@@ -742,7 +743,7 @@ contract('RealityCardsTests', (accounts) => {
     await cash.resetBalance(user2);
     // set an invalid outcome
     await realitio.setResult(69);
-    await realitycards.lockContract(); 
+    await realitycards.lockMarket(); 
     await realitycards.determineWinner(); 
     ////////////////////////
     //check user0 winnings 
@@ -802,7 +803,7 @@ contract('RealityCardsTests', (accounts) => {
     await cash.resetBalance(user1);
     await cash.resetBalance(user2);
     ////////////////////////
-    await realitycards.lockContract(); 
+    await realitycards.lockMarket(); 
     await time.increase(time.duration.weeks(24)); 
     await realitycards.circuitBreaker(); 
     ////////////////////////
@@ -929,7 +930,7 @@ contract('RealityCardsTests', (accounts) => {
     // time: 0: 10 days (604800) 
     // set winner 1
     await realitio.setResult(1);
-    await realitycards.lockContract(); 
+    await realitycards.lockMarket(); 
     await realitycards.determineWinner(); 
     await realitycards.withdraw({ from: user0 });
     await realitycards.withdraw({ from: user1 });
@@ -996,7 +997,7 @@ contract('RealityCardsTests', (accounts) => {
     // time: 0: 10 days (604800) 
     // set winner 1
     await realitio.setResult(1);
-    await realitycards.lockContract(); 
+    await realitycards.lockMarket(); 
     await realitycards.determineWinner(); 
     /////// THIS TEST //////
     // reset cash balances
@@ -1061,7 +1062,7 @@ contract('RealityCardsTests', (accounts) => {
     await realitio.setResult(1);
     // should fail before step 1:
     await shouldFail.reverting.withMessage(realitycards.withdrawDepositAfterMarketEnded({ from: user0 }), "Incorrect state");
-    await realitycards.lockContract(); 
+    await realitycards.lockMarket(); 
     /////// THIS TEST //////
     // reset cash balances
     await cash.resetBalance(user0);
@@ -1112,7 +1113,7 @@ contract('RealityCardsTests', (accounts) => {
     await realitycards.newRental(web3.utils.toWei('3', 'ether'),1,web3.utils.toWei('24', 'ether'),{ from: user2 }); //used deposit of 24
     await time.increase(time.duration.weeks(2)); 
     // not setting winner so we expect step2 to revert
-    await realitycards.lockContract(); 
+    await realitycards.lockMarket(); 
     await shouldFail.reverting.withMessage(realitycards.determineWinner(), "Oracle not resolved");
     await shouldFail.reverting.withMessage(realitycards.withdraw(), "Incorrect state");
     });
@@ -1185,7 +1186,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
   // time: 0: 10 days (604800) 
   // set winner 1
   await realitio.setResult(1);
-  await realitycards.lockContract(); 
+  await realitycards.lockMarket(); 
   await realitycards.determineWinner(); 
   await realitycards.withdraw({ from: user0 });
   await realitycards.withdraw({ from: user1 });
@@ -1239,7 +1240,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await shouldFail.reverting.withMessage(realitycards.changePrice(web3.utils.toWei('2', 'ether'),2,{ from: user1}), "Not owner");
     //check notEnded
     await time.increase(time.duration.hours(1)); 
-    await realitycards.lockContract();
+    await realitycards.lockMarket();
     await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('2', 'ether'),4,web3.utils.toWei('1', 'ether'),{ from: user}), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards.depositDai(web3.utils.toWei('2', 'ether'),4,{ from: user}), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards.withdrawDeposit(web3.utils.toWei('2', 'ether'),4,{ from: user}), "Incorrect state");
@@ -1257,12 +1258,12 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     // call step 2 before step 1 done
     await shouldFail.reverting.withMessage(realitycards.determineWinner(), "Incorrect state");
     //call step 1 before markets ended
-    await shouldFail.reverting.withMessage(realitycards.lockContract(), "Market has not finished");
+    await shouldFail.reverting.withMessage(realitycards.lockMarket(), "Market has not finished");
     await time.increase(time.duration.hours(1)); 
     // call step 1 after markets ended, should work
-    await realitycards.lockContract(); 
+    await realitycards.lockMarket(); 
     // call step 1 twice
-    await shouldFail.reverting.withMessage(realitycards.lockContract(), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards.lockMarket(), "Incorrect state");
     });
 
   it('check that _revertToPreviousOwner does not revert more than ten times ', async () => {
@@ -1403,7 +1404,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await shouldFail.reverting(realitycards.safeTransferFrom(user,user1,2));
     await shouldFail.reverting(realitycards.safeTransferFrom(user,user1,2,web3.utils.asciiToHex("123456789")));
     await time.increase(time.duration.days(1)); 
-    await realitycards.lockContract();
+    await realitycards.lockMarket();
     // should fail cos LOCKED
     await shouldFail.reverting(realitycards.transferFrom(user,user1,2));
     await shouldFail.reverting(realitycards.safeTransferFrom(user,user1,2));
@@ -1423,13 +1424,14 @@ it('test payouts (incl deposit returned) when newRental called again by existing
   it('huge check state expected failures', async() => {
     user = user0;
     // undo beforeEach
-    marketExpectedResolutionTime = 0;
-    realitycards = await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketExpectedResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName); 
+    marketLockingTime = await 0;
+    oracleResolutionTime = await 0;
+    realitycards = await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName); 
     // check state is 0
     var state = await realitycards.state.call();
     assert.equal(0,state);
     // currently in state 'NFTSNOTMINTED' the following should all fail 
-    await shouldFail.reverting.withMessage(realitycards.lockContract(), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards.lockMarket(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards.determineWinner(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards.withdraw(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards.withdrawDepositAfterMarketEnded(), "Incorrect state");
@@ -1451,7 +1453,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await shouldFail.reverting.withMessage(realitycards.withdraw(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards.withdrawDepositAfterMarketEnded(), "Incorrect state");
     // increment state
-    await realitycards.lockContract();
+    await realitycards.lockMarket();
     var state = await realitycards.state.call();
     assert.equal(2,state);
     // currently in state 'LOCKED' the following should all fail 
@@ -1469,7 +1471,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     assert.equal(3,state);
     // currently in state 'WITHDRAW' the following should all fail 
     await shouldFail.reverting.withMessage(realitycards.mintNfts(user), "Incorrect state");
-    await shouldFail.reverting.withMessage(realitycards.lockContract(), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards.lockMarket(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards.determineWinner(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards.collectRentAllTokens(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards.newRental(0,0,0), "Incorrect state");
@@ -1494,8 +1496,9 @@ it('test payouts (incl deposit returned) when newRental called again by existing
   it('check renounce ownership works', async() => {
     user = user0;
     // undo the token creation from the beforeEach:
-    marketExpectedResolutionTime = await time.latest();
-    realitycards = await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketExpectedResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName);
+    marketLockingTime = await time.latest();
+    oracleResolutionTime = await time.latest();
+    realitycards = await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName);
     // should work while im the owner
     await realitycards.renounceOwnership({from: andrewsAddress});
     await shouldFail.reverting.withMessage(realitycards.circuitBreaker({from: andrewsAddress}), "Too early");
@@ -1579,7 +1582,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await cash.resetBalance(user2);
     // set an invalid outcome
     await realitio.setResult(7);
-    await realitycards.lockContract(); 
+    await realitycards.lockMarket(); 
     await realitycards.determineWinner(); 
     ////////////////////////
     //check user0 winnings 
@@ -1613,22 +1616,24 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     var arbitrator = "0xA6EAd513D05347138184324392d8ceb24C116118";
     var timeout = 86400;
     var templateId = 2;
-    var marketExpectedResolutionTime = 69420; 
-    await realitio.askQuestion(templateId,question,arbitrator,timeout,marketExpectedResolutionTime,0);
+    var marketLockingTime = 69420; 
+    var oracleResolutionTime = 69420; 
+    await realitio.askQuestion(templateId,question,arbitrator,timeout,oracleResolutionTime,0);
     var actualId = await realitio.actualQuestionId.call();
     // change question
     question = 'Test 7␟"X","Y","Z"␟news-politics␟en_US';
     var useExistingQuestion = true;
-    marketExpectedResolutionTime = 69420;
+    var marketLockingTime = 69420; 
+    var oracleResolutionTime = 69420; 
     // redeply with useExistingQuestion true it should revert because question is changed
-    await shouldFail.reverting.withMessage(RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketExpectedResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName), "Content hash does not match");
+    await shouldFail.reverting.withMessage(RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName), "Content hash does not match");
     // try again with correct question but made up question Id should fail again
     questionId = '0xb5358101b5dfdf6918d344b751898ad5a3d1738f57c49124edf019ba61bf8f45';
     var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
-    await shouldFail.reverting.withMessage(RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketExpectedResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName), "Content hash does not match");
+    await shouldFail.reverting.withMessage(RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName), "Content hash does not match");
     // now use correct question Id, should work
     questionId = actualId;
-    await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketExpectedResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName);
+    await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName);
   });
 
 
@@ -1748,7 +1753,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await cash.resetBalance(user8);
     await cash.resetBalance(user9);
     await realitio.setResult(5);
-    await realitycards.lockContract(); 
+    await realitycards.lockMarket(); 
     await realitycards.determineWinner(); 
     //winners
     await realitycards.withdraw({ from: user0 });
@@ -1810,7 +1815,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     // set winner 1
     await realitio.setResult(1);
     ////////////////////////
-    await realitycards.lockContract(); 
+    await realitycards.lockMarket(); 
     await realitycards.determineWinner(); 
     ////////////////////////
     await realitycards.withdrawWinningsAndDeposit({ from: user1 });
@@ -1858,7 +1863,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     // set winner 1
     await realitio.setResult(1);
     ////////////////////////
-    await realitycards.lockContract(); 
+    await realitycards.lockMarket(); 
     await realitycards.determineWinner(); 
     ////////////////////////
     // total deposits = 150, check:
@@ -1929,7 +1934,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await cash.resetBalance(user3);
     // set an invalid outcome
     await realitio.setResult(69); // nice
-    await realitycards.lockContract(); 
+    await realitycards.lockMarket(); 
     await realitycards.determineWinner(); 
     ////////////////////////
     //check user0 winnings 
@@ -1960,6 +1965,32 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user5 winnings, should fail cos didn't pay any rent
     await shouldFail.reverting.withMessage(realitycards.withdraw({ from: user5 }), "Paid no rent");
+  });
+
+  it('check oracleResolutionTime and marketLockingTime expected failures', async () => {
+    // someone else deploys question to realitio
+    var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
+    var useExistingQuestion = false;
+    var arbitrator = "0xA6EAd513D05347138184324392d8ceb24C116118";
+    var timeout = 86400;
+    var templateId = 2;
+    // resolution time before locking, expect failure
+    var oracleResolutionTime = 69419;
+    var marketLockingTime = 69420; 
+    await shouldFail.reverting.withMessage(RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName), "Invalid timestamps");
+    // resolution time > 1 weeks after locking, expect failure
+    var oracleResolutionTime = 604810;
+    var marketLockingTime = 0; 
+    await shouldFail.reverting.withMessage(RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName), "Invalid timestamps");
+    // resolution time < 1 week  after locking, no failure
+    var oracleResolutionTime = 604790;
+    var marketLockingTime = 0; 
+    await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName);
+    // same time, no failure
+    var oracleResolutionTime = 0;
+    var marketLockingTime = 0; 
+    await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName);
+
   });
 
 });

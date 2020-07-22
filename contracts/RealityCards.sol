@@ -71,8 +71,10 @@ contract RealityCards is ERC721Full, Ownable {
 
     ///// MARKET RESOLUTION VARIABLES /////
     uint256 public winningOutcome = UNRESOLVED_OUTCOME_RESULT; 
-    //// @dev when the question can be answered on Realitio. 
-    uint32 public marketExpectedResolutionTime; 
+    //// @dev when the market locks 
+    uint32 public marketLockingTime; 
+    //// @dev when the question can be answered on realitio
+    uint32 public oracleResolutionTime;
     /// @dev prevent users withdrawing twice
     mapping (address => bool) public userAlreadyWithdrawn;
 
@@ -85,7 +87,8 @@ contract RealityCards is ERC721Full, Ownable {
         uint256 _numberOfTokens, 
         ICash _addressOfCashContract, 
         IRealitio _addressOfRealitioContract, 
-        uint32 _marketExpectedResolutionTime, 
+        uint32 _marketLockingTime,
+        uint32 _oracleResolutionTime, 
         uint256 _templateId, 
         string memory _question, 
         bytes32 _questionId,
@@ -95,12 +98,16 @@ contract RealityCards is ERC721Full, Ownable {
         string memory _tokenName) 
         ERC721Full(_tokenName, "RC") public
     {
+        // resolution time must not be less than locking time, but not by more than one week
+        require(_marketLockingTime + 1 weeks > _oracleResolutionTime && _marketLockingTime <= _oracleResolutionTime, "Invalid timestamps" );
+
         // reassign ownership
         transferOwnership(_owner);
 
         // assign arguments to public variables
         numberOfTokens = _numberOfTokens;
-        marketExpectedResolutionTime = _marketExpectedResolutionTime;
+        marketLockingTime = _marketLockingTime;
+        oracleResolutionTime = _oracleResolutionTime;
         
         // external contract variables:
         realitio = _addressOfRealitioContract;
@@ -109,12 +116,12 @@ contract RealityCards is ERC721Full, Ownable {
         // create the question on Realitio or pass the questionId
         if (_useExistingQuestion) {
             // check you are passing the correct ID
-            bytes32 _myQuestionContentHash = keccak256(abi.encodePacked(_templateId, _marketExpectedResolutionTime, _question));
+            bytes32 _myQuestionContentHash = keccak256(abi.encodePacked(_templateId, _oracleResolutionTime, _question));
             bytes32 _existingQuestionContentHash = _getHashExistingQuestion(_questionId);
             require(_myQuestionContentHash == _existingQuestionContentHash, "Content hash does not match");
             questionId = _questionId;
         } else {
-            questionId = _postQuestion(_templateId, _question, _arbitrator, _timeout, _marketExpectedResolutionTime, 0);
+            questionId = _postQuestion(_templateId, _question, _arbitrator, _timeout, _oracleResolutionTime, 0);
         }
     } 
 
@@ -269,8 +276,8 @@ contract RealityCards is ERC721Full, Ownable {
 
     /// @notice checks whether the competition has ended (1 hour grace), if so moves to LOCKED state
     /// @dev can be called by anyone 
-    function lockContract() external checkState(States.OPEN) {
-        require(marketExpectedResolutionTime < (now - 1 hours), "Market has not finished");
+    function lockMarket() external checkState(States.OPEN) {
+        require(marketLockingTime < (now - 1 hours), "Market has not finished");
         // do a final rent collection before the contract is locked down
         collectRentAllTokens();
         _incrementState();
@@ -594,7 +601,7 @@ contract RealityCards is ERC721Full, Ownable {
     /// @dev change state to WITHDRAW to lock contract and return all funds
     /// @dev in case Oracle never resolves, or a bug is found 
     function circuitBreaker() external {
-        require(now > (marketExpectedResolutionTime + 4 weeks), "Too early");
+        require(now > (oracleResolutionTime + 4 weeks), "Too early");
         state = States.WITHDRAW;
     }
 
