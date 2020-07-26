@@ -26,8 +26,8 @@ contract RealityCards is ERC721Full, Ownable {
     uint256 public nftMintCount;
     /// @dev the question ID of the question on realitio
     bytes32 public questionId;
-    /// @dev only for _revertToPreviousOwner to prevent gas limits
     uint256 public constant UNRESOLVED_OUTCOME_RESULT = 2**256 - 1;
+    /// @dev only for _revertToPreviousOwner to prevent gas limits
     uint256 public constant MAX_ITERATIONS = 10;
     enum States {NFTSNOTMINTED, OPEN, LOCKED, WITHDRAW}
     States public state; 
@@ -364,12 +364,16 @@ contract RealityCards is ERC721Full, Ownable {
     function newRental(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) external checkState(States.OPEN) tokenExists(_tokenId) {
         uint256 _currentPricePlusTenPercent = price[_tokenId].mul(11).div(10);
         uint256 _oneHoursDeposit = _newPrice.div(24);
+        uint256 _updatedDeposit = _deposit.add(deposits[_tokenId][msg.sender]);
         require(_newPrice >= _currentPricePlusTenPercent, "Price not 10% higher");
-        require(_deposit + deposits[_tokenId][msg.sender] >= _oneHoursDeposit, "One hour's rent minimum");
+        require(_updatedDeposit >= _oneHoursDeposit, "One hour's rent minimum");
         require(_newPrice >= 1 ether, "Minimum rental 1 Dai");
         
         _collectRent(_tokenId);
-        _depositDai(_deposit, _tokenId);
+
+        if (_deposit > 0) {
+            _depositDai(_deposit, _tokenId);
+        }
 
         address _currentOwner = ownerOf(_tokenId);
 
@@ -443,9 +447,9 @@ contract RealityCards is ERC721Full, Ownable {
     /// @notice ability to add liqudity to the pot without being able to win. 
     function sponsor(uint256 _dai) external {
         _receiveCash(msg.sender, _dai);
+        totalCollected = totalCollected.add(_dai);
         // just so user can get it back if invalid outcome
         collectedPerUser[msg.sender] = collectedPerUser[msg.sender].add(_dai); 
-        totalCollected = totalCollected.add(_dai);
     }
 
     ////////////////////////////////////

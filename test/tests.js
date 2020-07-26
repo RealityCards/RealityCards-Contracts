@@ -1480,28 +1480,22 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await shouldFail.reverting.withMessage(realitycards.withdrawDeposit(0,0), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards.exit(0), "Incorrect state");
   });
-  
-  it('check onlyOwner modifier is working', async() => {
-    user = user0;
-    await shouldFail.reverting.withMessage(realitycards.circuitBreaker(), "Too early");
-  });
 
-  it('check that owner can not be changed', async() => {
+  it('check that owner can not be changed unless correct owner', async() => {
     user = user0;
     // buidler giving me shit when I try and intercept revert message so just testing revert
     await shouldFail.reverting(realitycards.transferOwnership(user));
-    await shouldFail.reverting(realitycards.transferOwnership(user));
+    await realitycards.transferOwnership(user,{from: andrewsAddress});
+    var newOwner = await realitycards.owner.call();
+    assert.equal(newOwner, user);
   });
 
   it('check renounce ownership works', async() => {
     user = user0;
-    // undo the token creation from the beforeEach:
-    marketLockingTime = await time.latest();
-    oracleResolutionTime = await time.latest();
-    realitycards = await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName);
     // should work while im the owner
     await realitycards.renounceOwnership({from: andrewsAddress});
-    await shouldFail.reverting.withMessage(realitycards.circuitBreaker({from: andrewsAddress}), "Too early");
+    var newOwner = await realitycards.owner.call();
+    assert.equal(newOwner, 0);
   });
 
   it('check getWinnings with different winners', async () => {
