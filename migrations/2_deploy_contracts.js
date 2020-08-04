@@ -3,7 +3,7 @@ var RealityCards = artifacts.require("./RealityCards.sol");
 var CashMockup = artifacts.require("./mockups/CashMockup.sol");
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 
-var market = "pres";
+var market = "boxing";
 
 if (market === "pres")
 {
@@ -24,6 +24,23 @@ else if (market === "compoundprice")
     var numberOfTokens = 2;
     var question = 'What will the USD price of the Compound token (COMP) be at the end of July 2020 UTC per coinmarketcap.com?␟"Below $200","Above $200"␟crypto␟en_US';
 }
+else if (market === "boxing")
+{
+    var marketLockingTime = 1599966000; //09/13/2020 @ 3:00am (UTC)
+    var oracleResolutionTime = 1599987600; //09/13/2020 @ 9:00am (UTC)
+    var numberOfTokens = 2;
+    var question = 'Who will win the boxing match between Mike Tyson and Roy Jones Jr. on September 12th 2020?␟"Mike Tyson","Roy Jones Jr."␟sport␟en_US';
+    var tokenName = 'TysonVsJones';
+}
+
+else if (market === "yearn")
+{
+    var marketLockingTime = 1596412800; //08/03/2020 @ 12:00am (UTC)
+    var oracleResolutionTime = 1596412800; //08/03/2020 @ 12:00am (UTC)
+    var numberOfTokens = 4;
+    var question = 'What will the USD price of YFI (Yearn) be closest to at the end of 2nd August 2020 UTC per coinmarketcap.com?␟"$1k","$2k","$3k","$4k"␟crypto␟en_US';
+    var tokenName = 'yearnPrice';
+}
 
 // variables common
 var templateId = 2;
@@ -33,8 +50,9 @@ var timeout = 86400; // 86400 = 1 day
 var useExistingQuestion = false;
 
 // variables test
-var marketExpectedResolutionTimeTest = 0;
 var timeoutTest = 30;
+var marketLockingTimeTest = 100; //09/13/2020 @ 3:00am (UTC)
+var oracleResolutionTimeTest = 100; //09/13/2020 @ 9:00am (UTC)
 var questionId = '0xc8dae2bccb46477df016e190ae986d5feadd8600f445991c6b8bbe8fe70598bc';
 
 // KOVAN ADDRESSES
@@ -49,7 +67,7 @@ module.exports = async (deployer, network) => {
 
     if (network === "kovan") 
     {
-        deployer.deploy(RealityCards, andrewsAddress, numberOfTokens, augurCashAddressKovan, realitioAddressKovan, marketExpectedResolutionTimeTest, templateId, question, questionId, useExistingQuestion, arbitrator, timeoutTest, tokenName).then(async () => {
+        deployer.deploy(RealityCards, andrewsAddress, numberOfTokens, augurCashAddressKovan, realitioAddressKovan, marketLockingTimeTest, oracleResolutionTimeTest, templateId, question, questionId, useExistingQuestion, arbitrator, timeoutTest, tokenName).then(async () => {
             instance = await RealityCards.deployed();
                 
             if (market === "etherprice")
@@ -72,9 +90,21 @@ module.exports = async (deployer, network) => {
                 await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/compoundPrice/token0.json");
                 await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/compoundPrice/token1.json");
             }
+            else if (market === "boxing")
+            {
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/boxing/token0.json");
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/boxing/token1.json");
+            }
+            else if (market === "yearn")
+            {
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/yearnPrice/token0.json");
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/yearnPrice/token1.json");
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/yearnPrice/token2.json");
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/yearnPrice/token3.json");
+            }
         });
   } else if (network === "mainnet") {
-    deployer.deploy(RealityCards, andrewsAddress, numberOfTokens, daiAddressMainnet, realitioAddressMainnet, marketExpectedResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName).then(async () => {
+    deployer.deploy(RealityCards, andrewsAddress, numberOfTokens, daiAddressMainnet, realitioAddressMainnet, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName).then(async () => {
         instance = await RealityCards.deployed();
         
             if (market === "etherPrice")
@@ -96,6 +126,18 @@ module.exports = async (deployer, network) => {
             {
                 await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/compoundPrice/token0.json");
                 await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/compoundPrice/token1.json");
+            }
+            else if (market === "boxing")
+            {
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/boxing/token0.json");
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/boxing/token1.json");
+            }
+            else if (market === "yearn")
+            {
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/yearnPrice/token0.json");
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/yearnPrice/token1.json");
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/yearnPrice/token2.json");
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/yearnPrice/token3.json");
             }
       });
 

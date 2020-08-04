@@ -98,7 +98,7 @@ contract RealityCards is ERC721Full, Ownable {
         string memory _tokenName) 
         ERC721Full(_tokenName, "RC") public
     {
-        // resolution time must not be less than locking time, but not by more than one week
+        // resolution time must not be less than locking time, and not greater by more than one week
         require(_marketLockingTime + 1 weeks > _oracleResolutionTime && _marketLockingTime <= _oracleResolutionTime, "Invalid timestamps" );
 
         // reassign ownership
@@ -227,6 +227,11 @@ contract RealityCards is ERC721Full, Ownable {
         uint256 _numerator = totalCollected.mul(_winnersTimeHeld);
         uint256 _winnings = _numerator.div(totalTimeHeld[_winningOutcome]);    
         return _winnings;    
+    }
+
+    /// @dev for front end only
+    function marketExpectedResolutionTime() public view returns(uint32) {
+        return marketLockingTime;
     }
     
     ////////////////////////////////////
