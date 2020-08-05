@@ -141,6 +141,7 @@ contract RealityCards is ERC721Full, Ownable {
     event LogWinningsPaid(address indexed paidTo, uint256 indexed amountPaid);
     event LogRentReturned(address indexed returnedTo, uint256 indexed amountReturned);
     event LogTimeHeldUpdated(uint256 indexed newTimeHeld, address indexed owner, uint256 indexed tokenId);
+    event LogStateChange(uint256 indexed newState);
 
     ////////////////////////////////////
     //////// INITIAL SETUP /////////////
@@ -604,7 +605,8 @@ contract RealityCards is ERC721Full, Ownable {
     /// @dev should only be called thrice
     function _incrementState() internal {
         assert(uint256(state) < 4);
-        state = States(uint(state) + 1);
+        state = States(uint256(state) + 1);
+        emit LogStateChange(uint256(state));
     }
 
     /// @dev change state to WITHDRAW to lock contract and return all funds
