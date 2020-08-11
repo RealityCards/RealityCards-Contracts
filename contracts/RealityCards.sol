@@ -129,10 +129,10 @@ contract RealityCards is ERC721Full, Ownable {
     //////// EVENTS ////////////////////
     ////////////////////////////////////
 
-    event LogNewRental(address indexed newOwner, uint256 indexed newPrice, uint256 indexed tokenId);
+    event LogNewRental(address indexed newOwner, uint256 indexed newPrice, uint256 indexed tokenId, uint256 deposit);
     event LogPriceChange(uint256 indexed newPrice, uint256 indexed tokenId);
     event LogForeclosure(address indexed prevOwner, uint256 indexed tokenId);
-    event LogRentCollection(uint256 indexed rentCollected, uint256 indexed tokenId);
+    event LogRentCollection(uint256 indexed rentCollected, uint256 indexed tokenId, address indexed owner);
     event LogReturnToPreviousOwner(uint256 indexed tokenId, address indexed previousOwner);
     event LogDepositWithdrawal(uint256 indexed daiWithdrawn, uint256 indexed tokenId, address indexed returnedTo);
     event LogDepositIncreased(uint256 indexed daiDeposited, uint256 indexed tokenId, address indexed sentBy);
@@ -393,7 +393,7 @@ contract RealityCards is ERC721Full, Ownable {
             timeAcquired[_tokenId] = now;
             // externals
             _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
-            emit LogNewRental(msg.sender, _newPrice, _tokenId); 
+            emit LogNewRental(msg.sender, _newPrice, _tokenId, _deposit); 
         }
     }
 
@@ -499,7 +499,7 @@ contract RealityCards is ERC721Full, Ownable {
             totalCollected = totalCollected.add(_rentOwed);
 
             emit LogTimeHeldUpdated(timeHeld[_tokenId][_currentOwner], _currentOwner, _tokenId);
-            emit LogRentCollection(_rentOwed, _tokenId);
+            emit LogRentCollection(_rentOwed, _tokenId, _currentOwner);
         }
 
         // timeLastCollected is updated regardless of whether the token is owned, so that the clock starts ticking
