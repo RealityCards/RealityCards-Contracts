@@ -3,7 +3,7 @@ var RealityCards = artifacts.require("./RealityCards.sol");
 var CashMockup = artifacts.require("./mockups/CashMockup.sol");
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 
-var market = "boxing";
+var market = "curve";
 
 if (market === "pres")
 {
@@ -40,6 +40,15 @@ else if (market === "yearn")
     var numberOfTokens = 4;
     var question = 'What will the USD price of YFI (Yearn) be closest to at the end of 2nd August 2020 UTC per coinmarketcap.com?␟"$1k","$2k","$3k","$4k"␟crypto␟en_US';
     var tokenName = 'yearnPrice';
+}
+
+else if (market === "curve")
+{
+    var marketLockingTime = 1597795201; //08/19/2020 @ 12:00am (UTC)
+    var oracleResolutionTime = 1597795201; //08/19/2020 @ 12:00am (UTC)
+    var numberOfTokens = 3;
+    var question = 'What will the total LP token supply for the Curve Y Pool (0xdf5e0e81dff6faf3a7e52ba697820c5e32d806a8) be closest to when the first block is mined August 19th 2020 UTC?␟"150m","250m","350m"␟crypto␟en_US';
+    var tokenName = 'curve';
 }
 
 // variables common
@@ -102,6 +111,12 @@ module.exports = async (deployer, network) => {
                 await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/yearnPrice/token2.json");
                 await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/yearnPrice/token3.json");
             }
+            else if (market === "curve")
+            {
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/curve/token0.json");
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/curve/token1.json");
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/curve/token2.json");
+            }
         });
   } else if (network === "mainnet") {
     deployer.deploy(RealityCards, andrewsAddress, numberOfTokens, daiAddressMainnet, realitioAddressMainnet, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName).then(async () => {
@@ -138,6 +153,12 @@ module.exports = async (deployer, network) => {
                 await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/yearnPrice/token1.json");
                 await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/yearnPrice/token2.json");
                 await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/yearnPrice/token3.json");
+            }
+            else if (market === "curve")
+            {
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/curve/token0.json");
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/curve/token1.json");
+                await instance.mintNfts("https://cdn.realitycards.io/nftmetadata/curve/token2.json");
             }
       });
 
