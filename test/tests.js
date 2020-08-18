@@ -35,7 +35,6 @@ contract('RealityCardsTests', (accounts) => {
   user6 = accounts[6];
   user7 = accounts[7];
   user8 = accounts[8];
-  user9 = accounts[10];
   andrewsAddress = accounts[9];
 
   beforeEach(async () => {
@@ -395,8 +394,6 @@ contract('RealityCardsTests', (accounts) => {
       assert.equal(price, web3.utils.toWei('0', 'ether'));
     });
 
-
-
     // these are four crucial variables that are relied on for other functions. are they what they should be?
     it('test timeHeld and totalTimeHeld', async () => {
       //same as previous but this time check that time is correct
@@ -430,31 +427,35 @@ contract('RealityCardsTests', (accounts) => {
       assert.isBelow(difference,2);
       await time.increase(time.duration.days(3));
       await realitycards.collectRentAllTokens();
-      // u2 still 4 days, u1 3 days
+      // u2 still 4 days, u1 5 days, u0 0 days
       var timeHeld = await realitycards.timeHeld.call(0, user2);
       var timeHeldShouldBe = time.duration.days(4);
       var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
       assert.isBelow(difference/timeHeld,2);
       var timeHeld = await realitycards.timeHeld.call(0, user1);
-      var timeHeldShouldBe = time.duration.days(3);
+      var timeHeldShouldBe = time.duration.days(5);
       var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
       assert.isBelow(difference/timeHeld,0.001);
       await time.increase(time.duration.days(3));
       await realitycards.collectRentAllTokens();
-      // u1 5 days
-      var timeHeld = await realitycards.timeHeld.call(0, user1);
-      var timeHeldShouldBe = time.duration.days(5);
-      var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
-      assert.isBelow(difference/timeHeld,0.001);
-      await time.increase(time.duration.days(1));
-      await realitycards.collectRentAllTokens();
-      // u1 5 days, u0 1 day
+      // u1 5 days, u0 3 days
       var timeHeld = await realitycards.timeHeld.call(0, user1);
       var timeHeldShouldBe = time.duration.days(5);
       var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
       assert.isBelow(difference/timeHeld,0.001);
       var timeHeld = await realitycards.timeHeld.call(0, user0);
-      var timeHeldShouldBe = time.duration.days(1);
+      var timeHeldShouldBe = time.duration.days(3);
+      var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
+      assert.isBelow(difference/timeHeld,0.001);
+      await time.increase(time.duration.days(1));
+      await realitycards.collectRentAllTokens();
+      // u1 5 days, u0 6 day
+      var timeHeld = await realitycards.timeHeld.call(0, user1);
+      var timeHeldShouldBe = time.duration.days(5);
+      var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
+      assert.isBelow(difference/timeHeld,0.001);
+      var timeHeld = await realitycards.timeHeld.call(0, user0);
+      var timeHeldShouldBe = time.duration.days(4);
       var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
       assert.isBelow(difference/timeHeld,0.001);
       // buy again, check the new owner, then revert again
@@ -472,10 +473,10 @@ contract('RealityCardsTests', (accounts) => {
       await realitycards.collectRentAllTokens();
       // u0 8 days
       var timeHeld = await realitycards.timeHeld.call(0, user0);
-      var timeHeldShouldBe = time.duration.days(8);
+      var timeHeldShouldBe = time.duration.days(10);
       var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
       assert.isBelow(difference/timeHeld,0.001);
-      await time.increase(time.duration.days(7));
+      await time.increase(time.duration.days(9));
       await realitycards.collectRentAllTokens();
       // u0 10 days
       var timeHeld = await realitycards.timeHeld.call(0, user0);
@@ -1651,12 +1652,9 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await cash.approve(realitycards.address, web3.utils.toWei('100000', 'ether'),{ from: user7 });
     await cash.faucet(web3.utils.toWei('1000000000', 'ether'),{ from: user8 });
     await cash.approve(realitycards.address, web3.utils.toWei('10000000000', 'ether'),{ from: user8 });
-    await cash.faucet(web3.utils.toWei('100000', 'ether'),{ from: user9 });
-    await cash.approve(realitycards.address, web3.utils.toWei('100000', 'ether'),{ from: user9 });
     await realitycards.newRental(web3.utils.toWei('1', 'ether'),2,web3.utils.toWei('10', 'ether'),{ from: user0 });
     await realitycards.newRental(web3.utils.toWei('1', 'ether'),5,web3.utils.toWei('10', 'ether'),{ from: user6 });
     await time.increase(time.duration.weeks(2)); 
-    await realitycards.newRental(web3.utils.toWei('1', 'ether'),1,web3.utils.toWei('10', 'ether'),{ from: user9 });
     await realitycards.depositDai(web3.utils.toWei('1', 'ether'),7,{ from: user2 });
     await realitycards.newRental(web3.utils.toWei('1', 'ether'),3,web3.utils.toWei('10', 'ether'),{ from: user7 });
     await realitycards.withdrawDeposit(web3.utils.toWei('10', 'ether'),2,{ from: user0 });
@@ -1666,7 +1664,6 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await realitycards.newRental(web3.utils.toWei('1', 'ether'),2,web3.utils.toWei('10', 'ether'),{ from: user3 });
     await time.increase(time.duration.weeks(2)); 
     await realitycards.newRental(web3.utils.toWei('1', 'ether'),4,web3.utils.toWei('10', 'ether'),{ from: user0 });
-    await realitycards.depositDai(web3.utils.toWei('1', 'ether'),2,{ from: user9 });
     await realitycards.newRental(web3.utils.toWei('1', 'ether'),8,web3.utils.toWei('10', 'ether'),{ from: user0 });
     await realitycards.exit(4,{ from: user0 });
     await realitycards.depositDai(web3.utils.toWei('1', 'ether'),8,{ from: user3 });
@@ -1689,7 +1686,6 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await realitycards.newRental(web3.utils.toWei('1', 'ether'),7,web3.utils.toWei('10', 'ether'),{ from: user0 });
     await realitycards.withdrawDeposit(web3.utils.toWei('5', 'ether'),2,{ from: user8 });
     await realitycards.newRental(web3.utils.toWei('6638', 'ether'),2,web3.utils.toWei('1000', 'ether'),{ from: user5 });
-    await realitycards.depositDai(web3.utils.toWei('1', 'ether'),2,{ from: user9 });
     await realitycards.collectRentAllTokens();
     await realitycards.newRental(web3.utils.toWei('7376', 'ether'),2,web3.utils.toWei('1083', 'ether'),{ from: user3 });
     await realitycards.changePrice(web3.utils.toWei('10', 'ether'),7,{ from: user0});
@@ -1733,7 +1729,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await realitycards.newRental(web3.utils.toWei('1', 'ether'),5,web3.utils.toWei('10', 'ether'),{ from: user4 });
     await realitycards.exitAll({ from: user7 });
     await realitycards.changePrice(web3.utils.toWei('50000', 'ether'),2,{ from: user8});
-    await realitycards.newRental(web3.utils.toWei('1', 'ether'),4,web3.utils.toWei('10', 'ether'),{ from: user0 });
+    await realitycards.newRental(web3.utils.toWei('100', 'ether'),4,web3.utils.toWei('100', 'ether'),{ from: user0 });
     await realitycards.depositDai(web3.utils.toWei('1', 'ether'),3,{ from: user8 });
     await realitycards.collectRentAllTokens();
     await cash.resetBalance(user0);
@@ -1745,7 +1741,6 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await cash.resetBalance(user6);
     await cash.resetBalance(user7);
     await cash.resetBalance(user8);
-    await cash.resetBalance(user9);
     await realitio.setResult(5);
     await realitycards.lockMarket(); 
     await realitycards.determineWinner(); 
@@ -1775,7 +1770,6 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await shouldFail.reverting.withMessage(realitycards.withdraw({ from: user2 }), "Not a winner");
     await shouldFail.reverting.withMessage(realitycards.withdraw({ from: user3 }), "Not a winner");
     await shouldFail.reverting.withMessage(realitycards.withdraw({ from: user7 }), "Not a winner");
-    await shouldFail.reverting.withMessage(realitycards.withdraw({ from: user9 }), "Not a winner");
   });
 
   it('check you can rent a card with zero new deposit if you already have a balance', async () => {

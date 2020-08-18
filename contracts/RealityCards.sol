@@ -466,12 +466,13 @@ contract RealityCards is ERC721Full, Ownable {
     /// @dev also calculates and updates how long the current user has held the token for
     /// @dev is not a problem if called externally, but making internal over public to save gas
     function _collectRent(uint256 _tokenId) internal {
+        uint256 _timeOfThisCollection = now;
+
         //only collect rent if the token is owned (ie, if owned by the contract this implies unowned)
         if (ownerOf(_tokenId) != address(this)) {
             
             uint256 _rentOwed = rentOwed(_tokenId);
             address _currentOwner = ownerOf(_tokenId);
-            uint256 _timeOfThisCollection;
             
             if (_rentOwed >= deposits[_tokenId][_currentOwner]) {
                 // run out of deposit. Calculate time it was actually paid for, then revert to previous owner 
@@ -479,10 +480,7 @@ contract RealityCards is ERC721Full, Ownable {
                 _rentOwed = deposits[_tokenId][_currentOwner]; // take what's left     
                 _revertToPreviousOwner(_tokenId);
                 
-            } else  {
-                // normal collection
-                _timeOfThisCollection = now;
-            }
+            } 
 
             // decrease deposit by rent owed
             deposits[_tokenId][_currentOwner] = deposits[_tokenId][_currentOwner].sub(_rentOwed);
@@ -503,9 +501,8 @@ contract RealityCards is ERC721Full, Ownable {
         }
 
         // timeLastCollected is updated regardless of whether the token is owned, so that the clock starts ticking
-        // ... when the first owner buys it, because this function is run before ownership changes upon calling
-        // ... newRental
-        timeLastCollected[_tokenId] = now;
+        // ... when the first owner buys it, because this function is run before ownership changes upon calling newRental
+        timeLastCollected[_tokenId] = _timeOfThisCollection;
     }
 
     /// @dev depositDai is split into two, because it needs to be called direct from newRental
