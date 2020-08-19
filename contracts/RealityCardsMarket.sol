@@ -7,10 +7,10 @@ import "@nomiclabs/buidler/console.sol";
 import "./interfaces/ICash.sol";
 import "./interfaces/IRealitio.sol";
 
-/// @title RealityCards
+/// @title Reality Cards Market
 /// @author Andrew Stanger
 
-contract RealityCards is ERC721Full, Ownable {
+contract RealityCardsMarket is ERC721Full, Ownable {
 
     using SafeMath for uint256;
 
@@ -83,7 +83,6 @@ contract RealityCards is ERC721Full, Ownable {
     ////////////////////////////////////
 
     constructor(
-        address _owner, 
         uint256 _numberOfTokens, 
         ICash _addressOfCashContract, 
         IRealitio _addressOfRealitioContract, 
@@ -100,9 +99,6 @@ contract RealityCards is ERC721Full, Ownable {
     {
         // resolution time must not be less than locking time, and not greater by more than one week
         require(_marketLockingTime + 1 weeks > _oracleResolutionTime && _marketLockingTime <= _oracleResolutionTime, "Invalid timestamps" );
-
-        // reassign ownership
-        transferOwnership(_owner);
 
         // assign arguments to public variables
         numberOfTokens = _numberOfTokens;
