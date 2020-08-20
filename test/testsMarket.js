@@ -1483,18 +1483,17 @@ it('test payouts (incl deposit returned) when newRental called again by existing
   });
 
   it('check that owner can not be changed unless correct owner', async() => {
-    user = user0;
     // buidler giving me shit when I try and intercept revert message so just testing revert
-    await shouldFail.reverting(realitycards.transferOwnership(user));
-    await realitycards.transferOwnership(user,{from: andrewsAddress});
+    await shouldFail.reverting(realitycards.transferOwnership(user5,{from: user1}));
+    await realitycards.transferOwnership(user5,{from: user0});
     var newOwner = await realitycards.owner.call();
-    assert.equal(newOwner, user);
+    assert.equal(newOwner, user5);
   });
 
   it('check renounce ownership works', async() => {
     user = user0;
     // should work while im the owner
-    await realitycards.renounceOwnership({from: andrewsAddress});
+    await realitycards.renounceOwnership({from: user});
     var newOwner = await realitycards.owner.call();
     assert.equal(newOwner, 0);
   });
@@ -1621,11 +1620,11 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     var marketLockingTime = 69420; 
     var oracleResolutionTime = 69420; 
     // redeply with useExistingQuestion true it should revert because question is changed
-    await shouldFail.reverting.withMessage(RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName), "Content hash does not match");
+    await shouldFail.reverting.withMessage(RealityCards.new(numberOfTokens, cash.address, realitio.address, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName), "Content hash does not match");
     // try again with correct question but made up question Id should fail again
     questionId = '0xb5358101b5dfdf6918d344b751898ad5a3d1738f57c49124edf019ba61bf8f45';
     var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
-    await shouldFail.reverting.withMessage(RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName), "Content hash does not match");
+    await shouldFail.reverting.withMessage(RealityCards.new(numberOfTokens, cash.address, realitio.address, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName), "Content hash does not match");
     // now use correct question Id, should work
     questionId = actualId;
     await RealityCards.new(numberOfTokens, cash.address, realitio.address, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName);
@@ -1731,6 +1730,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await realitycards.changePrice(web3.utils.toWei('50000', 'ether'),2,{ from: user8});
     await realitycards.newRental(web3.utils.toWei('100', 'ether'),4,web3.utils.toWei('100', 'ether'),{ from: user0 });
     await realitycards.depositDai(web3.utils.toWei('1', 'ether'),3,{ from: user8 });
+    await time.increase(time.duration.weeks(2));
     await realitycards.collectRentAllTokens();
     await cash.resetBalance(user0);
     await cash.resetBalance(user1);
@@ -1965,11 +1965,11 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     // resolution time before locking, expect failure
     var oracleResolutionTime = 69419;
     var marketLockingTime = 69420; 
-    await shouldFail.reverting.withMessage(RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName), "Invalid timestamps");
+    await shouldFail.reverting.withMessage(RealityCards.new(numberOfTokens, cash.address, realitio.address, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName), "Invalid timestamps");
     // resolution time > 1 weeks after locking, expect failure
     var oracleResolutionTime = 604810;
     var marketLockingTime = 0; 
-    await shouldFail.reverting.withMessage(RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName), "Invalid timestamps");
+    await shouldFail.reverting.withMessage(RealityCards.new(numberOfTokens, cash.address, realitio.address, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName), "Invalid timestamps");
     // resolution time < 1 week  after locking, no failure
     var oracleResolutionTime = 604790;
     var marketLockingTime = 0; 
