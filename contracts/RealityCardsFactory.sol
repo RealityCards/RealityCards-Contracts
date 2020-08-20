@@ -3,7 +3,6 @@ pragma solidity 0.5.13;
 import "@openzeppelin/contracts/token/ERC721/ERC721Full.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import '@openzeppelin/contracts/utils/Pausable.sol';
 import "@nomiclabs/buidler/console.sol";
 import "./interfaces/ICash.sol";
 import "./interfaces/IRealitio.sol";
@@ -12,71 +11,70 @@ import './RealityCardsMarket.sol';
 /// @title Reality Cards Factory
 /// @author Andrew Stanger
 
-// contract RealityCardsFactory is Ownable, Pausable {
+contract RealityCardsFactory is Ownable {
 
-//     using SafeMath for uint256;
+    using SafeMath for uint256;
 
-//     ////////////////////////////////////
-//     //////// VARIABLES /////////////////
-//     ////////////////////////////////////
+    ////////////////////////////////////
+    //////// VARIABLES /////////////////
+    ////////////////////////////////////
 
-//     ///// CONTRACT VARIABLES /////
-//     IRealitio public realitio;
-//     ICash public cash; 
+    ///// CONTRACT VARIABLES /////
+    IRealitio public realitio;
+    ICash public cash; 
 
-//     mapping(address => bool) public mappingOfMarkets;
-//     address[] public marketAddresses;
+    mapping(address => bool) public mappingOfMarkets;
+    address[] public marketAddresses;
+    address public mostRecentContract;
 
-//     event MarketCreated(address contractAddress);
+    event MarketCreated(address contractAddress);
 
-//     constructor(
-//         ICash _daiAddress,
-//         IRealitio _realitioAddress,
-//     ) public {
-//         cash = _daiAddress;
-//         realitio = _realitioAddress;
-//     }
+    constructor(ICash _daiAddress, IRealitio _realitioAddress) public 
+    {
+        cash = _daiAddress;
+        realitio = _realitioAddress;
+    }
 
-//     /// @notice This contract is the framework of each new market
-//     /// @dev Currently, only owners can generate the markets
-//     /// @param _eventName The event name
-//     /// @param _marketOpeningTime When the market opens
-//     /// @param _marketLockingTime When the market locks
-//     /// @param _marketResolutionTime When the market is set to resolve
-//     /// @param _timeout The timeout period
-//     /// @param _arbitrator The arbitrator address
-//     /// @param _realitioQuestion The question, formatted to suit how realitio required
-//     function createMarket(
-//         string memory _eventName,
-//         uint256 _marketLockingTime,
-//         uint32 _oracleResolutionTime,
-//         string memory _realitioQuestion,
-//         bytes32 _questionId,
-//         bool _useExistingQuestion,
-//         address _arbitrator,
-//         uint32 _timeout,
-//         string memory _tokenName,
-//     ) public virtual onlyOwner whenNotPaused returns (RealityCardsMarket) {
-//         uint256[3] memory marketTimes = [_marketLockingTime, _marketResolutionTime, _timeout];
-//         MBMarket newContract = new RealityCardsMarket({
-//             _daiAddress: dai,
-//             _aaveAddresses: [address(aToken), address(aaveLendingPool), address(aaveLendingPoolCore)],
-//             _realitioAddress: realitio,
-//             _uniswapRouter: uniswapRouter,
-//             _eventName: _eventName,
-//             _marketTimes: marketTimes,
-//             _arbitrator: _arbitrator,
-//             _realitioQuestion: _realitioQuestion,
-//             _outcomeNamesArray: _outcomeNamesArray,
-//             _owner: msg.sender
-//         });
-//         address newAddress = address(newContract);
-//         marketAddresses.push(newAddress);
-//         mappingOfMarkets[newAddress] = true;
-//         mostRecentContract = newAddress;
-//         emit MarketCreated(address(newAddress));
-//         return newContract;
-//     }
+    /// @notice This contract is the framework of each new market
+    /// @dev Currently, only owners can generate the markets
+    /// @param _marketLockingTime When the market locks
+    /// @param _oracleResolutionTime When the market is set to resolve
+    /// @param _timeout The timeout period
+    /// @param _arbitrator The arbitrator address
+    /// @param _realitioQuestion The question, formatted to suit how realitio required
+    function createMarket(
+        uint256 _numberOfTokens,
+        uint32 _marketLockingTime,
+        uint32 _oracleResolutionTime,
+        uint256 _templateId,
+        string memory _realitioQuestion,
+        bytes32 _questionId,
+        bool _useExistingQuestion,
+        address _arbitrator,
+        uint32 _timeout,
+        string memory _tokenName
+    ) public onlyOwner returns (RealityCardsMarket) {
+        RealityCardsMarket newContract = new RealityCardsMarket({
+            _numberOfTokens: _numberOfTokens,
+            _addressOfCashContract: cash,
+            _addressOfRealitioContract: realitio,
+            _marketLockingTime: _marketLockingTime,
+            _oracleResolutionTime: _oracleResolutionTime,
+            _templateId: _templateId,
+            _question: _realitioQuestion,
+            _questionId: _questionId,
+            _useExistingQuestion: _useExistingQuestion,
+            _arbitrator: _arbitrator,
+            _timeout: _timeout,
+            _tokenName: _tokenName
+        });
+        address newAddress = address(newContract);
+        marketAddresses.push(newAddress);
+        mappingOfMarkets[newAddress] = true;
+        mostRecentContract = newAddress;
+        emit MarketCreated(address(newAddress));
+        return newContract;
+    }
 
-// }
+}
 

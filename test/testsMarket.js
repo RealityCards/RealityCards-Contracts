@@ -8,7 +8,7 @@ const {
 } = require('openzeppelin-test-helpers');
 
 // const Token = artifacts.require('./ERC721Full.sol');
-var RealityCards = artifacts.require('./RealityCards.sol');
+var RealityCards = artifacts.require('./RealityCardsMarket.sol');
 var CashMockup = artifacts.require("./mockups/CashMockup.sol");
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 
@@ -42,7 +42,7 @@ contract('RealityCardsTests', (accounts) => {
     var oracleResolutionTime = await time.latest();
     cash = await CashMockup.new();
     realitio = await RealitioMockup.new();
-    realitycards = await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName);
+    realitycards = await RealityCards.new(numberOfTokens, cash.address, realitio.address, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName);
     for (i = 0; i < 20; i++) {
       await realitycards.mintNfts("uri", {from: andrewsAddress});
     }
@@ -1427,7 +1427,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     // undo beforeEach
     marketLockingTime = await 0;
     oracleResolutionTime = await 0;
-    realitycards = await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName); 
+    realitycards = await RealityCards.new(numberOfTokens, cash.address, realitio.address, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName); 
     // check state is 0
     var state = await realitycards.state.call();
     assert.equal(0,state);
@@ -1628,7 +1628,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await shouldFail.reverting.withMessage(RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName), "Content hash does not match");
     // now use correct question Id, should work
     questionId = actualId;
-    await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName);
+    await RealityCards.new(numberOfTokens, cash.address, realitio.address, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName);
   });
 
 
@@ -1973,11 +1973,11 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     // resolution time < 1 week  after locking, no failure
     var oracleResolutionTime = 604790;
     var marketLockingTime = 0; 
-    await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName);
+    await RealityCards.new(numberOfTokens, cash.address, realitio.address, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName);
     // same time, no failure
     var oracleResolutionTime = 0;
     var marketLockingTime = 0; 
-    await RealityCards.new(andrewsAddress, numberOfTokens, cash.address, realitio.address, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName);
+    await RealityCards.new(numberOfTokens, cash.address, realitio.address, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName);
 
   });
 
