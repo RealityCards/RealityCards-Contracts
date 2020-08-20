@@ -76,5 +76,9 @@ contract RealityCardsFactory is Ownable {
         return newContract;
     }
 
+    function getMarkets() public view returns (address[] memory) {
+        return marketAddresses;
+    }
+
 }
 
