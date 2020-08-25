@@ -112,6 +112,8 @@ contract RealityCardsFactory is Ownable, CloneFactory {
             _timeout: _timeout,
             _tokenName: _tokenName
             });
+
+            // RealityCardsMarket(marketAddresses[marketAddresses.length - 1]).transferOwnership({newOwner: address(this)});
     }
 
     function getMarkets() public view returns (address[] memory) {
