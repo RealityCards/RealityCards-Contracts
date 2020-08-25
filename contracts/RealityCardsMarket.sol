@@ -10,7 +10,7 @@ import "./interfaces/IRealitio.sol";
 /// @title Reality Cards Market
 /// @author Andrew Stanger
 
-contract RealityCardsMarket is ERC721Full, Ownable {
+contract RealityCardsMarket is ERC721Full("realitycards", "RC"), Ownable  {
 
     using SafeMath for uint256;
 
@@ -19,6 +19,7 @@ contract RealityCardsMarket is ERC721Full, Ownable {
     ////////////////////////////////////
 
     ///// CONTRACT SETUP /////
+    bool private isInitialized = false;
     /// @dev = how many outcomes/teams/NFTs etc 
     uint256 public numberOfTokens;
     /// @dev counts how many NFTs have been minted 
@@ -82,7 +83,7 @@ contract RealityCardsMarket is ERC721Full, Ownable {
     //////// CONSTRUCTOR ///////////////
     ////////////////////////////////////
 
-    constructor(
+    function initialize(
         uint256 _numberOfTokens, 
         ICash _addressOfCashContract, 
         IRealitio _addressOfRealitioContract, 
@@ -94,9 +95,13 @@ contract RealityCardsMarket is ERC721Full, Ownable {
         bool _useExistingQuestion,
         address _arbitrator, 
         uint32 _timeout,
-        string memory _tokenName) 
-        ERC721Full(_tokenName, "RC") public
-    {
+        string memory _tokenName
+    ) public {
+        require(!isInitialized, 'Contract already initialized.');
+        isInitialized = true;
+
+        updateName(_tokenName);
+        
         // resolution time must not be less than locking time, and not greater by more than one week
         require(_marketLockingTime + 1 weeks > _oracleResolutionTime && _marketLockingTime <= _oracleResolutionTime, "Invalid timestamps" );
 

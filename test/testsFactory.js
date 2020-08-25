@@ -38,43 +38,21 @@ contract('RealityCardsTests', (accounts) => {
   andrewsAddress = accounts[9];
 
   beforeEach(async () => {
+    var marketLockingTime = await time.latest();
+    var oracleResolutionTime = await time.latest();
     cash = await CashMockup.new();
     realitio = await RealitioMockup.new();
+    const rcLib = await RCMarket.new();
     rcfactory = await RCFactory.new(cash.address, realitio.address);
+    await rcfactory.setLibraryAddress(rcLib.address);
+    await rcfactory.createMarket(numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName);
+    const marketAddress = await rcfactory.marketAddresses.call(0);
+    realitycards = await RCMarket.at(marketAddress);
   });
 
   // check that the contract initially owns the token
-  it('create three markets then one test on final market', async () => {
-    var marketLockingTime = await time.latest();
-    var oracleResolutionTime = await time.latest();
-    var address1 = '0xAc5BFb2B621AAcDcEA78eDa76e47449a4a6904e1';
-    var address2 = '0x067D446251AD3d451613C0431068110D4EA5Ce0d';
-    var address3 = '0xc86Fd07F5BAF9e61D4F60479eA6A06712B729B48';
-
-    // first market
-    rcfactory.createMarket(numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName);
-    var marketAddress = await rcfactory.marketAddresses.call(0);
-    assert.equal(marketAddress, address1);
-    var recentAddress = await rcfactory.mostRecentContract.call();
-    assert.equal(recentAddress, address1);
-
-    // second market
-    rcfactory.createMarket(numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName);
-    var marketAddress = await rcfactory.marketAddresses.call(1);
-    assert.equal(marketAddress, address2);
-    var recentAddress = await rcfactory.mostRecentContract.call();
-    assert.equal(recentAddress, address2);
-
-    // third market
-    rcfactory.createMarket(numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName);
-    var marketAddress = await rcfactory.marketAddresses.call(2);
-    assert.equal(marketAddress, address3);
-    var recentAddress = await rcfactory.mostRecentContract.call();
-    assert.equal(recentAddress, address3);
-
-    
+  it('create three markets then one test on final market', async () => {  
     // test withdraw- winner 1
-    realitycards = await RCMarket.at(recentAddress);
     for (i = 0; i < 20; i++) {
         await realitycards.mintNfts("uri", {from: andrewsAddress});
     }
