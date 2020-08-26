@@ -1,8 +1,9 @@
 pragma solidity 0.5.13;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721Full.sol";
-import "@openzeppelin/contracts/ownership/Ownable.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/ERC721Full.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
+import "@openzeppelin/upgrades/contracts/Initializable.sol";
 import "@nomiclabs/buidler/console.sol";
 import "./interfaces/ICash.sol";
 import "./interfaces/IRealitio.sol";
@@ -10,7 +11,7 @@ import "./interfaces/IRealitio.sol";
 /// @title Reality Cards Market
 /// @author Andrew Stanger
 
-contract RealityCardsMarket is ERC721Full("realitycards", "RC"), Ownable  {
+contract RealityCardsMarket is Ownable, ERC721Full {
 
     using SafeMath for uint256;
 
@@ -19,7 +20,6 @@ contract RealityCardsMarket is ERC721Full("realitycards", "RC"), Ownable  {
     ////////////////////////////////////
 
     ///// CONTRACT SETUP /////
-    bool private isInitialized = false;
     /// @dev = how many outcomes/teams/NFTs etc 
     uint256 public numberOfTokens;
     /// @dev counts how many NFTs have been minted 
@@ -84,6 +84,7 @@ contract RealityCardsMarket is ERC721Full("realitycards", "RC"), Ownable  {
     ////////////////////////////////////
 
     function initialize(
+        address _owner,
         uint256 _numberOfTokens, 
         ICash _addressOfCashContract, 
         IRealitio _addressOfRealitioContract, 
@@ -96,11 +97,11 @@ contract RealityCardsMarket is ERC721Full("realitycards", "RC"), Ownable  {
         address _arbitrator, 
         uint32 _timeout,
         string memory _tokenName
-    ) public {
-        require(!isInitialized, 'Contract already initialized.');
-        isInitialized = true;
-
-        updateName(_tokenName);
+    ) public initializer {
+        // initialiiize!
+        Ownable.initialize(_owner);
+        ERC721.initialize();
+        ERC721Metadata.initialize(_tokenName,"RC");
         
         // resolution time must not be less than locking time, and not greater by more than one week
         require(_marketLockingTime + 1 weeks > _oracleResolutionTime && _marketLockingTime <= _oracleResolutionTime, "Invalid timestamps" );

@@ -1,8 +1,7 @@
 pragma solidity 0.5.13;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721Full.sol";
-import "@openzeppelin/contracts/ownership/Ownable.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "@nomiclabs/buidler/console.sol";
 import './lib/CloneFactory.sol';
 import "./interfaces/ICash.sol";
@@ -37,6 +36,7 @@ contract RealityCardsFactory is Ownable, CloneFactory {
     {
         cash = _daiAddress;
         realitio = _realitioAddress;
+        Ownable.initialize(msg.sender);
     }
 
     /// @notice This function sets the library for the contract logic
@@ -52,6 +52,7 @@ contract RealityCardsFactory is Ownable, CloneFactory {
     /// @param _arbitrator The arbitrator address
     /// @param _realitioQuestion The question, formatted to suit how realitio required
     function createMarket(
+        address _owner,
         uint256 _numberOfTokens,
         uint32 _marketLockingTime,
         uint32 _oracleResolutionTime,
@@ -64,13 +65,13 @@ contract RealityCardsFactory is Ownable, CloneFactory {
         string memory _tokenName
     ) public onlyOwner returns (RealityCardsMarket) {
         address newAddress = createClone(libraryAddress);
-
         marketAddresses.push(newAddress);
         mappingOfMarkets[newAddress] = true;
         mostRecentContract = newAddress;
         emit MarketCreated(address(newAddress));
 
         _initLatestMarket(
+            _owner,
             _numberOfTokens, 
             _marketLockingTime, 
             _oracleResolutionTime, 
@@ -87,6 +88,7 @@ contract RealityCardsFactory is Ownable, CloneFactory {
     }
 
     function _initLatestMarket( 
+        address _owner,
         uint256 _numberOfTokens, 
         uint32 _marketLockingTime,
         uint32 _oracleResolutionTime, 
@@ -99,6 +101,7 @@ contract RealityCardsFactory is Ownable, CloneFactory {
         string memory _tokenName
     ) internal {
         RealityCardsMarket(marketAddresses[marketAddresses.length - 1]).initialize({
+            _owner: _owner,
             _numberOfTokens: _numberOfTokens,
             _addressOfCashContract: cash,
             _addressOfRealitioContract: realitio,
