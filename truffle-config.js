@@ -67,7 +67,7 @@ module.exports = {
       network_id: 42,
       gas: 10000000,
       gasPrice: 1000000000, // 1 gwei
-      networkCheckTimeout:6000,
+      networkCheckTimeout:2000,
     },
   },
   compilers: {
