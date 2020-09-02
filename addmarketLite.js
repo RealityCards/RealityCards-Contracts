@@ -1,5 +1,5 @@
 var realityCardsFactory = artifacts.require("RealityCardsFactory");
-var realityCardsMarket = artifacts.require("RealityCardsMarket");
+var realityCardsMarketLite = artifacts.require("RealityCardsMarketLite");
 
 var factoryAddress = '0x88ABFF38c916A08c6E13AB7E49Ece5Ee61fC6c8c';
 
@@ -8,11 +8,9 @@ var marketLockingTime = 1600041601; //Monday, 14-Sep-20 00:00:01 UTC
 var oracleResolutionTime = 1600041601; //Monday, 14-Sep-20 00:00:01 UTC
 var numberOfTokens = 8;
 var question = 'Who will win the 2020 US Tennis Open Mens Singles?␟"Novak Djokovic","Dominic Thiem","Daniil Medvedev","Stefanos Tsitsipas","Alexander Zverev","Matteo Berrettini","David Goffin","Someone else"␟sport␟en_US';
-var tokenName = 'RealityCards_2020usopen';
 
 // variables COMMON
 var templateId = 2;
-var andrewsAddress = '0x34A971cA2fd6DA2Ce2969D716dF922F17aAA1dB0';
 var arbitrator = "0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D"; //kleros 4lyfe
 var timeout = 86400; // 86400 = 1 day
 var useExistingQuestion = false;
@@ -25,16 +23,16 @@ var oracleResolutionTime = 100; //09/13/2020 @ 9:00am (UTC)
 
 module.exports = function() {
     
-  async function createMarket() {
-    //create market
+  async function createMarketLite() {
+    // create market
     let factory = await realityCardsFactory.at(factoryAddress);
-    console.log("CREATING MARKET");
-    await factory.createMarket(andrewsAddress, numberOfTokens, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName);
+    console.log("CREATING LITE MARKET");
+    await factory.createMarketLite(numberOfTokens, marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout);
     var lastAddress = await factory.mostRecentContract.call();
-    console.log("Market created at address: ",lastAddress);
+    console.log("Lite Market created at address: ",lastAddress);
 
     //mint nfts
-    let market = await realityCardsMarket.at(lastAddress);
+    let market = await realityCardsMarketLite.at(lastAddress);
     await market.mintNfts("https://cdn.realitycards.io/nftmetadata/tennis/token0.json");
     await market.mintNfts("https://cdn.realitycards.io/nftmetadata/tennis/token0.json");
     await market.mintNfts("https://cdn.realitycards.io/nftmetadata/tennis/token0.json");
@@ -43,11 +41,11 @@ module.exports = function() {
     await market.mintNfts("https://cdn.realitycards.io/nftmetadata/tennis/token0.json");
     await market.mintNfts("https://cdn.realitycards.io/nftmetadata/tennis/token0.json");
     await market.mintNfts("https://cdn.realitycards.io/nftmetadata/tennis/token0.json");
-    console.log("NFTs minted");
+    console.log("Fake NFTs minted");
     console.log("[safe to exit]");
 
   }
-  createMarket();
+  createMarketLite();
 }
 
 
