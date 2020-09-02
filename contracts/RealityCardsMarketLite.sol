@@ -1,7 +1,5 @@
 pragma solidity 0.5.13;
 
-import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/ERC721Full.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "@openzeppelin/upgrades/contracts/Initializable.sol";
 import "@nomiclabs/buidler/console.sol";
@@ -10,8 +8,10 @@ import "./interfaces/IRealitio.sol";
 
 /// @title Reality Cards Market
 /// @author Andrew Stanger
+/// @dev modified version of RealityCardsMarket to remove NFT element to save on gas
+/// @dev all public variable/function names unchanged so frontend is agnostic to the type of market
 
-contract RealityCardsMarket is Ownable, ERC721Full {
+contract RealityCardsMarketLite is Initializable {
 
     using SafeMath for uint256;
 
@@ -23,19 +23,24 @@ contract RealityCardsMarket is Ownable, ERC721Full {
     /// @dev = how many outcomes/teams/NFTs etc 
     uint256 public numberOfTokens;
     /// @dev counts how many NFTs have been minted 
-    /// @dev when nftMintCount = numberOfTokens, increment state
-    uint256 public nftMintCount;
+    /// @dev when cardMintCount = numberOfTokens, increment state
+    uint256 public cardMintCount;
     /// @dev the question ID of the question on realitio
     bytes32 public questionId;
     uint256 public constant UNRESOLVED_OUTCOME_RESULT = 2**256 - 1;
     /// @dev only for _revertToPreviousOwner to prevent gas limits
     uint256 public constant MAX_ITERATIONS = 10;
-    enum States {NFTSNOTMINTED, OPEN, LOCKED, WITHDRAW}
+    enum States {CARDSNOTMINTED, OPEN, LOCKED, WITHDRAW}
     States public state; 
 
     ///// CONTRACT VARIABLES /////
     IRealitio public realitio;
     ICash public cash; 
+
+    ///// FAKE ERC721 VARIABLES /////
+    string private _baseURI;
+    mapping(uint256 => string) private _tokenURIs;
+    mapping (uint256 => address) private _tokenOwner; 
 
     ///// PRICE, DEPOSITS, RENT /////
     /// @dev in attodai (so $100 = 100000000000000000000)
@@ -84,7 +89,6 @@ contract RealityCardsMarket is Ownable, ERC721Full {
     ////////////////////////////////////
 
     function initialize(
-        address _owner,
         uint256 _numberOfTokens, 
         ICash _addressOfCashContract, 
         IRealitio _addressOfRealitioContract, 
@@ -95,14 +99,8 @@ contract RealityCardsMarket is Ownable, ERC721Full {
         bytes32 _questionId,
         bool _useExistingQuestion,
         address _arbitrator, 
-        uint32 _timeout,
-        string memory _tokenName
+        uint32 _timeout
     ) public initializer {
-        // initialiiize!
-        Ownable.initialize(_owner);
-        ERC721.initialize();
-        ERC721Metadata.initialize(_tokenName,"RC");
-        
         // resolution time must not be less than locking time, and not greater by more than one week
         require(_marketLockingTime + 1 weeks > _oracleResolutionTime && _marketLockingTime <= _oracleResolutionTime, "Invalid timestamps" );
 
@@ -144,16 +142,18 @@ contract RealityCardsMarket is Ownable, ERC721Full {
     event LogRentReturned(address indexed returnedTo, uint256 indexed amountReturned);
     event LogTimeHeldUpdated(uint256 indexed newTimeHeld, address indexed owner, uint256 indexed tokenId);
     event LogStateChange(uint256 indexed newState);
+    event Transfer(address indexed currentOwner, address indexed newOwner, uint256 tokenId);
 
     ////////////////////////////////////
     //////// INITIAL SETUP /////////////
     ////////////////////////////////////
 
-    function mintNfts(string calldata _uri) external checkState(States.NFTSNOTMINTED) {
-        _mint(address(this), nftMintCount); 
-        _setTokenURI(nftMintCount, _uri);
-        nftMintCount = nftMintCount.add(1);
-        if (nftMintCount == numberOfTokens) {
+    /// @dev keeping the same function name to increase compatibility
+    function mintNfts(string calldata _uri) external checkState(States.CARDSNOTMINTED) {
+        _tokenURIs[cardMintCount] = _uri;
+        _tokenOwner[cardMintCount] = address(this);
+        cardMintCount = cardMintCount.add(1);
+        if (cardMintCount == numberOfTokens) {
             _incrementState();
         }
     }
@@ -188,6 +188,24 @@ contract RealityCardsMarket is Ownable, ERC721Full {
     ////////////////////////////////////
     //////// VIEW FUNCTIONS ////////////
     ////////////////////////////////////
+
+    /// @dev modified ERC721 function
+    function tokenURI(uint256 tokenId) external view returns (string memory) {
+        string memory _tokenURI = _tokenURIs[tokenId];
+
+        // Even if there is a base URI, it is only appended to non-empty token-specific URIs
+        if (bytes(_tokenURI).length == 0) {
+            return "";
+        } else {
+            // abi.encodePacked is being used to concatenate strings
+            return string(abi.encodePacked(_baseURI, _tokenURI));
+        }
+    }
+
+    /// @dev modified ERC721 function
+    function ownerOf(uint256 tokenId) public view returns (address) {
+        return _tokenOwner[tokenId];
+    }
 
     /// @dev called in collectRent function, and various other view functions 
     function rentOwed(uint256 _tokenId) public view returns (uint256) {
@@ -335,7 +353,7 @@ contract RealityCardsMarket is Ownable, ERC721Full {
     /// @dev can be called in either locked or withdraw state
     /// @dev public because called by withdrawWinningsAndDeposit
     function withdrawDepositAfterMarketEnded() public {
-        require(state != States.NFTSNOTMINTED, "Incorrect state");
+        require(state != States.CARDSNOTMINTED, "Incorrect state");
         require(state != States.OPEN, "Incorrect state");
         for (uint i = 0; i < numberOfTokens; i++) {
 
@@ -589,12 +607,12 @@ contract RealityCardsMarket is Ownable, ERC721Full {
         emit LogForeclosure(_currentOwner, _tokenId);
     }
 
-    /// @notice transfer ERC 721 between users
-    /// @dev there is no event emitted as this is handled in ERC721.sol
+    /// @notice transfer [FAKE] ERC 721 between users
     function _transferTokenTo(address _currentOwner, address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
         require(_currentOwner != address(0) && _newOwner != address(0) , "Cannot send to/from zero address");
         price[_tokenId] = _newPrice;
-        _transferFrom(_currentOwner, _newOwner, _tokenId);
+        _tokenOwner[_tokenId] = _newOwner;
+        emit Transfer(_currentOwner, _newOwner, _tokenId);
     }
 
     ////////////////////////////////////
@@ -615,14 +633,5 @@ contract RealityCardsMarket is Ownable, ERC721Full {
         state = States.WITHDRAW;
     }
 
-    /// @dev transfers only possible in withdraw state, so override the existing functions
-    function transferFrom(address from, address to, uint256 tokenId) public checkState(States.WITHDRAW) onlyTokenOwner(tokenId) {
-        _transferFrom(from, to, tokenId);
-    }
-
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) public checkState(States.WITHDRAW) onlyTokenOwner(tokenId) {
-        _transferFrom(from, to, tokenId);
-        _data;
-    }
-
 }
+
