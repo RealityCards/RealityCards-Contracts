@@ -7,6 +7,7 @@ import "@openzeppelin/upgrades/contracts/Initializable.sol";
 import "@nomiclabs/buidler/console.sol";
 import "./interfaces/ICash.sol";
 import "./interfaces/IRealitio.sol";
+import "./interfaces/IRealityCardsFactory.sol";
 
 /// @title Reality Cards Market
 /// @author Andrew Stanger
@@ -86,16 +87,12 @@ contract RealityCardsMarket is Ownable, ERC721Full {
     function initialize(
         address _owner,
         uint256 _numberOfTokens, 
-        ICash _addressOfCashContract, 
-        IRealitio _addressOfRealitioContract, 
         uint32 _marketLockingTime,
         uint32 _oracleResolutionTime, 
+        uint32 _timeout,
         uint256 _templateId, 
         string memory _question, 
-        bytes32 _questionId,
-        bool _useExistingQuestion,
         address _arbitrator, 
-        uint32 _timeout,
         string memory _tokenName
     ) public initializer {
         // initialiiize!
