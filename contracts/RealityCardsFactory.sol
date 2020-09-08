@@ -67,8 +67,6 @@ contract RealityCardsFactory is Ownable, CloneFactory {
         uint32 _oracleResolutionTime,
         uint256 _templateId,
         string memory _realitioQuestion,
-        bytes32 _questionId,
-        bool _useExistingQuestion,
         address _arbitrator,
         uint32 _timeout,
         string memory _tokenName
@@ -82,10 +80,10 @@ contract RealityCardsFactory is Ownable, CloneFactory {
                 _numberOfTokens: _numberOfTokens,
                 _marketLockingTime: _marketLockingTime,
                 _oracleResolutionTime: _oracleResolutionTime,
-                _timeout: _timeout,
                 _templateId: _templateId,
                 _question: _realitioQuestion,
                 _arbitrator: _arbitrator,
+                _timeout: _timeout,
                 _tokenName: _tokenName
             });
         } else {
@@ -93,14 +91,10 @@ contract RealityCardsFactory is Ownable, CloneFactory {
 
             RealityCardsMarketLite(marketAddresses[marketAddresses.length - 1]).initialize({
                 _numberOfTokens: _numberOfTokens,
-                _addressOfCashContract: cash,
-                _addressOfRealitioContract: realitio,
                 _marketLockingTime: _marketLockingTime,
                 _oracleResolutionTime: _oracleResolutionTime,
                 _templateId: _templateId,
                 _question: _realitioQuestion,
-                _questionId: _questionId,
-                _useExistingQuestion: _useExistingQuestion,
                 _arbitrator: _arbitrator,
                 _timeout: _timeout
             });

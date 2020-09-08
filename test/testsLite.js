@@ -20,11 +20,8 @@ contract('RealityCardsTestsLite', (accounts) => {
   var numberOfTokens = 20;
   var templateId = 2;
   var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
-  var questionId = '0xb5358101b5dfdf6918d344b751898ad5a3d1738f57c49124edf019ba61bf8f44';
-  var useExistingQuestion = false;
   var arbitrator = "0xA6EAd513D05347138184324392d8ceb24C116118";
   var timeout = 86400;
-  var tokenName = 'PresElection';
 
   user0 = accounts[0];
   user1 = accounts[1];
@@ -45,7 +42,7 @@ contract('RealityCardsTestsLite', (accounts) => {
     const rcLib = await RCMarket.new();
     rcfactory = await RCFactory.new(cash.address, realitio.address);
     await rcfactory.setLibraryAddressLite(rcLib.address);
-    await rcfactory.createMarketLite(numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout);
+    await rcfactory.createMarket(true, '0x0', andrewsAddress, numberOfTokens, marketLockingTime, oracleResolutionTime, templateId, question, arbitrator, timeout, '0');
     const marketAddress = await rcfactory.marketAddresses.call(0);
     realitycards = await RCMarket.at(marketAddress);
     for (i = 0; i < 20; i++) {
@@ -1397,7 +1394,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     // undo beforeEach
     marketLockingTime = await 0;
     oracleResolutionTime = await 0;
-    await rcfactory.createMarketLite(numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout);
+    await rcfactory.createMarket(true, 0, andrewsAddress, numberOfTokens, marketLockingTime, oracleResolutionTime, templateId, question, arbitrator, timeout, 0);
     var recentAddress = await rcfactory.mostRecentContract.call();
     realitycards = await RCMarket.at(recentAddress);
     // check state is 0
@@ -1601,7 +1598,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     await shouldFail.reverting.withMessage(rcfactory.createMarketLite(numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout), "Content hash does not match");
     // now use correct question Id, should work
     questionId = actualId;
-    await rcfactory.createMarketLite(numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout);
+    await rcfactory.createMarket(true, 0, andrewsAddress, numberOfTokens, marketLockingTime, oracleResolutionTime, templateId, question, arbitrator, timeout, 0);
   });
 
 
@@ -1947,11 +1944,11 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     // resolution time < 1 week  after locking, no failure
     var oracleResolutionTime = 604790;
     var marketLockingTime = 0; 
-    await rcfactory.createMarketLite(numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout);
+    await rcfactory.createMarket(true, 0, andrewsAddress, numberOfTokens, marketLockingTime, oracleResolutionTime, templateId, question, arbitrator, timeout, 0);
     // same time, no failure
     var oracleResolutionTime = 0;
     var marketLockingTime = 0; 
-    await rcfactory.createMarketLite(numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout);
+    await rcfactory.createMarket(true, 0, andrewsAddress, numberOfTokens, marketLockingTime, oracleResolutionTime, templateId, question, arbitrator, timeout, 0);
 
   });
 
