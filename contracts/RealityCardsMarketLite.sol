@@ -94,9 +94,9 @@ contract RealityCardsMarketLite is Initializable {
         uint32 _marketLockingTime,
         uint32 _oracleResolutionTime, 
         uint256 _templateId, 
-        string memory _question,
-        uint32 _timeout, 
-        address _arbitrator 
+        string memory _question, 
+        address _arbitrator,
+        uint32 _timeout
     ) public initializer {
         // resolution time must not be less than locking time, and not greater by more than one week
         require(_marketLockingTime + 1 weeks > _oracleResolutionTime && _marketLockingTime <= _oracleResolutionTime, "Invalid timestamps" );

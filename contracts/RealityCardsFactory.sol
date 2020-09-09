@@ -59,7 +59,7 @@ contract RealityCardsFactory is Ownable, CloneFactory {
     /// @param _arbitrator The arbitrator address
     /// @param _realitioQuestion The question, formatted to suit how realitio required
     function createMarket(
-        bool _liteMode,
+        uint32 _mode,
         bytes memory _ipfsHash,
         address _owner,
         uint256 _numberOfTokens,
@@ -73,9 +73,9 @@ contract RealityCardsFactory is Ownable, CloneFactory {
     ) public onlyOwner returns (address)  {
         address _newAddress;
 
-        if (!_liteMode) {
+        if (_mode == 0) {
             _newAddress = createClone(libraryAddress);
-            RealityCardsMarket(marketAddresses[marketAddresses.length - 1]).initialize({
+            RealityCardsMarket(_newAddress).initialize({
                 _owner: _owner,
                 _numberOfTokens: _numberOfTokens,
                 _marketLockingTime: _marketLockingTime,
@@ -86,10 +86,9 @@ contract RealityCardsFactory is Ownable, CloneFactory {
                 _timeout: _timeout,
                 _tokenName: _tokenName
             });
-        } else {
+        } else if (_mode == 1) {
             _newAddress = createClone(libraryAddressLite);
-
-            RealityCardsMarketLite(marketAddresses[marketAddresses.length - 1]).initialize({
+            RealityCardsMarketLite(_newAddress).initialize({
                 _numberOfTokens: _numberOfTokens,
                 _marketLockingTime: _marketLockingTime,
                 _oracleResolutionTime: _oracleResolutionTime,
