@@ -45,7 +45,7 @@ contract('RealityCardsTests', (accounts) => {
     const rcLib = await RCMarket.new();
     rcfactory = await RCFactory.new(cash.address, realitio.address);
     await rcfactory.setLibraryAddress(rcLib.address);
-    await rcfactory.createMarket(andrewsAddress,numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName);
+    await rcfactory.createMarket(0,'0x0',andrewsAddress,numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, arbitrator, timeout, tokenName);
     const marketAddress = await rcfactory.marketAddresses.call(0);
     realitycards = await RCMarket.at(marketAddress);
     for (i = 0; i < 20; i++) {
@@ -1433,7 +1433,7 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     // undo beforeEach
     marketLockingTime = await 0;
     oracleResolutionTime = await 0;
-    await rcfactory.createMarket(andrewsAddress,numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName);
+    await rcfactory.createMarket(0,'0x0',andrewsAddress,numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, arbitrator, timeout, tokenName);
     var recentAddress = await rcfactory.mostRecentContract.call();
     realitycards = await RCMarket.at(recentAddress);
     // check state is 0
@@ -1612,34 +1612,6 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     //check user5 winnings, should fail cos didn't pay any rent
     await shouldFail.reverting.withMessage(realitycards.withdraw({ from: user5 }), "Paid no rent");
   });
-
-  it('check useExistingQuestion', async () => {
-    // someone else deploys question to realitio
-    var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
-    var useExistingQuestion = false;
-    var arbitrator = "0xA6EAd513D05347138184324392d8ceb24C116118";
-    var timeout = 86400;
-    var templateId = 2;
-    var marketLockingTime = 69420; 
-    var oracleResolutionTime = 69420; 
-    await realitio.askQuestion(templateId,question,arbitrator,timeout,oracleResolutionTime,0);
-    var actualId = await realitio.actualQuestionId.call();
-    // change question
-    question = 'Test 7␟"X","Y","Z"␟news-politics␟en_US';
-    var useExistingQuestion = true;
-    var marketLockingTime = 69420; 
-    var oracleResolutionTime = 69420; 
-    // redeply with useExistingQuestion true it should revert because question is changed
-    await shouldFail.reverting.withMessage(rcfactory.createMarket(andrewsAddress,numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName), "Content hash does not match");
-    // try again with correct question but made up question Id should fail again
-    questionId = '0xb5358101b5dfdf6918d344b751898ad5a3d1738f57c49124edf019ba61bf8f45';
-    var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
-    await shouldFail.reverting.withMessage(rcfactory.createMarket(andrewsAddress,numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName), "Content hash does not match");
-    // now use correct question Id, should work
-    questionId = actualId;
-    await rcfactory.createMarket(andrewsAddress,numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName);
-  });
-
 
   it('test a whole bunch of random stuff', async () => {
     /////// SETUP //////
@@ -1975,19 +1947,19 @@ it('test payouts (incl deposit returned) when newRental called again by existing
     // resolution time before locking, expect failure
     var oracleResolutionTime = 69419;
     var marketLockingTime = 69420; 
-    await shouldFail.reverting.withMessage(rcfactory.createMarket(andrewsAddress,numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName), "Invalid timestamps");
+    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',andrewsAddress,numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, arbitrator, timeout, tokenName), "Invalid timestamps");
     // resolution time > 1 weeks after locking, expect failure
     var oracleResolutionTime = 604810;
     var marketLockingTime = 0; 
-    await shouldFail.reverting.withMessage(rcfactory.createMarket(andrewsAddress,numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName), "Invalid timestamps");
+    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',andrewsAddress,numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, arbitrator, timeout, tokenName), "Invalid timestamps");
     // resolution time < 1 week  after locking, no failure
     var oracleResolutionTime = 604790;
     var marketLockingTime = 0; 
-    await rcfactory.createMarket(andrewsAddress,numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName);
+    await rcfactory.createMarket(0,'0x0',andrewsAddress,numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, arbitrator, timeout, tokenName);
     // same time, no failure
     var oracleResolutionTime = 0;
     var marketLockingTime = 0; 
-    await rcfactory.createMarket(andrewsAddress,numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, questionId, useExistingQuestion, arbitrator, timeout, tokenName);
+    await rcfactory.createMarket(0,'0x0',andrewsAddress,numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, arbitrator, timeout, tokenName);
 
   });
 
