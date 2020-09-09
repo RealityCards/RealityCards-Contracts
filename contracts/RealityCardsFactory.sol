@@ -32,7 +32,7 @@ contract RealityCardsFactory is Ownable, CloneFactory {
     address public mostRecentContract;
 
     ///// EVENTS /////
-    event MarketCreated(address contractAddress);
+    event MarketCreated(address contractAddress, bytes ipfsHash);
 
     constructor(ICash _daiAddress, IRealitio _realitioAddress) public 
     {
@@ -59,128 +59,52 @@ contract RealityCardsFactory is Ownable, CloneFactory {
     /// @param _arbitrator The arbitrator address
     /// @param _realitioQuestion The question, formatted to suit how realitio required
     function createMarket(
+        uint32 _mode,
+        bytes memory _ipfsHash,
         address _owner,
         uint256 _numberOfTokens,
         uint32 _marketLockingTime,
         uint32 _oracleResolutionTime,
         uint256 _templateId,
         string memory _realitioQuestion,
-        bytes32 _questionId,
-        bool _useExistingQuestion,
         address _arbitrator,
         uint32 _timeout,
         string memory _tokenName
-    ) public onlyOwner returns (RealityCardsMarket) {
-        address newAddress = createClone(libraryAddress);
-        marketAddresses.push(newAddress);
-        mappingOfMarkets[newAddress] = true;
-        mostRecentContract = newAddress;
-        emit MarketCreated(address(newAddress));
+    ) public onlyOwner returns (address)  {
+        address _newAddress;
 
-        _initMarket(
-            _owner,
-            _numberOfTokens, 
-            _marketLockingTime, 
-            _oracleResolutionTime, 
-            _templateId, 
-            _realitioQuestion, 
-            _questionId, 
-            _useExistingQuestion, 
-            _arbitrator, 
-            _timeout, 
-            _tokenName
-        );
-        
-        return RealityCardsMarket(newAddress);
-    }
-
-    /// @dev As above, but NFT-free version to save gas costs
-    function createMarketLite(
-        uint256 _numberOfTokens,
-        uint32 _marketLockingTime,
-        uint32 _oracleResolutionTime,
-        uint256 _templateId,
-        string memory _realitioQuestion,
-        bytes32 _questionId,
-        bool _useExistingQuestion,
-        address _arbitrator,
-        uint32 _timeout
-    ) public onlyOwner returns (RealityCardsMarketLite) {
-        address newAddress = createClone(libraryAddressLite);
-        marketAddresses.push(newAddress);
-        mappingOfMarkets[newAddress] = true;
-        mostRecentContract = newAddress;
-        emit MarketCreated(address(newAddress));
-
-        _initMarketLite(
-            _numberOfTokens, 
-            _marketLockingTime, 
-            _oracleResolutionTime, 
-            _templateId, 
-            _realitioQuestion, 
-            _questionId, 
-            _useExistingQuestion, 
-            _arbitrator, 
-            _timeout
-        );
-        
-        return RealityCardsMarketLite(newAddress);
-    }
-
-    function _initMarket( 
-        address _owner,
-        uint256 _numberOfTokens, 
-        uint32 _marketLockingTime,
-        uint32 _oracleResolutionTime, 
-        uint256 _templateId, 
-        string memory _realitioQuestion, 
-        bytes32 _questionId,
-        bool _useExistingQuestion,
-        address _arbitrator, 
-        uint32 _timeout,
-        string memory _tokenName
-    ) internal {
-        RealityCardsMarket(marketAddresses[marketAddresses.length - 1]).initialize({
-            _owner: _owner,
-            _numberOfTokens: _numberOfTokens,
-            _addressOfCashContract: cash,
-            _addressOfRealitioContract: realitio,
-            _marketLockingTime: _marketLockingTime,
-            _oracleResolutionTime: _oracleResolutionTime,
-            _templateId: _templateId,
-            _question: _realitioQuestion,
-            _questionId: _questionId,
-            _useExistingQuestion: _useExistingQuestion,
-            _arbitrator: _arbitrator,
-            _timeout: _timeout,
-            _tokenName: _tokenName
+        if (_mode == 0) {
+            _newAddress = createClone(libraryAddress);
+            RealityCardsMarket(_newAddress).initialize({
+                _owner: _owner,
+                _numberOfTokens: _numberOfTokens,
+                _marketLockingTime: _marketLockingTime,
+                _oracleResolutionTime: _oracleResolutionTime,
+                _templateId: _templateId,
+                _question: _realitioQuestion,
+                _arbitrator: _arbitrator,
+                _timeout: _timeout,
+                _tokenName: _tokenName
             });
-    }
-
-    function _initMarketLite( 
-        uint256 _numberOfTokens, 
-        uint32 _marketLockingTime,
-        uint32 _oracleResolutionTime, 
-        uint256 _templateId, 
-        string memory _realitioQuestion, 
-        bytes32 _questionId,
-        bool _useExistingQuestion,
-        address _arbitrator, 
-        uint32 _timeout
-    ) internal {
-        RealityCardsMarketLite(marketAddresses[marketAddresses.length - 1]).initialize({
-            _numberOfTokens: _numberOfTokens,
-            _addressOfCashContract: cash,
-            _addressOfRealitioContract: realitio,
-            _marketLockingTime: _marketLockingTime,
-            _oracleResolutionTime: _oracleResolutionTime,
-            _templateId: _templateId,
-            _question: _realitioQuestion,
-            _questionId: _questionId,
-            _useExistingQuestion: _useExistingQuestion,
-            _arbitrator: _arbitrator,
-            _timeout: _timeout
+        } else if (_mode == 1) {
+            _newAddress = createClone(libraryAddressLite);
+            RealityCardsMarketLite(_newAddress).initialize({
+                _numberOfTokens: _numberOfTokens,
+                _marketLockingTime: _marketLockingTime,
+                _oracleResolutionTime: _oracleResolutionTime,
+                _templateId: _templateId,
+                _question: _realitioQuestion,
+                _arbitrator: _arbitrator,
+                _timeout: _timeout
             });
+        }
+        
+        marketAddresses.push(_newAddress);
+        mappingOfMarkets[_newAddress] = true;
+        mostRecentContract = _newAddress;
+        emit MarketCreated(address(_newAddress), _ipfsHash);
+
+        return _newAddress;
     }
 
     function getMarkets() public view returns (address[] memory) {

@@ -7,6 +7,7 @@ import "@openzeppelin/upgrades/contracts/Initializable.sol";
 import "@nomiclabs/buidler/console.sol";
 import "./interfaces/ICash.sol";
 import "./interfaces/IRealitio.sol";
+import "./interfaces/IFactory.sol";
 
 /// @title Reality Cards Market
 /// @author Andrew Stanger
@@ -35,7 +36,7 @@ contract RealityCardsMarket is Ownable, ERC721Full {
 
     ///// CONTRACT VARIABLES /////
     IRealitio public realitio;
-    ICash public cash; 
+    ICash public cash;
 
     ///// PRICE, DEPOSITS, RENT /////
     /// @dev in attodai (so $100 = 100000000000000000000)
@@ -86,14 +87,10 @@ contract RealityCardsMarket is Ownable, ERC721Full {
     function initialize(
         address _owner,
         uint256 _numberOfTokens, 
-        ICash _addressOfCashContract, 
-        IRealitio _addressOfRealitioContract, 
         uint32 _marketLockingTime,
         uint32 _oracleResolutionTime, 
         uint256 _templateId, 
         string memory _question, 
-        bytes32 _questionId,
-        bool _useExistingQuestion,
         address _arbitrator, 
         uint32 _timeout,
         string memory _tokenName
@@ -112,19 +109,12 @@ contract RealityCardsMarket is Ownable, ERC721Full {
         oracleResolutionTime = _oracleResolutionTime;
         
         // external contract variables:
-        realitio = _addressOfRealitioContract;
-        cash = _addressOfCashContract;
+        IFactory _factory = IFactory(msg.sender);
+        realitio = _factory.realitio();
+        cash = _factory.cash();
 
-        // create the question on Realitio or pass the questionId
-        if (_useExistingQuestion) {
-            // check you are passing the correct ID
-            bytes32 _myQuestionContentHash = keccak256(abi.encodePacked(_templateId, _oracleResolutionTime, _question));
-            bytes32 _existingQuestionContentHash = _getHashExistingQuestion(_questionId);
-            require(_myQuestionContentHash == _existingQuestionContentHash, "Content hash does not match");
-            questionId = _questionId;
-        } else {
-            questionId = _postQuestion(_templateId, _question, _arbitrator, _timeout, _oracleResolutionTime, 0);
-        }
+        // create the question on Realitio
+        questionId = _postQuestion(_templateId, _question, _arbitrator, _timeout, _oracleResolutionTime, 0);
     } 
 
     ////////////////////////////////////
