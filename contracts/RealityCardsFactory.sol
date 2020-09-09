@@ -8,6 +8,7 @@ import "./interfaces/ICash.sol";
 import "./interfaces/IRealitio.sol";
 import './RealityCardsMarket.sol';
 import './RealityCardsMarketLite.sol';
+import './RealityCardsMarketXdai.sol';
 
 /// @title Reality Cards Factory
 /// @author Andrew Stanger
@@ -26,7 +27,8 @@ contract RealityCardsFactory is Ownable, CloneFactory {
 
     ///// MARKET ADDRESSES /////
     address public libraryAddress; // the single deployment of the contract logic
-    address public libraryAddressLite; // the single deployment of the contract logic
+    address public libraryAddressLite; 
+    address public libraryAddressXdai; 
     mapping(address => bool) public mappingOfMarkets;
     address[] public marketAddresses;
     address public mostRecentContract;
@@ -49,6 +51,11 @@ contract RealityCardsFactory is Ownable, CloneFactory {
     /// @notice This function sets the library for the contract logic
     function setLibraryAddressLite(address _libraryAddress) public onlyOwner {
         libraryAddressLite = _libraryAddress;
+    }
+
+    /// @notice This function sets the library for the contract logic
+    function setLibraryAddressXdai(address _libraryAddress) public onlyOwner {
+        libraryAddressXdai = _libraryAddress;
     }
 
     /// @notice This contract is the framework of each new market
@@ -96,6 +103,19 @@ contract RealityCardsFactory is Ownable, CloneFactory {
                 _question: _realitioQuestion,
                 _arbitrator: _arbitrator,
                 _timeout: _timeout
+            });
+        } else if (_mode == 2) {
+            _newAddress = createClone(libraryAddressXdai);
+            RealityCardsMarketXdai(_newAddress).initialize({
+                _owner: _owner,
+                _numberOfTokens: _numberOfTokens,
+                _marketLockingTime: _marketLockingTime,
+                _oracleResolutionTime: _oracleResolutionTime,
+                _templateId: _templateId,
+                _question: _realitioQuestion,
+                _arbitrator: _arbitrator,
+                _timeout: _timeout,
+                _tokenName: _tokenName
             });
         }
         

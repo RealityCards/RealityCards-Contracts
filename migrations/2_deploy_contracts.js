@@ -2,6 +2,7 @@
 var RealityCardsFactory = artifacts.require("./RealityCardsFactory.sol");
 var RealityCardsMarket = artifacts.require("./RealityCardsMarket.sol");
 var RealityCardsMarketLite = artifacts.require("./RealityCardsMarketLite.sol");
+var RealityCardsMarketXdai = artifacts.require("./RealityCardsMarketXdai.sol");
 
 // KOVAN ADDRESSES
 const cashAddressKovan = '0x86309723166C177591960E5A9a5ecb7056564331';
@@ -18,11 +19,15 @@ module.exports = async (deployer, network) =>
         deployer.deploy(RealityCardsFactory, cashAddressKovan, realitioAddressKovan).then(async () => {
             return deployer.deploy(RealityCardsMarket, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0).then(async () => {
                 return deployer.deploy(RealityCardsMarketLite, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0).then(async () => {
-                    market = await RealityCardsMarket.deployed();
-                    marketLite = await RealityCardsMarketLite.deployed();
-                    factory = await RealityCardsFactory.deployed();
-                    await factory.setLibraryAddress(market.address);
-                    await factory.setLibraryAddressLite(marketLite.address);
+                    return deployer.deploy(RealityCardsMarketXdai, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0).then(async () => {
+                        market = await RealityCardsMarket.deployed();
+                        marketLite = await RealityCardsMarketLite.deployed();
+                        marketXdai = await RealityCardsMarketXdai.deployed();
+                        factory = await RealityCardsFactory.deployed();
+                        await factory.setLibraryAddress(market.address);
+                        await factory.setLibraryAddressLite(marketLite.address);
+                        await factory.setLibraryAddressXdai(marketXdai.address);
+                    });
                 });
             });
         });      
