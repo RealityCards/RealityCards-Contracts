@@ -1,7 +1,7 @@
 var realityCardsFactory = artifacts.require("RealityCardsFactory");
 var realityCardsMarketLite = artifacts.require("RealityCardsMarketLite");
 
-var factoryAddress = '0x88ABFF38c916A08c6E13AB7E49Ece5Ee61fC6c8c';
+var factoryAddress = process.env.FACTORY_ADDRESS;
 
 // variables market specific
 var marketLockingTime = 1600041601; //Monday, 14-Sep-20 00:00:01 UTC
@@ -13,8 +13,6 @@ var question = 'Who will win the 2020 US Tennis Open Mens Singles?␟"Novak Djok
 var templateId = 2;
 var arbitrator = "0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D"; //kleros 4lyfe
 var timeout = 86400; // 86400 = 1 day
-var useExistingQuestion = false;
-var questionId = '0xc8dae2bccb46477df016e190ae986d5feadd8600f445991c6b8bbe8fe70598bc';
 
 // kovan overrides (*COMMENT OUT IF MAINNET*)
 var timeout = 30;

@@ -51,11 +51,89 @@ contract('RealityCardsTests Xdai version', (accounts) => {
     }
   });
 
+  async function newRental(price, outcome, deposit, user) {
+    await realitycards.newRental(price,outcome,{ from: user, value: deposit });
+  }
+  
+
+    // check that the contract initially owns the token
+    it('getOwner', async () => {
+    var i;
+    for (i = 0; i < 20; i++) {
+        var owner = await realitycards.ownerOf.call(i);
+        assert.equal(owner, realitycards.address);
+    }
+    });
+
+
+  // check that the contract initially owns the token
+  it('getName', async () => {
+    var name = await realitycards.name.call();
+    assert.equal(name, 'PresElection');
+  });
+
+    // check fundamentals first
+    it('user 0 rent Token first time and check: price, deposits, owner etc', async () => {
+    user = user0;
+    // setup
+    await cash.faucet(web3.utils.toWei('100', 'ether'), { from: user });
+    await cash.approve(realitycards.address, web3.utils.toWei('100', 'ether'), { from: user });
+    await newRental(web3.utils.toWei('1', 'ether'), 4, web3.utils.toWei('10', 'ether'), user);
+    // tests
+    var price = await realitycards.price.call(4);
+    assert.equal(price, web3.utils.toWei('1', 'ether'));
+    var deposit = await realitycards.deposits.call(4, user);
+    assert.equal(deposit, web3.utils.toWei('10', 'ether'));
+    var owner = await realitycards.ownerOf.call(4);
+    assert.equal(owner, user);
+    // 1 because nothing stored in zero
+    var ownerTracker = await realitycards.ownerTracker.call(4, 1);
+    assert.equal(ownerTracker[1].toString(), web3.utils.toWei('1', 'ether').toString());
+    assert.equal(ownerTracker[0], user);
+    });
+    
+// // do the same thing- does it still work? 
+//     it('user 0 rent Token second time and check: various', async () => {
+//     user = user0;
+//     // setup from previous test
+//     await cash.faucet(web3.utils.toWei('100', 'ether'), { from: user });
+//     await cash.approve(realitycards.address, web3.utils.toWei('100', 'ether'), { from: user });
+//     await realitycards.newRental(web3.utils.toWei('1', 'ether'), 4, web3.utils.toWei('10', 'ether'), { from: user });
+//     // new setup
+//     await realitycards.newRental(web3.utils.toWei('2', 'ether'),4,web3.utils.toWei('10', 'ether'),{ from: user });
+//     // tests
+//     var price = await realitycards.price.call(4);
+//     assert.equal(price, web3.utils.toWei('2', 'ether'));
+//     var deposit = await realitycards.deposits.call(4, user);
+//     var depositShouldBe = web3.utils.toWei('20', 'ether');
+//     var difference = Math.abs(deposit.toString()-depositShouldBe.toString())
+//     assert.isBelow(difference/deposit,0.00001);
+//     var owner = await realitycards.ownerOf.call(4);
+//     assert.equal(owner, user);
+//     var ownerTracker = await realitycards.ownerTracker.call(4, 1);
+//     assert.equal(ownerTracker[1].toString(), web3.utils.toWei('2', 'ether').toString());
+//     assert.equal(ownerTracker[0], user);
+//     });
+
+//     // make sure it throws a revert when it is supposed to
+//     it('user 1 rent Token fail states', async () => {
+//     // setup from previous test
+//     user = user0;
+//     await cash.faucet(web3.utils.toWei('100', 'ether'), { from: user });
+//     await cash.approve(realitycards.address, web3.utils.toWei('100', 'ether'), { from: user });
+//     await realitycards.newRental(web3.utils.toWei('1', 'ether'), 4, web3.utils.toWei('10', 'ether'), { from: user });
+//     await realitycards.newRental(web3.utils.toWei('2', 'ether'),4,web3.utils.toWei('10', 'ether'),{ from: user });
+//     // tests
+//     await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('2', 'ether'),4,web3.utils.toWei('1', 'ether'),{ from: user}), "Price not 10% higher");
+//     await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('3', 'ether'),20,web3.utils.toWei('0', 'ether'),{ from: user}), "This token does not exist");
+//     await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('3', 'ether'),4,web3.utils.toWei('100', 'ether'),{ from: user}), "Insufficient balance");
+//     });
+
     // test the payout functions work fine, with different winners each time
   it('test withdraw- winner 1', async () => {
     /////// SETUP //////
     //rent losing teams
-    await realitycards.newRental(web3.utils.toWei('1', 'ether'),2,{ from: user0, value: web3.utils.toWei('10', 'ether') }); //used deposit of 10
+    await newRental(web3.utils.toWei('1', 'ether'),2,web3.utils.toWei('10', 'ether'),user0 ); //used deposit of 10
     await realitycards.newRental(web3.utils.toWei('2', 'ether'),3,{ from: user1, value: web3.utils.toWei('20', 'ether') }); //used deposit of 20
     //rent winning team
     await realitycards.newRental(web3.utils.toWei('1', 'ether'),1,{ from: user0, value: web3.utils.toWei('10', 'ether') }); //used deposit of 7

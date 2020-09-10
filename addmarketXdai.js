@@ -31,7 +31,7 @@ module.exports = function() {
     console.log("CREATING XDAI MARKET");
     var transaction = await factory.createMarket(
       2,
-      '0x0'
+      '0x0',
       andrewsAddress,
       numberOfTokens,
       marketLockingTime,
