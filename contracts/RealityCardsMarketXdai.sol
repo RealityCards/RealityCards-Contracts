@@ -238,7 +238,7 @@ contract RealityCardsMarketXdai is Ownable, ERC721Full {
     function _sendCash(address _to, uint256 _amount) internal { 
         address _thisAddressNotPayable = _to;
         address payable _recipient = address(uint160(_thisAddressNotPayable)); // <-- this is required to cast address to address payable
-        _recipient.transfer(_amount);
+        _recipient.call.value(_amount);
     }
 
     ////////////////////////////////////

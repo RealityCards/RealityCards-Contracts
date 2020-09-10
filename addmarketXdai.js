@@ -3,7 +3,7 @@
 var realityCardsFactory = artifacts.require("RealityCardsFactory");
 var realityCardsMarket = artifacts.require("RealityCardsMarketXdai");
 
-var factoryAddress = process.env.FACTORY_ADDRESS;
+var factoryAddress = process.env.FACTORY_ADDRESS_XDAI;
 
 // variables market specific
 var marketLockingTime = 1600041601; //Monday, 14-Sep-20 00:00:01 UTC
@@ -52,25 +52,25 @@ module.exports = function() {
       "https://cdn.realitycards.io/nftmetadata/tennis/token0.json"
     );
     await market.mintNfts(
-      "https://cdn.realitycards.io/nftmetadata/tennis/token0.json"
+      "https://cdn.realitycards.io/nftmetadata/tennis/token1.json"
     );
     await market.mintNfts(
-      "https://cdn.realitycards.io/nftmetadata/tennis/token0.json"
+      "https://cdn.realitycards.io/nftmetadata/tennis/token2.json"
     );
     await market.mintNfts(
-      "https://cdn.realitycards.io/nftmetadata/tennis/token0.json"
+      "https://cdn.realitycards.io/nftmetadata/tennis/token3.json"
     );
     await market.mintNfts(
-      "https://cdn.realitycards.io/nftmetadata/tennis/token0.json"
+      "https://cdn.realitycards.io/nftmetadata/tennis/token4.json"
     );
     await market.mintNfts(
-      "https://cdn.realitycards.io/nftmetadata/tennis/token0.json"
+      "https://cdn.realitycards.io/nftmetadata/tennis/token5.json"
     );
     await market.mintNfts(
-      "https://cdn.realitycards.io/nftmetadata/tennis/token0.json"
+      "https://cdn.realitycards.io/nftmetadata/tennis/token6.json"
     );
     await market.mintNfts(
-      "https://cdn.realitycards.io/nftmetadata/tennis/token0.json"
+      "https://cdn.realitycards.io/nftmetadata/tennis/token7.json"
     );
     console.log("NFTs minted");
     process.exit();

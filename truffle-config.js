@@ -69,6 +69,16 @@ module.exports = {
       gasPrice: 1000000000, // 1 gwei
       networkCheckTimeout: 5000,
     },
+    xdai: {
+        provider: function() {
+              return new HDWalletProvider(
+                MNEMONIC,
+             "https://dai.poa.network")
+        },
+        network_id: 100,
+        gas: 5000000,
+        gasPrice: 1000000000
+  },
   },
   compilers: {
     solc: {
