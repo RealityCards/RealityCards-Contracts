@@ -6,12 +6,12 @@ var realityCardsMarket = artifacts.require("RealityCardsMarketXdai");
 var factoryAddress = process.env.FACTORY_ADDRESS_XDAI;
 
 // variables market specific
-var marketLockingTime = 1600041601; //Monday, 14-Sep-20 00:00:01 UTC
-var oracleResolutionTime = 1600041601; //Monday, 14-Sep-20 00:00:01 UTC
-var numberOfTokens = 8;
+var marketLockingTime = 1600646401; //Monday, 21-Sep-20 00:00:01 UTC
+var oracleResolutionTime = 1600646401; //Monday, 21-Sep-20 00:00:01 UTC
+var numberOfTokens = 5;
 var question =
   'Who will win the 2020 US Tennis Open Mens Singles?␟"Novak Djokovic","Dominic Thiem","Daniil Medvedev","Stefanos Tsitsipas","Alexander Zverev","Matteo Berrettini","David Goffin","Someone else"␟sport␟en_US';
-var tokenName = "RealityCards_2020usopen";
+var tokenName = "RealityCards_STAKEPRICE";
 
 // variables COMMON
 var templateId = 2;
@@ -20,9 +20,9 @@ var arbitrator = "0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D"; //kleros 4lyfe
 var timeout = 86400; // 86400 = 1 day
 
 // kovan overrides (*COMMENT OUT IF MAINNET*)
-var timeout = 30;
-var marketLockingTime = 100; //09/13/2020 @ 3:00am (UTC)
-var oracleResolutionTime = 100; //09/13/2020 @ 9:00am (UTC)
+// var timeout = 30;
+// var marketLockingTime = 100; //09/13/2020 @ 3:00am (UTC)
+// var oracleResolutionTime = 100; //09/13/2020 @ 9:00am (UTC)
 
 module.exports = function() {
   async function createMarket() {
@@ -49,29 +49,20 @@ module.exports = function() {
     //mint nfts
     let market = await realityCardsMarket.at(lastAddress);
     await market.mintNfts(
-      "https://cdn.realitycards.io/nftmetadata/tennis/token0.json"
+      "https://cdn.realitycards.io/nftmetadata/stake/token0.json"
     );
     await market.mintNfts(
-      "https://cdn.realitycards.io/nftmetadata/tennis/token1.json"
+      "https://cdn.realitycards.io/nftmetadata/stake/token1.json"
     );
     await market.mintNfts(
-      "https://cdn.realitycards.io/nftmetadata/tennis/token2.json"
+      "https://cdn.realitycards.io/nftmetadata/stake/token2.json"
     );
     await market.mintNfts(
-      "https://cdn.realitycards.io/nftmetadata/tennis/token3.json"
+      "https://cdn.realitycards.io/nftmetadata/stake/token3.json"
     );
     await market.mintNfts(
-      "https://cdn.realitycards.io/nftmetadata/tennis/token4.json"
-    );
-    await market.mintNfts(
-      "https://cdn.realitycards.io/nftmetadata/tennis/token5.json"
-    );
-    await market.mintNfts(
-      "https://cdn.realitycards.io/nftmetadata/tennis/token6.json"
-    );
-    await market.mintNfts(
-      "https://cdn.realitycards.io/nftmetadata/tennis/token7.json"
-    );
+      "https://cdn.realitycards.io/nftmetadata/stake/token4.json"
+      );
     console.log("NFTs minted");
     process.exit();
   }

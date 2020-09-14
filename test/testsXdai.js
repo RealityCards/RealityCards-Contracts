@@ -75,8 +75,6 @@ contract('RealityCardsTests Xdai version', (accounts) => {
   async function faucet(dummy, dummy2) {}
   async function approve(dummy, dummy2, dummy3) {}
 
-
-
     // check that the contract initially owns the token
     it('getOwner', async () => {
     var i;
@@ -604,6 +602,69 @@ contract('RealityCardsTests Xdai version', (accounts) => {
     var balanceAfter = await web3.eth.getBalance(user2);
     var winningsSentToUser = balanceAfter - balanceBefore;
     var winningsShouldBe = ether('75').mul(new BN('691200')).div(new BN('1900800'));
+    var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
+    assert.isBelow(difference/winningsSentToUser,0.00001);
+    // check random user can't withdraw
+    await shouldFail.reverting.withMessage(realitycards.withdraw({ from: user6 }), "Not a winner");
+  });
+
+  it('test sponsor', async () => {
+    await realitycards.sponsor({ value: web3.utils.toWei('75', 'ether'), from: user3 });
+    /////// SETUP //////
+    //rent losing teams
+    await newRental(web3.utils.toWei('1', 'ether'),2,web3.utils.toWei('10', 'ether'),user0 ); //used deposit of 10
+    await newRental(web3.utils.toWei('2', 'ether'),3,web3.utils.toWei('20', 'ether'),user1 );  //used deposit of 20
+    //rent winning team
+    await newRental(web3.utils.toWei('1', 'ether'),1,web3.utils.toWei('10', 'ether'),user0 );  //used deposit of 7
+    await time.increase(time.duration.weeks(1));
+    await newRental(web3.utils.toWei('2', 'ether'),1,web3.utils.toWei('20', 'ether'),user1 );  //used deposit of 14
+    await time.increase(time.duration.weeks(1));
+    await newRental(web3.utils.toWei('3', 'ether'),1,web3.utils.toWei('24', 'ether'),user2 );  //used deposit of 24
+    await time.increase(time.duration.weeks(2)); 
+    // winner 1: 
+    // totalcollected = 75, //now 150
+    // paid: 0: 17, 1: 34, 2: 30
+    // total days: 22 = 1900800 seconds
+    // time: 0: 7 days (604800) 1: 7 days 2: 8 days (691200)
+    // winner 2: 
+    // totalcollected = 75, 
+    // paid: 0: 10
+    // total days: 22 = 1900800 seconds
+    // time: 0: 10 days (604800) 
+    ////////////////////////
+    await realitycards.lockMarket(); 
+    // set winner 1
+    await realitycards.determineWinner2(1,{ from:andrewsAddress}); 
+    ////////////////////////
+    // total deposits = 75, check:
+    var totalCollected = await realitycards.totalCollected.call();
+    var totalCollectedShouldBe = web3.utils.toWei('150', 'ether');
+    var difference = Math.abs(totalCollected.toString()-totalCollectedShouldBe.toString());
+    assert.isBelow(difference/totalCollected,0.00001);
+    //check user0 winnings
+    var balanceBefore = await web3.eth.getBalance(user0);
+    await withdraw(user0);
+    var balanceAfter = await web3.eth.getBalance(user0);
+    var winningsSentToUser = balanceAfter - balanceBefore;
+    var winningsShouldBe = ether('150').mul(new BN('604800')).div(new BN('1900800'));
+    var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
+    assert.isBelow(difference/winningsSentToUser,0.00001);
+    //check user0 cant withdraw again
+    await shouldFail.reverting.withMessage(withdraw(user0), "Already withdrawn");
+    //check user1 winnings
+    var balanceBefore = await web3.eth.getBalance(user1);
+    await withdraw(user1 );
+    var balanceAfter = await web3.eth.getBalance(user1);
+    var winningsSentToUser = balanceAfter - balanceBefore;
+    var winningsShouldBe = ether('150').mul(new BN('604800')).div(new BN('1900800'));
+    var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
+    assert.isBelow(difference/winningsSentToUser,0.00001);
+    //check user2 winnings
+    var balanceBefore = await web3.eth.getBalance(user2);
+    await withdraw(user2);
+    var balanceAfter = await web3.eth.getBalance(user2);
+    var winningsSentToUser = balanceAfter - balanceBefore;
+    var winningsShouldBe = ether('150').mul(new BN('691200')).div(new BN('1900800'));
     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     // check random user can't withdraw
