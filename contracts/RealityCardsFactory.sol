@@ -32,6 +32,7 @@ contract RealityCardsFactory is Ownable, CloneFactory {
     address public libraryAddress; // the single deployment of the contract logic
     address public libraryAddressLite; 
     address public libraryAddressXdai; 
+    address public libraryAddressXdaiV1;
     address public treasuryAddress; 
     bool public treasuryAddressSet = false;
     mapping(address => bool) public mappingOfMarkets;

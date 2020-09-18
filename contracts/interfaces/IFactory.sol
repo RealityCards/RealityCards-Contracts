@@ -7,5 +7,5 @@ interface IFactory
 {
     function realitio() external returns (IRealitio);
     function cash() external returns (ICash);
-    function treasuryAddress() returns (address);
+    function treasuryAddress() external returns (address);
 }

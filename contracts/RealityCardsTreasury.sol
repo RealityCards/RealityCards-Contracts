@@ -30,6 +30,12 @@ contract RealityCardsTreasury {
     mapping (address => uint256) public totalRentalAmount; 
 
     ////////////////////////////////////
+    //////// EVENTS ////////////////////
+    ////////////////////////////////////
+    event LogDepositIncreased(uint256 indexed daiDeposited, address indexed sentBy);
+    event LogDepositWithdrawal(uint256 indexed daiWithdrawn, address indexed returnedTo);
+
+    ////////////////////////////////////
     /////////// MODIFIERS //////////////
     ////////////////////////////////////
 
@@ -39,13 +45,18 @@ contract RealityCardsTreasury {
         assert(_contractBalance == totalDeposits + totalMarketPots);
     }
 
+    modifier onlyMarkets {
+        require(isMarket[msg.sender], "Not authorised");
+        _;
+    }
+
     ////////////////////////////////////
     ///////// VIEW FUNCTIONS ///////////
     ////////////////////////////////////
 
     /// @dev returns the deposit left for the specific market
-    function getDepositPerMarket(address currentOwner, uint256 _thisRentalAmount) public view {
-        return ((deposits[_currentOwner].mul(_thisRentalAmount)).div(totalRentalAmount[currentOwner]));
+    function getDepositPerMarket(address _currentOwner, uint256 _thisRentalAmount) public view {
+        return ((deposits[_currentOwner].mul(_thisRentalAmount)).div(totalRentalAmount[_currentOwner]));
     }
 
     ////////////////////////////////////
@@ -98,9 +109,16 @@ contract RealityCardsTreasury {
     ////////////////////////////////////
     /// @dev these functions can only be called by an existing RC Market instance
 
+    function updateTotalRentalAmount(address _owner, uint256 _price, bool _exit) external onlyMarkets() {
+        if (!_exit) {
+            totalRentalAmount[_owner] = totalRentalAmount[_owner].add(_price);
+        } else {
+            totalRentalAmount[_owner] = totalRentalAmount[_owner].sub(_price);
+        }
+    }
+
     /// @dev a rental payment is equivilent to moving to market pot from user's deposit
-    function payRent(address _recipient, uint256 _dai) external balancedBooks() {
-        require(isMarket[msg.sender], "Not authorised");
+    function payRent(address _recipient, uint256 _dai) external balancedBooks() onlyMarkets() {
         marketPot[msg.sender] = marketPot[msg.sender].add(_dai);
         deposits[_recipient] = deposits[_recipient].sub(_dai);
         totalMarketPots = totalMarketPots.add(_dai);
@@ -108,8 +126,7 @@ contract RealityCardsTreasury {
     }
 
     /// @dev a payout is equivilent to moving from market pot to user's deposit
-    function payout(address _recipient, uint256 _dai) external balancedBooks() {
-        require(isMarket[msg.sender], "Not authorised");
+    function payout(address _recipient, uint256 _dai) external balancedBooks() onlyMarkets {
         marketPot[msg.sender] = marketPot[msg.sender].sub(_dai);
         deposits[_recipient] = deposits[_recipient].add(_dai);
         totalMarketPots = totalMarketPots.sub(_dai);
