@@ -55,7 +55,7 @@ contract RealityCardsTreasury {
     ////////////////////////////////////
 
     /// @dev returns the deposit left for the specific market
-    function getDepositPerMarket(address _currentOwner, uint256 _thisRentalAmount) public view {
+    function getDepositPerMarket(address _currentOwner, uint256 _thisRentalAmount) public view returns(uint256) {
         return ((deposits[_currentOwner].mul(_thisRentalAmount)).div(totalRentalAmount[_currentOwner]));
     }
 
@@ -68,7 +68,7 @@ contract RealityCardsTreasury {
     }
 
     function addMarket(address _newMarket) external {
-        require(msg.sender == factoryAddress, "not factory");
+        require(msg.sender == factoryAddress, "Not factory");
         isMarket[_newMarket] = true;
     }
 
@@ -126,7 +126,7 @@ contract RealityCardsTreasury {
     }
 
     /// @dev a payout is equivilent to moving from market pot to user's deposit
-    function payout(address _recipient, uint256 _dai) external balancedBooks() onlyMarkets {
+    function payout(address _recipient, uint256 _dai) external balancedBooks() onlyMarkets() {
         marketPot[msg.sender] = marketPot[msg.sender].sub(_dai);
         deposits[_recipient] = deposits[_recipient].add(_dai);
         totalMarketPots = totalMarketPots.sub(_dai);
@@ -145,7 +145,9 @@ contract RealityCardsTreasury {
         totalDeposits = totalDeposits.sub(_dai);
         address _thisAddressNotPayable = msg.sender;
         address payable _recipient = address(uint160(_thisAddressNotPayable));
-        _recipient.call.value(_dai)("");
+        (bool _success, bytes memory data) = _recipient.call.value(_dai)("");
+        require(_success, "Transfer failed");
+        data; // suppress compilation warning
         emit LogDepositWithdrawal(_dai, msg.sender);
     }
 

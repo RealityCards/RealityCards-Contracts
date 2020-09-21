@@ -110,7 +110,7 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
         // external contract variables:
         IFactory _factory = IFactory(msg.sender);
         realitio = _factory.realitio();
-        treasury = _factory.treasuryAddress();
+        treasury = _factory.treasury();
         assert(address(realitio) != address(0));
         assert(address(treasury) != address(0));
 
@@ -199,12 +199,6 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
         } else {
             return _depositForThisMarket.sub(_rentOwed);
         }
-    }
-
-    /// @dev this is now duff. To remove. Keeping for now so front end does not break
-    function userRemainingDeposit(uint256 _tokenId) external view returns (uint256) {
-        _tokenId;
-        return 0;
     }
 
     /// @dev for front end only
@@ -403,7 +397,7 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
             
             uint256 _rentOwed = rentOwed(_tokenId);
             address _currentOwner = ownerOf(_tokenId);
-            uint256 _deposit = treasury.deposits[_currentOwner];
+            uint256 _deposit = treasury.deposits(_currentOwner);
             
             if (_rentOwed >= _deposit) {
                 // run out of deposit. Calculate time it was actually paid for, then revert to previous owner 
@@ -446,7 +440,7 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
             currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].sub(1); // currentOwnerIndex will now point to  previous owner
             _index = currentOwnerIndex[_tokenId]; // just for readability
             _previousOwner = ownerTracker[_tokenId][_index].owner;
-            _previousOwnersDeposit = treasury.deposits[_previousOwner];
+            _previousOwnersDeposit = treasury.deposits(_previousOwner);
 
             // if no previous owners. price -> zero, foreclose
             if (_index == 0) {

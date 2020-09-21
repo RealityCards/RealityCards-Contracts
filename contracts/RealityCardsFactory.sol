@@ -33,8 +33,6 @@ contract RealityCardsFactory is Ownable, CloneFactory {
     address public libraryAddressLite; 
     address public libraryAddressXdai; 
     address public libraryAddressXdaiV1;
-    address public treasuryAddress; 
-    bool public treasuryAddressSet = false;
     mapping(address => bool) public mappingOfMarkets;
     address[] public marketAddresses;
     address public mostRecentContract;
@@ -87,7 +85,6 @@ contract RealityCardsFactory is Ownable, CloneFactory {
         uint32 _timeout,
         string memory _tokenName
     ) public onlyOwner returns (address)  {
-        assert(treasuryAddressSet);
         address _newAddress;
 
         if (_mode == 0) {
