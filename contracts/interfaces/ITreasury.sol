@@ -8,4 +8,5 @@ interface ITreasury
     function deposits(address) external returns (uint256);
     function getDepositPerMarket(address,uint256) external view returns (uint256);
     function updateTotalRentalAmount(address,uint256,bool) external;
+    function setFactoryAddress(address) external returns(bool);
 }

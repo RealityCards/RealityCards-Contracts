@@ -360,15 +360,27 @@ contract RealityCardsMarketXdai is Ownable, ERC721Full {
     /// @dev basically functions that have checkState(States.OPEN) modifier
 
     /// @notice collects rent for all tokens
-    /// @dev cannot be external because it is called within the lockContract function, therefore public
     function collectRentAllTokens() public checkState(States.OPEN) {
        for (uint i = 0; i < numberOfTokens; i++) {
             _collectRent(i);
         }
     }
+
+    /// @notice rent every Card at the minimum price
+    function rentAllCards() external payable {
+        for (uint i = 0; i < numberOfTokens; i++) {
+            if (ownerOf(i) != msg.sender) {
+                uint _newPrice;
+                if (price[i]>0) {
+                    _newPrice = price[i].mul(11).div(10);
+                }
+                newRental(_newPrice, i);
+            }
+        }
+    }
     
     /// @notice to rent a token
-    function newRental(uint256 _newPrice, uint256 _tokenId) external payable checkState(States.OPEN) tokenExists(_tokenId) {
+    function newRental(uint256 _newPrice, uint256 _tokenId) public payable checkState(States.OPEN) tokenExists(_tokenId) {
         uint256 _deposit = msg.value;
         uint256 _currentPricePlusTenPercent = price[_tokenId].mul(11).div(10);
         uint256 _oneHoursDeposit = _newPrice.div(24);

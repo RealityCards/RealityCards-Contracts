@@ -46,6 +46,7 @@ contract RealityCardsFactory is Ownable, CloneFactory {
         realitio = _realitioAddress;
         treasury = _treasuryAddress;
         Ownable.initialize(msg.sender);
+        assert(treasury.setFactoryAddress(address(this)));
     }
 
     /// @notice These functions set the library for the contract logic

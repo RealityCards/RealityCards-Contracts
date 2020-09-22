@@ -322,10 +322,15 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
     }
 
     /// @notice rent every Card at the minimum price
-    function rentAllCards() external {
+    function rentAllCards() external  {
         for (uint i = 0; i < numberOfTokens; i++) {
-            uint256 _currentPricePlusTenPercent = price[i].mul(11).div(10);
-            newRental(_currentPricePlusTenPercent, i);
+            if (ownerOf(i) != msg.sender) {
+                uint _newPrice;
+                if (price[i]>0) {
+                    _newPrice = price[i].mul(11).div(10);
+                }
+                newRental(_newPrice, i);
+            }
         }
     }
     
@@ -365,13 +370,17 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
     /// @notice stop renting a token
     /// @dev public because called by exitAll()
     function exit(uint256 _tokenId) public {
+        require(ownerOf(_tokenId) == msg.sender, "Not owner");
         _revertToPreviousOwner(_tokenId);
     }
 
     /// @notice stop renting all tokens
     function exitAll() external {
         for (uint i = 0; i < numberOfTokens; i++) {
-            exit(i);
+            if (ownerOf(i) == msg.sender)
+            {
+                exit(i);
+            }
         }
     }
 
@@ -454,7 +463,7 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
         // if the above loop did not end in foreclose, then transfer to previous owner
         if (ownerOf(_tokenId) != address(this)) {
             // update totalRentalAmount on Treasury 
-            treasury.updateTotalRentalAmount(msg.sender,price[_tokenId],true);
+            treasury.updateTotalRentalAmount(ownerOf(_tokenId),price[_tokenId],true);
             // transfer to previous owner
             address _currentOwner = ownerOf(_tokenId);
             uint256 _oldPrice = ownerTracker[_tokenId][_index].price;

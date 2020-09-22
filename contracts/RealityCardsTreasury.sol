@@ -18,6 +18,7 @@ contract RealityCardsTreasury {
 
     /// @dev address of the Factory so only the Factory can add new markets
     address public factoryAddress;
+    bool public factoryAddressSet = false;
     /// @dev so only markets can withdraw funds
     mapping (address => bool) public isMarket;
     /// @dev keeps track of all the deposits for each user
@@ -50,6 +51,11 @@ contract RealityCardsTreasury {
         _;
     }
 
+    modifier initialised {
+        require(factoryAddressSet, "Factory address not set");
+        _;
+    }
+
     ////////////////////////////////////
     ///////// VIEW FUNCTIONS ///////////
     ////////////////////////////////////
@@ -63,11 +69,14 @@ contract RealityCardsTreasury {
     ////////// INITIALISATION //////////
     ////////////////////////////////////
 
-    constructor (address _factoryAddress) public {
+    function setFactoryAddress(address _factoryAddress) external returns(bool) {
+        require(!factoryAddressSet, "Factory address already set");
         factoryAddress = _factoryAddress;
+        factoryAddressSet = true;
+        return true;
     }
 
-    function addMarket(address _newMarket) external {
+    function addMarket(address _newMarket) external initialised() {
         require(msg.sender == factoryAddress, "Not factory");
         isMarket[_newMarket] = true;
     }
@@ -76,7 +85,7 @@ contract RealityCardsTreasury {
     /// DEPOSIT & WITHDRAW FUNCTIONS ///
     ////////////////////////////////////
 
-    function increaseDeposit() external payable balancedBooks() {
+    function deposit() external payable balancedBooks() initialised() {
         uint256 _dai = msg.value;
         deposits[msg.sender] = deposits[msg.sender].add(_dai);
         totalDeposits = totalDeposits.add(_dai);
@@ -139,9 +148,11 @@ contract RealityCardsTreasury {
 
     /// @dev this is the only function where funds leave the contract
     function _withdrawDeposit(uint256 _dai) internal  {
-        // this is an assert because safe math should enforce this
-        assert (_dai >= deposits[msg.sender]); 
+        // this is an assert because its reduced to their deposit already in withdrawDeposit
+        assert (_dai <= deposits[msg.sender]); 
+        console.log(deposits[msg.sender]);
         deposits[msg.sender] = deposits[msg.sender].sub(_dai);
+        console.log(deposits[msg.sender]);
         totalDeposits = totalDeposits.sub(_dai);
         address _thisAddressNotPayable = msg.sender;
         address payable _recipient = address(uint160(_thisAddressNotPayable));
