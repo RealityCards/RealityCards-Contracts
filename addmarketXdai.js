@@ -6,12 +6,11 @@ var realityCardsMarket = artifacts.require("RealityCardsMarketXdai");
 var factoryAddress = process.env.FACTORY_ADDRESS_XDAI;
 
 // variables market specific
-var marketLockingTime = 1600646401; //Monday, 21-Sep-20 00:00:01 UTC
-var oracleResolutionTime = 1600646401; //Monday, 21-Sep-20 00:00:01 UTC
-var numberOfTokens = 5;
-var question =
-  'Who will win the 2020 US Tennis Open Mens Singles?␟"Novak Djokovic","Dominic Thiem","Daniil Medvedev","Stefanos Tsitsipas","Alexander Zverev","Matteo Berrettini","David Goffin","Someone else"␟sport␟en_US';
-var tokenName = "RealityCards_STAKEPRICE";
+var marketLockingTime = 1601251201; // Monday, 28-Sep-20 00:00:01 UTC in RFC 2822
+var oracleResolutionTime = 1601251201; // Monday, 28-Sep-20 00:00:01 UTC in RFC 2822
+var numberOfTokens = 4;
+var question = 'na';
+var tokenName = "RealityCards_UNIPRICE";
 
 // variables COMMON
 var templateId = 2;
@@ -49,20 +48,17 @@ module.exports = function() {
     //mint nfts
     let market = await realityCardsMarket.at(lastAddress);
     await market.mintNfts(
-      "https://cdn.realitycards.io/nftmetadata/stake/token0.json"
+      "https://cdn.realitycards.io/nftmetadata/uni/token0.json"
     );
     await market.mintNfts(
-      "https://cdn.realitycards.io/nftmetadata/stake/token1.json"
+      "https://cdn.realitycards.io/nftmetadata/uni/token1.json"
     );
     await market.mintNfts(
-      "https://cdn.realitycards.io/nftmetadata/stake/token2.json"
+      "https://cdn.realitycards.io/nftmetadata/uni/token2.json"
     );
     await market.mintNfts(
-      "https://cdn.realitycards.io/nftmetadata/stake/token3.json"
+      "https://cdn.realitycards.io/nftmetadata/uni/token3.json"
     );
-    await market.mintNfts(
-      "https://cdn.realitycards.io/nftmetadata/stake/token4.json"
-      );
     console.log("NFTs minted");
     process.exit();
   }
