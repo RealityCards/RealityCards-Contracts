@@ -41,7 +41,7 @@ contract('RealityCardsTests Xdai version', (accounts) => {
     cash = await CashMockup.new();
     realitio = await RealitioMockup.new();
     const rcLib = await RCMarket.new();
-    rcfactory = await RCFactory.new(cash.address, realitio.address);
+    rcfactory = await RCFactory.new(cash.address, realitio.address, realitio.address);
     await rcfactory.setLibraryAddressXdai(rcLib.address);
     await rcfactory.createMarket(2,'0x0',andrewsAddress,numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, arbitrator, timeout, tokenName);
     const marketAddress = await rcfactory.marketAddresses.call(0);
@@ -670,6 +670,36 @@ contract('RealityCardsTests Xdai version', (accounts) => {
     // check random user can't withdraw
     await shouldFail.reverting.withMessage(realitycards.withdraw({ from: user6 }), "Not a winner");
   });
+
+//   it('test rentAllCards', async () => {
+//     // rent 0, 1, 2 for incremening
+//     await newRental(web3.utils.toWei('1', 'ether'),0,web3.utils.toWei('10', 'ether'),user0 ); 
+//     await newRental(web3.utils.toWei('2', 'ether'),1,web3.utils.toWei('20', 'ether'),user0 ); 
+//     await newRental(web3.utils.toWei('3', 'ether'),2,web3.utils.toWei('20', 'ether'),user0 );
+//     await realitycards.rentAllCards({from: user1});
+//     // check price is correct
+//     var price0 = realitycards.price.call(0);
+//     var price1 = realitycards.price.call(0);
+//     var price2 = realitycards.price.call(0);
+//     var price3 = realitycards.price.call(0);
+//     assert.equal(price0,web3.utils.toWei('1.1', 'ether'));
+//     assert.equal(price1,web3.utils.toWei('2.2', 'ether'));
+//     assert.equal(price2,web3.utils.toWei('3.3', 'ether'));
+//     assert.equal(price3,0);
+//     //check the dude owns them all
+//     var owner0 = await realitycards.ownerOf.call(0);
+//     var owner1 = await realitycards.ownerOf.call(1);
+//     var owner2 = await realitycards.ownerOf.call(2);
+//     var owner3 = await realitycards.ownerOf.call(3);
+//     var owner10 = await realitycards.ownerOf.call(10);
+//     assert.equal(owner0,user1);
+//     assert.equal(owner1,user1);
+//     assert.equal(owner2,user1);
+//     assert.equal(owner3,user1);
+//     assert.equal(owner10,user1);
+//   });
+
+
 
 });
 

@@ -6,9 +6,11 @@ import "@nomiclabs/buidler/console.sol";
 import './lib/CloneFactory.sol';
 import "./interfaces/ICash.sol";
 import "./interfaces/IRealitio.sol";
+import "./interfaces/ITreasury.sol";
 import './RealityCardsMarket.sol';
 import './RealityCardsMarketLite.sol';
 import './RealityCardsMarketXdai.sol';
+import './RealityCardsMarketXdaiV1.sol';
 
 /// @title Reality Cards Factory
 /// @author Andrew Stanger
@@ -24,11 +26,13 @@ contract RealityCardsFactory is Ownable, CloneFactory {
     ///// CONTRACT VARIABLES /////
     IRealitio public realitio;
     ICash public cash; 
+    ITreasury public treasury;
 
     ///// MARKET ADDRESSES /////
     address public libraryAddress; // the single deployment of the contract logic
     address public libraryAddressLite; 
     address public libraryAddressXdai; 
+    address public libraryAddressXdaiV1;
     mapping(address => bool) public mappingOfMarkets;
     address[] public marketAddresses;
     address public mostRecentContract;
@@ -36,26 +40,30 @@ contract RealityCardsFactory is Ownable, CloneFactory {
     ///// EVENTS /////
     event MarketCreated(address contractAddress, bytes ipfsHash);
 
-    constructor(ICash _daiAddress, IRealitio _realitioAddress) public 
+    constructor(ICash _daiAddress, IRealitio _realitioAddress, ITreasury _treasuryAddress) public 
     {
         cash = _daiAddress;
         realitio = _realitioAddress;
+        treasury = _treasuryAddress;
         Ownable.initialize(msg.sender);
+        assert(treasury.setFactoryAddress(address(this)));
     }
 
-    /// @notice This function sets the library for the contract logic
+    /// @notice These functions set the library for the contract logic
     function setLibraryAddress(address _libraryAddress) public onlyOwner {
         libraryAddress = _libraryAddress;
     }
 
-    /// @notice This function sets the library for the contract logic
     function setLibraryAddressLite(address _libraryAddress) public onlyOwner {
         libraryAddressLite = _libraryAddress;
     }
 
-    /// @notice This function sets the library for the contract logic
     function setLibraryAddressXdai(address _libraryAddress) public onlyOwner {
         libraryAddressXdai = _libraryAddress;
+    }
+
+    function setLibraryAddressXdaiV1(address _libraryAddress) public onlyOwner {
+        libraryAddressXdaiV1 = _libraryAddress;
     }
 
     /// @notice This contract is the framework of each new market
@@ -117,6 +125,20 @@ contract RealityCardsFactory is Ownable, CloneFactory {
                 _timeout: _timeout,
                 _tokenName: _tokenName
             });
+        } else if (_mode == 3) {
+            _newAddress = createClone(libraryAddressXdaiV1);
+            RealityCardsMarketXdaiV1(_newAddress).initialize({
+                _owner: _owner,
+                _numberOfTokens: _numberOfTokens,
+                _marketLockingTime: _marketLockingTime,
+                _oracleResolutionTime: _oracleResolutionTime,
+                _templateId: _templateId,
+                _question: _realitioQuestion,
+                _arbitrator: _arbitrator,
+                _timeout: _timeout,
+                _tokenName: _tokenName
+            });
+            treasury.addMarket(_newAddress);
         }
         
         marketAddresses.push(_newAddress);
