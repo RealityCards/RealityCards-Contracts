@@ -149,10 +149,11 @@ contract RealityCardsTreasury {
     /// @dev this is the only function where funds leave the contract
     function _withdrawDeposit(uint256 _dai) internal  {
         // this is an assert because its reduced to their deposit already in withdrawDeposit
+        // console.log("_dai is ",_dai);
         assert (_dai <= deposits[msg.sender]); 
-        console.log(deposits[msg.sender]);
+        // console.log("deposits before is ",deposits[msg.sender]);
         deposits[msg.sender] = deposits[msg.sender].sub(_dai);
-        console.log(deposits[msg.sender]);
+        console.log("deposits after is ",deposits[msg.sender]);
         totalDeposits = totalDeposits.sub(_dai);
         address _thisAddressNotPayable = msg.sender;
         address payable _recipient = address(uint160(_thisAddressNotPayable));

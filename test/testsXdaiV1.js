@@ -45,11 +45,19 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     rcreference = await RCMarket.new();
     rcfactory = await RCFactory.new(cash.address, realitio.address, treasury.address);
     await rcfactory.setLibraryAddressXdaiV1(rcreference.address);
+    //first market
     await rcfactory.createMarket(3,'0x0',andrewsAddress,numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, arbitrator, timeout, tokenName);
     const marketAddress = await rcfactory.marketAddresses.call(0);
     realitycards = await RCMarket.at(marketAddress);
     for (i = 0; i < 20; i++) {
         await realitycards.mintNfts("uri", {from: andrewsAddress});
+    }
+    //second market
+    await rcfactory.createMarket(3,'0x0',andrewsAddress,numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, arbitrator, timeout, tokenName);
+    const marketAddress = await rcfactory.marketAddresses.call(1);
+    realitycards2 = await RCMarket.at(marketAddress);
+    for (i = 0; i < 20; i++) {
+        await realitycards2.mintNfts("uri", {from: andrewsAddress});
     }
   });
 
@@ -61,6 +69,11 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
   async function newRental(price, outcome, user) {
     price = web3.utils.toWei(price.toString(), 'ether');
     await realitycards.newRental(price,outcome,{ from: user});
+  }
+
+  async function newRental2(price, outcome, user) {
+    price = web3.utils.toWei(price.toString(), 'ether');
+    await realitycards2.newRental(price,outcome,{ from: user});
   }
 
   async function changePrice(price, outcome, userx) {
@@ -303,20 +316,26 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     //     assert.isBelow(difference/timeHeld,0.001);
     //   });
   
-    //   it('test withdrawDeposit- no failures', async () => {
-    //     user = user0;
-    //     await depositDai(10,user);
-    //     await newRental(1,0,user);
-    //     //withdraw half. We cannot withdraw all as _collectrent is run which means there may
-    //     //... not be enough. Exit is the function to withdraw all. 
-    //     var deposit = await treasury.deposits.call(user); 
-    //     assert.equal(deposit, web3.utils.toWei('10', 'ether')); 
-    //     await withdrawDeposit(5,user);
-    //     var deposit = await treasury.deposits.call(user); 
-    //     var depositShouldBe = web3.utils.toWei('5', 'ether');
-    //     var difference = Math.abs(deposit.toString()-depositShouldBe.toString());
-    //     assert.isBelow(difference/deposit,0.00001);
-    //   });
+      it('test withdrawDeposit- no failures', async () => {
+        user = user0;
+        await depositDai(10,user);
+        await newRental(24,0,user);
+        //withdraw half. We cannot withdraw all as _collectrent is run which means there may
+        //... not be enough. Exit is the function to withdraw all. 
+        var deposit = await treasury.deposits.call(user); 
+        assert.equal(deposit, web3.utils.toWei('10', 'ether')); 
+        await withdrawDeposit(5,user);
+        var deposit = await treasury.deposits.call(user); 
+        var depositShouldBe = web3.utils.toWei('5', 'ether');
+        var difference = Math.abs(deposit.toString()-depositShouldBe.toString());
+        assert.isBelow(difference/deposit,0.00001);
+        // withdraw the rest, should only allow you to withdraw 4
+        await withdrawDeposit(5,user);
+        var deposit = await treasury.deposits.call(user); 
+        var depositShouldBe = web3.utils.toWei('1', 'ether');
+        var difference = Math.abs(deposit.toString()-depositShouldBe.toString());
+        assert.isBelow(difference/deposit,0.00001);
+      });
   
       it('test withdrawDeposit- withdraw too much', async () => {
         //setup
@@ -330,13 +349,32 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         await withdrawDeposit(1000,user);
         var balanceAfter = await web3.eth.getBalance(user);
         var depositWithdrawn = await balanceAfter - balanceBefore;
-        console.log(depositWithdrawn);
-        var depositWithdrawnShouldBe = web3.utils.toWei('9', 'ether');
+        // can only withdraw 8 because 9 left but will keep 1 left for future hour
+        var depositWithdrawnShouldBe = web3.utils.toWei('8', 'ether');
         var difference = Math.abs(depositWithdrawn.toString() - depositWithdrawnShouldBe.toString());
         assert.isBelow(difference/depositWithdrawn,0.001);
         //original user tries to withdraw again, there should be zero withdrawn
-        var deposit = await treasury.deposits.call(user);
-        assert.equal(deposit,0);
+        var balanceBefore = await web3.eth.getBalance(user);
+        await withdrawDeposit(1000,user);
+        var balanceAfter = await web3.eth.getBalance(user);
+        var depositWithdrawn = await balanceAfter - balanceBefore;
+        assert.equal(depositWithdrawn,0);
+      });
+
+      it('test withdrawDeposit- multiple markets', async () => {
+        user = user0;
+        await depositDai(10,user);
+        await newRental(24,0,user);
+        await newRental2(48,0,user);
+        // withdraw all, should be 3 left therefore only withdraw 7
+        var balanceBefore = await web3.eth.getBalance(user);
+        await withdrawDeposit(1000,user);
+        var balanceAfter = await web3.eth.getBalance(user);
+        var depositWithdrawn = await balanceAfter - balanceBefore;
+        var depositWithdrawnShouldBe = web3.utils.toWei('7', 'ether');
+        var difference = Math.abs(depositWithdrawn.toString() - depositWithdrawnShouldBe.toString());
+        assert.isBelow(difference/depositWithdrawn,0.001);
+        //original user tries to withdraw again, there should be zero withdrawn
         var balanceBefore = await web3.eth.getBalance(user);
         await withdrawDeposit(1000,user);
         var balanceAfter = await web3.eth.getBalance(user);
