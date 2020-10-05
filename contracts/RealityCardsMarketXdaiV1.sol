@@ -340,7 +340,7 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
         require(_newPrice >= _currentPricePlusTenPercent, "Price not 10% higher");
         require(_newPrice >= 1 ether, "Minimum rental 1 Dai");
         
-        _collectRent(_tokenId);
+        collectRentAllTokens();
 
         address _currentOwner = ownerOf(_tokenId);
 
