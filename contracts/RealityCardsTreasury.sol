@@ -27,11 +27,10 @@ contract RealityCardsTreasury {
     /// @dev keeps track of rental payments made
     mapping (address => uint256) public marketPot;
     uint256 public totalMarketPots;
-    /// @dev sum of prices of all Cards for each user 
-    mapping (address => uint256) public totalRentalAmount; 
-    /// @dev first hour of each rental is specific to each Card
+    /// @dev first ten mins of each rental is specific to each Card
     /// @dev market -> user -> tokenId -> deposit
-    mapping (address => mapping (address => mapping (uint256 => uint256)) ) public oneHoursDeposit;
+    mapping (address => mapping (address => mapping (uint256 => uint256))) public cardSpecificDeposits;
+    
 
 //     this is what we need to do:
 
@@ -67,15 +66,6 @@ contract RealityCardsTreasury {
     }
 
     ////////////////////////////////////
-    ///////// VIEW FUNCTIONS ///////////
-    ////////////////////////////////////
-
-    /// @dev returns the deposit left for the specific market
-    function getDepositPerMarket(address _currentOwner, uint256 _thisRentalAmount) public view returns(uint256) {
-        return ((deposits[_currentOwner].mul(_thisRentalAmount)).div(totalRentalAmount[_currentOwner]));
-    }
-
-    ////////////////////////////////////
     ////////// INITIALISATION //////////
     ////////////////////////////////////
 
@@ -102,68 +92,12 @@ contract RealityCardsTreasury {
         emit LogDepositIncreased(_dai, msg.sender);
     }
 
-    /// @notice withdraw deposit
-    /// @dev must leave enough for one hour's rental across all Cards
-    function withdrawDeposit(uint256 _daiToWithdraw) external balancedBooks() {
-        uint256 _minDepositToLeave = totalRentalAmount[msg.sender].div(24);
-        uint256 _maxDaiToWithdraw = deposits[msg.sender].sub(_minDepositToLeave);
-        if (_daiToWithdraw > _maxDaiToWithdraw) {
-            _daiToWithdraw = _maxDaiToWithdraw;
-        }
-
-        _withdrawDeposit(_daiToWithdraw);
-    }
-
-    /// @notice withdraw deposit
-    /// @dev must leave enough for one hour's rental across all Cards
-    function withdrawMaxDeposit() external balancedBooks() {
-        uint256 _minDepositToLeave = totalRentalAmount[msg.sender].div(24);
-        uint256 _maxDaiToWithdraw = deposits[msg.sender].sub(_minDepositToLeave);
-        
-        _withdrawDeposit(_maxDaiToWithdraw);
-    }
-
-    ////////////////////////////////////
-    //////    MARKET CALLABLE     //////
-    ////////////////////////////////////
-    /// @dev these functions can only be called by an existing RC Market instance
-
-    function updateTotalRentalAmount(address _owner, uint256 _price, bool _exit) external onlyMarkets() {
-        if (!_exit) {
-            totalRentalAmount[_owner] = totalRentalAmount[_owner].add(_price);
-        } else {
-            totalRentalAmount[_owner] = totalRentalAmount[_owner].sub(_price);
-        }
-    }
-
-    /// @dev a rental payment is equivilent to moving to market pot from user's deposit
-    function payRent(address _recipient, uint256 _dai) external balancedBooks() onlyMarkets() {
-        marketPot[msg.sender] = marketPot[msg.sender].add(_dai);
-        deposits[_recipient] = deposits[_recipient].sub(_dai);
-        totalMarketPots = totalMarketPots.add(_dai);
-        totalDeposits = totalDeposits.sub(_dai);
-    }
-
-    /// @dev a payout is equivilent to moving from market pot to user's deposit
-    function payout(address _recipient, uint256 _dai) external balancedBooks() onlyMarkets() {
-        marketPot[msg.sender] = marketPot[msg.sender].sub(_dai);
-        deposits[_recipient] = deposits[_recipient].add(_dai);
-        totalMarketPots = totalMarketPots.sub(_dai);
-        totalDeposits = totalDeposits.add(_dai);
-    }
-
-    ////////////////////////////////////
-    //////////   INTERNAL   ////////////
-    ////////////////////////////////////
-
     /// @dev this is the only function where funds leave the contract
-    function _withdrawDeposit(uint256 _dai) internal  {
-        // this is an assert because its reduced to their deposit already in withdrawDeposit
-        // console.log("_dai is ",_dai);
-        assert (_dai <= deposits[msg.sender]); 
-        // console.log("deposits before is ",deposits[msg.sender]);
+    function withdrawDeposit(uint256 _dai) external balancedBooks()  {
+        if (_dai > deposits[msg.sender]) {
+            _dai = deposits[msg.sender];
+        }
         deposits[msg.sender] = deposits[msg.sender].sub(_dai);
-        console.log("deposits after is ",deposits[msg.sender]);
         totalDeposits = totalDeposits.sub(_dai);
         address _thisAddressNotPayable = msg.sender;
         address payable _recipient = address(uint160(_thisAddressNotPayable));
@@ -171,6 +105,56 @@ contract RealityCardsTreasury {
         require(_success, "Transfer failed");
         data; // suppress compilation warning
         emit LogDepositWithdrawal(_dai, msg.sender);
+    }
+
+    ////////////////////////////////////
+    //////    MARKET CALLABLE     //////
+    ////////////////////////////////////
+    /// only markets can call these functions
+
+    /// @dev moves ten minutes' deposit into a seperate pot
+    function newRental(address _user, uint256 _tokenId, uint256 _price) external balancedBooks() onlyMarkets() {
+        uint256 _tenMinsDeposit = _price.div(24*6);
+        uint256 _depositToMove = _tenMinsDeposit.sub(cardSpecificDeposits[msg.sender][_user][_tokenId]);
+        require(deposits[_user] >= _depositToMove, "Insufficient deposit");
+        // move the deposit
+        deposits[_user] = deposits[_user].sub(_depositToMove);
+        cardSpecificDeposits[msg.sender][_user][_tokenId] = cardSpecificDeposits[msg.sender][_user][_tokenId].add(_depositToMove);
+    }
+
+    /// @dev a rental payment is equivilent to moving to market pot from user's deposit
+    function payRent(address _user, uint256 _dai, uint256 _tokenId, bool _exitFlag) external balancedBooks() onlyMarkets() {
+        uint256 _cardSpecificDeposit = cardSpecificDeposits[msg.sender][_user][_tokenId];
+        if (!_exitFlag) {
+            if (_cardSpecificDeposit == 0) {
+                // no specific deposit left, take from general deposit 
+                deposits[_user] = deposits[_user].sub(_dai);
+            } else if (_cardSpecificDeposit < _dai) {
+                // specific deposit left, but not enough, zero it out and take remainder from general deposit
+                deposits[_user] = deposits[_user].sub(_dai.sub(_cardSpecificDeposit));
+                cardSpecificDeposits[msg.sender][_user][_tokenId] = 0;
+            } else {
+                // specific deposit sufficient
+                cardSpecificDeposits[msg.sender][_user][_tokenId] = cardSpecificDeposits[msg.sender][_user][_tokenId].sub(_dai);
+            }
+        } else {
+            // _collectRent in the market should have already reduced _dai
+            // to _cardSpecificDeposit if 
+            assert(_dai >= _cardSpecificDeposit);
+            cardSpecificDeposits[msg.sender][_user][_tokenId] = cardSpecificDeposits[msg.sender][_user][_tokenId].sub(_dai);
+        }
+        
+        marketPot[msg.sender] = marketPot[msg.sender].add(_dai);
+        totalMarketPots = totalMarketPots.add(_dai);
+        totalDeposits = totalDeposits.sub(_dai);
+    }
+
+    /// @dev a payout is equivilent to moving from market pot to user's deposit
+    function payout(address _user, uint256 _dai) external balancedBooks() onlyMarkets() {
+        marketPot[msg.sender] = marketPot[msg.sender].sub(_dai);
+        deposits[_user] = deposits[_user].add(_dai);
+        totalMarketPots = totalMarketPots.sub(_dai);
+        totalDeposits = totalDeposits.add(_dai);
     }
 
 }

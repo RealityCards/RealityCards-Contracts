@@ -48,7 +48,10 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
     mapping (uint256 => uint256) public collectedPerToken;
     /// @dev an easy way to track the above across all tokens
     uint256 public totalCollected; 
-
+    /// @dev tells the contract to exit position after ten mins deposit used
+    /// @dev user => tokenId => bool
+    mapping (address => mapping (uint256 => bool)) public exitFlag;
+ 
     ///// TIME /////
     /// @dev how many seconds each user has held each token for, for determining winnings  
     mapping (uint256 => mapping (address => uint256) ) public timeHeld;
@@ -346,16 +349,12 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
 
         if (_currentOwner == msg.sender) { 
             // bought by current owner- just change price
-            // update totalRentalAmount on Treasury
-            uint256 _priceIncrease = _newPrice.sub(price[_tokenId]); 
-            treasury.updateTotalRentalAmount(msg.sender,_priceIncrease,false);
-            // increase price
             price[_tokenId] = _newPrice;
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
 
         } else {   
-            // update totalRentalAmount on Treasury 
-            treasury.updateTotalRentalAmount(msg.sender,_newPrice,false);
+            // allocate 10mins deposit
+            treasury.newRental(msg.sender,_tokenId,_newPrice);
             // update internals
             currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].add(1); 
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
@@ -406,20 +405,30 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
             
             uint256 _rentOwed = rentOwed(_tokenId);
             address _currentOwner = ownerOf(_tokenId);
-            uint256 _deposit = treasury.deposits(_currentOwner);
+            uint256 _cardSpecificDeposit = treasury.cardSpecificDeposits(address(this),msg.sender,_tokenId);
+            uint256 _totalDeposit = treasury.deposits(_currentOwner).add(_cardSpecificDeposit);
+            bool _exitFlag = exitFlag[msg.sender][_tokenId];
             
-            if (_rentOwed >= _deposit) {
-                // run out of deposit. Calculate time it was actually paid for, then revert to previous owner 
-                _timeOfThisCollection = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(_deposit).div(_rentOwed)));
-                _rentOwed = _deposit; // take what's left     
-                _revertToPreviousOwner(_tokenId);
-            } 
+            if (!_exitFlag) {
+                if (_rentOwed >= _totalDeposit) {
+                    // run out of deposit. Calculate time it was actually paid for, then revert to previous owner 
+                    _timeOfThisCollection = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(_totalDeposit).div(_rentOwed)));
+                    _rentOwed = _totalDeposit; // take what's left     
+                    _revertToPreviousOwner(_tokenId);
+                } 
+                // decrease deposit by rent owed at the Treasury
+                treasury.payRent(_currentOwner, _rentOwed, _tokenId, false);
+            } else {
+                if (_rentOwed >= _cardSpecificDeposit) {
+                    // run out of deposit. Calculate time it was actually paid for, then revert to previous owner 
+                    _timeOfThisCollection = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(_cardSpecificDeposit).div(_rentOwed)));
+                    _rentOwed = _cardSpecificDeposit; // take what's left     
+                    _revertToPreviousOwner(_tokenId);
+                } 
+                // decrease deposit by rent owed at the Treasury
+                treasury.payRent(_currentOwner, _rentOwed, _tokenId, true);
+            }
 
-            // decrease deposit by rent owed at the Treasury
-            treasury.payRent(_currentOwner, _rentOwed);
-
-            // update time held and amount collected variables
-            uint256 _timeHeldToIncrement = (_timeOfThisCollection.sub(timeLastCollected[_tokenId])); 
             // note that if _revertToPreviousOwner was called above, _currentOwner will no longer refer to the
             // ... actual current owner. This is correct- we are updating the variables of the user who just
             // ... had their rent collected, not the new owner, if there is one
@@ -462,8 +471,6 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
 
         // if the above loop did not end in foreclose, then transfer to previous owner
         if (ownerOf(_tokenId) != address(this)) {
-            // update totalRentalAmount on Treasury 
-            treasury.updateTotalRentalAmount(ownerOf(_tokenId),price[_tokenId],true);
             // transfer to previous owner
             address _currentOwner = ownerOf(_tokenId);
             uint256 _oldPrice = ownerTracker[_tokenId][_index].price;
