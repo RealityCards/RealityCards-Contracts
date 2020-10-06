@@ -3,15 +3,14 @@
 var realityCardsFactory = artifacts.require("RealityCardsFactory");
 var realityCardsMarket = artifacts.require("RealityCardsMarketXdai");
 
-var factoryAddress = process.env.FACTORY_ADDRESS_XDAI;
+var factoryAddress = '0x73eb82593eD044F1617c01fE4E123850B0D8eEDe';
 
 // variables market specific
-var marketLockingTime = 1600646401; //Monday, 21-Sep-20 00:00:01 UTC
-var oracleResolutionTime = 1600646401; //Monday, 21-Sep-20 00:00:01 UTC
-var numberOfTokens = 5;
-var question =
-  'Who will win the 2020 US Tennis Open Mens Singles?␟"Novak Djokovic","Dominic Thiem","Daniil Medvedev","Stefanos Tsitsipas","Alexander Zverev","Matteo Berrettini","David Goffin","Someone else"␟sport␟en_US';
-var tokenName = "RealityCards_STAKEPRICE";
+var marketLockingTime = 1602460801; // Monday, 12-Oct-20 00:00:01 UTC
+var oracleResolutionTime = 1602460801; // Monday, 12-Oct-20 00:00:01 UTC
+var numberOfTokens = 6;
+var question = 'na';
+var tokenName = "RealityCards_ETHPRICE";
 
 // variables COMMON
 var templateId = 2;
@@ -48,21 +47,12 @@ module.exports = function() {
 
     //mint nfts
     let market = await realityCardsMarket.at(lastAddress);
-    await market.mintNfts(
-      "https://cdn.realitycards.io/nftmetadata/stake/token0.json"
-    );
-    await market.mintNfts(
-      "https://cdn.realitycards.io/nftmetadata/stake/token1.json"
-    );
-    await market.mintNfts(
-      "https://cdn.realitycards.io/nftmetadata/stake/token2.json"
-    );
-    await market.mintNfts(
-      "https://cdn.realitycards.io/nftmetadata/stake/token3.json"
-    );
-    await market.mintNfts(
-      "https://cdn.realitycards.io/nftmetadata/stake/token4.json"
-      );
+    await market.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPrice3/token0.json");
+    await market.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPrice3/token1.json");
+    await market.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPrice3/token2.json");
+    await market.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPrice3/token3.json");
+    await market.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPrice3/token4.json");
+    await market.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPrice3/token5.json");
     console.log("NFTs minted");
     process.exit();
   }

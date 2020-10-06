@@ -375,7 +375,7 @@ contract RealityCardsMarketXdai is Ownable, ERC721Full {
         require(_updatedDeposit >= _oneHoursDeposit, "One hour's rent minimum");
         require(_newPrice >= 1 ether, "Minimum rental 1 Dai");
         
-        _collectRent(_tokenId);
+        collectRentAllTokens();
 
         if (_deposit > 0) {
             _depositDai(_tokenId);
