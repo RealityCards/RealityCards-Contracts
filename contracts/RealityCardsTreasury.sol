@@ -113,10 +113,16 @@ contract RealityCardsTreasury {
     /// only markets can call these functions
 
     /// @dev moves ten minutes' deposit into a seperate pot
-    function newRental(address _user, uint256 _tokenId, uint256 _price) external balancedBooks() onlyMarkets() {
+    function allocateCardSpecificDeposit(address _newOwner, address _previousOwner, uint256 _tokenId, uint256 _price) external balancedBooks() onlyMarkets() {
+        // first, unallocate card specific deposit of previous owner
+        if (cardSpecificDeposits[msg.sender][_previousOwner][_tokenId] > 0) {
+            
+        }
+        // balance should have been cleared out 
+        assert(cardSpecificDeposits[msg.sender][_user][_tokenId] == 0);
         uint256 _tenMinsDeposit = _price.div(24*6);
         uint256 _depositToMove = _tenMinsDeposit.sub(cardSpecificDeposits[msg.sender][_user][_tokenId]);
-        require(deposits[_user] >= _depositToMove, "Insufficient deposit");
+        require(deposits[_user] >= _tenMinsDeposit, "Insufficient deposit");
         // move the deposit
         deposits[_user] = deposits[_user].sub(_depositToMove);
         cardSpecificDeposits[msg.sender][_user][_tokenId] = cardSpecificDeposits[msg.sender][_user][_tokenId].add(_depositToMove);
@@ -125,7 +131,10 @@ contract RealityCardsTreasury {
     /// @dev a rental payment is equivilent to moving to market pot from user's deposit
     function payRent(address _user, uint256 _dai, uint256 _tokenId, bool _exitFlag) external balancedBooks() onlyMarkets() {
         uint256 _cardSpecificDeposit = cardSpecificDeposits[msg.sender][_user][_tokenId];
-        if (!_exitFlag) {
+        if (_exitFlag) {
+            assert(_dai <= _cardSpecificDeposit); // enforced by _collectRent function in the market
+            cardSpecificDeposits[msg.sender][_user][_tokenId] = _cardSpecificDeposit.sub(_dai);
+        } else {
             if (_cardSpecificDeposit == 0) {
                 // no specific deposit left, take from general deposit 
                 deposits[_user] = deposits[_user].sub(_dai);
@@ -135,14 +144,9 @@ contract RealityCardsTreasury {
                 cardSpecificDeposits[msg.sender][_user][_tokenId] = 0;
             } else {
                 // specific deposit sufficient
-                cardSpecificDeposits[msg.sender][_user][_tokenId] = cardSpecificDeposits[msg.sender][_user][_tokenId].sub(_dai);
+                cardSpecificDeposits[msg.sender][_user][_tokenId] = _cardSpecificDeposit.sub(_dai);
             }
-        } else {
-            // _collectRent in the market should have already reduced _dai
-            // to _cardSpecificDeposit if 
-            assert(_dai >= _cardSpecificDeposit);
-            cardSpecificDeposits[msg.sender][_user][_tokenId] = cardSpecificDeposits[msg.sender][_user][_tokenId].sub(_dai);
-        }
+        } 
         
         marketPot[msg.sender] = marketPot[msg.sender].add(_dai);
         totalMarketPots = totalMarketPots.add(_dai);

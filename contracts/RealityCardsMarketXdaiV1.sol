@@ -191,27 +191,6 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
         return price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(1 days);
     }
 
-    /// @dev for front end only
-    /// @return how much the current owner has left of their deposit after deducting rent owed but not paid
-    function currentOwnerRemainingDeposit(uint256 _tokenId) public view returns (uint256) {
-        uint256 _rentOwed = rentOwed(_tokenId);
-        address _currentOwner = ownerOf(_tokenId);
-        uint256 _depositForThisMarket = treasury.getDepositPerMarket(_currentOwner, price[_tokenId]);
-        if(_rentOwed >= _depositForThisMarket) {
-            return 0;
-        } else {
-            return _depositForThisMarket.sub(_rentOwed);
-        }
-    }
-
-    /// @dev for front end only
-    /// @return rental expiry time given current contract state
-    function rentalExpiryTime(uint256 _tokenId) external view returns (uint256) {
-        uint256 pps;
-        pps = price[_tokenId].div(1 days);
-        return now + currentOwnerRemainingDeposit(_tokenId).div(pps);
-    }
-
     /// @dev for front end and _payoutWinnings function
     function getWinnings(uint256 _winningOutcome) public view returns (uint256) {
         uint256 _winnersTimeHeld = timeHeld[_winningOutcome][msg.sender];
@@ -339,8 +318,7 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
     
     /// @notice to rent a token
     function newRental(uint256 _newPrice, uint256 _tokenId) public checkState(States.OPEN) tokenExists(_tokenId) {
-        uint256 _currentPricePlusTenPercent = price[_tokenId].mul(11).div(10);
-        require(_newPrice >= _currentPricePlusTenPercent, "Price not 10% higher");
+        require(_newPrice >= price[_tokenId].mul(11).div(10), "Price not 10% higher");
         require(_newPrice >= 1 ether, "Minimum rental 1 Dai");
         
         collectRentAllTokens();
@@ -354,7 +332,7 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
 
         } else {   
             // allocate 10mins deposit
-            treasury.newRental(msg.sender,_tokenId,_newPrice);
+            treasury.allocateCardSpecificDeposit(msg.sender,_tokenId,_newPrice);
             // update internals
             currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].add(1); 
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
@@ -364,22 +342,27 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
             _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
             emit LogNewRental(msg.sender, _newPrice, _tokenId); 
         }
+
+        // make sure exit flag is set back to false
+        if (exitFlag[msg.sender][_tokenId]) {
+            exitFlag[msg.sender][_tokenId] = false;
+        }
     }
 
     /// @notice stop renting a token
     /// @dev public because called by exitAll()
+    /// @dev doesn't need to be current owner so user can prevent ownership returning to them
     function exit(uint256 _tokenId) public {
-        require(ownerOf(_tokenId) == msg.sender, "Not owner");
-        _revertToPreviousOwner(_tokenId);
+        if (!exitFlag[msg.sender][_tokenId]) {
+            exitFlag[msg.sender][_tokenId] = true;
+            _collectRent(_tokenId);
+        }
     }
 
     /// @notice stop renting all tokens
     function exitAll() external {
         for (uint i = 0; i < numberOfTokens; i++) {
-            if (ownerOf(i) == msg.sender)
-            {
-                exit(i);
-            }
+            exit(i);
         }
     }
 
@@ -416,8 +399,6 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
                     _rentOwed = _totalDeposit; // take what's left     
                     _revertToPreviousOwner(_tokenId);
                 } 
-                // decrease deposit by rent owed at the Treasury
-                treasury.payRent(_currentOwner, _rentOwed, _tokenId, false);
             } else {
                 if (_rentOwed >= _cardSpecificDeposit) {
                     // run out of deposit. Calculate time it was actually paid for, then revert to previous owner 
@@ -425,21 +406,26 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
                     _rentOwed = _cardSpecificDeposit; // take what's left     
                     _revertToPreviousOwner(_tokenId);
                 } 
-                // decrease deposit by rent owed at the Treasury
-                treasury.payRent(_currentOwner, _rentOwed, _tokenId, true);
             }
+            // _rentOwed will be 0 if _exitFlag set after cardSpecificDeposit used
+            if (_rentOwed > 0) {
+                // decrease deposit by rent owed at the Treasury
+                treasury.payRent(_currentOwner, _rentOwed, _tokenId, _exitFlag);
 
-            // note that if _revertToPreviousOwner was called above, _currentOwner will no longer refer to the
-            // ... actual current owner. This is correct- we are updating the variables of the user who just
-            // ... had their rent collected, not the new owner, if there is one
-            timeHeld[_tokenId][_currentOwner] = timeHeld[_tokenId][_currentOwner].add(_timeHeldToIncrement);
-            totalTimeHeld[_tokenId] = totalTimeHeld[_tokenId].add(_timeHeldToIncrement);
-            collectedPerUser[_currentOwner] = collectedPerUser[_currentOwner].add(_rentOwed);
-            collectedPerToken[_tokenId] = collectedPerToken[_tokenId].add(_rentOwed);
-            totalCollected = totalCollected.add(_rentOwed);
+                // update time held and amount collected variables
+                uint256 _timeHeldToIncrement = (_timeOfThisCollection.sub(timeLastCollected[_tokenId]));
+                // note that if _revertToPreviousOwner was called above, _currentOwner will no longer refer to the
+                // ... actual current owner. This is correct- we are updating the variables of the user who just
+                // ... had their rent collected, not the new owner, if there is one
+                timeHeld[_tokenId][_currentOwner] = timeHeld[_tokenId][_currentOwner].add(_timeHeldToIncrement);
+                totalTimeHeld[_tokenId] = totalTimeHeld[_tokenId].add(_timeHeldToIncrement);
+                collectedPerUser[_currentOwner] = collectedPerUser[_currentOwner].add(_rentOwed);
+                collectedPerToken[_tokenId] = collectedPerToken[_tokenId].add(_rentOwed);
+                totalCollected = totalCollected.add(_rentOwed);
 
-            emit LogTimeHeldUpdated(timeHeld[_tokenId][_currentOwner], _currentOwner, _tokenId);
-            emit LogRentCollection(_rentOwed, _tokenId, _currentOwner);
+                emit LogTimeHeldUpdated(timeHeld[_tokenId][_currentOwner], _currentOwner, _tokenId);
+                emit LogRentCollection(_rentOwed, _tokenId, _currentOwner);
+            } 
         }
 
         // timeLastCollected is updated regardless of whether the token is owned, so that the clock starts ticking
@@ -459,6 +445,11 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
             _index = currentOwnerIndex[_tokenId]; // just for readability
             _previousOwner = ownerTracker[_tokenId][_index].owner;
             _previousOwnersDeposit = treasury.deposits(_previousOwner);
+            if (exitFlag[_previousOwner][_tokenId]) {
+                _previousOwnersDeposit = treasury.cardSpecificDeposits(address(this),msg.sender,_tokenId);
+            } else {
+                _previousOwnersDeposit = treasury.deposits(_previousOwner).add(treasury.cardSpecificDeposits(address(this),msg.sender,_tokenId));
+            }
 
             // if no previous owners. price -> zero, foreclose
             if (_index == 0) {
