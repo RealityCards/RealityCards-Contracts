@@ -3,9 +3,10 @@
 var realityCardsFactory = artifacts.require("RealityCardsFactory");
 var realityCardsMarket = artifacts.require("RealityCardsMarketXdai");
 
-var factoryAddress = '0x73eb82593eD044F1617c01fE4E123850B0D8eEDe';
+var factoryAddress = '0x3c50A816653A7480c0b653FfcC9b5ae63593fc0D';
 
 // variables market specific
+var marketOpeningTime = 1;
 var marketLockingTime = 1602460801; // Monday, 12-Oct-20 00:00:01 UTC
 var oracleResolutionTime = 1602460801; // Monday, 12-Oct-20 00:00:01 UTC
 var numberOfTokens = 6;
@@ -20,6 +21,7 @@ var timeout = 86400; // 86400 = 1 day
 
 // kovan overrides (*COMMENT OUT IF MAINNET*)
 // var timeout = 30;
+// var marketOpeningTime = 100;
 // var marketLockingTime = 100; //09/13/2020 @ 3:00am (UTC)
 // var oracleResolutionTime = 100; //09/13/2020 @ 9:00am (UTC)
 
@@ -33,6 +35,7 @@ module.exports = function() {
       '0x0',
       andrewsAddress,
       numberOfTokens,
+      marketOpeningTime,
       marketLockingTime,
       oracleResolutionTime,
       templateId,

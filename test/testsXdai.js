@@ -36,6 +36,7 @@ contract('RealityCardsTests Xdai version', (accounts) => {
   andrewsAddress = accounts[9];
 
   beforeEach(async () => {
+    var marketOpeningTime = 0;
     var marketLockingTime = await time.latest();
     var oracleResolutionTime = await time.latest();
     cash = await CashMockup.new();
@@ -43,12 +44,13 @@ contract('RealityCardsTests Xdai version', (accounts) => {
     const rcLib = await RCMarket.new();
     rcfactory = await RCFactory.new(cash.address, realitio.address);
     await rcfactory.setLibraryAddressXdai(rcLib.address);
-    await rcfactory.createMarket(2,'0x0',andrewsAddress,numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, arbitrator, timeout, tokenName);
+    await rcfactory.createMarket(2,'0x0',andrewsAddress,numberOfTokens, marketOpeningTime, marketLockingTime, oracleResolutionTime, templateId, question, arbitrator, timeout, tokenName);
     const marketAddress = await rcfactory.marketAddresses.call(0);
     realitycards = await RCMarket.at(marketAddress);
     for (i = 0; i < 20; i++) {
         await realitycards.mintNfts("uri", {from: andrewsAddress});
     }
+    await realitycards.openMarket();
   });
 
   async function newRental(price, outcome, deposit, userx) {

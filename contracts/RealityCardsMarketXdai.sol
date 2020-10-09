@@ -30,7 +30,7 @@ contract RealityCardsMarketXdai is Ownable, ERC721Full {
     uint256 public constant UNRESOLVED_OUTCOME_RESULT = 2**256 - 1;
     /// @dev only for _revertToPreviousOwner to prevent gas limits
     uint256 public constant MAX_ITERATIONS = 10;
-    enum States {NFTSNOTMINTED, OPEN, LOCKED, WITHDRAW}
+    enum States {CLOSED, OPEN, LOCKED, WITHDRAW}
     States public state; 
 
     ///// CONTRACT VARIABLES /////
@@ -72,6 +72,8 @@ contract RealityCardsMarketXdai is Ownable, ERC721Full {
 
     ///// MARKET RESOLUTION VARIABLES /////
     uint256 public winningOutcome = UNRESOLVED_OUTCOME_RESULT; 
+    //// @dev when the market opens 
+    uint32 public marketOpeningTime; 
     //// @dev when the market locks 
     uint32 public marketLockingTime; 
     //// @dev when the question can be answered on realitio
@@ -86,6 +88,7 @@ contract RealityCardsMarketXdai is Ownable, ERC721Full {
     function initialize(
         address _owner,
         uint256 _numberOfTokens, 
+        uint32 _marketOpeningTime,
         uint32 _marketLockingTime,
         uint32 _oracleResolutionTime, 
         uint256 _templateId, 
@@ -104,6 +107,7 @@ contract RealityCardsMarketXdai is Ownable, ERC721Full {
 
         // assign arguments to public variables
         numberOfTokens = _numberOfTokens;
+        marketOpeningTime = _marketOpeningTime;
         marketLockingTime = _marketLockingTime;
         oracleResolutionTime = _oracleResolutionTime;
         
@@ -142,13 +146,16 @@ contract RealityCardsMarketXdai is Ownable, ERC721Full {
     //////// INITIAL SETUP /////////////
     ////////////////////////////////////
 
-    function mintNfts(string calldata _uri) external checkState(States.NFTSNOTMINTED) {
+    function mintNfts(string calldata _uri) external checkState(States.CLOSED) {
         _mint(address(this), nftMintCount); 
         _setTokenURI(nftMintCount, _uri);
         nftMintCount = nftMintCount.add(1);
-        if (nftMintCount == numberOfTokens) {
-            _incrementState();
-        }
+    }
+
+    function openMarket() external checkState(States.CLOSED) {
+        require (nftMintCount == numberOfTokens, "NFTs not minted");
+        require (now > marketOpeningTime, "Too early");
+        _incrementState();
     }
 
     ////////////////////////////////////
@@ -332,7 +339,7 @@ contract RealityCardsMarketXdai is Ownable, ERC721Full {
     /// @dev can be called in either locked or withdraw state
     /// @dev public because called by withdrawWinningsAndDeposit
     function withdrawDepositAfterMarketEnded() public {
-        require(state != States.NFTSNOTMINTED, "Incorrect state");
+        require(state != States.CLOSED, "Incorrect state");
         require(state != States.OPEN, "Incorrect state");
         for (uint i = 0; i < numberOfTokens; i++) {
 

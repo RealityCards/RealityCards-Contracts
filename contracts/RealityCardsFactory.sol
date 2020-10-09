@@ -70,6 +70,7 @@ contract RealityCardsFactory is Ownable, CloneFactory {
         bytes memory _ipfsHash,
         address _owner,
         uint256 _numberOfTokens,
+        uint32 _marketOpeningTime,
         uint32 _marketLockingTime,
         uint32 _oracleResolutionTime,
         uint256 _templateId,
@@ -109,6 +110,7 @@ contract RealityCardsFactory is Ownable, CloneFactory {
             RealityCardsMarketXdai(_newAddress).initialize({
                 _owner: _owner,
                 _numberOfTokens: _numberOfTokens,
+                _marketOpeningTime: _marketOpeningTime,
                 _marketLockingTime: _marketLockingTime,
                 _oracleResolutionTime: _oracleResolutionTime,
                 _templateId: _templateId,

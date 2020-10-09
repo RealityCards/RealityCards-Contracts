@@ -51,7 +51,7 @@ module.exports = async (deployer, network) =>
         deployer.deploy(RealityCardsFactory, cashAddressKovan, realitioAddressKovan).then(async () => {
             return deployer.deploy(RealityCardsMarket, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0).then(async () => {
                 return deployer.deploy(RealityCardsMarketLite, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0).then(async () => {
-                    return deployer.deploy(RealityCardsMarketXdai, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0).then(async () => {
+                    return deployer.deploy(RealityCardsMarketXdai, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0).then(async () => {
                         market = await RealityCardsMarket.deployed();
                         marketLite = await RealityCardsMarketLite.deployed();
                         marketXdai = await RealityCardsMarketXdai.deployed();
