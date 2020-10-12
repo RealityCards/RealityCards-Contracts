@@ -58,6 +58,10 @@ contract RealityCardsMarketXdai is Ownable, ERC721Full {
     mapping (uint256 => uint256) public timeLastCollected; 
     /// @dev when a token was bought. Used to enforce minimum of one hour rental, also used in front end. Rent collection does not need this, only needs timeLastCollected.
     mapping (uint256 => uint256) public timeAcquired; 
+    /// @dev to track the max timeheld of each token
+    mapping (uint256 => uint256) public maxTimeHeld;
+    /// @dev to track who has owned it the most 
+    mapping (uint256 => address) public longestOwner;
 
     ///// PREVIOUS OWNERS /////
     /// @dev keeps track of all previous owners of a token, including the price, so that if the current owner's deposit runs out,
@@ -501,6 +505,12 @@ contract RealityCardsMarketXdai is Ownable, ERC721Full {
             collectedPerUser[_currentOwner] = collectedPerUser[_currentOwner].add(_rentOwed);
             collectedPerToken[_tokenId] = collectedPerToken[_tokenId].add(_rentOwed);
             totalCollected = totalCollected.add(_rentOwed);
+
+            // longest owner tracking
+            if (timeHeld[_tokenId][_currentOwner] > maxTimeHeld[_tokenId]) {
+                maxTimeHeld[_tokenId] = timeHeld[_tokenId][_currentOwner];
+                longestOwner[_tokenId] = _currentOwner;
+            }
 
             emit LogTimeHeldUpdated(timeHeld[_tokenId][_currentOwner], _currentOwner, _tokenId);
             emit LogRentCollection(_rentOwed, _tokenId, _currentOwner);
