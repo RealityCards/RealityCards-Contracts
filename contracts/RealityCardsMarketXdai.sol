@@ -44,11 +44,13 @@ contract RealityCardsMarketXdai is Ownable, ERC721Full {
     mapping (uint256 => mapping (address => uint256) ) public deposits; 
     /// @dev keeps track of all the rent paid by each user. So that it can be returned in case of an invalid market outcome.
     mapping (address => uint256) public collectedPerUser;
+    /// @dev track rent paid per user per Card
+    mapping (uint256 => mapping (address => uint256) ) public collectedPerUserPerCard;
     /// @dev keeps track of all the rent paid for each token, front end only
     mapping (uint256 => uint256) public collectedPerToken;
     /// @dev an easy way to track the above across all tokens
     uint256 public totalCollected; 
-
+    
     ///// TIME /////
     /// @dev how many seconds each user has held each token for, for determining winnings  
     mapping (uint256 => mapping (address => uint256) ) public timeHeld;
@@ -249,7 +251,9 @@ contract RealityCardsMarketXdai is Ownable, ERC721Full {
     function _sendCash(address _to, uint256 _amount) internal { 
         address _thisAddressNotPayable = _to;
         address payable _recipient = address(uint160(_thisAddressNotPayable)); // <-- this is required to cast address to address payable
-        _recipient.call.value(_amount)("");
+        (bool _success, bytes memory data) = _recipient.call.value(_amount)("");
+        require(_success, "Transfer failed");
+        data; // suppress compilation warning
     }
 
     ////////////////////////////////////
@@ -503,6 +507,7 @@ contract RealityCardsMarketXdai is Ownable, ERC721Full {
             timeHeld[_tokenId][_currentOwner] = timeHeld[_tokenId][_currentOwner].add(_timeHeldToIncrement);
             totalTimeHeld[_tokenId] = totalTimeHeld[_tokenId].add(_timeHeldToIncrement);
             collectedPerUser[_currentOwner] = collectedPerUser[_currentOwner].add(_rentOwed);
+            collectedPerUserPerCard[_tokenId][_currentOwner] = collectedPerUserPerCard[_tokenId][_currentOwner].add(_rentOwed);
             collectedPerToken[_tokenId] = collectedPerToken[_tokenId].add(_rentOwed);
             totalCollected = totalCollected.add(_rentOwed);
 

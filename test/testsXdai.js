@@ -673,6 +673,49 @@ contract('RealityCardsTests Xdai version', (accounts) => {
     await shouldFail.reverting.withMessage(realitycards.withdraw({ from: user6 }), "Not a winner");
   });
 
+  it('test maxTimeHeld & longestOwner', async () => {
+    await newRental(web3.utils.toWei('1', 'ether'),2,web3.utils.toWei('10', 'ether'),user0 ); 
+    await time.increase(time.duration.days(1)); 
+    await realitycards.collectRentAllTokens();
+    var maxTimeHeld = await realitycards.maxTimeHeld(2);
+    var maxTimeHeldShouldBe = time.duration.days(1);
+    var difference = Math.abs(maxTimeHeld.toString() - maxTimeHeldShouldBe.toString());
+    assert.isBelow(difference/maxTimeHeld,0.0001);
+    var longestOwner = await realitycards.longestOwner(2);
+    var longestOwnerShouldBe = user0;
+    assert.equal(longestOwner, longestOwnerShouldBe);
+    // try again new owner
+    await newRental(web3.utils.toWei('2', 'ether'),2,web3.utils.toWei('10', 'ether'),user1 ); 
+    await time.increase(time.duration.days(2));
+    await realitycards.collectRentAllTokens();
+    var maxTimeHeld = await realitycards.maxTimeHeld(2);
+    var maxTimeHeldShouldBe = time.duration.days(2);
+    var difference = Math.abs(maxTimeHeld.toString() - maxTimeHeldShouldBe.toString());
+    assert.isBelow(difference/maxTimeHeld,0.0001);
+    var longestOwner = await realitycards.longestOwner(2);
+    var longestOwnerShouldBe = user1;
+    assert.equal(longestOwner, longestOwnerShouldBe);
+  });
+
+  it('test collectedPerUserPerCard', async () => {
+    await newRental(web3.utils.toWei('1', 'ether'),2,web3.utils.toWei('10', 'ether'),user0 ); 
+    await time.increase(time.duration.days(1)); 
+    await realitycards.collectRentAllTokens();
+    // test 1
+    var collectedPerUserPerCard = await realitycards.collectedPerUserPerCard(2,user0);
+    var collectedPerUserPerCardShouldBe = web3.utils.toWei('1', 'ether');
+    var difference = Math.abs(collectedPerUserPerCard.toString() - collectedPerUserPerCardShouldBe.toString());
+    assert.isBelow(difference/collectedPerUserPerCard,0.0001);
+    // test 2
+    await newRental(web3.utils.toWei('2', 'ether'),2,web3.utils.toWei('10', 'ether'),user1 ); 
+    await time.increase(time.duration.days(2)); 
+    await realitycards.collectRentAllTokens();
+    var collectedPerUserPerCard = await realitycards.collectedPerUserPerCard(2,user1);
+    var collectedPerUserPerCardShouldBe = web3.utils.toWei('4', 'ether');
+    var difference = Math.abs(collectedPerUserPerCard.toString() - collectedPerUserPerCardShouldBe.toString());
+    assert.isBelow(difference/collectedPerUserPerCard,0.0001);
+  });
+
 });
 
 
