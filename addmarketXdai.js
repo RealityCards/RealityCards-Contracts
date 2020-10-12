@@ -3,7 +3,7 @@
 var realityCardsFactory = artifacts.require("RealityCardsFactory");
 var realityCardsMarket = artifacts.require("RealityCardsMarketXdai");
 
-var factoryAddress = '0x3c50A816653A7480c0b653FfcC9b5ae63593fc0D';
+var factoryAddress = '0x2f61b382a49E746bdf9A0bcC834C9ea0Ad3538b0';
 
 // variables market specific
 var marketOpeningTime = 1;
