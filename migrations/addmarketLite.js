@@ -1,7 +1,7 @@
 var realityCardsFactory = artifacts.require("RealityCardsFactory");
 var realityCardsMarketLite = artifacts.require("RealityCardsMarketLite");
 
-var factoryAddress = '0x88ABFF38c916A08c6E13AB7E49Ece5Ee61fC6c8c';
+var factoryAddress = '0x27cb39821Faab832a15a66A6847072c08BBCEfD8';
 
 // variables market specific
 var marketLockingTime = 1600041601; //Monday, 14-Sep-20 00:00:01 UTC

@@ -418,7 +418,7 @@ contract RealityCardsMarketXdai is Ownable, ERC721Full {
     /// @dev this is ok, they can still withdraw via withdrawDeposit. 
     /// @dev can be called by anyone- you can top up someone else's deposit if you wish!
     function depositDai(uint256 _tokenId) external payable checkState(States.OPEN) amountNotZero(msg.value) tokenExists(_tokenId) {
-        _collectRent(_tokenId);
+        collectRentAllTokens();
         _depositDai(_tokenId);
     }
 
@@ -426,7 +426,7 @@ contract RealityCardsMarketXdai is Ownable, ERC721Full {
     /// @dev 10% price increase not required for existing owners
     function changePrice(uint256 _newPrice, uint256 _tokenId) external checkState(States.OPEN) tokenExists(_tokenId) onlyTokenOwner(_tokenId) {
         require(_newPrice > price[_tokenId], "New price must be higher"); 
-        _collectRent(_tokenId);
+        collectRentAllTokens();
         _changePrice(_newPrice, _tokenId);
     }
     
@@ -434,7 +434,7 @@ contract RealityCardsMarketXdai is Ownable, ERC721Full {
     /// @dev do not need to be the current owner
     /// @dev public because called by exit
     function withdrawDeposit(uint256 _daiToWithdraw, uint256 _tokenId) public checkState(States.OPEN) tokenExists(_tokenId) amountNotZero(_daiToWithdraw) {
-        _collectRent(_tokenId);
+        collectRentAllTokens();
         uint256 _remainingDeposit = deposits[_tokenId][msg.sender];
         // deposits may be lower (or zero) then when function called due to _collectRent 
         if (_remainingDeposit > 0) { 

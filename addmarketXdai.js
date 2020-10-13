@@ -3,15 +3,15 @@
 var realityCardsFactory = artifacts.require("RealityCardsFactory");
 var realityCardsMarket = artifacts.require("RealityCardsMarketXdai");
 
-var factoryAddress = '0x2f61b382a49E746bdf9A0bcC834C9ea0Ad3538b0';
+var factoryAddress = '0x27cb39821Faab832a15a66A6847072c08BBCEfD8';
 
 // variables market specific
 var marketOpeningTime = 1;
-var marketLockingTime = 1602460801; // Monday, 12-Oct-20 00:00:01 UTC
-var oracleResolutionTime = 1602460801; // Monday, 12-Oct-20 00:00:01 UTC
-var numberOfTokens = 6;
+var marketLockingTime = 1604448001; // Wednesday, 04-Nov-20 00:00:01 UTC
+var oracleResolutionTime = 1604448001; // Wednesday, 04-Nov-20 00:00:01 UTC
+var numberOfTokens = 3;
 var question = 'na';
-var tokenName = "RealityCards_ETHPRICE";
+var tokenName = "RealityCards_USELECTION";
 
 // variables COMMON
 var templateId = 2;
@@ -50,12 +50,9 @@ module.exports = function() {
 
     //mint nfts
     let market = await realityCardsMarket.at(lastAddress);
-    await market.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPrice3/token0.json");
-    await market.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPrice3/token1.json");
-    await market.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPrice3/token2.json");
-    await market.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPrice3/token3.json");
-    await market.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPrice3/token4.json");
-    await market.mintNfts("https://cdn.realitycards.io/nftmetadata/etherPrice3/token5.json");
+    await market.mintNfts("https://cdn.realitycards.io/nftmetadata/presElection2/token0.json");
+    await market.mintNfts("https://cdn.realitycards.io/nftmetadata/presElection2/token1.json");
+    await market.mintNfts("https://cdn.realitycards.io/nftmetadata/presElection2/token2.json");
     console.log("NFTs minted");
     process.exit();
   }
