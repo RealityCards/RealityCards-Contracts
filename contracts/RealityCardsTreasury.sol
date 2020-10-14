@@ -30,14 +30,6 @@ contract RealityCardsTreasury {
     /// @dev first ten mins of each rental is specific to each Card
     /// @dev market -> user -> tokenId -> deposit
     mapping (address => mapping (address => mapping (uint256 => uint256))) public cardSpecificDeposits;
-    
-
-//     this is what we need to do:
-
-// 1) have a mapping in treasury which stores the first hour's rent, and when new rental, it shifts this over to that
-// 2) remove all other checks on one hour
-// 3) when collecting rent, firest collect from this mapping, then from the main thing
-// 4) when exiting, exit immediatly if this mapping is empty, otherwise have a flag to exit within the market
 
     ////////////////////////////////////
     //////// EVENTS ////////////////////

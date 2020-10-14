@@ -332,7 +332,7 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
 
         } else {   
             // allocate 10mins deposit
-            treasury.allocateCardSpecificDeposit(msg.sender,_tokenId,_newPrice);
+            treasury.allocateCardSpecificDeposit(msg.sender,_currentOwner,_tokenId,_newPrice);
             // update internals
             currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].add(1); 
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
@@ -388,9 +388,9 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
             
             uint256 _rentOwed = rentOwed(_tokenId);
             address _currentOwner = ownerOf(_tokenId);
-            uint256 _cardSpecificDeposit = treasury.cardSpecificDeposits(address(this),msg.sender,_tokenId);
+            uint256 _cardSpecificDeposit = treasury.cardSpecificDeposits(address(this),_currentOwner,_tokenId);
             uint256 _totalDeposit = treasury.deposits(_currentOwner).add(_cardSpecificDeposit);
-            bool _exitFlag = exitFlag[msg.sender][_tokenId];
+            bool _exitFlag = exitFlag[_currentOwner][_tokenId];
             
             if (!_exitFlag) {
                 if (_rentOwed >= _totalDeposit) {
