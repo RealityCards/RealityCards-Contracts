@@ -444,7 +444,6 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
             currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].sub(1); // currentOwnerIndex will now point to  previous owner
             _index = currentOwnerIndex[_tokenId]; // just for readability
             _previousOwner = ownerTracker[_tokenId][_index].owner;
-            _previousOwnersDeposit = treasury.deposits(_previousOwner);
             if (exitFlag[_previousOwner][_tokenId]) {
                 _previousOwnersDeposit = treasury.cardSpecificDeposits(address(this),msg.sender,_tokenId);
             } else {
