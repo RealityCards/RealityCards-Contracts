@@ -1,14 +1,14 @@
 pragma solidity 0.5.13;
 
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@nomiclabs/buidler/console.sol";
-import './RealityCardsMarketXdaiV1.sol';
 
 /// @title Reality Cards Treasury
 /// @author Andrew Stanger
 /// @dev supports xDai only (aka Ether)
 
-contract RealityCardsTreasury {
+contract RealityCardsTreasury is Ownable {
 
     using SafeMath for uint256;
 
@@ -27,6 +27,8 @@ contract RealityCardsTreasury {
     /// @dev keeps track of rental payments made
     mapping (address => uint256) public marketPot;
     uint256 public totalMarketPots;
+    // @dev keeps track of total sponsorship, just so books balance
+    uint256 public totalSponsorship;
     /// @dev first ten mins of each rental is specific to each Card
     /// @dev market -> user -> tokenId -> deposit
     mapping (address => mapping (address => mapping (uint256 => uint256))) public cardSpecificDeposits;
@@ -34,6 +36,7 @@ contract RealityCardsTreasury {
     ////////////////////////////////////
     //////// EVENTS ////////////////////
     ////////////////////////////////////
+
     event LogDepositIncreased(uint256 indexed daiDeposited, address indexed sentBy);
     event LogDepositWithdrawal(uint256 indexed daiWithdrawn, address indexed returnedTo);
 
@@ -154,6 +157,13 @@ contract RealityCardsTreasury {
         deposits[_user] = deposits[_user].add(_dai);
         totalMarketPots = totalMarketPots.sub(_dai);
         totalDeposits = totalDeposits.add(_dai);
+    }
+
+    /// @notice ability to add liqudity to the pot without being able to win. 
+    /// @dev also prevents accidentally sending ether direct
+    function() external payable balancedBooks() onlyMarkets() {
+        marketPot[msg.sender] = marketPot[msg.sender].add(msg.value);
+        totalMarketPots = totalMarketPots.add(msg.value);
     }
 
 }

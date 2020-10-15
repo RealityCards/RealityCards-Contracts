@@ -368,6 +368,12 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
 
     /// @notice ability to add liqudity to the pot without being able to win. 
     function sponsor() external payable {
+        // send funds to the Treasury
+        address _thisAddressNotPayable = address(treasury);
+        address payable _recipient = address(uint160(_thisAddressNotPayable));
+        (bool _success, bytes memory data) = _recipient.call.value(msg.value)("");
+        require(_success, "Transfer failed");
+        data; // suppress compilation warning
         totalCollected = totalCollected.add(msg.value);
         // just so user can get it back if invalid outcome
         collectedPerUser[msg.sender] = collectedPerUser[msg.sender].add(msg.value); 
