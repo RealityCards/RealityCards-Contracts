@@ -74,7 +74,7 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
                     uint256 price; }
 
     ///// MARKET RESOLUTION VARIABLES /////
-    uint256 public winningOutcome = UNRESOLVED_OUTCOME_RESULT; 
+    uint256 public winningOutcome; 
     //// @dev when the market locks 
     uint32 public marketLockingTime; 
     //// @dev when the question can be answered on realitio
@@ -101,6 +101,7 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
         Ownable.initialize(_owner);
         ERC721.initialize();
         ERC721Metadata.initialize(_tokenName,"RC");
+        winningOutcome = UNRESOLVED_OUTCOME_RESULT;
         
         // resolution time must not be less than locking time, and not greater by more than one week
         require(_marketLockingTime + 1 weeks > _oracleResolutionTime && _marketLockingTime <= _oracleResolutionTime, "Invalid timestamps" );
