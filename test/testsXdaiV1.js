@@ -27,8 +27,8 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
 
   user0 = accounts[0]; //0xc783df8a850f42e7F7e57013759C285caa701eB6
   user1 = accounts[1]; //0xeAD9C93b79Ae7C1591b1FB5323BD777E86e150d4
-  user2 = accounts[2];
-  user3 = accounts[3];
+  user2 = accounts[2]; //0xE5904695748fe4A84b40b3fc79De2277660BD1D3
+  user3 = accounts[3]; //0x92561F28Ec438Ee9831D00D1D59fbDC981b762b2
   user4 = accounts[4];
   user5 = accounts[5];
   user6 = accounts[6];
@@ -52,13 +52,6 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     for (i = 0; i < 20; i++) {
         await realitycards.mintNfts("uri", {from: andrewsAddress});
     }
-    //second market
-    await rcfactory.createMarket(3,'0x0',andrewsAddress,numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, arbitrator, timeout, tokenName);
-    marketAddress = await rcfactory.marketAddresses.call(1);
-    realitycards2 = await RCMarket.at(marketAddress);
-    for (i = 0; i < 20; i++) {
-        await realitycards2.mintNfts("uri", {from: andrewsAddress});
-    }
   });
 
   async function depositDai(amount, user) {
@@ -69,11 +62,6 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
   async function newRental(price, outcome, user) {
     price = web3.utils.toWei(price.toString(), 'ether');
     await realitycards.newRental(price,outcome,{ from: user});
-  }
-
-  async function newRental2(price, outcome, user) {
-    price = web3.utils.toWei(price.toString(), 'ether');
-    await realitycards2.newRental(price,outcome,{ from: user});
   }
 
   async function changePrice(price, outcome, userx) {
@@ -132,6 +120,8 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     var ownerTracker = await realitycards.ownerTracker.call(4, 1);
     assert.equal(ownerTracker[1].toString(), web3.utils.toWei('144', 'ether').toString());
     assert.equal(ownerTracker[0], user);
+    // withdraw
+    await withdrawDeposit(1000,user);
    });
   
   it('test change price by renting again', async () => {
@@ -146,6 +136,8 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     await newRental(3,4,user);
     var price = await realitycards.price.call(4);
     assert.equal(price, web3.utils.toWei('3', 'ether'));
+    // withdraw
+    await withdrawDeposit(1000,user);
    });
     
     // is rentOwed function correct? Perhaps the most important function!!
@@ -163,6 +155,8 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         var fundsOwedActualShouldBe = web3.utils.toWei('3', 'ether');
         var difference = Math.abs(fundsOwedActual.toString()-fundsOwedActualShouldBe.toString());
         assert.isBelow(difference/fundsOwedActual,0.001);
+        // withdraw
+        await withdrawDeposit(1000,user);
       });
   
     it('test various after collectRent', async () => {
@@ -204,6 +198,8 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         var timeLastCollected = await realitycards.timeLastCollected.call(4);
         currentTime = await time.latest();
         assert.equal(currentTime.toString(),timeLastCollected.toString());
+        // withdraw
+        await withdrawDeposit(1000,user);
     });
 
     // test collectRent again, but this time it should foreclose, does it?
@@ -226,6 +222,10 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         assert.equal(owner, realitycards.address);
         var price = await realitycards.price.call(1);
         assert.equal(price, 0);
+        // withdraw
+        await withdrawDeposit(1000,user);
+        // withdraw
+        await withdrawDeposit(1000,user1);
     });
 
   
@@ -314,9 +314,13 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         var totalTimeHeld = await realitycards.totalTimeHeld.call(0);
         var difference = Math.abs(totalTimeHeld - totalTimeHeldShouldBe);
         assert.isBelow(difference/timeHeld,0.001);
+        // withdraw
+        await withdrawDeposit(1000,user0);
+        await withdrawDeposit(1000,user1);
+        await withdrawDeposit(1000,user2);
       });
   
-      it('test withdrawDeposit', async () => {
+      it('test withdrawDeposit after zero mins', async () => {
         user = user0;
         await depositDai(144,user);
         await newRental(144,0,user);
@@ -354,13 +358,24 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         var depositWithdrawnShouldBe = web3.utils.toWei('71', 'ether');
         var difference = Math.abs(depositWithdrawn.toString()-depositWithdrawnShouldBe.toString());
         assert.isBelow(difference/depositWithdrawnShouldBe,0.00001);
+        // withdraw for next test
+        await withdrawDeposit(1000,user0);
       });
 
-      it('test withdrawDeposit- multiple markets', async () => {
+    it('test withdrawDeposit- multiple markets', async () => {
         user = user0;
         await depositDai(10,user);
         await newRental(144,0,user);
-        await newRental2(288,0,user);
+        //second market
+        var marketLockingTime = await time.latest();
+        var oracleResolutionTime = await time.latest();
+        await rcfactory.createMarket(3,'0x0',andrewsAddress,numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, arbitrator, timeout, tokenName);
+        marketAddress = await rcfactory.marketAddresses.call(1);
+        realitycards2 = await RCMarket.at(marketAddress);
+        for (i = 0; i < 20; i++) {
+            await realitycards2.mintNfts("uri", {from: andrewsAddress});
+        }
+        await realitycards2.newRental(web3.utils.toWei('288', 'ether'),0,{ from: user});
         // withdraw all, should be 3 left therefore only withdraw 7
         var balanceBefore = await web3.eth.getBalance(user);
         await withdrawDeposit(1000,user);
@@ -375,7 +390,9 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         var balanceAfter = await web3.eth.getBalance(user);
         var depositWithdrawn = await balanceAfter - balanceBefore;
         assert.equal(depositWithdrawn,0);
-      });
+        // withdraw for next test
+        await withdrawDeposit(1000,user0);
+    });
 
     it('test exit- more than ten mins', async () => {
         // setup
@@ -402,6 +419,9 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         var timeHeldShouldBe = time.duration.hours(1);
         var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
         assert.isBelow(difference,2);
+        // withdraw for next test
+        await withdrawDeposit(1000,user0);
+        await withdrawDeposit(1000,user1);
     });
 
     it('test exit- less than ten mins', async () => {
@@ -439,6 +459,9 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         var timeHeldShouldBe = time.duration.minutes(55);
         var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
         assert.isBelow(difference/timeHeldShouldBe,0.01);
+        // withdraw for next test
+        await withdrawDeposit(1000,user0);
+        await withdrawDeposit(1000,user1);
     });
 
     it('test exitAll', async () => {
@@ -464,6 +487,9 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         assert.equal(owner, user0);
         var owner = await realitycards.ownerOf.call(3);
         assert.equal(owner, user0);
+        // withdraw for next test
+        await withdrawDeposit(1000,user0);
+        await withdrawDeposit(1000,user1);
     });
   
     // test the payout functions work fine, with different winners each time
@@ -526,9 +552,14 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     assert.isBelow(difference/winningsSentToUser,0.00001);
     // check random user can't withdraw
     await shouldFail.reverting.withMessage(realitycards.withdraw({ from: user6 }), "Not a winner");
+    // withdraw for next test
+    await withdrawDeposit(1000,user0);
+    await withdrawDeposit(1000,user1);
+    await withdrawDeposit(1000,user2);
   });
 
   it('test sponsor', async () => {
+    await shouldFail.reverting.withMessage(realitycards.sponsor({ from: user6 }), "Must send something");
     await realitycards.sponsor({ value: web3.utils.toWei('153', 'ether'), from: user3 });
     ///// SETUP //////
     await depositDai(1000,user0);
@@ -588,6 +619,10 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     assert.isBelow(difference/winningsSentToUser,0.00001);
     // check random user can't withdraw
     await shouldFail.reverting.withMessage(realitycards.withdraw({ from: user6 }), "Not a winner");
+    // withdraw for next test
+    await withdrawDeposit(1000,user0);
+    await withdrawDeposit(1000,user1);
+    await withdrawDeposit(1000,user2);
   });
 
 it('test withdraw- invalid', async () => {
@@ -649,6 +684,10 @@ it('test withdraw- invalid', async () => {
     assert.isBelow(difference/winningsSentToUser,0.00001);
     // check random user can't withdraw
     await shouldFail.reverting.withMessage(realitycards.withdraw({ from: user6 }), "Paid no rent");
+    // withdraw for next test
+    await withdrawDeposit(1000,user0);
+    await withdrawDeposit(1000,user1);
+    await withdrawDeposit(1000,user2);
     });
 
 it('test circuitBreaker', async () => {
@@ -710,6 +749,10 @@ it('test circuitBreaker', async () => {
     assert.isBelow(difference/winningsSentToUser,0.00001);
     // check random user can't withdraw
     await shouldFail.reverting.withMessage(realitycards.withdraw({ from: user6 }), "Paid no rent");
+    // withdraw for next test
+    await withdrawDeposit(1000,user0);
+    await withdrawDeposit(1000,user1);
+    await withdrawDeposit(1000,user2);
     });
 
 it('test circuitBreaker less than 1 month', async () => {
@@ -721,7 +764,213 @@ it('test circuitBreaker less than 1 month', async () => {
     await shouldFail.reverting.withMessage(realitycards.circuitBreaker(), "Too early");
     await time.increase(time.duration.weeks(3));
     await realitycards.circuitBreaker();
+    // withdraw for next test
+    await withdrawDeposit(1000,user0);
     });
+
+it('check expected failures with market resolution: question not resolved but market ended', async () => {
+    await depositDai(1000,user0);
+    await newRental(1,0,user0); 
+    await time.increase(time.duration.hours(1));
+    await realitycards.lockMarket(); 
+    await shouldFail.reverting.withMessage(realitycards.determineWinner(), "Oracle not resolved");
+    await shouldFail.reverting.withMessage(realitycards.withdraw(), "Incorrect state");
+    // withdraw for next test
+    await withdrawDeposit(1000,user0);
+});
+
+it('newRental check failures', async () => {
+    /////// SETUP //////
+    user = user0;
+    await depositDai(1000,user0);
+    // check newRental stuff
+    await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('0.5', 'ether'),0,{ from: user}), "Minimum rental 1 Dai");
+    await newRental(1,0,user0);
+    await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('1', 'ether'),0,{ from: user}), "Price not 10% higher");
+    await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('1', 'ether'),23,{ from: user}), "This token does not exist");
+    // withdraw for next test
+    await withdrawDeposit(1000,user0);
+    });
+
+
+    it('check market resolution failures', async () => {
+        /////// SETUP //////
+        await depositDai(1000,user0);
+        await newRental(1,0,user0); 
+        //// TESTS ////
+        // call step 2 before step 1 done
+        await shouldFail.reverting.withMessage(realitycards.determineWinner(), "Incorrect state");
+        //call step 1 before markets ended
+        await shouldFail.reverting.withMessage(realitycards.lockMarket(), "Market has not finished");
+        await time.increase(time.duration.hours(1)); 
+        // call step 1 after markets ended, should work
+        await realitycards.lockMarket(); 
+        // call step 1 twice
+        await shouldFail.reverting.withMessage(realitycards.lockMarket(), "Incorrect state");
+        // withdraw for next test
+        await withdrawDeposit(1000,user0);
+    });
+
+    it('check that _revertToPreviousOwner does not revert more than ten times ', async () => {
+        /////// SETUP //////
+        await depositDai(1000,user0);
+        await depositDai(1000,user1);
+        await depositDai(1000,user2);
+        await depositDai(1000,user3);
+        // get user 0 and 1 to rent it 4 times
+        await newRental(1,0,user0); 
+        await newRental(2,0,user1);
+        await newRental(3,0,user0);
+        await newRental(4,0,user1);
+        // get user 2 and 3 to rent it more than ten times
+        await newRental(5,0,user2);
+        await newRental(6,0,user3);
+        await newRental(7,0,user2);
+        await newRental(8,0,user3);
+        await newRental(9,0,user2);
+        await newRental(10,0,user3);
+        await newRental(20,0,user2);
+        await newRental(30,0,user3);
+        await newRental(40,0,user2);
+        await newRental(50,0,user3);
+        await newRental(60,0,user2);
+        await newRental(70,0,user3);
+        // make sure owned for at least an hour
+        await time.increase(time.duration.hours(1)); 
+        // user 2 and 3 exit, it should return to one of them NOT return to user 0 or 1 
+        await realitycards.exit(0,{ from: user2 });
+        await realitycards.exit(0,{ from: user3 });
+        var owner = await realitycards.ownerOf.call(0);
+        assert.equal(owner, user3);
+        var price = await realitycards.price.call(0);
+        assert.equal(price, web3.utils.toWei('6', 'ether'));
+        // withdraw for next test
+        await withdrawDeposit(1000,user0);
+        await withdrawDeposit(1000,user1);
+        await withdrawDeposit(1000,user2);
+        await withdrawDeposit(1000,user3);
+    });
+
+it('check that cannot rent a card if less than 1 hous rent', async () => {
+    await depositDai(1,user0);
+    await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('150', 'ether'),2,{ from: user0}), "Insufficient deposit");
+    });
+
+it('test deposits after 0 mins, 5 mins, 15 mins', async () => {
+    user = user0;
+    await depositDai(144,user);
+    await newRental(144,0,user);
+    // 0 mins
+    var deposit = await treasury.deposits.call(user); 
+    marketAddress = await rcfactory.marketAddresses.call(0);
+    var depositSpecific = await treasury.cardSpecificDeposits.call(marketAddress,user,0);
+    assert.equal(deposit, web3.utils.toWei('143', 'ether')); 
+    assert.equal(depositSpecific, web3.utils.toWei('1', 'ether'));
+    // 5 mins
+    await time.increase(time.duration.minutes(5));
+    await realitycards.collectRentAllTokens(); 
+    var deposit = await treasury.deposits.call(user); 
+    assert.equal(deposit, web3.utils.toWei('143', 'ether')); 
+    marketAddress = await rcfactory.marketAddresses.call(0);
+    var depositSpecific = await treasury.cardSpecificDeposits.call(marketAddress,user,0);
+    var depositSpecificShouldBe = web3.utils.toWei('0.5', 'ether');
+    var difference = Math.abs(depositSpecific.toString()-depositSpecificShouldBe.toString());
+    assert.isBelow(difference/depositSpecificShouldBe,0.01);
+    // 15 mins
+    var deposit = await treasury.deposits.call(user); 
+    assert.equal(deposit, web3.utils.toWei('143', 'ether')); 
+    marketAddress = await rcfactory.marketAddresses.call(0);
+    var depositSpecific = await treasury.cardSpecificDeposits.call(marketAddress,user,0);
+    var depositSpecificShouldBe = web3.utils.toWei('0.5', 'ether');
+    var difference = Math.abs(depositSpecific.toString()-depositSpecificShouldBe.toString());
+    assert.isBelow(difference/depositSpecificShouldBe,0.01);
+    await withdrawDeposit(1000,user0);
+});
+
+it('check that users cannot transfer their NFTs until withdraw state', async() => {
+    user = user0;
+    await depositDai(144,user);
+    await newRental(1,2,user);
+    var owner = await realitycards.ownerOf(2);
+    assert.equal(owner, user);
+    // buidler giving me shit when I try and intercept revert message so just testing revert, in OPEN state
+    await shouldFail.reverting(realitycards.transferFrom(user,user1,2));
+    await shouldFail.reverting(realitycards.safeTransferFrom(user,user1,2));
+    await shouldFail.reverting(realitycards.safeTransferFrom(user,user1,2,web3.utils.asciiToHex("123456789")));
+    await time.increase(time.duration.days(1)); 
+    await realitycards.lockMarket();
+    // // should fail cos LOCKED
+    await shouldFail.reverting(realitycards.transferFrom(user,user1,2));
+    await shouldFail.reverting(realitycards.safeTransferFrom(user,user1,2));
+    await shouldFail.reverting(realitycards.safeTransferFrom(user,user1,2,web3.utils.asciiToHex("123456789")));
+    await realitycards.determineWinner2(1,{ from:andrewsAddress}); 
+    // // these shoudl all fail cos wrong owner:
+    var owner = await realitycards.ownerOf(2);
+    assert.equal(owner, user);
+    await shouldFail.reverting(realitycards.transferFrom(user,user1,2,{from: user1}));
+    await shouldFail.reverting(realitycards.safeTransferFrom(user1,user1,2,{from: user1}));
+    // these should not
+    await realitycards.transferFrom(user,user1,2,{from: user});
+    await realitycards.safeTransferFrom(user1,user,2,{from: user1});
+    // withdraw for next test
+    await withdrawDeposit(1000,user0);
+  });
+
+  it('make sure functions cant be called in the wrong state', async() => {
+    user = user0;
+    // undo beforeEach
+    var marketLockingTime = await time.latest();
+    var oracleResolutionTime = await time.latest();
+    await rcfactory.createMarket(3,'0x0',andrewsAddress,numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, arbitrator, timeout, tokenName);
+    marketAddress = await rcfactory.marketAddresses.call(1);
+    realitycards2 = await RCMarket.at(marketAddress);
+    // check state is 0
+    var state = await realitycards2.state.call();
+    assert.equal(0,state);
+    // currently in state 'NFTSNOTMINTED' the following should all fail 
+    await shouldFail.reverting.withMessage(realitycards2.lockMarket(), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards2.determineWinner(), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards2.withdraw(), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards2.collectRentAllTokens(), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards2.newRental(0,0), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards2.exit(0), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards2.rentAllCards(), "Incorrect state");
+    // increment state
+    for (i = 0; i < 20; i++) {
+      await realitycards2.mintNfts("uri", {from: andrewsAddress});
+    }
+    var state = await realitycards2.state.call();
+    assert.equal(1,state);
+    // currently in state 'OPEN' the following should all fail 
+    await shouldFail.reverting.withMessage(realitycards2.mintNfts(user), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards2.determineWinner(), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards2.withdraw(), "Incorrect state");
+    // increment state
+    await time.increase(time.duration.days(1)); 
+    await realitycards2.lockMarket();
+    var state = await realitycards2.state.call();
+    assert.equal(2,state);
+    // currently in state 'LOCKED' the following should all fail 
+    await shouldFail.reverting.withMessage(realitycards2.mintNfts(user), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards2.collectRentAllTokens(), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards2.newRental(0,0), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards2.exit(0), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards2.rentAllCards(), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards2.sponsor({value: 3}), "Incorrect state");
+    // increment state
+    await realitio.setResult(1);
+    await realitycards2.determineWinner();
+    var state = await realitycards2.state.call();
+    assert.equal(3,state);
+    // currently in state 'WITHDRAW' the following should all fail 
+    await shouldFail.reverting.withMessage(realitycards2.mintNfts(user), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards2.lockMarket(), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards2.determineWinner(), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards2.collectRentAllTokens(), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards2.newRental(0,0), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards2.exit(0), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards2.sponsor({value: 3}), "Incorrect state");
+  });
 
 });
 

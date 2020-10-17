@@ -28,7 +28,6 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
     uint256 public nftMintCount;
     /// @dev the question ID of the question on realitio
     bytes32 public questionId;
-    uint256 public constant UNRESOLVED_OUTCOME_RESULT = 2**256 - 1;
     /// @dev only for _revertToPreviousOwner to prevent gas limits
     uint256 public constant MAX_ITERATIONS = 10;
     enum States {NFTSNOTMINTED, OPEN, LOCKED, WITHDRAW}
@@ -82,6 +81,13 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
     /// @dev prevent users withdrawing twice
     mapping (address => bool) public userAlreadyWithdrawn;
 
+    // to do
+    // add new state for not open, update the 'incorrect state' tests
+    // update check state modifier to move the state if timestmps are right
+    // set exit flag to zero after certain amount of itme, so that they can set how long to own it for
+    // maybe: add variable for min% increase so it can be changed
+
+
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
     ////////////////////////////////////
@@ -101,7 +107,7 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
         Ownable.initialize(_owner);
         ERC721.initialize();
         ERC721Metadata.initialize(_tokenName,"RC");
-        winningOutcome = UNRESOLVED_OUTCOME_RESULT;
+        winningOutcome = 2**256 - 1; // default invalid
         
         // resolution time must not be less than locking time, and not greater by more than one week
         require(_marketLockingTime + 1 weeks > _oracleResolutionTime && _marketLockingTime <= _oracleResolutionTime, "Invalid timestamps" );
@@ -305,7 +311,7 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
     }
 
     /// @notice rent every Card at the minimum price
-    function rentAllCards() external  {
+    function rentAllCards() external checkState(States.OPEN)  {
         for (uint i = 0; i < numberOfTokens; i++) {
             if (ownerOf(i) != msg.sender) {
                 uint _newPrice;
@@ -321,7 +327,6 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
     function newRental(uint256 _newPrice, uint256 _tokenId) public checkState(States.OPEN) tokenExists(_tokenId) {
         require(_newPrice >= price[_tokenId].mul(11).div(10), "Price not 10% higher");
         require(_newPrice >= 1 ether, "Minimum rental 1 Dai");
-        
         collectRentAllTokens();
 
         address _currentOwner = ownerOf(_tokenId);
@@ -330,7 +335,6 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
             // bought by current owner- just change price
             price[_tokenId] = _newPrice;
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
-
         } else {   
             // allocate 10mins deposit
             treasury.allocateCardSpecificDeposit(msg.sender,_currentOwner,_tokenId,_newPrice);
@@ -353,7 +357,7 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
     /// @notice stop renting a token
     /// @dev public because called by exitAll()
     /// @dev doesn't need to be current owner so user can prevent ownership returning to them
-    function exit(uint256 _tokenId) public {
+    function exit(uint256 _tokenId) public checkState(States.OPEN) {
         if (!exitFlag[msg.sender][_tokenId]) {
             exitFlag[msg.sender][_tokenId] = true;
             _collectRent(_tokenId);
@@ -369,6 +373,9 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
 
     /// @notice ability to add liqudity to the pot without being able to win. 
     function sponsor() external payable {
+        require(msg.value > 0, "Must send something");
+        require(state != States.LOCKED, "Incorrect state");
+        require(state != States.WITHDRAW, "Incorrect state");
         // send funds to the Treasury
         address _thisAddressNotPayable = address(treasury);
         address payable _recipient = address(uint160(_thisAddressNotPayable));

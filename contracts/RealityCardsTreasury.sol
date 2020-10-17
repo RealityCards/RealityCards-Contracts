@@ -46,8 +46,7 @@ contract RealityCardsTreasury is Ownable {
 
     modifier balancedBooks() {
         _;
-        uint256 _contractBalance = address(this).balance;
-        assert(_contractBalance == totalDeposits + totalMarketPots);
+        assert(address(this).balance == totalDeposits + totalMarketPots);
     }
 
     modifier onlyMarkets {
@@ -121,7 +120,6 @@ contract RealityCardsTreasury is Ownable {
         assert(cardSpecificDeposits[msg.sender][_newOwner][_tokenId] == 0);
         uint256 _tenMinsDeposit = _price.div(24*6);
         require(deposits[_newOwner] >= _tenMinsDeposit, "Insufficient deposit");
-        // move the deposit
         deposits[_newOwner] = deposits[_newOwner].sub(_tenMinsDeposit);
         cardSpecificDeposits[msg.sender][_newOwner][_tokenId] = cardSpecificDeposits[msg.sender][_newOwner][_tokenId].add(_tenMinsDeposit);
     }
@@ -159,8 +157,9 @@ contract RealityCardsTreasury is Ownable {
         totalDeposits = totalDeposits.add(_dai);
     }
 
-    /// @notice ability to add liqudity to the pot without being able to win. 
-    /// @dev also prevents accidentally sending ether direct
+    /// @notice ability to add liqudity to the pot without being able to win (called by market sponsor function). 
+    /// @dev prevents accidentally sending Ether direct
+    /// @dev prevents deliberately sending Ether direct to fuck up balancedBooks modifier
     function() external payable balancedBooks() onlyMarkets() {
         marketPot[msg.sender] = marketPot[msg.sender].add(msg.value);
         totalMarketPots = totalMarketPots.add(msg.value);
