@@ -559,7 +559,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
   });
 
   it('test sponsor', async () => {
-    await shouldFail.reverting.withMessage(realitycards.sponsor({ from: user6 }), "Must send something");
+    await shouldFail.reverting.withMessage(realitycards.sponsor({ from: user3 }), "Must send something");
     await realitycards.sponsor({ value: web3.utils.toWei('153', 'ether'), from: user3 });
     ///// SETUP //////
     await depositDai(1000,user0);
@@ -623,6 +623,49 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
+    await withdrawDeposit(1000,user3);
+  });
+
+  it('test sponsor- invalid', async () => {
+    await shouldFail.reverting.withMessage(realitycards.sponsor({ from: user3 }), "Must send something");
+    await realitycards.sponsor({ value: web3.utils.toWei('153', 'ether'), from: user3 });
+    ///// SETUP //////
+    await depositDai(1000,user0);
+    await depositDai(1000,user1);
+    await depositDai(1000,user2);
+    // rent losing teams
+    await newRental(1,0,user0); // collected 28
+    await newRental(2,1,user1); // collected 52
+    // rent winning team
+    await newRental(1,2,user0); // collected 7
+    await time.increase(time.duration.weeks(1));
+    await newRental(2,2,user1); // collected 14
+    await time.increase(time.duration.weeks(1));
+    await newRental(3,2,user2); // collected 42
+    await time.increase(time.duration.weeks(2)); 
+    // winner 1: 
+    // totalcollected = 147, // now 300 
+    // total days = 28 
+    // user 0 owned for 7 days
+    // user 1 owned for 7 days
+    // user 2 owned for 14 days
+    ////////////////////////
+    await realitycards.lockMarket(); 
+    // set winner 1
+    await realitycards.determineWinner2(20,{ from:andrewsAddress}); 
+    ////////////////////////
+    //check sponsor winnings
+    var depositBefore = await treasury.deposits.call(user3); 
+    await withdraw(user3);
+    var depositAfter = await treasury.deposits.call(user3); 
+    var winningsSentToUser = depositAfter - depositBefore;
+    var winningsShouldBe = ether('153');
+    var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
+    assert.isBelow(difference/winningsSentToUser,0.00001);
+    await withdrawDeposit(1000,user0);
+    await withdrawDeposit(1000,user1);
+    await withdrawDeposit(1000,user2);
+    await withdrawDeposit(1000,user3);
   });
 
 it('test withdraw- invalid', async () => {
@@ -970,6 +1013,72 @@ it('check that users cannot transfer their NFTs until withdraw state', async() =
     await shouldFail.reverting.withMessage(realitycards2.newRental(0,0), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards2.exit(0), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards2.sponsor({value: 3}), "Incorrect state");
+  });
+
+  it('check that owner can not be changed unless correct owner', async() => {
+    // buidler giving me shit when I try and intercept revert message so just testing revert
+    var newOwner = await realitycards.owner.call();
+    await shouldFail.reverting(realitycards.transferOwnership(user5,{from: user1}));
+    await realitycards.transferOwnership(user5,{from: andrewsAddress});
+    var newOwner = await realitycards.owner.call();
+    assert.equal(newOwner, user5);
+  });
+
+  it('check renounce ownership works', async() => {
+    user = user0;
+    // should work while im the owner
+    await realitycards.renounceOwnership({from: andrewsAddress});
+    var newOwner = await realitycards.owner.call();
+    assert.equal(newOwner, 0);
+  });
+
+  it('check getWinnings with different winners', async () => {
+    await depositDai(50,user0);
+    await newRental(1,0,user0);
+    await depositDai(50,user0);
+    await newRental(1,1,user0);
+    await time.increase(time.duration.weeks(1));
+    await depositDai(50,user1);
+    await newRental(2,1,user1);
+    await time.increase(time.duration.weeks(1)); 
+    // 0 has paid rent of 14 for 0 and 7 for 1, 1 has paid 14 for 1. 
+    // total collected = 35
+    // winnings for 0 if 0 wins should be 35
+    // winnings for 0 if 1 wins should be one half of 35
+    await realitycards.collectRentAllTokens();
+    var winnings = await realitycards.getWinnings.call(0,{from: user0});
+    var winningsShouldBe = web3.utils.toWei('35', 'ether');
+    var difference = Math.abs(winnings.toString()-winningsShouldBe.toString())
+    assert.isBelow(difference/winnings,0.00001);
+    var winnings = await realitycards.getWinnings.call(1,{from:user0});
+    var winningsShouldBe = web3.utils.toWei('35', 'ether') / 2;
+    var difference = Math.abs(winnings.toString()-winningsShouldBe.toString())
+    assert.isBelow(difference/winnings,0.00001);
+  });
+
+it('check oracleResolutionTime and marketLockingTime expected failures', async () => {
+    // someone else deploys question to realitio
+    var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
+    var arbitrator = "0xA6EAd513D05347138184324392d8ceb24C116118";
+    var timeout = 86400;
+    var templateId = 2;
+    // resolution time before locking, expect failure
+    var oracleResolutionTime = 69419;
+    var marketLockingTime = 69420; 
+    await shouldFail.reverting.withMessage(rcfactory.createMarket(3,'0x0',andrewsAddress,numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, arbitrator, timeout, tokenName), "Invalid timestamps");
+    // resolution time > 1 weeks after locking, expect failure
+    var oracleResolutionTime = 604810;
+    var marketLockingTime = 0; 
+    await shouldFail.reverting.withMessage(rcfactory.createMarket(3,'0x0',andrewsAddress,numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, arbitrator, timeout, tokenName), "Invalid timestamps");
+    // resolution time < 1 week  after locking, no failure
+    var oracleResolutionTime = 604790;
+    var marketLockingTime = 0; 
+    await rcfactory.createMarket(3,'0x0',andrewsAddress,numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, arbitrator, timeout, tokenName);
+    // same time, no failure
+    var oracleResolutionTime = 0;
+    var marketLockingTime = 0; 
+    await rcfactory.createMarket(3,'0x0',andrewsAddress,numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, arbitrator, timeout, tokenName);
+
   });
 
 });
