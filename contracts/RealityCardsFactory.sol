@@ -7,9 +7,6 @@ import './lib/CloneFactory.sol';
 import "./interfaces/ICash.sol";
 import "./interfaces/IRealitio.sol";
 import "./interfaces/ITreasury.sol";
-import './RealityCardsMarket.sol';
-import './RealityCardsMarketLite.sol';
-import './RealityCardsMarketXdai.sol';
 import './RealityCardsMarketXdaiV1.sol';
 
 /// @title Reality Cards Factory
@@ -29,16 +26,14 @@ contract RealityCardsFactory is Ownable, CloneFactory {
     ITreasury public treasury;
 
     ///// MARKET ADDRESSES /////
-    address public libraryAddress; // the single deployment of the contract logic
-    address public libraryAddressLite; 
-    address public libraryAddressXdai; 
-    address public libraryAddressXdaiV1;
+    // the single deployment of the contract logic, uint = mode
+    mapping(uint256 => address) public referenceContractAddresses; 
     mapping(address => bool) public mappingOfMarkets;
     address[] public marketAddresses;
     address public mostRecentContract;
 
     ///// EVENTS /////
-    event MarketCreated(address contractAddress, bytes ipfsHash);
+    event MarketCreated(address contractAddress, address treasuryAddress, bytes ipfsHash);
 
     constructor(ICash _daiAddress, IRealitio _realitioAddress, ITreasury _treasuryAddress) public 
     {
@@ -49,21 +44,9 @@ contract RealityCardsFactory is Ownable, CloneFactory {
         assert(treasury.setFactoryAddress(address(this)));
     }
 
-    /// @notice These functions set the library for the contract logic
-    function setLibraryAddress(address _libraryAddress) public onlyOwner {
-        libraryAddress = _libraryAddress;
-    }
-
-    function setLibraryAddressLite(address _libraryAddress) public onlyOwner {
-        libraryAddressLite = _libraryAddress;
-    }
-
-    function setLibraryAddressXdai(address _libraryAddress) public onlyOwner {
-        libraryAddressXdai = _libraryAddress;
-    }
-
-    function setLibraryAddressXdaiV1(address _libraryAddress) public onlyOwner {
-        libraryAddressXdaiV1 = _libraryAddress;
+    /// @notice These functions set the reference contract for the contract logic
+    function setReferenceContractAddress(uint256 _mode, address _referenceContractAddress) public onlyOwner {
+        referenceContractAddresses[_mode] = _referenceContractAddress;
     }
 
     /// @notice This contract is the framework of each new market
@@ -89,44 +72,7 @@ contract RealityCardsFactory is Ownable, CloneFactory {
         address _newAddress;
 
         if (_mode == 0) {
-            _newAddress = createClone(libraryAddress);
-            RealityCardsMarket(_newAddress).initialize({
-                _owner: _owner,
-                _numberOfTokens: _numberOfTokens,
-                _marketLockingTime: _marketLockingTime,
-                _oracleResolutionTime: _oracleResolutionTime,
-                _templateId: _templateId,
-                _question: _realitioQuestion,
-                _arbitrator: _arbitrator,
-                _timeout: _timeout,
-                _tokenName: _tokenName
-            });
-        } else if (_mode == 1) {
-            _newAddress = createClone(libraryAddressLite);
-            RealityCardsMarketLite(_newAddress).initialize({
-                _numberOfTokens: _numberOfTokens,
-                _marketLockingTime: _marketLockingTime,
-                _oracleResolutionTime: _oracleResolutionTime,
-                _templateId: _templateId,
-                _question: _realitioQuestion,
-                _arbitrator: _arbitrator,
-                _timeout: _timeout
-            });
-        } else if (_mode == 2) {
-            _newAddress = createClone(libraryAddressXdai);
-            RealityCardsMarketXdai(_newAddress).initialize({
-                _owner: _owner,
-                _numberOfTokens: _numberOfTokens,
-                _marketLockingTime: _marketLockingTime,
-                _oracleResolutionTime: _oracleResolutionTime,
-                _templateId: _templateId,
-                _question: _realitioQuestion,
-                _arbitrator: _arbitrator,
-                _timeout: _timeout,
-                _tokenName: _tokenName
-            });
-        } else if (_mode == 3) {
-            _newAddress = createClone(libraryAddressXdaiV1);
+            _newAddress = createClone(referenceContractAddresses[_mode]);
             RealityCardsMarketXdaiV1(_newAddress).initialize({
                 _owner: _owner,
                 _numberOfTokens: _numberOfTokens,
@@ -144,7 +90,7 @@ contract RealityCardsFactory is Ownable, CloneFactory {
         marketAddresses.push(_newAddress);
         mappingOfMarkets[_newAddress] = true;
         mostRecentContract = _newAddress;
-        emit MarketCreated(address(_newAddress), _ipfsHash);
+        emit MarketCreated(address(_newAddress), address(treasury), _ipfsHash);
 
         return _newAddress;
     }
