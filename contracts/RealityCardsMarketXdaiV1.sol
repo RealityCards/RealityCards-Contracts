@@ -493,11 +493,9 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
     /// @notice gives the winning Card to the winner, burns the rest
     function _processNFTsAfterEvent() internal {
         for (uint i = 0; i < numberOfTokens; i++) {
-            if (i == winningOutcome) {
+            if (i == winningOutcome && longestOwner[i] != address(0)) {
                 // if never owned, longestOwner[i] will = zero
-                if (longestOwner[i] != address(0)) {
-                    _transferTokenTo(ownerOf(i), longestOwner[i], price[i],i);
-                }
+                _transferTokenTo(ownerOf(i), longestOwner[i], price[i],i);
             } else {
                 _burn(i);
             }

@@ -1109,6 +1109,76 @@ it('check oracleResolutionTime and marketLockingTime expected failures', async (
     assert.equal(longestOwner, longestOwnerShouldBe);
   });
 
+it('test NFT allocation after event- winner', async () => {
+    await depositDai(1000,user0);
+    await depositDai(1000,user1);
+    await depositDai(1000,user2);
+    await newRental(1,0,user0); 
+    await newRental(1,1,user1); 
+    await newRental(1,2,user2);
+    await time.increase(time.duration.weeks(1));
+    await newRental(2,0,user1); //user 1 winner
+    await time.increase(time.duration.weeks(2));
+    ////////////////////////
+    await realitycards.lockMarket(); 
+    // set winner
+    await realitio.setResult(0);
+    await realitycards.determineWinner();
+    var owner = await realitycards.ownerOf(0);
+    assert.equal(owner,user1);
+    for (i = 1; i < 20; i++) {
+        await shouldFail.reverting.withMessage(realitycards.ownerOf(i), "ERC721: owner query for nonexistent token");
+    }
+    await withdrawDeposit(1000,user0);
+    await withdrawDeposit(1000,user1);
+    await withdrawDeposit(1000,user2);
+});
+
+it('test NFT allocation after event- circuit breaker', async () => {
+    await depositDai(1000,user0);
+    await depositDai(1000,user1);
+    await depositDai(1000,user2);
+    await newRental(1,0,user0); 
+    await newRental(1,1,user1); 
+    await newRental(1,2,user2);
+    await time.increase(time.duration.weeks(1));
+    await newRental(2,0,user1); //user 1 winner
+    await time.increase(time.duration.weeks(2));
+    ////////////////////////
+    await realitycards.lockMarket(); 
+    await time.increase(time.duration.weeks(2));
+    await realitycards.circuitBreaker();
+    for (i = 0; i < 20; i++) {
+        await shouldFail.reverting.withMessage(realitycards.ownerOf(i), "ERC721: owner query for nonexistent token");
+    }
+    await withdrawDeposit(1000,user0);
+    await withdrawDeposit(1000,user1);
+    await withdrawDeposit(1000,user2);
+});
+
+it('test NFT allocation after event- nobody owns winner', async () => {
+    await depositDai(1000,user0);
+    await depositDai(1000,user1);
+    await depositDai(1000,user2);
+    await newRental(1,0,user0); 
+    await newRental(1,1,user1); 
+    await newRental(1,2,user2);
+    await time.increase(time.duration.weeks(1));
+    await newRental(2,0,user1); //user 1 winner
+    await time.increase(time.duration.weeks(2));
+    ////////////////////////
+    await realitycards.lockMarket(); 
+    // set winner
+    await realitio.setResult(4);
+    await realitycards.determineWinner();
+    for (i = 0; i < 20; i++) {
+        await shouldFail.reverting.withMessage(realitycards.ownerOf(i), "ERC721: owner query for nonexistent token");
+    }
+    await withdrawDeposit(1000,user0);
+    await withdrawDeposit(1000,user1);
+    await withdrawDeposit(1000,user2);
+});
+
 });
 
 
