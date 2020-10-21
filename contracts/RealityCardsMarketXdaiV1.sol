@@ -60,6 +60,10 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
     mapping (uint256 => uint256) public timeLastCollected; 
     /// @dev when a token was bought. Used to enforce minimum of one hour rental, also used in front end. Rent collection does not need this, only needs timeLastCollected.
     mapping (uint256 => uint256) public timeAcquired; 
+     /// @dev to track the max timeheld of each token (for giving NFT to winner)
+    mapping (uint256 => uint256) public maxTimeHeld;
+    /// @dev to track who has owned it the most (for giving NFT to winner)
+    mapping (uint256 => address) public longestOwner;
 
     ///// PREVIOUS OWNERS /////
     /// @dev keeps track of all previous owners of a token, including the price, so that if the current owner's deposit runs out,
@@ -85,7 +89,10 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
     // add new state for not open, update the 'incorrect state' tests
     // update check state modifier to move the state if timestmps are right
     // set exit flag to zero after certain amount of itme, so that they can set how long to own it for
+    // update to latest version of solidity etc
     // maybe: add variable for min% increase so it can be changed
+    // maybe: have central NFT contract
+
 
 
     ////////////////////////////////////
@@ -259,13 +266,7 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
         // get the winner. This will revert if answer is not resolved.
         winningOutcome = _getWinner();
         _incrementState();
-        emit LogWinnerKnown(winningOutcome);
-    }
-
-    /// @dev temporary function until I have sorted out mainnet bridge
-    function determineWinner2(uint _winner) external checkState(States.LOCKED) onlyOwner {
-        winningOutcome = _winner;
-        _incrementState();
+        _processNFTsAfterEvent();
         emit LogWinnerKnown(winningOutcome);
     }
 
@@ -437,6 +438,12 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
                 collectedPerToken[_tokenId] = collectedPerToken[_tokenId].add(_rentOwed);
                 totalCollected = totalCollected.add(_rentOwed);
 
+                // longest owner tracking
+                if (timeHeld[_tokenId][_currentOwner] > maxTimeHeld[_tokenId]) {
+                    maxTimeHeld[_tokenId] = timeHeld[_tokenId][_currentOwner];
+                    longestOwner[_tokenId] = _currentOwner;
+                }
+
                 emit LogTimeHeldUpdated(timeHeld[_tokenId][_currentOwner], _currentOwner, _tokenId);
                 emit LogRentCollection(_rentOwed, _tokenId, _currentOwner);
             } 
@@ -483,6 +490,20 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
         }
     }
 
+    /// @notice gives the winning Card to the winner, burns the rest
+    function _processNFTsAfterEvent() internal {
+        for (uint i = 0; i < numberOfTokens; i++) {
+            if (i == winningOutcome) {
+                // if never owned, longestOwner[i] will = zero
+                if (longestOwner[i] != address(0)) {
+                    _transferTokenTo(ownerOf(i), longestOwner[i], price[i],i);
+                }
+            } else {
+                _burn(i);
+            }
+        }
+    }
+
     /// @notice return token to the contract and return price to zero
     function _foreclose(uint256 _tokenId) internal {
         address _currentOwner = ownerOf(_tokenId);
@@ -515,6 +536,7 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
     function circuitBreaker() external {
         require(now > (oracleResolutionTime + 4 weeks), "Too early");
         state = States.WITHDRAW;
+        _processNFTsAfterEvent();
     }
 
     /// @dev transfers only possible in withdraw state, so override the existing functions

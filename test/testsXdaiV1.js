@@ -81,10 +81,6 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     await treasury.withdrawDeposit(amount,{ from: userx});
   }
 
-    //dummy functions so I don't need to delete the same line from every test
-  async function faucet(dummy, dummy2) {}
-  async function approve(dummy, dummy2, dummy3) {}
-
     // check that the contract initially owns the token
     it('getOwner', async () => {
     var i;
@@ -408,7 +404,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         var timeHeld = await realitycards.timeHeld.call(0, user1);
         var timeHeldShouldBe = time.duration.hours(1);
         var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
-        assert.isBelow(difference,2);
+        assert.isBelow(difference,3);
         // call exit, user 0 should own and no more time held on u1
         await realitycards.exit(0,{ from: user1  });
         var owner = await realitycards.ownerOf.call(0);
@@ -418,7 +414,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         var timeHeld = await realitycards.timeHeld.call(0, user1);
         var timeHeldShouldBe = time.duration.hours(1);
         var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
-        assert.isBelow(difference,2);
+        assert.isBelow(difference,3);
         // withdraw for next test
         await withdrawDeposit(1000,user0);
         await withdrawDeposit(1000,user1);
@@ -517,7 +513,8 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     ////////////////////////
     await realitycards.lockMarket(); 
     // set winner 1
-    await realitycards.determineWinner2(2,{ from:andrewsAddress}); 
+    await realitio.setResult(2);
+    await realitycards.determineWinner();
     ////////////////////////
     // total deposits = 139, check:
     var totalCollected = await realitycards.totalCollected.call();
@@ -583,8 +580,9 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     // user 2 owned for 14 days
     ////////////////////////
     await realitycards.lockMarket(); 
-    // set winner 1
-    await realitycards.determineWinner2(2,{ from:andrewsAddress}); 
+    // set winner
+    await realitio.setResult(2);
+    await realitycards.determineWinner();
     ////////////////////////
     // total deposits = 139, check:
     var totalCollected = await realitycards.totalCollected.call();
@@ -651,8 +649,9 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     // user 2 owned for 14 days
     ////////////////////////
     await realitycards.lockMarket(); 
-    // set winner 1
-    await realitycards.determineWinner2(20,{ from:andrewsAddress}); 
+    // set winner 
+    await realitio.setResult(20);
+    await realitycards.determineWinner();
     ////////////////////////
     //check sponsor winnings
     var depositBefore = await treasury.deposits.call(user3); 
@@ -692,7 +691,8 @@ it('test withdraw- invalid', async () => {
     ////////////////////////
     await realitycards.lockMarket(); 
     // set invalid winner
-    await realitycards.determineWinner2(69,{ from:andrewsAddress}); 
+    await realitio.setResult(69);
+    await realitycards.determineWinner();
     ////////////////////////
     // total deposits = 139, check:
     var totalCollected = await realitycards.totalCollected.call();
@@ -946,7 +946,8 @@ it('check that users cannot transfer their NFTs until withdraw state', async() =
     await shouldFail.reverting(realitycards.transferFrom(user,user1,2));
     await shouldFail.reverting(realitycards.safeTransferFrom(user,user1,2));
     await shouldFail.reverting(realitycards.safeTransferFrom(user,user1,2,web3.utils.asciiToHex("123456789")));
-    await realitycards.determineWinner2(1,{ from:andrewsAddress}); 
+    await realitio.setResult(2);
+    await realitycards.determineWinner();
     // // these shoudl all fail cos wrong owner:
     var owner = await realitycards.ownerOf(2);
     assert.equal(owner, user);
@@ -1078,7 +1079,34 @@ it('check oracleResolutionTime and marketLockingTime expected failures', async (
     var oracleResolutionTime = 0;
     var marketLockingTime = 0; 
     await rcfactory.createMarket(0,'0x0',andrewsAddress,numberOfTokens,marketLockingTime, oracleResolutionTime, templateId, question, arbitrator, timeout, tokenName);
+  });
 
+  it('test maxTimeHeld & longestOwner', async () => {
+    await depositDai(10,user0);
+    await newRental(1,2,user0);
+    // await newRental(web3.utils.toWei('1', 'ether'),2,web3.utils.toWei('10', 'ether'),user0 ); 
+    await time.increase(time.duration.days(1)); 
+    await realitycards.collectRentAllTokens();
+    var maxTimeHeld = await realitycards.maxTimeHeld(2);
+    var maxTimeHeldShouldBe = time.duration.days(1);
+    var difference = Math.abs(maxTimeHeld.toString() - maxTimeHeldShouldBe.toString());
+    assert.isBelow(difference/maxTimeHeld,0.0001);
+    var longestOwner = await realitycards.longestOwner(2);
+    var longestOwnerShouldBe = user0;
+    assert.equal(longestOwner, longestOwnerShouldBe);
+    // try again new owner
+    await depositDai(10,user1);
+    await newRental(2,2,user1);
+    // await newRental(web3.utils.toWei('2', 'ether'),2,web3.utils.toWei('10', 'ether'),user1 ); 
+    await time.increase(time.duration.days(2));
+    await realitycards.collectRentAllTokens();
+    var maxTimeHeld = await realitycards.maxTimeHeld(2);
+    var maxTimeHeldShouldBe = time.duration.days(2);
+    var difference = Math.abs(maxTimeHeld.toString() - maxTimeHeldShouldBe.toString());
+    assert.isBelow(difference/maxTimeHeld,0.0001);
+    var longestOwner = await realitycards.longestOwner(2);
+    var longestOwnerShouldBe = user1;
+    assert.equal(longestOwner, longestOwnerShouldBe);
   });
 
 });
