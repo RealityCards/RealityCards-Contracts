@@ -406,7 +406,6 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
             if (_rentOwed > 0) {
                 // decrease deposit by rent owed at the Treasury
                 treasury.payRent(_currentOwner, _rentOwed, _tokenId, _exitFlag);
-
                 // update time held and amount collected variables
                 uint256 _timeHeldToIncrement = (_timeOfThisCollection.sub(timeLastCollected[_tokenId]));
                 // note that if _revertToPreviousOwner was called above, _currentOwner will no longer refer to the
