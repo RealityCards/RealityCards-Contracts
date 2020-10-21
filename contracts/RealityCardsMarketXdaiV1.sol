@@ -197,28 +197,6 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
     }
 
     ////////////////////////////////////
-    //////// VIEW FUNCTIONS ////////////
-    ////////////////////////////////////
-
-    /// @dev called in collectRent function, and various other view functions 
-    function rentOwed(uint256 _tokenId) public view returns (uint256) {
-        return price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(1 days);
-    }
-
-    /// @dev for front end and _payoutWinnings function
-    function getWinnings(uint256 _winningOutcome) public view returns (uint256) {
-        uint256 _winnersTimeHeld = timeHeld[_winningOutcome][msg.sender];
-        uint256 _numerator = totalCollected.mul(_winnersTimeHeld);
-        uint256 _winnings = _numerator.div(totalTimeHeld[_winningOutcome]);    
-        return _winnings;    
-    }
-
-    /// @dev for front end only
-    function marketExpectedResolutionTime() public view returns(uint32) {
-        return marketLockingTime;
-    }
-
-    ////////////////////////////////////
     ////// REALITIO CONTRACT CALLS /////
     ////////////////////////////////////
 
@@ -284,7 +262,9 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
 
     /// @notice pays winnings
     function _payoutWinnings() internal {
-        uint256 _winningsToTransfer = getWinnings(winningOutcome);
+        uint256 _winnersTimeHeld = timeHeld[winningOutcome][msg.sender];
+        uint256 _numerator = totalCollected.mul(_winnersTimeHeld);
+        uint256 _winningsToTransfer = _numerator.div(totalTimeHeld[winningOutcome]); 
         require(_winningsToTransfer > 0, "Not a winner");
         treasury.payout(msg.sender, _winningsToTransfer);
         emit LogWinningsPaid(msg.sender, _winningsToTransfer);
@@ -401,7 +381,7 @@ contract RealityCardsMarketXdaiV1 is Ownable, ERC721Full {
         //only collect rent if the token is owned (ie, if owned by the contract this implies unowned)
         if (ownerOf(_tokenId) != address(this)) {
             
-            uint256 _rentOwed = rentOwed(_tokenId);
+            uint256 _rentOwed = price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(1 days);
             address _currentOwner = ownerOf(_tokenId);
             uint256 _cardSpecificDeposit = treasury.cardSpecificDeposits(address(this),_currentOwner,_tokenId);
             uint256 _totalDeposit = treasury.deposits(_currentOwner).add(_cardSpecificDeposit);

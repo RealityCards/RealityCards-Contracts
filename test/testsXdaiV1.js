@@ -135,25 +135,6 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     // withdraw
     await withdrawDeposit(1000,user);
    });
-    
-    // is rentOwed function correct? Perhaps the most important function!!
-    it('test rentOwed function', async () => {
-        user = user0;
-        await depositDai(10,user);
-        await newRental(1,4,user);
-        await newRental(2,4,user);
-        await newRental(3,4,user);
-        // tests
-        var fundsOwedActual = await realitycards.rentOwed.call(4);
-        assert.equal(fundsOwedActual, 0);
-        await time.increase(time.duration.days(1));
-        var fundsOwedActual = await realitycards.rentOwed.call(4);
-        var fundsOwedActualShouldBe = web3.utils.toWei('3', 'ether');
-        var difference = Math.abs(fundsOwedActual.toString()-fundsOwedActualShouldBe.toString());
-        assert.isBelow(difference/fundsOwedActual,0.001);
-        // withdraw
-        await withdrawDeposit(1000,user);
-      });
   
     it('test various after collectRent', async () => {
         // setup
@@ -1031,30 +1012,6 @@ it('check that users cannot transfer their NFTs until withdraw state', async() =
     await realitycards.renounceOwnership({from: andrewsAddress});
     var newOwner = await realitycards.owner.call();
     assert.equal(newOwner, 0);
-  });
-
-  it('check getWinnings with different winners', async () => {
-    await depositDai(50,user0);
-    await newRental(1,0,user0);
-    await depositDai(50,user0);
-    await newRental(1,1,user0);
-    await time.increase(time.duration.weeks(1));
-    await depositDai(50,user1);
-    await newRental(2,1,user1);
-    await time.increase(time.duration.weeks(1)); 
-    // 0 has paid rent of 14 for 0 and 7 for 1, 1 has paid 14 for 1. 
-    // total collected = 35
-    // winnings for 0 if 0 wins should be 35
-    // winnings for 0 if 1 wins should be one half of 35
-    await realitycards.collectRentAllTokens();
-    var winnings = await realitycards.getWinnings.call(0,{from: user0});
-    var winningsShouldBe = web3.utils.toWei('35', 'ether');
-    var difference = Math.abs(winnings.toString()-winningsShouldBe.toString())
-    assert.isBelow(difference/winnings,0.00001);
-    var winnings = await realitycards.getWinnings.call(1,{from:user0});
-    var winningsShouldBe = web3.utils.toWei('35', 'ether') / 2;
-    var difference = Math.abs(winnings.toString()-winningsShouldBe.toString())
-    assert.isBelow(difference/winnings,0.00001);
   });
 
 it('check oracleResolutionTime and marketLockingTime expected failures', async () => {
