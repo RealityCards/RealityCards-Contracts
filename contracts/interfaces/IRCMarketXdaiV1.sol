@@ -1,8 +1,5 @@
 pragma solidity 0.5.13;
 
-/// @title Reality Cards Market
-/// @author Andrew Stanger
-
 interface IRCMarketXdaiV1 {
 
     function initialize(

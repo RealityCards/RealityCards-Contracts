@@ -85,16 +85,15 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
     /// @dev prevent users withdrawing twice
     mapping (address => bool) public userAlreadyWithdrawn;
 
-    // to do
+    // WORK TO DO 
     // add new state for not open, update the 'incorrect state' tests
     // update check state modifier to move the state if timestmps are right
     // set exit flag to zero after certain amount of itme, so that they can set how long to own it for
     // update to latest version of solidity etc [why, what is the point?]
-    // allow an owned function in treasury to change the factory address
+    // create an owned function in treasury to change the factory address
     // maybe: add variable for min% increase so it can be changed
-    // maybe: have central NFT contract
 
-
+    
 
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////

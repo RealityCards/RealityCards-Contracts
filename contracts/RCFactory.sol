@@ -4,7 +4,6 @@ import "@openzeppelin/contracts-ethereum-package/contracts/ownership/Ownable.sol
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "@nomiclabs/buidler/console.sol";
 import './lib/CloneFactory.sol';
-import "./interfaces/ICash.sol";
 import "./interfaces/IRealitio.sol";
 import "./interfaces/ITreasury.sol";
 import './interfaces/IRCMarketXdaiV1.sol';
@@ -22,7 +21,6 @@ contract RCFactory is Ownable, CloneFactory {
 
     ///// CONTRACT VARIABLES /////
     IRealitio public realitio;
-    ICash public cash; 
     ITreasury public treasury;
 
     ///// MARKET ADDRESSES /////
@@ -31,15 +29,15 @@ contract RCFactory is Ownable, CloneFactory {
         uint256 version; }
     // the reference deployment of the contract logic, uint = mode
     mapping(uint256 => referenceContract) public referenceContracts; 
+    mapping(uint256 => address[]) public referenceContractsArchive;
     mapping(address => bool) public mappingOfMarkets;
     address[] public marketAddresses;
 
     ///// EVENTS /////
     event MarketCreated(address contractAddress, address treasuryAddress, uint256 mode, uint256 version, bytes ipfsHash);
 
-    constructor(ICash _daiAddress, IRealitio _realitioAddress, ITreasury _treasuryAddress) public 
+    constructor(IRealitio _realitioAddress, ITreasury _treasuryAddress) public 
     {
-        cash = _daiAddress;
         realitio = _realitioAddress;
         treasury = _treasuryAddress;
         Ownable.initialize(msg.sender);
@@ -51,6 +49,7 @@ contract RCFactory is Ownable, CloneFactory {
     function setReferenceContractAddress(uint256 _mode, address _referenceContractAddress) public onlyOwner {
         referenceContracts[_mode].referenceContractAddress = _referenceContractAddress;
         referenceContracts[_mode].version = referenceContracts[_mode].version.add(1);
+        referenceContractsArchive[_mode].push(_referenceContractAddress);
     }
 
     /// @notice create a new market
