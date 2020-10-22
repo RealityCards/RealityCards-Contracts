@@ -93,7 +93,9 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
     // create an owned function in treasury to change the factory address
     // maybe: add variable for min% increase so it can be changed
 
-    
+    // TESTS TO DO
+    //check modifiers on treasury
+    // check cnat send ether direct to treausry
 
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
@@ -316,6 +318,8 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
             // bought by current owner- just change price
             price[_tokenId] = _newPrice;
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
+            // ensure 10 mins deposit is increased as appropriate
+            treasury.allocateCardSpecificDeposit(msg.sender,_currentOwner,_tokenId,_newPrice);
         } else {   
             // allocate 10mins deposit
             treasury.allocateCardSpecificDeposit(msg.sender,_currentOwner,_tokenId,_newPrice);

@@ -80,10 +80,9 @@ contract RCTreasury is Ownable {
     ////////////////////////////////////
 
     function deposit() external payable balancedBooks() initialised() {
-        uint256 _dai = msg.value;
-        deposits[msg.sender] = deposits[msg.sender].add(_dai);
-        totalDeposits = totalDeposits.add(_dai);
-        emit LogDepositIncreased(_dai, msg.sender);
+        deposits[msg.sender] = deposits[msg.sender].add(msg.value);
+        totalDeposits = totalDeposits.add(msg.value);
+        emit LogDepositIncreased(msg.value, msg.sender);
     }
 
     /// @dev this is the only function where funds leave the contract
@@ -108,6 +107,8 @@ contract RCTreasury is Ownable {
 
     /// @dev moves ten minutes' deposit into a seperate pot
     function allocateCardSpecificDeposit(address _newOwner, address _previousOwner, uint256 _tokenId, uint256 _price) external balancedBooks() onlyMarkets() {
+        uint256 _tenMinsDeposit = _price.div(24*6);
+        require(deposits[_newOwner] >= _tenMinsDeposit, "Insufficient deposit");
 
         // first, unallocate card specific deposit of previous owner
         if (cardSpecificDeposits[msg.sender][_previousOwner][_tokenId] > 0) {
@@ -118,8 +119,6 @@ contract RCTreasury is Ownable {
         // allocate card specific deposit for new owner
         // balance should have been cleared out as per the above
         assert(cardSpecificDeposits[msg.sender][_newOwner][_tokenId] == 0);
-        uint256 _tenMinsDeposit = _price.div(24*6);
-        require(deposits[_newOwner] >= _tenMinsDeposit, "Insufficient deposit");
         deposits[_newOwner] = deposits[_newOwner].sub(_tenMinsDeposit);
         cardSpecificDeposits[msg.sender][_newOwner][_tokenId] = cardSpecificDeposits[msg.sender][_newOwner][_tokenId].add(_tenMinsDeposit);
     }
