@@ -7,9 +7,9 @@ const {
   time
 } = require('openzeppelin-test-helpers');
 
-var RCFactory = artifacts.require('./RealityCardsFactory.sol');
-var RCTreasury = artifacts.require('./RealityCardsTreasury.sol');
-var RCMarket = artifacts.require('./RealityCardsMarketXdaiV1.sol');
+var RCFactory = artifacts.require('./RCFactory.sol');
+var RCTreasury = artifacts.require('./RCTreasury.sol');
+var RCMarket = artifacts.require('./RCMarketXdaiV1.sol');
 var CashMockup = artifacts.require("./mockups/CashMockup.sol");
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 
@@ -417,7 +417,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         var timeHeld = await realitycards.timeHeld.call(0, user1);
         var timeHeldShouldBe = time.duration.minutes(5);
         var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
-        assert.isBelow(difference,2);
+        assert.isBelow(difference,5);
         // call exit, user 1 should still own
         await realitycards.exit(0,{ from: user1 });
         var owner = await realitycards.ownerOf.call(0);

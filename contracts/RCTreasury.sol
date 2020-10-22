@@ -8,7 +8,7 @@ import "@nomiclabs/buidler/console.sol";
 /// @author Andrew Stanger
 /// @dev supports xDai only (aka Ether)
 
-contract RealityCardsTreasury is Ownable {
+contract RCTreasury is Ownable {
 
     using SafeMath for uint256;
 

@@ -7,12 +7,12 @@ import './lib/CloneFactory.sol';
 import "./interfaces/ICash.sol";
 import "./interfaces/IRealitio.sol";
 import "./interfaces/ITreasury.sol";
-import './RealityCardsMarketXdaiV1.sol';
+import './interfaces/IRCMarketXdaiV1.sol';
 
 /// @title Reality Cards Factory
 /// @author Andrew Stanger
 
-contract RealityCardsFactory is Ownable, CloneFactory {
+contract RCFactory is Ownable, CloneFactory {
 
     using SafeMath for uint256;
 
@@ -26,10 +26,10 @@ contract RealityCardsFactory is Ownable, CloneFactory {
     ITreasury public treasury;
 
     ///// MARKET ADDRESSES /////
-    // the single deployment of the contract logic, uint = mode
     struct referenceContract { 
         address referenceContractAddress;
         uint256 version; }
+    // the reference deployment of the contract logic, uint = mode
     mapping(uint256 => referenceContract) public referenceContracts; 
     mapping(address => bool) public mappingOfMarkets;
     address[] public marketAddresses;
@@ -46,16 +46,14 @@ contract RealityCardsFactory is Ownable, CloneFactory {
         assert(treasury.setFactoryAddress(address(this)));
     }
 
-    /// @notice These functions set the reference contract for the contract logic
+    /// @notice set the reference contract for the contract logic
+    /// @dev automatically increments version number if we 'upgrade' the contract
     function setReferenceContractAddress(uint256 _mode, address _referenceContractAddress) public onlyOwner {
         referenceContracts[_mode].referenceContractAddress = _referenceContractAddress;
         referenceContracts[_mode].version = referenceContracts[_mode].version.add(1);
     }
 
-    /// @notice This contract is the framework of each new market
-    /// @dev Currently, only owners can generate the markets
-    /// @param _arbitrator The arbitrator address
-    /// @param _realitioQuestion The question, formatted to suit how realitio required
+    /// @notice create a new market
     function createMarket(
         uint32 _mode,
         bytes memory _ipfsHash,
@@ -71,7 +69,7 @@ contract RealityCardsFactory is Ownable, CloneFactory {
 
         if (_mode == 0) {
             _newAddress = createClone(referenceContracts[_mode].referenceContractAddress);
-            RealityCardsMarketXdaiV1(_newAddress).initialize({
+            IRCMarketXdaiV1(_newAddress).initialize({
                 _owner: _owner,
                 _numberOfTokens: _numberOfTokens,
                 _marketLockingTime: timestamps[0],
