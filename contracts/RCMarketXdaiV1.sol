@@ -313,16 +313,15 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
         collectRentAllTokens();
 
         address _currentOwner = ownerOf(_tokenId);
+        // allocate 10mins deposit (or increase if same owner)
+        
+        treasury.allocateCardSpecificDeposit(msg.sender,_currentOwner,_tokenId,_newPrice);
 
         if (_currentOwner == msg.sender) { 
             // bought by current owner- just change price
             price[_tokenId] = _newPrice;
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
-            // ensure 10 mins deposit is increased as appropriate
-            treasury.allocateCardSpecificDeposit(msg.sender,_currentOwner,_tokenId,_newPrice);
         } else {   
-            // allocate 10mins deposit
-            treasury.allocateCardSpecificDeposit(msg.sender,_currentOwner,_tokenId,_newPrice);
             // update internals
             currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].add(1); 
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
@@ -448,12 +447,10 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
             currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].sub(1); // currentOwnerIndex will now point to  previous owner
             _index = currentOwnerIndex[_tokenId]; // just for readability
             _previousOwner = ownerTracker[_tokenId][_index].owner;
-            if (exitFlag[_previousOwner][_tokenId]) {
-                _previousOwnersDeposit = treasury.cardSpecificDeposits(address(this),msg.sender,_tokenId);
-            } else {
-                _previousOwnersDeposit = treasury.deposits(_previousOwner).add(treasury.cardSpecificDeposits(address(this),msg.sender,_tokenId));
-            }
-
+            _previousOwnersDeposit = treasury.deposits(_previousOwner);
+            // because always unallocated upon new rental
+            assert(treasury.cardSpecificDeposits(address(this),_previousOwner,_tokenId) == 0);
+            
             // if no previous owners. price -> zero, foreclose
             if (_index == 0) {
                 _foreclose(_tokenId);
@@ -461,6 +458,7 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
             } else if (_previousOwnersDeposit > 0) {
                 break;
             }  
+            
         }   
 
         // if the above loop did not end in foreclose, then transfer to previous owner
