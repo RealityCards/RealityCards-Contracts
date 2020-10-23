@@ -29,12 +29,12 @@ contract RCFactory is Ownable, CloneFactory {
         uint256 version; }
     // the reference deployment of the contract logic, uint = mode
     mapping(uint256 => referenceContract) public referenceContracts; 
-    mapping(uint256 => address[]) public referenceContractsArchive;
-    mapping(address => bool) public mappingOfMarkets;
-    address[] public marketAddresses;
+    mapping(uint256 => address[]) public referenceContractsArchive; // version implied by position
+    mapping(address => bool) public mappingOfMarkets; //not currently used
+    mapping(uint256 => address[]) public marketAddresses;
 
     ///// EVENTS /////
-    event MarketCreated(address contractAddress, address treasuryAddress, uint256 mode, uint256 version, bytes ipfsHash);
+    event LogMarketCreated(address contractAddress, address treasuryAddress, uint256 mode, uint256 version, bytes ipfsHash);
 
     constructor(IRealitio _realitioAddress, ITreasury _treasuryAddress) public 
     {
@@ -82,16 +82,20 @@ contract RCFactory is Ownable, CloneFactory {
             treasury.addMarket(_newAddress);
         }
         
-        marketAddresses.push(_newAddress);
+        marketAddresses[_mode].push(_newAddress);
         mappingOfMarkets[_newAddress] = true;
         uint256 _version = referenceContracts[_mode].version;
-        emit MarketCreated(address(_newAddress), address(treasury), _mode, _version, _ipfsHash);
+        emit LogMarketCreated(address(_newAddress), address(treasury), _mode, _version, _ipfsHash);
 
         return _newAddress;
     }
 
-    function getMarkets() public view returns (address[] memory) {
-        return marketAddresses;
+    function getMostRecentMarket(uint256 _mode) public view returns (address) {
+        return marketAddresses[_mode][marketAddresses[_mode].length-1];
+    }
+
+    function getAllMarkets(uint256 _mode) public view returns (address[] memory) {
+        return marketAddresses[_mode];
     }
 
 }

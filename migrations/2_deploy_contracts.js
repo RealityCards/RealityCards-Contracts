@@ -1,14 +1,8 @@
 /* globals artifacts */
-var RealityCardsTreasury = artifacts.require("./RealityCardsTreasury.sol");
-var RealityCardsFactory = artifacts.require("./RealityCardsFactory.sol");
-var RealityCardsMarket = artifacts.require("./RealityCardsMarket.sol");
-var RealityCardsMarketLite = artifacts.require("./RealityCardsMarketLite.sol");
-var RealityCardsMarketXdai = artifacts.require("./RealityCardsMarketXdai.sol");
-var RealityCardsMarketXdaiV1 = artifacts.require("./RealityCardsMarketXdaiV1.sol")
+var RealityCardsTreasury = artifacts.require("./RCTreasury.sol");
+var RealityCardsFactory = artifacts.require("./RCFactory.sol");
+var RealityCardsMarketXdaiV1 = artifacts.require("./RCMarketXdaiV1.sol")
 
-// KOVAN ADDRESSES
-const cashAddressKovan = '0x86309723166C177591960E5A9a5ecb7056564331';
-const realitioAddressKovan = '0x50E35A1ED424aB9C0B8C7095b3d9eC2fb791A168';
 
 // MAINNET ADDRESSES
 const daiAddressMainnet = '0x6b175474e89094c44da98b954eedeac495271d0f';
@@ -21,28 +15,19 @@ module.exports = async (deployer, network) =>
 {
     if (network === "xdai") 
     {
-        // deployer.deploy(RealityCardsTreasury).then(async () => {
-        //     treasury = await RealityCardsTreasury.deployed();
-        //     return deployer.deploy(RealityCardsFactory, dummyAddresss, dummyAddresss,treasury.address).then(async () => {
-        //         factory = await RealityCardsFactory.deployed();
-        //         return deployer.deploy(RealityCardsMarketXdaiV1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0).then(async () => {
-        //             marketXdaiV1 = await RealityCardsMarketXdaiV1.deployed();
-        //             await factory.setLibraryAddressXdaiV1(marketXdaiV1.address);
-        //         }); 
-        //     }); 
-        // });      
-    } 
-    else if (network === "kovan") 
-    {
         deployer.deploy(RealityCardsTreasury).then(async () => {
             treasury = await RealityCardsTreasury.deployed();
-            return deployer.deploy(RealityCardsFactory, dummyAddresss, dummyAddresss,treasury.address).then(async () => {
+            return deployer.deploy(RealityCardsFactory,dummyAddresss,treasury.address).then(async () => {
                 factory = await RealityCardsFactory.deployed();
-                return deployer.deploy(RealityCardsMarketXdaiV1, 0, 0, 0, 0, 0, 0, 0, 0, 0).then(async () => {
+                return deployer.deploy(RealityCardsMarketXdaiV1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0).then(async () => {
                     marketXdaiV1 = await RealityCardsMarketXdaiV1.deployed();
-                    await factory.setLibraryAddressXdaiV1(marketXdaiV1.address);
+                    await factory.setReferenceContractAddress(0,marketXdaiV1.address);
                 }); 
             }); 
         });      
+    } 
+    else 
+    {
+        console.log("No deploy script for this network")   
     } 
 };

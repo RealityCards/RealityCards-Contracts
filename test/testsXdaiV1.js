@@ -43,9 +43,20 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     rcreference = await RCMarket.new();
     rcfactory = await RCFactory.new(realitio.address, treasury.address);
     await rcfactory.setReferenceContractAddress(0,rcreference.address);
+    await rcfactory.createMarket(
+        0,
+        '0x0',
+        andrewsAddress,
+        numberOfTokens,
+        timestamps,
+        question,
+        arbitrator,
+        timeout,
+        tokenName
+      );
     //first market
-    await rcfactory.createMarket(0,'0x0',andrewsAddress,numberOfTokens,timestamps, question, arbitrator, timeout, tokenName);
-    var marketAddress = await rcfactory.marketAddresses.call(0);
+    // await rcfactory.createMarket(0,'0x0',andrewsAddress,numberOfTokens,timestamps, question, arbitrator, timeout, tokenName);
+    var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards = await RCMarket.at(marketAddress);
     for (i = 0; i < 20; i++) {
         await realitycards.mintNfts("uri", {from: andrewsAddress});
@@ -105,7 +116,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     assert.equal(price, web3.utils.toWei('144', 'ether'));
     var deposit = await treasury.deposits.call(user);
     assert.equal(deposit, web3.utils.toWei('143', 'ether'));
-    marketAddress = await rcfactory.marketAddresses.call(0);
+    marketAddress = await rcfactory.getMostRecentMarket.call(0);
     var depositSpecific = await treasury.cardSpecificDeposits.call(marketAddress,user,4);
     assert.equal(depositSpecific, web3.utils.toWei('1', 'ether'));
     var owner = await realitycards.ownerOf.call(4);
@@ -300,7 +311,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         await depositDai(144,user);
         await newRental(144,0,user);
         var deposit = await treasury.deposits.call(user); 
-        marketAddress = await rcfactory.marketAddresses.call(0);
+        marketAddress = await rcfactory.getMostRecentMarket.call(0);
         var depositSpecific = await treasury.cardSpecificDeposits.call(marketAddress,user,0);
         assert.equal(deposit, web3.utils.toWei('143', 'ether')); 
         assert.equal(depositSpecific, web3.utils.toWei('1', 'ether')); 
@@ -323,7 +334,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         await withdrawDeposit(100,user);
         // check deposit balances 
         var deposit = await treasury.deposits.call(user); 
-        marketAddress = await rcfactory.marketAddresses.call(0);
+        marketAddress = await rcfactory.getMostRecentMarket.call(0);
         var depositSpecific = await treasury.cardSpecificDeposits.call(marketAddress,user,0);
         assert.equal(deposit, 0); 
         assert.equal(depositSpecific, web3.utils.toWei('1', 'ether'));
@@ -346,7 +357,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         var oracleResolutionTime = await time.latest();
         var timestamps = [marketLockingTime,oracleResolutionTime];
         await rcfactory.createMarket(0,'0x0',andrewsAddress,numberOfTokens,timestamps, question, arbitrator, timeout, tokenName);
-        marketAddress = await rcfactory.marketAddresses.call(1);
+        marketAddress = await rcfactory.getMostRecentMarket.call(0);
         realitycards2 = await RCMarket.at(marketAddress);
         for (i = 0; i < 20; i++) {
             await realitycards2.mintNfts("uri", {from: andrewsAddress});
@@ -884,7 +895,7 @@ it('test payRent/deposits after 0 mins, 5 mins, 15 mins', async () => {
     await newRental(144,0,user);
     // 0 mins
     var deposit = await treasury.deposits.call(user); 
-    marketAddress = await rcfactory.marketAddresses.call(0);
+    marketAddress = await rcfactory.getMostRecentMarket.call(0);
     var depositSpecific = await treasury.cardSpecificDeposits.call(marketAddress,user,0);
     assert.equal(deposit, web3.utils.toWei('143', 'ether')); 
     assert.equal(depositSpecific, web3.utils.toWei('1', 'ether'));
@@ -893,7 +904,7 @@ it('test payRent/deposits after 0 mins, 5 mins, 15 mins', async () => {
     await realitycards.collectRentAllTokens(); 
     var deposit = await treasury.deposits.call(user); 
     assert.equal(deposit, web3.utils.toWei('143', 'ether')); 
-    marketAddress = await rcfactory.marketAddresses.call(0);
+    marketAddress = await rcfactory.getMostRecentMarket.call(0);
     var depositSpecific = await treasury.cardSpecificDeposits.call(marketAddress,user,0);
     var depositSpecificShouldBe = web3.utils.toWei('0.5', 'ether');
     var difference = Math.abs(depositSpecific.toString()-depositSpecificShouldBe.toString());
@@ -945,7 +956,7 @@ it('check that users cannot transfer their NFTs until withdraw state', async() =
     var oracleResolutionTime = await time.latest();
     var timestamps = [marketLockingTime,oracleResolutionTime];
     await rcfactory.createMarket(0,'0x0',andrewsAddress,numberOfTokens,timestamps, question, arbitrator, timeout, tokenName);
-    marketAddress = await rcfactory.marketAddresses.call(1);
+    marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
     // check state is 0
     var state = await realitycards2.state.call();
@@ -1150,7 +1161,7 @@ it('deploy new reference contract, does it still work? test withdraw', async () 
     assert.notEqual(referenceContractAddressBefore,referenceContractAddressAfter);
     // new market with different reference contract
     await rcfactory.createMarket(0,'0x0',andrewsAddress,numberOfTokens,timestamps, question, arbitrator, timeout, tokenName);
-    var marketAddress = await rcfactory.marketAddresses.call(1);
+    var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards = await RCMarket.at(marketAddress);
     for (i = 0; i < 20; i++) {
         await realitycards.mintNfts("uri", {from: andrewsAddress});
@@ -1199,7 +1210,7 @@ it('check that card specific deposit is only allocated once', async () => {
     await depositDai(1000,user0);
     await newRental(144,0,user0);
     // check user 0 has 1 card specific deposit
-    marketAddress = await rcfactory.marketAddresses.call(0);
+    marketAddress = await rcfactory.getMostRecentMarket.call(0);
     var depositSpecific = await treasury.cardSpecificDeposits.call(marketAddress,user0,0);
     var depositSpecificShouldBe = web3.utils.toWei('1', 'ether');
     var difference = Math.abs(depositSpecific.toString()-depositSpecificShouldBe.toString());
@@ -1219,7 +1230,7 @@ it('check card specific deposit is removed when there is a new renter', async ()
     await depositDai(1000,user1);
     await newRental(144,0,user0);
     // check user 0 has 1 card specific deposit
-    marketAddress = await rcfactory.marketAddresses.call(0);
+    marketAddress = await rcfactory.getMostRecentMarket.call(0);
     var depositSpecific = await treasury.cardSpecificDeposits.call(marketAddress,user0,0);
     var depositSpecificShouldBe = web3.utils.toWei('1', 'ether');
     var difference = Math.abs(depositSpecific.toString()-depositSpecificShouldBe.toString());
