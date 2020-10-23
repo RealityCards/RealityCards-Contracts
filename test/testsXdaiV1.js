@@ -1154,9 +1154,9 @@ it('deploy new reference contract, does it still work? test withdraw', async () 
     var oracleResolutionTime = await time.latest();
     var timestamps = [marketLockingTime,oracleResolutionTime];
     rcreference2 = await RCMarket.new();
-    var referenceContractAddressBefore = await rcfactory.referenceContracts(0);
+    var referenceContractAddressBefore = await rcfactory.getMostRecentReferenceContract(0);
     await rcfactory.setReferenceContractAddress(0,rcreference2.address);
-    var referenceContractAddressAfter = await rcfactory.referenceContracts(0);
+    var referenceContractAddressAfter = await rcfactory.getMostRecentReferenceContract(0);
     // chcek the reference contract address has changed
     assert.notEqual(referenceContractAddressBefore,referenceContractAddressAfter);
     // new market with different reference contract

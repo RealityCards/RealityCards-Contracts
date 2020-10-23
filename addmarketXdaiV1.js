@@ -3,7 +3,7 @@
 var realityCardsFactory = artifacts.require("RCFactory");
 var RealityCardsMarketXdaiV1 = artifacts.require("RCMarketXdaiV1");
 
-var factoryAddress = '0xE5e255D75E1606BE6795b94A6d04A5C4d53eAa9A';
+var factoryAddress = '0xa67E989b4Bc377C76c6f1E2657E5E833f94720eB';
 
 // variables market specific
 var marketLockingTime = 1601251201; // Monday, 28-Sep-20 00:00:01 UTC in RFC 2822

@@ -23,18 +23,15 @@ contract RCFactory is Ownable, CloneFactory {
     IRealitio public realitio;
     ITreasury public treasury;
 
-    ///// MARKET ADDRESSES /////
-    struct referenceContract { 
-        address referenceContractAddress;
-        uint256 version; }
-    // the reference deployment of the contract logic, uint = mode
-    mapping(uint256 => referenceContract) public referenceContracts; 
-    mapping(uint256 => address[]) public referenceContractsArchive; // version implied by position
-    mapping(address => bool) public mappingOfMarkets; //not currently used
+    ///// CONTRACT ADDRESSES /////
+    // version implied by position
+    mapping(uint256 => address[]) public referenceContractAddresses; 
     mapping(uint256 => address[]) public marketAddresses;
+    mapping(address => bool) public mappingOfMarkets; //not currently used
 
     ///// EVENTS /////
     event LogMarketCreated(address contractAddress, address treasuryAddress, uint256 mode, uint256 version, bytes ipfsHash);
+    event LogNewReferenceContract(address contractAddress, uint256 mode, uint256 version);
 
     constructor(IRealitio _realitioAddress, ITreasury _treasuryAddress) public 
     {
@@ -47,9 +44,9 @@ contract RCFactory is Ownable, CloneFactory {
     /// @notice set the reference contract for the contract logic
     /// @dev automatically increments version number if we 'upgrade' the contract
     function setReferenceContractAddress(uint256 _mode, address _referenceContractAddress) public onlyOwner {
-        referenceContracts[_mode].referenceContractAddress = _referenceContractAddress;
-        referenceContracts[_mode].version = referenceContracts[_mode].version.add(1);
-        referenceContractsArchive[_mode].push(_referenceContractAddress);
+        referenceContractAddresses[_mode].push(_referenceContractAddress);
+        uint256 _version = referenceContractAddresses[_mode].length-1;
+        emit LogNewReferenceContract(_referenceContractAddress, _mode, _version);
     }
 
     /// @notice create a new market
@@ -67,7 +64,7 @@ contract RCFactory is Ownable, CloneFactory {
         address _newAddress;
 
         if (_mode == 0) {
-            _newAddress = createClone(referenceContracts[_mode].referenceContractAddress);
+            _newAddress = createClone(getMostRecentReferenceContract(_mode));
             IRCMarketXdaiV1(_newAddress).initialize({
                 _owner: _owner,
                 _numberOfTokens: _numberOfTokens,
@@ -84,10 +81,18 @@ contract RCFactory is Ownable, CloneFactory {
         
         marketAddresses[_mode].push(_newAddress);
         mappingOfMarkets[_newAddress] = true;
-        uint256 _version = referenceContracts[_mode].version;
+        uint256 _version = referenceContractAddresses[_mode].length-1;
         emit LogMarketCreated(address(_newAddress), address(treasury), _mode, _version, _ipfsHash);
 
         return _newAddress;
+    }
+
+    function getMostRecentReferenceContract(uint256 _mode) public view returns (address) {
+        return referenceContractAddresses[_mode][referenceContractAddresses[_mode].length-1];
+    }
+
+    function getAllReferenceContracts(uint256 _mode) public view returns (address[] memory) {
+        return referenceContractAddresses[_mode];
     }
 
     function getMostRecentMarket(uint256 _mode) public view returns (address) {
