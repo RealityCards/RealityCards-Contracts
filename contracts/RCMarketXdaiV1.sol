@@ -92,6 +92,10 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
     // update to latest version of solidity etc [why, what is the point?]
     // create an owned function in treasury to change the factory address
     // maybe: add variable for min% increase so it can be changed
+    // maybe: add a delegate call to treasury in newRental so treasury can prevent payRent being 
+    // called for a user that never rented a Card
+    // add pausiable
+    // add some panic mode so that bets cant be placed, all you can do is withdraw
 
     // TESTS TO DO
     //check modifiers on treasury
@@ -268,7 +272,7 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
         uint256 _numerator = totalCollected.mul(_winnersTimeHeld);
         uint256 _winningsToTransfer = _numerator.div(totalTimeHeld[winningOutcome]); 
         require(_winningsToTransfer > 0, "Not a winner");
-        treasury.payout(msg.sender, _winningsToTransfer);
+        assert(treasury.payout(msg.sender, _winningsToTransfer));
         emit LogWinningsPaid(msg.sender, _winningsToTransfer);
     }
 
@@ -276,7 +280,7 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
     function _returnRent() internal {
         uint256 _rentCollected = collectedPerUser[msg.sender];
         require(_rentCollected > 0, "Paid no rent");
-        treasury.payout(msg.sender, _rentCollected);
+        assert(treasury.payout(msg.sender, _rentCollected));
         emit LogRentReturned(msg.sender, _rentCollected);
     }
 
@@ -315,7 +319,7 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
         address _currentOwner = ownerOf(_tokenId);
         // allocate 10mins deposit (or increase if same owner)
         
-        treasury.allocateCardSpecificDeposit(msg.sender,_currentOwner,_tokenId,_newPrice);
+        assert(treasury.allocateCardSpecificDeposit(msg.sender,_currentOwner,_tokenId,_newPrice));
 
         if (_currentOwner == msg.sender) { 
             // bought by current owner- just change price
@@ -408,7 +412,7 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
             // _rentOwed will be 0 if _exitFlag set after cardSpecificDeposit used
             if (_rentOwed > 0) {
                 // decrease deposit by rent owed at the Treasury
-                treasury.payRent(_currentOwner, _rentOwed, _tokenId, _exitFlag);
+                assert(treasury.payRent(_currentOwner, _rentOwed, _tokenId, _exitFlag));
                 // update time held and amount collected variables
                 uint256 _timeHeldToIncrement = (_timeOfThisCollection.sub(timeLastCollected[_tokenId]));
                 // note that if _revertToPreviousOwner was called above, _currentOwner will no longer refer to the
@@ -476,7 +480,7 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
         for (uint i = 0; i < numberOfTokens; i++) {
             if (i == winningOutcome && longestOwner[i] != address(0)) {
                 // if never owned, longestOwner[i] will = zero
-                _transferTokenTo(ownerOf(i), longestOwner[i], price[i],i);
+                _transferTokenTo(ownerOf(i), longestOwner[i], price[i], i);
             } else {
                 _burn(i);
             }

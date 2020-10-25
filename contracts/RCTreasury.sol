@@ -70,9 +70,10 @@ contract RCTreasury is Ownable {
         return true;
     }
 
-    function addMarket(address _newMarket) external initialised() {
+    function addMarket(address _newMarket) external initialised() returns(bool) {
         require(msg.sender == factoryAddress, "Not factory");
         isMarket[_newMarket] = true;
+        return true;
     }
 
     ////////////////////////////////////
@@ -106,7 +107,7 @@ contract RCTreasury is Ownable {
     /// only markets can call these functions
 
     /// @dev moves ten minutes' deposit into a seperate pot
-    function allocateCardSpecificDeposit(address _newOwner, address _previousOwner, uint256 _tokenId, uint256 _price) external balancedBooks() onlyMarkets() {
+    function allocateCardSpecificDeposit(address _newOwner, address _previousOwner, uint256 _tokenId, uint256 _price) external balancedBooks() onlyMarkets() returns(bool) {
         uint256 _tenMinsDeposit = _price.div(24*6);
         require(deposits[_newOwner] >= _tenMinsDeposit, "Insufficient deposit");
 
@@ -121,10 +122,11 @@ contract RCTreasury is Ownable {
         assert(cardSpecificDeposits[msg.sender][_newOwner][_tokenId] == 0);
         deposits[_newOwner] = deposits[_newOwner].sub(_tenMinsDeposit);
         cardSpecificDeposits[msg.sender][_newOwner][_tokenId] = cardSpecificDeposits[msg.sender][_newOwner][_tokenId].add(_tenMinsDeposit);
+        return true;
     }
 
     /// @dev a rental payment is equivilent to moving to market pot from user's deposit
-    function payRent(address _user, uint256 _dai, uint256 _tokenId, bool _exitFlag) external balancedBooks() onlyMarkets() {
+    function payRent(address _user, uint256 _dai, uint256 _tokenId, bool _exitFlag) external balancedBooks() onlyMarkets() returns(bool) {
         uint256 _cardSpecificDeposit = cardSpecificDeposits[msg.sender][_user][_tokenId];
         if (!_exitFlag) {
             if (_cardSpecificDeposit == 0) {
@@ -139,21 +141,23 @@ contract RCTreasury is Ownable {
                 cardSpecificDeposits[msg.sender][_user][_tokenId] = _cardSpecificDeposit.sub(_dai);
             }
         } else {
-            assert(_dai <= _cardSpecificDeposit); // enforced by _collectRent function in the market
+            assert(_dai <= _cardSpecificDeposit); // already enforced by _collectRent function in the market and safeMath
             cardSpecificDeposits[msg.sender][_user][_tokenId] = _cardSpecificDeposit.sub(_dai);
         } 
         
         marketPot[msg.sender] = marketPot[msg.sender].add(_dai);
         totalMarketPots = totalMarketPots.add(_dai);
         totalDeposits = totalDeposits.sub(_dai);
+        return true;
     }
 
-    /// @dev a payout is equivilent to moving from market pot to user's deposit
-    function payout(address _user, uint256 _dai) external balancedBooks() onlyMarkets() {
+    /// @dev a payout is equivilent to moving from market pot to user's deposit (the opposite of payRent)
+    function payout(address _user, uint256 _dai) external balancedBooks() onlyMarkets() returns(bool) {
         marketPot[msg.sender] = marketPot[msg.sender].sub(_dai);
         deposits[_user] = deposits[_user].add(_dai);
         totalMarketPots = totalMarketPots.sub(_dai);
         totalDeposits = totalDeposits.add(_dai);
+        return true;
     }
 
     /// @notice ability to add liqudity to the pot without being able to win (called by market sponsor function). 

@@ -63,27 +63,24 @@ contract RCFactory is Ownable, CloneFactory {
     ) public onlyOwner returns (address)  {
         address _newAddress;
 
-        if (_mode == 0) {
-            _newAddress = createClone(getMostRecentReferenceContract(_mode));
-            IRCMarketXdaiV1(_newAddress).initialize({
-                _owner: _owner,
-                _numberOfTokens: _numberOfTokens,
-                _marketLockingTime: timestamps[0],
-                _oracleResolutionTime: timestamps[1],
-                _templateId: 2,
-                _question: _realitioQuestion,
-                _arbitrator: _arbitrator,
-                _timeout: _timeout,
-                _tokenName: _tokenName
-            });
-            treasury.addMarket(_newAddress);
-        }
+        _newAddress = createClone(getMostRecentReferenceContract(_mode));
+        IRCMarketXdaiV1(_newAddress).initialize({
+            _owner: _owner,
+            _numberOfTokens: _numberOfTokens,
+            _marketLockingTime: timestamps[0],
+            _oracleResolutionTime: timestamps[1],
+            _templateId: 2,
+            _question: _realitioQuestion,
+            _arbitrator: _arbitrator,
+            _timeout: _timeout,
+            _tokenName: _tokenName
+        });
         
+        assert(treasury.addMarket(_newAddress));
         marketAddresses[_mode].push(_newAddress);
         mappingOfMarkets[_newAddress] = true;
         uint256 _version = referenceContractAddresses[_mode].length-1;
         emit LogMarketCreated(address(_newAddress), address(treasury), _mode, _version, _ipfsHash);
-
         return _newAddress;
     }
 
