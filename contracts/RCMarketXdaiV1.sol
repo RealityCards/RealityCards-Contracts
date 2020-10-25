@@ -100,6 +100,7 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
     // TESTS TO DO
     //check modifiers on treasury
     // check cnat send ether direct to treausry
+    // test updateRealitioTimeout
 
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
@@ -108,27 +109,31 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
     function initialize(
         address _owner,
         uint256 _numberOfTokens, 
-        uint32 _marketLockingTime,
-        uint32 _oracleResolutionTime, 
         uint256 _templateId, 
         string memory _question, 
         address _arbitrator, 
-        uint32 _timeout,
         string memory _tokenName
     ) public initializer {
+        console.log("stfu");
         // initialiiize!
         Ownable.initialize(_owner);
         ERC721.initialize();
         ERC721Metadata.initialize(_tokenName,"RC");
         winningOutcome = 2**256 - 1; // default invalid
-        
-        // resolution time must not be less than locking time, and not greater by more than one week
-        require(_marketLockingTime + 1 weeks > _oracleResolutionTime && _marketLockingTime <= _oracleResolutionTime, "Invalid timestamps" );
 
         // assign arguments to public variables
-        numberOfTokens = _numberOfTokens;
-        marketLockingTime = _marketLockingTime;
-        oracleResolutionTime = _oracleResolutionTime;
+        // numberOfTokens = _numberOfTokens;
+        // marketLockingTime = _timestamps[0];
+        // oracleResolutionTime = _timestamps[1];
+        // uint32 _timeout = _timestamps[2];
+
+        numberOfTokens = 0;
+        marketLockingTime = 0;
+        oracleResolutionTime = 0;
+        uint32 _timeout = 0;
+
+        // resolution time must not be less than locking time, and not greater by more than one week
+        require(marketLockingTime + 1 weeks > oracleResolutionTime && marketLockingTime <= oracleResolutionTime, "Invalid timestamps" );
         
         // external contract variables:
         IFactory _factory = IFactory(msg.sender);
@@ -142,7 +147,6 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
         _question;
         _templateId;
         _arbitrator;
-        _timeout;
         // questionId = _postQuestion(_templateId, _question, _arbitrator, _timeout, _oracleResolutionTime, 0);
     } 
 

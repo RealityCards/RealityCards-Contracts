@@ -20,7 +20,6 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
   var numberOfTokens = 20;
   var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
   var arbitrator = "0xA6EAd513D05347138184324392d8ceb24C116118";
-  var timeout = 86400;
   var tokenName = 'PresElection';
 
   user0 = accounts[0]; //0xc783df8a850f42e7F7e57013759C285caa701eB6
@@ -51,7 +50,6 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         timestamps,
         question,
         arbitrator,
-        timeout,
         tokenName
       );
     //first market

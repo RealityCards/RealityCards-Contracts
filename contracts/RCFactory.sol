@@ -29,9 +29,19 @@ contract RCFactory is Ownable, CloneFactory {
     mapping(uint256 => address[]) public marketAddresses;
     mapping(address => bool) public mappingOfMarkets; //not currently used
 
-    ///// EVENTS /////
+    ///// MARKET PARAMETERS /////
+    uint32 public realitioTimeout;
+
+    ////////////////////////////////////
+    //////// EVENTS ////////////////////
+    ////////////////////////////////////
+
     event LogMarketCreated(address contractAddress, address treasuryAddress, uint256 mode, uint256 version, bytes ipfsHash);
     event LogNewReferenceContract(address contractAddress, uint256 mode, uint256 version);
+
+    ////////////////////////////////////
+    //////// CONSTRUCTOR ///////////////
+    ////////////////////////////////////
 
     constructor(IRealitio _realitioAddress, ITreasury _treasuryAddress) public 
     {
@@ -39,50 +49,14 @@ contract RCFactory is Ownable, CloneFactory {
         treasury = _treasuryAddress;
         Ownable.initialize(msg.sender);
         assert(treasury.setFactoryAddress(address(this)));
+
+        // initialise market parameters
+        realitioTimeout = 86400; //24 hours
     }
 
-    /// @notice set the reference contract for the contract logic
-    /// @dev automatically increments version number if we 'upgrade' the contract
-    function setReferenceContractAddress(uint256 _mode, address _referenceContractAddress) public onlyOwner {
-        referenceContractAddresses[_mode].push(_referenceContractAddress);
-        uint256 _version = referenceContractAddresses[_mode].length-1;
-        emit LogNewReferenceContract(_referenceContractAddress, _mode, _version);
-    }
-
-    /// @notice create a new market
-    function createMarket(
-        uint32 _mode,
-        bytes memory _ipfsHash,
-        address _owner,
-        uint256 _numberOfTokens,
-        uint32[] memory timestamps,
-        string memory _realitioQuestion,
-        address _arbitrator,
-        uint32 _timeout,
-        string memory _tokenName
-    ) public onlyOwner returns (address)  {
-        address _newAddress;
-
-        _newAddress = createClone(getMostRecentReferenceContract(_mode));
-        IRCMarketXdaiV1(_newAddress).initialize({
-            _owner: _owner,
-            _numberOfTokens: _numberOfTokens,
-            _marketLockingTime: timestamps[0],
-            _oracleResolutionTime: timestamps[1],
-            _templateId: 2,
-            _question: _realitioQuestion,
-            _arbitrator: _arbitrator,
-            _timeout: _timeout,
-            _tokenName: _tokenName
-        });
-        
-        assert(treasury.addMarket(_newAddress));
-        marketAddresses[_mode].push(_newAddress);
-        mappingOfMarkets[_newAddress] = true;
-        uint256 _version = referenceContractAddresses[_mode].length-1;
-        emit LogMarketCreated(address(_newAddress), address(treasury), _mode, _version, _ipfsHash);
-        return _newAddress;
-    }
+    ////////////////////////////////////
+    ///////// VIEW FUNCTIONS ///////////
+    ////////////////////////////////////
 
     function getMostRecentReferenceContract(uint256 _mode) public view returns (address) {
         return referenceContractAddresses[_mode][referenceContractAddresses[_mode].length-1];
@@ -98,6 +72,64 @@ contract RCFactory is Ownable, CloneFactory {
 
     function getAllMarkets(uint256 _mode) public view returns (address[] memory) {
         return marketAddresses[_mode];
+    }
+
+    ////////////////////////////////////
+    ///////// INITIALISATION ///////////
+    ////////////////////////////////////
+
+    /// @notice set the reference contract for the contract logic
+    /// @dev automatically increments version number if we 'upgrade' the contract
+    function setReferenceContractAddress(uint256 _mode, address _referenceContractAddress) public onlyOwner {
+        referenceContractAddresses[_mode].push(_referenceContractAddress);
+        uint256 _version = referenceContractAddresses[_mode].length-1;
+        emit LogNewReferenceContract(_referenceContractAddress, _mode, _version);
+    }
+
+
+    ////////////////////////////////////
+    /////// MARKET PARAMETERS //////////
+    ////////////////////////////////////
+
+    function updateRealitioTimeout(uint32 _newTimeout) public {
+        require(_newTimeout >= 86400, "24 hours min");
+        realitioTimeout = _newTimeout;
+    }
+
+    ////////////////////////////////////
+    /////// MARKET PARAMETERS //////////
+    ////////////////////////////////////
+
+    /// @notice create a new market
+    function createMarket(
+        uint32 _mode,
+        bytes memory _ipfsHash,
+        address _owner,
+        uint256 _numberOfTokens,
+        uint32[] memory _timestamps,
+        string memory _realitioQuestion,
+        address _arbitrator,
+        string memory _tokenName
+    ) public onlyOwner returns (address)  {
+        address _newAddress;
+        _timestamps[_timestamps.length] = realitioTimeout;
+
+        _newAddress = createClone(getMostRecentReferenceContract(_mode));
+        IRCMarketXdaiV1(_newAddress).initialize({
+            _owner: _owner,
+            _numberOfTokens: _numberOfTokens,
+            _templateId: 2,
+            _question: _realitioQuestion,
+            _arbitrator: _arbitrator,
+            _tokenName: _tokenName
+        });
+        
+        assert(treasury.addMarket(_newAddress));
+        marketAddresses[_mode].push(_newAddress);
+        mappingOfMarkets[_newAddress] = true;
+        uint256 _version = referenceContractAddresses[_mode].length-1;
+        emit LogMarketCreated(address(_newAddress), address(treasury), _mode, _version, _ipfsHash);
+        return _newAddress;
     }
 
 }
