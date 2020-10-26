@@ -1,4 +1,5 @@
 pragma solidity 0.5.13;
+pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/ERC721Full.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/ownership/Ownable.sol";
@@ -100,6 +101,7 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
     // TESTS TO DO
     //check modifiers on treasury
     // check cnat send ether direct to treausry
+    // test updateRealitioTimeout
 
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
@@ -107,45 +109,51 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
 
     function initialize(
         address _owner,
-        uint256 _numberOfTokens, 
-        uint32 _marketLockingTime,
-        uint32 _oracleResolutionTime, 
+        string[] memory _tokenURIs,
+        uint32[] memory _timestamps,
         uint256 _templateId, 
         string memory _question, 
-        address _arbitrator, 
-        uint32 _timeout,
         string memory _tokenName
     ) public initializer {
+        IFactory _factory = IFactory(msg.sender);
+
         // initialiiize!
         Ownable.initialize(_owner);
         ERC721.initialize();
         ERC721Metadata.initialize(_tokenName,"RC");
         winningOutcome = 2**256 - 1; // default invalid
-        
-        // resolution time must not be less than locking time, and not greater by more than one week
-        require(_marketLockingTime + 1 weeks > _oracleResolutionTime && _marketLockingTime <= _oracleResolutionTime, "Invalid timestamps" );
 
         // assign arguments to public variables
-        numberOfTokens = _numberOfTokens;
-        marketLockingTime = _marketLockingTime;
-        oracleResolutionTime = _oracleResolutionTime;
+        numberOfTokens = _tokenURIs.length;
+        marketLockingTime = _timestamps[0];
+        oracleResolutionTime = _timestamps[1];
+        uint32 _timeout = _factory.realitioTimeout();
+        address _arbitrator = _factory.arbitrator();
+
+        // resolution time must not be less than locking time, and not greater by more than one week
+        require(marketLockingTime + 1 weeks > oracleResolutionTime && marketLockingTime <= oracleResolutionTime, "Invalid timestamps" );
         
         // external contract variables:
-        IFactory _factory = IFactory(msg.sender);
         realitio = _factory.realitio();
         treasury = _factory.treasury();
         assert(address(realitio) != address(0));
         assert(address(treasury) != address(0));
+
+        // create the NFTs
+        for (uint i = 0; i < numberOfTokens; i++) { 
+            _mint(address(this), i); 
+            _setTokenURI(i, _tokenURIs[i]);
+        }
+        _incrementState();
 
         // create the question on Realitio
         /// @dev temporarily removing this
         _question;
         _templateId;
         _arbitrator;
-        _timeout;
         // questionId = _postQuestion(_templateId, _question, _arbitrator, _timeout, _oracleResolutionTime, 0);
     } 
-
+    
     ////////////////////////////////////
     //////// EVENTS ////////////////////
     ////////////////////////////////////
@@ -161,19 +169,6 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
     event LogRentReturned(address indexed returnedTo, uint256 indexed amountReturned);
     event LogTimeHeldUpdated(uint256 indexed newTimeHeld, address indexed owner, uint256 indexed tokenId);
     event LogStateChange(uint256 indexed newState);
-
-    ////////////////////////////////////
-    //////// INITIAL SETUP /////////////
-    ////////////////////////////////////
-
-    function mintNfts(string calldata _uri) external checkState(States.NFTSNOTMINTED) {
-        _mint(address(this), nftMintCount); 
-        _setTokenURI(nftMintCount, _uri);
-        nftMintCount = nftMintCount.add(1);
-        if (nftMintCount == numberOfTokens) {
-            _incrementState();
-        }
-    }
 
     ////////////////////////////////////
     /////////// MODIFIERS //////////////
