@@ -38,7 +38,7 @@ contract RCFactory is Ownable, CloneFactory {
     //////// EVENTS ////////////////////
     ////////////////////////////////////
 
-    event LogMarketCreated(address contractAddress, address treasuryAddress, uint256 mode, uint256 version, bytes ipfsHash);
+    event LogMarketCreated(address contractAddress, address treasuryAddress, string[] tokenURIs, uint32[] timestamps, uint256 mode, uint256 version, bytes ipfsHash);
     event LogNewReferenceContract(address contractAddress, uint256 mode, uint256 version);
 
     ////////////////////////////////////
@@ -139,7 +139,7 @@ contract RCFactory is Ownable, CloneFactory {
         marketAddresses[_mode].push(_newAddress);
         mappingOfMarkets[_newAddress] = true;
         uint256 _version = referenceContractAddresses[_mode].length-1;
-        emit LogMarketCreated(address(_newAddress), address(treasury), _mode, _version, _ipfsHash);
+        emit LogMarketCreated(address(_newAddress), address(treasury), _tokenURIs, _timestamps,  _mode, _version, _ipfsHash);
         return _newAddress;
     }
 
