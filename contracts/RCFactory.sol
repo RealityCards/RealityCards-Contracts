@@ -1,4 +1,5 @@
 pragma solidity 0.5.13;
+pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-ethereum-package/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
@@ -106,8 +107,8 @@ contract RCFactory is Ownable, CloneFactory {
         uint32 _mode,
         bytes memory _ipfsHash,
         address _owner,
-        uint256 _numberOfTokens,
         uint32[] memory _timestamps,
+        string[] memory _tokenURIs,
         string memory _realitioQuestion,
         string memory _tokenName
     ) public onlyOwner returns (address)  {
@@ -116,7 +117,7 @@ contract RCFactory is Ownable, CloneFactory {
         _newAddress = createClone(getMostRecentReferenceContract(_mode));
         IRCMarketXdaiV1(_newAddress).initialize({
             _owner: _owner,
-            _numberOfTokens: _numberOfTokens,
+            _tokenURIs: _tokenURIs,
             _timestamps: _timestamps,
             _templateId: 2,
             _question: _realitioQuestion,

@@ -1,4 +1,5 @@
 pragma solidity 0.5.13;
+pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/ERC721Full.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/ownership/Ownable.sol";
@@ -108,7 +109,7 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
 
     function initialize(
         address _owner,
-        uint256 _numberOfTokens, 
+        string[] memory _tokenURIs,
         uint32[] memory _timestamps,
         uint256 _templateId, 
         string memory _question, 
@@ -123,16 +124,11 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
         winningOutcome = 2**256 - 1; // default invalid
 
         // assign arguments to public variables
-        numberOfTokens = _numberOfTokens;
-        // marketLockingTime = _timestamps[0];
-        // oracleResolutionTime = _timestamps[1];
+        numberOfTokens = _tokenURIs.length;
+        marketLockingTime = _timestamps[0];
+        oracleResolutionTime = _timestamps[1];
         uint32 _timeout = _factory.realitioTimeout();
         address _arbitrator = _factory.arbitrator();
-
-        // numberOfTokens = 0;
-        marketLockingTime = 0;
-        oracleResolutionTime = 0;
-        // uint32 _timeout = 0;
 
         // resolution time must not be less than locking time, and not greater by more than one week
         require(marketLockingTime + 1 weeks > oracleResolutionTime && marketLockingTime <= oracleResolutionTime, "Invalid timestamps" );

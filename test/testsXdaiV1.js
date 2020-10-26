@@ -17,7 +17,7 @@ const delay = duration => new Promise(resolve => setTimeout(resolve, duration));
 contract('RealityCardsTests XdaiV1', (accounts) => {
 
   var realitycards;
-  var numberOfTokens = 20;
+  var tokenURIs = ['stfu','stfu','stfu','stfu','stfu','stfu','stfu','stfu','stfu','stfu']; // ten tokens
   var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
   var arbitrator = "0xA6EAd513D05347138184324392d8ceb24C116118";
   var tokenName = 'PresElection';
@@ -46,8 +46,8 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         0,
         '0x0',
         andrewsAddress,
-        numberOfTokens,
         timestamps,
+        tokenURIs,
         question,
         tokenName
       );
@@ -55,7 +55,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     // await rcfactory.createMarket(0,'0x0',andrewsAddress,numberOfTokens,timestamps, question, arbitrator, timeout, tokenName);
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards = await RCMarket.at(marketAddress);
-    for (i = 0; i < 20; i++) {
+    for (i = 0; i < 10; i++) {
         await realitycards.mintNfts("uri", {from: andrewsAddress});
     }
   });
