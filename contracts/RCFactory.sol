@@ -45,15 +45,18 @@ contract RCFactory is Ownable, CloneFactory {
     //////// CONSTRUCTOR ///////////////
     ////////////////////////////////////
 
-    constructor(IRealitio _realitioAddress, ITreasury _treasuryAddress) public 
+    /// @dev Treasury must be deployed before Factory
+    /// @dev Realitio address is passed for testing on mock realitio contract
+    constructor(ITreasury _treasuryAddress, IRealitio _realitio) public 
     {
-        realitio = _realitioAddress;
         treasury = _treasuryAddress;
         Ownable.initialize(msg.sender);
         assert(treasury.setFactoryAddress(address(this)));
 
         // initialise market parameters
         realitioTimeout = 86400; //24 hours
+        realitio = IRealitio(_realitio);
+        arbitrator = 0xA6EAd513D05347138184324392d8ceb24C116118; //kleros
     }
 
     ////////////////////////////////////
@@ -88,14 +91,22 @@ contract RCFactory is Ownable, CloneFactory {
         emit LogNewReferenceContract(_referenceContractAddress, _mode, _version);
     }
 
-
     ////////////////////////////////////
     /////// MARKET PARAMETERS //////////
     ////////////////////////////////////
+    /// @dev governance functions
 
-    function updateRealitioTimeout(uint32 _newTimeout) public {
+    function updateRealitioTimeout(uint32 _newTimeout) public onlyOwner {
         require(_newTimeout >= 86400, "24 hours min");
         realitioTimeout = _newTimeout;
+    }
+
+    function updateArbitrator(address _newArbitrator) public onlyOwner {
+        arbitrator = _newArbitrator;
+    }
+
+    function updateRealitioAddress(IRealitio _newRealitioAddress) public onlyOwner {
+        realitio = IRealitio(_newRealitioAddress);
     }
 
     ////////////////////////////////////

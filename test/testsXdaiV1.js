@@ -17,9 +17,8 @@ const delay = duration => new Promise(resolve => setTimeout(resolve, duration));
 contract('RealityCardsTests XdaiV1', (accounts) => {
 
   var realitycards;
-  var tokenURIs = ['stfu','stfu','stfu','stfu','stfu','stfu','stfu','stfu','stfu','stfu']; // ten tokens
+  var tokenURIs = ['x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x']; // 20 tokens
   var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
-  var arbitrator = "0xA6EAd513D05347138184324392d8ceb24C116118";
   var tokenName = 'PresElection';
 
   user0 = accounts[0]; //0xc783df8a850f42e7F7e57013759C285caa701eB6
@@ -40,7 +39,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     realitio = await RealitioMockup.new();
     treasury = await RCTreasury.new();
     rcreference = await RCMarket.new();
-    rcfactory = await RCFactory.new(realitio.address, treasury.address);
+    rcfactory = await RCFactory.new(treasury.address, realitio.address);
     await rcfactory.setReferenceContractAddress(0,rcreference.address);
     await rcfactory.createMarket(
         0,
@@ -51,13 +50,8 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         question,
         tokenName
       );
-    //first market
-    // await rcfactory.createMarket(0,'0x0',andrewsAddress,numberOfTokens,timestamps, question, arbitrator, timeout, tokenName);
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards = await RCMarket.at(marketAddress);
-    for (i = 0; i < 10; i++) {
-        await realitycards.mintNfts("uri", {from: andrewsAddress});
-    }
   });
 
   async function depositDai(amount, user) {

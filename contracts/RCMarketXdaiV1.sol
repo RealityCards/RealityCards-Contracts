@@ -139,6 +139,13 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
         assert(address(realitio) != address(0));
         assert(address(treasury) != address(0));
 
+        // create the NFTs
+        for (uint i = 0; i < numberOfTokens; i++) { 
+            _mint(address(this), i); 
+            _setTokenURI(i, _tokenURIs[i]);
+        }
+        _incrementState();
+
         // create the question on Realitio
         /// @dev temporarily removing this
         _question;
@@ -146,7 +153,7 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
         _arbitrator;
         // questionId = _postQuestion(_templateId, _question, _arbitrator, _timeout, _oracleResolutionTime, 0);
     } 
-
+    
     ////////////////////////////////////
     //////// EVENTS ////////////////////
     ////////////////////////////////////
@@ -162,19 +169,6 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
     event LogRentReturned(address indexed returnedTo, uint256 indexed amountReturned);
     event LogTimeHeldUpdated(uint256 indexed newTimeHeld, address indexed owner, uint256 indexed tokenId);
     event LogStateChange(uint256 indexed newState);
-
-    ////////////////////////////////////
-    //////// INITIAL SETUP /////////////
-    ////////////////////////////////////
-
-    function mintNfts(string calldata _uri) external checkState(States.NFTSNOTMINTED) {
-        _mint(address(this), nftMintCount); 
-        _setTokenURI(nftMintCount, _uri);
-        nftMintCount = nftMintCount.add(1);
-        if (nftMintCount == numberOfTokens) {
-            _incrementState();
-        }
-    }
 
     ////////////////////////////////////
     /////////// MODIFIERS //////////////
