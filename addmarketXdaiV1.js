@@ -1,28 +1,29 @@
 //require("dotenv").config();
 
 var realityCardsFactory = artifacts.require("RCFactory");
-var RealityCardsMarketXdaiV1 = artifacts.require("RCMarketXdaiV1");
 
-var factoryAddress = '0xa67E989b4Bc377C76c6f1E2657E5E833f94720eB';
+var factoryAddress = '0x0F0B3a60185fC5e37b0DFBB9f9d4bf61c25624b3';
 
 // variables market specific
 var marketLockingTime = 1601251201; // Monday, 28-Sep-20 00:00:01 UTC in RFC 2822
 var oracleResolutionTime = 1601251201; // Monday, 28-Sep-20 00:00:01 UTC in RFC 2822
-var numberOfTokens = 4;
 var question = 'na';
 var tokenName = "RealityCards_UNIPRICE";
 
 // variables COMMON
 var andrewsAddress = "0x34A971cA2fd6DA2Ce2969D716dF922F17aAA1dB0";
-var arbitrator = "0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D"; //kleros 4lyfe
-var timeout = 86400; // 86400 = 1 day
 
 // kovan overrides (*COMMENT OUT IF MAINNET*)
-// var timeout = 30;
-// var marketLockingTime = 100; //09/13/2020 @ 3:00am (UTC)
-// var oracleResolutionTime = 100; //09/13/2020 @ 9:00am (UTC)
+// var marketLockingTime = 100; 
+// var oracleResolutionTime = 100; 
 
 var timestamps = [marketLockingTime,oracleResolutionTime];
+var tokenURIs = [
+    'https://cdn.realitycards.io/nftmetadata/uni/token0.json',
+    'https://cdn.realitycards.io/nftmetadata/uni/token1.json',
+    'https://cdn.realitycards.io/nftmetadata/uni/token2.json',
+    'https://cdn.realitycards.io/nftmetadata/uni/token3.json'
+]; 
 
 module.exports = function() {
   async function createMarket() {
@@ -30,36 +31,18 @@ module.exports = function() {
     let factory = await realityCardsFactory.at(factoryAddress);
     console.log("CREATING XDAI MARKET");
     var transaction = await factory.createMarket(
-      0,
-      '0x0',
-      andrewsAddress,
-      numberOfTokens,
-      timestamps,
-      question,
-      arbitrator,
-      timeout,
-      tokenName
-    );
+        0,
+        '0x0',
+        andrewsAddress,
+        timestamps,
+        tokenURIs,
+        question,
+        tokenName
+      );
 
     var lastAddress = await factory.getMostRecentMarket.call(0);
-    console.log("Market created at address: ", lastAddress);
+    console.log("Market created and NFTs minted at address: ", lastAddress);
     console.log("Block number: ", transaction.receipt.blockNumber);
-
-    //mint nfts
-    let market = await RealityCardsMarketXdaiV1.at(lastAddress);
-    await market.mintNfts(
-      "https://cdn.realitycards.io/nftmetadata/uni/token0.json"
-    );
-    await market.mintNfts(
-      "https://cdn.realitycards.io/nftmetadata/uni/token1.json"
-    );
-    await market.mintNfts(
-      "https://cdn.realitycards.io/nftmetadata/uni/token2.json"
-    );
-    await market.mintNfts(
-      "https://cdn.realitycards.io/nftmetadata/uni/token3.json"
-    );
-    console.log("NFTs minted");
     process.exit();
   }
   createMarket();

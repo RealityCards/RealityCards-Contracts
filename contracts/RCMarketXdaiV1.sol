@@ -154,6 +154,7 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
         _question;
         _templateId;
         _arbitrator;
+        _timeout;
         // questionId = _postQuestion(_templateId, _question, _arbitrator, _timeout, _oracleResolutionTime, 0);
     } 
 

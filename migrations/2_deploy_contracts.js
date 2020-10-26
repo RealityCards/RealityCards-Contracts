@@ -17,9 +17,9 @@ module.exports = async (deployer, network) =>
     {
         deployer.deploy(RealityCardsTreasury).then(async () => {
             treasury = await RealityCardsTreasury.deployed();
-            return deployer.deploy(RealityCardsFactory,dummyAddresss,treasury.address).then(async () => {
+            return deployer.deploy(RealityCardsFactory,treasury.address,realitioAddressMainnet).then(async () => {
                 factory = await RealityCardsFactory.deployed();
-                return deployer.deploy(RealityCardsMarketXdaiV1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0).then(async () => {
+                return deployer.deploy(RealityCardsMarketXdaiV1).then(async () => {
                     marketXdaiV1 = await RealityCardsMarketXdaiV1.deployed();
                     await factory.setReferenceContractAddress(0,marketXdaiV1.address);
                 }); 
