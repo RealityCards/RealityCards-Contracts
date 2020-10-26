@@ -109,12 +109,13 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
     function initialize(
         address _owner,
         uint256 _numberOfTokens, 
+        uint32[] memory _timestamps,
         uint256 _templateId, 
         string memory _question, 
-        address _arbitrator, 
         string memory _tokenName
     ) public initializer {
-        console.log("stfu");
+        IFactory _factory = IFactory(msg.sender);
+
         // initialiiize!
         Ownable.initialize(_owner);
         ERC721.initialize();
@@ -122,21 +123,21 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
         winningOutcome = 2**256 - 1; // default invalid
 
         // assign arguments to public variables
-        // numberOfTokens = _numberOfTokens;
+        numberOfTokens = _numberOfTokens;
         // marketLockingTime = _timestamps[0];
         // oracleResolutionTime = _timestamps[1];
-        // uint32 _timeout = _timestamps[2];
+        uint32 _timeout = _factory.realitioTimeout();
+        address _arbitrator = _factory.arbitrator();
 
-        numberOfTokens = 0;
+        // numberOfTokens = 0;
         marketLockingTime = 0;
         oracleResolutionTime = 0;
-        uint32 _timeout = 0;
+        // uint32 _timeout = 0;
 
         // resolution time must not be less than locking time, and not greater by more than one week
         require(marketLockingTime + 1 weeks > oracleResolutionTime && marketLockingTime <= oracleResolutionTime, "Invalid timestamps" );
         
         // external contract variables:
-        IFactory _factory = IFactory(msg.sender);
         realitio = _factory.realitio();
         treasury = _factory.treasury();
         assert(address(realitio) != address(0));

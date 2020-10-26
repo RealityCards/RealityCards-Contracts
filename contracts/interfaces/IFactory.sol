@@ -9,4 +9,6 @@ interface IFactory
     function realitio() external returns (IRealitio);
     function cash() external returns (ICash);
     function treasury() external returns (ITreasury);
+    function realitioTimeout() external returns (uint32);
+    function arbitrator() external returns (address);
 }

@@ -49,7 +49,6 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         numberOfTokens,
         timestamps,
         question,
-        arbitrator,
         tokenName
       );
     //first market

@@ -31,6 +31,7 @@ contract RCFactory is Ownable, CloneFactory {
 
     ///// MARKET PARAMETERS /////
     uint32 public realitioTimeout;
+    address public arbitrator;
 
     ////////////////////////////////////
     //////// EVENTS ////////////////////
@@ -108,19 +109,17 @@ contract RCFactory is Ownable, CloneFactory {
         uint256 _numberOfTokens,
         uint32[] memory _timestamps,
         string memory _realitioQuestion,
-        address _arbitrator,
         string memory _tokenName
     ) public onlyOwner returns (address)  {
         address _newAddress;
-        _timestamps[_timestamps.length] = realitioTimeout;
 
         _newAddress = createClone(getMostRecentReferenceContract(_mode));
         IRCMarketXdaiV1(_newAddress).initialize({
             _owner: _owner,
             _numberOfTokens: _numberOfTokens,
+            _timestamps: _timestamps,
             _templateId: 2,
             _question: _realitioQuestion,
-            _arbitrator: _arbitrator,
             _tokenName: _tokenName
         });
         
