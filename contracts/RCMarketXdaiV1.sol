@@ -97,11 +97,14 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
     // called for a user that never rented a Card
     // add pausiable
     // add some panic mode so that bets cant be placed, all you can do is withdraw
+    // add the new types of market
 
     // TESTS TO DO
     //check modifiers on treasury
     // check cnat send ether direct to treausry
     // test updateRealitioTimeout
+    // check all the tokens are minted, do tests on last one
+    // check you cant call initialize more than once
 
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
@@ -153,7 +156,7 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
         _arbitrator;
         // questionId = _postQuestion(_templateId, _question, _arbitrator, _timeout, _oracleResolutionTime, 0);
     } 
-    
+
     ////////////////////////////////////
     //////// EVENTS ////////////////////
     ////////////////////////////////////

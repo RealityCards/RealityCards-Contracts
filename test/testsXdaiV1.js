@@ -54,6 +54,24 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     realitycards = await RCMarket.at(marketAddress);
   });
 
+  async function createMarket() {
+    var marketLockingTime = await time.latest();
+    var oracleResolutionTime = await time.latest();
+    var timestamps = [marketLockingTime,oracleResolutionTime];
+    await rcfactory.createMarket(
+        0,
+        '0x0',
+        andrewsAddress,
+        timestamps,
+        tokenURIs,
+        question,
+        tokenName
+      );
+    var marketAddress = await rcfactory.getMostRecentMarket.call(0);
+    realitycards2 = await RCMarket.at(marketAddress);
+    return realitycards2;
+  }
+
   async function depositDai(amount, user) {
     amount = web3.utils.toWei(amount.toString(), 'ether');
     await treasury.deposit({ from: user, value: amount });
@@ -344,15 +362,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         await depositDai(10,user);
         await newRental(144,0,user);
         //second market
-        var marketLockingTime = await time.latest();
-        var oracleResolutionTime = await time.latest();
-        var timestamps = [marketLockingTime,oracleResolutionTime];
-        await rcfactory.createMarket(0,'0x0',andrewsAddress,numberOfTokens,timestamps, question, arbitrator, timeout, tokenName);
-        marketAddress = await rcfactory.getMostRecentMarket.call(0);
-        realitycards2 = await RCMarket.at(marketAddress);
-        for (i = 0; i < 20; i++) {
-            await realitycards2.mintNfts("uri", {from: andrewsAddress});
-        }
+        realitycards2 = await createMarket();
         await realitycards2.newRental(web3.utils.toWei('288', 'ether'),0,{ from: user});
         // withdraw all, should be 3 left therefore only withdraw 7
         var balanceBefore = await web3.eth.getBalance(user);
@@ -953,32 +963,10 @@ it('check that users cannot transfer their NFTs until withdraw state', async() =
 
   it('make sure functions cant be called in the wrong state', async() => {
     user = user0;
-    // undo beforeEach
-    var marketLockingTime = await time.latest();
-    var oracleResolutionTime = await time.latest();
-    var timestamps = [marketLockingTime,oracleResolutionTime];
-    await rcfactory.createMarket(0,'0x0',andrewsAddress,numberOfTokens,timestamps, question, arbitrator, timeout, tokenName);
-    marketAddress = await rcfactory.getMostRecentMarket.call(0);
-    realitycards2 = await RCMarket.at(marketAddress);
-    // check state is 0
-    var state = await realitycards2.state.call();
-    assert.equal(0,state);
-    // currently in state 'NFTSNOTMINTED' the following should all fail 
-    await shouldFail.reverting.withMessage(realitycards2.lockMarket(), "Incorrect state");
-    await shouldFail.reverting.withMessage(realitycards2.determineWinner(), "Incorrect state");
-    await shouldFail.reverting.withMessage(realitycards2.withdraw(), "Incorrect state");
-    await shouldFail.reverting.withMessage(realitycards2.collectRentAllTokens(), "Incorrect state");
-    await shouldFail.reverting.withMessage(realitycards2.newRental(0,0), "Incorrect state");
-    await shouldFail.reverting.withMessage(realitycards2.exit(0), "Incorrect state");
-    await shouldFail.reverting.withMessage(realitycards2.rentAllCards(), "Incorrect state");
-    // increment state
-    for (i = 0; i < 20; i++) {
-      await realitycards2.mintNfts("uri", {from: andrewsAddress});
-    }
+    realitycards2 = realitycards; // cos later we will add realitycards2 back
     var state = await realitycards2.state.call();
     assert.equal(1,state);
     // currently in state 'OPEN' the following should all fail 
-    await shouldFail.reverting.withMessage(realitycards2.mintNfts(user), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards2.determineWinner(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards2.withdraw(), "Incorrect state");
     // increment state
@@ -987,7 +975,6 @@ it('check that users cannot transfer their NFTs until withdraw state', async() =
     var state = await realitycards2.state.call();
     assert.equal(2,state);
     // currently in state 'LOCKED' the following should all fail 
-    await shouldFail.reverting.withMessage(realitycards2.mintNfts(user), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards2.collectRentAllTokens(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards2.newRental(0,0), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards2.exit(0), "Incorrect state");
@@ -999,7 +986,6 @@ it('check that users cannot transfer their NFTs until withdraw state', async() =
     var state = await realitycards2.state.call();
     assert.equal(3,state);
     // currently in state 'WITHDRAW' the following should all fail 
-    await shouldFail.reverting.withMessage(realitycards2.mintNfts(user), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards2.lockMarket(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards2.determineWinner(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards2.collectRentAllTokens(), "Incorrect state");
@@ -1035,22 +1021,22 @@ it('check oracleResolutionTime and marketLockingTime expected failures', async (
     var oracleResolutionTime = 69419;
     var marketLockingTime = 69420; 
     var timestamps = [marketLockingTime,oracleResolutionTime];
-    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',andrewsAddress,numberOfTokens,timestamps, question, arbitrator, timeout, tokenName), "Invalid timestamps");
+    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',andrewsAddress,timestamps, tokenURIs, question,tokenName), "Invalid timestamps");
     // resolution time > 1 weeks after locking, expect failure
     var oracleResolutionTime = 604810;
     var marketLockingTime = 0; 
     var timestamps = [marketLockingTime,oracleResolutionTime];
-    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',andrewsAddress,numberOfTokens,timestamps, question, arbitrator, timeout, tokenName), "Invalid timestamps");
+    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',andrewsAddress,timestamps, tokenURIs, question,tokenName), "Invalid timestamps");
     // resolution time < 1 week  after locking, no failure
     var oracleResolutionTime = 604790;
     var marketLockingTime = 0; 
     var timestamps = [marketLockingTime,oracleResolutionTime];
-    await rcfactory.createMarket(0,'0x0',andrewsAddress,numberOfTokens,timestamps, question, arbitrator, timeout, tokenName);
+    await rcfactory.createMarket(0,'0x0',andrewsAddress,timestamps, tokenURIs, question,tokenName);
     // same time, no failure
     var oracleResolutionTime = 0;
     var marketLockingTime = 0; 
     var timestamps = [marketLockingTime,oracleResolutionTime];
-    await rcfactory.createMarket(0,'0x0',andrewsAddress,numberOfTokens,timestamps, question, arbitrator, timeout, tokenName);
+    await rcfactory.createMarket(0,'0x0',andrewsAddress,timestamps, tokenURIs, question,tokenName);
   });
 
   it('test maxTimeHeld & longestOwner', async () => {
@@ -1162,12 +1148,7 @@ it('deploy new reference contract, does it still work? test withdraw', async () 
     // chcek the reference contract address has changed
     assert.notEqual(referenceContractAddressBefore,referenceContractAddressAfter);
     // new market with different reference contract
-    await rcfactory.createMarket(0,'0x0',andrewsAddress,numberOfTokens,timestamps, question, arbitrator, timeout, tokenName);
-    var marketAddress = await rcfactory.getMostRecentMarket.call(0);
-    realitycards = await RCMarket.at(marketAddress);
-    for (i = 0; i < 20; i++) {
-        await realitycards.mintNfts("uri", {from: andrewsAddress});
-    }
+    realitycards = await createMarket();
     // now normal withdraw test
     /////// SETUP //////
     await depositDai(1000,user0);
