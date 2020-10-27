@@ -1,8 +1,8 @@
 //require("dotenv").config();
 
 var realityCardsFactory = artifacts.require("RCFactory");
-
 var factoryAddress = '0xd408Ec7EDDe6f1b9bB2f816b05e379F624bC7a7B';
+
 
 // variables market specific
 var marketLockingTime = 1601251201; // Monday, 28-Sep-20 00:00:01 UTC in RFC 2822
