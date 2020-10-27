@@ -34,8 +34,11 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
   andrewsAddress = accounts[9];
 
   beforeEach(async () => {
-    var marketLockingTime = await time.latest();
-    var oracleResolutionTime = await time.latest();
+    var latestTime = await time.latest();
+    var oneYear = new BN('31104000');
+    var oneYearInTheFuture = oneYear.add(latestTime);
+    var marketLockingTime = oneYearInTheFuture; 
+    var oracleResolutionTime = oneYearInTheFuture; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
     realitio = await RealitioMockup.new();
     treasury = await RCTreasury.new();
@@ -56,8 +59,8 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
   });
 
   async function createMarket() {
-    var marketLockingTime = await time.latest();
-    var oracleResolutionTime = await time.latest();
+    var marketLockingTime = 1893456000;
+    var oracleResolutionTime = 1893456000;
     var timestamps = [marketLockingTime,oracleResolutionTime];
     await rcfactory.createMarket(
         0,
@@ -511,6 +514,11 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     await time.increase(time.duration.weeks(1));
     await newRental(3,2,user2); // collected 42
     await time.increase(time.duration.weeks(2)); 
+    // exit all, progress time so marketLockingTime in the past
+    await realitycards.exitAll({from: user0});
+    await realitycards.exitAll({from: user1});
+    await realitycards.exitAll({from: user2});
+    await time.increase(time.duration.years(1)); 
     // winner 1: 
     // totalcollected = 147, 
     // total days = 28 
@@ -518,17 +526,17 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     // user 1 owned for 7 days
     // user 2 owned for 14 days
     ////////////////////////
+
     await realitycards.lockMarket(); 
-    // set winner 1
+    // // set winner 1
     await realitio.setResult(2);
     await realitycards.determineWinner();
     ////////////////////////
-    // total deposits = 139, check:
     var totalCollected = await realitycards.totalCollected.call();
     var totalCollectedShouldBe = web3.utils.toWei('147', 'ether');
     var difference = Math.abs(totalCollected.toString()-totalCollectedShouldBe.toString());
     assert.isBelow(difference/totalCollected,0.00001);
-    //check user0 winnings
+    // //check user0 winnings
     var depositBefore = await treasury.deposits.call(user0); 
     await withdraw(user0);
     var depositAfter = await treasury.deposits.call(user0); 
@@ -579,6 +587,11 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     await time.increase(time.duration.weeks(1));
     await newRental(3,2,user2); // collected 42
     await time.increase(time.duration.weeks(2)); 
+    // exit all, progress time so marketLockingTime in the past
+    await realitycards.exitAll({from: user0});
+    await realitycards.exitAll({from: user1});
+    await realitycards.exitAll({from: user2});
+    await time.increase(time.duration.years(1));     
     // winner 1: 
     // totalcollected = 147, // now 300 
     // total days = 28 
@@ -648,6 +661,11 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     await time.increase(time.duration.weeks(1));
     await newRental(3,2,user2); // collected 42
     await time.increase(time.duration.weeks(2)); 
+    // exit all, progress time so marketLockingTime in the past
+    await realitycards.exitAll({from: user0});
+    await realitycards.exitAll({from: user1});
+    await realitycards.exitAll({from: user2});
+    await time.increase(time.duration.years(1)); 
     // winner 1: 
     // totalcollected = 147, // now 300 
     // total days = 28 
@@ -689,6 +707,11 @@ it('test withdraw- invalid', async () => {
     await time.increase(time.duration.weeks(1));
     await newRental(3,2,user2); // collected 42
     await time.increase(time.duration.weeks(2)); 
+    // exit all, progress time so marketLockingTime in the past
+    await realitycards.exitAll({from: user0});
+    await realitycards.exitAll({from: user1});
+    await realitycards.exitAll({from: user2});
+    await time.increase(time.duration.years(1)); 
     // winner 1: 
     // totalcollected = 147, 
     // total days = 28 
@@ -755,6 +778,11 @@ it('test circuitBreaker', async () => {
     await time.increase(time.duration.weeks(1));
     await newRental(3,2,user2); // collected 42
     await time.increase(time.duration.weeks(2)); 
+    // exit all, progress time so marketLockingTime in the past
+    await realitycards.exitAll({from: user0});
+    await realitycards.exitAll({from: user1});
+    await realitycards.exitAll({from: user2});
+    await time.increase(time.duration.years(1)); 
     // winner 1: 
     // totalcollected = 147, 
     // total days = 28 
@@ -810,6 +838,9 @@ it('test circuitBreaker less than 1 month', async () => {
     await depositDai(1000,user0);
     await newRental(1,0,user0); // collected 28
     await time.increase(time.duration.weeks(3));
+    // exit all, progress time so marketLockingTime in the past
+    await realitycards.exitAll({from: user0});
+    await time.increase(time.duration.years(1)); 
     await realitycards.lockMarket(); 
     await shouldFail.reverting.withMessage(realitycards.circuitBreaker(), "Too early");
     await time.increase(time.duration.weeks(3));
@@ -822,6 +853,9 @@ it('check expected failures with market resolution: question not resolved but ma
     await depositDai(1000,user0);
     await newRental(1,0,user0); 
     await time.increase(time.duration.hours(1));
+    // exit all, progress time so marketLockingTime in the past
+    await realitycards.exitAll({from: user0});
+    await time.increase(time.duration.years(1)); 
     await realitycards.lockMarket(); 
     await shouldFail.reverting.withMessage(realitycards.determineWinner(), "Oracle not resolved");
     await shouldFail.reverting.withMessage(realitycards.withdraw(), "Incorrect state");
@@ -842,24 +876,24 @@ it('newRental check failures', async () => {
     await withdrawDeposit(1000,user0);
     });
 
-
-    it('check market resolution failures', async () => {
-        /////// SETUP //////
-        await depositDai(1000,user0);
-        await newRental(1,0,user0); 
-        //// TESTS ////
-        // call step 2 before step 1 done
-        await shouldFail.reverting.withMessage(realitycards.determineWinner(), "Incorrect state");
-        //call step 1 before markets ended
-        await shouldFail.reverting.withMessage(realitycards.lockMarket(), "Market has not finished");
-        await time.increase(time.duration.hours(1)); 
-        // call step 1 after markets ended, should work
-        await realitycards.lockMarket(); 
-        // call step 1 twice
-        await shouldFail.reverting.withMessage(realitycards.lockMarket(), "Incorrect state");
-        // withdraw for next test
-        await withdrawDeposit(1000,user0);
-    });
+it('check lockMarket cant be called too early', async () => {
+    /////// SETUP //////
+    await depositDai(1000,user0);
+    var realitycards2 = await createMarketCustomeTimestamps(100,2603807783,2603807783);
+    await realitycards2.newRental(web3.utils.toWei('200', 'ether'),2,{ from: user0})
+    //// TESTS ////
+    // call step 2 before step 1 done
+    await shouldFail.reverting.withMessage(realitycards2.determineWinner(), "Incorrect state");
+    //call step 1 before markets ended
+    await shouldFail.reverting.withMessage(realitycards2.lockMarket(), "Market has not finished");
+    await time.increase(time.duration.years(500)); 
+    // // call step 1 after markets ended, should work
+    await realitycards2.lockMarket(); 
+    // // call step 1 twice
+    await shouldFail.reverting.withMessage(realitycards2.lockMarket(), "Incorrect state");
+    // // withdraw for next test
+    await withdrawDeposit(1000,user0);
+});
 
     it('check that _revertToPreviousOwner does not revert more than ten times ', async () => {
         /////// SETUP //////
@@ -1093,6 +1127,11 @@ it('test NFT allocation after event- winner', async () => {
     await time.increase(time.duration.weeks(1));
     await newRental(2,0,user1); //user 1 winner
     await time.increase(time.duration.weeks(2));
+    // exit all, progress time so marketLockingTime in the past
+    await realitycards.exitAll({from: user0});
+    await realitycards.exitAll({from: user1});
+    await realitycards.exitAll({from: user2});
+    await time.increase(time.duration.years(1)); 
     ////////////////////////
     await realitycards.lockMarket(); 
     // set winner
@@ -1118,6 +1157,11 @@ it('test NFT allocation after event- circuit breaker', async () => {
     await time.increase(time.duration.weeks(1));
     await newRental(2,0,user1); //user 1 winner
     await time.increase(time.duration.weeks(2));
+    // exit all, progress time so marketLockingTime in the past
+    await realitycards.exitAll({from: user0});
+    await realitycards.exitAll({from: user1});
+    await realitycards.exitAll({from: user2});
+    await time.increase(time.duration.years(1)); 
     ////////////////////////
     await realitycards.lockMarket(); 
     await time.increase(time.duration.weeks(2));
@@ -1140,6 +1184,11 @@ it('test NFT allocation after event- nobody owns winner', async () => {
     await time.increase(time.duration.weeks(1));
     await newRental(2,0,user1); //user 1 winner
     await time.increase(time.duration.weeks(2));
+    // exit all, progress time so marketLockingTime in the past
+    await realitycards.exitAll({from: user0});
+    await realitycards.exitAll({from: user1});
+    await realitycards.exitAll({from: user2});
+    await time.increase(time.duration.years(1)); 
     ////////////////////////
     await realitycards.lockMarket(); 
     // set winner
@@ -1180,6 +1229,11 @@ it('deploy new reference contract, does it still work? test withdraw', async () 
     await time.increase(time.duration.weeks(1));
     await newRental(3,2,user2); // collected 42
     await time.increase(time.duration.weeks(2)); 
+    // exit all, progress time so marketLockingTime in the past
+    await realitycards.exitAll({from: user0});
+    await realitycards.exitAll({from: user1});
+    await realitycards.exitAll({from: user2});
+    await time.increase(time.duration.years(1)); 
     await realitycards.lockMarket(); 
     // set winner
     await realitio.setResult(2);

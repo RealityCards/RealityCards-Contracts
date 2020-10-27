@@ -252,8 +252,9 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
 
     /// @notice checks whether the competition has ended (1 hour grace), if so moves to LOCKED state
     /// @dev can be called by anyone 
-    function lockMarket() external checkState(States.OPEN) {
-        require(marketLockingTime < (now - 1 hours), "Market has not finished");
+    /// @dev public because possibly called within newRental
+    function lockMarket() public checkState(States.OPEN) {
+        require(marketLockingTime < now, "Market has not finished");
         // do a final rent collection before the contract is locked down
         collectRentAllTokens();
         _incrementState();
@@ -357,15 +358,32 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
         if (exitFlag[msg.sender][_tokenId]) {
             exitFlag[msg.sender][_tokenId] = false;
         }
+
+        // lock market automatically if marketLockingTime in the past
+        if (marketLockingTime < now) {
+            lockMarket();
+        } 
     }
 
     /// @notice stop renting a token
     /// @dev public because called by exitAll()
     /// @dev doesn't need to be current owner so user can prevent ownership returning to them
     function exit(uint256 _tokenId) public checkState(States.OPEN) {
-        if (!exitFlag[msg.sender][_tokenId]) {
-            exitFlag[msg.sender][_tokenId] = true;
+        // if current owner, collect rent, revert if necessary
+        if (ownerOf(_tokenId) == msg.sender) {
+            // collectRent first, so correct rent to now is taken
             _collectRent(_tokenId);
+            // if still the current owner and used all card specific deposit left, revert immediately
+            if (ownerOf(_tokenId) == msg.sender) {
+                if (treasury.cardSpecificDeposits(address(this),msg.sender,_tokenId) == 0) {
+                    _revertToPreviousOwner(_tokenId);
+                    }
+                }
+        }
+        // set exit flag in all cases
+        // even if they already lost ownership- pointless but not a problem, is anulled upon newRental
+        if (!exitFlag[msg.sender][_tokenId]) {
+                exitFlag[msg.sender][_tokenId] = true;
         }
     }
 
