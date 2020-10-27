@@ -1,8 +1,8 @@
 //require("dotenv").config();
 
 var realityCardsFactory = artifacts.require("RCFactory");
+var factoryAddress = '0xd408Ec7EDDe6f1b9bB2f816b05e379F624bC7a7B';
 
-var factoryAddress = '0x6eb91fBa045B0882627BEa6fBD9BCE6bC024B4E2';
 
 // variables market specific
 var marketLockingTime = 1601251201; // Monday, 28-Sep-20 00:00:01 UTC in RFC 2822
@@ -17,7 +17,7 @@ var andrewsAddress = "0x34A971cA2fd6DA2Ce2969D716dF922F17aAA1dB0";
 // var marketLockingTime = 100; 
 // var oracleResolutionTime = 100; 
 
-var timestamps = [marketLockingTime,oracleResolutionTime];
+var timestamps = [0,marketLockingTime,oracleResolutionTime];
 var tokenURIs = [
     'https://cdn.realitycards.io/nftmetadata/uni/token0.json',
     'https://cdn.realitycards.io/nftmetadata/uni/token1.json',

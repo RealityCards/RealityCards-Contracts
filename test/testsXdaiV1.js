@@ -1,3 +1,4 @@
+const { assert } = require('hardhat');
 const {
   BN,
   shouldFail,
@@ -33,9 +34,12 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
   andrewsAddress = accounts[9];
 
   beforeEach(async () => {
-    var marketLockingTime = await time.latest();
-    var oracleResolutionTime = await time.latest();
-    var timestamps = [marketLockingTime,oracleResolutionTime];
+    var latestTime = await time.latest();
+    var oneYear = new BN('31104000');
+    var oneYearInTheFuture = oneYear.add(latestTime);
+    var marketLockingTime = oneYearInTheFuture; 
+    var oracleResolutionTime = oneYearInTheFuture; 
+    var timestamps = [0,marketLockingTime,oracleResolutionTime];
     realitio = await RealitioMockup.new();
     treasury = await RCTreasury.new();
     rcreference = await RCMarket.new();
@@ -55,9 +59,28 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
   });
 
   async function createMarket() {
-    var marketLockingTime = await time.latest();
-    var oracleResolutionTime = await time.latest();
-    var timestamps = [marketLockingTime,oracleResolutionTime];
+    var latestTime = await time.latest();
+    var oneYear = new BN('31104000');
+    var oneYearInTheFuture = oneYear.add(latestTime);
+    var marketLockingTime = oneYearInTheFuture; 
+    var oracleResolutionTime = oneYearInTheFuture;
+    var timestamps = [0,marketLockingTime,oracleResolutionTime];
+    await rcfactory.createMarket(
+        0,
+        '0x0',
+        andrewsAddress,
+        timestamps,
+        tokenURIs,
+        question,
+        tokenName
+      );
+    var marketAddress = await rcfactory.getMostRecentMarket.call(0);
+    realitycards2 = await RCMarket.at(marketAddress);
+    return realitycards2;
+  }
+
+  async function createMarketCustomeTimestamps(marketOpeningTime,marketLockingTime,oracleResolutionTime) {
+    var timestamps = [marketOpeningTime,marketLockingTime,oracleResolutionTime];
     await rcfactory.createMarket(
         0,
         '0x0',
@@ -222,7 +245,6 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         // withdraw
         await withdrawDeposit(1000,user1);
     });
-
   
       // these are two crucial variables that are relied on for other functions. are they what they should be?
       it('test timeHeld and totalTimeHeld', async () => {
@@ -495,6 +517,11 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     await time.increase(time.duration.weeks(1));
     await newRental(3,2,user2); // collected 42
     await time.increase(time.duration.weeks(2)); 
+    // exit all, progress time so marketLockingTime in the past
+    await realitycards.exitAll({from: user0});
+    await realitycards.exitAll({from: user1});
+    await realitycards.exitAll({from: user2});
+    await time.increase(time.duration.years(1)); 
     // winner 1: 
     // totalcollected = 147, 
     // total days = 28 
@@ -502,17 +529,17 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     // user 1 owned for 7 days
     // user 2 owned for 14 days
     ////////////////////////
+
     await realitycards.lockMarket(); 
-    // set winner 1
+    // // set winner 1
     await realitio.setResult(2);
     await realitycards.determineWinner();
     ////////////////////////
-    // total deposits = 139, check:
     var totalCollected = await realitycards.totalCollected.call();
     var totalCollectedShouldBe = web3.utils.toWei('147', 'ether');
     var difference = Math.abs(totalCollected.toString()-totalCollectedShouldBe.toString());
     assert.isBelow(difference/totalCollected,0.00001);
-    //check user0 winnings
+    // //check user0 winnings
     var depositBefore = await treasury.deposits.call(user0); 
     await withdraw(user0);
     var depositAfter = await treasury.deposits.call(user0); 
@@ -563,6 +590,11 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     await time.increase(time.duration.weeks(1));
     await newRental(3,2,user2); // collected 42
     await time.increase(time.duration.weeks(2)); 
+    // exit all, progress time so marketLockingTime in the past
+    await realitycards.exitAll({from: user0});
+    await realitycards.exitAll({from: user1});
+    await realitycards.exitAll({from: user2});
+    await time.increase(time.duration.years(1));     
     // winner 1: 
     // totalcollected = 147, // now 300 
     // total days = 28 
@@ -632,6 +664,11 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     await time.increase(time.duration.weeks(1));
     await newRental(3,2,user2); // collected 42
     await time.increase(time.duration.weeks(2)); 
+    // exit all, progress time so marketLockingTime in the past
+    await realitycards.exitAll({from: user0});
+    await realitycards.exitAll({from: user1});
+    await realitycards.exitAll({from: user2});
+    await time.increase(time.duration.years(1)); 
     // winner 1: 
     // totalcollected = 147, // now 300 
     // total days = 28 
@@ -673,6 +710,11 @@ it('test withdraw- invalid', async () => {
     await time.increase(time.duration.weeks(1));
     await newRental(3,2,user2); // collected 42
     await time.increase(time.duration.weeks(2)); 
+    // exit all, progress time so marketLockingTime in the past
+    await realitycards.exitAll({from: user0});
+    await realitycards.exitAll({from: user1});
+    await realitycards.exitAll({from: user2});
+    await time.increase(time.duration.years(1)); 
     // winner 1: 
     // totalcollected = 147, 
     // total days = 28 
@@ -739,6 +781,11 @@ it('test circuitBreaker', async () => {
     await time.increase(time.duration.weeks(1));
     await newRental(3,2,user2); // collected 42
     await time.increase(time.duration.weeks(2)); 
+    // exit all, progress time so marketLockingTime in the past
+    await realitycards.exitAll({from: user0});
+    await realitycards.exitAll({from: user1});
+    await realitycards.exitAll({from: user2});
+    await time.increase(time.duration.years(1)); 
     // winner 1: 
     // totalcollected = 147, 
     // total days = 28 
@@ -794,6 +841,9 @@ it('test circuitBreaker less than 1 month', async () => {
     await depositDai(1000,user0);
     await newRental(1,0,user0); // collected 28
     await time.increase(time.duration.weeks(3));
+    // exit all, progress time so marketLockingTime in the past
+    await realitycards.exitAll({from: user0});
+    await time.increase(time.duration.years(1)); 
     await realitycards.lockMarket(); 
     await shouldFail.reverting.withMessage(realitycards.circuitBreaker(), "Too early");
     await time.increase(time.duration.weeks(3));
@@ -806,6 +856,9 @@ it('check expected failures with market resolution: question not resolved but ma
     await depositDai(1000,user0);
     await newRental(1,0,user0); 
     await time.increase(time.duration.hours(1));
+    // exit all, progress time so marketLockingTime in the past
+    await realitycards.exitAll({from: user0});
+    await time.increase(time.duration.years(1)); 
     await realitycards.lockMarket(); 
     await shouldFail.reverting.withMessage(realitycards.determineWinner(), "Oracle not resolved");
     await shouldFail.reverting.withMessage(realitycards.withdraw(), "Incorrect state");
@@ -826,64 +879,63 @@ it('newRental check failures', async () => {
     await withdrawDeposit(1000,user0);
     });
 
+it('check lockMarket cant be called too early', async () => {
+    /////// SETUP //////
+    await depositDai(1000,user0);
+    await newRental(1,0,user0); 
+    //// TESTS ////
+    // call step 2 before step 1 done
+    await shouldFail.reverting.withMessage(realitycards.determineWinner(), "Incorrect state");
+    //call step 1 before markets ended
+    await shouldFail.reverting.withMessage(realitycards.lockMarket(), "Market has not finished");
+    await time.increase(time.duration.years(1)); 
+    // // call step 1 after markets ended, should work
+    await realitycards.lockMarket(); 
+    // // call step 1 twice
+    await shouldFail.reverting.withMessage(realitycards.lockMarket(), "Incorrect state");
+    // // withdraw for next test
+    await withdrawDeposit(1000,user0);
+});
 
-    it('check market resolution failures', async () => {
-        /////// SETUP //////
-        await depositDai(1000,user0);
-        await newRental(1,0,user0); 
-        //// TESTS ////
-        // call step 2 before step 1 done
-        await shouldFail.reverting.withMessage(realitycards.determineWinner(), "Incorrect state");
-        //call step 1 before markets ended
-        await shouldFail.reverting.withMessage(realitycards.lockMarket(), "Market has not finished");
-        await time.increase(time.duration.hours(1)); 
-        // call step 1 after markets ended, should work
-        await realitycards.lockMarket(); 
-        // call step 1 twice
-        await shouldFail.reverting.withMessage(realitycards.lockMarket(), "Incorrect state");
-        // withdraw for next test
-        await withdrawDeposit(1000,user0);
-    });
-
-    it('check that _revertToPreviousOwner does not revert more than ten times ', async () => {
-        /////// SETUP //////
-        await depositDai(1000,user0);
-        await depositDai(1000,user1);
-        await depositDai(1000,user2);
-        await depositDai(1000,user3);
-        // get user 0 and 1 to rent it 4 times
-        await newRental(1,0,user0); 
-        await newRental(2,0,user1);
-        await newRental(3,0,user0);
-        await newRental(4,0,user1);
-        // get user 2 and 3 to rent it more than ten times
-        await newRental(5,0,user2);
-        await newRental(6,0,user3);
-        await newRental(7,0,user2);
-        await newRental(8,0,user3);
-        await newRental(9,0,user2);
-        await newRental(10,0,user3);
-        await newRental(20,0,user2);
-        await newRental(30,0,user3);
-        await newRental(40,0,user2);
-        await newRental(50,0,user3);
-        await newRental(60,0,user2);
-        await newRental(70,0,user3);
-        // make sure owned for at least an hour
-        await time.increase(time.duration.hours(1)); 
-        // user 2 and 3 exit, it should return to one of them NOT return to user 0 or 1 
-        await realitycards.exit(0,{ from: user2 });
-        await realitycards.exit(0,{ from: user3 });
-        var owner = await realitycards.ownerOf.call(0);
-        assert.equal(owner, user3);
-        var price = await realitycards.price.call(0);
-        assert.equal(price, web3.utils.toWei('6', 'ether'));
-        // withdraw for next test
-        await withdrawDeposit(1000,user0);
-        await withdrawDeposit(1000,user1);
-        await withdrawDeposit(1000,user2);
-        await withdrawDeposit(1000,user3);
-    });
+it('check that _revertToPreviousOwner does not revert more than ten times ', async () => {
+    /////// SETUP //////
+    await depositDai(1000,user0);
+    await depositDai(1000,user1);
+    await depositDai(1000,user2);
+    await depositDai(1000,user3);
+    // get user 0 and 1 to rent it 4 times
+    await newRental(1,0,user0); 
+    await newRental(2,0,user1);
+    await newRental(3,0,user0);
+    await newRental(4,0,user1);
+    // get user 2 and 3 to rent it more than ten times
+    await newRental(5,0,user2);
+    await newRental(6,0,user3);
+    await newRental(7,0,user2);
+    await newRental(8,0,user3);
+    await newRental(9,0,user2);
+    await newRental(10,0,user3);
+    await newRental(20,0,user2);
+    await newRental(30,0,user3);
+    await newRental(40,0,user2);
+    await newRental(50,0,user3);
+    await newRental(60,0,user2);
+    await newRental(70,0,user3);
+    // make sure owned for at least an hour
+    await time.increase(time.duration.hours(1)); 
+    // user 2 and 3 exit, it should return to one of them NOT return to user 0 or 1 
+    await realitycards.exit(0,{ from: user2 });
+    await realitycards.exit(0,{ from: user3 });
+    var owner = await realitycards.ownerOf.call(0);
+    assert.equal(owner, user3);
+    var price = await realitycards.price.call(0);
+    assert.equal(price, web3.utils.toWei('6', 'ether'));
+    // withdraw for next test
+    await withdrawDeposit(1000,user0);
+    await withdrawDeposit(1000,user1);
+    await withdrawDeposit(1000,user2);
+    await withdrawDeposit(1000,user3);
+});
 
 it('check that cannot rent a card if less than 1 hous rent', async () => {
     await depositDai(1,user0);
@@ -941,7 +993,7 @@ it('check that users cannot transfer their NFTs until withdraw state', async() =
     await shouldFail.reverting(realitycards.transferFrom(user,user1,2));
     await shouldFail.reverting(realitycards.safeTransferFrom(user,user1,2));
     await shouldFail.reverting(realitycards.safeTransferFrom(user,user1,2,web3.utils.asciiToHex("123456789")));
-    await time.increase(time.duration.days(1)); 
+    await time.increase(time.duration.years(1)); 
     await realitycards.lockMarket();
     // // should fail cos LOCKED
     await shouldFail.reverting(realitycards.transferFrom(user,user1,2));
@@ -970,7 +1022,7 @@ it('check that users cannot transfer their NFTs until withdraw state', async() =
     await shouldFail.reverting.withMessage(realitycards2.determineWinner(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards2.withdraw(), "Incorrect state");
     // increment state
-    await time.increase(time.duration.days(1)); 
+    await time.increase(time.duration.years(1)); 
     await realitycards2.lockMarket();
     var state = await realitycards2.state.call();
     assert.equal(2,state);
@@ -1020,22 +1072,22 @@ it('check oracleResolutionTime and marketLockingTime expected failures', async (
     // resolution time before locking, expect failure
     var oracleResolutionTime = 69419;
     var marketLockingTime = 69420; 
-    var timestamps = [marketLockingTime,oracleResolutionTime];
+    var timestamps = [0,marketLockingTime,oracleResolutionTime];
     await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',andrewsAddress,timestamps, tokenURIs, question,tokenName), "Invalid timestamps");
     // resolution time > 1 weeks after locking, expect failure
     var oracleResolutionTime = 604810;
     var marketLockingTime = 0; 
-    var timestamps = [marketLockingTime,oracleResolutionTime];
+    var timestamps = [0,marketLockingTime,oracleResolutionTime];
     await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',andrewsAddress,timestamps, tokenURIs, question,tokenName), "Invalid timestamps");
     // resolution time < 1 week  after locking, no failure
     var oracleResolutionTime = 604790;
     var marketLockingTime = 0; 
-    var timestamps = [marketLockingTime,oracleResolutionTime];
+    var timestamps = [0,marketLockingTime,oracleResolutionTime];
     await rcfactory.createMarket(0,'0x0',andrewsAddress,timestamps, tokenURIs, question,tokenName);
     // same time, no failure
     var oracleResolutionTime = 0;
     var marketLockingTime = 0; 
-    var timestamps = [marketLockingTime,oracleResolutionTime];
+    var timestamps = [0,marketLockingTime,oracleResolutionTime];
     await rcfactory.createMarket(0,'0x0',andrewsAddress,timestamps, tokenURIs, question,tokenName);
   });
 
@@ -1077,6 +1129,11 @@ it('test NFT allocation after event- winner', async () => {
     await time.increase(time.duration.weeks(1));
     await newRental(2,0,user1); //user 1 winner
     await time.increase(time.duration.weeks(2));
+    // exit all, progress time so marketLockingTime in the past
+    await realitycards.exitAll({from: user0});
+    await realitycards.exitAll({from: user1});
+    await realitycards.exitAll({from: user2});
+    await time.increase(time.duration.years(1)); 
     ////////////////////////
     await realitycards.lockMarket(); 
     // set winner
@@ -1102,6 +1159,11 @@ it('test NFT allocation after event- circuit breaker', async () => {
     await time.increase(time.duration.weeks(1));
     await newRental(2,0,user1); //user 1 winner
     await time.increase(time.duration.weeks(2));
+    // exit all, progress time so marketLockingTime in the past
+    await realitycards.exitAll({from: user0});
+    await realitycards.exitAll({from: user1});
+    await realitycards.exitAll({from: user2});
+    await time.increase(time.duration.years(1)); 
     ////////////////////////
     await realitycards.lockMarket(); 
     await time.increase(time.duration.weeks(2));
@@ -1124,6 +1186,11 @@ it('test NFT allocation after event- nobody owns winner', async () => {
     await time.increase(time.duration.weeks(1));
     await newRental(2,0,user1); //user 1 winner
     await time.increase(time.duration.weeks(2));
+    // exit all, progress time so marketLockingTime in the past
+    await realitycards.exitAll({from: user0});
+    await realitycards.exitAll({from: user1});
+    await realitycards.exitAll({from: user2});
+    await time.increase(time.duration.years(1)); 
     ////////////////////////
     await realitycards.lockMarket(); 
     // set winner
@@ -1164,6 +1231,11 @@ it('deploy new reference contract, does it still work? test withdraw', async () 
     await time.increase(time.duration.weeks(1));
     await newRental(3,2,user2); // collected 42
     await time.increase(time.duration.weeks(2)); 
+    // exit all, progress time so marketLockingTime in the past
+    await realitycards.exitAll({from: user0});
+    await realitycards.exitAll({from: user1});
+    await realitycards.exitAll({from: user2});
+    await time.increase(time.duration.years(1)); 
     await realitycards.lockMarket(); 
     // set winner
     await realitio.setResult(2);
@@ -1304,6 +1376,34 @@ it('test _revertToPreviousOwner will revert properly if current owner has deposi
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
+});
+
+it('test marketOpeningTime stuff', async () => {
+    await depositDai(144,user0);
+    // // check that state is 1 if marketopening time in the past
+    var realitycards2 = await createMarketCustomeTimestamps(100,100,100);
+    var state = await realitycards2.state();
+    assert.equal(state,1);
+
+    var latestTime = await time.latest();
+    var oneMonth = new BN('2592000');
+    var oneYear = new BN('31104000');
+    var oneMonthInTheFuture = oneMonth.add(latestTime);
+    var oneYearInTheFuture = oneYear.add(latestTime);
+    var realitycards3 = await createMarketCustomeTimestamps(oneMonthInTheFuture,oneYearInTheFuture,oneYearInTheFuture);
+    // check that if in the future, state 0 originally
+    // just use the default realitycards
+    var state = await realitycards3.state();
+    assert.equal(state,0);
+    // check newRental fails because incorrect state
+    await shouldFail.reverting.withMessage(realitycards3.newRental(web3.utils.toWei('150', 'ether'),2,{ from: user0}), "Incorrect state");
+    // advance time so its in the past, should work
+    await time.increase(time.duration.weeks(8)); 
+    await realitycards3.newRental(web3.utils.toWei('150', 'ether'),2,{ from: user0})
+    // check that it won't increment state twice
+    await realitycards3.newRental(web3.utils.toWei('200', 'ether'),2,{ from: user0})
+    var state = await realitycards3.state();
+    assert.equal(state,1);
 });
 
 });
