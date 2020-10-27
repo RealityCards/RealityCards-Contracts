@@ -31,7 +31,7 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
     bytes32 public questionId;
     /// @dev only for _revertToPreviousOwner to prevent gas limits
     uint256 public constant MAX_ITERATIONS = 10;
-    enum States {NFTSNOTMINTED, OPEN, LOCKED, WITHDRAW}
+    enum States {CLOSED, OPEN, LOCKED, WITHDRAW}
     States public state; 
 
     ///// CONTRACT VARIABLES /////
@@ -79,6 +79,8 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
 
     ///// MARKET RESOLUTION VARIABLES /////
     uint256 public winningOutcome; 
+    //// @dev when the market opens 
+    uint32 public marketOpeningTime; 
     //// @dev when the market locks 
     uint32 public marketLockingTime; 
     //// @dev when the question can be answered on realitio
@@ -98,6 +100,8 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
     // add pausiable
     // add some panic mode so that bets cant be placed, all you can do is withdraw
     // add the new types of market
+    // 2% for the winner, 1% for the artist if defined (and make this user playable)
+    // event image, title need to be passed to createMarket
 
     // TESTS TO DO
     //check modifiers on treasury
@@ -128,8 +132,9 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
 
         // assign arguments to public variables
         numberOfTokens = _tokenURIs.length;
-        marketLockingTime = _timestamps[0];
-        oracleResolutionTime = _timestamps[1];
+        marketOpeningTime = _timestamps[0];
+        marketLockingTime = _timestamps[1];
+        oracleResolutionTime = _timestamps[2];
         uint32 _timeout = _factory.realitioTimeout();
         address _arbitrator = _factory.arbitrator();
 
@@ -147,8 +152,12 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
             _mint(address(this), i); 
             _setTokenURI(i, _tokenURIs[i]);
         }
-        _incrementState();
 
+        // move to OPEN immediately if market opening time in the past
+        if (marketOpeningTime <= now) {
+            _incrementState();
+        }
+        
         // create the question on Realitio
         /// @dev temporarily removing this
         _question;
@@ -179,6 +188,12 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
     ////////////////////////////////////
 
     modifier checkState(States currentState) {
+        require(state == currentState, "Incorrect state");
+        _;
+    }
+
+    /// @dev automatically puts to open if appropriate
+    modifier unlock(States currentState) {
         require(state == currentState, "Incorrect state");
         _;
     }
@@ -297,7 +312,7 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
     }
 
     /// @notice rent every Card at the minimum price
-    function rentAllCards() external checkState(States.OPEN)  {
+    function rentAllCards() external {
         for (uint i = 0; i < numberOfTokens; i++) {
             if (ownerOf(i) != msg.sender) {
                 uint _newPrice;
