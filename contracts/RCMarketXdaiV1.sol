@@ -192,9 +192,12 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
         _;
     }
 
-    /// @dev automatically puts to open if appropriate
-    modifier unlock(States currentState) {
-        require(state == currentState, "Incorrect state");
+    /// @dev automatically opens market if appropriate
+    modifier unlock() {
+        // console.log("state is", state);
+        if (marketOpeningTime <= now && state == States.CLOSED) {
+            _incrementState();
+        }
         _;
     }
 
@@ -325,7 +328,7 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
     }
     
     /// @notice to rent a token
-    function newRental(uint256 _newPrice, uint256 _tokenId) public checkState(States.OPEN) tokenExists(_tokenId) {
+    function newRental(uint256 _newPrice, uint256 _tokenId) public unlock() checkState(States.OPEN) tokenExists(_tokenId) {
         require(_newPrice >= price[_tokenId].mul(11).div(10), "Price not 10% higher");
         require(_newPrice >= 1 ether, "Minimum rental 1 Dai");
         collectRentAllTokens();

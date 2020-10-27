@@ -1,3 +1,4 @@
+const { assert } = require('hardhat');
 const {
   BN,
   shouldFail,
@@ -35,7 +36,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
   beforeEach(async () => {
     var marketLockingTime = await time.latest();
     var oracleResolutionTime = await time.latest();
-    var timestamps = [marketLockingTime,oracleResolutionTime];
+    var timestamps = [0,marketLockingTime,oracleResolutionTime];
     realitio = await RealitioMockup.new();
     treasury = await RCTreasury.new();
     rcreference = await RCMarket.new();
@@ -58,6 +59,22 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     var marketLockingTime = await time.latest();
     var oracleResolutionTime = await time.latest();
     var timestamps = [marketLockingTime,oracleResolutionTime];
+    await rcfactory.createMarket(
+        0,
+        '0x0',
+        andrewsAddress,
+        timestamps,
+        tokenURIs,
+        question,
+        tokenName
+      );
+    var marketAddress = await rcfactory.getMostRecentMarket.call(0);
+    realitycards2 = await RCMarket.at(marketAddress);
+    return realitycards2;
+  }
+
+  async function createMarketCustomeTimestamps(marketOpeningTime,marketLockingTime,oracleResolutionTime) {
+    var timestamps = [marketOpeningTime,marketLockingTime,oracleResolutionTime];
     await rcfactory.createMarket(
         0,
         '0x0',
@@ -222,7 +239,6 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         // withdraw
         await withdrawDeposit(1000,user1);
     });
-
   
       // these are two crucial variables that are relied on for other functions. are they what they should be?
       it('test timeHeld and totalTimeHeld', async () => {
@@ -1304,6 +1320,27 @@ it('test _revertToPreviousOwner will revert properly if current owner has deposi
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
+});
+
+it('test marketOpeningTime stuff', async () => {
+    await depositDai(144,user0);
+    // // check that state is 1 if marketopening time in the past
+    var realitycards = await createMarketCustomeTimestamps(100,100,100);
+    var state = await realitycards.state();
+    assert.equal(state,1);
+    // check that state is zero if marketopening time in the future
+    var realitycards2 = await createMarketCustomeTimestamps(2603807783,2603807783,2603807783);
+    var state = await realitycards2.state();
+    assert.equal(state,0);
+    // check newRental fails because incorrect state
+    await shouldFail.reverting.withMessage(realitycards2.newRental(web3.utils.toWei('150', 'ether'),2,{ from: user0}), "Incorrect state");
+    // advance time so its in the past, should work
+    await time.increase(time.duration.years(500)); 
+    await realitycards2.newRental(web3.utils.toWei('150', 'ether'),2,{ from: user0})
+    // check that it won't increment state twice
+    await realitycards2.newRental(web3.utils.toWei('200', 'ether'),2,{ from: user0})
+    var state = await realitycards.state();
+    assert.equal(state,1);
 });
 
 });
