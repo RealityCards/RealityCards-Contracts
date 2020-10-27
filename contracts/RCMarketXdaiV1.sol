@@ -89,8 +89,6 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
     mapping (address => bool) public userAlreadyWithdrawn;
 
     // WORK TO DO 
-    // add new state for not open, update the 'incorrect state' tests
-    // update check state modifier to move the state if timestmps are right
     // set exit flag to zero after certain amount of itme, so that they can set how long to own it for
     // update to latest version of solidity etc [why, what is the point?]
     // create an owned function in treasury to change the factory address
@@ -194,7 +192,6 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
 
     /// @dev automatically opens market if appropriate
     modifier unlock() {
-        // console.log("state is", state);
         if (marketOpeningTime <= now && state == States.CLOSED) {
             _incrementState();
         }
