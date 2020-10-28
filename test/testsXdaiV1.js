@@ -1327,7 +1327,7 @@ it('test exit but then can rent again', async () => {
     await withdrawDeposit(1000,user1);
 });
 
-it('test _revertToPreviousOwner will not revert if exit flag set', async () => {
+it('test _revertToPreviousOwner will not revert to user if exit flag set', async () => {
     // setup
     await depositDai(144,user0);
     await depositDai(144,user1);

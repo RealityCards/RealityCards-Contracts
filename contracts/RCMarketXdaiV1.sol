@@ -90,11 +90,7 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
 
     // WORK TO DO 
     // set exit flag to zero after certain amount of itme, so that they can set how long to own it for
-    // update to latest version of solidity etc [why, what is the point?]
-    // create an owned function in treasury to change the factory address
-    // maybe: add variable for min% increase so it can be changed
-    // maybe: add a delegate call to treasury in newRental so treasury can prevent payRent being 
-    // called for a user that never rented a Card
+    // maybe: add a delegate call to treasury in newRental so treasury can prevent payRent being called for a user that never rented a Card
     // add pausiable
     // add some panic mode so that bets cant be placed, all you can do is withdraw
     // add the new types of market
@@ -102,11 +98,15 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
     // event image, title need to be passed to createMarket
 
     // TESTS TO DO
-    //check modifiers on treasury
+    // check modifiers on treasury
     // check cnat send ether direct to treausry
     // test updateRealitioTimeout
     // check all the tokens are minted, do tests on last one
     // check you cant call initialize more than once
+
+    // PARAMETERS TO MAKE VARIABLE/OWNED
+    // min rental time
+    // create an owned function in treasury to change the factory address
 
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
@@ -370,15 +370,15 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
         if (ownerOf(_tokenId) == msg.sender) {
             // collectRent first, so correct rent to now is taken
             _collectRent(_tokenId);
-            // if still the current owner and used all card specific deposit left, revert immediately
+            // if still the current owner and used all card specific deposit, revert immediately
             if (ownerOf(_tokenId) == msg.sender) {
                 if (treasury.cardSpecificDeposits(address(this),msg.sender,_tokenId) == 0) {
+                    exitFlag[msg.sender][_tokenId] = true; // else they might get it back at lower price on revert
                     _revertToPreviousOwner(_tokenId);
                     }
                 }
         }
-        // set exit flag in all cases
-        // even if they already lost ownership- pointless but not a problem, is anulled upon newRental
+        // set exit flag if not already set in all cases
         if (!exitFlag[msg.sender][_tokenId]) {
                 exitFlag[msg.sender][_tokenId] = true;
         }
@@ -491,7 +491,7 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
             if (_index == 0) {
                 _foreclose(_tokenId);
                 break;
-            } else if (_previousOwnersDeposit > 0) {
+            } else if (_previousOwnersDeposit > 0 && !exitFlag[_previousOwner][_tokenId]) {
                 break;
             }  
             
