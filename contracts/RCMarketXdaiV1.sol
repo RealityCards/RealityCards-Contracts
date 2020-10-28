@@ -2,7 +2,6 @@ pragma solidity 0.5.13;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/ERC721Full.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "@openzeppelin/upgrades/contracts/Initializable.sol";
 import "@nomiclabs/buidler/console.sol";
@@ -12,8 +11,7 @@ import "./interfaces/ITreasury.sol";
 
 /// @title Reality Cards Market
 /// @author Andrew Stanger
-
-contract RCMarketXdaiV1 is Ownable, ERC721Full {
+contract RCMarketXdaiV1 is ERC721Full {
 
     using SafeMath for uint256;
 
@@ -96,24 +94,22 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
     // add the new types of market
     // 2% for the winner, 1% for the artist if defined (and make this user playable)
     // event image, title need to be passed to createMarket
+    // whitelisted create markets (remove onlyOwner)
 
     // TESTS TO DO
-    // check modifiers on treasury
-    // check cnat send ether direct to treausry
-    // test updateRealitioTimeout
     // check all the tokens are minted, do tests on last one
     // check you cant call initialize more than once
 
     // PARAMETERS TO MAKE VARIABLE/OWNED
     // min rental time
     // create an owned function in treasury to change the factory address
+    // treasury update factory
 
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
     ////////////////////////////////////
 
     function initialize(
-        address _owner,
         string[] memory _tokenURIs,
         uint32[] memory _timestamps,
         uint256 _templateId, 
@@ -123,7 +119,6 @@ contract RCMarketXdaiV1 is Ownable, ERC721Full {
         IFactory _factory = IFactory(msg.sender);
 
         // initialiiize!
-        Ownable.initialize(_owner);
         ERC721.initialize();
         ERC721Metadata.initialize(_tokenName,"RC");
         winningOutcome = 2**256 - 1; // default invalid

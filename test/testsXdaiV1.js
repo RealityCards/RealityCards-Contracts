@@ -48,7 +48,6 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     await rcfactory.createMarket(
         0,
         '0x0',
-        andrewsAddress,
         timestamps,
         tokenURIs,
         question,
@@ -68,7 +67,6 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     await rcfactory.createMarket(
         0,
         '0x0',
-        andrewsAddress,
         timestamps,
         tokenURIs,
         question,
@@ -84,7 +82,6 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     await rcfactory.createMarket(
         0,
         '0x0',
-        andrewsAddress,
         timestamps,
         tokenURIs,
         question,
@@ -1046,23 +1043,6 @@ it('check that users cannot transfer their NFTs until withdraw state', async() =
     await shouldFail.reverting.withMessage(realitycards2.sponsor({value: 3}), "Incorrect state");
   });
 
-  it('check that owner can not be changed unless correct owner', async() => {
-    // buidler giving me shit when I try and intercept revert message so just testing revert
-    var newOwner = await realitycards.owner.call();
-    await shouldFail.reverting(realitycards.transferOwnership(user5,{from: user1}));
-    await realitycards.transferOwnership(user5,{from: andrewsAddress});
-    var newOwner = await realitycards.owner.call();
-    assert.equal(newOwner, user5);
-  });
-
-  it('check renounce ownership works', async() => {
-    user = user0;
-    // should work while im the owner
-    await realitycards.renounceOwnership({from: andrewsAddress});
-    var newOwner = await realitycards.owner.call();
-    assert.equal(newOwner, 0);
-  });
-
 it('check oracleResolutionTime and marketLockingTime expected failures', async () => {
     // someone else deploys question to realitio
     var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
@@ -1073,22 +1053,22 @@ it('check oracleResolutionTime and marketLockingTime expected failures', async (
     var oracleResolutionTime = 69419;
     var marketLockingTime = 69420; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',andrewsAddress,timestamps, tokenURIs, question,tokenName), "Invalid timestamps");
+    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, question,tokenName), "Invalid timestamps");
     // resolution time > 1 weeks after locking, expect failure
     var oracleResolutionTime = 604810;
     var marketLockingTime = 0; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',andrewsAddress,timestamps, tokenURIs, question,tokenName), "Invalid timestamps");
+    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, question,tokenName), "Invalid timestamps");
     // resolution time < 1 week  after locking, no failure
     var oracleResolutionTime = 604790;
     var marketLockingTime = 0; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await rcfactory.createMarket(0,'0x0',andrewsAddress,timestamps, tokenURIs, question,tokenName);
+    await rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, question,tokenName);
     // same time, no failure
     var oracleResolutionTime = 0;
     var marketLockingTime = 0; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await rcfactory.createMarket(0,'0x0',andrewsAddress,timestamps, tokenURIs, question,tokenName);
+    await rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, question,tokenName);
   });
 
   it('test maxTimeHeld & longestOwner', async () => {
@@ -1210,6 +1190,11 @@ it('deploy new reference contract, does it still work? test withdraw', async () 
     var timestamps = [marketLockingTime,oracleResolutionTime];
     rcreference2 = await RCMarket.new();
     var referenceContractAddressBefore = await rcfactory.getMostRecentReferenceContract(0);
+    // first check it will not allow dummy contract to be deployed
+    var dummy = await RealitioMockup.new();
+    await shouldFail.reverting.withMessage(rcfactory.setReferenceContractAddress(0,dummy.address), "reverted");
+    // carry on as before
+
     await rcfactory.setReferenceContractAddress(0,rcreference2.address);
     var referenceContractAddressAfter = await rcfactory.getMostRecentReferenceContract(0);
     // chcek the reference contract address has changed
@@ -1405,6 +1390,56 @@ it('test marketOpeningTime stuff', async () => {
     var state = await realitycards3.state();
     assert.equal(state,1);
 });
+
+it('check that non markets cannot call market only functions on Treasury', async () => {
+    await shouldFail.reverting.withMessage(treasury.allocateCardSpecificDeposit(user0,user0,0,0), "Not authorised");
+    await shouldFail.reverting.withMessage(treasury.payRent(user0,user0,0,0), "Not authorised");
+    await shouldFail.reverting.withMessage(treasury.payout(user0,0), "Not authorised");
+});
+
+it('check that cant send ether to the contract direct', async () => {
+    await shouldFail.reverting.withMessage(treasury.send(1), "Not authorised");
+});
+
+it('check onlyOwner is on everything it should be', async () => {
+    // first check that they can only be called by owner
+    await shouldFail.reverting.withMessage(rcfactory.setReferenceContractAddress(0,user1,{from: user1}), "caller is not the owner");
+    await shouldFail.reverting.withMessage(rcfactory.updateRealitioTimeout(1), "24 hours min");
+    await shouldFail.reverting.withMessage(rcfactory.updateArbitrator(user1,{from: user1}), "caller is not the owner");
+    await shouldFail.reverting.withMessage(rcfactory.updateRealitioAddress(user1,{from: user1}), "caller is not the owner");
+    // check that realitio address is actually changed (cant check the others as local only)
+    await rcfactory.updateRealitioAddress(user1);
+    var realitycards2 = await createMarket();
+    var realitoAddress = await realitycards2.realitio.call();
+    assert.equal(realitoAddress,user1);
+});
+
+it('check that ownership can not be changed unless correct owner, treasury and factory', async() => {
+    await shouldFail.reverting.withMessage(rcfactory.transferOwnership(user1,{from: user1}), "caller is not the owner");
+    await shouldFail.reverting.withMessage(treasury.transferOwnership(user1,{from: user1}), "caller is not the owner");
+    // check that works fine if owner
+    await rcfactory.transferOwnership(user1,{from: user0});
+    await treasury.transferOwnership(user1,{from: user0});
+    // check that ownership changed
+    var newOwner = await rcfactory.owner.call();
+    assert.equal(newOwner, user1);
+    var newOwner = await treasury.owner.call();
+    assert.equal(newOwner, user1);
+  });
+
+  it('check renounce ownership works, treasury and factory', async() => {
+    await shouldFail.reverting.withMessage(rcfactory.renounceOwnership({from: user1}), "caller is not the owner");
+    await shouldFail.reverting.withMessage(treasury.renounceOwnership({from: user1}), "caller is not the owner");
+    // check that works fine if owner
+    await rcfactory.renounceOwnership({from: user0});
+    await treasury.renounceOwnership({from: user0});
+    // check that ownership changed
+    var newOwner = await rcfactory.owner.call();
+    assert.equal(newOwner, 0);
+    var newOwner = await treasury.owner.call();
+    assert.equal(newOwner, 0);
+  });
+
 
 });
 

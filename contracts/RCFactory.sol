@@ -80,12 +80,16 @@ contract RCFactory is Ownable, CloneFactory {
     }
 
     ////////////////////////////////////
-    ///////// INITIALISATION ///////////
+    /////// REFERENCE CONTRACT /////////
     ////////////////////////////////////
 
     /// @notice set the reference contract for the contract logic
     /// @dev automatically increments version number if we 'upgrade' the contract
     function setReferenceContractAddress(uint256 _mode, address _referenceContractAddress) public onlyOwner {
+        // check its an RC contract by reading the one constant
+        IRCMarketXdaiV1 newContractVariable = IRCMarketXdaiV1(_referenceContractAddress);
+        assert(newContractVariable.MAX_ITERATIONS() == 10);
+        // push new reference contracts
         referenceContractAddresses[_mode].push(_referenceContractAddress);
         uint256 _version = referenceContractAddresses[_mode].length-1;
         emit LogNewReferenceContract(_referenceContractAddress, _mode, _version);
@@ -117,7 +121,6 @@ contract RCFactory is Ownable, CloneFactory {
     function createMarket(
         uint32 _mode,
         bytes memory _ipfsHash,
-        address _owner,
         uint32[] memory _timestamps,
         string[] memory _tokenURIs,
         string memory _realitioQuestion,
@@ -127,7 +130,6 @@ contract RCFactory is Ownable, CloneFactory {
 
         _newAddress = createClone(getMostRecentReferenceContract(_mode));
         IRCMarketXdaiV1(_newAddress).initialize({
-            _owner: _owner,
             _tokenURIs: _tokenURIs,
             _timestamps: _timestamps,
             _templateId: 2,

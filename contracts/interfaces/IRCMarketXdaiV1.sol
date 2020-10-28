@@ -3,8 +3,9 @@ pragma experimental ABIEncoderV2;
 
 interface IRCMarketXdaiV1 {
 
+    function MAX_ITERATIONS() external view returns (uint);
+
     function initialize(
-        address _owner,
         string[] calldata _tokenURIs, 
         uint32[] calldata _timestamps,
         uint256 _templateId, 
