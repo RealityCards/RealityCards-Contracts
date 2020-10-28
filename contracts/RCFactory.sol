@@ -38,7 +38,7 @@ contract RCFactory is Ownable, CloneFactory {
     //////// EVENTS ////////////////////
     ////////////////////////////////////
 
-    event LogMarketCreated(address contractAddress, address treasuryAddress, string[] tokenURIs, uint32[] timestamps, uint256 mode, uint256 version, bytes ipfsHash);
+    event LogMarketCreated(address contractAddress, address treasuryAddress, string[] marketDetails, string[] tokenURIs, uint32[] timestamps, uint256 mode, uint256 version, bytes ipfsHash);
     event LogNewReferenceContract(address contractAddress, uint256 mode, uint256 version);
 
     ////////////////////////////////////
@@ -118,13 +118,14 @@ contract RCFactory is Ownable, CloneFactory {
     ////////////////////////////////////
 
     /// @notice create a new market
+    /// @param _marketDetails: [0] = token name, [1] = event name [2] = image location
     function createMarket(
         uint32 _mode,
         bytes memory _ipfsHash,
+        string[] memory _marketDetails,
         uint32[] memory _timestamps,
         string[] memory _tokenURIs,
-        string memory _realitioQuestion,
-        string memory _tokenName
+        string memory _realitioQuestion
     ) public onlyOwner returns (address)  {
         address _newAddress;
 
@@ -134,14 +135,14 @@ contract RCFactory is Ownable, CloneFactory {
             _timestamps: _timestamps,
             _templateId: 2,
             _question: _realitioQuestion,
-            _tokenName: _tokenName
+            _tokenName: _marketDetails[0]
         });
         
         assert(treasury.addMarket(_newAddress));
         marketAddresses[_mode].push(_newAddress);
         mappingOfMarkets[_newAddress] = true;
         uint256 _version = referenceContractAddresses[_mode].length-1;
-        emit LogMarketCreated(address(_newAddress), address(treasury), _tokenURIs, _timestamps,  _mode, _version, _ipfsHash);
+        emit LogMarketCreated(address(_newAddress), address(treasury), _marketDetails, _tokenURIs, _timestamps,  _mode, _version, _ipfsHash);
         return _newAddress;
     }
 

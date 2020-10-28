@@ -19,8 +19,8 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
 
   var realitycards;
   var tokenURIs = ['x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x']; // 20 tokens
+  var marketDetails = ['PresElection','x','x']; 
   var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
-  var tokenName = 'PresElection';
 
   user0 = accounts[0]; //0xc783df8a850f42e7F7e57013759C285caa701eB6
   user1 = accounts[1]; //0xeAD9C93b79Ae7C1591b1FB5323BD777E86e150d4
@@ -48,10 +48,10 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     await rcfactory.createMarket(
         0,
         '0x0',
+        marketDetails,
         timestamps,
         tokenURIs,
         question,
-        tokenName
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards = await RCMarket.at(marketAddress);
@@ -67,10 +67,10 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     await rcfactory.createMarket(
         0,
         '0x0',
+        marketDetails,
         timestamps,
         tokenURIs,
         question,
-        tokenName
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -82,10 +82,10 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     await rcfactory.createMarket(
         0,
         '0x0',
+        marketDetails,
         timestamps,
         tokenURIs,
         question,
-        tokenName
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -1053,22 +1053,22 @@ it('check oracleResolutionTime and marketLockingTime expected failures', async (
     var oracleResolutionTime = 69419;
     var marketLockingTime = 69420; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, question,tokenName), "Invalid timestamps");
+    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',marketDetails,timestamps, tokenURIs, question), "Invalid timestamps");
     // resolution time > 1 weeks after locking, expect failure
     var oracleResolutionTime = 604810;
     var marketLockingTime = 0; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, question,tokenName), "Invalid timestamps");
+    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',marketDetails,timestamps, tokenURIs, question), "Invalid timestamps");
     // resolution time < 1 week  after locking, no failure
     var oracleResolutionTime = 604790;
     var marketLockingTime = 0; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, question,tokenName);
+    await rcfactory.createMarket(0,'0x0',marketDetails,timestamps, tokenURIs, question);
     // same time, no failure
     var oracleResolutionTime = 0;
     var marketLockingTime = 0; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, question,tokenName);
+    await rcfactory.createMarket(0,'0x0',marketDetails,timestamps, tokenURIs, question);
   });
 
   it('test maxTimeHeld & longestOwner', async () => {

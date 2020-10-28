@@ -93,7 +93,6 @@ contract RCMarketXdaiV1 is ERC721Full {
     // add some panic mode so that bets cant be placed, all you can do is withdraw
     // add the new types of market
     // 2% for the winner, 1% for the artist if defined (and make this user playable)
-    // event image, title need to be passed to createMarket
     // whitelisted create markets (remove onlyOwner)
 
     // TESTS TO DO
