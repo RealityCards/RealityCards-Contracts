@@ -428,7 +428,7 @@ contract RCMarketXdaiV1 is ERC721Full {
 
         //only collect rent if the token is owned (ie, if owned by the contract this implies unowned)
         if (ownerOf(_tokenId) != address(this)) {
-            
+            // console.log(price[_tokenId]);
             uint256 _rentOwed = price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(1 days);
             address _currentOwner = ownerOf(_tokenId);
             uint256 _cardSpecificDeposit = treasury.cardSpecificDeposits(address(this),_currentOwner,_tokenId);
@@ -441,12 +441,10 @@ contract RCMarketXdaiV1 is ERC721Full {
                     // case 1: rentOwed is reduced to _totalDeposit
                     if (_totalDeposit <= _rentOwedLimit)
                     {
-                        // run out of deposit. Calculate time it was actually paid for, then revert to previous owner 
                         _timeOfThisCollection = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(_totalDeposit).div(_rentOwed)));
                         _rentOwed = _totalDeposit; // take what's left     
                     // case 2: rentOwed is reduced to _rentOwedLimit
                     } else {
-                        // 
                         _timeOfThisCollection = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(_rentOwedLimit).div(_rentOwed)));
                         _rentOwed = _rentOwedLimit; // take up to the max   
                     }
