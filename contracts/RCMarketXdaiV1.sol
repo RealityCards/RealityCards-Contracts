@@ -29,6 +29,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     bytes32 public questionId;
     /// @dev only for _revertToPreviousOwner to prevent gas limits
     uint256 public constant MAX_ITERATIONS = 10;
+    uint256 public constant MAX_UINT256 = 2**256 - 1;
     enum States {CLOSED, OPEN, LOCKED, WITHDRAW}
     States public state; 
 
@@ -53,6 +54,8 @@ contract RCMarketXdaiV1 is ERC721Full {
     ///// TIME /////
     /// @dev how many seconds each user has held each token for, for determining winnings  
     mapping (uint256 => mapping (address => uint256) ) public timeHeld;
+    /// @dev users can optionally set a maximum time to hold it for, after which it reverts
+    mapping (uint256 => mapping (address => uint256) ) public timeHeldLimit;
     /// @dev sums all the timeHelds for each. Not required, but saves on gas when paying out. Should always increment at the same time as timeHeld
     mapping (uint256 => uint256) public totalTimeHeld; 
     /// @dev used to determine the rent due. Rent is due for the period (now - timeLastCollected), at which point timeLastCollected is set to now.
@@ -60,7 +63,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     /// @dev when a token was bought. Used to enforce minimum of one hour rental, also used in front end. Rent collection does not need this, only needs timeLastCollected.
     mapping (uint256 => uint256) public timeAcquired; 
      /// @dev to track the max timeheld of each token (for giving NFT to winner)
-    mapping (uint256 => uint256) public maxTimeHeld;
+    mapping (uint256 => uint256) public longestTimeHeld;
     /// @dev to track who has owned it the most (for giving NFT to winner)
     mapping (uint256 => address) public longestOwner;
 
@@ -87,13 +90,18 @@ contract RCMarketXdaiV1 is ERC721Full {
     mapping (address => bool) public userAlreadyWithdrawn;
 
     // WORK TO DO 
+    // BIG ROCKS
     // set exit flag to zero after certain amount of itme, so that they can set how long to own it for
-    // maybe: add a delegate call to treasury in newRental so treasury can prevent payRent being called for a user that never rented a Card
-    // add pausiable
-    // add some panic mode so that bets cant be placed, all you can do is withdraw
+    // add pausiable & some panic/withdraw mode
     // add the new types of market
     // 2% for the winner, 1% for the artist if defined (and make this user playable)
     // whitelisted create markets (remove onlyOwner)
+    // oracle token bridge etc
+    //
+    // PEBBLES
+    // maybe: add a delegate call to treasury in newRental so treasury can prevent payRent being called for a user that never rented a Card
+    // ugprade to solidity v7
+    // change uint256 -> uint32
 
     // TESTS TO DO
     // check all the tokens are minted, do tests on last one
@@ -120,7 +128,7 @@ contract RCMarketXdaiV1 is ERC721Full {
         // initialiiize!
         ERC721.initialize();
         ERC721Metadata.initialize(_tokenName,"RC");
-        winningOutcome = 2**256 - 1; // default invalid
+        winningOutcome = MAX_UINT256; // default invalid
 
         // assign arguments to public variables
         numberOfTokens = _tokenURIs.length;
@@ -314,24 +322,25 @@ contract RCMarketXdaiV1 is ERC721Full {
                 if (price[i]>0) {
                     _newPrice = price[i].mul(11).div(10);
                 }
-                newRental(_newPrice, i);
+                newRental(_newPrice, MAX_UINT256, i);
             }
         }
     }
     
     /// @notice to rent a token
-    function newRental(uint256 _newPrice, uint256 _tokenId) public unlock() checkState(States.OPEN) tokenExists(_tokenId) {
+    function newRental(uint256 _newPrice, uint256 _timeHeldLimit, uint256 _tokenId) public unlock() checkState(States.OPEN) tokenExists(_tokenId) {
         require(_newPrice >= price[_tokenId].mul(11).div(10), "Price not 10% higher");
         require(_newPrice >= 1 ether, "Minimum rental 1 Dai");
         collectRentAllTokens();
+        // below must be after collectRent so timeHeld is up to date
+        require(_timeHeldLimit >= timeHeld[_tokenId][msg.sender].add(600), "Ten mins min"); 
 
         address _currentOwner = ownerOf(_tokenId);
         // allocate 10mins deposit (or increase if same owner)
-        
         assert(treasury.allocateCardSpecificDeposit(msg.sender,_currentOwner,_tokenId,_newPrice));
 
         if (_currentOwner == msg.sender) { 
-            // bought by current owner- just change price
+            // bought by current owner- just change price and limit
             price[_tokenId] = _newPrice;
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
         } else {   
@@ -345,6 +354,12 @@ contract RCMarketXdaiV1 is ERC721Full {
             emit LogNewRental(msg.sender, _newPrice, _tokenId); 
         }
 
+        // update timeHeldLimit for user
+        if (timeHeldLimit[_tokenId][msg.sender] != _timeHeldLimit) {
+            assert(_timeHeldLimit > timeHeldLimit[_tokenId][msg.sender]);
+            timeHeldLimit[_tokenId][msg.sender] = _timeHeldLimit;
+        }
+        
         // make sure exit flag is set back to false
         if (exitFlag[msg.sender][_tokenId]) {
             exitFlag[msg.sender][_tokenId] = false;
@@ -419,12 +434,22 @@ contract RCMarketXdaiV1 is ERC721Full {
             uint256 _cardSpecificDeposit = treasury.cardSpecificDeposits(address(this),_currentOwner,_tokenId);
             uint256 _totalDeposit = treasury.deposits(_currentOwner).add(_cardSpecificDeposit);
             bool _exitFlag = exitFlag[_currentOwner][_tokenId];
-            
+            uint256 _rentOwedLimit = price[_tokenId].mul(timeHeldLimit[_tokenId][_currentOwner].sub(timeHeld[_tokenId][_currentOwner])).div(1 days);
+
             if (!_exitFlag) {
-                if (_rentOwed >= _totalDeposit) {
-                    // run out of deposit. Calculate time it was actually paid for, then revert to previous owner 
-                    _timeOfThisCollection = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(_totalDeposit).div(_rentOwed)));
-                    _rentOwed = _totalDeposit; // take what's left     
+                if (_rentOwed >= _totalDeposit || _rentOwed >= _rentOwedLimit)  {
+                    // case 1: rentOwed is reduced to _totalDeposit
+                    if (_totalDeposit <= _rentOwedLimit)
+                    {
+                        // run out of deposit. Calculate time it was actually paid for, then revert to previous owner 
+                        _timeOfThisCollection = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(_totalDeposit).div(_rentOwed)));
+                        _rentOwed = _totalDeposit; // take what's left     
+                    // case 2: rentOwed is reduced to _rentOwedLimit
+                    } else {
+                        // 
+                        _timeOfThisCollection = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(_rentOwedLimit).div(_rentOwed)));
+                        _rentOwed = _rentOwedLimit; // take up to the max   
+                    }
                     _revertToPreviousOwner(_tokenId);
                 } 
             } else {
@@ -451,8 +476,8 @@ contract RCMarketXdaiV1 is ERC721Full {
                 totalCollected = totalCollected.add(_rentOwed);
 
                 // longest owner tracking
-                if (timeHeld[_tokenId][_currentOwner] > maxTimeHeld[_tokenId]) {
-                    maxTimeHeld[_tokenId] = timeHeld[_tokenId][_currentOwner];
+                if (timeHeld[_tokenId][_currentOwner] > longestTimeHeld[_tokenId]) {
+                    longestTimeHeld[_tokenId] = timeHeld[_tokenId][_currentOwner];
                     longestOwner[_tokenId] = _currentOwner;
                 }
 

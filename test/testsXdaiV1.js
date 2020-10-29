@@ -21,6 +21,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
   var tokenURIs = ['x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x']; // 20 tokens
   var marketDetails = ['PresElection','x','x']; 
   var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
+  var maxuint256 = 4294967295;
 
   user0 = accounts[0]; //0xc783df8a850f42e7F7e57013759C285caa701eB6
   user1 = accounts[1]; //0xeAD9C93b79Ae7C1591b1FB5323BD777E86e150d4
@@ -99,7 +100,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
 
   async function newRental(price, outcome, user) {
     price = web3.utils.toWei(price.toString(), 'ether');
-    await realitycards.newRental(price,outcome,{ from: user});
+    await realitycards.newRental(price,maxuint256.toString(),outcome,{ from: user});
   }
 
   async function changePrice(price, outcome, userx) {
@@ -382,7 +383,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         await newRental(144,0,user);
         //second market
         realitycards2 = await createMarket();
-        await realitycards2.newRental(web3.utils.toWei('288', 'ether'),0,{ from: user});
+        await realitycards2.newRental(web3.utils.toWei('288', 'ether'),maxuint256,0,{ from: user});
         // withdraw all, should be 3 left therefore only withdraw 7
         var balanceBefore = await web3.eth.getBalance(user);
         await withdrawDeposit(1000,user);
@@ -868,10 +869,10 @@ it('newRental check failures', async () => {
     user = user0;
     await depositDai(1000,user0);
     // check newRental stuff
-    await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('0.5', 'ether'),0,{ from: user}), "Minimum rental 1 Dai");
+    await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('0.5', 'ether'),maxuint256,0,{ from: user}), "Minimum rental 1 Dai");
     await newRental(1,0,user0);
-    await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('1', 'ether'),0,{ from: user}), "Price not 10% higher");
-    await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('1', 'ether'),23,{ from: user}), "This token does not exist");
+    await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('1', 'ether'),maxuint256,0,{ from: user}), "Price not 10% higher");
+    await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('1', 'ether'),maxuint256,23,{ from: user}), "This token does not exist");
     // withdraw for next test
     await withdrawDeposit(1000,user0);
     });
@@ -936,7 +937,7 @@ it('check that _revertToPreviousOwner does not revert more than ten times ', asy
 
 it('check that cannot rent a card if less than 1 hous rent', async () => {
     await depositDai(1,user0);
-    await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('150', 'ether'),2,{ from: user0}), "Insufficient deposit");
+    await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('150', 'ether'),maxuint256,2,{ from: user0}), "Insufficient deposit");
     });
 
 it('test payRent/deposits after 0 mins, 5 mins, 15 mins, 20 mins', async () => {
@@ -1025,7 +1026,7 @@ it('check that users cannot transfer their NFTs until withdraw state', async() =
     assert.equal(2,state);
     // currently in state 'LOCKED' the following should all fail 
     await shouldFail.reverting.withMessage(realitycards2.collectRentAllTokens(), "Incorrect state");
-    await shouldFail.reverting.withMessage(realitycards2.newRental(0,0), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards2.newRental(0,maxuint256,0), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards2.exit(0), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards2.rentAllCards(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards2.sponsor({value: 3}), "Incorrect state");
@@ -1038,7 +1039,7 @@ it('check that users cannot transfer their NFTs until withdraw state', async() =
     await shouldFail.reverting.withMessage(realitycards2.lockMarket(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards2.determineWinner(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards2.collectRentAllTokens(), "Incorrect state");
-    await shouldFail.reverting.withMessage(realitycards2.newRental(0,0), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards2.newRental(0,maxuint256,0), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards2.exit(0), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards2.sponsor({value: 3}), "Incorrect state");
   });
@@ -1071,13 +1072,13 @@ it('check oracleResolutionTime and marketLockingTime expected failures', async (
     await rcfactory.createMarket(0,'0x0',marketDetails,timestamps, tokenURIs, question);
   });
 
-  it('test maxTimeHeld & longestOwner', async () => {
+  it('test longestTimeHeld & longestOwner', async () => {
     await depositDai(10,user0);
     await newRental(1,2,user0);
     // await newRental(web3.utils.toWei('1', 'ether'),2,web3.utils.toWei('10', 'ether'),user0 ); 
     await time.increase(time.duration.days(1)); 
     await realitycards.collectRentAllTokens();
-    var maxTimeHeld = await realitycards.maxTimeHeld(2);
+    var maxTimeHeld = await realitycards.longestTimeHeld(2);
     var maxTimeHeldShouldBe = time.duration.days(1);
     var difference = Math.abs(maxTimeHeld.toString() - maxTimeHeldShouldBe.toString());
     assert.isBelow(difference/maxTimeHeld,0.0001);
@@ -1090,7 +1091,7 @@ it('check oracleResolutionTime and marketLockingTime expected failures', async (
     // await newRental(web3.utils.toWei('2', 'ether'),2,web3.utils.toWei('10', 'ether'),user1 ); 
     await time.increase(time.duration.days(2));
     await realitycards.collectRentAllTokens();
-    var maxTimeHeld = await realitycards.maxTimeHeld(2);
+    var maxTimeHeld = await realitycards.longestTimeHeld(2);
     var maxTimeHeldShouldBe = time.duration.days(2);
     var difference = Math.abs(maxTimeHeld.toString() - maxTimeHeldShouldBe.toString());
     assert.isBelow(difference/maxTimeHeld,0.0001);
@@ -1381,12 +1382,12 @@ it('test marketOpeningTime stuff', async () => {
     var state = await realitycards3.state();
     assert.equal(state,0);
     // check newRental fails because incorrect state
-    await shouldFail.reverting.withMessage(realitycards3.newRental(web3.utils.toWei('150', 'ether'),2,{ from: user0}), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards3.newRental(web3.utils.toWei('150', 'ether'),maxuint256,2,{ from: user0}), "Incorrect state");
     // advance time so its in the past, should work
     await time.increase(time.duration.weeks(8)); 
-    await realitycards3.newRental(web3.utils.toWei('150', 'ether'),2,{ from: user0})
+    await realitycards3.newRental(web3.utils.toWei('150', 'ether'),maxuint256,2,{ from: user0})
     // check that it won't increment state twice
-    await realitycards3.newRental(web3.utils.toWei('200', 'ether'),2,{ from: user0})
+    await realitycards3.newRental(web3.utils.toWei('200', 'ether'),maxuint256,2,{ from: user0})
     var state = await realitycards3.state();
     assert.equal(state,1);
 });
