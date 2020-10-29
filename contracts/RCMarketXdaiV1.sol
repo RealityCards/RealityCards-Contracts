@@ -91,7 +91,6 @@ contract RCMarketXdaiV1 is ERC721Full {
 
     // WORK TO DO 
     // BIG ROCKS
-    // set exit flag to zero after certain amount of itme, so that they can set how long to own it for
     // add pausiable & some panic/withdraw mode
     // add the new types of market
     // 2% for the winner, 1% for the artist if defined (and make this user playable)
@@ -369,6 +368,13 @@ contract RCMarketXdaiV1 is ERC721Full {
         if (marketLockingTime < now) {
             lockMarket();
         } 
+    }
+
+    /// @notice to change your timeHeldLimit without having to re-rent
+    function updateTimeHeldLimit(uint256 _timeHeldLimit, uint256 _tokenId) public checkState(States.OPEN) tokenExists(_tokenId) {
+        _collectRent(_tokenId);
+        require(_timeHeldLimit >= timeHeld[_tokenId][msg.sender].add(600), "Ten mins min"); 
+        timeHeldLimit[_tokenId][msg.sender] = _timeHeldLimit;
     }
 
     /// @notice stop renting a token

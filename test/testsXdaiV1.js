@@ -249,193 +249,193 @@ it('ccollectRent function with foreclose and revertPreviousOwner', async () => {
     await withdrawDeposit(1000,user1);
 });
   
-      // these are two crucial variables that are relied on for other functions. are they what they should be?
-      it('test timeHeld and totalTimeHeld', async () => {
-        await depositDai(10,user0);
-        await newRental(1,0,user0);
-        await depositDai(10,user1);
-        await newRental(2,0,user1);
-        await depositDai(12,user2);
-        await newRental(3,0,user2);
-        //tests
-        await time.increase(time.duration.days(3));
-        await realitycards.collectRentAllTokens();
-        // u2 3 days
-        var timeHeld = await realitycards.timeHeld.call(0, user2);
-        var timeHeldShouldBe = time.duration.days(3);
-        var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
-        assert.isBelow(difference,4);
-        await time.increase(time.duration.days(3));
-        await realitycards.collectRentAllTokens();
-        // u2 one more day
-        var timeHeld = await realitycards.timeHeld.call(0, user2);
-        var timeHeldShouldBe = time.duration.days(4);
-        var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
-        assert.isBelow(difference,2);
-        await time.increase(time.duration.days(3));
-        await realitycards.collectRentAllTokens();
-        // u2 still 4 days, u1 5 days, u0 0 days
-        var timeHeld = await realitycards.timeHeld.call(0, user2);
-        var timeHeldShouldBe = time.duration.days(4);
-        var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
-        assert.isBelow(difference/timeHeld,2);
-        var timeHeld = await realitycards.timeHeld.call(0, user1);
-        var timeHeldShouldBe = time.duration.days(5);
-        var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
-        assert.isBelow(difference/timeHeld,0.001);
-        await time.increase(time.duration.days(3));
-        await realitycards.collectRentAllTokens();
-        // u1 5 days, u0 3 days
-        var timeHeld = await realitycards.timeHeld.call(0, user1);
-        var timeHeldShouldBe = time.duration.days(5);
-        var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
-        assert.isBelow(difference/timeHeld,0.001);
-        var timeHeld = await realitycards.timeHeld.call(0, user0);
-        var timeHeldShouldBe = time.duration.days(3);
-        var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
-        assert.isBelow(difference/timeHeld,0.001);
-        await time.increase(time.duration.days(1));
-        await realitycards.collectRentAllTokens();
-        // u1 5 days, u0 6 day
-        var timeHeld = await realitycards.timeHeld.call(0, user1);
-        var timeHeldShouldBe = time.duration.days(5);
-        var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
-        assert.isBelow(difference/timeHeld,0.001);
-        var timeHeld = await realitycards.timeHeld.call(0, user0);
-        var timeHeldShouldBe = time.duration.days(4);
-        var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
-        assert.isBelow(difference/timeHeld,0.001);
-        // buy again, check the new owner, then revert again
-        user = user5;
-        await depositDai(10,user5);
-        await newRental(10,0,user5);
-        await time.increase(time.duration.days(2));
-        await realitycards.collectRentAllTokens();
-        var timeHeld = await realitycards.timeHeld.call(0, user5);
-        var timeHeldShouldBe = time.duration.days(1);
-        var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
-        assert.isBelow(difference/timeHeld,0.001);
-        await time.increase(time.duration.days(7));
-        await realitycards.collectRentAllTokens();
-        // u0 8 days
-        var timeHeld = await realitycards.timeHeld.call(0, user0);
-        var timeHeldShouldBe = time.duration.days(10);
-        var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
-        assert.isBelow(difference/timeHeld,0.001);
-        await time.increase(time.duration.days(9));
-        await realitycards.collectRentAllTokens();
-        // u0 10 days
-        var timeHeld = await realitycards.timeHeld.call(0, user0);
-        var timeHeldShouldBe = time.duration.days(10);
-        var difference = Math.abs(timeHeld - timeHeldShouldBe); 
-        assert.isBelow(difference/timeHeld,0.001);
-        // check total collected
-        var totalTimeHeldShouldBe = time.duration.days(20);
-        var totalTimeHeld = await realitycards.totalTimeHeld.call(0);
-        var difference = Math.abs(totalTimeHeld - totalTimeHeldShouldBe);
-        assert.isBelow(difference/timeHeld,0.001);
-        // withdraw
-        await withdrawDeposit(1000,user0);
-        await withdrawDeposit(1000,user1);
-        await withdrawDeposit(1000,user2);
-      });
+// these are two crucial variables that are relied on for other functions. are they what they should be?
+it('test timeHeld and totalTimeHeld', async () => {
+    await depositDai(10,user0);
+    await newRental(1,0,user0);
+    await depositDai(10,user1);
+    await newRental(2,0,user1);
+    await depositDai(12,user2);
+    await newRental(3,0,user2);
+    //tests
+    await time.increase(time.duration.days(3));
+    await realitycards.collectRentAllTokens();
+    // u2 3 days
+    var timeHeld = await realitycards.timeHeld.call(0, user2);
+    var timeHeldShouldBe = time.duration.days(3);
+    var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
+    assert.isBelow(difference,4);
+    await time.increase(time.duration.days(3));
+    await realitycards.collectRentAllTokens();
+    // u2 one more day
+    var timeHeld = await realitycards.timeHeld.call(0, user2);
+    var timeHeldShouldBe = time.duration.days(4);
+    var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
+    assert.isBelow(difference,2);
+    await time.increase(time.duration.days(3));
+    await realitycards.collectRentAllTokens();
+    // u2 still 4 days, u1 5 days, u0 0 days
+    var timeHeld = await realitycards.timeHeld.call(0, user2);
+    var timeHeldShouldBe = time.duration.days(4);
+    var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
+    assert.isBelow(difference/timeHeld,2);
+    var timeHeld = await realitycards.timeHeld.call(0, user1);
+    var timeHeldShouldBe = time.duration.days(5);
+    var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
+    assert.isBelow(difference/timeHeld,0.001);
+    await time.increase(time.duration.days(3));
+    await realitycards.collectRentAllTokens();
+    // u1 5 days, u0 3 days
+    var timeHeld = await realitycards.timeHeld.call(0, user1);
+    var timeHeldShouldBe = time.duration.days(5);
+    var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
+    assert.isBelow(difference/timeHeld,0.001);
+    var timeHeld = await realitycards.timeHeld.call(0, user0);
+    var timeHeldShouldBe = time.duration.days(3);
+    var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
+    assert.isBelow(difference/timeHeld,0.001);
+    await time.increase(time.duration.days(1));
+    await realitycards.collectRentAllTokens();
+    // u1 5 days, u0 6 day
+    var timeHeld = await realitycards.timeHeld.call(0, user1);
+    var timeHeldShouldBe = time.duration.days(5);
+    var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
+    assert.isBelow(difference/timeHeld,0.001);
+    var timeHeld = await realitycards.timeHeld.call(0, user0);
+    var timeHeldShouldBe = time.duration.days(4);
+    var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
+    assert.isBelow(difference/timeHeld,0.001);
+    // buy again, check the new owner, then revert again
+    user = user5;
+    await depositDai(10,user5);
+    await newRental(10,0,user5);
+    await time.increase(time.duration.days(2));
+    await realitycards.collectRentAllTokens();
+    var timeHeld = await realitycards.timeHeld.call(0, user5);
+    var timeHeldShouldBe = time.duration.days(1);
+    var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
+    assert.isBelow(difference/timeHeld,0.001);
+    await time.increase(time.duration.days(7));
+    await realitycards.collectRentAllTokens();
+    // u0 8 days
+    var timeHeld = await realitycards.timeHeld.call(0, user0);
+    var timeHeldShouldBe = time.duration.days(10);
+    var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
+    assert.isBelow(difference/timeHeld,0.001);
+    await time.increase(time.duration.days(9));
+    await realitycards.collectRentAllTokens();
+    // u0 10 days
+    var timeHeld = await realitycards.timeHeld.call(0, user0);
+    var timeHeldShouldBe = time.duration.days(10);
+    var difference = Math.abs(timeHeld - timeHeldShouldBe); 
+    assert.isBelow(difference/timeHeld,0.001);
+    // check total collected
+    var totalTimeHeldShouldBe = time.duration.days(20);
+    var totalTimeHeld = await realitycards.totalTimeHeld.call(0);
+    var difference = Math.abs(totalTimeHeld - totalTimeHeldShouldBe);
+    assert.isBelow(difference/timeHeld,0.001);
+    // withdraw
+    await withdrawDeposit(1000,user0);
+    await withdrawDeposit(1000,user1);
+    await withdrawDeposit(1000,user2);
+});
   
-      it('test withdrawDeposit after zero mins', async () => {
-        user = user0;
-        await depositDai(144,user);
-        await newRental(144,0,user);
-        var deposit = await treasury.deposits.call(user); 
-        marketAddress = await rcfactory.getMostRecentMarket.call(0);
-        var depositSpecific = await treasury.cardSpecificDeposits.call(marketAddress,user,0);
-        assert.equal(deposit, web3.utils.toWei('143', 'ether')); 
-        assert.equal(depositSpecific, web3.utils.toWei('1', 'ether')); 
-        // withdraw half
-        var balanceBefore = await web3.eth.getBalance(user);
-        await withdrawDeposit(72,user);
-        // check deposit balances 
-        var deposit = await treasury.deposits.call(user); 
-        var depositShouldBe = web3.utils.toWei('71', 'ether');
-        var difference = Math.abs(deposit.toString()-depositShouldBe.toString());
-        assert.isBelow(difference/deposit,0.00001);
-        // check withdrawn amounts
-        var balanceAfter = await web3.eth.getBalance(user);
-        var depositWithdrawn = await balanceAfter - balanceBefore;
-        var depositWithdrawnShouldBe = web3.utils.toWei('72', 'ether');
-        var difference = Math.abs(depositWithdrawn.toString()-depositWithdrawnShouldBe.toString());
-        assert.isBelow(difference/depositWithdrawnShouldBe,0.00001);
-        // withdraw too much, should only allow you to withdraw the remaining
-        var balanceBefore = await web3.eth.getBalance(user);
-        await withdrawDeposit(100,user);
-        // check deposit balances 
-        var deposit = await treasury.deposits.call(user); 
-        marketAddress = await rcfactory.getMostRecentMarket.call(0);
-        var depositSpecific = await treasury.cardSpecificDeposits.call(marketAddress,user,0);
-        assert.equal(deposit, 0); 
-        assert.equal(depositSpecific, web3.utils.toWei('1', 'ether'));
-        // check withdrawn amounts 
-        var balanceAfter = await web3.eth.getBalance(user);
-        var depositWithdrawn = await balanceAfter - balanceBefore;
-        var depositWithdrawnShouldBe = web3.utils.toWei('71', 'ether');
-        var difference = Math.abs(depositWithdrawn.toString()-depositWithdrawnShouldBe.toString());
-        assert.isBelow(difference/depositWithdrawnShouldBe,0.00001);
-        // withdraw for next test
-        await withdrawDeposit(1000,user0);
-      });
+it('test withdrawDeposit after zero mins', async () => {
+    user = user0;
+    await depositDai(144,user);
+    await newRental(144,0,user);
+    var deposit = await treasury.deposits.call(user); 
+    marketAddress = await rcfactory.getMostRecentMarket.call(0);
+    var depositSpecific = await treasury.cardSpecificDeposits.call(marketAddress,user,0);
+    assert.equal(deposit, web3.utils.toWei('143', 'ether')); 
+    assert.equal(depositSpecific, web3.utils.toWei('1', 'ether')); 
+    // withdraw half
+    var balanceBefore = await web3.eth.getBalance(user);
+    await withdrawDeposit(72,user);
+    // check deposit balances 
+    var deposit = await treasury.deposits.call(user); 
+    var depositShouldBe = web3.utils.toWei('71', 'ether');
+    var difference = Math.abs(deposit.toString()-depositShouldBe.toString());
+    assert.isBelow(difference/deposit,0.00001);
+    // check withdrawn amounts
+    var balanceAfter = await web3.eth.getBalance(user);
+    var depositWithdrawn = await balanceAfter - balanceBefore;
+    var depositWithdrawnShouldBe = web3.utils.toWei('72', 'ether');
+    var difference = Math.abs(depositWithdrawn.toString()-depositWithdrawnShouldBe.toString());
+    assert.isBelow(difference/depositWithdrawnShouldBe,0.00001);
+    // withdraw too much, should only allow you to withdraw the remaining
+    var balanceBefore = await web3.eth.getBalance(user);
+    await withdrawDeposit(100,user);
+    // check deposit balances 
+    var deposit = await treasury.deposits.call(user); 
+    marketAddress = await rcfactory.getMostRecentMarket.call(0);
+    var depositSpecific = await treasury.cardSpecificDeposits.call(marketAddress,user,0);
+    assert.equal(deposit, 0); 
+    assert.equal(depositSpecific, web3.utils.toWei('1', 'ether'));
+    // check withdrawn amounts 
+    var balanceAfter = await web3.eth.getBalance(user);
+    var depositWithdrawn = await balanceAfter - balanceBefore;
+    var depositWithdrawnShouldBe = web3.utils.toWei('71', 'ether');
+    var difference = Math.abs(depositWithdrawn.toString()-depositWithdrawnShouldBe.toString());
+    assert.isBelow(difference/depositWithdrawnShouldBe,0.00001);
+    // withdraw for next test
+    await withdrawDeposit(1000,user0);
+});
 
-    it('test withdrawDeposit- multiple markets', async () => {
-        user = user0;
-        await depositDai(10,user);
-        await newRental(144,0,user);
-        //second market
-        realitycards2 = await createMarket();
-        await realitycards2.newRental(web3.utils.toWei('288', 'ether'),maxuint256,0,{ from: user});
-        // withdraw all, should be 3 left therefore only withdraw 7
-        var balanceBefore = await web3.eth.getBalance(user);
-        await withdrawDeposit(1000,user);
-        var balanceAfter = await web3.eth.getBalance(user);
-        var depositWithdrawn = await balanceAfter - balanceBefore;
-        var depositWithdrawnShouldBe = web3.utils.toWei('7', 'ether');
-        var difference = Math.abs(depositWithdrawn.toString() - depositWithdrawnShouldBe.toString());
-        assert.isBelow(difference/depositWithdrawn,0.001);
-        //original user tries to withdraw again, there should be zero withdrawn
-        var balanceBefore = await web3.eth.getBalance(user);
-        await withdrawDeposit(1000,user);
-        var balanceAfter = await web3.eth.getBalance(user);
-        var depositWithdrawn = await balanceAfter - balanceBefore;
-        assert.equal(depositWithdrawn,0);
-        // withdraw for next test
-        await withdrawDeposit(1000,user0);
-    });
+it('test withdrawDeposit- multiple markets', async () => {
+    user = user0;
+    await depositDai(10,user);
+    await newRental(144,0,user);
+    //second market
+    realitycards2 = await createMarket();
+    await realitycards2.newRental(web3.utils.toWei('288', 'ether'),maxuint256,0,{ from: user});
+    // withdraw all, should be 3 left therefore only withdraw 7
+    var balanceBefore = await web3.eth.getBalance(user);
+    await withdrawDeposit(1000,user);
+    var balanceAfter = await web3.eth.getBalance(user);
+    var depositWithdrawn = await balanceAfter - balanceBefore;
+    var depositWithdrawnShouldBe = web3.utils.toWei('7', 'ether');
+    var difference = Math.abs(depositWithdrawn.toString() - depositWithdrawnShouldBe.toString());
+    assert.isBelow(difference/depositWithdrawn,0.001);
+    //original user tries to withdraw again, there should be zero withdrawn
+    var balanceBefore = await web3.eth.getBalance(user);
+    await withdrawDeposit(1000,user);
+    var balanceAfter = await web3.eth.getBalance(user);
+    var depositWithdrawn = await balanceAfter - balanceBefore;
+    assert.equal(depositWithdrawn,0);
+    // withdraw for next test
+    await withdrawDeposit(1000,user0);
+});
 
-    it('test exit- more than ten mins', async () => {
-        // setup
-        await depositDai(144,user0);
-        await depositDai(144,user1);
-        await newRental(10,0,user0);
-        await newRental(144,0,user1);
-        await time.increase(time.duration.hours(1)); 
-        await realitycards.collectRentAllTokens();
-        // user 1 should still be owner, held for 1 hour
-        var owner = await realitycards.ownerOf.call(0);
-        assert.equal(owner, user1);
-        var timeHeld = await realitycards.timeHeld.call(0, user1);
-        var timeHeldShouldBe = time.duration.hours(1);
-        var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
-        assert.isBelow(difference,3);
-        // call exit, user 0 should own and no more time held on u1
-        await realitycards.exit(0,{ from: user1  });
-        var owner = await realitycards.ownerOf.call(0);
-        assert.equal(owner, user0);
-        await time.increase(time.duration.hours(1)); 
-        await realitycards.collectRentAllTokens();
-        var timeHeld = await realitycards.timeHeld.call(0, user1);
-        var timeHeldShouldBe = time.duration.hours(1);
-        var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
-        assert.isBelow(difference,3);
-        // withdraw for next test
-        await withdrawDeposit(1000,user0);
-        await withdrawDeposit(1000,user1);
-    });
+it('test exit- more than ten mins', async () => {
+    // setup
+    await depositDai(144,user0);
+    await depositDai(144,user1);
+    await newRental(10,0,user0);
+    await newRental(144,0,user1);
+    await time.increase(time.duration.hours(1)); 
+    await realitycards.collectRentAllTokens();
+    // user 1 should still be owner, held for 1 hour
+    var owner = await realitycards.ownerOf.call(0);
+    assert.equal(owner, user1);
+    var timeHeld = await realitycards.timeHeld.call(0, user1);
+    var timeHeldShouldBe = time.duration.hours(1);
+    var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
+    assert.isBelow(difference,3);
+    // call exit, user 0 should own and no more time held on u1
+    await realitycards.exit(0,{ from: user1  });
+    var owner = await realitycards.ownerOf.call(0);
+    assert.equal(owner, user0);
+    await time.increase(time.duration.hours(1)); 
+    await realitycards.collectRentAllTokens();
+    var timeHeld = await realitycards.timeHeld.call(0, user1);
+    var timeHeldShouldBe = time.duration.hours(1);
+    var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
+    assert.isBelow(difference,3);
+    // withdraw for next test
+    await withdrawDeposit(1000,user0);
+    await withdrawDeposit(1000,user1);
+});
 
     it('test exit- less than ten mins', async () => {
         // setup
@@ -1563,6 +1563,59 @@ it('test winner/withdraw, recreated without exit', async () => {
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
+});
+
+it('test timeHeldLimit using updateTimeHeldLimit', async() => {
+    await depositDai(144,user0);
+    await depositDai(144,user1);
+    // first: check timeHeldLimit cant be below ten mins
+    await shouldFail.reverting.withMessage(realitycards.updateTimeHeldLimit('500',0,{ from: user0}), "Ten mins min");
+    // second: limit is below rent owed and below total deposit
+    // rent a card for one day only
+    await newRental(1,0,user0);
+    await realitycards.updateTimeHeldLimit(86400,0,{from: user0});
+    await newRental(5,0,user1);
+    await realitycards.updateTimeHeldLimit(86400,0,{from: user1});
+    // do a minor interval to check it isnt reverting yet
+    await time.increase(time.duration.hours(11));
+    await realitycards.collectRentAllTokens();
+    var owner = await realitycards.ownerOf(0);
+    assert.equal(owner,user1);
+    await time.increase(time.duration.weeks(10));
+    await realitycards.collectRentAllTokens();
+    // check that only owned for 1 day
+    var timeHeld = await realitycards.timeHeld.call(0, user1);
+    var timeHeldShouldBe = time.duration.days(1);
+    var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
+    assert.isBelow(difference/timeHeld,0.001);
+    // check they paid 5 dai
+    var collected = await realitycards.collectedPerUser(user1);
+    var collectedShouldBe = web3.utils.toWei('5', 'ether');
+    var difference = Math.abs(collected.toString() - collectedShouldBe.toString()); 
+    assert.isBelow(difference/collected,0.001);
+    // check that it reverted
+    var owner = await realitycards.ownerOf(0);
+    assert.equal(owner,user0);
+    // third: deposit is below rent owed and below limit
+    await depositDai(144,user2);
+    await depositDai(144,user3);
+    await newRentalCustomTimeLimit(1,1,1,user2);
+    await newRentalCustomTimeLimit(144,100,1,user3);
+    await time.increase(time.duration.days(2));
+    await realitycards.collectRentAllTokens();
+    // check that only owned for 1 day
+    var timeHeld = await realitycards.timeHeld.call(1, user3);
+    var timeHeldShouldBe = time.duration.days(1);
+    var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
+    assert.isBelow(difference/timeHeld,0.001);
+    // check that it reverted
+    var owner = await realitycards.ownerOf(1);
+    assert.equal(owner,user2);
+    // withdraw for next test
+    await withdrawDeposit(1000,user0);
+    await withdrawDeposit(1000,user1);
+    await withdrawDeposit(1000,user2);
+    await withdrawDeposit(1000,user3);
 });
 
 
