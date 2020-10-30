@@ -80,14 +80,25 @@ contract RCTreasury is Ownable {
     /// DEPOSIT & WITHDRAW FUNCTIONS ///
     ////////////////////////////////////
 
-    function deposit() external payable balancedBooks() initialised() {
+    function deposit() external payable balancedBooks() initialised() returns(bool) {
+        require(msg.value > 0, "Must deposit something");
         deposits[msg.sender] = deposits[msg.sender].add(msg.value);
         totalDeposits = totalDeposits.add(msg.value);
         emit LogDepositIncreased(msg.value, msg.sender);
+        return true;
+    }
+
+    function depositViaMarket(address _user) external payable balancedBooks() initialised() returns(bool) {
+        require(msg.value > 0, "Must deposit something");
+        deposits[_user] = deposits[_user].add(msg.value);
+        totalDeposits = totalDeposits.add(msg.value);
+        emit LogDepositIncreased(msg.value, msg.sender);
+        return true;
     }
 
     /// @dev this is the only function where funds leave the contract
     function withdrawDeposit(uint256 _dai) external balancedBooks()  {
+        require(_dai > 0, "Must withdraw  something");
         if (_dai > deposits[msg.sender]) {
             _dai = deposits[msg.sender];
         }

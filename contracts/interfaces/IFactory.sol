@@ -11,4 +11,5 @@ interface IFactory
     function treasury() external returns (ITreasury);
     function realitioTimeout() external returns (uint32);
     function arbitrator() external returns (address);
+    function deposit() external payable returns(bool);
 }

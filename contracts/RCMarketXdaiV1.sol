@@ -94,7 +94,6 @@ contract RCMarketXdaiV1 is ERC721Full {
     // WORK TO DO 
     // BIG ROCKS
     // add pausiable & some panic/withdraw mode
-    // add the new types of market
     // 2% for the winner, 1% for the artist if defined (and make this user playable)
     // whitelisted create markets (remove onlyOwner)
     // oracle token bridge etc
@@ -125,6 +124,7 @@ contract RCMarketXdaiV1 is ERC721Full {
         string memory _question, 
         string memory _tokenName
     ) public initializer {
+        assert(_mode < 2);
         IFactory _factory = IFactory(msg.sender);
         
         // initialiiize!
@@ -285,7 +285,7 @@ contract RCMarketXdaiV1 is ERC721Full {
             } else if (mode == 1) {
                 _payoutWinningsWinnerTakesAll();
             } else {
-                require(false,"this mode does not exist");
+                assert(false);
             }
         } else {
              _returnRent();
@@ -341,6 +341,12 @@ contract RCMarketXdaiV1 is ERC721Full {
                 newRental(_newPrice, MAX_UINT256, i);
             }
         }
+    }
+
+    /// @notice deposit and rent a token in the same tx
+    function newRentalWithDeposit(uint256 _newPrice, uint256 _timeHeldLimit, uint256 _tokenId) payable public {
+        assert(treasury.depositViaMarket.value(msg.value)(msg.sender));
+        newRental(_newPrice,_timeHeldLimit,_tokenId);
     }
     
     /// @notice to rent a token
