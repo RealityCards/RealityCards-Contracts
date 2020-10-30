@@ -1483,7 +1483,7 @@ it('check that non markets cannot call market only functions on Treasury', async
 });
 
 it('check that cant send ether to the contract direct', async () => {
-    await shouldFail.reverting.withMessage(treasury.send(1), "Not authorised");
+    await shouldFail.reverting.withMessage(treasury.send(1), "Verboten");
 });
 
 it('check onlyOwner is on everything it should be', async () => {

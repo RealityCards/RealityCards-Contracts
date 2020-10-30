@@ -435,11 +435,7 @@ contract RCMarketXdaiV1 is ERC721Full {
         require(state != States.LOCKED, "Incorrect state");
         require(state != States.WITHDRAW, "Incorrect state");
         // send funds to the Treasury
-        address _thisAddressNotPayable = address(treasury);
-        address payable _recipient = address(uint160(_thisAddressNotPayable));
-        (bool _success, bytes memory data) = _recipient.call.value(msg.value)("");
-        require(_success, "Transfer failed");
-        data; // suppress compilation warning
+        assert(treasury.sponsor.value(msg.value)());
         totalCollected = totalCollected.add(msg.value);
         // just so user can get it back if invalid outcome
         collectedPerUser[msg.sender] = collectedPerUser[msg.sender].add(msg.value); 

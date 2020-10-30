@@ -172,11 +172,16 @@ contract RCTreasury is Ownable {
     }
 
     /// @notice ability to add liqudity to the pot without being able to win (called by market sponsor function). 
-    /// @dev prevents accidentally sending Ether direct
-    /// @dev prevents deliberately sending Ether direct to fuck up balancedBooks modifier
-    function() external payable balancedBooks() onlyMarkets() {
+    function sponsor() external payable balancedBooks() onlyMarkets() returns(bool) {
         marketPot[msg.sender] = marketPot[msg.sender].add(msg.value);
         totalMarketPots = totalMarketPots.add(msg.value);
+        return true;
+    }
+ 
+    /// @dev prevents accidentally sending Ether direct
+    /// @dev prevents deliberately sending Ether direct to fuck up balancedBooks modifier
+    function() external payable {
+        require(false,"Verboten");
     }
 
 }
