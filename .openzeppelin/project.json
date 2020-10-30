@@ -1,0 +1,19 @@
+{
+  "manifestVersion": "2.2",
+  "contracts": {
+    "Factory": "RCFactory",
+    "Treasury": "RCTreasury",
+    "Market": "RCMarketXdaiV1"
+  },
+  "dependencies": {},
+  "name": "RealityCards",
+  "version": "1.0.0",
+  "compiler": {
+    "compilerSettings": {
+      "optimizer": {}
+    },
+    "typechain": {
+      "enabled": false
+    }
+  }
+}
