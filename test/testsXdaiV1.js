@@ -78,6 +78,26 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     return realitycards2;
   }
 
+  async function createMarketMode1() {
+    var latestTime = await time.latest();
+    var oneYear = new BN('31104000');
+    var oneYearInTheFuture = oneYear.add(latestTime);
+    var marketLockingTime = oneYearInTheFuture; 
+    var oracleResolutionTime = oneYearInTheFuture;
+    var timestamps = [0,marketLockingTime,oracleResolutionTime];
+    await rcfactory.createMarket(
+        1,
+        '0x0',
+        marketDetails,
+        timestamps,
+        tokenURIs,
+        question,
+      );
+    var marketAddress = await rcfactory.getMostRecentMarket.call(1);
+    realitycards2 = await RCMarket.at(marketAddress);
+    return realitycards2;
+  }
+
   async function createMarketCustomeTimestamps(marketOpeningTime,marketLockingTime,oracleResolutionTime) {
     var timestamps = [marketOpeningTime,marketLockingTime,oracleResolutionTime];
     await rcfactory.createMarket(
@@ -101,6 +121,11 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
   async function newRental(price, outcome, user) {
     price = web3.utils.toWei(price.toString(), 'ether');
     await realitycards.newRental(price,maxuint256.toString(),outcome,{ from: user});
+  }
+
+  async function newRentalCustomContract(contract, price, outcome, user) {
+    price = web3.utils.toWei(price.toString(), 'ether');
+    await contract.newRental(price,maxuint256.toString(),outcome,{ from: user});
   }
 
   async function newRentalCustomTimeLimit(price, timelimit, outcome, user) {
@@ -421,7 +446,7 @@ it('test exit- more than ten mins', async () => {
     var timeHeld = await realitycards.timeHeld.call(0, user1);
     var timeHeldShouldBe = time.duration.hours(1);
     var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
-    assert.isBelow(difference,3);
+    assert.isBelow(difference,5);
     // call exit, user 0 should own and no more time held on u1
     await realitycards.exit(0,{ from: user1  });
     var owner = await realitycards.ownerOf.call(0);
@@ -505,7 +530,7 @@ it('test exit- more than ten mins', async () => {
     });
   
     // test the payout functions work fine, with different winners each time
-  it('test winner/withdraw', async () => {
+  it('test winner/withdraw mode 0', async () => {
     /////// SETUP //////
     await depositDai(1000,user0);
     await depositDai(1000,user1);
@@ -532,7 +557,6 @@ it('test exit- more than ten mins', async () => {
     // user 1 owned for 7 days
     // user 2 owned for 14 days
     ////////////////////////
-
     await realitycards.lockMarket(); 
     // // set winner 1
     await realitio.setResult(2);
@@ -570,6 +594,60 @@ it('test exit- more than ten mins', async () => {
     assert.isBelow(difference/winningsSentToUser,0.00001);
     // check random user can't withdraw
     await shouldFail.reverting.withMessage(realitycards.withdraw({ from: user6 }), "Not a winner");
+    // withdraw for next test
+    await withdrawDeposit(1000,user0);
+    await withdrawDeposit(1000,user1);
+    await withdrawDeposit(1000,user2);
+  });
+
+  it('test winner/withdraw mode 1', async () => {
+    await rcfactory.setReferenceContractAddress(1,rcreference.address);
+    var realitycards2 = await createMarketMode1();
+    /////// SETUP //////
+    await depositDai(1000,user0);
+    await depositDai(1000,user1);
+    await depositDai(1000,user2);
+    // rent losing teams
+    await newRentalCustomContract(realitycards2,1,0,user0); // collected 28
+    await newRentalCustomContract(realitycards2,2,1,user1); // collected 52
+    // rent winning team
+    await newRentalCustomContract(realitycards2,1,2,user0); // collected 7
+    await time.increase(time.duration.weeks(1));
+    await newRentalCustomContract(realitycards2,2,2,user1); // collected 14
+    await time.increase(time.duration.weeks(1));
+    await newRentalCustomContract(realitycards2,3,2,user2); // collected 42
+    await time.increase(time.duration.weeks(2)); 
+    // exit all, progress time so marketLockingTime in the past
+    await realitycards2.exitAll({from: user0});
+    await realitycards2.exitAll({from: user1});
+    await realitycards2.exitAll({from: user2});
+    await time.increase(time.duration.years(1)); 
+    // winner 1: 
+    // totalcollected = 147, 
+    // total days = 28 
+    // user 0 owned for 7 days
+    // user 1 owned for 7 days
+    // user 2 owned for 14 days
+    ////////////////////////
+    await realitycards2.lockMarket(); 
+    // // set winner 1
+    await realitio.setResult(2);
+    await realitycards2.determineWinner();
+    ////////////////////////
+    var totalCollected = await realitycards2.totalCollected.call();
+    var totalCollectedShouldBe = web3.utils.toWei('147', 'ether');
+    var difference = Math.abs(totalCollected.toString()-totalCollectedShouldBe.toString());
+    assert.isBelow(difference/totalCollected,0.00001);
+    // check user0 and 1 winnings should fail cos user 2 winner
+    await shouldFail.reverting.withMessage(realitycards2.withdraw({from:user0}), "Not a winner");
+    await shouldFail.reverting.withMessage(realitycards2.withdraw({from:user1}), "Not a winner");
+    //check user2 winnings
+    var depositBefore = await treasury.deposits.call(user2); 
+    await realitycards2.withdraw({from:user2});
+    var depositAfter = await treasury.deposits.call(user2); 
+    var winningsSentToUser = depositAfter - depositBefore;
+    var difference = Math.abs(winningsSentToUser.toString()-totalCollected.toString());
+    assert.isBelow(difference/totalCollected,0.00001);
     // withdraw for next test
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);

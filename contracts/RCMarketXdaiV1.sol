@@ -32,6 +32,8 @@ contract RCMarketXdaiV1 is ERC721Full {
     uint256 public constant MAX_UINT256 = 2**256 - 1;
     enum States {CLOSED, OPEN, LOCKED, WITHDRAW}
     States public state; 
+    /// @dev type of event. 0 = classic, 1 = winner takes all, 2 = hot potato
+    uint256 public mode;
 
     ///// CONTRACT VARIABLES /////
     IRealitio public realitio;
@@ -116,6 +118,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     ////////////////////////////////////
 
     function initialize(
+        uint256 _mode,
         string[] memory _tokenURIs,
         uint32[] memory _timestamps,
         uint256 _templateId, 
@@ -123,13 +126,14 @@ contract RCMarketXdaiV1 is ERC721Full {
         string memory _tokenName
     ) public initializer {
         IFactory _factory = IFactory(msg.sender);
-
+        
         // initialiiize!
         ERC721.initialize();
         ERC721Metadata.initialize(_tokenName,"RC");
         winningOutcome = MAX_UINT256; // default invalid
 
         // assign arguments to public variables
+        mode = _mode;
         numberOfTokens = _tokenURIs.length;
         marketOpeningTime = _timestamps[0];
         marketLockingTime = _timestamps[1];
@@ -276,20 +280,33 @@ contract RCMarketXdaiV1 is ERC721Full {
         require(!userAlreadyWithdrawn[msg.sender], "Already withdrawn");
         userAlreadyWithdrawn[msg.sender] = true;
         if (totalTimeHeld[winningOutcome] > 0) {
-            _payoutWinnings();
+            if (mode == 0) {
+                _payoutWinningsClassic();
+            } else if (mode == 1) {
+                _payoutWinningsWinnerTakesAll();
+            } else {
+                require(false,"this mode does not exist");
+            }
         } else {
              _returnRent();
         }
     }
 
     /// @notice pays winnings
-    function _payoutWinnings() internal {
+    function _payoutWinningsClassic() internal {
         uint256 _winnersTimeHeld = timeHeld[winningOutcome][msg.sender];
         uint256 _numerator = totalCollected.mul(_winnersTimeHeld);
         uint256 _winningsToTransfer = _numerator.div(totalTimeHeld[winningOutcome]); 
         require(_winningsToTransfer > 0, "Not a winner");
         assert(treasury.payout(msg.sender, _winningsToTransfer));
         emit LogWinningsPaid(msg.sender, _winningsToTransfer);
+    }
+
+    /// @notice pays winnings
+    function _payoutWinningsWinnerTakesAll() internal {
+        require(longestOwner[winningOutcome] == msg.sender, "Not a winner");
+        assert(treasury.payout(msg.sender, totalCollected));
+        emit LogWinningsPaid(msg.sender, totalCollected);
     }
 
     /// @notice returns all funds to users in case of invalid outcome

@@ -131,6 +131,7 @@ contract RCFactory is Ownable, CloneFactory {
 
         _newAddress = createClone(getMostRecentReferenceContract(_mode));
         IRCMarketXdaiV1(_newAddress).initialize({
+            _mode: _mode,
             _tokenURIs: _tokenURIs,
             _timestamps: _timestamps,
             _templateId: 2,
