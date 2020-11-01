@@ -290,7 +290,7 @@ contract RealityCardsMarketXdai is Ownable, ERC721Full {
     /// @notice checks whether the competition has ended (1 hour grace), if so moves to LOCKED state
     /// @dev can be called by anyone 
     function lockMarket() external checkState(States.OPEN) {
-        require(marketLockingTime < (now - 1 hours), "Market has not finished");
+        require(marketLockingTime < now, "Market has not finished");
         // do a final rent collection before the contract is locked down
         collectRentAllTokens();
         _incrementState();
