@@ -33,6 +33,8 @@ contract RCFactory is Ownable, CloneFactory {
     ///// MARKET PARAMETERS /////
     uint32 public realitioTimeout;
     address public arbitrator;
+    uint256 public artistCut; // %
+    uint256 public creatorCut; // %
 
     ////////////////////////////////////
     //////// EVENTS ////////////////////

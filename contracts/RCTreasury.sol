@@ -89,7 +89,7 @@ contract RCTreasury is Ownable {
     }
 
     function depositViaMarket(address _user) external payable balancedBooks() initialised() returns(bool) {
-        require(msg.value > 0, "Must deposit something");
+        assert(msg.value > 0); // this is enforced in newRental
         deposits[_user] = deposits[_user].add(msg.value);
         totalDeposits = totalDeposits.add(msg.value);
         emit LogDepositIncreased(msg.value, msg.sender);

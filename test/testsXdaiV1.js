@@ -123,6 +123,12 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     await realitycards.newRental(price,maxuint256.toString(),outcome,{ from: user});
   }
 
+  async function newRentalWithDeposit(price, outcome, user, dai) {
+    price = web3.utils.toWei(price.toString(), 'ether');
+    dai = web3.utils.toWei(dai.toString(), 'ether');
+    await realitycards.newRental(price,maxuint256.toString(),outcome,{ from: user, value: dai});
+  }
+
   async function newRentalCustomContract(contract, price, outcome, user) {
     price = web3.utils.toWei(price.toString(), 'ether');
     await contract.newRental(price,maxuint256.toString(),outcome,{ from: user});
@@ -1698,8 +1704,8 @@ it('test timeHeldLimit using updateTimeHeldLimit', async() => {
 
 
 it('test newRentalWithDeposit', async() => {
-    var amount = web3.utils.toWei('144', 'ether')
-    await realitycards.newRentalWithDeposit(amount,3600,0,{value: amount});
+    // var amount = web3.utils.toWei('144', 'ether')
+    await newRentalWithDeposit(144,0,user0,144);
     // check that rent worked
     var owner = await realitycards.ownerOf(0);
     assert.equal(owner,user0);
@@ -1717,14 +1723,19 @@ it('test winner/withdraw recreated using newRentalWithDeposit', async () => {
     // var amount = web3.utils.toWei('144', 'ether')
     // var price = web3.utils.toWei('1', 'ether')
     // rent losing
-    await realitycards.newRentalWithDeposit(web3.utils.toWei('1', 'ether'),maxuint256,0,{from: user0, value: web3.utils.toWei('144', 'ether')}); // collected 28
-    await realitycards.newRentalWithDeposit(web3.utils.toWei('2', 'ether'),maxuint256,1,{from: user1, value: web3.utils.toWei('144', 'ether')}); // collected 52
+    await newRentalWithDeposit(1,0,user0,144); // collected 28
+    // await realitycards.newRentalWithDeposit(web3.utils.toWei('1', 'ether'),maxuint256,0,{from: user0, value: web3.utils.toWei('144', 'ether')}); // collected 28
+    await newRentalWithDeposit(2,1,user1,144);
+    // await realitycards.newRentalWithDeposit(web3.utils.toWei('2', 'ether'),maxuint256,1,{from: user1, value: web3.utils.toWei('144', 'ether')}); // collected 52
     // rent winning
-    await realitycards.newRentalWithDeposit(web3.utils.toWei('1', 'ether'),maxuint256,2,{from: user0, value: web3.utils.toWei('144', 'ether')}); // collected 7
+    await newRentalWithDeposit(1,2,user0,144);
+    // await realitycards.newRentalWithDeposit(web3.utils.toWei('1', 'ether'),maxuint256,2,{from: user0, value: web3.utils.toWei('144', 'ether')}); // collected 7
     await time.increase(time.duration.weeks(1));
-    await realitycards.newRentalWithDeposit(web3.utils.toWei('2', 'ether'),maxuint256,2,{from: user1, value: web3.utils.toWei('144', 'ether')}); // collected 14
+    await newRentalWithDeposit(2,2,user1,144);
+    // await realitycards.newRentalWithDeposit(web3.utils.toWei('2', 'ether'),maxuint256,2,{from: user1, value: web3.utils.toWei('144', 'ether')}); // collected 14
     await time.increase(time.duration.weeks(1));
-    await realitycards.newRentalWithDeposit(web3.utils.toWei('3', 'ether'),maxuint256,2,{from: user2, value: web3.utils.toWei('144', 'ether')}); // collected 42
+    await newRentalWithDeposit(3,2,user2,144);
+    // await realitycards.newRentalWithDeposit(web3.utils.toWei('3', 'ether'),maxuint256,2,{from: user2, value: web3.utils.toWei('144', 'ether')}); // collected 42
     await time.increase(time.duration.weeks(2)); 
     // exit all, progress time so marketLockingTime in the past
     await realitycards.exitAll({from: user0});

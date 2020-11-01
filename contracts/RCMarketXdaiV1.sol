@@ -90,9 +90,17 @@ contract RCMarketXdaiV1 is ERC721Full {
     uint32 public oracleResolutionTime;
     /// @dev prevent users withdrawing twice
     mapping (address => bool) public userAlreadyWithdrawn;
+    /// @dev what % of the pot is allocated to NFT artist
+    uint256 public artistCut; 
+    address public artist;
+    /// @dev what % of the pot is allocated to market creator artist
+    uint256 public creatorCut;
+    address public creator;
 
     // WORK TO DO 
     // BIG ROCKS
+    // fixes: remove seperate rental function if depositing also
+    // fixes: zero = timeheldlimit of infinite
     // add pausiable & some panic/withdraw mode
     // 2% for the winner, 1% for the artist if defined (and make this user playable)
     // whitelisted create markets (remove onlyOwner)
@@ -120,6 +128,7 @@ contract RCMarketXdaiV1 is ERC721Full {
         uint256 _mode,
         string[] memory _tokenURIs,
         uint32[] memory _timestamps,
+
         uint256 _templateId, 
         string memory _question, 
         string memory _tokenName
@@ -343,19 +352,18 @@ contract RCMarketXdaiV1 is ERC721Full {
         }
     }
 
-    /// @notice deposit and rent a token in the same tx
-    function newRentalWithDeposit(uint256 _newPrice, uint256 _timeHeldLimit, uint256 _tokenId) payable public {
-        assert(treasury.depositViaMarket.value(msg.value)(msg.sender));
-        newRental(_newPrice,_timeHeldLimit,_tokenId);
-    }
-    
     /// @notice to rent a token
-    function newRental(uint256 _newPrice, uint256 _timeHeldLimit, uint256 _tokenId) public unlock() checkState(States.OPEN) tokenExists(_tokenId) {
+    function newRental(uint256 _newPrice, uint256 _timeHeldLimit, uint256 _tokenId) public payable unlock() checkState(States.OPEN) tokenExists(_tokenId) {
         require(_newPrice >= price[_tokenId].mul(11).div(10), "Price not 10% higher");
         require(_newPrice >= 1 ether, "Minimum rental 1 Dai");
         collectRentAllTokens();
         // below must be after collectRent so timeHeld is up to date
         require(_timeHeldLimit >= timeHeld[_tokenId][msg.sender].add(600), "Ten mins min"); 
+
+        // process deposit, if sent
+        if (msg.value > 0){
+            assert(treasury.depositViaMarket.value(msg.value)(msg.sender));
+        }
 
         address _currentOwner = ownerOf(_tokenId);
         // allocate 10mins deposit (or increase if same owner)
