@@ -73,37 +73,17 @@ module.exports = async (deployer, network, accounts) => {
 
     // create market
     var tokenURIs = [
-      "x",
-      "x",
-      "x",
-      "x",
-      "x",
-      "x",
-      "x",
-      "x",
-      "x",
-      "x",
-      "x",
-      "x",
-      "x",
-      "x",
-      "x",
-      "x",
-      "x",
-      "x",
-      "x",
-      "x",
-    ]; // 20 tokens
+      "https://cdn.realitycards.io/nftmetadata/uni/token0.json",
+      "https://cdn.realitycards.io/nftmetadata/uni/token1.json",
+      "https://cdn.realitycards.io/nftmetadata/uni/token2.json",
+      "https://cdn.realitycards.io/nftmetadata/uni/token3.json",
+    ];
 
     var sixtySeconds = 60;
     var latestTime = new BN(Date.now() / 1000 + sixtySeconds);
-    console.log("latestTime.toString()");
-    console.log(latestTime.toString());
     var oneYear = new BN("31104000");
     var oneYearInTheFuture = oneYear.add(latestTime);
     var marketLockingTime = oneYearInTheFuture;
-    console.log("marketLockingTime...........");
-    console.log(marketLockingTime.toString());
     var oracleResolutionTime = oneYearInTheFuture;
     var timestamps = [latestTime, marketLockingTime, oracleResolutionTime];
     var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
@@ -125,32 +105,35 @@ module.exports = async (deployer, network, accounts) => {
 
     realitycards = await RealityCardsMarketXdaiV1.at(marketAddress);
     var marketLockingTime = await realitycards.marketLockingTime.call();
-    console.log("marketLockingTime");
-    console.log(marketLockingTime.toString());
+    console.log("marketLockingTime: ", marketLockingTime.toString());
     var marketOpeningTime = await realitycards.marketOpeningTime.call();
-    console.log("marketOpeningTime.toString()");
-    console.log(marketOpeningTime.toString());
+    console.log("marketOpeningTime: ", marketOpeningTime.toString());
     var marketState = await realitycards.state.call();
-    console.log("marketState.toString()");
-    console.log(marketState.toString());
+    console.log("marketState: ", marketState.toString());
 
-    amount = web3.utils.toWei((2).toString(), "ether");
-    await treasury.deposit({ from: user0, value: amount });
-    amount2 = web3.utils.toWei((4).toString(), "ether");
-    await treasury.deposit({ from: user1, value: amount2 });
+    for (var i = 0; i < 15; i++) {
+      console.log(i);
+      let more = (i + 1) * (1 + i / 10); // atleast more than 10%
+      let amount = web3.utils.toWei(more.toString(), "ether");
+      console.log(amount.toString());
+      let user = user0;
+      i % 5 == 0
+        ? (user = user0)
+        : i % 5 == 1
+        ? (user = user1)
+        : i % 5 == 2
+        ? (user = user2)
+        : i % 5 == 3
+        ? (user = user3)
+        : i % 5 == 4
+        ? (user = user4)
+        : (user = user5);
+      console.log(user);
+      await treasury.deposit({ from: user, value: amount });
+      await realitycards.newRental(amount, 0, { from: user });
 
-    price = web3.utils.toWei((2).toString(), "ether");
-    console.log("pre rental");
-    await realitycards.newRental(price, 1, { from: user0 });
-    console.log("rental happened");
-    price2 = web3.utils.toWei((4).toString(), "ether");
-    console.log("pre rental2");
-    await realitycards.newRental(price2, 1, { from: user1 });
-    console.log("rental happened2");
-
-    marketState = await realitycards.state.call();
-    console.log("marketState.toString()");
-    console.log(marketState.toString());
+      await time.increase(time.duration.days(3)); // enough time to ensure deposit runs out
+    }
 
     console.log("factory.address: ", factory.address);
     console.log("treasury.address: ", treasury.address);
