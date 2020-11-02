@@ -8,7 +8,11 @@
   },
   "scripts": {
     "chain": "ganache-cli -m 'defense ready lady corn other ride rapid collect avocado tongue price nut' -l 10000000",
-    "prettier": "prettier --write contracts/RealityCards.sol"
+    "prettier": "prettier --write contracts/RealityCards.sol",
+    "compile": "buidler compile",
+    "test": "buidler test",
+    "coverage": "buidler coverage",
+    "update-graph-abis": "npx buidler compile && cp ./artifactsTruffle/RCFactory.json ../RealityCards-Client/subgraph/abis/RealityCardsFactory.json && cp ./artifactsTruffle/RCTreasury.json ../RealityCards-Client/subgraph/abis/RealityCardsTreasury.json && cp ./artifactsTruffle/RCMarketXdaiV1.json ../RealityCards-Client/subgraph/abis/RealityCardsMarket.json"
   },
   "repository": {
     "type": "git",
@@ -22,10 +26,12 @@
   },
   "homepage": "https://github.com/truffle-box/drizzle-box#readme",
   "dependencies": {
+    "@openzeppelin/cli": "^2.8.2",
+    "@openzeppelin/test-helpers": "^0.5.7",
     "acorn": "^7.1.0",
     "dotenv": "^8.2.0",
     "openzeppelin-solidity": "^2.1.1",
-    "openzeppelin-test-helpers": "^0.2.0",
+    "openzeppelin-test-helpers": "^0.5.1",
     "solc": "^0.6.6",
     "truffle-contract": "^4.0.31",
     "truffle-hdwallet-provider": "^1.0.17",
@@ -34,11 +40,11 @@
   },
   "devDependencies": {
     "@nomiclabs/buidler": "^1.4.4",
-    "@nomiclabs/buidler-truffle5": "^1.3.2",
-    "@nomiclabs/buidler-web3": "^1.3.2",
+    "@nomiclabs/buidler-truffle5": "^1.3.3",
+    "@nomiclabs/buidler-web3": "^1.3.4",
     "@nomiclabs/hardhat-truffle5": "^2.0.0",
     "@nomiclabs/hardhat-web3": "^2.0.0",
-    "@openzeppelin/contracts": "^2.4.0",
+    "@openzeppelin/contracts": "^2.5.1",
     "@openzeppelin/contracts-ethereum-package": "^2.4.0",
     "@openzeppelin/upgrades": "^2.4.0",
     "eth-gas-reporter": "^0.2.17",
