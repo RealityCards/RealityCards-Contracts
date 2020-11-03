@@ -80,28 +80,22 @@ contract RCTreasury is Ownable {
     /// DEPOSIT & WITHDRAW FUNCTIONS ///
     ////////////////////////////////////
 
-    function deposit() external payable balancedBooks() initialised() returns(bool) {
+    /// @dev it is passed the user instead of using msg.value because might be called
+    /// @dev ... via contract instead of direct
+    function deposit(address _user) external payable balancedBooks() initialised() returns(bool) {
         require(msg.value > 0, "Must deposit something");
-        deposits[msg.sender] = deposits[msg.sender].add(msg.value);
-        totalDeposits = totalDeposits.add(msg.value);
-        emit LogDepositIncreased(msg.value, msg.sender);
-        return true;
-    }
-
-    function depositViaMarket(address _user) external payable balancedBooks() initialised() returns(bool) {
-        assert(msg.value > 0); // this is enforced in newRental
         deposits[_user] = deposits[_user].add(msg.value);
         totalDeposits = totalDeposits.add(msg.value);
-        emit LogDepositIncreased(msg.value, msg.sender);
+        emit LogDepositIncreased(msg.value, _user);
         return true;
     }
 
     /// @dev this is the only function where funds leave the contract
     function withdrawDeposit(uint256 _dai) external balancedBooks()  {
-        require(_dai > 0, "Must withdraw  something");
         if (_dai > deposits[msg.sender]) {
             _dai = deposits[msg.sender];
         }
+        require(_dai > 0, "Must withdraw something");
         deposits[msg.sender] = deposits[msg.sender].sub(_dai);
         totalDeposits = totalDeposits.sub(_dai);
         address _thisAddressNotPayable = msg.sender;

@@ -120,13 +120,13 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
 
   async function newRental(price, outcome, user) {
     price = web3.utils.toWei(price.toString(), 'ether');
-    await realitycards.newRental(price,maxuint256.toString(),outcome,{ from: user});
+    await realitycards.newRental(price,0,outcome,{ from: user});
   }
 
   async function newRentalWithDeposit(price, outcome, user, dai) {
     price = web3.utils.toWei(price.toString(), 'ether');
     dai = web3.utils.toWei(dai.toString(), 'ether');
-    await realitycards.newRental(price,maxuint256.toString(),outcome,{ from: user, value: dai});
+    await realitycards.newRental(price,0,outcome,{ from: user, value: dai});
   }
 
   async function newRentalCustomContract(contract, price, outcome, user) {

@@ -358,11 +358,11 @@ contract RCMarketXdaiV1 is ERC721Full {
         require(_newPrice >= 1 ether, "Minimum rental 1 Dai");
         collectRentAllTokens();
         // below must be after collectRent so timeHeld is up to date
-        require(_timeHeldLimit >= timeHeld[_tokenId][msg.sender].add(600), "Ten mins min"); 
+        require(_timeHeldLimit == 0 || _timeHeldLimit >= timeHeld[_tokenId][msg.sender].add(600), "Ten mins min"); 
 
         // process deposit, if sent
         if (msg.value > 0){
-            assert(treasury.depositViaMarket.value(msg.value)(msg.sender));
+            assert(treasury.deposit.value(msg.value)(msg.sender));
         }
 
         address _currentOwner = ownerOf(_tokenId);
@@ -386,6 +386,9 @@ contract RCMarketXdaiV1 is ERC721Full {
 
         // update timeHeldLimit for user
         if (timeHeldLimit[_tokenId][msg.sender] != _timeHeldLimit) {
+            if (_timeHeldLimit == 0) {
+                _timeHeldLimit = MAX_UINT256; // so 0 defaults to no limit
+            }
             assert(_timeHeldLimit > timeHeldLimit[_tokenId][msg.sender]);
             timeHeldLimit[_tokenId][msg.sender] = _timeHeldLimit;
         }
@@ -405,6 +408,9 @@ contract RCMarketXdaiV1 is ERC721Full {
     function updateTimeHeldLimit(uint256 _timeHeldLimit, uint256 _tokenId) public checkState(States.OPEN) tokenExists(_tokenId) {
         _collectRent(_tokenId);
         require(_timeHeldLimit >= timeHeld[_tokenId][msg.sender].add(600), "Ten mins min"); 
+        if (_timeHeldLimit == 0) {
+                _timeHeldLimit = MAX_UINT256; // so 0 defaults to no limit
+            }
         timeHeldLimit[_tokenId][msg.sender] = _timeHeldLimit;
     }
 
