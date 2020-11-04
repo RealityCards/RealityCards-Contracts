@@ -92,10 +92,10 @@ contract RCTreasury is Ownable {
 
     /// @dev this is the only function where funds leave the contract
     function withdrawDeposit(uint256 _dai) external balancedBooks()  {
+        require(deposits[msg.sender] > 0, "Nothing to withdraw");
         if (_dai > deposits[msg.sender]) {
             _dai = deposits[msg.sender];
         }
-        require(_dai > 0, "Must withdraw something");
         deposits[msg.sender] = deposits[msg.sender].sub(_dai);
         totalDeposits = totalDeposits.sub(_dai);
         address _thisAddressNotPayable = msg.sender;

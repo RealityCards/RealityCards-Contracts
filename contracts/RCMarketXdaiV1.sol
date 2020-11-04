@@ -358,6 +358,7 @@ contract RCMarketXdaiV1 is ERC721Full {
         require(_newPrice >= 1 ether, "Minimum rental 1 Dai");
         collectRentAllTokens();
         // below must be after collectRent so timeHeld is up to date
+        // _timeHeldLimit = 0 = no limit
         require(_timeHeldLimit == 0 || _timeHeldLimit >= timeHeld[_tokenId][msg.sender].add(600), "Ten mins min"); 
 
         // process deposit, if sent
@@ -385,10 +386,10 @@ contract RCMarketXdaiV1 is ERC721Full {
         }
 
         // update timeHeldLimit for user
-        if (timeHeldLimit[_tokenId][msg.sender] != _timeHeldLimit) {
-            if (_timeHeldLimit == 0) {
+        if (_timeHeldLimit == 0) {
                 _timeHeldLimit = MAX_UINT256; // so 0 defaults to no limit
             }
+        if (timeHeldLimit[_tokenId][msg.sender] != _timeHeldLimit) {
             assert(_timeHeldLimit > timeHeldLimit[_tokenId][msg.sender]);
             timeHeldLimit[_tokenId][msg.sender] = _timeHeldLimit;
         }
@@ -407,10 +408,10 @@ contract RCMarketXdaiV1 is ERC721Full {
     /// @notice to change your timeHeldLimit without having to re-rent
     function updateTimeHeldLimit(uint256 _timeHeldLimit, uint256 _tokenId) public checkState(States.OPEN) tokenExists(_tokenId) {
         _collectRent(_tokenId);
-        require(_timeHeldLimit >= timeHeld[_tokenId][msg.sender].add(600), "Ten mins min"); 
+        require(_timeHeldLimit == 0 || _timeHeldLimit >= timeHeld[_tokenId][msg.sender].add(600), "Ten mins min");
         if (_timeHeldLimit == 0) {
                 _timeHeldLimit = MAX_UINT256; // so 0 defaults to no limit
-            }
+        } 
         timeHeldLimit[_tokenId][msg.sender] = _timeHeldLimit;
     }
 
@@ -467,13 +468,19 @@ contract RCMarketXdaiV1 is ERC721Full {
 
         //only collect rent if the token is owned (ie, if owned by the contract this implies unowned)
         if (ownerOf(_tokenId) != address(this)) {
-            // console.log(price[_tokenId]);
             uint256 _rentOwed = price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(1 days);
             address _currentOwner = ownerOf(_tokenId);
             uint256 _cardSpecificDeposit = treasury.cardSpecificDeposits(address(this),_currentOwner,_tokenId);
             uint256 _totalDeposit = treasury.deposits(_currentOwner).add(_cardSpecificDeposit);
             bool _exitFlag = exitFlag[_currentOwner][_tokenId];
-            uint256 _rentOwedLimit = price[_tokenId].mul(timeHeldLimit[_tokenId][_currentOwner].sub(timeHeld[_tokenId][_currentOwner])).div(1 days);
+            uint256 _rentOwedLimit;
+
+            // get the maximum rent they can pay based on timeHeldLimit
+            if (timeHeldLimit[_tokenId][_currentOwner] == MAX_UINT256) {
+                _rentOwedLimit = MAX_UINT256;
+            } else {
+                _rentOwedLimit = price[_tokenId].mul(timeHeldLimit[_tokenId][_currentOwner].sub(timeHeld[_tokenId][_currentOwner])).div(1 days);
+            }
 
             if (!_exitFlag) {
                 if (_rentOwed >= _totalDeposit || _rentOwed >= _rentOwedLimit)  {

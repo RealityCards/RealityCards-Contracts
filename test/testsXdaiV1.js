@@ -115,7 +115,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
 
   async function depositDai(amount, user) {
     amount = web3.utils.toWei(amount.toString(), 'ether');
-    await treasury.deposit({ from: user, value: amount });
+    await treasury.deposit(user,{ from: user, value: amount });
   }
 
   async function newRental(price, outcome, user) {
@@ -274,10 +274,6 @@ it('ccollectRent function with foreclose and revertPreviousOwner', async () => {
     assert.equal(owner, realitycards.address);
     var price = await realitycards.price.call(1);
     assert.equal(price, 0);
-    // withdraw
-    await withdrawDeposit(1000,user);
-    // withdraw
-    await withdrawDeposit(1000,user1);
 });
   
 // these are two crucial variables that are relied on for other functions. are they what they should be?
@@ -365,10 +361,6 @@ it('test timeHeld and totalTimeHeld', async () => {
     var totalTimeHeld = await realitycards.totalTimeHeld.call(0);
     var difference = Math.abs(totalTimeHeld - totalTimeHeldShouldBe);
     assert.isBelow(difference/timeHeld,0.001);
-    // withdraw
-    await withdrawDeposit(1000,user0);
-    await withdrawDeposit(1000,user1);
-    await withdrawDeposit(1000,user2);
 });
   
 it('test withdrawDeposit after zero mins', async () => {
@@ -409,8 +401,6 @@ it('test withdrawDeposit after zero mins', async () => {
     var depositWithdrawnShouldBe = web3.utils.toWei('71', 'ether');
     var difference = Math.abs(depositWithdrawn.toString()-depositWithdrawnShouldBe.toString());
     assert.isBelow(difference/depositWithdrawnShouldBe,0.00001);
-    // withdraw for next test
-    await withdrawDeposit(1000,user0);
 });
 
 it('test withdrawDeposit- multiple markets', async () => {
@@ -428,14 +418,8 @@ it('test withdrawDeposit- multiple markets', async () => {
     var depositWithdrawnShouldBe = web3.utils.toWei('7', 'ether');
     var difference = Math.abs(depositWithdrawn.toString() - depositWithdrawnShouldBe.toString());
     assert.isBelow(difference/depositWithdrawn,0.001);
-    //original user tries to withdraw again, there should be zero withdrawn
-    var balanceBefore = await web3.eth.getBalance(user);
-    await withdrawDeposit(1000,user);
-    var balanceAfter = await web3.eth.getBalance(user);
-    var depositWithdrawn = await balanceAfter - balanceBefore;
-    assert.equal(depositWithdrawn,0);
-    // withdraw for next test
-    await withdrawDeposit(1000,user0);
+    //original user tries to withdraw again, should be nothign to withdraw 
+    await shouldFail.reverting.withMessage(treasury.withdrawDeposit(1000), "Nothing to withdraw");
 });
 
 it('test exit- more than ten mins', async () => {
@@ -731,7 +715,6 @@ it('test exit- more than ten mins', async () => {
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
-    await withdrawDeposit(1000,user3);
   });
 
   it('test sponsor- invalid', async () => {
@@ -1096,8 +1079,6 @@ it('check that users cannot transfer their NFTs until withdraw state', async() =
     // these should not
     await realitycards.transferFrom(user,user1,2,{from: user});
     await realitycards.safeTransferFrom(user1,user,2,{from: user1});
-    // withdraw for next test
-    await withdrawDeposit(1000,user0);
   });
 
   it('make sure functions cant be called in the wrong state', async() => {
@@ -1449,8 +1430,6 @@ it('test _revertToPreviousOwner will revert properly if current owner has deposi
     assert.equal(owner, user0);
     // withdraw for next test
     await withdrawDeposit(1000,user0);
-    await withdrawDeposit(1000,user1);
-    await withdrawDeposit(1000,user2);
 });
 
 it('test marketOpeningTime stuff', async () => {
@@ -1579,7 +1558,6 @@ it('test timeHeldLimit', async() => {
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
-    await withdrawDeposit(1000,user3);
 });
 
 it('test winner/withdraw, recreated without exit', async () => {
@@ -1699,7 +1677,6 @@ it('test timeHeldLimit using updateTimeHeldLimit', async() => {
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
-    await withdrawDeposit(1000,user3);
 });
 
 
