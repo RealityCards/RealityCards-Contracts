@@ -90,17 +90,15 @@ contract RCMarketXdaiV1 is ERC721Full {
     uint32 public oracleResolutionTime;
     /// @dev prevent users withdrawing twice
     mapping (address => bool) public userAlreadyWithdrawn;
-    /// @dev what % of the pot is allocated to NFT artist
-    uint256 public artistCut; 
-    address public artist;
-    /// @dev what % of the pot is allocated to market creator artist
-    uint256 public creatorCut;
-    address public creator;
+    /// @dev how will the winnings be distributed
+    /// @dev artist // creator // everyone else
+    uint256[3] public potDistribution;
+    /// @dev the artist's address
+    address public artistAddress;
 
     // WORK TO DO 
     // BIG ROCKS
-    // fixes: remove seperate rental function if depositing also
-    // fixes: zero = timeheldlimit of infinite
+    // make ipfs hash string
     // add pausiable & some panic/withdraw mode
     // 2% for the winner, 1% for the artist if defined (and make this user playable)
     // whitelisted create markets (remove onlyOwner)
@@ -109,7 +107,6 @@ contract RCMarketXdaiV1 is ERC721Full {
     // PEBBLES
     // maybe: add a delegate call to treasury in newRental so treasury can prevent payRent being called for a user that never rented a Card
     // ugprade to solidity v7
-    // change uint256 -> uint32
 
     // TESTS TO DO
     // check all the tokens are minted, do tests on last one
@@ -126,9 +123,9 @@ contract RCMarketXdaiV1 is ERC721Full {
 
     function initialize(
         uint256 _mode,
-        string[] memory _tokenURIs,
         uint32[] memory _timestamps,
-
+        string[] memory _tokenURIs,
+        address _artistAddress,
         uint256 _templateId, 
         string memory _question, 
         string memory _tokenName
@@ -147,8 +144,13 @@ contract RCMarketXdaiV1 is ERC721Full {
         marketOpeningTime = _timestamps[0];
         marketLockingTime = _timestamps[1];
         oracleResolutionTime = _timestamps[2];
+        artistAddress = _artistAddress;
         uint32 _timeout = _factory.realitioTimeout();
         address _arbitrator = _factory.arbitrator();
+        potDistribution = _factory.getPotDistribution();
+
+        // check pot distribution is valid
+        assert(potDistribution[0] + potDistribution[1] + potDistribution[2] == 1000);
 
         // resolution time must not be less than locking time, and not greater by more than one week
         require(marketLockingTime + 1 weeks > oracleResolutionTime && marketLockingTime <= oracleResolutionTime, "Invalid timestamps" );

@@ -6,9 +6,10 @@ interface IRCMarketXdaiV1 {
     function MAX_ITERATIONS() external view returns (uint);
 
     function initialize(
-        uint256 _mode,
-        string[] calldata _tokenURIs, 
+        uint256 _mode, 
         uint32[] calldata _timestamps,
+        string[] calldata _tokenURIs,
+        address _artistAddress,
         uint256 _templateId, 
         string calldata _question, 
         string calldata _tokenName

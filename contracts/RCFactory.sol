@@ -33,14 +33,13 @@ contract RCFactory is Ownable, CloneFactory {
     ///// MARKET PARAMETERS /////
     uint32 public realitioTimeout;
     address public arbitrator;
-    uint256 public artistCut; // %
-    uint256 public creatorCut; // %
+    uint256[3] public potDistribution;
 
     ////////////////////////////////////
     //////// EVENTS ////////////////////
     ////////////////////////////////////
 
-    event LogMarketCreated(address contractAddress, address treasuryAddress, string[] marketDetails, string[] tokenURIs, uint32[] timestamps, uint256 mode, uint256 version, bytes ipfsHash);
+    event LogMarketCreated(address contractAddress, address treasuryAddress, string[] tokenURIs, uint32[] timestamps, uint256 mode, uint256 version, bytes ipfsHash);
     event LogNewReferenceContract(address contractAddress, uint256 mode, uint256 version);
 
     ////////////////////////////////////
@@ -56,9 +55,10 @@ contract RCFactory is Ownable, CloneFactory {
         assert(treasury.setFactoryAddress(address(this)));
 
         // initialise market parameters
-        realitioTimeout = 86400; //24 hours
-        realitio = IRealitio(_realitio);
-        arbitrator = 0xA6EAd513D05347138184324392d8ceb24C116118; //kleros
+        updateRealitioTimeout(86400); // 24 hours
+        updateRealitioAddress(IRealitio(_realitio));
+        updateArbitrator(0xA6EAd513D05347138184324392d8ceb24C116118); // kleros
+        updatePotDistribution(20,0); // 2% artist, 0% market creators
     }
 
     ////////////////////////////////////
@@ -79,6 +79,10 @@ contract RCFactory is Ownable, CloneFactory {
 
     function getAllMarkets(uint256 _mode) public view returns (address[] memory) {
         return marketAddresses[_mode];
+    }
+
+    function getPotDistribution() public view returns (uint256[3] memory) {
+        return potDistribution;
     }
 
     ////////////////////////////////////
@@ -107,12 +111,19 @@ contract RCFactory is Ownable, CloneFactory {
         realitioTimeout = _newTimeout;
     }
 
-    function updateArbitrator(address _newArbitrator) public onlyOwner {
-        arbitrator = _newArbitrator;
-    }
-
     function updateRealitioAddress(IRealitio _newRealitioAddress) public onlyOwner {
         realitio = IRealitio(_newRealitioAddress);
+    }
+
+    function updateArbitrator(address _newArbitrator) public onlyOwner {
+        arbitrator = _newArbitrator;
+    } 
+
+    /// @dev in basis points
+    function updatePotDistribution(uint256 _artistCut, uint256 _creatorCut) public onlyOwner {
+        potDistribution[0] = _artistCut;
+        potDistribution[1] = _creatorCut;
+        potDistribution[2] = (1000 - _creatorCut - _artistCut);
     }
 
     ////////////////////////////////////
@@ -120,32 +131,33 @@ contract RCFactory is Ownable, CloneFactory {
     ////////////////////////////////////
 
     /// @notice create a new market
-    /// @param _marketDetails: [0] = token name, [1] = event name [2] = image location
     function createMarket(
         uint32 _mode,
         bytes memory _ipfsHash,
-        string[] memory _marketDetails,
         uint32[] memory _timestamps,
         string[] memory _tokenURIs,
-        string memory _realitioQuestion
+        string memory _realitioQuestion,
+        string memory _tokenName
     ) public onlyOwner returns (address)  {
         address _newAddress;
+        address _artistAddress;
 
         _newAddress = createClone(getMostRecentReferenceContract(_mode));
         IRCMarketXdaiV1(_newAddress).initialize({
             _mode: _mode,
-            _tokenURIs: _tokenURIs,
             _timestamps: _timestamps,
+            _tokenURIs: _tokenURIs,
+            _artistAddress: _artistAddress,
             _templateId: 2,
             _question: _realitioQuestion,
-            _tokenName: _marketDetails[0]
+            _tokenName: _tokenName
         });
         
         assert(treasury.addMarket(_newAddress));
         marketAddresses[_mode].push(_newAddress);
         mappingOfMarkets[_newAddress] = true;
         uint256 _version = referenceContractAddresses[_mode].length-1;
-        emit LogMarketCreated(address(_newAddress), address(treasury), _marketDetails, _tokenURIs, _timestamps,  _mode, _version, _ipfsHash);
+        emit LogMarketCreated(address(_newAddress), address(treasury), _tokenURIs, _timestamps,  _mode, _version, _ipfsHash);
         return _newAddress;
     }
 

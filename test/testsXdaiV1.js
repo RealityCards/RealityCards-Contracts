@@ -19,7 +19,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
 
   var realitycards;
   var tokenURIs = ['x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x']; // 20 tokens
-  var marketDetails = ['PresElection','x','x']; 
+  var tokenNAme = 'RCToken'; 
   var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
   var maxuint256 = 4294967295;
 
@@ -49,10 +49,10 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     await rcfactory.createMarket(
         0,
         '0x0',
-        marketDetails,
         timestamps,
         tokenURIs,
         question,
+        tokenNAme,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards = await RCMarket.at(marketAddress);
@@ -68,10 +68,10 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     await rcfactory.createMarket(
         0,
         '0x0',
-        marketDetails,
         timestamps,
         tokenURIs,
         question,
+        tokenNAme,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -88,10 +88,10 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     await rcfactory.createMarket(
         1,
         '0x0',
-        marketDetails,
         timestamps,
         tokenURIs,
         question,
+        tokenNAme,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(1);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -103,10 +103,10 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     await rcfactory.createMarket(
         0,
         '0x0',
-        marketDetails,
         timestamps,
         tokenURIs,
         question,
+        tokenNAme,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -168,7 +168,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
   // check name
   it('getName', async () => {
     var name = await realitycards.name.call();
-    assert.equal(name, 'PresElection');
+    assert.equal(name, 'RCToken');
   });
 
     // check fundamentals first
@@ -1120,26 +1120,27 @@ it('check oracleResolutionTime and marketLockingTime expected failures', async (
     var arbitrator = "0xA6EAd513D05347138184324392d8ceb24C116118";
     var timeout = 86400;
     var templateId = 2;
+    var tokenName = "x";
     // resolution time before locking, expect failure
     var oracleResolutionTime = 69419;
     var marketLockingTime = 69420; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',marketDetails,timestamps, tokenURIs, question), "Invalid timestamps");
+    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, question,tokenName), "Invalid timestamps");
     // resolution time > 1 weeks after locking, expect failure
     var oracleResolutionTime = 604810;
     var marketLockingTime = 0; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',marketDetails,timestamps, tokenURIs, question), "Invalid timestamps");
+    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, question,tokenName), "Invalid timestamps");
     // resolution time < 1 week  after locking, no failure
     var oracleResolutionTime = 604790;
     var marketLockingTime = 0; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await rcfactory.createMarket(0,'0x0',marketDetails,timestamps, tokenURIs, question);
+    await rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, question,tokenName);
     // same time, no failure
     var oracleResolutionTime = 0;
     var marketLockingTime = 0; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await rcfactory.createMarket(0,'0x0',marketDetails,timestamps, tokenURIs, question);
+    await rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, question,tokenName);
   });
 
   it('test longestTimeHeld & longestOwner', async () => {
