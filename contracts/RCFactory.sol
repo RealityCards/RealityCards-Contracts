@@ -136,11 +136,11 @@ contract RCFactory is Ownable, CloneFactory {
         bytes memory _ipfsHash,
         uint32[] memory _timestamps,
         string[] memory _tokenURIs,
+        address _artistAddress,
         string memory _realitioQuestion,
         string memory _tokenName
     ) public onlyOwner returns (address)  {
         address _newAddress;
-        address _artistAddress;
 
         _newAddress = createClone(getMostRecentReferenceContract(_mode));
         IRCMarketXdaiV1(_newAddress).initialize({

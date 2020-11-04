@@ -41,6 +41,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     var marketLockingTime = oneYearInTheFuture; 
     var oracleResolutionTime = oneYearInTheFuture; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
+    var artistAddress = user8;
     realitio = await RealitioMockup.new();
     treasury = await RCTreasury.new();
     rcreference = await RCMarket.new();
@@ -51,6 +52,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         '0x0',
         timestamps,
         tokenURIs,
+        artistAddress,
         question,
         tokenNAme,
       );
@@ -65,11 +67,13 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     var marketLockingTime = oneYearInTheFuture; 
     var oracleResolutionTime = oneYearInTheFuture;
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
+    var artistAddress = user8;
     await rcfactory.createMarket(
         0,
         '0x0',
         timestamps,
         tokenURIs,
+        artistAddress,
         question,
         tokenNAme,
       );
@@ -85,11 +89,13 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     var marketLockingTime = oneYearInTheFuture; 
     var oracleResolutionTime = oneYearInTheFuture;
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
+    var artistAddress = user8;
     await rcfactory.createMarket(
         1,
         '0x0',
         timestamps,
         tokenURIs,
+        artistAddress,
         question,
         tokenNAme,
       );
@@ -99,12 +105,14 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
   }
 
   async function createMarketCustomeTimestamps(marketOpeningTime,marketLockingTime,oracleResolutionTime) {
+    var artistAddress = user8;
     var timestamps = [marketOpeningTime,marketLockingTime,oracleResolutionTime];
     await rcfactory.createMarket(
         0,
         '0x0',
         timestamps,
         tokenURIs,
+        artistAddress,
         question,
         tokenNAme,
       );
@@ -132,6 +140,12 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
   async function newRentalCustomContract(contract, price, outcome, user) {
     price = web3.utils.toWei(price.toString(), 'ether');
     await contract.newRental(price,maxuint256.toString(),outcome,{ from: user});
+  }
+
+  async function newRentalWithDepositCustomContract(contract, price, outcome, user, dai) {
+    price = web3.utils.toWei(price.toString(), 'ether');
+    dai = web3.utils.toWei(dai.toString(), 'ether');
+    await contract.newRental(price,maxuint256.toString(),outcome,{ from: user, value: dai});
   }
 
   async function newRentalCustomTimeLimit(price, timelimit, outcome, user) {
@@ -1120,27 +1134,28 @@ it('check oracleResolutionTime and marketLockingTime expected failures', async (
     var arbitrator = "0xA6EAd513D05347138184324392d8ceb24C116118";
     var timeout = 86400;
     var templateId = 2;
+    var artistAddress = user8;
     var tokenName = "x";
     // resolution time before locking, expect failure
     var oracleResolutionTime = 69419;
     var marketLockingTime = 69420; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, question,tokenName), "Invalid timestamps");
+    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress, question,tokenName), "Invalid timestamps");
     // resolution time > 1 weeks after locking, expect failure
     var oracleResolutionTime = 604810;
     var marketLockingTime = 0; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, question,tokenName), "Invalid timestamps");
+    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress, question,tokenName), "Invalid timestamps");
     // resolution time < 1 week  after locking, no failure
     var oracleResolutionTime = 604790;
     var marketLockingTime = 0; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, question,tokenName);
+    await rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress, question,tokenName);
     // same time, no failure
     var oracleResolutionTime = 0;
     var marketLockingTime = 0; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, question,tokenName);
+    await rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress, question,tokenName);
   });
 
   it('test longestTimeHeld & longestOwner', async () => {
@@ -1768,6 +1783,92 @@ it('test winner/withdraw recreated using newRentalWithDeposit', async () => {
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
+});
+
+it('test winner/withdraw with artist and creator fees', async () => {
+    // 6% artist 4% creator
+    await rcfactory.updatePotDistribution(60,40);
+    var realitycards2 = await createMarket();
+    /////// SETUP //////
+    // var amount = web3.utils.toWei('144', 'ether')
+    // var price = web3.utils.toWei('1', 'ether')
+    // rent losing
+    await newRentalWithDepositCustomContract(realitycards2,1,0,user0,144); // collected 28
+    await newRentalWithDepositCustomContract(realitycards2,2,1,user1,144); // collected 52
+    // rent winning
+    await newRentalWithDepositCustomContract(realitycards2,1,2,user0,144); // collected 7
+    await time.increase(time.duration.weeks(1));
+    await newRentalWithDepositCustomContract(realitycards2,2,2,user1,144); // collected 14
+    await time.increase(time.duration.weeks(1));
+    await newRentalWithDepositCustomContract(realitycards2,3,2,user2,144); // collected 42
+    await time.increase(time.duration.weeks(2)); 
+    // exit all, progress time so marketLockingTime in the past
+    await realitycards2.exitAll({from: user0});
+    await realitycards2.exitAll({from: user1});
+    await realitycards2.exitAll({from: user2});
+    await time.increase(time.duration.years(1)); 
+    // winner 1: 
+    // totalcollected = 147, 
+    // total days = 28 
+    // user 0 owned for 7 days
+    // user 1 owned for 7 days
+    // user 2 owned for 14 days
+    ////////////////////////
+    await realitycards2.lockMarket(); 
+    // // set winner 1
+    await realitio.setResult(2);
+    var depositCreatorBefore = await treasury.deposits.call(user0);
+    await realitycards2.determineWinner();
+    var depositCreatorAfter = await treasury.deposits.call(user0);
+    // check that artist fees are correct shold be 147 * .06 = 8.82 
+    var depositArtist = await treasury.deposits.call(user8); 
+    var depositArtistShouldBe = web3.utils.toWei('8.82', 'ether');
+    var difference = Math.abs(depositArtist.toString() - depositArtistShouldBe.toString());
+    assert.isBelow(difference/depositArtist,0.00001);
+    // check that creator fees are correct shold be 147 * .04 = 8.82 
+    var depositCreator = depositCreatorAfter - depositCreatorBefore; 
+    var depositCreatorShouldBe = web3.utils.toWei('5.88', 'ether');
+    var difference = Math.abs(depositCreator.toString() - depositCreatorShouldBe.toString());
+    assert.isBelow(difference/depositCreator,0.00001);
+    ////////////////////////
+    var totalCollected = await realitycards2.totalCollected.call();
+    var totalCollectedShouldBe = web3.utils.toWei('147', 'ether');
+    var difference = Math.abs(totalCollected.toString()-totalCollectedShouldBe.toString());
+    assert.isBelow(difference/totalCollected,0.00001);
+    // rremaining pot is 132.3 which is 10% less as this is what is given to artists and creators
+    // //check user0 winnings
+    var depositBefore = await treasury.deposits.call(user0); 
+    await realitycards2.withdraw({from: user0} );
+    var depositAfter = await treasury.deposits.call(user0); 
+    var winningsSentToUser = depositAfter - depositBefore;
+    var winningsShouldBe = ether('132.3').mul(new BN('7')).div(new BN('28'));
+    var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
+    assert.isBelow(difference/winningsSentToUser,0.00001);
+    //check user0 cant withdraw again
+    await shouldFail.reverting.withMessage(realitycards2.withdraw({from: user0} ), "Already withdrawn");
+    //check user1 winnings
+    var depositBefore = await treasury.deposits.call(user1); 
+    await realitycards2.withdraw({from: user1} );
+    var depositAfter = await treasury.deposits.call(user1); 
+    var winningsSentToUser = depositAfter - depositBefore;
+    var winningsShouldBe = ether('132.3').mul(new BN('7')).div(new BN('28'));
+    var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
+    assert.isBelow(difference/winningsSentToUser,0.00001);
+    //check user2 winnings
+    var depositBefore = await treasury.deposits.call(user2); 
+    await realitycards2.withdraw({from: user2} );
+    var depositAfter = await treasury.deposits.call(user2); 
+    var winningsSentToUser = depositAfter - depositBefore;
+    var winningsShouldBe = ether('132.3').mul(new BN('14')).div(new BN('28'));
+    var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
+    assert.isBelow(difference/winningsSentToUser,0.00001);
+    // check random user can't withdraw
+    await shouldFail.reverting.withMessage(realitycards2.withdraw({ from: user6 }), "Not a winner");
+    // withdraw for next test
+    await withdrawDeposit(1000,user0);
+    await withdrawDeposit(1000,user1);
+    await withdrawDeposit(1000,user2);
+    await withdrawDeposit(1000,user8);
 });
 
 

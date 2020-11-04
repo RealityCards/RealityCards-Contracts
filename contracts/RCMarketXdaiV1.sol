@@ -90,10 +90,6 @@ contract RCMarketXdaiV1 is ERC721Full {
     uint32 public oracleResolutionTime;
     /// @dev prevent users withdrawing twice
     mapping (address => bool) public userAlreadyWithdrawn;
-    /// @dev prevent artists withdrawing twice
-    bool public artistAlreadyWithdrawn;
-    /// @dev prevent creator withdrawing twice
-    bool public creatorAlreadyWithdrawn;
     /// @dev how will the winnings be distributed
     /// @dev artist // creator // everyone else
     uint256[2] public potDistribution;
@@ -288,7 +284,14 @@ contract RCMarketXdaiV1 is ERC721Full {
         // get the winner. This will revert if answer is not resolved.
         winningOutcome = _getWinner();
         _incrementState();
+        // transfer NFTs to the longest owners
         _processNFTsAfterEvent();
+        // pay artist
+        _payArtist();
+        // pay market creator if not invalid
+        if (totalTimeHeld[winningOutcome] > 0) {
+            _payMarketCreator();
+        }
         emit LogWinnerKnown(winningOutcome);
     }
 
@@ -312,8 +315,8 @@ contract RCMarketXdaiV1 is ERC721Full {
 
     /// @notice pays winnings
     function _payoutWinningsClassic() internal {
-        uint256 _remainingDistribition = 1000 - potDistribution[0] - potDistribution[1];
-        uint256 _remainingPot = (totalCollected.mul(_remainingDistribition)).div(1000);
+        uint256 _remainingDistribution = 1000 - potDistribution[0] - potDistribution[1];
+        uint256 _remainingPot = (totalCollected.mul(_remainingDistribution)).div(1000);
         uint256 _winnersTimeHeld = timeHeld[winningOutcome][msg.sender];
         uint256 _numerator = _remainingPot.mul(_winnersTimeHeld);
         uint256 _winningsToTransfer = _numerator.div(totalTimeHeld[winningOutcome]); 
@@ -325,41 +328,38 @@ contract RCMarketXdaiV1 is ERC721Full {
     /// @notice pays winnings
     function _payoutWinningsWinnerTakesAll() internal {
         require(longestOwner[winningOutcome] == msg.sender, "Not a winner");
-        uint256 _remainingDistribition = 1000 - potDistribution[0] - potDistribution[1];
-        uint256 _remainingPot = (totalCollected.mul(_remainingDistribition)).div(1000);
+        uint256 _remainingDistribution = 1000 - potDistribution[0] - potDistribution[1];
+        uint256 _remainingPot = (totalCollected.mul(_remainingDistribution)).div(1000);
         assert(treasury.payout(msg.sender, _remainingPot));
         emit LogWinningsPaid(msg.sender, _remainingPot);
     }
 
     /// @notice returns all funds to users in case of invalid outcome
     function _returnRent() internal {
+        // deduct artist share but NOT market creator share
+        uint256 _remainingDistribution = 1000 - potDistribution[0];
         uint256 _rentCollected = collectedPerUser[msg.sender];
         require(_rentCollected > 0, "Paid no rent");
-        assert(treasury.payout(msg.sender, _rentCollected));
-        emit LogRentReturned(msg.sender, _rentCollected);
+        uint256 _rentCollectedAdjusted = (_rentCollected.mul(_remainingDistribution)).div(1000);
+        assert(treasury.payout(msg.sender, _rentCollectedAdjusted));
+        emit LogRentReturned(msg.sender, _rentCollectedAdjusted);
     }
 
     /// @notice pay artist
-    function payArtist() public {
-        require(!artistAlreadyWithdrawn, "Already withdrawn");
-        artistAlreadyWithdrawn = true;
-        require(msg.sender == artistAddress, "Not artist");
+    function _payArtist() internal {
         if (potDistribution[0] > 0) {
             uint256 _artistsCut = (totalCollected.mul(potDistribution[0])).div(1000);
-            assert(treasury.payout(msg.sender, _artistsCut));
-            emit LogArtistPaid(msg.sender, _artistsCut);
+            assert(treasury.payout(artistAddress, _artistsCut));
+            emit LogArtistPaid(artistAddress, _artistsCut);
         }
     }
 
     /// @notice pay market creator
-    function payMarketCreator() public {
-        require(!creatorAlreadyWithdrawn, "Already withdrawn");
-        creatorAlreadyWithdrawn = true;
-        require(msg.sender == marketCreatorAddress, "Not creator");
+    function _payMarketCreator() internal {
         if (potDistribution[1] > 0) {
             uint256 _marketCreatorsCut = (totalCollected.mul(potDistribution[1])).div(1000);
-            assert(treasury.payout(msg.sender, _marketCreatorsCut));
-            emit LogCreatorPaid(msg.sender, _marketCreatorsCut);
+            assert(treasury.payout(marketCreatorAddress, _marketCreatorsCut));
+            emit LogCreatorPaid(marketCreatorAddress, _marketCreatorsCut);
         }
     }
 
