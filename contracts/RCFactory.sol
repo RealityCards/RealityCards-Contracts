@@ -35,11 +35,15 @@ contract RCFactory is Ownable, CloneFactory {
     address public arbitrator;
     uint256[2] public potDistribution;
 
+    ///// MARKET CREATION /////
+    bool marketCreatorWhitelistEnabled = true;
+    mapping(address => bool) public marketCreatorWhitelist;
+
     ////////////////////////////////////
     //////// EVENTS ////////////////////
     ////////////////////////////////////
 
-    event LogMarketCreated(address contractAddress, address treasuryAddress, string[] tokenURIs, uint32[] timestamps, uint256 mode, uint256 version, bytes ipfsHash);
+    event LogMarketCreated(address contractAddress, address treasuryAddress, string[] tokenURIs, uint32[] timestamps, uint256 mode, uint256 version, string ipfsHash);
     event LogNewReferenceContract(address contractAddress, uint256 mode, uint256 version);
 
     ////////////////////////////////////
@@ -52,7 +56,6 @@ contract RCFactory is Ownable, CloneFactory {
     {
         treasury = _treasuryAddress;
         Ownable.initialize(msg.sender);
-        assert(treasury.setFactoryAddress(address(this)));
 
         // initialise market parameters
         updateRealitioTimeout(86400); // 24 hours
@@ -126,6 +129,25 @@ contract RCFactory is Ownable, CloneFactory {
         potDistribution[1] = _creatorCut;
     }
 
+    /// @notice add or remove an address from market creator whitelist
+    function updateMarketCreatorWhitelist(address _marketCreator) public onlyOwner {
+        if (!marketCreatorWhitelist[_marketCreator]) {
+            marketCreatorWhitelist[_marketCreator] = true;
+        } else {
+            marketCreatorWhitelist[_marketCreator] = false;
+        }
+    }
+
+    /// @notice allows createMarket to be called by anyone
+    /// @dev if called again will enable it again
+    function disableMarketCreatorWhitelist() public onlyOwner {
+        if (marketCreatorWhitelistEnabled) {
+            marketCreatorWhitelistEnabled = false;
+        } else {
+            marketCreatorWhitelistEnabled = true;
+        }
+    }
+
     ////////////////////////////////////
     /////// MARKET PARAMETERS //////////
     ////////////////////////////////////
@@ -133,13 +155,16 @@ contract RCFactory is Ownable, CloneFactory {
     /// @notice create a new market
     function createMarket(
         uint32 _mode,
-        bytes memory _ipfsHash,
+        string memory _ipfsHash,
         uint32[] memory _timestamps,
         string[] memory _tokenURIs,
         address _artistAddress,
         string memory _realitioQuestion,
         string memory _tokenName
-    ) public onlyOwner returns (address)  {
+    ) public returns (address)  {
+        if (marketCreatorWhitelistEnabled) {
+            require(marketCreatorWhitelist[msg.sender] || owner() == msg.sender, "Not approved");
+        }
         address _newAddress;
 
         _newAddress = createClone(getMostRecentReferenceContract(_mode));

@@ -100,9 +100,7 @@ contract RCMarketXdaiV1 is ERC721Full {
 
     // WORK TO DO 
     // BIG ROCKS
-    // make ipfs hash string
     // add pausiable & some panic/withdraw mode
-    // 2% for the winner, 1% for the artist if defined (and make this user playable)
     // whitelisted create markets (remove onlyOwner)
     // oracle token bridge etc
     //
@@ -111,6 +109,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     // ugprade to solidity v7
 
     // TESTS TO DO
+    // more tests on artist/creator, including returnRent mode
     // check all the tokens are minted, do tests on last one
     // check you cant call initialize more than once
 

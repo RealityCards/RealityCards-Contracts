@@ -46,6 +46,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     treasury = await RCTreasury.new();
     rcreference = await RCMarket.new();
     rcfactory = await RCFactory.new(treasury.address, realitio.address);
+    await treasury.setFactoryAddress(rcfactory.address);
     await rcfactory.setReferenceContractAddress(0,rcreference.address);
     await rcfactory.createMarket(
         0,

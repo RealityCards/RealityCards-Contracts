@@ -18,7 +18,6 @@ contract RCTreasury is Ownable {
 
     /// @dev address of the Factory so only the Factory can add new markets
     address public factoryAddress;
-    bool public factoryAddressSet = false;
     /// @dev so only markets can withdraw funds
     mapping (address => bool) public isMarket;
     /// @dev keeps track of all the deposits for each user
@@ -54,23 +53,17 @@ contract RCTreasury is Ownable {
         _;
     }
 
-    modifier initialised {
-        require(factoryAddressSet, "Factory address not set");
-        _;
-    }
-
     ////////////////////////////////////
     ////////// INITIALISATION //////////
     ////////////////////////////////////
 
-    function setFactoryAddress(address _factoryAddress) external returns(bool) {
-        require(!factoryAddressSet, "Factory address already set");
+    /// @dev owner can set a new factory, if needed
+    function setFactoryAddress(address _factoryAddress) onlyOwner() external returns(bool) {
         factoryAddress = _factoryAddress;
-        factoryAddressSet = true;
         return true;
     }
 
-    function addMarket(address _newMarket) external initialised() returns(bool) {
+    function addMarket(address _newMarket) external returns(bool) {
         require(msg.sender == factoryAddress, "Not factory");
         isMarket[_newMarket] = true;
         return true;
@@ -82,7 +75,7 @@ contract RCTreasury is Ownable {
 
     /// @dev it is passed the user instead of using msg.value because might be called
     /// @dev ... via contract instead of direct
-    function deposit(address _user) external payable balancedBooks() initialised() returns(bool) {
+    function deposit(address _user) external payable balancedBooks() returns(bool) {
         require(msg.value > 0, "Must deposit something");
         deposits[_user] = deposits[_user].add(msg.value);
         totalDeposits = totalDeposits.add(msg.value);
