@@ -33,7 +33,7 @@ contract RCFactory is Ownable, CloneFactory {
     ///// MARKET PARAMETERS /////
     uint32 public realitioTimeout;
     address public arbitrator;
-    uint256[3] public potDistribution;
+    uint256[2] public potDistribution;
 
     ////////////////////////////////////
     //////// EVENTS ////////////////////
@@ -58,7 +58,7 @@ contract RCFactory is Ownable, CloneFactory {
         updateRealitioTimeout(86400); // 24 hours
         updateRealitioAddress(IRealitio(_realitio));
         updateArbitrator(0xA6EAd513D05347138184324392d8ceb24C116118); // kleros
-        updatePotDistribution(20,0); // 2% artist, 0% market creators
+        updatePotDistribution(0,0); // 0% artist, 0% market creators
     }
 
     ////////////////////////////////////
@@ -81,7 +81,7 @@ contract RCFactory is Ownable, CloneFactory {
         return marketAddresses[_mode];
     }
 
-    function getPotDistribution() public view returns (uint256[3] memory) {
+    function getPotDistribution() public view returns (uint256[2] memory) {
         return potDistribution;
     }
 
@@ -121,9 +121,9 @@ contract RCFactory is Ownable, CloneFactory {
 
     /// @dev in basis points
     function updatePotDistribution(uint256 _artistCut, uint256 _creatorCut) public onlyOwner {
+        require(_artistCut + _creatorCut <= 100, "Arist/creator cut too big");
         potDistribution[0] = _artistCut;
         potDistribution[1] = _creatorCut;
-        potDistribution[2] = (1000 - _creatorCut - _artistCut);
     }
 
     ////////////////////////////////////
@@ -148,6 +148,7 @@ contract RCFactory is Ownable, CloneFactory {
             _timestamps: _timestamps,
             _tokenURIs: _tokenURIs,
             _artistAddress: _artistAddress,
+            _marketCreatorAddress: msg.sender,
             _templateId: 2,
             _question: _realitioQuestion,
             _tokenName: _tokenName

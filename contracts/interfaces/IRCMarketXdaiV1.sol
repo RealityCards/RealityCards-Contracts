@@ -10,6 +10,7 @@ interface IRCMarketXdaiV1 {
         uint32[] calldata _timestamps,
         string[] calldata _tokenURIs,
         address _artistAddress,
+        address _marketCreatorAddress,
         uint256 _templateId, 
         string calldata _question, 
         string calldata _tokenName

@@ -90,11 +90,17 @@ contract RCMarketXdaiV1 is ERC721Full {
     uint32 public oracleResolutionTime;
     /// @dev prevent users withdrawing twice
     mapping (address => bool) public userAlreadyWithdrawn;
+    /// @dev prevent artists withdrawing twice
+    bool public artistAlreadyWithdrawn;
+    /// @dev prevent creator withdrawing twice
+    bool public creatorAlreadyWithdrawn;
     /// @dev how will the winnings be distributed
     /// @dev artist // creator // everyone else
-    uint256[3] public potDistribution;
+    uint256[2] public potDistribution;
     /// @dev the artist's address
     address public artistAddress;
+    /// @dev market creator's address
+    address public marketCreatorAddress;
 
     // WORK TO DO 
     // BIG ROCKS
@@ -126,6 +132,7 @@ contract RCMarketXdaiV1 is ERC721Full {
         uint32[] memory _timestamps,
         string[] memory _tokenURIs,
         address _artistAddress,
+        address _marketCreatorAddress,
         uint256 _templateId, 
         string memory _question, 
         string memory _tokenName
@@ -145,12 +152,10 @@ contract RCMarketXdaiV1 is ERC721Full {
         marketLockingTime = _timestamps[1];
         oracleResolutionTime = _timestamps[2];
         artistAddress = _artistAddress;
+        marketCreatorAddress = _marketCreatorAddress;
         uint32 _timeout = _factory.realitioTimeout();
         address _arbitrator = _factory.arbitrator();
         potDistribution = _factory.getPotDistribution();
-
-        // check pot distribution is valid
-        assert(potDistribution[0] + potDistribution[1] + potDistribution[2] == 1000);
 
         // resolution time must not be less than locking time, and not greater by more than one week
         require(marketLockingTime + 1 weeks > oracleResolutionTime && marketLockingTime <= oracleResolutionTime, "Invalid timestamps" );
@@ -193,6 +198,8 @@ contract RCMarketXdaiV1 is ERC721Full {
     event LogContractLocked(bool indexed didTheEventFinish);
     event LogWinnerKnown(uint256 indexed winningOutcome);
     event LogWinningsPaid(address indexed paidTo, uint256 indexed amountPaid);
+    event LogArtistPaid(address indexed paidTo, uint256 indexed amountPaid);
+    event LogCreatorPaid(address indexed paidTo, uint256 indexed amountPaid);
     event LogRentReturned(address indexed returnedTo, uint256 indexed amountReturned);
     event LogTimeHeldUpdated(uint256 indexed newTimeHeld, address indexed owner, uint256 indexed tokenId);
     event LogStateChange(uint256 indexed newState);
@@ -305,8 +312,10 @@ contract RCMarketXdaiV1 is ERC721Full {
 
     /// @notice pays winnings
     function _payoutWinningsClassic() internal {
+        uint256 _remainingDistribition = 1000 - potDistribution[0] - potDistribution[1];
+        uint256 _remainingPot = (totalCollected.mul(_remainingDistribition)).div(1000);
         uint256 _winnersTimeHeld = timeHeld[winningOutcome][msg.sender];
-        uint256 _numerator = totalCollected.mul(_winnersTimeHeld);
+        uint256 _numerator = _remainingPot.mul(_winnersTimeHeld);
         uint256 _winningsToTransfer = _numerator.div(totalTimeHeld[winningOutcome]); 
         require(_winningsToTransfer > 0, "Not a winner");
         assert(treasury.payout(msg.sender, _winningsToTransfer));
@@ -316,8 +325,10 @@ contract RCMarketXdaiV1 is ERC721Full {
     /// @notice pays winnings
     function _payoutWinningsWinnerTakesAll() internal {
         require(longestOwner[winningOutcome] == msg.sender, "Not a winner");
-        assert(treasury.payout(msg.sender, totalCollected));
-        emit LogWinningsPaid(msg.sender, totalCollected);
+        uint256 _remainingDistribition = 1000 - potDistribution[0] - potDistribution[1];
+        uint256 _remainingPot = (totalCollected.mul(_remainingDistribition)).div(1000);
+        assert(treasury.payout(msg.sender, _remainingPot));
+        emit LogWinningsPaid(msg.sender, _remainingPot);
     }
 
     /// @notice returns all funds to users in case of invalid outcome
@@ -326,6 +337,30 @@ contract RCMarketXdaiV1 is ERC721Full {
         require(_rentCollected > 0, "Paid no rent");
         assert(treasury.payout(msg.sender, _rentCollected));
         emit LogRentReturned(msg.sender, _rentCollected);
+    }
+
+    /// @notice pay artist
+    function payArtist() public {
+        require(!artistAlreadyWithdrawn, "Already withdrawn");
+        artistAlreadyWithdrawn = true;
+        require(msg.sender == artistAddress, "Not artist");
+        if (potDistribution[0] > 0) {
+            uint256 _artistsCut = (totalCollected.mul(potDistribution[0])).div(1000);
+            assert(treasury.payout(msg.sender, _artistsCut));
+            emit LogArtistPaid(msg.sender, _artistsCut);
+        }
+    }
+
+    /// @notice pay market creator
+    function payMarketCreator() public {
+        require(!creatorAlreadyWithdrawn, "Already withdrawn");
+        creatorAlreadyWithdrawn = true;
+        require(msg.sender == marketCreatorAddress, "Not creator");
+        if (potDistribution[1] > 0) {
+            uint256 _marketCreatorsCut = (totalCollected.mul(potDistribution[1])).div(1000);
+            assert(treasury.payout(msg.sender, _marketCreatorsCut));
+            emit LogCreatorPaid(msg.sender, _marketCreatorsCut);
+        }
     }
 
     ////////////////////////////////////
