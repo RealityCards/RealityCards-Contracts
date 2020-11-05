@@ -111,13 +111,13 @@ module.exports = async (deployer, network, accounts) => {
     var marketState = await realitycards.state.call();
     console.log("marketState: ", marketState.toString());
 
-    for (var i = 0; i < 15; i++) {
-      console.log(i);
+    await time.increase(time.duration.weeks(3));
+
+    for (var i = 0; i < 6; i++) {
       let more = (i + 1) * (1 + i / 10); // atleast more than 10%
       let amount = web3.utils.toWei(more.toString(), "ether");
-      console.log(amount.toString());
       let user = user0;
-      i % 5 == 0
+      i % 6 == 0
         ? (user = user0)
         : i % 5 == 1
         ? (user = user1)
@@ -127,12 +127,19 @@ module.exports = async (deployer, network, accounts) => {
         ? (user = user3)
         : i % 5 == 4
         ? (user = user4)
+        : i % 5 == 5
+        ? (user = user2)
         : (user = user5);
-      console.log(user);
-      await treasury.deposit({ from: user, value: amount });
+
+      await treasury.deposit({
+        from: user,
+        value: amount + Math.floor(Math.random() * 9),
+      });
       await realitycards.newRental(amount, 0, { from: user });
 
-      await time.increase(time.duration.days(3)); // enough time to ensure deposit runs out
+      let numberOfDaysHeld = 3 + Math.floor(Math.random() * 3);
+
+      await time.increase(time.duration.days(numberOfDaysHeld)); // enough time to ensure deposit runs out
     }
 
     console.log("factory.address: ", factory.address);
