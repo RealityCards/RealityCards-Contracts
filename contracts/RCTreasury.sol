@@ -31,6 +31,8 @@ contract RCTreasury is Ownable {
     /// @dev first ten mins of each rental is specific to each Card
     /// @dev market -> user -> tokenId -> deposit
     mapping (address => mapping (address => mapping (uint256 => uint256))) public cardSpecificDeposits;
+    /// @dev minimum rental duration (1 day in seconds diviser) therefore 24 = 1 hour, 48 = 30 mins
+    uint256 public minimumRentalDivisor = 24*6; // defaults ten mins
 
     ////////////////////////////////////
     //////// EVENTS ////////////////////
@@ -70,12 +72,20 @@ contract RCTreasury is Ownable {
     }
 
     ////////////////////////////////////
+    ///// ADJUSTABLE PARAMETERS ////////
+    ////////////////////////////////////
+
+    function updateMinimumRental(uint256 _newDivisor) public onlyOwner() {
+        minimumRentalDivisor = _newDivisor;
+    }
+
+    ////////////////////////////////////
     /// DEPOSIT & WITHDRAW FUNCTIONS ///
     ////////////////////////////////////
 
     /// @dev it is passed the user instead of using msg.value because might be called
     /// @dev ... via contract instead of direct
-    function deposit(address _user) external payable balancedBooks() returns(bool) {
+    function deposit(address _user) public payable balancedBooks() returns(bool) {
         require(msg.value > 0, "Must deposit something");
         deposits[_user] = deposits[_user].add(msg.value);
         totalDeposits = totalDeposits.add(msg.value);
@@ -106,8 +116,8 @@ contract RCTreasury is Ownable {
 
     /// @dev moves ten minutes' deposit into a seperate pot
     function allocateCardSpecificDeposit(address _newOwner, address _previousOwner, uint256 _tokenId, uint256 _price) external balancedBooks() onlyMarkets() returns(bool) {
-        uint256 _tenMinsDeposit = _price.div(24*6);
-        require(deposits[_newOwner] >= _tenMinsDeposit, "Insufficient deposit");
+        uint256 _depositToAllocate = _price.div(minimumRentalDivisor);
+        require(deposits[_newOwner] >= _depositToAllocate, "Insufficient deposit");
 
         // first, unallocate card specific deposit of previous owner
         if (cardSpecificDeposits[msg.sender][_previousOwner][_tokenId] > 0) {
@@ -118,8 +128,8 @@ contract RCTreasury is Ownable {
         // allocate card specific deposit for new owner
         // balance should have been cleared out as per the above
         assert(cardSpecificDeposits[msg.sender][_newOwner][_tokenId] == 0);
-        deposits[_newOwner] = deposits[_newOwner].sub(_tenMinsDeposit);
-        cardSpecificDeposits[msg.sender][_newOwner][_tokenId] = cardSpecificDeposits[msg.sender][_newOwner][_tokenId].add(_tenMinsDeposit);
+        deposits[_newOwner] = deposits[_newOwner].sub(_depositToAllocate);
+        cardSpecificDeposits[msg.sender][_newOwner][_tokenId] = cardSpecificDeposits[msg.sender][_newOwner][_tokenId].add(_depositToAllocate);
         return true;
     }
 
@@ -165,10 +175,9 @@ contract RCTreasury is Ownable {
         return true;
     }
  
-    /// @dev prevents accidentally sending Ether direct
-    /// @dev prevents deliberately sending Ether direct to fuck up balancedBooks modifier
+    /// @dev sending ether direct is equal to a deposit, if this was not here balancedBooks modifier would break. 
     function() external payable {
-        require(false,"Verboten");
+        assert(deposit(msg.sender));
     }
 
 }

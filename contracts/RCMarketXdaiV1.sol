@@ -34,6 +34,8 @@ contract RCMarketXdaiV1 is ERC721Full {
     States public state; 
     /// @dev type of event. 0 = classic, 1 = winner takes all, 2 = hot potato
     uint256 public mode;
+    /// @dev so the Factory can check its a market
+    bool public constant isMarket = true;
 
     ///// CONTRACT VARIABLES /////
     IRealitio public realitio;
@@ -101,7 +103,6 @@ contract RCMarketXdaiV1 is ERC721Full {
     // WORK TO DO 
     // BIG ROCKS
     // add pausiable & some panic/withdraw mode
-    // whitelisted create markets (remove onlyOwner)
     // oracle token bridge etc
     //
     // PEBBLES
@@ -112,6 +113,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     // more tests on artist/creator, including returnRent mode
     // check all the tokens are minted, do tests on last one
     // check you cant call initialize more than once
+    // check the new minimum rental divisor thing
 
     // PARAMETERS TO MAKE VARIABLE/OWNED
     // min rental time
@@ -348,7 +350,9 @@ contract RCMarketXdaiV1 is ERC721Full {
     function _payArtist() internal {
         if (potDistribution[0] > 0) {
             uint256 _artistsCut = (totalCollected.mul(potDistribution[0])).div(1000);
-            assert(treasury.payout(artistAddress, _artistsCut));
+            if (_artistsCut > 0) {
+                assert(treasury.payout(artistAddress, _artistsCut));
+            }
             emit LogArtistPaid(artistAddress, _artistsCut);
         }
     }
@@ -357,7 +361,9 @@ contract RCMarketXdaiV1 is ERC721Full {
     function _payMarketCreator() internal {
         if (potDistribution[1] > 0) {
             uint256 _marketCreatorsCut = (totalCollected.mul(potDistribution[1])).div(1000);
-            assert(treasury.payout(marketCreatorAddress, _marketCreatorsCut));
+            if (_marketCreatorsCut > 0) {
+                assert(treasury.payout(marketCreatorAddress, _marketCreatorsCut));
+            }
             emit LogCreatorPaid(marketCreatorAddress, _marketCreatorsCut);
         }
     }
@@ -383,7 +389,7 @@ contract RCMarketXdaiV1 is ERC721Full {
                 if (price[i]>0) {
                     _newPrice = price[i].mul(11).div(10);
                 }
-                newRental(_newPrice, MAX_UINT256, i);
+                newRental(_newPrice, 0, i);
             }
         }
     }
@@ -593,7 +599,6 @@ contract RCMarketXdaiV1 is ERC721Full {
             } else if (_previousOwnersDeposit > 0 && !exitFlag[_previousOwner][_tokenId]) {
                 break;
             }  
-            
         }   
 
         // if the above loop did not end in foreclose, then transfer to previous owner
@@ -606,15 +611,13 @@ contract RCMarketXdaiV1 is ERC721Full {
         }
     }
 
-    /// @notice gives the winning Card to the winner, burns the rest
+    /// @notice gives each Card to the longest owner
     function _processNFTsAfterEvent() internal {
         for (uint i = 0; i < numberOfTokens; i++) {
-            if (i == winningOutcome && longestOwner[i] != address(0)) {
+            if (longestOwner[i] != address(0)) {
                 // if never owned, longestOwner[i] will = zero
                 _transferTokenTo(ownerOf(i), longestOwner[i], price[i], i);
-            } else {
-                _burn(i);
-            }
+            } 
         }
     }
 

@@ -3,7 +3,7 @@ pragma experimental ABIEncoderV2;
 
 interface IRCMarketXdaiV1 {
 
-    function MAX_ITERATIONS() external view returns (uint);
+    function isMarket() external view returns (bool);
 
     function initialize(
         uint256 _mode, 

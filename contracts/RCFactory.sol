@@ -97,7 +97,7 @@ contract RCFactory is Ownable, CloneFactory {
     function setReferenceContractAddress(uint256 _mode, address _referenceContractAddress) public onlyOwner {
         // check its an RC contract by reading the one constant
         IRCMarketXdaiV1 newContractVariable = IRCMarketXdaiV1(_referenceContractAddress);
-        assert(newContractVariable.MAX_ITERATIONS() == 10);
+        assert(newContractVariable.isMarket());
         // push new reference contracts
         referenceContractAddresses[_mode].push(_referenceContractAddress);
         uint256 _version = referenceContractAddresses[_mode].length-1;
