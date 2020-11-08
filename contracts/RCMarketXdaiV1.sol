@@ -104,6 +104,11 @@ contract RCMarketXdaiV1 is ERC721Full {
     // BIG ROCKS
     // add pausiable & some panic/withdraw mode
     // oracle token bridge etc
+    // different owner for the serious stuff
+    // mode for must sponsor for new markets 
+    // 
+    //
+    //
     //
     // PEBBLES
     // maybe: add a delegate call to treasury in newRental so treasury can prevent payRent being called for a user that never rented a Card

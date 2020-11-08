@@ -1,7 +1,7 @@
 //require("dotenv").config();
 
 var realityCardsFactory = artifacts.require("RCFactory");
-var factoryAddress = '0xd408Ec7EDDe6f1b9bB2f816b05e379F624bC7a7B';
+var factoryAddress = '0x7b74bDe552304f464e6Cb68f374f6fa8f2cE42eC';
 
 
 // variables market specific
@@ -9,9 +9,7 @@ var marketLockingTime = 1601251201; // Monday, 28-Sep-20 00:00:01 UTC in RFC 282
 var oracleResolutionTime = 1601251201; // Monday, 28-Sep-20 00:00:01 UTC in RFC 2822
 var question = 'na';
 var tokenName = "RealityCards_UNIPRICE";
-
-// variables COMMON
-var andrewsAddress = "0x34A971cA2fd6DA2Ce2969D716dF922F17aAA1dB0";
+var artistAddress = "0x34A971cA2fd6DA2Ce2969D716dF922F17aAA1dB0";
 
 // kovan overrides (*COMMENT OUT IF MAINNET*)
 // var marketLockingTime = 100; 
@@ -33,9 +31,9 @@ module.exports = function() {
     var transaction = await factory.createMarket(
         0,
         '0x0',
-        andrewsAddress,
         timestamps,
         tokenURIs,
+        artistAddress,
         question,
         tokenName
       );

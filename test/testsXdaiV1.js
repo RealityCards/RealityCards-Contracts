@@ -19,7 +19,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
 
   var realitycards;
   var tokenURIs = ['x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x']; // 20 tokens
-  var tokenNAme = 'RCToken'; 
+  var tokenName = 'RCToken'; 
   var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
   var maxuint256 = 4294967295;
 
@@ -55,7 +55,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         tokenURIs,
         artistAddress,
         question,
-        tokenNAme,
+        tokenName,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards = await RCMarket.at(marketAddress);
@@ -76,7 +76,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         tokenURIs,
         artistAddress,
         question,
-        tokenNAme,
+        tokenName,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -98,7 +98,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         tokenURIs,
         artistAddress,
         question,
-        tokenNAme,
+        tokenName,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(1);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -115,7 +115,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         tokenURIs,
         artistAddress,
         question,
-        tokenNAme,
+        tokenName,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
