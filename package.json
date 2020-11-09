@@ -8,7 +8,8 @@
   },
   "scripts": {
     "chain": "ganache-cli -m 'defense ready lady corn other ride rapid collect avocado tongue price nut' -l 10000000",
-    "prettier": "prettier --write contracts/RealityCards.sol"
+    "prettier": "prettier --write contracts/RealityCards.sol",
+    "update-graph-abis": "npx buidler compile && cp ./artifactsTruffle/RCFactory.json ../RealityCards-Client/subgraph/abis/RealityCardsFactory.json && cp ./artifactsTruffle/RCTreasury.json ../RealityCards-Client/subgraph/abis/RealityCardsTreasury.json && cp ./artifactsTruffle/RCMarketXdaiV1.json ../RealityCards-Client/subgraph/abis/RealityCardsMarket.json"
   },
   "repository": {
     "type": "git",
