@@ -100,31 +100,6 @@ contract RCMarketXdaiV1 is ERC721Full {
     /// @dev market creator's address
     address public marketCreatorAddress;
 
-    // WORK TO DO 
-    // BIG ROCKS
-    // add pausiable & some panic/withdraw mode
-    // oracle token bridge etc
-    // different owner for the serious stuff
-    // mode for must sponsor for new markets 
-    // max deposit amount
-    // is rentAllCards broken?
-    //
-    //
-    // PEBBLES
-    // maybe: add a delegate call to treasury in newRental so treasury can prevent payRent being called for a user that never rented a Card
-    // ugprade to solidity v7
-
-    // TESTS TO DO
-    // more tests on artist/creator, including returnRent mode
-    // check you cant call initialize more than once
-    // check the new minimum rental divisor thing
-    // rentAllCards test
-
-    // PARAMETERS TO MAKE VARIABLE/OWNED
-    // min rental time
-    // create an owned function in treasury to change the factory address
-    // treasury update factory
-
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
     ////////////////////////////////////

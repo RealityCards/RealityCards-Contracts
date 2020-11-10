@@ -461,7 +461,7 @@ it('test exit- more than ten mins', async () => {
     var timeHeld = await realitycards.timeHeld.call(0, user1);
     var timeHeldShouldBe = time.duration.hours(1);
     var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
-    assert.isBelow(difference,3);
+    assert.isBelow(difference,4);
     // withdraw for next test
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
@@ -1946,6 +1946,33 @@ it('test updateMaxContractBalance function and deposit limit hit', async () => {
     await depositDai(400,user0);
     // another 400 should not
     await shouldFail.reverting.withMessage(treasury.deposit(user0,{value: web3.utils.toWei('500', 'ether')}), "Limit hit");
+});
+
+it('test updateMarketCreatorWhitelist and disableMarketCreatorWhitelist', async () => {
+    // check user1 cant create market
+    var latestTime = await time.latest();
+    var oneYear = new BN('31104000');
+    var oneYearInTheFuture = oneYear.add(latestTime);
+    var marketLockingTime = oneYearInTheFuture; 
+    var oracleResolutionTime = oneYearInTheFuture; 
+    var timestamps = [0,marketLockingTime,oracleResolutionTime];
+    var artistAddress = user8;
+    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,question,tokenName,{from: user1}), "Not approved");
+    // first check that only owner can call
+    await shouldFail.reverting.withMessage(rcfactory.updateMarketCreatorWhitelist(user1,{from: user1}), "caller is not the owner");
+    // add user1 to whitelist 
+    await rcfactory.updateMarketCreatorWhitelist(user1);
+    //try again, should work
+    await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,question,tokenName,{from: user1});
+    // remove them, should fail again
+    await rcfactory.updateMarketCreatorWhitelist(user1);
+    await shouldFail.reverting.withMessage(rcfactory.updateMarketCreatorWhitelist(user1,{from: user1}), "caller is not the owner");
+    // disable whitelist, should work
+    await rcfactory.disableMarketCreatorWhitelist();
+    await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,question,tokenName,{from: user1});
+    // re-enable whitelist, should not work again
+    await rcfactory.disableMarketCreatorWhitelist();
+    await shouldFail.reverting.withMessage(rcfactory.updateMarketCreatorWhitelist(user1,{from: user1}), "caller is not the owner"); 
 });
 
 

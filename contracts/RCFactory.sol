@@ -35,8 +35,13 @@ contract RCFactory is Ownable, CloneFactory {
     address public arbitrator;
     uint256[2] public potDistribution;
 
+    //// GOVERNERS /////
+    /// @dev who can change market parameters
+    /// @dev governors can NOT call setReferenceContractAddress
+    mapping(address => bool) public governorWhiteList;
+
     ///// MARKET CREATION /////
-    bool marketCreatorWhitelistEnabled = true;
+    bool public marketCreatorWhitelistEnabled = true;
     mapping(address => bool) public marketCreatorWhitelist;
 
     ////////////////////////////////////
@@ -59,7 +64,7 @@ contract RCFactory is Ownable, CloneFactory {
 
         // initialise market parameters
         updateRealitioTimeout(86400); // 24 hours
-        updateRealitioAddress(IRealitio(_realitio));
+        updateRealitioAddress(_realitio);
         updateArbitrator(0xA6EAd513D05347138184324392d8ceb24C116118); // kleros
         updatePotDistribution(0,0); // 0% artist, 0% market creators
     }
@@ -131,25 +136,18 @@ contract RCFactory is Ownable, CloneFactory {
 
     /// @notice add or remove an address from market creator whitelist
     function updateMarketCreatorWhitelist(address _marketCreator) public onlyOwner {
-        if (!marketCreatorWhitelist[_marketCreator]) {
-            marketCreatorWhitelist[_marketCreator] = true;
-        } else {
-            marketCreatorWhitelist[_marketCreator] = false;
-        }
+        marketCreatorWhitelist[_marketCreator] = marketCreatorWhitelist[_marketCreator] ? false : true;
+
     }
 
     /// @notice allows createMarket to be called by anyone
     /// @dev if called again will enable it again
     function disableMarketCreatorWhitelist() public onlyOwner {
-        if (marketCreatorWhitelistEnabled) {
-            marketCreatorWhitelistEnabled = false;
-        } else {
-            marketCreatorWhitelistEnabled = true;
-        }
+        marketCreatorWhitelistEnabled = marketCreatorWhitelistEnabled ? false : true;
     }
 
     ////////////////////////////////////
-    /////// MARKET PARAMETERS //////////
+    //////// MARKET CREATION ///////////
     ////////////////////////////////////
 
     /// @notice create a new market

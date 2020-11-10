@@ -26,8 +26,6 @@ contract RCTreasury is Ownable {
     /// @dev keeps track of rental payments made
     mapping (address => uint256) public marketPot;
     uint256 public totalMarketPots;
-    // @dev keeps track of total sponsorship, just so books balance
-    uint256 public totalSponsorship;
     /// @dev first ten mins of each rental is specific to each Card
     /// @dev market -> user -> tokenId -> deposit
     mapping (address => mapping (address => mapping (uint256 => uint256))) public cardSpecificDeposits;
@@ -84,7 +82,6 @@ contract RCTreasury is Ownable {
     function updateMaxContractBalance(uint256 _newBalanceLimit) public onlyOwner() {
         maxContractBalance = _newBalanceLimit;
     }
-
 
     ////////////////////////////////////
     /// DEPOSIT & WITHDRAW FUNCTIONS ///
