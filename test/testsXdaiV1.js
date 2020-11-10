@@ -1939,6 +1939,15 @@ it('test winner/withdraw with invalid market and artist and creator fees', async
     await withdrawDeposit(1000,user8);
 });
 
+it('test updateMaxContractBalance function and deposit limit hit', async () => {
+    // change deposit balance limit to 500 ether
+    await treasury.updateMaxContractBalance(web3.utils.toWei('500', 'ether'))
+    // 400 should work
+    await depositDai(400,user0);
+    // another 400 should not
+    await shouldFail.reverting.withMessage(treasury.deposit(user0,{value: web3.utils.toWei('500', 'ether')}), "Limit hit");
+});
+
 
 });
 

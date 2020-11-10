@@ -19,8 +19,7 @@ module.exports = async (deployer, network) =>
                     marketXdaiV1 = await RealityCardsMarketXdaiV1.deployed();
                     await factory.setReferenceContractAddress(0,marketXdaiV1.address);
                     await treasury.setFactoryAddress(factory.address);
-                }); 
-                
+                });    
             }); 
         });      
     } 

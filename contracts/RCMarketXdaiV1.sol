@@ -106,8 +106,8 @@ contract RCMarketXdaiV1 is ERC721Full {
     // oracle token bridge etc
     // different owner for the serious stuff
     // mode for must sponsor for new markets 
-    // 
-    //
+    // max deposit amount
+    // is rentAllCards broken?
     //
     //
     // PEBBLES
@@ -116,9 +116,9 @@ contract RCMarketXdaiV1 is ERC721Full {
 
     // TESTS TO DO
     // more tests on artist/creator, including returnRent mode
-    // check all the tokens are minted, do tests on last one
     // check you cant call initialize more than once
     // check the new minimum rental divisor thing
+    // rentAllCards test
 
     // PARAMETERS TO MAKE VARIABLE/OWNED
     // min rental time
@@ -393,6 +393,8 @@ contract RCMarketXdaiV1 is ERC721Full {
                 uint _newPrice;
                 if (price[i]>0) {
                     _newPrice = price[i].mul(11).div(10);
+                } else {
+                    _newPrice = 1 ether;
                 }
                 newRental(_newPrice, 0, i);
             }

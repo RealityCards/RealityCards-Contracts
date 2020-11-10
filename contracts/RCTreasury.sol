@@ -32,7 +32,9 @@ contract RCTreasury is Ownable {
     /// @dev market -> user -> tokenId -> deposit
     mapping (address => mapping (address => mapping (uint256 => uint256))) public cardSpecificDeposits;
     /// @dev minimum rental duration (1 day in seconds diviser) therefore 24 = 1 hour, 48 = 30 mins
-    uint256 public minimumRentalDivisor = 24*6; // defaults ten mins
+    uint256 public minRentalDivisor = 24*6; // defaults ten mins
+    /// @dev max deposit balance, to minimise funds at risk
+    uint256 public maxContractBalance = 1000000 ether; // default 1m
 
     ////////////////////////////////////
     //////// EVENTS ////////////////////
@@ -75,9 +77,14 @@ contract RCTreasury is Ownable {
     ///// ADJUSTABLE PARAMETERS ////////
     ////////////////////////////////////
 
-    function updateMinimumRental(uint256 _newDivisor) public onlyOwner() {
-        minimumRentalDivisor = _newDivisor;
+    function updateMinRental(uint256 _newDivisor) public onlyOwner() {
+        minRentalDivisor = _newDivisor;
     }
+
+    function updateMaxContractBalance(uint256 _newBalanceLimit) public onlyOwner() {
+        maxContractBalance = _newBalanceLimit;
+    }
+
 
     ////////////////////////////////////
     /// DEPOSIT & WITHDRAW FUNCTIONS ///
@@ -87,6 +94,7 @@ contract RCTreasury is Ownable {
     /// @dev ... via contract instead of direct
     function deposit(address _user) public payable balancedBooks() returns(bool) {
         require(msg.value > 0, "Must deposit something");
+        require(address(this).balance <= maxContractBalance, "Limit hit");
         deposits[_user] = deposits[_user].add(msg.value);
         totalDeposits = totalDeposits.add(msg.value);
         emit LogDepositIncreased(msg.value, _user);
@@ -116,7 +124,7 @@ contract RCTreasury is Ownable {
 
     /// @dev moves ten minutes' deposit into a seperate pot
     function allocateCardSpecificDeposit(address _newOwner, address _previousOwner, uint256 _tokenId, uint256 _price) external balancedBooks() onlyMarkets() returns(bool) {
-        uint256 _depositToAllocate = _price.div(minimumRentalDivisor);
+        uint256 _depositToAllocate = _price.div(minRentalDivisor);
         require(deposits[_newOwner] >= _depositToAllocate, "Insufficient deposit");
 
         // first, unallocate card specific deposit of previous owner
