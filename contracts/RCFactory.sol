@@ -35,11 +35,6 @@ contract RCFactory is Ownable, CloneFactory {
     address public arbitrator;
     uint256[2] public potDistribution;
 
-    //// GOVERNERS /////
-    /// @dev who can change market parameters
-    /// @dev governors can NOT call setReferenceContractAddress
-    mapping(address => bool) public governorWhiteList;
-
     ///// MARKET CREATION /////
     bool public marketCreatorWhitelistEnabled = true;
     mapping(address => bool) public marketCreatorWhitelist;
