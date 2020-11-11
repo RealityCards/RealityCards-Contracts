@@ -18,6 +18,7 @@ contract RCTreasury is Ownable {
 
     /// @dev address of the Factory so only the Factory can add new markets
     address public factoryAddress;
+    bool public factoryAddressSet = false;
     /// @dev so only markets can withdraw funds
     mapping (address => bool) public isMarket;
     /// @dev keeps track of all the deposits for each user
@@ -59,9 +60,11 @@ contract RCTreasury is Ownable {
     ////////// INITIALISATION //////////
     ////////////////////////////////////
 
-    /// @dev owner can set a new factory, if needed
-    function setFactoryAddress(address _factoryAddress) onlyOwner() external returns(bool) {
-        factoryAddress = _factoryAddress;
+    /// @dev can never set a new factory address
+    function setFactoryAddress() external returns(bool) {
+        require(!factoryAddressSet, "Factory already set");
+        factoryAddressSet = true;
+        factoryAddress = msg.sender;
         return true;
     }
 

@@ -46,7 +46,6 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     treasury = await RCTreasury.new();
     rcreference = await RCMarket.new();
     rcfactory = await RCFactory.new(treasury.address, realitio.address);
-    await treasury.setFactoryAddress(rcfactory.address);
     await rcfactory.setReferenceContractAddress(rcreference.address);
     await rcfactory.createMarket(
         0,
@@ -1892,8 +1891,16 @@ it('check cant set new reference contract', async () => {
 });
 
 it('check cant create market without reference contract', async () => {
-    var rcfactory = await RCFactory.new(user0, user0);
-    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',[1,1],['x','x'],user0,'x','x'));
+    var treasury2 = await RCTreasury.new();
+    var rcfactory2 = await RCFactory.new(treasury2.address, user0);
+    await shouldFail.reverting.withMessage(rcfactory2.createMarket(0,'0x0',[1,1],['x','x'],user0,'x','x'),"No reference contract");
+});
+
+it('check cant change factory address on the treasury or deploy new factory to treasury', async () => {
+    // check cant directly change treasury address
+    await shouldFail.reverting.withMessage(treasury.setFactoryAddress(),"Factory already set");
+    // check cant deploy new factory to same treasury
+    await shouldFail.reverting.withMessage(RCFactory.new(treasury.address, user0,"Factory already set"));
 });
 
 it('test updateMarketCreatorWhitelist and disableMarketCreatorWhitelist', async () => {
