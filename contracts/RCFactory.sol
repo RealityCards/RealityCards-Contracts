@@ -25,10 +25,12 @@ contract RCFactory is Ownable, CloneFactory {
     ITreasury public treasury;
 
     ///// CONTRACT ADDRESSES /////
-    // version implied by position
-    mapping(uint256 => address[]) public referenceContractAddresses; 
+    // reference contract
+    address public referenceContractAddresses; 
+    bool public referenceContractSet = false;
+    // market addresses
     mapping(uint256 => address[]) public marketAddresses;
-    mapping(address => bool) public mappingOfMarkets; //not currently used
+    mapping(address => bool) public mappingOfMarkets; 
 
     ///// MARKET PARAMETERS /////
     uint32 public realitioTimeout;
@@ -43,8 +45,7 @@ contract RCFactory is Ownable, CloneFactory {
     //////// EVENTS ////////////////////
     ////////////////////////////////////
 
-    event LogMarketCreated(address contractAddress, address treasuryAddress, string[] tokenURIs, uint32[] timestamps, uint256 mode, uint256 version, string ipfsHash);
-    event LogNewReferenceContract(address contractAddress, uint256 mode, uint256 version);
+    event LogMarketCreated(address contractAddress, address treasuryAddress, string[] tokenURIs, uint32[] timestamps, uint256 mode, string ipfsHash);
 
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
@@ -65,16 +66,23 @@ contract RCFactory is Ownable, CloneFactory {
     }
 
     ////////////////////////////////////
-    ///////// VIEW FUNCTIONS ///////////
+    /////// REFERENCE CONTRACT /////////
     ////////////////////////////////////
 
-    function getMostRecentReferenceContract(uint256 _mode) public view returns (address) {
-        return referenceContractAddresses[_mode][referenceContractAddresses[_mode].length-1];
+    /// @notice set the reference contract for the contract logic
+    function setReferenceContractAddress(address _referenceContractAddress) public onlyOwner {
+        require(!referenceContractSet, "Reference already set");
+        // check its an RC contract by reading the one constant
+        IRCMarketXdaiV1 newContractVariable = IRCMarketXdaiV1(_referenceContractAddress);
+        assert(newContractVariable.isMarket());
+        // set 
+        referenceContractAddresses = _referenceContractAddress;
+        referenceContractSet = true;
     }
 
-    function getAllReferenceContracts(uint256 _mode) public view returns (address[] memory) {
-        return referenceContractAddresses[_mode];
-    }
+    ////////////////////////////////////
+    ///////// VIEW FUNCTIONS ///////////
+    ////////////////////////////////////
 
     function getMostRecentMarket(uint256 _mode) public view returns (address) {
         return marketAddresses[_mode][marketAddresses[_mode].length-1];
@@ -89,25 +97,9 @@ contract RCFactory is Ownable, CloneFactory {
     }
 
     ////////////////////////////////////
-    /////// REFERENCE CONTRACT /////////
-    ////////////////////////////////////
-
-    /// @notice set the reference contract for the contract logic
-    /// @dev automatically increments version number if we 'upgrade' the contract
-    function setReferenceContractAddress(uint256 _mode, address _referenceContractAddress) public onlyOwner {
-        // check its an RC contract by reading the one constant
-        IRCMarketXdaiV1 newContractVariable = IRCMarketXdaiV1(_referenceContractAddress);
-        assert(newContractVariable.isMarket());
-        // push new reference contracts
-        referenceContractAddresses[_mode].push(_referenceContractAddress);
-        uint256 _version = referenceContractAddresses[_mode].length-1;
-        emit LogNewReferenceContract(_referenceContractAddress, _mode, _version);
-    }
-
-    ////////////////////////////////////
     /////// MARKET PARAMETERS //////////
     ////////////////////////////////////
-    /// @dev governance functions
+    /// @dev aka governance functions
 
     function updateRealitioTimeout(uint32 _newTimeout) public onlyOwner {
         require(_newTimeout >= 86400, "24 hours min");
@@ -155,12 +147,13 @@ contract RCFactory is Ownable, CloneFactory {
         string memory _realitioQuestion,
         string memory _tokenName
     ) public returns (address)  {
+        require(referenceContractSet, "No reference contract");
         if (marketCreatorWhitelistEnabled) {
             require(marketCreatorWhitelist[msg.sender] || owner() == msg.sender, "Not approved");
         }
         address _newAddress;
 
-        _newAddress = createClone(getMostRecentReferenceContract(_mode));
+        _newAddress = createClone(referenceContractAddresses);
         IRCMarketXdaiV1(_newAddress).initialize({
             _mode: _mode,
             _timestamps: _timestamps,
@@ -175,8 +168,7 @@ contract RCFactory is Ownable, CloneFactory {
         assert(treasury.addMarket(_newAddress));
         marketAddresses[_mode].push(_newAddress);
         mappingOfMarkets[_newAddress] = true;
-        uint256 _version = referenceContractAddresses[_mode].length-1;
-        emit LogMarketCreated(address(_newAddress), address(treasury), _tokenURIs, _timestamps,  _mode, _version, _ipfsHash);
+        emit LogMarketCreated(address(_newAddress), address(treasury), _tokenURIs, _timestamps,  _mode, _ipfsHash);
         return _newAddress;
     }
 

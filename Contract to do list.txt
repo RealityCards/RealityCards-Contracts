@@ -1,0 +1,15 @@
+ASAP
+-add pausiable & some panic/withdraw mode
+-game mode 2: creator gets a share of rent of each card
+-remove ownable on uber owner functions, lock that shit in
+
+LATER
+-mode for must sponsor for new markets 
+-upgrade version
+-metatransactions
+-oracle token bridge etc
+
+TESTS
+-more tests on artist/creator, including returnRent mode
+-check you cant call initialize more than once
+-check the new minimum rental divisor thing
