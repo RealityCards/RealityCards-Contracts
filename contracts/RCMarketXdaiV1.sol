@@ -292,13 +292,11 @@ contract RCMarketXdaiV1 is ERC721Full {
         require(!userAlreadyWithdrawn[msg.sender], "Already withdrawn");
         userAlreadyWithdrawn[msg.sender] = true;
         if (totalTimeHeld[winningOutcome] > 0) {
-            if (mode == 0) {
+            if (mode != 1) {
                 _payoutWinningsClassic();
-            } else if (mode == 1) {
-                _payoutWinningsWinnerTakesAll();
             } else {
-                assert(false);
-            }
+                _payoutWinningsWinnerTakesAll();
+            } 
         } else {
              _returnRent();
         }
@@ -326,14 +324,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     /// @notice pays winnings
     function _payoutWinningsWinnerTakesAll() internal {
         require(longestOwner[winningOutcome] == msg.sender, "Not a winner");
-        uint256 _remainingDistribution;
-        if (mode == 2) {
-            // card specific payouts 
-            _remainingDistribution = 1000 - potDistribution[0] - potDistribution[1] - potDistribution[2];
-        } else {
-            // no card specific payouts
-            _remainingDistribution = 1000 - potDistribution[0] - potDistribution[1];
-        }
+        uint256 _remainingDistribution = 1000 - potDistribution[0] - potDistribution[1];
         uint256 _remainingPot = (totalCollected.mul(_remainingDistribution)).div(1000);
         assert(treasury.payout(msg.sender, _remainingPot));
         emit LogWinningsPaid(msg.sender, _remainingPot);
