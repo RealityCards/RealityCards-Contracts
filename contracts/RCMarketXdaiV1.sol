@@ -32,7 +32,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     uint256 public constant MAX_UINT256 = 2**256 - 1;
     enum States {CLOSED, OPEN, LOCKED, WITHDRAW}
     States public state; 
-    /// @dev type of event. 0 = classic, 1 = winner takes all, 2 = hot potato
+    /// @dev type of event. 0 = classic, 1 = winner takes all, 2 = recipient for each card
     uint256 public mode;
     /// @dev so the Factory can check its a market
     bool public constant isMarket = true;
@@ -93,12 +93,17 @@ contract RCMarketXdaiV1 is ERC721Full {
     /// @dev prevent users withdrawing twice
     mapping (address => bool) public userAlreadyWithdrawn;
     /// @dev how will the winnings be distributed
-    /// @dev artist // creator // everyone else
-    uint256[2] public potDistribution;
+    /// @dev artist // creator // card reciepients
+    uint256[3] public potDistribution;
     /// @dev the artist's address
     address public artistAddress;
+    bool public artistPaid = false;
     /// @dev market creator's address
     address public marketCreatorAddress;
+    bool public creatorPaid = false;
+    /// @dev card speciic recipients for mode 2
+    address[] public cardRecipients;
+    bool public cardRecipientsPaid = false;
 
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
@@ -108,13 +113,14 @@ contract RCMarketXdaiV1 is ERC721Full {
         uint256 _mode,
         uint32[] memory _timestamps,
         string[] memory _tokenURIs,
+        address[] memory _cardRecipients,
         address _artistAddress,
         address _marketCreatorAddress,
         uint256 _templateId, 
         string memory _question, 
         string memory _tokenName
     ) public initializer {
-        assert(_mode < 2);
+        assert(_mode < 3);
         IFactory _factory = IFactory(msg.sender);
         
         // initialiiize!
@@ -130,6 +136,7 @@ contract RCMarketXdaiV1 is ERC721Full {
         oracleResolutionTime = _timestamps[2];
         artistAddress = _artistAddress;
         marketCreatorAddress = _marketCreatorAddress;
+        cardRecipients = _cardRecipients;
         uint32 _timeout = _factory.realitioTimeout();
         address _arbitrator = _factory.arbitrator();
         potDistribution = _factory.getPotDistribution();
@@ -153,6 +160,14 @@ contract RCMarketXdaiV1 is ERC721Full {
         if (marketOpeningTime <= now) {
             _incrementState();
         }
+
+        // if mode 2, check _cardRecipients array
+        if (_mode == 2) {
+            assert(_tokenURIs.length == _cardRecipients.length);
+            for (uint i = 0; i < numberOfTokens; i++) { 
+                assert(_cardRecipients[0] != address(0));
+            }
+        } 
         
         // create the question on Realitio
         /// @dev temporarily removing this
@@ -177,6 +192,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     event LogWinningsPaid(address indexed paidTo, uint256 indexed amountPaid);
     event LogArtistPaid(address indexed paidTo, uint256 indexed amountPaid);
     event LogCreatorPaid(address indexed paidTo, uint256 indexed amountPaid);
+    event LogCardRecipientPaid(address indexed paidTo, uint256 indexed amountPaid);
     event LogRentReturned(address indexed returnedTo, uint256 indexed amountReturned);
     event LogTimeHeldUpdated(uint256 indexed newTimeHeld, address indexed owner, uint256 indexed tokenId);
     event LogStateChange(uint256 indexed newState);
@@ -267,12 +283,6 @@ contract RCMarketXdaiV1 is ERC721Full {
         _incrementState();
         // transfer NFTs to the longest owners
         _processNFTsAfterEvent();
-        // pay artist
-        _payArtist();
-        // pay market creator if not invalid
-        if (totalTimeHeld[winningOutcome] > 0) {
-            _payMarketCreator();
-        }
         emit LogWinnerKnown(winningOutcome);
     }
 
@@ -296,7 +306,14 @@ contract RCMarketXdaiV1 is ERC721Full {
 
     /// @notice pays winnings
     function _payoutWinningsClassic() internal {
-        uint256 _remainingDistribution = 1000 - potDistribution[0] - potDistribution[1];
+        uint256 _remainingDistribution;
+        if (mode == 2) {
+            // card specific payouts 
+            _remainingDistribution = 1000 - potDistribution[0] - potDistribution[1] - potDistribution[2];
+        } else {
+            // no card specific payouts
+            _remainingDistribution = 1000 - potDistribution[0] - potDistribution[1];
+        }
         uint256 _remainingPot = (totalCollected.mul(_remainingDistribution)).div(1000);
         uint256 _winnersTimeHeld = timeHeld[winningOutcome][msg.sender];
         uint256 _numerator = _remainingPot.mul(_winnersTimeHeld);
@@ -309,7 +326,14 @@ contract RCMarketXdaiV1 is ERC721Full {
     /// @notice pays winnings
     function _payoutWinningsWinnerTakesAll() internal {
         require(longestOwner[winningOutcome] == msg.sender, "Not a winner");
-        uint256 _remainingDistribution = 1000 - potDistribution[0] - potDistribution[1];
+        uint256 _remainingDistribution;
+        if (mode == 2) {
+            // card specific payouts 
+            _remainingDistribution = 1000 - potDistribution[0] - potDistribution[1] - potDistribution[2];
+        } else {
+            // no card specific payouts
+            _remainingDistribution = 1000 - potDistribution[0] - potDistribution[1];
+        }
         uint256 _remainingPot = (totalCollected.mul(_remainingDistribution)).div(1000);
         assert(treasury.payout(msg.sender, _remainingPot));
         emit LogWinningsPaid(msg.sender, _remainingPot);
@@ -317,8 +341,15 @@ contract RCMarketXdaiV1 is ERC721Full {
 
     /// @notice returns all funds to users in case of invalid outcome
     function _returnRent() internal {
-        // deduct artist share but NOT market creator share
-        uint256 _remainingDistribution = 1000 - potDistribution[0];
+        // deduct artist share and card specific share but NOT market creator share
+        uint256 _remainingDistribution;
+        if (mode == 2) {
+            // card specific payouts 
+            _remainingDistribution = 1000 - potDistribution[0] - potDistribution[2];
+        } else {
+            // no card specific payouts
+            _remainingDistribution = 1000 - potDistribution[0];
+        }
         uint256 _rentCollected = collectedPerUser[msg.sender];
         require(_rentCollected > 0, "Paid no rent");
         uint256 _rentCollectedAdjusted = (_rentCollected.mul(_remainingDistribution)).div(1000);
@@ -326,8 +357,14 @@ contract RCMarketXdaiV1 is ERC721Full {
         emit LogRentReturned(msg.sender, _rentCollectedAdjusted);
     }
 
+    /// @dev the below three functions pay artist, creator, card specific recipients as appropriate
+    /// @dev they are not called within determineWinner() unless a recipient address is a contract
+    /// @dev which refuses payment, then nobody could get winnings
+
     /// @notice pay artist
-    function _payArtist() internal {
+    function payArtist() public {
+        require(!artistPaid, "Artist already paid");
+        artistPaid = true;
         if (potDistribution[0] > 0) {
             uint256 _artistsCut = (totalCollected.mul(potDistribution[0])).div(1000);
             if (_artistsCut > 0) {
@@ -338,13 +375,32 @@ contract RCMarketXdaiV1 is ERC721Full {
     }
 
     /// @notice pay market creator
-    function _payMarketCreator() internal {
+    function payMarketCreator() public {
+        require(totalTimeHeld[winningOutcome] > 0, "No winner");
+        require(!creatorPaid, "Creator already paid");
+        creatorPaid = true;
         if (potDistribution[1] > 0) {
             uint256 _marketCreatorsCut = (totalCollected.mul(potDistribution[1])).div(1000);
             if (_marketCreatorsCut > 0) {
                 assert(treasury.payout(marketCreatorAddress, _marketCreatorsCut));
             }
             emit LogCreatorPaid(marketCreatorAddress, _marketCreatorsCut);
+        }
+    }
+
+     /// @notice pay card recipients
+    function payCardRecipients() public {
+        require(mode == 2, "Wrong mode");
+        require(!cardRecipientsPaid, "Card recipients already paid");
+        cardRecipientsPaid = true;
+        if (potDistribution[2] > 0) {
+            for (uint i = 0; i < numberOfTokens; i++) {
+                uint256 _cardRecipientsCut = (collectedPerToken[i].mul(potDistribution[2])).div(1000);
+                if (_cardRecipientsCut > 0) {
+                    assert(treasury.payout(cardRecipients[i], _cardRecipientsCut));
+                }
+                emit LogCardRecipientPaid(cardRecipients[i], _cardRecipientsCut);
+            }
         }
     }
 

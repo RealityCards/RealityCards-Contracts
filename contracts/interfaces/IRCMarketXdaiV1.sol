@@ -9,6 +9,7 @@ interface IRCMarketXdaiV1 {
         uint256 _mode, 
         uint32[] calldata _timestamps,
         string[] calldata _tokenURIs,
+        address[] calldata _cardRecipients,
         address _artistAddress,
         address _marketCreatorAddress,
         uint256 _templateId, 

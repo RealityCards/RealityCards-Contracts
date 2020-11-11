@@ -35,7 +35,7 @@ contract RCFactory is Ownable, CloneFactory {
     ///// MARKET PARAMETERS /////
     uint32 public realitioTimeout;
     address public arbitrator;
-    uint256[2] public potDistribution;
+    uint256[3] public potDistribution;
 
     ///// MARKET CREATION /////
     bool public marketCreatorWhitelistEnabled = true;
@@ -65,7 +65,8 @@ contract RCFactory is Ownable, CloneFactory {
         updateRealitioTimeout(86400); // 24 hours
         updateRealitioAddress(_realitio);
         updateArbitrator(0xA6EAd513D05347138184324392d8ceb24C116118); // kleros
-        updatePotDistribution(0,0); // 0% artist, 0% market creators
+        // 0% artist, 0% market creators, 10% card specific (only used if mode 2)
+        updatePotDistribution(0,0,100);  
     }
 
     ////////////////////////////////////
@@ -95,7 +96,7 @@ contract RCFactory is Ownable, CloneFactory {
         return marketAddresses[_mode];
     }
 
-    function getPotDistribution() public view returns (uint256[2] memory) {
+    function getPotDistribution() public view returns (uint256[3] memory) {
         return potDistribution;
     }
 
@@ -118,10 +119,11 @@ contract RCFactory is Ownable, CloneFactory {
     } 
 
     /// @dev in basis points
-    function updatePotDistribution(uint256 _artistCut, uint256 _creatorCut) public onlyOwner {
+    function updatePotDistribution(uint256 _artistCut, uint256 _creatorCut, uint256 _cardRecipientCut) public onlyOwner {
         require(_artistCut + _creatorCut <= 100, "Arist/creator cut too big");
         potDistribution[0] = _artistCut;
         potDistribution[1] = _creatorCut;
+        potDistribution[2] = _cardRecipientCut;
     }
 
     /// @notice add or remove an address from market creator whitelist
@@ -146,6 +148,7 @@ contract RCFactory is Ownable, CloneFactory {
         string memory _ipfsHash,
         uint32[] memory _timestamps,
         string[] memory _tokenURIs,
+        address[] memory _cardRecipients,
         address _artistAddress,
         string memory _realitioQuestion,
         string memory _tokenName
@@ -161,6 +164,7 @@ contract RCFactory is Ownable, CloneFactory {
             _mode: _mode,
             _timestamps: _timestamps,
             _tokenURIs: _tokenURIs,
+            _cardRecipients: _cardRecipients,
             _artistAddress: _artistAddress,
             _marketCreatorAddress: msg.sender,
             _templateId: 2,

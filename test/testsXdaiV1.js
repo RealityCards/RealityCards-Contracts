@@ -33,6 +33,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
   user7 = accounts[7];
   user8 = accounts[8];
   andrewsAddress = accounts[9];
+  var cardRecipients = [user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0];
 
   beforeEach(async () => {
     var latestTime = await time.latest();
@@ -51,7 +52,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         0,
         '0x0',
         timestamps,
-        tokenURIs,
+        tokenURIs,cardRecipients,
         artistAddress,
         question,
         tokenName,
@@ -72,7 +73,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         0,
         '0x0',
         timestamps,
-        tokenURIs,
+        tokenURIs,cardRecipients,
         artistAddress,
         question,
         tokenName,
@@ -94,7 +95,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         1,
         '0x0',
         timestamps,
-        tokenURIs,
+        tokenURIs,cardRecipients,
         artistAddress,
         question,
         tokenName,
@@ -111,7 +112,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         0,
         '0x0',
         timestamps,
-        tokenURIs,
+        tokenURIs,cardRecipients,
         artistAddress,
         question,
         tokenName,
@@ -1139,22 +1140,22 @@ it('check oracleResolutionTime and marketLockingTime expected failures', async (
     var oracleResolutionTime = 69419;
     var marketLockingTime = 69420; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress, question,tokenName), "Invalid timestamps");
+    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',timestamps, tokenURIs,cardRecipients, artistAddress, question,tokenName), "Invalid timestamps");
     // resolution time > 1 weeks after locking, expect failure
     var oracleResolutionTime = 604810;
     var marketLockingTime = 0; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress, question,tokenName), "Invalid timestamps");
+    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',timestamps, tokenURIs,cardRecipients, artistAddress, question,tokenName), "Invalid timestamps");
     // resolution time < 1 week  after locking, no failure
     var oracleResolutionTime = 604790;
     var marketLockingTime = 0; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress, question,tokenName);
+    await rcfactory.createMarket(0,'0x0',timestamps, tokenURIs,cardRecipients, artistAddress, question,tokenName);
     // same time, no failure
     var oracleResolutionTime = 0;
     var marketLockingTime = 0; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress, question,tokenName);
+    await rcfactory.createMarket(0,'0x0',timestamps, tokenURIs,cardRecipients, artistAddress, question,tokenName);
   });
 
   it('test longestTimeHeld & longestOwner', async () => {
@@ -1707,7 +1708,7 @@ it('test winner/withdraw recreated using newRentalWithDeposit', async () => {
 
 it('test winner/withdraw with artist and creator fees', async () => {
     // 6% artist 4% creator
-    await rcfactory.updatePotDistribution(60,40);
+    await rcfactory.updatePotDistribution(60,40,100);
     var realitycards2 = await createMarket();
     /////// SETUP //////
     // var amount = web3.utils.toWei('144', 'ether')
@@ -1739,6 +1740,11 @@ it('test winner/withdraw with artist and creator fees', async () => {
     await realitio.setResult(2);
     var depositCreatorBefore = await treasury.deposits.call(user0);
     await realitycards2.determineWinner();
+    await realitycards2.payArtist();
+    await realitycards2.payMarketCreator();
+    // artist and market creator cant withdraw twice
+    await shouldFail.reverting.withMessage(realitycards2.payMarketCreator(), "Creator already paid");
+    await shouldFail.reverting.withMessage(realitycards2.payArtist(), "Artist already paid");
     var depositCreatorAfter = await treasury.deposits.call(user0);
     // check that artist fees are correct shold be 147 * .06 = 8.82 
     var depositArtist = await treasury.deposits.call(user8); 
@@ -1793,7 +1799,7 @@ it('test winner/withdraw with artist and creator fees', async () => {
 
 it('test winner/withdraw with invalid market and artist and creator fees', async () => {
     // 6% artist 4% creator but invalid so 0% creator
-    await rcfactory.updatePotDistribution(60,40);
+    await rcfactory.updatePotDistribution(60,40,100);
     var realitycards2 = await createMarket();
     /////// SETUP //////
     // var amount = web3.utils.toWei('144', 'ether')
@@ -1825,6 +1831,8 @@ it('test winner/withdraw with invalid market and artist and creator fees', async
     await realitio.setResult(69);
     var depositCreatorBefore = await treasury.deposits.call(user0);
     await realitycards2.determineWinner();
+    await realitycards2.payArtist();
+    await shouldFail.reverting.withMessage(realitycards2.payMarketCreator(), "No winner");
     var depositCreatorAfter = await treasury.deposits.call(user0);
     // check that artist fees are correct shold be 147 * .06 = 8.82 
     var depositArtist = await treasury.deposits.call(user8); 
@@ -1893,7 +1901,7 @@ it('check cant set new reference contract', async () => {
 it('check cant create market without reference contract', async () => {
     var treasury2 = await RCTreasury.new();
     var rcfactory2 = await RCFactory.new(treasury2.address, user0);
-    await shouldFail.reverting.withMessage(rcfactory2.createMarket(0,'0x0',[1,1],['x','x'],user0,'x','x'),"No reference contract");
+    await shouldFail.reverting.withMessage(rcfactory2.createMarket(0,'0x0',[1,1],['x','x'],[user0,user0],user0,'x','x'),"No reference contract");
 });
 
 it('check cant change factory address on the treasury or deploy new factory to treasury', async () => {
@@ -1912,19 +1920,19 @@ it('test updateMarketCreatorWhitelist and disableMarketCreatorWhitelist', async 
     var oracleResolutionTime = oneYearInTheFuture; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
     var artistAddress = user8;
-    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,question,tokenName,{from: user1}), "Not approved");
+    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,cardRecipients,artistAddress,question,tokenName,{from: user1}), "Not approved");
     // first check that only owner can call
     await shouldFail.reverting.withMessage(rcfactory.updateMarketCreatorWhitelist(user1,{from: user1}), "caller is not the owner");
     // add user1 to whitelist 
     await rcfactory.updateMarketCreatorWhitelist(user1);
     //try again, should work
-    await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,question,tokenName,{from: user1});
+    await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,cardRecipients,artistAddress,question,tokenName,{from: user1});
     // remove them, should fail again
     await rcfactory.updateMarketCreatorWhitelist(user1);
     await shouldFail.reverting.withMessage(rcfactory.updateMarketCreatorWhitelist(user1,{from: user1}), "caller is not the owner");
     // disable whitelist, should work
     await rcfactory.disableMarketCreatorWhitelist();
-    await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,question,tokenName,{from: user1});
+    await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,cardRecipients,artistAddress,question,tokenName,{from: user1});
     // re-enable whitelist, should not work again
     await rcfactory.disableMarketCreatorWhitelist();
     await shouldFail.reverting.withMessage(rcfactory.updateMarketCreatorWhitelist(user1,{from: user1}), "caller is not the owner"); 
