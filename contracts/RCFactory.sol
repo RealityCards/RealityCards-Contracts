@@ -65,8 +65,8 @@ contract RCFactory is Ownable, CloneFactory {
         updateRealitioTimeout(86400); // 24 hours
         updateRealitioAddress(_realitio);
         updateArbitrator(0xA6EAd513D05347138184324392d8ceb24C116118); // kleros
-        // 0% artist, 0% market creators, 10% card specific (only used if mode 2)
-        updatePotDistribution(0,0,100);  
+        // 20% artist (only used of artist address set), 0% market creators, 10% card specific (only used if mode 2)
+        updatePotDistribution(20,0,100);  
     }
 
     ////////////////////////////////////

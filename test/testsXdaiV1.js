@@ -42,7 +42,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     var marketLockingTime = oneYearInTheFuture; 
     var oracleResolutionTime = oneYearInTheFuture; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    var artistAddress = user8;
+    var artistAddress = '0x0000000000000000000000000000000000000000';
     realitio = await RealitioMockup.new();
     treasury = await RCTreasury.new();
     rcreference = await RCMarket.new();
@@ -61,7 +61,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     realitycards = await RCMarket.at(marketAddress);
   });
 
-  async function createMarket() {
+  async function createMarketWithArtistSet() {
     var latestTime = await time.latest();
     var oneYear = new BN('31104000');
     var oneYearInTheFuture = oneYear.add(latestTime);
@@ -84,6 +84,30 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
   }
 
   async function createMarketCustomMode(mode) {
+    var latestTime = await time.latest();
+    var oneYear = new BN('31104000');
+    var oneYearInTheFuture = oneYear.add(latestTime);
+    var marketLockingTime = oneYearInTheFuture; 
+    var oracleResolutionTime = oneYearInTheFuture;
+    var timestamps = [0,marketLockingTime,oracleResolutionTime];
+    var artistAddress = '0x0000000000000000000000000000000000000000';
+    await rcfactory.createMarket(
+        mode,
+        '0x0',
+        timestamps,
+        tokenURIs,
+        cardRecipients,
+        artistAddress,
+        question,
+        tokenName,
+      );
+    var marketAddress = await rcfactory.getMostRecentMarket.call(mode);
+    realitycards2 = await RCMarket.at(marketAddress);
+    return realitycards2;
+  }
+
+
+  async function createMarketCustomModeWithArtist(mode) {
     var latestTime = await time.latest();
     var oneYear = new BN('31104000');
     var oneYearInTheFuture = oneYear.add(latestTime);
@@ -424,7 +448,7 @@ it('test withdrawDeposit- multiple markets', async () => {
     await depositDai(10,user);
     await newRental(144,0,user);
     //second market
-    realitycards2 = await createMarket();
+    realitycards2 = await createMarketWithArtistSet();
     await realitycards2.newRental(web3.utils.toWei('288', 'ether'),maxuint256,0,{ from: user});
     // withdraw all, should be 3 left therefore only withdraw 7
     var balanceBefore = await web3.eth.getBalance(user);
@@ -609,7 +633,7 @@ it('test exit- more than ten mins', async () => {
 it('test winner/withdraw mode 0- with artist/creator cut', async () => {
     // 6% artist 4% creator
     await rcfactory.updatePotDistribution(60,40,100);
-    var realitycards2 = await createMarket();
+    var realitycards2 = await createMarketWithArtistSet();
     /////// SETUP //////
     // var amount = web3.utils.toWei('144', 'ether')
     // var price = web3.utils.toWei('1', 'ether')
@@ -753,7 +777,7 @@ it('test winner/withdraw mode 0- with artist/creator cut', async () => {
 it('test winner/withdraw mode 1- with artist/creator cut', async () => {
     // 6% artist 4% creator
     await rcfactory.updatePotDistribution(60,40,100);
-    var realitycards2 = await createMarketCustomMode(1);
+    var realitycards2 = await createMarketCustomModeWithArtist(1);
     /////// SETUP //////
     await depositDai(1000,user0);
     await depositDai(1000,user1);
@@ -922,7 +946,7 @@ it('test winner/withdraw mode 2- zero artist/creator cut', async () => {
 it('test winner/withdraw mode 2- with artist/creator cut', async () => {
     // 6% artist 4% creator
     await rcfactory.updatePotDistribution(60,40,100);
-    var realitycards2 = await createMarketCustomMode(2);
+    var realitycards2 = await createMarketCustomModeWithArtist(2);
     /////// SETUP //////
     // var amount = web3.utils.toWei('144', 'ether')
     // var price = web3.utils.toWei('1', 'ether')
@@ -1230,7 +1254,7 @@ it('test withdraw- invalid mode 0- with artist/creator cut', async () => {
     /////// SETUP //////
     // 6% artist 4% creator
     await rcfactory.updatePotDistribution(50,20,100);
-    var realitycards2 = await createMarket();
+    var realitycards2 = await createMarketWithArtistSet();
     await treasury.send(web3.utils.toWei('1000', 'ether')); // sneaky direct send instead of deposit
     await depositDai(1000,user1);
     await depositDai(1000,user2);
@@ -1377,7 +1401,7 @@ it('test withdraw- invalid mode 1- zero artist/creator cut', async () => {
         /////// SETUP //////
         // 6% artist 4% creator
         await rcfactory.updatePotDistribution(50,20,100);
-        var realitycards2 = await createMarketCustomMode(1);
+        var realitycards2 = await createMarketCustomModeWithArtist(1);
         await treasury.send(web3.utils.toWei('1000', 'ether')); // sneaky direct send instead of deposit
         await depositDai(1000,user1);
         await depositDai(1000,user2);
@@ -1554,7 +1578,7 @@ it('test withdraw- invalid mode 2- zero artist/creator cut', async () => {
         /////// SETUP //////
         // 6% artist 4% creator
         await rcfactory.updatePotDistribution(50,20,100);
-        var realitycards2 = await createMarketCustomMode(2);
+        var realitycards2 = await createMarketCustomModeWithArtist(2);
         await treasury.send(web3.utils.toWei('1000', 'ether')); // sneaky direct send instead of deposit
         await depositDai(1000,user1);
         await depositDai(1000,user2);
@@ -2218,7 +2242,7 @@ it('check onlyOwner is on everything it should be', async () => {
     await shouldFail.reverting.withMessage(rcfactory.updateRealitioAddress(user1,{from: user1}), "caller is not the owner");
     // check that realitio address is actually changed (cant check the others as local only)
     await rcfactory.updateRealitioAddress(user1);
-    var realitycards2 = await createMarket();
+    var realitycards2 = await createMarketWithArtistSet();
     var realitoAddress = await realitycards2.realitio.call();
     assert.equal(realitoAddress,user1);
 });
@@ -2511,7 +2535,7 @@ it('test winner/withdraw recreated using newRentalWithDeposit', async () => {
 it('test winner/withdraw with invalid market and artist and creator fees', async () => {
     // 6% artist 4% creator but invalid so 0% creator
     await rcfactory.updatePotDistribution(60,40,100);
-    var realitycards2 = await createMarket();
+    var realitycards2 = await createMarketWithArtistSet();
     /////// SETUP //////
     // var amount = web3.utils.toWei('144', 'ether')
     // var price = web3.utils.toWei('1', 'ether')

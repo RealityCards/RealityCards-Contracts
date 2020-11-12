@@ -141,6 +141,11 @@ contract RCMarketXdaiV1 is ERC721Full {
         address _arbitrator = _factory.arbitrator();
         potDistribution = _factory.getPotDistribution();
 
+        // reduce artist cut to zero if zero adddress set
+        if (_artistAddress == address(0)) {
+            potDistribution[0] = 0;
+        }
+
         // resolution time must not be less than locking time, and not greater by more than one week
         require(marketLockingTime + 1 weeks > oracleResolutionTime && marketLockingTime <= oracleResolutionTime, "Invalid timestamps" );
         
