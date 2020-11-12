@@ -1929,6 +1929,9 @@ it('check that users cannot transfer their NFTs until withdraw state', async() =
     // currently in state 'OPEN' the following should all fail 
     await shouldFail.reverting.withMessage(realitycards2.determineWinner(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards2.withdraw(), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards2.payArtist(), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards2.payMarketCreator(), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards2.payCardRecipients(), "Incorrect state");
     // increment state
     await time.increase(time.duration.years(1)); 
     await realitycards2.lockMarket();
@@ -1940,6 +1943,9 @@ it('check that users cannot transfer their NFTs until withdraw state', async() =
     await shouldFail.reverting.withMessage(realitycards2.exit(0), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards2.rentAllCards(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards2.sponsor({value: 3}), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards2.payArtist(), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards2.payMarketCreator(), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards2.payCardRecipients(), "Incorrect state");
     // increment state
     await realitio.setResult(1);
     await realitycards2.determineWinner();

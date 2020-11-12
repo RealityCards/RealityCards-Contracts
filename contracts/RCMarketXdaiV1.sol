@@ -354,11 +354,11 @@ contract RCMarketXdaiV1 is ERC721Full {
     }
 
     /// @dev the below three functions pay artist, creator, card specific recipients as appropriate
-    /// @dev they are not called within determineWinner() unless a recipient address is a contract
-    /// @dev which refuses payment, then nobody could get winnings
+    /// @dev they are not called within determineWinner() because of the risk of an
+    /// @dev ....  address being a contract which refuses payment, then nobody could get winnings
 
     /// @notice pay artist
-    function payArtist() public {
+    function payArtist() public checkState(States.WITHDRAW) {
         require(!artistPaid, "Artist already paid");
         artistPaid = true;
         if (potDistribution[0] > 0) {
@@ -371,7 +371,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     }
 
     /// @notice pay market creator
-    function payMarketCreator() public {
+    function payMarketCreator() public checkState(States.WITHDRAW) {
         require(totalTimeHeld[winningOutcome] > 0, "No winner");
         require(!creatorPaid, "Creator already paid");
         creatorPaid = true;
@@ -385,7 +385,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     }
 
      /// @notice pay card recipients
-    function payCardRecipients() public {
+    function payCardRecipients() public checkState(States.WITHDRAW) {
         require(mode == 2, "Wrong mode");
         require(!cardRecipientsPaid, "Card recipients already paid");
         cardRecipientsPaid = true;
