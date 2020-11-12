@@ -12,5 +12,5 @@ interface IFactory
     function realitioTimeout() external returns (uint32);
     function arbitrator() external returns (address);
     function deposit() external payable returns(bool);
-    function getPotDistribution() external returns(uint256[3] memory);
+    function getPotDistribution() external returns(uint256[4] memory);
 }

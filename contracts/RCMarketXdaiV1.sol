@@ -93,8 +93,8 @@ contract RCMarketXdaiV1 is ERC721Full {
     /// @dev prevent users withdrawing twice
     mapping (address => bool) public userAlreadyWithdrawn;
     /// @dev how will the winnings be distributed
-    /// @dev artist // creator // card reciepients
-    uint256[3] public potDistribution;
+    /// @dev artist // winner // creator // card recipients
+    uint256[4] public potDistribution;
     /// @dev the artist's address
     address public artistAddress;
     bool public artistPaid = false;
@@ -166,8 +166,11 @@ contract RCMarketXdaiV1 is ERC721Full {
             _incrementState();
         }
 
-        // if mode 2, check _cardRecipients array
-        if (_mode == 2) {
+        // if winner takes all mode, set potDistribution[1] to max
+        // if card specific recipients mode, check _cardRecipients array is valid
+        if (_mode == 1) {
+            potDistribution[1] = (uint256(1000).sub(potDistribution[0])).sub(potDistribution[2]);
+        } else if (_mode == 2) {
             assert(_tokenURIs.length == _cardRecipients.length);
             for (uint i = 0; i < numberOfTokens; i++) { 
                 assert(_cardRecipients[0] != address(0));
@@ -297,54 +300,40 @@ contract RCMarketXdaiV1 is ERC721Full {
         require(!userAlreadyWithdrawn[msg.sender], "Already withdrawn");
         userAlreadyWithdrawn[msg.sender] = true;
         if (totalTimeHeld[winningOutcome] > 0) {
-            if (mode != 1) {
-                _payoutWinningsClassic();
-            } else {
-                _payoutWinningsWinnerTakesAll();
-            } 
+            _payoutWinnings();
         } else {
              _returnRent();
         }
     }
 
     /// @notice pays winnings
-    function _payoutWinningsClassic() internal {
-        uint256 _remainingDistribution;
+    function _payoutWinnings() internal {
+        uint256 _winningsToTransfer;
+        uint256 _remainingDistribution = ((uint256(1000).sub(potDistribution[0])).sub(potDistribution[1])).sub(potDistribution[2]); 
+        // if mode 2, also deduct card specific pot distribution
         if (mode == 2) {
-            // card specific payouts 
-            _remainingDistribution = 1000 - potDistribution[0] - potDistribution[1] - potDistribution[2];
-        } else {
-            // no card specific payouts
-            _remainingDistribution = 1000 - potDistribution[0] - potDistribution[1];
+            _remainingDistribution = _remainingDistribution.sub(potDistribution[3]); 
+        } 
+        // calculate longest owner's extra winnings, if relevant
+        if (longestOwner[winningOutcome] == msg.sender && potDistribution[1] > 0){
+            _winningsToTransfer = (totalCollected.mul(potDistribution[1])).div(1000);
         }
+        // calculate normal winnings, if any
         uint256 _remainingPot = (totalCollected.mul(_remainingDistribution)).div(1000);
         uint256 _winnersTimeHeld = timeHeld[winningOutcome][msg.sender];
         uint256 _numerator = _remainingPot.mul(_winnersTimeHeld);
-        uint256 _winningsToTransfer = _numerator.div(totalTimeHeld[winningOutcome]); 
+        _winningsToTransfer = _winningsToTransfer.add(_numerator.div(totalTimeHeld[winningOutcome])); 
         require(_winningsToTransfer > 0, "Not a winner");
         assert(treasury.payout(msg.sender, _winningsToTransfer));
         emit LogWinningsPaid(msg.sender, _winningsToTransfer);
     }
 
-    /// @notice pays winnings
-    function _payoutWinningsWinnerTakesAll() internal {
-        require(longestOwner[winningOutcome] == msg.sender, "Not a winner");
-        uint256 _remainingDistribution = 1000 - potDistribution[0] - potDistribution[1];
-        uint256 _remainingPot = (totalCollected.mul(_remainingDistribution)).div(1000);
-        assert(treasury.payout(msg.sender, _remainingPot));
-        emit LogWinningsPaid(msg.sender, _remainingPot);
-    }
-
     /// @notice returns all funds to users in case of invalid outcome
     function _returnRent() internal {
-        // deduct artist share and card specific share but NOT market creator share
-        uint256 _remainingDistribution;
+        // deduct artist share and card specific share if relevant but NOT market creator share or winner's share (no winner, market creator does not deserve)
+        uint256 _remainingDistribution = uint256(1000).sub(potDistribution[0]);
         if (mode == 2) {
-            // card specific payouts 
-            _remainingDistribution = 1000 - potDistribution[0] - potDistribution[2];
-        } else {
-            // no card specific payouts
-            _remainingDistribution = 1000 - potDistribution[0];
+            _remainingDistribution = _remainingDistribution.sub(potDistribution[3]);
         }
         uint256 _rentCollected = collectedPerUser[msg.sender];
         require(_rentCollected > 0, "Paid no rent");
@@ -375,8 +364,8 @@ contract RCMarketXdaiV1 is ERC721Full {
         require(totalTimeHeld[winningOutcome] > 0, "No winner");
         require(!creatorPaid, "Creator already paid");
         creatorPaid = true;
-        if (potDistribution[1] > 0) {
-            uint256 _marketCreatorsCut = (totalCollected.mul(potDistribution[1])).div(1000);
+        if (potDistribution[2] > 0) {
+            uint256 _marketCreatorsCut = (totalCollected.mul(potDistribution[2])).div(1000);
             if (_marketCreatorsCut > 0) {
                 assert(treasury.payout(marketCreatorAddress, _marketCreatorsCut));
             }
@@ -389,9 +378,9 @@ contract RCMarketXdaiV1 is ERC721Full {
         require(mode == 2, "Wrong mode");
         require(!cardRecipientsPaid, "Card recipients already paid");
         cardRecipientsPaid = true;
-        if (potDistribution[2] > 0) {
+        if (potDistribution[3] > 0) {
             for (uint i = 0; i < numberOfTokens; i++) {
-                uint256 _cardRecipientsCut = (collectedPerToken[i].mul(potDistribution[2])).div(1000);
+                uint256 _cardRecipientsCut = (collectedPerToken[i].mul(potDistribution[3])).div(1000);
                 if (_cardRecipientsCut > 0) {
                     assert(treasury.payout(cardRecipients[i], _cardRecipientsCut));
                 }
