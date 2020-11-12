@@ -82,7 +82,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     struct rental { address owner;
                     uint256 price; }
 
-    ///// MARKET RESOLUTION VARIABLES /////
+    ///// TIMESTAMPS /////
     uint256 public winningOutcome; 
     //// @dev when the market opens 
     uint32 public marketOpeningTime; 
@@ -91,18 +91,22 @@ contract RCMarketXdaiV1 is ERC721Full {
     //// @dev when the question can be answered on realitio
     uint32 public oracleResolutionTime;
     /// @dev prevent users withdrawing twice
+
+    ///// PAYOUT VARIABLES /////
     mapping (address => bool) public userAlreadyWithdrawn;
-    /// @dev how will the winnings be distributed
-    /// @dev artist // winner // creator // card recipients
-    uint256[4] public potDistribution;
-    /// @dev the artist's address
+    /// @dev the artist
     address public artistAddress;
+    uint256 public artistCut;
     bool public artistPaid = false;
-    /// @dev market creator's address
+    /// @dev the winner
+    uint256 public winnerCut;
+    /// @dev the market creator
     address public marketCreatorAddress;
+    uint256 public creatorCut;
     bool public creatorPaid = false;
     /// @dev card speciic recipients for mode 2
     address[] public cardRecipients;
+    uint256 public cardRecipientsCut;
     bool public cardRecipientsPaid = false;
 
     ////////////////////////////////////
@@ -139,11 +143,15 @@ contract RCMarketXdaiV1 is ERC721Full {
         cardRecipients = _cardRecipients;
         uint32 _timeout = _factory.realitioTimeout();
         address _arbitrator = _factory.arbitrator();
-        potDistribution = _factory.getPotDistribution();
+        uint256[4] memory _potDistribution = _factory.getPotDistribution();
+        artistCut = _potDistribution[0];
+        winnerCut = _potDistribution[1];
+        creatorCut = _potDistribution[2];
+        cardRecipientsCut = _potDistribution[3];
 
         // reduce artist cut to zero if zero adddress set
         if (_artistAddress == address(0)) {
-            potDistribution[0] = 0;
+            artistCut = 0;
         }
 
         // resolution time must not be less than locking time, and not greater by more than one week
@@ -166,10 +174,10 @@ contract RCMarketXdaiV1 is ERC721Full {
             _incrementState();
         }
 
-        // if winner takes all mode, set potDistribution[1] to max
+        // if winner takes all mode, set winnerCut to max
         // if card specific recipients mode, check _cardRecipients array is valid
         if (_mode == 1) {
-            potDistribution[1] = (uint256(1000).sub(potDistribution[0])).sub(potDistribution[2]);
+            winnerCut = (uint256(1000).sub(artistCut)).sub(creatorCut);
         } else if (_mode == 2) {
             assert(_tokenURIs.length == _cardRecipients.length);
             for (uint i = 0; i < numberOfTokens; i++) { 
@@ -309,14 +317,14 @@ contract RCMarketXdaiV1 is ERC721Full {
     /// @notice pays winnings
     function _payoutWinnings() internal {
         uint256 _winningsToTransfer;
-        uint256 _remainingDistribution = ((uint256(1000).sub(potDistribution[0])).sub(potDistribution[1])).sub(potDistribution[2]); 
+        uint256 _remainingDistribution = ((uint256(1000).sub(artistCut)).sub(winnerCut)).sub(creatorCut); 
         // if mode 2, also deduct card specific pot distribution
         if (mode == 2) {
-            _remainingDistribution = _remainingDistribution.sub(potDistribution[3]); 
+            _remainingDistribution = _remainingDistribution.sub(cardRecipientsCut); 
         } 
         // calculate longest owner's extra winnings, if relevant
-        if (longestOwner[winningOutcome] == msg.sender && potDistribution[1] > 0){
-            _winningsToTransfer = (totalCollected.mul(potDistribution[1])).div(1000);
+        if (longestOwner[winningOutcome] == msg.sender && winnerCut > 0){
+            _winningsToTransfer = (totalCollected.mul(winnerCut)).div(1000);
         }
         // calculate normal winnings, if any
         uint256 _remainingPot = (totalCollected.mul(_remainingDistribution)).div(1000);
@@ -331,9 +339,9 @@ contract RCMarketXdaiV1 is ERC721Full {
     /// @notice returns all funds to users in case of invalid outcome
     function _returnRent() internal {
         // deduct artist share and card specific share if relevant but NOT market creator share or winner's share (no winner, market creator does not deserve)
-        uint256 _remainingDistribution = uint256(1000).sub(potDistribution[0]);
+        uint256 _remainingDistribution = uint256(1000).sub(artistCut);
         if (mode == 2) {
-            _remainingDistribution = _remainingDistribution.sub(potDistribution[3]);
+            _remainingDistribution = _remainingDistribution.sub(cardRecipientsCut);
         }
         uint256 _rentCollected = collectedPerUser[msg.sender];
         require(_rentCollected > 0, "Paid no rent");
@@ -350,8 +358,8 @@ contract RCMarketXdaiV1 is ERC721Full {
     function payArtist() public checkState(States.WITHDRAW) {
         require(!artistPaid, "Artist already paid");
         artistPaid = true;
-        if (potDistribution[0] > 0) {
-            uint256 _artistsCut = (totalCollected.mul(potDistribution[0])).div(1000);
+        if (artistCut > 0) {
+            uint256 _artistsCut = (totalCollected.mul(artistCut)).div(1000);
             if (_artistsCut > 0) {
                 assert(treasury.payout(artistAddress, _artistsCut));
             }
@@ -364,8 +372,8 @@ contract RCMarketXdaiV1 is ERC721Full {
         require(totalTimeHeld[winningOutcome] > 0, "No winner");
         require(!creatorPaid, "Creator already paid");
         creatorPaid = true;
-        if (potDistribution[2] > 0) {
-            uint256 _marketCreatorsCut = (totalCollected.mul(potDistribution[2])).div(1000);
+        if (creatorCut > 0) {
+            uint256 _marketCreatorsCut = (totalCollected.mul(creatorCut)).div(1000);
             if (_marketCreatorsCut > 0) {
                 assert(treasury.payout(marketCreatorAddress, _marketCreatorsCut));
             }
@@ -378,9 +386,9 @@ contract RCMarketXdaiV1 is ERC721Full {
         require(mode == 2, "Wrong mode");
         require(!cardRecipientsPaid, "Card recipients already paid");
         cardRecipientsPaid = true;
-        if (potDistribution[3] > 0) {
+        if (cardRecipientsCut > 0) {
             for (uint i = 0; i < numberOfTokens; i++) {
-                uint256 _cardRecipientsCut = (collectedPerToken[i].mul(potDistribution[3])).div(1000);
+                uint256 _cardRecipientsCut = (collectedPerToken[i].mul(cardRecipientsCut)).div(1000);
                 if (_cardRecipientsCut > 0) {
                     assert(treasury.payout(cardRecipients[i], _cardRecipientsCut));
                 }
