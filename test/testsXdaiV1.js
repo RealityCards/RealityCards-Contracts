@@ -694,7 +694,7 @@ it('test exit- more than ten mins', async () => {
 
 it('test winner/withdraw mode 0- with artist/creator cut', async () => {
     // 6% artist 4% creator
-    await rcfactory.updatePotDistribution(60,0,0,40,100);
+    await rcfactory.updatePotDistribution(60,0,40,0,100);
     var realitycards2 = await createMarketWithArtistSet();
     /////// SETUP //////
     // var amount = web3.utils.toWei('144', 'ether')
@@ -785,7 +785,7 @@ it('test winner/withdraw mode 0- with artist/creator cut', async () => {
 
 it('test winner/withdraw mode 0- with artist/winner/creator cut', async () => {
     // 6% artist 4% creator
-    await rcfactory.updatePotDistribution(60,0,100,40,100);
+    await rcfactory.updatePotDistribution(60,100,40,0,100);
     var realitycards2 = await createMarketWithArtistSet();
     /////// SETUP //////
     // var amount = web3.utils.toWei('144', 'ether')
@@ -879,7 +879,7 @@ it('test winner/withdraw mode 0- with artist/winner/creator cut', async () => {
 
 it('test winner/withdraw mode 0- with artist/affiliate/winner/creator cut', async () => {
     // 6% artist 4% creator
-    await rcfactory.updatePotDistribution(60,100,100,40,100);
+    await rcfactory.updatePotDistribution(60,100,40,100,100);
     var realitycards2 = await createMarketWithArtistSet();
     /////// SETUP //////
     // var amount = web3.utils.toWei('144', 'ether')
@@ -1034,7 +1034,7 @@ it('test winner/withdraw mode 0- with artist/affiliate/winner/creator cut', asyn
 
 it('test winner/withdraw mode 1- with artist/creator cut', async () => {
     // 6% artist 4% creator
-    await rcfactory.updatePotDistribution(60,0,43,40,100);
+    await rcfactory.updatePotDistribution(60,43,40,0,100);
     var realitycards2 = await createMarketCustomModeWithArtist(1);
     /////// SETUP //////
     await depositDai(1000,user0);
@@ -1201,9 +1201,9 @@ it('test winner/withdraw mode 0- with card affiliate but zero artist/creator cut
     await withdrawDeposit(1000,user7);
     });
 
-it('test winner/withdraw mode 0- with artist/creator/card affiliate cut', async () => {
+it('test winner/withdraw mode 0 with artist/creator/card affiliate cut', async () => {
     // 6% artist 4% creator
-    await rcfactory.updatePotDistribution(60,0,0,40,100);
+    await rcfactory.updatePotDistribution(60,0,40,0,100);
     var realitycards2 = await createMarketWithArtistAndCardAffiliates();
     /////// SETUP //////
     // var amount = web3.utils.toWei('144', 'ether')
@@ -1318,7 +1318,7 @@ it('test winner/withdraw mode 0- with artist/creator/card affiliate cut', async 
 
 it('test winner/withdraw mode 0- with artist/winner/creator/card affiliate cut', async () => {
     // 6% artist 4% creator
-    await rcfactory.updatePotDistribution(60,0,100,40,100);
+    await rcfactory.updatePotDistribution(60,100,40,0,100);
     var realitycards2 = await createMarketWithArtistAndCardAffiliates();
     /////// SETUP //////
     // var amount = web3.utils.toWei('144', 'ether')
@@ -1626,7 +1626,7 @@ it('test withdraw- invalid mode 0- zero artist/creator cut', async () => {
 it('test withdraw- invalid mode 0- with artist/creator cut', async () => {
     /////// SETUP //////
     // 6% artist 4% creator
-    await rcfactory.updatePotDistribution(50,0,62,20,100);
+    await rcfactory.updatePotDistribution(50,62,20,0,100);
     var realitycards2 = await createMarketWithArtistSet();
     await treasury.send(web3.utils.toWei('1000', 'ether')); // sneaky direct send instead of deposit
     await depositDai(1000,user1);
@@ -1705,7 +1705,7 @@ it('test withdraw- invalid mode 0- with artist/creator cut', async () => {
     it('test withdraw- invalid mode 0- with artist/affiliate/creator cut', async () => {
         /////// SETUP //////
         // 6% artist 4% creator
-        await rcfactory.updatePotDistribution(50,100,62,20,100);
+        await rcfactory.updatePotDistribution(50,62,20,100,100);
         var realitycards2 = await createMarketWithArtistSet();
         await treasury.send(web3.utils.toWei('1000', 'ether')); // sneaky direct send instead of deposit
         await depositDai(1000,user1);
@@ -1860,7 +1860,7 @@ it('test withdraw- invalid mode 1- zero artist/creator cut', async () => {
     it('test withdraw- invalid mode 1- with artist/creator cut', async () => {
         /////// SETUP //////
         // 6% artist 4% creator
-        await rcfactory.updatePotDistribution(50,0,13,20,100);
+        await rcfactory.updatePotDistribution(50,13,20,0,100);
         var realitycards2 = await createMarketCustomModeWithArtist(1);
         await treasury.send(web3.utils.toWei('1000', 'ether')); // sneaky direct send instead of deposit
         await depositDai(1000,user1);
@@ -2037,7 +2037,7 @@ it('test withdraw- invalid mode 0- zero artist/creator cut', async () => {
 it('test withdraw- invalid mode 0- with artist/creator/card affiliate cut', async () => {
     /////// SETUP //////
     // 6% artist 4% creator
-    await rcfactory.updatePotDistribution(50,0,13,20,100);
+    await rcfactory.updatePotDistribution(50,13,20,0,100);
     var realitycards2 = await createMarketWithArtistAndCardAffiliates(0);
     await treasury.send(web3.utils.toWei('1000', 'ether')); // sneaky direct send instead of deposit
     await depositDai(1000,user1);
@@ -3001,7 +3001,7 @@ it('test winner/withdraw recreated using newRentalWithDeposit', async () => {
 
 it('test winner/withdraw with invalid market and artist and creator fees', async () => {
     // 6% artist 4% creator but invalid so 0% creator
-    await rcfactory.updatePotDistribution(60,0,0,40,100);
+    await rcfactory.updatePotDistribution(60,0,40,0,100);
     var realitycards2 = await createMarketWithArtistSet();
     /////// SETUP //////
     // var amount = web3.utils.toWei('144', 'ether')

@@ -151,9 +151,9 @@ contract RCMarketXdaiV1 is ERC721Full {
         address _arbitrator = _factory.arbitrator();
         uint256[5] memory _potDistribution = _factory.getPotDistribution();
         artistCut = _potDistribution[0];
-        affiliateCut = _potDistribution[1];
-        winnerCut = _potDistribution[2];
-        creatorCut = _potDistribution[3];
+        winnerCut = _potDistribution[1];
+        creatorCut = _potDistribution[2];
+        affiliateCut = _potDistribution[3];
         cardSpecificAffiliateCut = _potDistribution[4];
 
         // reduce artist cut to zero if zero adddress set
@@ -350,7 +350,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     /// @notice returns all funds to users in case of invalid outcome
     function _returnRent() internal {
         // deduct artist share and card specific share if relevant but NOT market creator share or winner's share (no winner, market creator does not deserve)
-        uint256 _remainingDistribution = ((uint256(1000).sub(artistCut)).sub(affiliateCut)).sub(cardSpecificAffiliateCut);  
+        uint256 _remainingDistribution = ((uint256(1000).sub(artistCut)).sub(affiliateCut)).sub(cardSpecificAffiliateCut);      
         uint256 _rentCollected = collectedPerUser[msg.sender];
         require(_rentCollected > 0, "Paid no rent");
         uint256 _rentCollectedAdjusted = (_rentCollected.mul(_remainingDistribution)).div(1000);

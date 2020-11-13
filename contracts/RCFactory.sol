@@ -66,8 +66,8 @@ contract RCFactory is Ownable, CloneFactory {
         updateRealitioTimeout(86400); // 24 hours
         updateRealitioAddress(_realitio);
         updateArbitrator(0xA6EAd513D05347138184324392d8ceb24C116118); // kleros
-        // artist // affiliate // winner // creator // card specific affiliates
-        updatePotDistribution(20,20,0,0,100);  
+        // artist // winner // creator // affiliate // card specific affiliates
+        updatePotDistribution(20,0,0,20,100);  
     }
 
     ////////////////////////////////////
@@ -120,13 +120,13 @@ contract RCFactory is Ownable, CloneFactory {
     } 
 
     /// @dev in basis points
-    function updatePotDistribution(uint256 _artistCut, uint256 _affiliateCut, uint256 _winnerCut, uint256 _creatorCut, uint256 _cardRecipientCut) public onlyOwner {
-        require(_artistCut + _affiliateCut + _creatorCut + _creatorCut + _cardRecipientCut <= 1000, "Cuts too big");
+    function updatePotDistribution(uint256 _artistCut, uint256 _winnerCut, uint256 _creatorCut, uint256 _affiliateCut, uint256 _cardSpecificAffiliateCut) public onlyOwner {
+        require(_artistCut + _affiliateCut + _creatorCut + _creatorCut + _cardSpecificAffiliateCut <= 1000, "Cuts too big");
         potDistribution[0] = _artistCut;
-        potDistribution[1] = _affiliateCut;
-        potDistribution[2] = _winnerCut;
-        potDistribution[3] = _creatorCut;
-        potDistribution[4] = _cardRecipientCut;
+        potDistribution[1] = _winnerCut;
+        potDistribution[2] = _creatorCut;
+        potDistribution[3] = _affiliateCut;
+        potDistribution[4] = _cardSpecificAffiliateCut;
     }
 
     /// @notice add or remove an address from market creator whitelist
