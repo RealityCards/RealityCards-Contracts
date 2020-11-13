@@ -53,7 +53,8 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         0,
         '0x0',
         timestamps,
-        tokenURIs,cardRecipients,
+        tokenURIs,
+        cardRecipients,
         artistAddress,
         affiliateAddress,
         question,
@@ -1122,7 +1123,7 @@ it('test winner/withdraw mode 2- zero artist/creator cut', async () => {
     assert.isBelow(difference/winningsSentToUser,0.00001);
     // now check that card specifics got the correct payout
     // token 0, collected = 28
-    await realitycards2.payCardRecipients();
+    await realitycards2.payCardSpecificAffiliate();
     var deposit = await treasury.deposits.call(user5);
     var depositShouldBe = ether('28').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
@@ -1138,8 +1139,8 @@ it('test winner/withdraw mode 2- zero artist/creator cut', async () => {
     var depositShouldBe = ether('63').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
     assert.isBelow(difference/deposit,0.00001);
-    // check cant call payCardRecipients() twice
-    await shouldFail.reverting.withMessage(realitycards2.payCardRecipients(), "Card recipients already paid");
+    // check cant call payCardSpecificAffiliate() twice
+    await shouldFail.reverting.withMessage(realitycards2.payCardSpecificAffiliate(), "Card recipients already paid");
     // withdraw for next test
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
@@ -1237,7 +1238,7 @@ it('test winner/withdraw mode 2- with artist/creator cut', async () => {
     await shouldFail.reverting.withMessage(realitycards2.withdraw({ from: user6 }), "Not a winner");
     // now check that card specifics got the correct payout
     // token 0, collected = 28
-    await realitycards2.payCardRecipients();
+    await realitycards2.payCardSpecificAffiliate();
     var deposit = await treasury.deposits.call(user5);
     var depositShouldBe = ether('28').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
@@ -1253,8 +1254,8 @@ it('test winner/withdraw mode 2- with artist/creator cut', async () => {
     var depositShouldBe = ether('63').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
     assert.isBelow(difference/deposit,0.00001);
-    // check cant call payCardRecipients() twice
-    await shouldFail.reverting.withMessage(realitycards2.payCardRecipients(), "Card recipients already paid");
+    // check cant call payCardSpecificAffiliate() twice
+    await shouldFail.reverting.withMessage(realitycards2.payCardSpecificAffiliate(), "Card recipients already paid");
     // withdraw for next test
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
@@ -1352,7 +1353,7 @@ it('test winner/withdraw mode 2- with artist/winner/creator cut', async () => {
     await shouldFail.reverting.withMessage(realitycards2.withdraw({ from: user6 }), "Not a winner");
     // now check that card specifics got the correct payout
     // token 0, collected = 28
-    await realitycards2.payCardRecipients();
+    await realitycards2.payCardSpecificAffiliate();
     var deposit = await treasury.deposits.call(user5);
     var depositShouldBe = ether('28').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
@@ -1368,8 +1369,8 @@ it('test winner/withdraw mode 2- with artist/winner/creator cut', async () => {
     var depositShouldBe = ether('63').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
     assert.isBelow(difference/deposit,0.00001);
-    // check cant call payCardRecipients() twice
-    await shouldFail.reverting.withMessage(realitycards2.payCardRecipients(), "Card recipients already paid");
+    // check cant call payCardSpecificAffiliate() twice
+    await shouldFail.reverting.withMessage(realitycards2.payCardSpecificAffiliate(), "Card recipients already paid");
     // withdraw for next test
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
@@ -1955,7 +1956,7 @@ it('test withdraw- invalid mode 2- zero artist/creator cut', async () => {
     assert.isBelow(difference/winningsSentToUser,0.00001);
         // now check that card specifics got the correct payout
     // token 0, collected = 28
-    await realitycards2.payCardRecipients();
+    await realitycards2.payCardSpecificAffiliate();
     var deposit = await treasury.deposits.call(user5);
     var depositShouldBe = ether('28').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
@@ -1971,8 +1972,8 @@ it('test withdraw- invalid mode 2- zero artist/creator cut', async () => {
     var depositShouldBe = ether('63').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
     assert.isBelow(difference/deposit,0.00001);
-    // check cant call payCardRecipients() twice
-    await shouldFail.reverting.withMessage(realitycards2.payCardRecipients(), "Card recipients already paid");
+    // check cant call payCardSpecificAffiliate() twice
+    await shouldFail.reverting.withMessage(realitycards2.payCardSpecificAffiliate(), "Card recipients already paid");
     // withdraw for next test
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
@@ -2057,7 +2058,7 @@ it('test withdraw- invalid mode 2- with artist/creator cut', async () => {
     assert.isBelow(difference/depositArtist,0.00001);
     // now check that card specifics got the correct payout
     // token 0, collected = 28
-    await realitycards2.payCardRecipients();
+    await realitycards2.payCardSpecificAffiliate();
     var deposit = await treasury.deposits.call(user5);
     var depositShouldBe = ether('28').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
@@ -2073,8 +2074,8 @@ it('test withdraw- invalid mode 2- with artist/creator cut', async () => {
     var depositShouldBe = ether('63').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
     assert.isBelow(difference/deposit,0.00001);
-    // check cant call payCardRecipients() twice
-    await shouldFail.reverting.withMessage(realitycards2.payCardRecipients(), "Card recipients already paid");
+    // check cant call payCardSpecificAffiliate() twice
+    await shouldFail.reverting.withMessage(realitycards2.payCardSpecificAffiliate(), "Card recipients already paid");
     // withdraw for next test
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
@@ -2339,7 +2340,7 @@ it('check that users cannot transfer their NFTs until withdraw state', async() =
     await shouldFail.reverting.withMessage(realitycards2.withdraw(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards2.payArtist(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards2.payMarketCreator(), "Incorrect state");
-    await shouldFail.reverting.withMessage(realitycards2.payCardRecipients(), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards2.payCardSpecificAffiliate(), "Incorrect state");
     // increment state
     await time.increase(time.duration.years(1)); 
     await realitycards2.lockMarket();
@@ -2353,7 +2354,7 @@ it('check that users cannot transfer their NFTs until withdraw state', async() =
     await shouldFail.reverting.withMessage(realitycards2.sponsor({value: 3}), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards2.payArtist(), "Incorrect state");
     await shouldFail.reverting.withMessage(realitycards2.payMarketCreator(), "Incorrect state");
-    await shouldFail.reverting.withMessage(realitycards2.payCardRecipients(), "Incorrect state");
+    await shouldFail.reverting.withMessage(realitycards2.payCardSpecificAffiliate(), "Incorrect state");
     // increment state
     await realitio.setResult(1);
     await realitycards2.determineWinner();
@@ -3071,7 +3072,7 @@ it('test updateMarketCreatorWhitelist and disableMarketCreatorWhitelist', async 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
     var artistAddress = user8;
     var affiliateAddress = user8;
-    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,cardRecipients,artistAddress,question,tokenName,{from: user1}), "Not approved");
+    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,cardRecipients,artistAddress,affiliateAddress,question,tokenName,{from: user1}), "Not approved");
     // first check that only owner can call
     await shouldFail.reverting.withMessage(rcfactory.updateMarketCreatorWhitelist(user1,{from: user1}), "caller is not the owner");
     // add user1 to whitelist 
