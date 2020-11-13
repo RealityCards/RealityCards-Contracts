@@ -98,6 +98,10 @@ contract RCMarketXdaiV1 is ERC721Full {
     address public artistAddress;
     uint256 public artistCut;
     bool public artistPaid = false;
+    /// @dev the affiliate
+    address public affiliateAddress;
+    uint256 public affiliateCut;
+    bool public affiliatePaid = false;
     /// @dev the winner
     uint256 public winnerCut;
     /// @dev the market creator
@@ -119,6 +123,7 @@ contract RCMarketXdaiV1 is ERC721Full {
         string[] memory _tokenURIs,
         address[] memory _cardRecipients,
         address _artistAddress,
+        address _affiliateAddress,
         address _marketCreatorAddress,
         uint256 _templateId, 
         string memory _question, 
@@ -139,19 +144,26 @@ contract RCMarketXdaiV1 is ERC721Full {
         marketLockingTime = _timestamps[1];
         oracleResolutionTime = _timestamps[2];
         artistAddress = _artistAddress;
+        affiliateAddress = _affiliateAddress;
         marketCreatorAddress = _marketCreatorAddress;
         cardRecipients = _cardRecipients;
         uint32 _timeout = _factory.realitioTimeout();
         address _arbitrator = _factory.arbitrator();
-        uint256[4] memory _potDistribution = _factory.getPotDistribution();
+        uint256[5] memory _potDistribution = _factory.getPotDistribution();
         artistCut = _potDistribution[0];
-        winnerCut = _potDistribution[1];
-        creatorCut = _potDistribution[2];
-        cardRecipientsCut = _potDistribution[3];
+        affiliateCut = _potDistribution[1];
+        winnerCut = _potDistribution[2];
+        creatorCut = _potDistribution[3];
+        cardRecipientsCut = _potDistribution[4];
 
         // reduce artist cut to zero if zero adddress set
         if (_artistAddress == address(0)) {
             artistCut = 0;
+        }
+
+        // reduce affiliate cut to zero if zero adddress set
+        if (_affiliateAddress == address(0)) {
+            affiliateCut = 0;
         }
 
         // resolution time must not be less than locking time, and not greater by more than one week
@@ -207,6 +219,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     event LogWinnerKnown(uint256 indexed winningOutcome);
     event LogWinningsPaid(address indexed paidTo, uint256 indexed amountPaid);
     event LogArtistPaid(address indexed paidTo, uint256 indexed amountPaid);
+    event LogAffiliatePaid(address indexed paidTo, uint256 indexed amountPaid);
     event LogCreatorPaid(address indexed paidTo, uint256 indexed amountPaid);
     event LogCardRecipientPaid(address indexed paidTo, uint256 indexed amountPaid);
     event LogRentReturned(address indexed returnedTo, uint256 indexed amountReturned);
@@ -317,7 +330,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     /// @notice pays winnings
     function _payoutWinnings() internal {
         uint256 _winningsToTransfer;
-        uint256 _remainingDistribution = ((uint256(1000).sub(artistCut)).sub(winnerCut)).sub(creatorCut); 
+        uint256 _remainingDistribution = (((uint256(1000).sub(artistCut)).sub(affiliateCut)).sub(winnerCut)).sub(creatorCut); 
         // if mode 2, also deduct card specific pot distribution
         if (mode == 2) {
             _remainingDistribution = _remainingDistribution.sub(cardRecipientsCut); 
@@ -339,7 +352,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     /// @notice returns all funds to users in case of invalid outcome
     function _returnRent() internal {
         // deduct artist share and card specific share if relevant but NOT market creator share or winner's share (no winner, market creator does not deserve)
-        uint256 _remainingDistribution = uint256(1000).sub(artistCut);
+        uint256 _remainingDistribution = (uint256(1000).sub(artistCut)).sub(affiliateCut);
         if (mode == 2) {
             _remainingDistribution = _remainingDistribution.sub(cardRecipientsCut);
         }
@@ -364,6 +377,19 @@ contract RCMarketXdaiV1 is ERC721Full {
                 assert(treasury.payout(artistAddress, _artistsCut));
             }
             emit LogArtistPaid(artistAddress, _artistsCut);
+        }
+    }
+
+    /// @notice pay artist
+    function payAffiliate() public checkState(States.WITHDRAW) {
+        require(!affiliatePaid, "Affiliate already paid");
+        affiliatePaid = true;
+        if (affiliateCut > 0) {
+            uint256 _affiliateCut = (totalCollected.mul(affiliateCut)).div(1000);
+            if (_affiliateCut > 0) {
+                assert(treasury.payout(affiliateAddress, _affiliateCut));
+            }
+            emit LogAffiliatePaid(affiliateAddress, _affiliateCut);
         }
     }
 

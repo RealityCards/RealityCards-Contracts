@@ -11,6 +11,7 @@ interface IRCMarketXdaiV1 {
         string[] calldata _tokenURIs,
         address[] calldata _cardRecipients,
         address _artistAddress,
+        address _affiliateAddress,
         address _marketCreatorAddress,
         uint256 _templateId, 
         string calldata _question, 

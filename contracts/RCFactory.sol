@@ -35,7 +35,8 @@ contract RCFactory is Ownable, CloneFactory {
     ///// MARKET PARAMETERS /////
     uint32 public realitioTimeout;
     address public arbitrator;
-    uint256[4] public potDistribution;
+    // artist / affiliate / winner / market creator / card specific
+    uint256[5] public potDistribution;
 
     ///// MARKET CREATION /////
     bool public marketCreatorWhitelistEnabled = true;
@@ -65,8 +66,8 @@ contract RCFactory is Ownable, CloneFactory {
         updateRealitioTimeout(86400); // 24 hours
         updateRealitioAddress(_realitio);
         updateArbitrator(0xA6EAd513D05347138184324392d8ceb24C116118); // kleros
-        // 20% artist (only used if artist address set), 0% winner, 0% market creators, 10% card specific (only used if mode 2)
-        updatePotDistribution(20,0,0,100);  
+        // artist // affiliate // winner // creator // card specific affiliates
+        updatePotDistribution(20,20,0,0,100);  
     }
 
     ////////////////////////////////////
@@ -96,7 +97,7 @@ contract RCFactory is Ownable, CloneFactory {
         return marketAddresses[_mode];
     }
 
-    function getPotDistribution() public view returns (uint256[4] memory) {
+    function getPotDistribution() public view returns (uint256[5] memory) {
         return potDistribution;
     }
 
@@ -119,12 +120,13 @@ contract RCFactory is Ownable, CloneFactory {
     } 
 
     /// @dev in basis points
-    function updatePotDistribution(uint256 _artistCut, uint256 _winnerCut, uint256 _creatorCut, uint256 _cardRecipientCut) public onlyOwner {
-        require(_artistCut + _creatorCut + _creatorCut + _cardRecipientCut <= 1000, "Cuts too big");
+    function updatePotDistribution(uint256 _artistCut, uint256 _affiliateCut, uint256 _winnerCut, uint256 _creatorCut, uint256 _cardRecipientCut) public onlyOwner {
+        require(_artistCut + _affiliateCut + _creatorCut + _creatorCut + _cardRecipientCut <= 1000, "Cuts too big");
         potDistribution[0] = _artistCut;
-        potDistribution[1] = _winnerCut;
-        potDistribution[2] = _creatorCut;
-        potDistribution[3] = _cardRecipientCut;
+        potDistribution[1] = _affiliateCut;
+        potDistribution[2] = _winnerCut;
+        potDistribution[3] = _creatorCut;
+        potDistribution[4] = _cardRecipientCut;
     }
 
     /// @notice add or remove an address from market creator whitelist
@@ -151,6 +153,7 @@ contract RCFactory is Ownable, CloneFactory {
         string[] memory _tokenURIs,
         address[] memory _cardRecipients,
         address _artistAddress,
+        address _affiliateAddress,
         string memory _realitioQuestion,
         string memory _tokenName
     ) public returns (address)  {
@@ -167,6 +170,7 @@ contract RCFactory is Ownable, CloneFactory {
             _tokenURIs: _tokenURIs,
             _cardRecipients: _cardRecipients,
             _artistAddress: _artistAddress,
+            _affiliateAddress: _affiliateAddress,
             _marketCreatorAddress: msg.sender,
             _templateId: 2,
             _question: _realitioQuestion,
