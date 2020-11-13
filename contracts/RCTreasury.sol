@@ -91,7 +91,7 @@ contract RCTreasury is Ownable {
     ////////////////////////////////////
 
     /// @dev it is passed the user instead of using msg.value because might be called
-    /// @dev ... via contract instead of direct
+    /// @dev ... via contract (newRental function, specifically) instead of direct
     function deposit(address _user) public payable balancedBooks() returns(bool) {
         require(msg.value > 0, "Must deposit something");
         require(address(this).balance <= maxContractBalance, "Limit hit");

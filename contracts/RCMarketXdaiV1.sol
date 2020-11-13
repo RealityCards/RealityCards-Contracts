@@ -51,7 +51,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     mapping (uint256 => uint256) public collectedPerToken;
     /// @dev an easy way to track the above across all tokens
     uint256 public totalCollected; 
-    /// @dev tells the contract to exit position after ten mins deposit used
+    /// @dev tells the contract to exit position after min rental duration (or immediately, if already rented for this long)
     /// @dev user => tokenId => bool
     mapping (address => mapping (uint256 => bool)) public exitFlag;
  
@@ -452,7 +452,8 @@ contract RCMarketXdaiV1 is ERC721Full {
         collectRentAllTokens();
         // below must be after collectRent so timeHeld is up to date
         // _timeHeldLimit = 0 = no limit
-        require(_timeHeldLimit == 0 || _timeHeldLimit >= timeHeld[_tokenId][msg.sender].add(600), "Ten mins min"); 
+        uint256 _minRentalTime = uint256(1 days).div(treasury.minRentalDivisor());
+        require(_timeHeldLimit == 0 || _timeHeldLimit >= timeHeld[_tokenId][msg.sender].add(_minRentalTime), "Limit too low"); 
 
         // process deposit, if sent
         if (msg.value > 0){
@@ -501,9 +502,10 @@ contract RCMarketXdaiV1 is ERC721Full {
     /// @notice to change your timeHeldLimit without having to re-rent
     function updateTimeHeldLimit(uint256 _timeHeldLimit, uint256 _tokenId) public checkState(States.OPEN) tokenExists(_tokenId) {
         _collectRent(_tokenId);
-        require(_timeHeldLimit == 0 || _timeHeldLimit >= timeHeld[_tokenId][msg.sender].add(600), "Ten mins min");
+        uint256 _minRentalTime = uint256(1 days).div(treasury.minRentalDivisor());
+        require(_timeHeldLimit == 0 || _timeHeldLimit >= timeHeld[_tokenId][msg.sender].add(_minRentalTime), "Limit too low");
         if (_timeHeldLimit == 0) {
-                _timeHeldLimit = MAX_UINT256; // so 0 defaults to no limit
+            _timeHeldLimit = MAX_UINT256; // so 0 defaults to no limit
         } 
         timeHeldLimit[_tokenId][msg.sender] = _timeHeldLimit;
     }

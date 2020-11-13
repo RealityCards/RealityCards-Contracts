@@ -593,6 +593,50 @@ it('test exit- more than ten mins', async () => {
         await withdrawDeposit(1000,user1);
     });
 
+    it('test exit- reduce rental time to one min', async () => {
+        // check function is owned to change limit
+        await shouldFail.reverting.withMessage(treasury.updateMinRental(12,{from: user1}), "caller is not the owner");
+        // change to one min
+        await treasury.updateMinRental(1440);
+        await depositDai(144,user0);
+        await depositDai(144,user1);
+        await newRental(10,0,user0);
+        await newRental(144,0,user1);
+        await time.increase(time.duration.seconds(30)); 
+        await realitycards.collectRentAllTokens();
+        // user 1 should be owner, held for 30 secs
+        var owner = await realitycards.ownerOf.call(0);
+        assert.equal(owner, user1);
+        var timeHeld = await realitycards.timeHeld.call(0, user1);
+        var timeHeldShouldBe = time.duration.seconds(30);
+        var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
+        assert.isBelow(difference,5);
+        // call exit, user 1 should still own
+        await realitycards.exit(0,{ from: user1 });
+        var owner = await realitycards.ownerOf.call(0);
+        assert.equal(owner, user1);
+        // increase by 90 secs, user 0 will own and u1 should have ten minutes ownership time
+        await time.increase(time.duration.seconds(90)); 
+        await realitycards.collectRentAllTokens();
+        var owner = await realitycards.ownerOf.call(0);
+        assert.equal(owner, user0);
+        var timeHeld = await realitycards.timeHeld.call(0, user1);
+        var timeHeldShouldBe = time.duration.minutes(1);
+        var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
+        assert.isBelow(difference/timeHeldShouldBe,0.01);
+        // to be safe, chcek that u0 has owned for 1 min
+        await realitycards.collectRentAllTokens();
+        var timeHeld = await realitycards.timeHeld.call(0, user0);
+        var timeHeldShouldBe = time.duration.minutes(1);
+        var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
+        // 0.1 cos we're dealing with individual seconds and indivdiual calls take a few seconds so 
+        // more time has elapsed than the 90 that was set above
+        assert.isBelow(difference/timeHeldShouldBe,0.1); 
+        // withdraw for next test
+        await withdrawDeposit(1000,user0);
+        // await withdrawDeposit(1000,user1);
+    });
+
     it('test exitAll', async () => {
         // setup
         await depositDai(144,user0);
@@ -2744,7 +2788,7 @@ it('test timeHeldLimit', async() => {
     await depositDai(144,user0);
     await depositDai(144,user1);
     // first: check timeHeldLimit cant be below ten mins
-    await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('1', 'ether'),'500',0,{ from: user0}), "Ten mins min");
+    await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('1', 'ether'),'500',0,{ from: user0}), "Limit too low");
     // second: limit is below rent owed and below total deposit
     // rent a card for one day only
     await newRentalCustomTimeLimit(1,1,0,user0);
@@ -2788,6 +2832,22 @@ it('test timeHeldLimit', async() => {
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
+});
+
+it('test timeHeldLimit failures both newRental and updateTimeHeldLimit', async() => {
+    await depositDai(144,user0);
+    await depositDai(144,user1);
+    // first: check timeHeldLimit cant be below ten mins
+    await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('1', 'ether'),'500',0,{ from: user0}), "Limit too low");
+    // change divisor and check it still gives the same error, set to 1 min and try 50 seconds
+    await treasury.updateMinRental(1440);
+    await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('1', 'ether'),'50',0,{ from: user0}), "Limit too low");
+    // but 70 second should work
+    await realitycards.newRental(web3.utils.toWei('1', 'ether'),'70',0);
+    // same thing with updateeTimeHeld
+    await shouldFail.reverting.withMessage(realitycards.updateTimeHeldLimit(50,0,{ from: user0}), "Limit too low");
+    await withdrawDeposit(1000,user0);
+    await withdrawDeposit(1000,user1);
 });
 
 it('test winner/withdraw, recreated without exit', async () => {
@@ -2861,7 +2921,7 @@ it('test timeHeldLimit using updateTimeHeldLimit', async() => {
     await depositDai(144,user0);
     await depositDai(144,user1);
     // first: check timeHeldLimit cant be below ten mins
-    await shouldFail.reverting.withMessage(realitycards.updateTimeHeldLimit('500',0,{ from: user0}), "Ten mins min");
+    await shouldFail.reverting.withMessage(realitycards.updateTimeHeldLimit('500',0,{ from: user0}), "Limit too low");
     // second: limit is below rent owed and below total deposit
     // rent a card for one day only
     await newRental(1,0,user0);
