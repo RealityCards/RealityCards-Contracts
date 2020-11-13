@@ -32,7 +32,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     uint256 public constant MAX_UINT256 = 2**256 - 1;
     enum States {CLOSED, OPEN, LOCKED, WITHDRAW}
     States public state; 
-    /// @dev type of event. 0 = classic, 1 = winner takes all, 2 = recipient for each card
+    /// @dev type of event. 0 = classic, 1 = winner takes all
     uint256 public mode;
     /// @dev so the Factory can check its a market
     bool public constant isMarket = true;
@@ -129,7 +129,7 @@ contract RCMarketXdaiV1 is ERC721Full {
         string memory _question, 
         string memory _tokenName
     ) public initializer {
-        assert(_mode < 3);
+        assert(_mode < 2);
         IFactory _factory = IFactory(msg.sender);
         
         // initialiiize!
@@ -166,6 +166,13 @@ contract RCMarketXdaiV1 is ERC721Full {
             affiliateCut = 0;
         }
 
+        // reduce card specifc affiliate cut to zero if zero adddress set
+        for (uint i = 0; i < numberOfTokens; i++) { 
+            if (_cardSpecificAffiliateAddresses[i] == address(0)) {
+                cardSpecificAffiliateCut = 0;
+            }
+        }
+
         // resolution time must not be less than locking time, and not greater by more than one week
         require(marketLockingTime + 1 weeks > oracleResolutionTime && marketLockingTime <= oracleResolutionTime, "Invalid timestamps" );
         
@@ -187,14 +194,8 @@ contract RCMarketXdaiV1 is ERC721Full {
         }
 
         // if winner takes all mode, set winnerCut to max
-        // if card specific recipients mode, check _cardSpecificAffiliate array is valid
         if (_mode == 1) {
-            winnerCut = ((uint256(1000).sub(artistCut)).sub(creatorCut)).sub(affiliateCut);
-        } else if (_mode == 2) {
-            assert(_tokenURIs.length == _cardSpecificAffiliateAddresses.length);
-            for (uint i = 0; i < numberOfTokens; i++) { 
-                assert(_cardSpecificAffiliateAddresses[0] != address(0));
-            }
+            winnerCut = (((uint256(1000).sub(artistCut)).sub(creatorCut)).sub(affiliateCut)).sub(cardSpecificAffiliateCut);
         } 
         
         // create the question on Realitio
@@ -330,11 +331,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     /// @notice pays winnings
     function _payoutWinnings() internal {
         uint256 _winningsToTransfer;
-        uint256 _remainingDistribution = (((uint256(1000).sub(artistCut)).sub(affiliateCut)).sub(winnerCut)).sub(creatorCut); 
-        // if mode 2, also deduct card specific pot distribution
-        if (mode == 2) {
-            _remainingDistribution = _remainingDistribution.sub(cardSpecificAffiliateCut); 
-        } 
+        uint256 _remainingDistribution = ((((uint256(1000).sub(artistCut)).sub(affiliateCut))).sub(cardSpecificAffiliateCut).sub(winnerCut)).sub(creatorCut); 
         // calculate longest owner's extra winnings, if relevant
         if (longestOwner[winningOutcome] == msg.sender && winnerCut > 0){
             _winningsToTransfer = (totalCollected.mul(winnerCut)).div(1000);
@@ -353,10 +350,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     /// @notice returns all funds to users in case of invalid outcome
     function _returnRent() internal {
         // deduct artist share and card specific share if relevant but NOT market creator share or winner's share (no winner, market creator does not deserve)
-        uint256 _remainingDistribution = (uint256(1000).sub(artistCut)).sub(affiliateCut);
-        if (mode == 2) {
-            _remainingDistribution = _remainingDistribution.sub(cardSpecificAffiliateCut);
-        }
+        uint256 _remainingDistribution = ((uint256(1000).sub(artistCut)).sub(affiliateCut)).sub(cardSpecificAffiliateCut);  
         uint256 _rentCollected = collectedPerUser[msg.sender];
         require(_rentCollected > 0, "Paid no rent");
         uint256 _rentCollectedAdjusted = (_rentCollected.mul(_remainingDistribution)).div(1000);
@@ -373,11 +367,11 @@ contract RCMarketXdaiV1 is ERC721Full {
         require(!artistPaid, "Artist already paid");
         artistPaid = true;
         if (artistCut > 0) {
-            uint256 _artistsCut = (totalCollected.mul(artistCut)).div(1000);
-            if (_artistsCut > 0) {
-                assert(treasury.payout(artistAddress, _artistsCut));
+            uint256 _artistPayment = (totalCollected.mul(artistCut)).div(1000);
+            if (_artistPayment > 0) {
+                assert(treasury.payout(artistAddress, _artistPayment));
             }
-            emit LogArtistPaid(artistAddress, _artistsCut);
+            emit LogArtistPaid(artistAddress, _artistPayment);
         }
     }
 
@@ -386,26 +380,25 @@ contract RCMarketXdaiV1 is ERC721Full {
         require(!affiliatePaid, "Affiliate already paid");
         affiliatePaid = true;
         if (affiliateCut > 0) {
-            uint256 _affiliateCut = (totalCollected.mul(affiliateCut)).div(1000);
-            if (_affiliateCut > 0) {
-                assert(treasury.payout(affiliateAddress, _affiliateCut));
+            uint256 _affiliatePayment = (totalCollected.mul(affiliateCut)).div(1000);
+            if (_affiliatePayment > 0) {
+                assert(treasury.payout(affiliateAddress, _affiliatePayment));
             }
-            emit LogAffiliatePaid(affiliateAddress, _affiliateCut);
+            emit LogAffiliatePaid(affiliateAddress, _affiliatePayment);
         }
     }
 
     /// @notice pay card recipients
     function payCardSpecificAffiliate() public checkState(States.WITHDRAW) {
-        require(mode == 2, "Wrong mode");
         require(!cardSpecificAffiliatePaid, "Card recipients already paid");
         cardSpecificAffiliatePaid = true;
         if (cardSpecificAffiliateCut > 0) {
             for (uint i = 0; i < numberOfTokens; i++) {
-                uint256 _cardSpecificAffiliateCut = (collectedPerToken[i].mul(cardSpecificAffiliateCut)).div(1000);
-                if (_cardSpecificAffiliateCut > 0) {
-                    assert(treasury.payout(cardSpecificAffiliateAddresses[i], _cardSpecificAffiliateCut));
+                uint256 _cardSpecificAffiliatePayment = (collectedPerToken[i].mul(cardSpecificAffiliateCut)).div(1000);
+                if (_cardSpecificAffiliatePayment > 0) {
+                    assert(treasury.payout(cardSpecificAffiliateAddresses[i], _cardSpecificAffiliatePayment));
                 }
-                emit LogCardRecipientPaid(cardSpecificAffiliateAddresses[i], _cardSpecificAffiliateCut);
+                emit LogCardRecipientPaid(cardSpecificAffiliateAddresses[i], _cardSpecificAffiliatePayment);
             }
         }
     }

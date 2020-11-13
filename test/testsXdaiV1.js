@@ -33,7 +33,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
   user7 = accounts[7];
   user8 = accounts[8];
   andrewsAddress = accounts[9];
-  var cardRecipients = [user5,user6,user7,user8,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0];
+  var cardRecipients = ['0x0000000000000000000000000000000000000000',user6,user7,user8,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0];
 
   beforeEach(async () => {
     var latestTime = await time.latest();
@@ -113,6 +113,31 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     return realitycards2;
   }
 
+  async function createMarketWithCardAffiliates() {
+    var latestTime = await time.latest();
+    var oneYear = new BN('31104000');
+    var oneYearInTheFuture = oneYear.add(latestTime);
+    var marketLockingTime = oneYearInTheFuture; 
+    var oracleResolutionTime = oneYearInTheFuture;
+    var timestamps = [0,marketLockingTime,oracleResolutionTime];
+    var cardRecipients = [user5,user6,user7,user8,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0];
+    var artistAddress = '0x0000000000000000000000000000000000000000';
+    var affiliateAddress = '0x0000000000000000000000000000000000000000';
+    await rcfactory.createMarket(
+        0,
+        '0x0',
+        timestamps,
+        tokenURIs,
+        cardRecipients,
+        artistAddress,
+        affiliateAddress,
+        question,
+        tokenName,
+      );
+    var marketAddress = await rcfactory.getMostRecentMarket.call(0);
+    realitycards2 = await RCMarket.at(marketAddress);
+    return realitycards2;
+  }
 
   async function createMarketCustomModeWithArtist(mode) {
     var latestTime = await time.latest();
@@ -135,6 +160,32 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         tokenName,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(mode);
+    realitycards2 = await RCMarket.at(marketAddress);
+    return realitycards2;
+  }
+
+  async function createMarketWithArtistAndCardAffiliates() {
+    var latestTime = await time.latest();
+    var oneYear = new BN('31104000');
+    var oneYearInTheFuture = oneYear.add(latestTime);
+    var marketLockingTime = oneYearInTheFuture; 
+    var oracleResolutionTime = oneYearInTheFuture;
+    var timestamps = [0,marketLockingTime,oracleResolutionTime];
+    var artistAddress = user8;
+    var affiliateAddress = user7;
+    var cardRecipients = [user5,user6,user7,user8,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0];
+    await rcfactory.createMarket(
+        0,
+        '0x0',
+        timestamps,
+        tokenURIs,
+        cardRecipients,
+        artistAddress,
+        affiliateAddress,
+        question,
+        tokenName,
+      );
+    var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
     return realitycards2;
   }
@@ -1054,8 +1105,8 @@ it('test winner/withdraw mode 1- with artist/creator cut', async () => {
     await withdrawDeposit(1000,user2);
 });
 
-it('test winner/withdraw mode 2- zero artist/creator cut', async () => {
-    var realitycards2 = await createMarketCustomMode(2);
+it('test winner/withdraw mode 0- with card affiliate but zero artist/creator cut', async () => {
+    var realitycards2 = await createMarketWithCardAffiliates();
     /////// SETUP //////
     await treasury.send(web3.utils.toWei('1000', 'ether')); // sneaky direct send instead of deposit
     await depositDai(1000,user1);
@@ -1150,10 +1201,10 @@ it('test winner/withdraw mode 2- zero artist/creator cut', async () => {
     await withdrawDeposit(1000,user7);
     });
 
-it('test winner/withdraw mode 2- with artist/creator cut', async () => {
+it('test winner/withdraw mode 0- with artist/creator/card affiliate cut', async () => {
     // 6% artist 4% creator
     await rcfactory.updatePotDistribution(60,0,0,40,100);
-    var realitycards2 = await createMarketCustomModeWithArtist(2);
+    var realitycards2 = await createMarketWithArtistAndCardAffiliates();
     /////// SETUP //////
     // var amount = web3.utils.toWei('144', 'ether')
     // var price = web3.utils.toWei('1', 'ether')
@@ -1265,10 +1316,10 @@ it('test winner/withdraw mode 2- with artist/creator cut', async () => {
     await withdrawDeposit(1000,user7);
 });
 
-it('test winner/withdraw mode 2- with artist/winner/creator cut', async () => {
+it('test winner/withdraw mode 0- with artist/winner/creator/card affiliate cut', async () => {
     // 6% artist 4% creator
     await rcfactory.updatePotDistribution(60,0,100,40,100);
-    var realitycards2 = await createMarketCustomModeWithArtist(2);
+    var realitycards2 = await createMarketWithArtistAndCardAffiliates();
     /////// SETUP //////
     // var amount = web3.utils.toWei('144', 'ether')
     // var price = web3.utils.toWei('1', 'ether')
@@ -1885,9 +1936,9 @@ it('test withdraw- invalid mode 1- zero artist/creator cut', async () => {
         await withdrawDeposit(1000,user2);
         });
 
-it('test withdraw- invalid mode 2- zero artist/creator cut', async () => {
+it('test withdraw- invalid mode 0- zero artist/creator cut', async () => {
     // with stands 10% payout to dudes
-    var realitycards2 = await createMarketCustomMode(2);
+    var realitycards2 = await createMarketWithCardAffiliates(0);
     /////// SETUP //////
     await treasury.send(web3.utils.toWei('1000', 'ether')); // sneaky direct send instead of deposit
     await depositDai(1000,user1);
@@ -1983,11 +2034,11 @@ it('test withdraw- invalid mode 2- zero artist/creator cut', async () => {
     await withdrawDeposit(1000,user7);
     });
 
-it('test withdraw- invalid mode 2- with artist/creator cut', async () => {
+it('test withdraw- invalid mode 0- with artist/creator/card affiliate cut', async () => {
     /////// SETUP //////
     // 6% artist 4% creator
     await rcfactory.updatePotDistribution(50,0,13,20,100);
-    var realitycards2 = await createMarketCustomModeWithArtist(2);
+    var realitycards2 = await createMarketWithArtistAndCardAffiliates(0);
     await treasury.send(web3.utils.toWei('1000', 'ether')); // sneaky direct send instead of deposit
     await depositDai(1000,user1);
     await depositDai(1000,user2);
