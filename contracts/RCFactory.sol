@@ -1,8 +1,8 @@
 pragma solidity 0.5.13;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts-ethereum-package/contracts/ownership/Ownable.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@nomiclabs/buidler/console.sol";
 import './lib/CloneFactory.sol';
 import "./interfaces/IRealitio.sol";
@@ -28,14 +28,14 @@ contract RCFactory is Ownable, CloneFactory {
     // reference contract
     address public referenceContractAddresses; 
     bool public referenceContractSet = false;
-    // market addresses
+    // market addresses, mode // address
     mapping(uint256 => address[]) public marketAddresses;
-    mapping(address => bool) public mappingOfMarkets; 
+    mapping(address => bool) public mappingOfMarkets; // not used for anything 
 
     ///// MARKET PARAMETERS /////
     uint32 public realitioTimeout;
     address public arbitrator;
-    // artist / affiliate / winner / market creator / card specific
+    // artist / winner / market creator / affiliaite / card specific affiliate
     uint256[5] public potDistribution;
 
     ///// MARKET CREATION /////
@@ -53,11 +53,9 @@ contract RCFactory is Ownable, CloneFactory {
     ////////////////////////////////////
 
     /// @dev Treasury must be deployed before Factory
-    /// @dev Realitio address is passed for testing on mock realitio contract
     constructor(ITreasury _treasuryAddress, IRealitio _realitio) public 
     {
         treasury = _treasuryAddress;
-        Ownable.initialize(msg.sender);
 
         // tell Treasury about the Factory
         assert(treasury.setFactoryAddress());
@@ -77,12 +75,12 @@ contract RCFactory is Ownable, CloneFactory {
     /// @notice set the reference contract for the contract logic
     function setReferenceContractAddress(address _referenceContractAddress) public onlyOwner {
         require(!referenceContractSet, "Reference already set");
-        // check its an RC contract by reading the one constant
+        referenceContractSet = true;
+        // check it's an RC contract
         IRCMarketXdaiV1 newContractVariable = IRCMarketXdaiV1(_referenceContractAddress);
         assert(newContractVariable.isMarket());
         // set 
         referenceContractAddresses = _referenceContractAddress;
-        referenceContractSet = true;
     }
 
     ////////////////////////////////////
