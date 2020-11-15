@@ -108,7 +108,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     address public marketCreatorAddress;
     uint256 public creatorCut;
     bool public creatorPaid = false;
-    /// @dev card speciic recipients for mode 2
+    /// @dev card speciic recipients f
     address[] public cardSpecificAffiliateAddresses;
     uint256 public cardSpecificAffiliateCut;
     bool public cardSpecificAffiliatePaid = false;
@@ -129,7 +129,7 @@ contract RCMarketXdaiV1 is ERC721Full {
         string memory _question, 
         string memory _tokenName
     ) public initializer {
-        assert(_mode < 2);
+        assert(_mode <= 2);
         IFactory _factory = IFactory(msg.sender);
         
         // initialiiize!
@@ -461,8 +461,14 @@ contract RCMarketXdaiV1 is ERC721Full {
         }
 
         address _currentOwner = ownerOf(_tokenId);
+
+        // if hot potato mode, pay current owner
+        if (mode == 2) {
+            assert(treasury.payCurrentOwner(msg.sender, _currentOwner, price[_tokenId]));
+        }
+
         // allocate 10mins deposit (or increase if same owner)
-        assert(treasury.allocateCardSpecificDeposit(msg.sender,_currentOwner,_tokenId,_newPrice));
+        assert(treasury.allocateCardSpecificDeposit(msg.sender, _currentOwner, _tokenId,_newPrice));
 
         if (_currentOwner == msg.sender) { 
             // bought by current owner- just change price and limit

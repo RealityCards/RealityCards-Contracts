@@ -631,7 +631,7 @@ it('test exit- more than ten mins', async () => {
         var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
         // 0.1 cos we're dealing with individual seconds and indivdiual calls take a few seconds so 
         // more time has elapsed than the 90 that was set above
-        assert.isBelow(difference/timeHeldShouldBe,0.1); 
+        assert.isBelow(difference/timeHeldShouldBe,0.15); 
         // withdraw for next test
         await withdrawDeposit(1000,user0);
         // await withdrawDeposit(1000,user1);

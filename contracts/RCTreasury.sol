@@ -122,15 +122,15 @@ contract RCTreasury is Ownable {
     ////////////////////////////////////
     /// only markets can call these functions
 
-    /// @dev moves ten minutes' deposit into a seperate pot
-    function allocateCardSpecificDeposit(address _newOwner, address _previousOwner, uint256 _tokenId, uint256 _price) external balancedBooks() onlyMarkets() returns(bool) {
-        uint256 _depositToAllocate = _price.div(minRentalDivisor);
+    /// @dev moves the amount required for minimum rental duration to seperate pot
+    function allocateCardSpecificDeposit(address _newOwner, address _currentOwner, uint256 _tokenId, uint256 _newPrice) external balancedBooks() onlyMarkets() returns(bool) {
+        uint256 _depositToAllocate = _newPrice.div(minRentalDivisor);
         require(deposits[_newOwner] >= _depositToAllocate, "Insufficient deposit");
 
         // first, unallocate card specific deposit of previous owner
-        if (cardSpecificDeposits[msg.sender][_previousOwner][_tokenId] > 0) {
-            deposits[_previousOwner] = deposits[_previousOwner].add(cardSpecificDeposits[msg.sender][_previousOwner][_tokenId]);
-            cardSpecificDeposits[msg.sender][_previousOwner][_tokenId] = 0;
+        if (cardSpecificDeposits[msg.sender][_currentOwner][_tokenId] > 0) {
+            deposits[_currentOwner] = deposits[_currentOwner].add(cardSpecificDeposits[msg.sender][_currentOwner][_tokenId]);
+            cardSpecificDeposits[msg.sender][_currentOwner][_tokenId] = 0;
         }
 
         // allocate card specific deposit for new owner
@@ -138,6 +138,15 @@ contract RCTreasury is Ownable {
         assert(cardSpecificDeposits[msg.sender][_newOwner][_tokenId] == 0);
         deposits[_newOwner] = deposits[_newOwner].sub(_depositToAllocate);
         cardSpecificDeposits[msg.sender][_newOwner][_tokenId] = cardSpecificDeposits[msg.sender][_newOwner][_tokenId].add(_depositToAllocate);
+        return true;
+    }
+
+    /// @dev new owner pays current owner one day's rent for hot potato mode
+    function payCurrentOwner(address _newOwner, address _currentOwner, uint256 _oldPrice) external balancedBooks() onlyMarkets() returns(bool) {
+        require(deposits[_newOwner] >= _oldPrice, "Insufficient deposit");
+
+        deposits[_newOwner] = deposits[_newOwner].sub(_oldPrice);
+        deposits[_currentOwner] = deposits[_currentOwner].add(_oldPrice);
         return true;
     }
 

@@ -9,6 +9,7 @@ interface ITreasury
     function deposits(address) external returns (uint256);
     function setFactoryAddress() external returns(bool);
     function allocateCardSpecificDeposit(address,address,uint256,uint256) external returns (bool);
+    function payCurrentOwner(address,address,uint256) external returns (bool);
     function cardSpecificDeposits(address,address,uint256) external returns(uint256);
     function deposit(address) external payable returns (bool);
     function sponsor() external payable returns (bool);
