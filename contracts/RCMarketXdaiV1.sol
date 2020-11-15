@@ -461,12 +461,6 @@ contract RCMarketXdaiV1 is ERC721Full {
         }
 
         address _currentOwner = ownerOf(_tokenId);
-
-        // if hot potato mode, pay current owner
-        if (mode == 2) {
-            assert(treasury.payCurrentOwner(msg.sender, _currentOwner, price[_tokenId]));
-        }
-
         // allocate 10mins deposit (or increase if same owner)
         assert(treasury.allocateCardSpecificDeposit(msg.sender, _currentOwner, _tokenId,_newPrice));
 
@@ -475,6 +469,10 @@ contract RCMarketXdaiV1 is ERC721Full {
             price[_tokenId] = _newPrice;
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
         } else {   
+             // if hot potato mode, pay current owner
+            if (mode == 2) {
+                assert(treasury.payCurrentOwner(msg.sender, _currentOwner, price[_tokenId]));
+            }
             // update internals
             currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].add(1); 
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
