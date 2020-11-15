@@ -714,6 +714,16 @@ contract RCMarketXdaiV1 is ERC721Full {
         _processNFTsAfterEvent();
     }
 
+    // /// @dev allows governance to determine outcome, if not already resolved
+    // function amicableResolution() external {
+    //     require(state != States.WITHDRAW, "Too late");
+    //     require(treasury.amicableResolution(address(this)), "Denied");
+    //     // collectRentAllTokens();
+    //     winningOutcome = treasury.winningOutcome(address(this));
+    //     state = States.WITHDRAW;
+    //     _processNFTsAfterEvent();
+    // }
+
     /// @dev transfers only possible in withdraw state, so override the existing functions
     function transferFrom(address from, address to, uint256 tokenId) public checkState(States.WITHDRAW) onlyTokenOwner(tokenId) {
         _transferFrom(from, to, tokenId);

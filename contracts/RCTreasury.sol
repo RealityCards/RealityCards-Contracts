@@ -38,6 +38,16 @@ contract RCTreasury is Ownable {
     /// @dev max deposit balance, to minimise funds at risk
     uint256 public maxContractBalance = 1000000 ether; // default 1m
 
+    ///// EMERGENCY POWERS /////
+    /// @dev true = no new rentals or deposits for any market
+    bool public globalPause = false;
+    /// @dev true = new new rentals for this market
+    mapping (address => bool) public marketPaused;
+    /// @dev amicable resolution- set outcome for unresolved markets. 
+    mapping (address => bool) public oracleOverride;
+    mapping (address => uint256) public winningOutcome;
+
+
     ////////////////////////////////////
     //////// EVENTS ////////////////////
     ////////////////////////////////////
@@ -93,12 +103,30 @@ contract RCTreasury is Ownable {
     }
 
     ////////////////////////////////////
+    ///////// EMERGENCY POWERS /////////
+    ////////////////////////////////////
+
+    function setGlobalPause() public onlyOwner() {
+        globalPause = globalPause ? false : true;
+    }
+
+    function pauseMarket(address _market) public onlyOwner() {
+        marketPaused[_market] = marketPaused[_market] ? false : true;
+    }
+
+    function amicableResolution(address _market, uint256 _winningOutcome) public onlyOwner() {
+        oracleOverride[_market] = true;
+        winningOutcome[_market] = _winningOutcome;
+    }
+
+    ////////////////////////////////////
     /// DEPOSIT & WITHDRAW FUNCTIONS ///
     ////////////////////////////////////
 
     /// @dev it is passed the user instead of using msg.value because might be called
     /// @dev ... via contract (newRental function, specifically) instead of direct
     function deposit(address _user) public payable balancedBooks() returns(bool) {
+        require(!globalPause, "Deposits are disabled");
         require(msg.value > 0, "Must deposit something");
         require(address(this).balance <= maxContractBalance, "Limit hit");
         deposits[_user] = deposits[_user].add(msg.value);
@@ -132,6 +160,7 @@ contract RCTreasury is Ownable {
     /// @dev if current owner rents again, _newOwner and _currentOwner will be the same this is fine: 
     /// @dev ... card specific deposit will just be increased 
     function allocateCardSpecificDeposit(address _newOwner, address _currentOwner, uint256 _tokenId, uint256 _newPrice) external balancedBooks() onlyMarkets() returns(bool) {
+        require(!globalPause, "Rentals are disabled");
         uint256 _depositToAllocate = _newPrice.div(minRentalDivisor);
         require(deposits[_newOwner] >= _depositToAllocate, "Insufficient deposit");
 
