@@ -32,7 +32,7 @@ contract RCFactory is Ownable, CloneFactory {
     mapping(uint256 => address[]) public marketAddresses;
     mapping(address => bool) public mappingOfMarkets; // not used for anything 
 
-    ///// MARKET PARAMETERS /////
+    ///// ADJUSTABLE PARAMETERS /////
     uint32 public realitioTimeout;
     address public arbitrator;
     // artist / winner / market creator / affiliaite / card specific affiliate
@@ -100,7 +100,7 @@ contract RCFactory is Ownable, CloneFactory {
     }
 
     ////////////////////////////////////
-    /////// MARKET PARAMETERS //////////
+    ////// ADJUSTABLE PARAMETERS ///////
     ////////////////////////////////////
     /// @dev aka governance functions
 
@@ -130,7 +130,6 @@ contract RCFactory is Ownable, CloneFactory {
     /// @notice add or remove an address from market creator whitelist
     function updateMarketCreatorWhitelist(address _marketCreator) public onlyOwner {
         marketCreatorWhitelist[_marketCreator] = marketCreatorWhitelist[_marketCreator] ? false : true;
-
     }
 
     /// @notice allows createMarket to be called by anyone
@@ -149,9 +148,9 @@ contract RCFactory is Ownable, CloneFactory {
         string memory _ipfsHash,
         uint32[] memory _timestamps,
         string[] memory _tokenURIs,
-        address[] memory _cardSpecificAffiliateAddresses,
         address _artistAddress,
         address _affiliateAddress,
+        address[] memory _cardSpecificAffiliateAddresses,
         string memory _realitioQuestion,
         string memory _tokenName
     ) public returns (address)  {

@@ -54,9 +54,9 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         '0x0',
         timestamps,
         tokenURIs,
-        cardRecipients,
         artistAddress,
         affiliateAddress,
+        cardRecipients,
         question,
         tokenName,
       );
@@ -77,9 +77,10 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         0,
         '0x0',
         timestamps,
-        tokenURIs,cardRecipients,
+        tokenURIs,
         artistAddress,
         affiliateAddress,
+        cardRecipients,
         question,
         tokenName,
       );
@@ -102,9 +103,9 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         '0x0',
         timestamps,
         tokenURIs,
-        cardRecipients,
         artistAddress,
         affiliateAddress,
+        cardRecipients,
         question,
         tokenName,
       );
@@ -128,9 +129,9 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         '0x0',
         timestamps,
         tokenURIs,
-        cardRecipients,
         artistAddress,
         affiliateAddress,
+        cardRecipients,
         question,
         tokenName,
       );
@@ -153,9 +154,9 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         '0x0',
         timestamps,
         tokenURIs,
-        cardRecipients,
         artistAddress,
         affiliateAddress,
+        cardRecipients,
         question,
         tokenName,
       );
@@ -179,9 +180,9 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         '0x0',
         timestamps,
         tokenURIs,
-        cardRecipients,
         artistAddress,
         affiliateAddress,
+        cardRecipients,
         question,
         tokenName,
       );
@@ -198,9 +199,10 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         0,
         '0x0',
         timestamps,
-        tokenURIs,cardRecipients,
+        tokenURIs,
         artistAddress,
         affiliateAddress,
+        cardRecipients,
         question,
         tokenName,
       );
@@ -692,7 +694,7 @@ it('test exit- more than ten mins', async () => {
     // user 1 owned for 7 days
     // user 2 owned for 14 days
     ////////////////////////
-    await realitycards.lockMarket(); 
+    await newRental(1,2,user0); // auto locks 
     // // set winner 1
     await realitio.setResult(2);
     await realitycards.determineWinner();
@@ -2549,22 +2551,22 @@ it('check oracleResolutionTime and marketLockingTime expected failures', async (
     var oracleResolutionTime = 69419;
     var marketLockingTime = 69420; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',timestamps, tokenURIs,cardRecipients, artistAddress,affiliateAddress, question,tokenName), "Invalid timestamps");
+    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress,affiliateAddress,cardRecipients, question,tokenName), "Invalid timestamps");
     // resolution time > 1 weeks after locking, expect failure
     var oracleResolutionTime = 604810;
     var marketLockingTime = 0; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',timestamps, tokenURIs,cardRecipients, artistAddress, affiliateAddress, question,tokenName), "Invalid timestamps");
+    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress, affiliateAddress,cardRecipients, question,tokenName), "Invalid timestamps");
     // resolution time < 1 week  after locking, no failure
     var oracleResolutionTime = 604790;
     var marketLockingTime = 0; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await rcfactory.createMarket(0,'0x0',timestamps, tokenURIs,cardRecipients, artistAddress, affiliateAddress, question,tokenName);
+    await rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress, affiliateAddress,cardRecipients, question,tokenName);
     // same time, no failure
     var oracleResolutionTime = 0;
     var marketLockingTime = 0; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await rcfactory.createMarket(0,'0x0',timestamps, tokenURIs,cardRecipients, artistAddress, affiliateAddress, question,tokenName);
+    await rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress, affiliateAddress,cardRecipients, question,tokenName);
   });
 
   it('test longestTimeHeld & longestOwner', async () => {
@@ -2809,6 +2811,7 @@ it('check that non markets cannot call market only functions on Treasury', async
     await shouldFail.reverting.withMessage(treasury.allocateCardSpecificDeposit(user0,user0,0,0), "Not authorised");
     await shouldFail.reverting.withMessage(treasury.payRent(user0,user0,0,0), "Not authorised");
     await shouldFail.reverting.withMessage(treasury.payout(user0,0), "Not authorised");
+    await shouldFail.reverting.withMessage(treasury.payCurrentOwner(user0,user0,0), "Not authorised");
 });
 
 it('check that sending ether direct is the same as a deposit', async () => {
@@ -3235,7 +3238,7 @@ it('check cant set new reference contract', async () => {
 it('check cant create market without reference contract', async () => {
     var treasury2 = await RCTreasury.new();
     var rcfactory2 = await RCFactory.new(treasury2.address, user0);
-    await shouldFail.reverting.withMessage(rcfactory2.createMarket(0,'0x0',[1,1],['x','x'],[user0,user0],user0,user0,'x','x'),"No reference contract");
+    await shouldFail.reverting.withMessage(rcfactory2.createMarket(0,'0x0',[1,1],['x','x'],user0,user0,[user0,user0],'x','x'),"No reference contract");
 });
 
 it('check cant change factory address on the treasury or deploy new factory to treasury', async () => {
@@ -3255,19 +3258,19 @@ it('test updateMarketCreatorWhitelist and disableMarketCreatorWhitelist', async 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
     var artistAddress = user8;
     var affiliateAddress = user8;
-    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,cardRecipients,artistAddress,affiliateAddress,question,tokenName,{from: user1}), "Not approved");
+    await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,tokenName,{from: user1}), "Not approved");
     // first check that only owner can call
     await shouldFail.reverting.withMessage(rcfactory.updateMarketCreatorWhitelist(user1,{from: user1}), "caller is not the owner");
     // add user1 to whitelist 
     await rcfactory.updateMarketCreatorWhitelist(user1);
     //try again, should work
-    await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,cardRecipients,artistAddress,affiliateAddress,question,tokenName,{from: user1});
+    await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,tokenName,{from: user1});
     // remove them, should fail again
     await rcfactory.updateMarketCreatorWhitelist(user1);
     await shouldFail.reverting.withMessage(rcfactory.updateMarketCreatorWhitelist(user1,{from: user1}), "caller is not the owner");
     // disable whitelist, should work
     await rcfactory.disableMarketCreatorWhitelist();
-    await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,cardRecipients,artistAddress,affiliateAddress,question,tokenName,{from: user1});
+    await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,tokenName,{from: user1});
     // re-enable whitelist, should not work again
     await rcfactory.disableMarketCreatorWhitelist();
     await shouldFail.reverting.withMessage(rcfactory.updateMarketCreatorWhitelist(user1,{from: user1}), "caller is not the owner"); 
@@ -3343,6 +3346,28 @@ it('test hot potato mode fundamentals', async () => {
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
   });
+
+it('test auto lock', async () => {
+    await depositDai(1000,user0);
+    await newRental(1,0,user0);
+    // check state 1
+    var state = await realitycards.state.call();
+    assert.equal(1,state);
+    // increment 11 months, rent, should be state 1 still
+    await time.increase(time.duration.weeks(51));
+    await newRental(2,0,user0);
+    // check state 1
+    var state = await realitycards.state.call();
+    assert.equal(1,state);
+    // increment 2 months, rent, should be state 2 still
+    await time.increase(time.duration.weeks(2));
+    await newRental(3,0,user0);
+    // check state 1
+    var state = await realitycards.state.call();
+    assert.equal(2,state);
+    // withdraw for next test
+    await withdrawDeposit(1000,user0);
+});
 
 });
 

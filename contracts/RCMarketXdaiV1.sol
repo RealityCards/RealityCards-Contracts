@@ -22,9 +22,6 @@ contract RCMarketXdaiV1 is ERC721Full {
     ///// CONTRACT SETUP /////
     /// @dev = how many outcomes/teams/NFTs etc 
     uint256 public numberOfTokens;
-    /// @dev counts how many NFTs have been minted 
-    /// @dev when nftMintCount = numberOfTokens, increment state
-    uint256 public nftMintCount;
     /// @dev the question ID of the question on realitio
     bytes32 public questionId;
     /// @dev only for _revertToPreviousOwner to prevent gas limits
@@ -32,7 +29,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     uint256 public constant MAX_UINT256 = 2**256 - 1;
     enum States {CLOSED, OPEN, LOCKED, WITHDRAW}
     States public state; 
-    /// @dev type of event. 0 = classic, 1 = winner takes all
+    /// @dev type of event. 0 = classic, 1 = winner takes all, 2 = hot potato 
     uint256 public mode;
     /// @dev so the Factory can check its a market
     bool public constant isMarket = true;
@@ -43,7 +40,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     ITreasury public treasury;
 
     ///// PRICE, DEPOSITS, RENT /////
-    /// @dev in attodai (so $100 = 100000000000000000000)
+    /// @dev in attodai (so 100xdai = 100000000000000000000)
     mapping (uint256 => uint256) public price; 
     /// @dev keeps track of all the rent paid by each user. So that it can be returned in case of an invalid market outcome.
     mapping (address => uint256) public collectedPerUser;
@@ -64,9 +61,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     mapping (uint256 => uint256) public totalTimeHeld; 
     /// @dev used to determine the rent due. Rent is due for the period (now - timeLastCollected), at which point timeLastCollected is set to now.
     mapping (uint256 => uint256) public timeLastCollected; 
-    /// @dev when a token was bought. Used to enforce minimum of one hour rental, also used in front end. Rent collection does not need this, only needs timeLastCollected.
-    mapping (uint256 => uint256) public timeAcquired; 
-     /// @dev to track the max timeheld of each token (for giving NFT to winner)
+    /// @dev to track the max timeheld of each token (for giving NFT to winner)
     mapping (uint256 => uint256) public longestTimeHeld;
     /// @dev to track who has owned it the most (for giving NFT to winner)
     mapping (uint256 => address) public longestOwner;
@@ -82,8 +77,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     struct rental { address owner;
                     uint256 price; }
 
-    ///// TIMESTAMPS /////
-    uint256 public winningOutcome; 
+    ///// TIMESTAMPS ///// 
     //// @dev when the market opens 
     uint32 public marketOpeningTime; 
     //// @dev when the market locks 
@@ -93,6 +87,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     /// @dev prevent users withdrawing twice
 
     ///// PAYOUT VARIABLES /////
+    uint256 public winningOutcome;
     mapping (address => bool) public userAlreadyWithdrawn;
     /// @dev the artist
     address public artistAddress;
@@ -108,7 +103,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     address public marketCreatorAddress;
     uint256 public creatorCut;
     bool public creatorPaid = false;
-    /// @dev card speciic recipients f
+    /// @dev card specific recipients
     address[] public cardSpecificAffiliateAddresses;
     uint256 public cardSpecificAffiliateCut;
     bool public cardSpecificAffiliatePaid = false;
@@ -169,9 +164,16 @@ contract RCMarketXdaiV1 is ERC721Full {
         // reduce card specifc affiliate cut to zero if zero adddress set
         for (uint i = 0; i < numberOfTokens; i++) { 
             if (_cardSpecificAffiliateAddresses[i] == address(0)) {
-                cardSpecificAffiliateCut = 0;
+                if (cardSpecificAffiliateCut != 0) {
+                    cardSpecificAffiliateCut = 0;
+                }
             }
         }
+
+        // if winner takes all mode, set winnerCut to max
+        if (_mode == 1) {
+            winnerCut = (((uint256(1000).sub(artistCut)).sub(creatorCut)).sub(affiliateCut)).sub(cardSpecificAffiliateCut);
+        } 
 
         // resolution time must not be less than locking time, and not greater by more than one week
         require(marketLockingTime + 1 weeks > oracleResolutionTime && marketLockingTime <= oracleResolutionTime, "Invalid timestamps" );
@@ -192,11 +194,6 @@ contract RCMarketXdaiV1 is ERC721Full {
         if (marketOpeningTime <= now) {
             _incrementState();
         }
-
-        // if winner takes all mode, set winnerCut to max
-        if (_mode == 1) {
-            winnerCut = (((uint256(1000).sub(artistCut)).sub(creatorCut)).sub(affiliateCut)).sub(cardSpecificAffiliateCut);
-        } 
         
         // create the question on Realitio
         /// @dev temporarily removing this
@@ -237,11 +234,19 @@ contract RCMarketXdaiV1 is ERC721Full {
     }
 
     /// @dev automatically opens market if appropriate
-    modifier unlock() {
+    modifier autoUnlock() {
         if (marketOpeningTime <= now && state == States.CLOSED) {
             _incrementState();
         }
         _;
+    }
+
+    /// @dev automatically locks market if appropriate
+    modifier autoLock() {
+        _;
+        if (marketLockingTime <= now) {
+            lockMarket();
+        }
     }
 
     /// @notice checks the token exists
@@ -265,6 +270,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     ////////////////////////////////////
     ////// REALITIO CONTRACT CALLS /////
     ////////////////////////////////////
+    /// @dev these functions do not operate effectively currently, as mainnet oracle has yet to be hooked up
 
     /// @notice posts the question to realit.io
     function _postQuestion(uint256 template_id, string memory question, address arbitrator, uint32 timeout, uint32 opening_ts, uint256 nonce) internal returns (bytes32) {
@@ -293,7 +299,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     //// MARKET RESOLUTION FUNCTIONS ///
     ////////////////////////////////////
 
-    /// @notice checks whether the competition has ended (1 hour grace), if so moves to LOCKED state
+    /// @notice checks whether the competition has ended, if so moves to LOCKED state
     /// @dev can be called by anyone 
     /// @dev public because possibly called within newRental
     function lockMarket() public checkState(States.OPEN) {
@@ -312,7 +318,7 @@ contract RCMarketXdaiV1 is ERC721Full {
         winningOutcome = _getWinner();
         _incrementState();
         // transfer NFTs to the longest owners
-        _processNFTsAfterEvent();
+        _processNFTsAfterEvent(); 
         emit LogWinnerKnown(winningOutcome);
     }
 
@@ -446,7 +452,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     }
 
     /// @notice to rent a token
-    function newRental(uint256 _newPrice, uint256 _timeHeldLimit, uint256 _tokenId) public payable unlock() checkState(States.OPEN) tokenExists(_tokenId) {
+    function newRental(uint256 _newPrice, uint256 _timeHeldLimit, uint256 _tokenId) public payable autoUnlock() autoLock() checkState(States.OPEN) tokenExists(_tokenId) {
         require(_newPrice >= price[_tokenId].mul(11).div(10), "Price not 10% higher");
         require(_newPrice >= 1 ether, "Minimum rental 1 Dai");
         collectRentAllTokens();
@@ -477,7 +483,6 @@ contract RCMarketXdaiV1 is ERC721Full {
             currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].add(1); 
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].owner = msg.sender; 
-            timeAcquired[_tokenId] = now;
             // externals
             _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
             emit LogNewRental(msg.sender, _newPrice, _tokenId); 
@@ -497,10 +502,6 @@ contract RCMarketXdaiV1 is ERC721Full {
             exitFlag[msg.sender][_tokenId] = false;
         }
 
-        // lock market automatically if marketLockingTime in the past
-        if (marketLockingTime < now) {
-            lockMarket();
-        } 
     }
 
     /// @notice to change your timeHeldLimit without having to re-rent

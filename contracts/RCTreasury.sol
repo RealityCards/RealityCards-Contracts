@@ -6,7 +6,6 @@ import "@nomiclabs/buidler/console.sol";
 
 /// @title Reality Cards Treasury
 /// @author Andrew Stanger
-/// @dev supports xDai only (aka Ether)
 
 contract RCTreasury is Ownable {
 
@@ -27,11 +26,15 @@ contract RCTreasury is Ownable {
     /// @dev keeps track of rental payments made
     mapping (address => uint256) public marketPot;
     uint256 public totalMarketPots;
-    /// @dev first ten mins of each rental is specific to each Card
+    /// @dev to enforce minimum rental duration, small deposit is allocated to specific Card 
     /// @dev market -> user -> tokenId -> deposit
     mapping (address => mapping (address => mapping (uint256 => uint256))) public cardSpecificDeposits;
-    /// @dev minimum rental duration (1 day in seconds diviser) therefore 24 = 1 hour, 48 = 30 mins
+
+    ///// ADJUSTABLE PARAMETERS /////
+    /// @dev minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
     uint256 public minRentalDivisor = 24*6; // defaults ten mins
+    /// @dev if hot potato mode, how much rent new owner must pay current owner (1 week divisor: i.e. 7 = 1 day, 14 = 12 hours)
+    uint256 public hotPotatoDivisor = 7; // defaults one day
     /// @dev max deposit balance, to minimise funds at risk
     uint256 public maxContractBalance = 1000000 ether; // default 1m
 
@@ -60,7 +63,6 @@ contract RCTreasury is Ownable {
     ////////// INITIALISATION //////////
     ////////////////////////////////////
 
-    /// @dev can never set a new factory address
     function setFactoryAddress() external returns(bool) {
         require(!factoryAddressSet, "Factory already set");
         factoryAddressSet = true;
@@ -80,6 +82,10 @@ contract RCTreasury is Ownable {
 
     function updateMinRental(uint256 _newDivisor) public onlyOwner() {
         minRentalDivisor = _newDivisor;
+    }
+
+    function updateHotPotatoPayment(uint256 _newDivisor) public onlyOwner() {
+        hotPotatoDivisor = _newDivisor;
     }
 
     function updateMaxContractBalance(uint256 _newBalanceLimit) public onlyOwner() {
@@ -123,6 +129,8 @@ contract RCTreasury is Ownable {
     /// only markets can call these functions
 
     /// @dev moves the amount required for minimum rental duration to seperate pot
+    /// @dev if current owner rents again, _newOwner and _currentOwner will be the same this is fine: 
+    /// @dev ... card specific deposit will just be increased 
     function allocateCardSpecificDeposit(address _newOwner, address _currentOwner, uint256 _tokenId, uint256 _newPrice) external balancedBooks() onlyMarkets() returns(bool) {
         uint256 _depositToAllocate = _newPrice.div(minRentalDivisor);
         require(deposits[_newOwner] >= _depositToAllocate, "Insufficient deposit");
@@ -134,25 +142,28 @@ contract RCTreasury is Ownable {
         }
 
         // allocate card specific deposit for new owner
-        // balance should have been cleared out as per the above
-        assert(cardSpecificDeposits[msg.sender][_newOwner][_tokenId] == 0);
         deposits[_newOwner] = deposits[_newOwner].sub(_depositToAllocate);
-        cardSpecificDeposits[msg.sender][_newOwner][_tokenId] = cardSpecificDeposits[msg.sender][_newOwner][_tokenId].add(_depositToAllocate);
+        cardSpecificDeposits[msg.sender][_newOwner][_tokenId] = _depositToAllocate;
         return true;
     }
 
-    /// @dev new owner pays current owner one day's rent for hot potato mode
+    /// @dev new owner pays current owner for hot potato mode
     function payCurrentOwner(address _newOwner, address _currentOwner, uint256 _oldPrice) external balancedBooks() onlyMarkets() returns(bool) {
-        require(deposits[_newOwner] >= _oldPrice, "Insufficient deposit");
+        uint256 _duration = uint256(1 weeks).div(hotPotatoDivisor);
+        uint256 _requiredPayment = (_oldPrice.mul(_duration)).div(uint256(1 days));
+        require(deposits[_newOwner] >= _requiredPayment, "Insufficient deposit (hp)");
 
-        deposits[_newOwner] = deposits[_newOwner].sub(_oldPrice);
-        deposits[_currentOwner] = deposits[_currentOwner].add(_oldPrice);
+        deposits[_newOwner] = deposits[_newOwner].sub(_requiredPayment);
+        deposits[_currentOwner] = deposits[_currentOwner].add(_requiredPayment);
         return true;
     }
 
-    /// @dev a rental payment is equivilent to moving to market pot from user's deposit
+    /// @dev a rental payment is equivalent to moving to market pot from user's deposit, called by _collectRent in the market
+    /// @dev no require statement checking that user has sufficient deposit because _dai should have been reduced to the 
+    /// @dev ... appropriate amount before this function is called (plus, safemath would enforce it anyway). 
     function payRent(address _user, uint256 _dai, uint256 _tokenId, bool _exitFlag) external balancedBooks() onlyMarkets() returns(bool) {
         uint256 _cardSpecificDeposit = cardSpecificDeposits[msg.sender][_user][_tokenId];
+        // exitFlag true = only pay rent up to balance of cardSpecificDeposit and no more
         if (!_exitFlag) {
             if (_cardSpecificDeposit == 0) {
                 // no specific deposit left, take from general deposit 
@@ -166,7 +177,6 @@ contract RCTreasury is Ownable {
                 cardSpecificDeposits[msg.sender][_user][_tokenId] = _cardSpecificDeposit.sub(_dai);
             }
         } else {
-            assert(_dai <= _cardSpecificDeposit); // already enforced by _collectRent function in the market and safeMath
             cardSpecificDeposits[msg.sender][_user][_tokenId] = _cardSpecificDeposit.sub(_dai);
         } 
         
@@ -176,7 +186,7 @@ contract RCTreasury is Ownable {
         return true;
     }
 
-    /// @dev a payout is equivilent to moving from market pot to user's deposit (the opposite of payRent)
+    /// @dev a payout is equivalent to moving from market pot to user's deposit (the opposite of payRent)
     function payout(address _user, uint256 _dai) external balancedBooks() onlyMarkets() returns(bool) {
         marketPot[msg.sender] = marketPot[msg.sender].sub(_dai);
         deposits[_user] = deposits[_user].add(_dai);
