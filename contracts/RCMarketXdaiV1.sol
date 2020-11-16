@@ -36,7 +36,6 @@ contract RCMarketXdaiV1 is ERC721Full {
 
     ///// CONTRACT VARIABLES /////
     IRealitio public realitio;
-    ICash public cash;
     ITreasury public treasury;
 
     ///// PRICE, DEPOSITS, RENT /////
@@ -44,13 +43,10 @@ contract RCMarketXdaiV1 is ERC721Full {
     mapping (uint256 => uint256) public price; 
     /// @dev keeps track of all the rent paid by each user. So that it can be returned in case of an invalid market outcome.
     mapping (address => uint256) public collectedPerUser;
-    /// @dev keeps track of all the rent paid for each token, front end only
+    /// @dev keeps track of all the rent paid for each token, for card specific affiliate payout
     mapping (uint256 => uint256) public collectedPerToken;
     /// @dev an easy way to track the above across all tokens
     uint256 public totalCollected; 
-    /// @dev tells the contract to exit position after min rental duration (or immediately, if already rented for this long)
-    /// @dev user => tokenId => bool
-    mapping (address => mapping (uint256 => bool)) public exitFlag;
  
     ///// TIME /////
     /// @dev how many seconds each user has held each token for, for determining winnings  
@@ -65,6 +61,10 @@ contract RCMarketXdaiV1 is ERC721Full {
     mapping (uint256 => uint256) public longestTimeHeld;
     /// @dev to track who has owned it the most (for giving NFT to winner)
     mapping (uint256 => address) public longestOwner;
+    /// @dev tells the contract to exit position after min rental duration (or immediately, if already rented for this long)
+    /// @dev if not current owner, prevents ownership reverting back to you
+    /// @dev user => tokenId => bool
+    mapping (address => mapping (uint256 => bool)) public exitFlag;
 
     ///// PREVIOUS OWNERS /////
     /// @dev keeps track of all previous owners of a token, including the price, so that if the current owner's deposit runs out,
@@ -84,10 +84,10 @@ contract RCMarketXdaiV1 is ERC721Full {
     uint32 public marketLockingTime; 
     //// @dev when the question can be answered on realitio
     uint32 public oracleResolutionTime;
-    /// @dev prevent users withdrawing twice
 
     ///// PAYOUT VARIABLES /////
     uint256 public winningOutcome;
+    /// @dev prevent users withdrawing twice
     mapping (address => bool) public userAlreadyWithdrawn;
     /// @dev the artist
     address public artistAddress;
@@ -111,7 +111,16 @@ contract RCMarketXdaiV1 is ERC721Full {
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
     ////////////////////////////////////
-
+    
+    /// @param _mode 0 = normal, 1 = winner takes all, 2 = hot potato
+    /// @param _timestamps for market opening, locking, and oracle resolution
+    /// @param _tokenURIs NFT metadata
+    /// @param _artistAddress where to send artist's cut, if any
+    /// @param _affiliateAddress where to send affiliate's cut, if any
+    /// @param _cardSpecificAffiliateAddresses where to send card specific affiliate's cut, if any
+    /// @param _marketCreatorAddress where to send affiliate's cut, if any
+    /// @param _affiliateAddress where to send affiliate's cut, if any
+    /// @param _affiliateAddress where to send affiliate's cut, if any
     function initialize(
         uint256 _mode,
         uint32[] memory _timestamps,
@@ -208,7 +217,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     //////// EVENTS ////////////////////
     ////////////////////////////////////
 
-    event LogNewRental(address indexed newOwner, uint256 indexed newPrice, uint256 indexed tokenId);
+    event LogNewRental(address indexed newOwner, uint256 indexed newPrice, uint256 timeHeldLimit, uint256 indexed tokenId);
     event LogPriceChange(uint256 indexed newPrice, uint256 indexed tokenId);
     event LogForeclosure(address indexed prevOwner, uint256 indexed tokenId);
     event LogRentCollection(uint256 indexed rentCollected, uint256 indexed tokenId, address indexed owner);
@@ -223,6 +232,9 @@ contract RCMarketXdaiV1 is ERC721Full {
     event LogRentReturned(address indexed returnedTo, uint256 indexed amountReturned);
     event LogTimeHeldUpdated(uint256 indexed newTimeHeld, address indexed owner, uint256 indexed tokenId);
     event LogStateChange(uint256 indexed newState);
+    event LogUpdateTimeHeldLimit(address indexed owner, uint256 newLimit, uint256 tokenId);
+    event LogExit(address indexed owner, uint256 tokenId);
+    event LogSponsor(uint256 amount);
 
     ////////////////////////////////////
     /////////// MODIFIERS //////////////
@@ -455,7 +467,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     function newRental(uint256 _newPrice, uint256 _timeHeldLimit, uint256 _tokenId) public payable autoUnlock() autoLock() checkState(States.OPEN) tokenExists(_tokenId) {
         require(_newPrice >= price[_tokenId].mul(11).div(10), "Price not 10% higher");
         require(_newPrice >= 1 ether, "Minimum rental 1 Dai");
-        collectRentAllTokens();
+        _collectRent(_tokenId);
         // below must be after collectRent so timeHeld is up to date
         // _timeHeldLimit = 0 = no limit
         uint256 _minRentalTime = uint256(1 days).div(treasury.minRentalDivisor());
@@ -485,7 +497,7 @@ contract RCMarketXdaiV1 is ERC721Full {
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].owner = msg.sender; 
             // externals
             _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
-            emit LogNewRental(msg.sender, _newPrice, _tokenId); 
+            emit LogNewRental(msg.sender, _timeHeldLimit, _newPrice, _tokenId); 
         }
 
         // update timeHeldLimit for user
@@ -500,7 +512,6 @@ contract RCMarketXdaiV1 is ERC721Full {
         if (exitFlag[msg.sender][_tokenId]) {
             exitFlag[msg.sender][_tokenId] = false;
         }
-
     }
 
     /// @notice to change your timeHeldLimit without having to re-rent
@@ -512,6 +523,7 @@ contract RCMarketXdaiV1 is ERC721Full {
             _timeHeldLimit = MAX_UINT256; // so 0 defaults to no limit
         } 
         timeHeldLimit[_tokenId][msg.sender] = _timeHeldLimit;
+        emit LogUpdateTimeHeldLimit(msg.sender, _timeHeldLimit, _tokenId); 
     }
 
     /// @notice stop renting a token
@@ -534,6 +546,7 @@ contract RCMarketXdaiV1 is ERC721Full {
         if (!exitFlag[msg.sender][_tokenId]) {
                 exitFlag[msg.sender][_tokenId] = true;
         }
+        emit LogExit(msg.sender, _tokenId); 
     }
 
     /// @notice stop renting all tokens
@@ -553,6 +566,7 @@ contract RCMarketXdaiV1 is ERC721Full {
         totalCollected = totalCollected.add(msg.value);
         // just so user can get it back if invalid outcome
         collectedPerUser[msg.sender] = collectedPerUser[msg.sender].add(msg.value); 
+        emit LogSponsor(msg.value); 
     }
 
     ////////////////////////////////////
@@ -711,6 +725,7 @@ contract RCMarketXdaiV1 is ERC721Full {
         require(now > (oracleResolutionTime + 4 weeks), "Too early");
         state = States.WITHDRAW;
         _processNFTsAfterEvent();
+        emit LogWinnerKnown(winningOutcome);
     }
 
     /// @dev transfers only possible in withdraw state, so override the existing functions
