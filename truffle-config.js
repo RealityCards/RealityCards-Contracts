@@ -8,7 +8,7 @@ const ETHERSCAN_KEY = process.env.ETHERSCAN_KEY;
 const blockchainNodeHost = process.env.BLOCKCHAIN_NODE_HOST || "localhost";
 
 module.exports = {
-  plugins: ["truffle-plugin-verify", "truffle-security"],
+  plugins: ["truffle-plugin-verify", "truffle-security",'truffle-contract-size'],
   contracts_build_directory: path.join(__dirname, "./artifactsTruffle"),
   networks: {
     develop: {

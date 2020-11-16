@@ -462,16 +462,16 @@ contract RCMarketXdaiV1 is ERC721Full {
         require(_timeHeldLimit == 0 || _timeHeldLimit >= timeHeld[_tokenId][msg.sender].add(_minRentalTime), "Limit too low"); 
 
         // process deposit, if sent
-        if (msg.value > 0){
+        if (msg.value > 0) {
             assert(treasury.deposit.value(msg.value)(msg.sender));
         }
 
         address _currentOwner = ownerOf(_tokenId);
         // allocate 10mins deposit (or increase if same owner)
-        assert(treasury.allocateCardSpecificDeposit(msg.sender, _currentOwner, _tokenId,_newPrice));
+        assert(treasury.allocateCardSpecificDeposit(msg.sender, _currentOwner, _tokenId, _newPrice));
 
         if (_currentOwner == msg.sender) { 
-            // bought by current owner- just change price and limit
+            // bought by current owner- just change price
             price[_tokenId] = _newPrice;
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
         } else {   
@@ -493,7 +493,6 @@ contract RCMarketXdaiV1 is ERC721Full {
                 _timeHeldLimit = MAX_UINT256; // so 0 defaults to no limit
             }
         if (timeHeldLimit[_tokenId][msg.sender] != _timeHeldLimit) {
-            assert(_timeHeldLimit > timeHeldLimit[_tokenId][msg.sender]);
             timeHeldLimit[_tokenId][msg.sender] = _timeHeldLimit;
         }
         
@@ -525,7 +524,7 @@ contract RCMarketXdaiV1 is ERC721Full {
             _collectRent(_tokenId);
             // if still the current owner and used all card specific deposit, revert immediately
             if (ownerOf(_tokenId) == msg.sender) {
-                if (treasury.cardSpecificDeposits(address(this),msg.sender,_tokenId) == 0) {
+                if (treasury.cardSpecificDeposits(address(this), msg.sender, _tokenId) == 0) {
                     exitFlag[msg.sender][_tokenId] = true; // else they might get it back at lower price on revert
                     _revertToPreviousOwner(_tokenId);
                     }
@@ -570,12 +569,12 @@ contract RCMarketXdaiV1 is ERC721Full {
         if (ownerOf(_tokenId) != address(this)) {
             uint256 _rentOwed = price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(1 days);
             address _currentOwner = ownerOf(_tokenId);
-            uint256 _cardSpecificDeposit = treasury.cardSpecificDeposits(address(this),_currentOwner,_tokenId);
+            uint256 _cardSpecificDeposit = treasury.cardSpecificDeposits(address(this), _currentOwner, _tokenId);
             uint256 _totalDeposit = treasury.deposits(_currentOwner).add(_cardSpecificDeposit);
             bool _exitFlag = exitFlag[_currentOwner][_tokenId];
-            uint256 _rentOwedLimit;
-
+            
             // get the maximum rent they can pay based on timeHeldLimit
+            uint256 _rentOwedLimit;
             if (timeHeldLimit[_tokenId][_currentOwner] == MAX_UINT256) {
                 _rentOwedLimit = MAX_UINT256;
             } else {
