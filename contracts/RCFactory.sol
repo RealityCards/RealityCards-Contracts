@@ -26,7 +26,7 @@ contract RCFactory is Ownable, CloneFactory {
 
     ///// CONTRACT ADDRESSES /////
     // reference contract
-    address public referenceContractAddresses; 
+    address public referenceContractAddress; 
     bool public referenceContractSet = false;
     // market addresses, mode // address
     mapping(uint256 => address[]) public marketAddresses;
@@ -37,6 +37,9 @@ contract RCFactory is Ownable, CloneFactory {
     address public arbitrator;
     // artist / winner / market creator / affiliaite / card specific affiliate
     uint256[5] public potDistribution;
+    uint256 sponsorshipRequired;
+    // so markets can be hidden from the interface
+    mapping(address => bool) public hiddenMarkets;
 
     ///// MARKET CREATION /////
     bool public marketCreatorWhitelistEnabled = true;
@@ -47,6 +50,7 @@ contract RCFactory is Ownable, CloneFactory {
     ////////////////////////////////////
 
     event LogMarketCreated(address contractAddress, address treasuryAddress, string[] tokenURIs, uint32[] timestamps, uint256 mode, string ipfsHash);
+    event LogMarketHidden(address market);
 
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
@@ -80,7 +84,7 @@ contract RCFactory is Ownable, CloneFactory {
         IRCMarketXdaiV1 newContractVariable = IRCMarketXdaiV1(_referenceContractAddress);
         assert(newContractVariable.isMarket());
         // set 
-        referenceContractAddresses = _referenceContractAddress;
+        referenceContractAddress = _referenceContractAddress;
     }
 
     ////////////////////////////////////
@@ -128,7 +132,7 @@ contract RCFactory is Ownable, CloneFactory {
     }
 
     /// @notice add or remove an address from market creator whitelist
-    function updateMarketCreatorWhitelist(address _marketCreator) public onlyOwner {
+    function addMarketCreator(address _marketCreator) public onlyOwner {
         marketCreatorWhitelist[_marketCreator] = marketCreatorWhitelist[_marketCreator] ? false : true;
     }
 
@@ -136,6 +140,15 @@ contract RCFactory is Ownable, CloneFactory {
     /// @dev if called again will enable it again
     function disableMarketCreatorWhitelist() public onlyOwner {
         marketCreatorWhitelistEnabled = marketCreatorWhitelistEnabled ? false : true;
+    }
+
+    function updateSponsorshipRequired(uint256 _dai) public onlyOwner {
+        sponsorshipRequired = _dai;
+    }
+
+    function hideMarket(address _market) public onlyOwner {
+        hiddenMarkets[_market] = hiddenMarkets[_market] ? false : true;
+        emit LogMarketHidden(_market);
     }
 
     ////////////////////////////////////
@@ -153,14 +166,15 @@ contract RCFactory is Ownable, CloneFactory {
         address[] memory _cardSpecificAffiliateAddresses,
         string memory _realitioQuestion,
         string memory _tokenName
-    ) public returns (address)  {
+    ) public payable returns (address)  {
         require(referenceContractSet, "No reference contract");
+        require(msg.value >= sponsorshipRequired, "Insufficient sponsorship");
+
         if (marketCreatorWhitelistEnabled) {
             require(marketCreatorWhitelist[msg.sender] || owner() == msg.sender, "Not approved");
         }
-        address _newAddress;
 
-        _newAddress = createClone(referenceContractAddresses);
+        address _newAddress = createClone(referenceContractAddress);
         IRCMarketXdaiV1(_newAddress).initialize({
             _mode: _mode,
             _timestamps: _timestamps,
@@ -177,6 +191,12 @@ contract RCFactory is Ownable, CloneFactory {
         assert(treasury.addMarket(_newAddress));
         marketAddresses[_mode].push(_newAddress);
         mappingOfMarkets[_newAddress] = true;
+
+        // pay sponsorship, if applicable
+        if (msg.value > 0) {
+            IRCMarketXdaiV1(_newAddress).sponsor.value(msg.value)();
+        }
+
         emit LogMarketCreated(address(_newAddress), address(treasury), _tokenURIs, _timestamps,  _mode, _ipfsHash);
         return _newAddress;
     }

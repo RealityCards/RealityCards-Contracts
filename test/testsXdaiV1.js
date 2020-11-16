@@ -191,6 +191,33 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     return realitycards2;
   }
 
+  async function createMarketWithArtistAndCardAffiliatesAndSponsorship(amount, user) {
+    amount = web3.utils.toWei(amount.toString(), 'ether');
+    var latestTime = await time.latest();
+    var oneYear = new BN('31104000');
+    var oneYearInTheFuture = oneYear.add(latestTime);
+    var marketLockingTime = oneYearInTheFuture; 
+    var oracleResolutionTime = oneYearInTheFuture;
+    var timestamps = [0,marketLockingTime,oracleResolutionTime];
+    var artistAddress = user8;
+    var affiliateAddress = user7;
+    var cardRecipients = [user5,user6,user7,user8,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0];
+    await rcfactory.createMarket(
+        0,
+        '0x0',
+        timestamps,
+        tokenURIs,
+        artistAddress,
+        affiliateAddress,
+        cardRecipients,
+        question,
+        tokenName, {value: amount, from: user}
+      );
+    var marketAddress = await rcfactory.getMostRecentMarket.call(0);
+    realitycards2 = await RCMarket.at(marketAddress);
+    return realitycards2;
+  }
+
   async function createMarketCustomeTimestamps(marketOpeningTime,marketLockingTime,oracleResolutionTime) {
     var artistAddress = user8;
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
@@ -1655,6 +1682,50 @@ it('test sponsor with card affiliate cut', async () => {
     await rcfactory.updatePotDistribution(0,0,0,0,100);
     var realitycards2 = await createMarketWithArtistAndCardAffiliates();
     await realitycards2.sponsor({ value: web3.utils.toWei('200', 'ether'), from: user3 });
+    await newRentalWithDepositCustomContract(realitycards2,5,0,user0,1000); // paid 50
+    await newRentalWithDepositCustomContract(realitycards2,15,1,user1,1000);  // paid 150
+    await time.increase(time.duration.days(10));
+    await realitycards2.exitAll({from: user0});
+    await realitycards2.exitAll({from: user1});
+    await time.increase(time.duration.years(1)); 
+    await realitycards2.lockMarket(); 
+    await realitio.setResult(0);
+    await realitycards2.determineWinner();
+    // token 0
+    await realitycards2.payCardSpecificAffiliate();
+    var deposit = await treasury.deposits.call(user5);
+    var depositShouldBe = ether('60').div(new BN('10'));
+    var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
+    assert.isBelow(difference/deposit,0.00001);
+    // token 1
+    var deposit = await treasury.deposits.call(user6);
+    var depositShouldBe = ether('160').div(new BN('10'));
+    var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
+    assert.isBelow(difference/deposit,0.00001);
+    // winnings of user 0 should be 400 - 20 so 380
+    var depositBefore = await treasury.deposits.call(user0);
+    await realitycards2.withdraw({from: user0} );
+    var depositAfter = await treasury.deposits.call(user0); 
+    var winningsSentToUser = depositAfter - depositBefore;
+    var winningsShouldBe = web3.utils.toWei('360', 'ether');
+    var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
+    assert.isBelow(difference/winningsSentToUser,0.00001);
+    // check market pot is empty
+    var marketPot = await treasury.marketPot.call(realitycards2.address);
+    assert.isBelow(Math.abs(marketPot.toString()),10);
+    // ensure everything is withdrawn
+    // withdraw for next test
+    await withdrawDeposit(1000,user0);
+    await withdrawDeposit(1000,user1);
+});
+
+it('test sponsor via market creation with card affiliate cut', async () => {
+    // 10% card specific affiliates
+    await rcfactory.updatePotDistribution(0,0,0,0,100);
+    // add user3 to whitelist 
+    await rcfactory.addMarketCreator(user3);
+    var realitycards2 = await createMarketWithArtistAndCardAffiliatesAndSponsorship(200,user3);
+    // await realitycards2.sponsor({ value: web3.utils.toWei('200', 'ether'), from: user3 });
     await newRentalWithDepositCustomContract(realitycards2,5,0,user0,1000); // paid 50
     await newRentalWithDepositCustomContract(realitycards2,15,1,user1,1000);  // paid 150
     await time.increase(time.duration.days(10));
@@ -3406,7 +3477,7 @@ it('check cant change factory address on the treasury or deploy new factory to t
     await shouldFail.reverting.withMessage(RCFactory.new(treasury.address, user0,"Factory already set"));
 });
 
-it('test updateMarketCreatorWhitelist and disableMarketCreatorWhitelist', async () => {
+it('test addMarketCreator and disableMarketCreatorWhitelist', async () => {
     // check user1 cant create market
     var latestTime = await time.latest();
     var oneYear = new BN('31104000');
@@ -3418,20 +3489,20 @@ it('test updateMarketCreatorWhitelist and disableMarketCreatorWhitelist', async 
     var affiliateAddress = user8;
     await shouldFail.reverting.withMessage(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,tokenName,{from: user1}), "Not approved");
     // first check that only owner can call
-    await shouldFail.reverting.withMessage(rcfactory.updateMarketCreatorWhitelist(user1,{from: user1}), "caller is not the owner");
+    await shouldFail.reverting.withMessage(rcfactory.addMarketCreator(user1,{from: user1}), "caller is not the owner");
     // add user1 to whitelist 
-    await rcfactory.updateMarketCreatorWhitelist(user1);
+    await rcfactory.addMarketCreator(user1);
     //try again, should work
     await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,tokenName,{from: user1});
     // remove them, should fail again
-    await rcfactory.updateMarketCreatorWhitelist(user1);
-    await shouldFail.reverting.withMessage(rcfactory.updateMarketCreatorWhitelist(user1,{from: user1}), "caller is not the owner");
+    await rcfactory.addMarketCreator(user1);
+    await shouldFail.reverting.withMessage(rcfactory.addMarketCreator(user1,{from: user1}), "caller is not the owner");
     // disable whitelist, should work
     await rcfactory.disableMarketCreatorWhitelist();
     await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,tokenName,{from: user1});
     // re-enable whitelist, should not work again
     await rcfactory.disableMarketCreatorWhitelist();
-    await shouldFail.reverting.withMessage(rcfactory.updateMarketCreatorWhitelist(user1,{from: user1}), "caller is not the owner"); 
+    await shouldFail.reverting.withMessage(rcfactory.addMarketCreator(user1,{from: user1}), "caller is not the owner"); 
 });
 
 it('test rentAllCards', async () => {
@@ -3525,6 +3596,17 @@ it('test auto lock', async () => {
     assert.equal(2,state);
     // withdraw for next test
     await withdrawDeposit(1000,user0);
+});
+
+it('test sponsor via market creation', async () => {
+    await rcfactory.updateSponsorshipRequired(ether('200'));
+    await rcfactory.addMarketCreator(user3);
+    await shouldFail.reverting.withMessage(createMarketWithArtistAndCardAffiliatesAndSponsorship(100,user3), "Insufficient sponsorship");
+    var realitycards2 = await createMarketWithArtistAndCardAffiliatesAndSponsorship(200,user3);
+    var totalCollected = await realitycards2.totalCollected();
+    var totalCollectedShouldBe = web3.utils.toWei('200', 'ether');
+    var difference = Math.abs(totalCollected.toString()-totalCollectedShouldBe.toString());
+    assert.isBelow(difference/totalCollected,0.00001);
 });
 
 });

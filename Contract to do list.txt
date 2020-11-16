@@ -1,6 +1,5 @@
 NOW
--min sponsor
--disable market
+
 
 LATER
 -add pausiable & some panic/withdraw mode (see branch emergency powers)

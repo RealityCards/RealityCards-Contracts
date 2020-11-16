@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 interface IRCMarketXdaiV1 {
 
     function isMarket() external view returns (bool);
+    function sponsor() external payable;
 
     function initialize(
         uint256 _mode, 
