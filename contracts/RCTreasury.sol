@@ -151,7 +151,7 @@ contract RCTreasury is Ownable {
     function payCurrentOwner(address _newOwner, address _currentOwner, uint256 _oldPrice) external balancedBooks() onlyMarkets() returns(bool) {
         uint256 _duration = uint256(1 weeks).div(hotPotatoDivisor);
         uint256 _requiredPayment = (_oldPrice.mul(_duration)).div(uint256(1 days));
-        require(deposits[_newOwner] >= _requiredPayment, "Insufficient deposit (hp)");
+        require(deposits[_newOwner] >= _requiredPayment, "Insufficient deposit");
 
         deposits[_newOwner] = deposits[_newOwner].sub(_requiredPayment);
         deposits[_currentOwner] = deposits[_currentOwner].add(_requiredPayment);

@@ -118,9 +118,8 @@ contract RCMarketXdaiV1 is ERC721Full {
     /// @param _artistAddress where to send artist's cut, if any
     /// @param _affiliateAddress where to send affiliate's cut, if any
     /// @param _cardSpecificAffiliateAddresses where to send card specific affiliate's cut, if any
-    /// @param _marketCreatorAddress where to send affiliate's cut, if any
-    /// @param _affiliateAddress where to send affiliate's cut, if any
-    /// @param _affiliateAddress where to send affiliate's cut, if any
+    /// @param _marketCreatorAddress where to send market creator's cut, if any
+    /// @param _question the question on the Oracle
     function initialize(
         uint256 _mode,
         uint32[] memory _timestamps,
@@ -190,8 +189,6 @@ contract RCMarketXdaiV1 is ERC721Full {
         // external contract variables:
         realitio = _factory.realitio();
         treasury = _factory.treasury();
-        assert(address(realitio) != address(0));
-        assert(address(treasury) != address(0));
 
         // create the NFTs
         for (uint i = 0; i < numberOfTokens; i++) { 
@@ -349,17 +346,16 @@ contract RCMarketXdaiV1 is ERC721Full {
     /// @notice pays winnings
     function _payoutWinnings() internal {
         uint256 _winningsToTransfer;
-        uint256 _remainingDistribution = ((((uint256(1000).sub(artistCut)).sub(affiliateCut))).sub(cardSpecificAffiliateCut).sub(winnerCut)).sub(creatorCut); 
+        uint256 _remainingCut = ((((uint256(1000).sub(artistCut)).sub(affiliateCut))).sub(cardSpecificAffiliateCut).sub(winnerCut)).sub(creatorCut); 
         // calculate longest owner's extra winnings, if relevant
         if (longestOwner[winningOutcome] == msg.sender && winnerCut > 0){
             _winningsToTransfer = (totalCollected.mul(winnerCut)).div(1000);
         }
         // calculate normal winnings, if any
-        uint256 _remainingPot = (totalCollected.mul(_remainingDistribution)).div(1000);
+        uint256 _remainingPot = (totalCollected.mul(_remainingCut)).div(1000);
         uint256 _winnersTimeHeld = timeHeld[winningOutcome][msg.sender];
         uint256 _numerator = _remainingPot.mul(_winnersTimeHeld);
         _winningsToTransfer = _winningsToTransfer.add(_numerator.div(totalTimeHeld[winningOutcome]));
-        // console.log() 
         require(_winningsToTransfer > 0, "Not a winner");
         assert(treasury.payout(msg.sender, _winningsToTransfer));
         emit LogWinningsPaid(msg.sender, _winningsToTransfer);
@@ -368,15 +364,15 @@ contract RCMarketXdaiV1 is ERC721Full {
     /// @notice returns all funds to users in case of invalid outcome
     function _returnRent() internal {
         // deduct artist share and card specific share if relevant but NOT market creator share or winner's share (no winner, market creator does not deserve)
-        uint256 _remainingDistribution = ((uint256(1000).sub(artistCut)).sub(affiliateCut)).sub(cardSpecificAffiliateCut);      
+        uint256 _remainingCut = ((uint256(1000).sub(artistCut)).sub(affiliateCut)).sub(cardSpecificAffiliateCut);      
         uint256 _rentCollected = collectedPerUser[msg.sender];
         require(_rentCollected > 0, "Paid no rent");
-        uint256 _rentCollectedAdjusted = (_rentCollected.mul(_remainingDistribution)).div(1000);
+        uint256 _rentCollectedAdjusted = (_rentCollected.mul(_remainingCut)).div(1000);
         assert(treasury.payout(msg.sender, _rentCollectedAdjusted));
         emit LogRentReturned(msg.sender, _rentCollectedAdjusted);
     }
 
-    /// @dev the below three functions pay artist, creator, card specific recipients as appropriate
+    /// @dev the below three functions pay artist, creator, affiliate, card specific affiliates as appropriate
     /// @dev they are not called within determineWinner() because of the risk of an
     /// @dev ....  address being a contract which refuses payment, then nobody could get winnings
 
@@ -479,7 +475,7 @@ contract RCMarketXdaiV1 is ERC721Full {
         }
 
         address _currentOwner = ownerOf(_tokenId);
-        // allocate 10mins deposit (or increase if same owner)
+        // allocate minimum rental deposit (or increase if same owner)
         assert(treasury.allocateCardSpecificDeposit(msg.sender, _currentOwner, _tokenId, _newPrice));
 
         if (_currentOwner == msg.sender) { 
@@ -515,7 +511,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     }
 
     /// @notice to change your timeHeldLimit without having to re-rent
-    function updateTimeHeldLimit(uint256 _timeHeldLimit, uint256 _tokenId) public checkState(States.OPEN) tokenExists(_tokenId) {
+    function updateTimeHeldLimit(uint256 _timeHeldLimit, uint256 _tokenId) external checkState(States.OPEN) tokenExists(_tokenId) {
         _collectRent(_tokenId);
         uint256 _minRentalTime = uint256(1 days).div(treasury.minRentalDivisor());
         require(_timeHeldLimit == 0 || _timeHeldLimit >= timeHeld[_tokenId][msg.sender].add(_minRentalTime), "Limit too low");
@@ -566,6 +562,10 @@ contract RCMarketXdaiV1 is ERC721Full {
         totalCollected = totalCollected.add(msg.value);
         // just so user can get it back if invalid outcome
         collectedPerUser[msg.sender] = collectedPerUser[msg.sender].add(msg.value); 
+        // allocate equally to each token, in case card specific affiliates
+        for (uint i = 0; i < numberOfTokens; i++) {
+            collectedPerToken[i] =  collectedPerToken[i].add(msg.value.div(numberOfTokens));
+        }
         emit LogSponsor(msg.value); 
     }
 
@@ -664,6 +664,7 @@ contract RCMarketXdaiV1 is ERC721Full {
             assert(treasury.cardSpecificDeposits(address(this),_previousOwner,_tokenId) == 0);
             
             // if no previous owners. price -> zero, foreclose
+            // if previous owners, revert to them if they have deposit AND exit flag is not set
             if (_index == 0) {
                 _foreclose(_tokenId);
                 break;
@@ -726,6 +727,7 @@ contract RCMarketXdaiV1 is ERC721Full {
         state = States.WITHDRAW;
         _processNFTsAfterEvent();
         emit LogWinnerKnown(winningOutcome);
+        emit LogStateChange(uint256(state));
     }
 
     /// @dev transfers only possible in withdraw state, so override the existing functions
