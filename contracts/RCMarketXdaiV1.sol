@@ -47,13 +47,15 @@ contract RCMarketXdaiV1 is ERC721Full {
     mapping (uint256 => uint256) public collectedPerToken;
     /// @dev an easy way to track the above across all tokens
     uint256 public totalCollected; 
+    /// @dev the minimum required price increase
+    uint256 public minimumPriceIncrease;
  
     ///// TIME /////
     /// @dev how many seconds each user has held each token for, for determining winnings  
     mapping (uint256 => mapping (address => uint256) ) public timeHeld;
     /// @dev users can optionally set a maximum time to hold it for, after which it reverts
     mapping (uint256 => mapping (address => uint256) ) public timeHeldLimit;
-    /// @dev sums all the timeHelds for each. Not required, but saves on gas when paying out. Should always increment at the same time as timeHeld
+    /// @dev sums all the timeHelds for each. Used when paying out. Should always increment at the same time as timeHeld
     mapping (uint256 => uint256) public totalTimeHeld; 
     /// @dev used to determine the rent due. Rent is due for the period (now - timeLastCollected), at which point timeLastCollected is set to now.
     mapping (uint256 => uint256) public timeLastCollected; 
@@ -147,12 +149,13 @@ contract RCMarketXdaiV1 is ERC721Full {
         marketLockingTime = _timestamps[1];
         oracleResolutionTime = _timestamps[2];
         artistAddress = _artistAddress;
+        marketCreatorAddress = _marketCreatorAddress;
         affiliateAddress = _affiliateAddress;
         cardSpecificAffiliateAddresses = _cardSpecificAffiliateAddresses;
-        marketCreatorAddress = _marketCreatorAddress;
         uint32 _timeout = _factory.realitioTimeout();
         address _arbitrator = _factory.arbitrator();
         uint256[5] memory _potDistribution = _factory.getPotDistribution();
+        minimumPriceIncrease = _factory.minimumPriceIncrease();
         artistCut = _potDistribution[0];
         winnerCut = _potDistribution[1];
         creatorCut = _potDistribution[2];
@@ -281,15 +284,15 @@ contract RCMarketXdaiV1 is ERC721Full {
     ////////////////////////////////////
     /// @dev these functions do not operate effectively currently, as mainnet oracle has yet to be hooked up
 
-    /// @notice posts the question to realit.io
-    function _postQuestion(uint256 template_id, string memory question, address arbitrator, uint32 timeout, uint32 opening_ts, uint256 nonce) internal returns (bytes32) {
-        return realitio.askQuestion(template_id, question, arbitrator, timeout, opening_ts, nonce);
-    }
+    // /// @notice posts the question to realit.io
+    // function _postQuestion(uint256 template_id, string memory question, address arbitrator, uint32 timeout, uint32 opening_ts, uint256 nonce) internal returns (bytes32) {
+    //     return realitio.askQuestion(template_id, question, arbitrator, timeout, opening_ts, nonce);
+    // }
 
-    /// @notice gets an existing question's content hash
-    function _getHashExistingQuestion(bytes32 _questionId) internal view returns (bytes32) {
-        return realitio.getContentHash(_questionId);
-    }
+    // /// @notice gets an existing question's content hash
+    // function _getHashExistingQuestion(bytes32 _questionId) internal view returns (bytes32) {
+    //     return realitio.getContentHash(_questionId);
+    // }
 
     /// @notice gets the winning outcome from realitio
     /// @dev the returned value is equivilent to tokenId
@@ -372,7 +375,7 @@ contract RCMarketXdaiV1 is ERC721Full {
         emit LogRentReturned(msg.sender, _rentCollectedAdjusted);
     }
 
-    /// @dev the below three functions pay artist, creator, affiliate, card specific affiliates as appropriate
+    /// @dev the below functions pay artist, creator, affiliate, card specific affiliates as appropriate
     /// @dev they are not called within determineWinner() because of the risk of an
     /// @dev ....  address being a contract which refuses payment, then nobody could get winnings
 
@@ -450,7 +453,7 @@ contract RCMarketXdaiV1 is ERC721Full {
             if (ownerOf(i) != msg.sender) {
                 uint _newPrice;
                 if (price[i]>0) {
-                    _newPrice = price[i].mul(11).div(10);
+                    _newPrice = (price[i].mul(minimumPriceIncrease.add(100))).div(100);
                 } else {
                     _newPrice = 1 ether;
                 }
@@ -461,9 +464,11 @@ contract RCMarketXdaiV1 is ERC721Full {
 
     /// @notice to rent a token
     function newRental(uint256 _newPrice, uint256 _timeHeldLimit, uint256 _tokenId) public payable autoUnlock() autoLock() checkState(States.OPEN) tokenExists(_tokenId) {
-        require(_newPrice >= price[_tokenId].mul(11).div(10), "Price not 10% higher");
+        require(_newPrice >= (price[_tokenId].mul(minimumPriceIncrease.add(100))).div(100), "Price too low");
         require(_newPrice >= 1 ether, "Minimum rental 1 Dai");
         _collectRent(_tokenId);
+        address _currentOwner = ownerOf(_tokenId);
+
         // below must be after collectRent so timeHeld is up to date
         // _timeHeldLimit = 0 = no limit
         uint256 _minRentalTime = uint256(1 days).div(treasury.minRentalDivisor());
@@ -474,7 +479,6 @@ contract RCMarketXdaiV1 is ERC721Full {
             assert(treasury.deposit.value(msg.value)(msg.sender));
         }
 
-        address _currentOwner = ownerOf(_tokenId);
         // allocate minimum rental deposit (or increase if same owner)
         assert(treasury.allocateCardSpecificDeposit(msg.sender, _currentOwner, _tokenId, _newPrice));
 

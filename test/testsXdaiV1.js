@@ -2590,7 +2590,7 @@ it('newRental check failures', async () => {
     // check newRental stuff
     await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('0.5', 'ether'),maxuint256,0,{ from: user}), "Minimum rental 1 Dai");
     await newRental(1,0,user0);
-    await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('1', 'ether'),maxuint256,0,{ from: user}), "Price not 10% higher");
+    await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('1', 'ether'),maxuint256,0,{ from: user}), "Price too low");
     await shouldFail.reverting.withMessage(realitycards.newRental(web3.utils.toWei('1', 'ether'),maxuint256,23,{ from: user}), "This token does not exist");
     // withdraw for next test
     await withdrawDeposit(1000,user0);
@@ -3607,6 +3607,69 @@ it('test sponsor via market creation', async () => {
     var totalCollectedShouldBe = web3.utils.toWei('200', 'ether');
     var difference = Math.abs(totalCollected.toString()-totalCollectedShouldBe.toString());
     assert.isBelow(difference/totalCollected,0.00001);
+});
+
+it('ensure only factory can add markets', async () => {
+    await shouldFail.reverting.withMessage(treasury.addMarket(user3), "Not factory");
+});
+
+it('test updateHotPotatoPayment', async () => {
+    var realitycards2 = await createMarketCustomMode(2);
+    // first check only owner is set
+    await shouldFail.reverting.withMessage(treasury.updateHotPotatoPayment(7*24, {from: user1}), "caller is not the owner");
+    await treasury.updateHotPotatoPayment(7*24, {from: user0});
+    /////// SETUP //////
+    await depositDai(1000,user0);
+    await depositDai(1000,user1);
+    await newRentalCustomContract(realitycards2,24,0,user0); 
+    var depositBefore = await treasury.deposits.call(user0);
+    await newRentalCustomContract(realitycards2,590,0,user1);
+    var depositAfter = await treasury.deposits.call(user0);
+    var paymentSentToUser = depositAfter - depositBefore;
+    // should be 1 ether sent via mode 2 and extra 24/(24*6) = 0.1666 from specific returned 
+    var paymentSentToUserShouldBe = ether('1.166667');
+    var difference = Math.abs(paymentSentToUser.toString() - paymentSentToUserShouldBe.toString());
+    assert.isBelow(difference/paymentSentToUser,0.001);
+//   withdraw for next test
+    await withdrawDeposit(1000,user0);
+    await withdrawDeposit(1000,user1);
+});
+
+it('check onlyOwner is on relevant Treasury functions', async () => {
+    await shouldFail.reverting.withMessage(treasury.updateHotPotatoPayment(7*24, {from: user1}), "caller is not the owner");
+    await shouldFail.reverting.withMessage(treasury.updateMinRental(7*24, {from: user1}), "caller is not the owner");
+    await shouldFail.reverting.withMessage(treasury.updateMaxContractBalance(7*24, {from: user1}), "caller is not the owner");
+});
+
+it('check onlyOwner is on relevant Factory functions', async () => {
+    await shouldFail.reverting.withMessage(rcfactory.updateRealitioTimeout(7*24, {from: user1}), "caller is not the owner");
+    await shouldFail.reverting.withMessage(rcfactory.updateRealitioAddress(user0, {from: user1}), "caller is not the owner");
+    await shouldFail.reverting.withMessage(rcfactory.updateArbitrator(user0, {from: user1}), "caller is not the owner");
+    await shouldFail.reverting.withMessage(rcfactory.updatePotDistribution(0,0,0,0,0, {from: user1}), "caller is not the owner");
+    await shouldFail.reverting.withMessage(rcfactory.addMarketCreator(user0, {from: user1}), "caller is not the owner");
+    await shouldFail.reverting.withMessage(rcfactory.disableMarketCreatorWhitelist({from: user1}), "caller is not the owner");
+    await shouldFail.reverting.withMessage(rcfactory.updateSponsorshipRequired(7*24, {from: user1}), "caller is not the owner");
+    await shouldFail.reverting.withMessage(rcfactory.hideMarket(user0, {from: user1}), "caller is not the owner");
+    await shouldFail.reverting.withMessage(rcfactory.updateMinimumPriceIncrease(4, {from: user1}), "caller is not the owner");
+});
+
+it('test updateMinimumPriceIncrease', async () => {
+    var realitycards2 = await createMarketCustomMode(0);
+    /////// SETUP //////
+    await depositDai(1000,user0);
+    await depositDai(1000,user1);
+    await newRentalCustomContract(realitycards2,1,0,user0); 
+    // 5% increase, should fail
+    await shouldFail.reverting.withMessage(newRentalCustomContract(realitycards2,1.05,0,user1), "Price too low");
+    // update min to 5%, try again
+    await rcfactory.updateMinimumPriceIncrease(5);
+    var realitycards3 = await createMarketCustomMode(0);
+    await newRentalCustomContract(realitycards3,1.05,0,user1);
+    // check rent all cards works
+    await realitycards3.rentAllCards({from:user0});
+    var price = await realitycards3.price(0);
+    var priceShouldBe = ether('1.1025');
+    assert.equal(price.toString(),priceShouldBe.toString());
 });
 
 });

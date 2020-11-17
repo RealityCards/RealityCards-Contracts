@@ -18,12 +18,12 @@ contract RCTreasury is Ownable {
     /// @dev address of the Factory so only the Factory can add new markets
     address public factoryAddress;
     bool public factoryAddressSet = false;
-    /// @dev so only markets can withdraw funds
+    /// @dev so only markets can move balances between deposits and market pots
     mapping (address => bool) public isMarket;
     /// @dev keeps track of all the deposits for each user
     mapping (address => uint256) public deposits;
     uint256 public totalDeposits;
-    /// @dev keeps track of rental payments made
+    /// @dev keeps track of rental payments made in each market
     mapping (address => uint256) public marketPot;
     uint256 public totalMarketPots;
     /// @dev to enforce minimum rental duration, small deposit is allocated to specific Card 
@@ -129,7 +129,7 @@ contract RCTreasury is Ownable {
     /// only markets can call these functions
 
     /// @dev moves the amount required for minimum rental duration to seperate pot
-    /// @dev if current owner rents again, _newOwner and _currentOwner will be the same this is fine: 
+    /// @dev if current owner rents again, _newOwner and _currentOwner will be the same, this is fine; 
     /// @dev ... card specific deposit will just be increased 
     function allocateCardSpecificDeposit(address _newOwner, address _currentOwner, uint256 _tokenId, uint256 _newPrice) external balancedBooks() onlyMarkets() returns(bool) {
         uint256 _depositToAllocate = _newPrice.div(minRentalDivisor);
@@ -152,7 +152,6 @@ contract RCTreasury is Ownable {
         uint256 _duration = uint256(1 weeks).div(hotPotatoDivisor);
         uint256 _requiredPayment = (_oldPrice.mul(_duration)).div(uint256(1 days));
         require(deposits[_newOwner] >= _requiredPayment, "Insufficient deposit");
-
         deposits[_newOwner] = deposits[_newOwner].sub(_requiredPayment);
         deposits[_currentOwner] = deposits[_currentOwner].add(_requiredPayment);
         return true;

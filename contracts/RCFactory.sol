@@ -40,6 +40,8 @@ contract RCFactory is Ownable, CloneFactory {
     uint256 sponsorshipRequired;
     // so markets can be hidden from the interface
     mapping(address => bool) public hiddenMarkets;
+    // adjust required price increase
+    uint256 public minimumPriceIncrease;
 
     ///// MARKET CREATION /////
     bool public marketCreatorWhitelistEnabled = true;
@@ -69,7 +71,8 @@ contract RCFactory is Ownable, CloneFactory {
         updateRealitioAddress(_realitio);
         updateArbitrator(0xA6EAd513D05347138184324392d8ceb24C116118); // kleros
         // artist // winner // creator // affiliate // card specific affiliates
-        updatePotDistribution(20,0,0,20,100);  
+        updatePotDistribution(20,0,0,20,100); // 2% artist, 2% affiliate, 10% card specific affiliate default
+        updateMinimumPriceIncrease(10); // 10% default
     }
 
     ////////////////////////////////////
@@ -149,6 +152,11 @@ contract RCFactory is Ownable, CloneFactory {
     function hideMarket(address _market) public onlyOwner {
         hiddenMarkets[_market] = hiddenMarkets[_market] ? false : true;
         emit LogMarketHidden(_market);
+    }
+
+    /// @dev in %
+    function updateMinimumPriceIncrease(uint256 _percentIncrease) public onlyOwner {
+        minimumPriceIncrease = _percentIncrease;
     }
 
     ////////////////////////////////////
