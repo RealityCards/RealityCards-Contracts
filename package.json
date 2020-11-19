@@ -23,10 +23,13 @@
   },
   "homepage": "https://github.com/truffle-box/drizzle-box#readme",
   "dependencies": {
+    "@openzeppelin/test-helpers": "^0.5.9",
     "acorn": "^7.1.0",
     "dotenv": "^8.2.0",
+    "minimist": "^1.2.5",
     "openzeppelin-solidity": "^2.1.1",
     "openzeppelin-test-helpers": "^0.2.0",
+    "sha3": "^1.2.2",
     "solc": "^0.6.6",
     "truffle-contract": "^4.0.31",
     "truffle-hdwallet-provider": "^1.0.17",

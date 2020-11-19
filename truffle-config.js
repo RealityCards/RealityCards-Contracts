@@ -1,25 +1,25 @@
-require("dotenv").config();
+require('dotenv').config();
 
-const path = require("path");
-const HDWalletProvider = require("truffle-hdwallet-provider");
+const path = require('path');
+const HDWalletProvider = require('truffle-hdwallet-provider');
 const INFURA_KEY = process.env.INFURA_KEY;
 const MNEMONIC = process.env.MNEMONIC;
 const ETHERSCAN_KEY = process.env.ETHERSCAN_KEY;
-const blockchainNodeHost = process.env.BLOCKCHAIN_NODE_HOST || "localhost";
+const blockchainNodeHost = process.env.BLOCKCHAIN_NODE_HOST || 'localhost';
 
 module.exports = {
-  plugins: ["truffle-plugin-verify", "truffle-security"],
-  contracts_build_directory: path.join(__dirname, "./artifactsTruffle"),
+  plugins: ['truffle-plugin-verify', 'truffle-security'],
+  contracts_build_directory: path.join(__dirname, './artifactsTruffle'),
   networks: {
     develop: {
-      host: "127.0.0.1",
+      host: '127.0.0.1',
       port: 8545,
-      network_id: "*",
+      network_id: '*',
     },
     graphTesting: {
       host: blockchainNodeHost, // Localhost (default: none)
       port: 8545, // Standard Ethereum port (default: none)
-      network_id: "*", // Any network (default: none)
+      network_id: '*', // Any network (default: none)
       gasPrice: 1000000000, // 1 gwei
     },
     mainnet: {
@@ -78,7 +78,7 @@ module.exports = {
     },
     xdai: {
       provider: function() {
-        return new HDWalletProvider(MNEMONIC, "https://dai.poa.network");
+        return new HDWalletProvider(MNEMONIC, 'https://dai.poa.network');
       },
       network_id: 100,
       gas: 5000000,
@@ -87,7 +87,7 @@ module.exports = {
   },
   compilers: {
     solc: {
-      version: "0.5.13",
+      version: '0.5.13',
       settings: {
         optimizer: {
           enabled: true,

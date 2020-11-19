@@ -6,7 +6,7 @@ const {
   expectEvent,
   balance,
   time
-} = require('openzeppelin-test-helpers');
+} = require('@openzeppelin/test-helpers');
 
 var RCFactory = artifacts.require('./RCFactory.sol');
 var RCTreasury = artifacts.require('./RCTreasury.sol');
