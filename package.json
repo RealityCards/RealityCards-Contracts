@@ -22,10 +22,10 @@
   },
   "homepage": "https://github.com/truffle-box/drizzle-box#readme",
   "dependencies": {
-    "@openzeppelin/test-helpers": "^0.5.9",
     "acorn": "^7.1.0",
     "dotenv": "^8.2.0",
     "openzeppelin-solidity": "^2.1.1",
+    "openzeppelin-test-helpers": "^0.2.0",
     "solc": "^0.6.6",
     "truffle-contract": "^4.0.31",
     "truffle-contract-size": "^2.0.1",
