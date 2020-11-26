@@ -117,9 +117,8 @@ contract RCTreasury is Ownable {
         totalDeposits = totalDeposits.sub(_dai);
         address _thisAddressNotPayable = msg.sender;
         address payable _recipient = address(uint160(_thisAddressNotPayable));
-        (bool _success, bytes memory data) = _recipient.call.value(_dai)("");
+        (bool _success, ) = _recipient.call.value(_dai)("");
         require(_success, "Transfer failed");
-        data; // suppress compilation warning
         emit LogDepositWithdrawal(_dai, msg.sender);
     }
 

@@ -218,7 +218,6 @@ contract RCMarketXdaiV1 is ERC721Full {
     ////////////////////////////////////
 
     event LogNewRental(address indexed newOwner, uint256 indexed newPrice, uint256 timeHeldLimit, uint256 indexed tokenId);
-    event LogPriceChange(uint256 indexed newPrice, uint256 indexed tokenId);
     event LogForeclosure(address indexed prevOwner, uint256 indexed tokenId);
     event LogRentCollection(uint256 indexed rentCollected, uint256 indexed tokenId, address indexed owner);
     event LogReturnToPreviousOwner(uint256 indexed tokenId, address indexed previousOwner);
@@ -336,7 +335,7 @@ contract RCMarketXdaiV1 is ERC721Full {
 
     /// @notice pays out winnings, or returns funds
     /// @dev public because called by withdrawWinningsAndDeposit
-    function withdraw() public checkState(States.WITHDRAW) {
+    function withdraw() external checkState(States.WITHDRAW) {
         require(!userAlreadyWithdrawn[msg.sender], "Already withdrawn");
         userAlreadyWithdrawn[msg.sender] = true;
         if (totalTimeHeld[winningOutcome] > 0) {
@@ -380,7 +379,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     /// @dev ....  address being a contract which refuses payment, then nobody could get winnings
 
     /// @notice pay artist
-    function payArtist() public checkState(States.WITHDRAW) {
+    function payArtist() external checkState(States.WITHDRAW) {
         require(!artistPaid, "Artist already paid");
         artistPaid = true;
         if (artistCut > 0) {
@@ -392,8 +391,8 @@ contract RCMarketXdaiV1 is ERC721Full {
         }
     }
 
-    /// @notice pay artist
-    function payAffiliate() public checkState(States.WITHDRAW) {
+    /// @notice pay affiliate
+    function payAffiliate() external checkState(States.WITHDRAW) {
         require(!affiliatePaid, "Affiliate already paid");
         affiliatePaid = true;
         if (affiliateCut > 0) {
@@ -406,7 +405,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     }
 
     /// @notice pay card recipients
-    function payCardSpecificAffiliate() public checkState(States.WITHDRAW) {
+    function payCardSpecificAffiliate() external checkState(States.WITHDRAW) {
         require(!cardSpecificAffiliatePaid, "Card recipients already paid");
         cardSpecificAffiliatePaid = true;
         if (cardSpecificAffiliateCut > 0) {
@@ -421,7 +420,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     }
 
     /// @notice pay market creator
-    function payMarketCreator() public checkState(States.WITHDRAW) {
+    function payMarketCreator() external checkState(States.WITHDRAW) {
         require(totalTimeHeld[winningOutcome] > 0, "No winner");
         require(!creatorPaid, "Creator already paid");
         creatorPaid = true;
@@ -529,7 +528,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     /// @notice stop renting a token
     /// @dev public because called by exitAll()
     /// @dev doesn't need to be current owner so user can prevent ownership returning to them
-    function exit(uint256 _tokenId) public checkState(States.OPEN) {
+    function exit(uint256 _tokenId) public checkState(States.OPEN) tokenExists(_tokenId) {
         // if current owner, collect rent, revert if necessary
         if (ownerOf(_tokenId) == msg.sender) {
             // collectRent first, so correct rent to now is taken

@@ -35,9 +35,9 @@ contract RCFactory is Ownable, CloneFactory {
     ///// ADJUSTABLE PARAMETERS /////
     uint32 public realitioTimeout;
     address public arbitrator;
-    // artist / winner / market creator / affiliaite / card specific affiliate
+    // artist / winner / market creator / affiliate / card specific affiliate
     uint256[5] public potDistribution;
-    uint256 sponsorshipRequired;
+    uint256 public sponsorshipRequired;
     // so markets can be hidden from the interface
     mapping(address => bool) public hiddenMarkets;
     // adjust required price increase
@@ -111,6 +111,8 @@ contract RCFactory is Ownable, CloneFactory {
     ////////////////////////////////////
     /// @dev aka governance functions
 
+    /// CALLED WITHIN CONSTRUCTOR
+
     function updateRealitioTimeout(uint32 _newTimeout) public onlyOwner {
         require(_newTimeout >= 86400, "24 hours min");
         realitioTimeout = _newTimeout;
@@ -124,9 +126,9 @@ contract RCFactory is Ownable, CloneFactory {
         arbitrator = _newArbitrator;
     } 
 
-    /// @dev in basis points
+    /// @dev in 10s of basis points (so 1000 = 100%)
     function updatePotDistribution(uint256 _artistCut, uint256 _winnerCut, uint256 _creatorCut, uint256 _affiliateCut, uint256 _cardSpecificAffiliateCut) public onlyOwner {
-        require(_artistCut + _affiliateCut + _creatorCut + _creatorCut + _cardSpecificAffiliateCut <= 1000, "Cuts too big");
+        require(_artistCut.add(_affiliateCut).add(_creatorCut).add(_winnerCut).add(_affiliateCut).add(_cardSpecificAffiliateCut) <= 1000, "Cuts too big");
         potDistribution[0] = _artistCut;
         potDistribution[1] = _winnerCut;
         potDistribution[2] = _creatorCut;
@@ -134,31 +136,33 @@ contract RCFactory is Ownable, CloneFactory {
         potDistribution[4] = _cardSpecificAffiliateCut;
     }
 
-    /// @notice add or remove an address from market creator whitelist
-    function addMarketCreator(address _marketCreator) public onlyOwner {
-        marketCreatorWhitelist[_marketCreator] = marketCreatorWhitelist[_marketCreator] ? false : true;
-    }
-
-    /// @notice allows createMarket to be called by anyone
-    /// @dev if called again will enable it again
-    function disableMarketCreatorWhitelist() public onlyOwner {
-        marketCreatorWhitelistEnabled = marketCreatorWhitelistEnabled ? false : true;
-    }
-
-    function updateSponsorshipRequired(uint256 _dai) public onlyOwner {
-        sponsorshipRequired = _dai;
-    }
-
-    function hideMarket(address _market) public onlyOwner {
-        hiddenMarkets[_market] = hiddenMarkets[_market] ? false : true;
-        emit LogMarketHidden(_market);
-    }
-
     /// @dev in %
     function updateMinimumPriceIncrease(uint256 _percentIncrease) public onlyOwner {
         minimumPriceIncrease = _percentIncrease;
     }
 
+    /// NOT CALLED WITHIN CONSTRUCTOR
+
+    /// @notice add or remove an address from market creator whitelist
+    function addOrRemoveMarketCreator(address _marketCreator) external onlyOwner {
+        marketCreatorWhitelist[_marketCreator] = marketCreatorWhitelist[_marketCreator] ? false : true;
+    }
+
+    /// @notice allows createMarket to be called by anyone
+    /// @dev if called again will enable it again
+    function enableOrDisableMarketCreatorWhitelist() external onlyOwner {
+        marketCreatorWhitelistEnabled = marketCreatorWhitelistEnabled ? false : true;
+    }
+
+    function updateSponsorshipRequired(uint256 _dai) external onlyOwner {
+        sponsorshipRequired = _dai;
+    }
+
+    function hideOrUnhideMarket(address _market) external onlyOwner {
+        hiddenMarkets[_market] = hiddenMarkets[_market] ? false : true;
+        emit LogMarketHidden(_market);
+    }
+    
     ////////////////////////////////////
     //////// MARKET CREATION ///////////
     ////////////////////////////////////

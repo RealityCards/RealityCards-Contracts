@@ -1723,7 +1723,7 @@ it('test sponsor via market creation with card affiliate cut', async () => {
     // 10% card specific affiliates
     await rcfactory.updatePotDistribution(0,0,0,0,100);
     // add user3 to whitelist 
-    await rcfactory.addMarketCreator(user3);
+    await rcfactory.addOrRemoveMarketCreator(user3);
     var realitycards2 = await createMarketWithArtistAndCardAffiliatesAndSponsorship(200,user3);
     // await realitycards2.sponsor({ value: web3.utils.toWei('200', 'ether'), from: user3 });
     await newRentalWithDepositCustomContract(realitycards2,5,0,user0,1000); // paid 50
@@ -3477,7 +3477,7 @@ it('check cant change factory address on the treasury or deploy new factory to t
     await expectRevert(RCFactory.new(treasury.address, user0),"Factory already set");
 });
 
-it('test addMarketCreator and disableMarketCreatorWhitelist', async () => {
+it('test addOrRemoveMarketCreator and enableOrDisableMarketCreatorWhitelist', async () => {
     // check user1 cant create market
     var latestTime = await time.latest();
     var oneYear = new BN('31104000');
@@ -3489,20 +3489,20 @@ it('test addMarketCreator and disableMarketCreatorWhitelist', async () => {
     var affiliateAddress = user8;
     await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,tokenName,{from: user1}), "Not approved");
     // first check that only owner can call
-    await expectRevert(rcfactory.addMarketCreator(user1,{from: user1}), "caller is not the owner");
+    await expectRevert(rcfactory.addOrRemoveMarketCreator(user1,{from: user1}), "caller is not the owner");
     // add user1 to whitelist 
-    await rcfactory.addMarketCreator(user1);
+    await rcfactory.addOrRemoveMarketCreator(user1);
     //try again, should work
     await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,tokenName,{from: user1});
     // remove them, should fail again
-    await rcfactory.addMarketCreator(user1);
-    await expectRevert(rcfactory.addMarketCreator(user1,{from: user1}), "caller is not the owner");
+    await rcfactory.addOrRemoveMarketCreator(user1);
+    await expectRevert(rcfactory.addOrRemoveMarketCreator(user1,{from: user1}), "caller is not the owner");
     // disable whitelist, should work
-    await rcfactory.disableMarketCreatorWhitelist();
+    await rcfactory.enableOrDisableMarketCreatorWhitelist();
     await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,tokenName,{from: user1});
     // re-enable whitelist, should not work again
-    await rcfactory.disableMarketCreatorWhitelist();
-    await expectRevert(rcfactory.addMarketCreator(user1,{from: user1}), "caller is not the owner"); 
+    await rcfactory.enableOrDisableMarketCreatorWhitelist();
+    await expectRevert(rcfactory.addOrRemoveMarketCreator(user1,{from: user1}), "caller is not the owner"); 
 });
 
 it('test rentAllCards', async () => {
@@ -3600,7 +3600,7 @@ it('test auto lock', async () => {
 
 it('test sponsor via market creation', async () => {
     await rcfactory.updateSponsorshipRequired(ether('200'));
-    await rcfactory.addMarketCreator(user3);
+    await rcfactory.addOrRemoveMarketCreator(user3);
     await expectRevert(createMarketWithArtistAndCardAffiliatesAndSponsorship(100,user3), "Insufficient sponsorship");
     var realitycards2 = await createMarketWithArtistAndCardAffiliatesAndSponsorship(200,user3);
     var totalCollected = await realitycards2.totalCollected();
@@ -3646,10 +3646,10 @@ it('check onlyOwner is on relevant Factory functions', async () => {
     await expectRevert(rcfactory.updateRealitioAddress(user0, {from: user1}), "caller is not the owner");
     await expectRevert(rcfactory.updateArbitrator(user0, {from: user1}), "caller is not the owner");
     await expectRevert(rcfactory.updatePotDistribution(0,0,0,0,0, {from: user1}), "caller is not the owner");
-    await expectRevert(rcfactory.addMarketCreator(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(rcfactory.disableMarketCreatorWhitelist({from: user1}), "caller is not the owner");
+    await expectRevert(rcfactory.addOrRemoveMarketCreator(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(rcfactory.enableOrDisableMarketCreatorWhitelist({from: user1}), "caller is not the owner");
     await expectRevert(rcfactory.updateSponsorshipRequired(7*24, {from: user1}), "caller is not the owner");
-    await expectRevert(rcfactory.hideMarket(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(rcfactory.hideOrUnhideMarket(user0, {from: user1}), "caller is not the owner");
     await expectRevert(rcfactory.updateMinimumPriceIncrease(4, {from: user1}), "caller is not the owner");
 });
 
