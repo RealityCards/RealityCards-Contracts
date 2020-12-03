@@ -81,7 +81,7 @@ module.exports = async (deployer, network, accounts) => {
     ]
 
     var sixtySeconds = 60
-    var latestTime = new BN(Date.now() / 1000 + sixtySeconds)
+    var latestTime = await time.latest()
     var oneYear = new BN('31104000')
     var oneYearInTheFuture = oneYear.add(latestTime)
     var marketLockingTime = oneYearInTheFuture
@@ -95,6 +95,7 @@ module.exports = async (deployer, network, accounts) => {
 
     const artistAddress = andrewsAddress
 
+    // market 1
     await factory.createMarket(
       0,
       ipfsHashes[0],
@@ -106,6 +107,7 @@ module.exports = async (deployer, network, accounts) => {
     )
 
     var marketAddress = await factory.getMostRecentMarket.call(0)
+    console.log('marketAddress #1: ', marketAddress)
 
     realitycards = await RealityCardsMarketXdaiV1.at(marketAddress)
     var marketLockingTime = await realitycards.marketLockingTime.call()
@@ -115,48 +117,10 @@ module.exports = async (deployer, network, accounts) => {
     var marketState = await realitycards.state.call()
     console.log('marketState: ', marketState.toString())
 
-    await time.increase(time.duration.weeks(3))
-
-    for (var i = 0; i < 6; i++) {
-      let more = (i + 1) * (1 + i / 10) // atleast more than 10%
-      let amount = web3.utils.toWei(more.toString(), 'ether')
-      let user = user0
-      i % 6 == 0
-        ? (user = user0)
-        : i % 5 == 1
-        ? (user = user1)
-        : i % 5 == 2
-        ? (user = user2)
-        : i % 5 == 3
-        ? (user = user3)
-        : i % 5 == 4
-        ? (user = user4)
-        : i % 5 == 5
-        ? (user = user2)
-        : (user = user5)
-
-      await treasury.deposit(user, {
-        from: user,
-        value: amount + Math.floor(Math.random() * 9)
-      })
-
-      await realitycards.newRental(amount, 0, 0, {from: user})
-
-      let numberOfDaysHeld = 3 + Math.floor(Math.random() * 3)
-
-      await time.increase(time.duration.days(numberOfDaysHeld)) // enough time to ensure deposit runs out
-    }
-
-    console.log('factory.address: ', factory.address)
-    console.log('treasury.address: ', treasury.address)
-    console.log('marketXdaiV1.address: ', marketXdaiV1.address)
-    console.log('marketAddress: ', marketAddress)
-
-    // create market #2
-
-    var twoYears = oneYear.add(oneYear)
-    var twoYearsInTheFuture = twoYears.add(latestTime)
-    timestamps = [oneYearInTheFuture, twoYearsInTheFuture, twoYearsInTheFuture]
+    // market 2
+    let threeWeeks = new BN('1814400')
+    let threeWeeksInTheFuture = threeWeeks.add(latestTime)
+    timestamps = [latestTime, threeWeeksInTheFuture, threeWeeksInTheFuture]
 
     await factory.createMarket(
       0,
@@ -168,52 +132,62 @@ module.exports = async (deployer, network, accounts) => {
       tokenName
     )
 
-    marketAddress = await factory.getMostRecentMarket.call(0)
+    var marketAddress2 = await factory.getMostRecentMarket.call(0)
+    console.log('marketAddress #2: ', marketAddress2)
 
-    realitycards = await RealityCardsMarketXdaiV1.at(marketAddress)
-    marketLockingTime = await realitycards.marketLockingTime.call()
-    console.log('marketLockingTime: ', marketLockingTime.toString())
-    marketOpeningTime = await realitycards.marketOpeningTime.call()
-    console.log('marketOpeningTime: ', marketOpeningTime.toString())
-    marketState = await realitycards.state.call()
-    console.log('marketState: ', marketState.toString())
+    realitycards2 = await RealityCardsMarketXdaiV1.at(marketAddress2)
 
-    // await time.increase(time.duration.weeks(3))
+    // TIME: 1 week
+    await time.increase(time.duration.weeks(1))
 
-    // for (var i = 0; i < 6; i++) {
-    //   let more = (i + 1) * (1 + i / 10) // atleast more than 10%
-    //   let amount = web3.utils.toWei(more.toString(), 'ether')
-    //   let user = user0
-    //   i % 6 == 0
-    //     ? (user = user0)
-    //     : i % 5 == 1
-    //     ? (user = user1)
-    //     : i % 5 == 2
-    //     ? (user = user2)
-    //     : i % 5 == 3
-    //     ? (user = user3)
-    //     : i % 5 == 4
-    //     ? (user = user4)
-    //     : i % 5 == 5
-    //     ? (user = user2)
-    //     : (user = user5)
+    // 4 users renting the first card of market#1
+    for (var i = 1; i < 5; i++) {
+      let user = accounts[i - 1]
+      let amount = web3.utils.toWei(i.toString(), 'ether')
+      await realitycards.newRental(amount, 0, 0, {from: user, value: amount})
 
-    //   await treasury.deposit(user, {
-    //     from: user,
-    //     value: amount + Math.floor(Math.random() * 9)
-    //   })
+      await time.increase(time.duration.hours(Math.floor(Math.random() * 9))) // hold for a few hours
+    }
 
-    //   await realitycards.newRental(amount, 0, 0, {from: user})
+    // 4 users each renting a card of market#2
+    for (var i = 1; i < 5; i++) {
+      user = accounts[i - 1]
+      amount = web3.utils.toWei((i * 2).toString(), 'ether')
+      await realitycards2.newRental(amount, 0, i - 1, {
+        from: user,
+        value: amount
+      })
+    }
 
-    //   let numberOfDaysHeld = 3 + Math.floor(Math.random() * 3)
+    // TIME: 5 hours
+    await time.increase(time.duration.hours(5))
 
-    //   await time.increase(time.duration.days(numberOfDaysHeld)) // enough time to ensure deposit runs out
-    // }
+    // Same 4 users = deposit 50dai, change price of the card they own, withdraw 1dai
+    for (var i = 1; i < 5; i++) {
+      user = accounts[i - 1]
+      more = i * 2 * (1 + (i * 2) / 10)
+      amount = web3.utils.toWei(more.toString(), 'ether')
+
+      await treasury.deposit(user, {
+        from: user,
+        value: web3.utils.toWei('50', 'ether')
+      })
+
+      await realitycards2.newRental(amount, 0, i - 1, {
+        from: user
+      })
+
+      await treasury.withdrawDeposit(web3.utils.toWei('1', 'ether'), {
+        from: user
+      })
+    }
+
+    // Uncomment the following lines to test the values when the market is locked
+    // await time.increase(time.duration.weeks(2))
+    // await realitycards2.lockMarket()
 
     console.log('factory.address: ', factory.address)
     console.log('treasury.address: ', treasury.address)
-    console.log('marketXdaiV1.address: ', marketXdaiV1.address)
-    console.log('marketAddress: ', marketAddress)
   } else {
     console.log('No deploy script for this network')
   }
