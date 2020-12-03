@@ -48,6 +48,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     treasury = await RCTreasury.new();
     rcreference = await RCMarket.new();
     rcfactory = await RCFactory.new(treasury.address, realitio.address);
+    await treasury.setFactoryAddress(rcfactory.address);
     await rcfactory.setReferenceContractAddress(rcreference.address);
     await rcfactory.createMarket(
         0,
@@ -3470,13 +3471,6 @@ it('check cant create market without reference contract', async () => {
     await expectRevert(rcfactory2.createMarket(0,'0x0',[1,1],['x','x'],user0,user0,[user0,user0],'x','x'),"No reference contract");
 });
 
-it('check cant change factory address on the treasury or deploy new factory to treasury', async () => {
-    // check cant directly change treasury address
-    await expectRevert(treasury.setFactoryAddress(),"Factory already set");
-    // check cant deploy new factory to same treasury
-    await expectRevert(RCFactory.new(treasury.address, user0),"Factory already set");
-});
-
 it('test addOrRemoveMarketCreator and enableOrDisableMarketCreatorWhitelist', async () => {
     // check user1 cant create market
     var latestTime = await time.latest();
@@ -3670,6 +3664,41 @@ it('test updateMinimumPriceIncrease', async () => {
     var price = await realitycards3.price(0);
     var priceShouldBe = ether('1.1025');
     assert.equal(price.toString(),priceShouldBe.toString());
+});
+
+it('test uberOwner Treasury', async () => {
+    // market creation shit
+    var latestTime = await time.latest();
+    var oneYear = new BN('31104000');
+    var oneYearInTheFuture = oneYear.add(latestTime);
+    var marketLockingTime = oneYearInTheFuture; 
+    var oracleResolutionTime = oneYearInTheFuture;
+    var timestamps = [0,marketLockingTime,oracleResolutionTime];
+    var artistAddress = '0x0000000000000000000000000000000000000000';
+    var affiliateAddress = '0x0000000000000000000000000000000000000000';
+    // first, change owner
+    await treasury.changeUberOwner(user5);
+    // now try and change again and change factory from prevous owner, should fail
+    await expectRevert(treasury.changeUberOwner(user0), "Access denied");
+    await expectRevert(treasury.setFactoryAddress(user0), "Access denied");
+    // deploy new factory, update address
+    rcfactory2 = await RCFactory.new(treasury.address, realitio.address);
+    await treasury.setFactoryAddress(rcfactory2.address,{from: user5});
+    await rcfactory2.setReferenceContractAddress(rcreference.address);
+    // create market with old factory, should fail
+    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,tokenName), "Not factory");
+    // create market with new factory and do some standard stuff
+    await rcfactory2.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,tokenName);
+    var marketAddress = await rcfactory2.getMostRecentMarket.call(0);
+    realitycards2 = await RCMarket.at(marketAddress);
+    await depositDai(144,user3);
+    await newRentalCustomContract(realitycards2,144,4,user3);
+    var price = await realitycards2.price.call(4);
+    assert.equal(price, web3.utils.toWei('144', 'ether'));
+    // check that the original market still works
+    await newRental(69,4,user3);
+    var price = await realitycards.price.call(4);
+    assert.equal(price, web3.utils.toWei('69', 'ether'));
 });
 
 });

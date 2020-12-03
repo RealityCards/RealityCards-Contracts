@@ -62,10 +62,7 @@ contract RCFactory is Ownable, CloneFactory {
     constructor(ITreasury _treasuryAddress, IRealitio _realitio) public 
     {
         treasury = _treasuryAddress;
-
-        // tell Treasury about the Factory
-        assert(treasury.setFactoryAddress());
-
+        
         // initialise market parameters
         updateRealitioTimeout(86400); // 24 hours
         updateRealitioAddress(_realitio);

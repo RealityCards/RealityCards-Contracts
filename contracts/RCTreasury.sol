@@ -17,7 +17,6 @@ contract RCTreasury is Ownable {
 
     /// @dev address of the Factory so only the Factory can add new markets
     address public factoryAddress;
-    bool public factoryAddressSet = false;
     /// @dev so only markets can move balances between deposits and market pots
     mapping (address => bool) public isMarket;
     /// @dev keeps track of all the deposits for each user
@@ -38,12 +37,25 @@ contract RCTreasury is Ownable {
     /// @dev max deposit balance, to minimise funds at risk
     uint256 public maxContractBalance = 1000000 ether; // default 1m
 
+    ///// UBER OWNER /////
+    /// @dev high level owner who can change the factory address
+    address public uberOwner;
+
     ////////////////////////////////////
     //////// EVENTS ////////////////////
     ////////////////////////////////////
 
     event LogDepositIncreased(uint256 indexed daiDeposited, address indexed sentBy);
     event LogDepositWithdrawal(uint256 indexed daiWithdrawn, address indexed returnedTo);
+
+    ////////////////////////////////////
+    //////// CONSTRUCTOR ///////////////
+    ////////////////////////////////////
+
+    constructor() public {
+        // at initiation, uberOwner and owner will be the same
+        uberOwner = msg.sender;
+    }
 
     ////////////////////////////////////
     /////////// MODIFIERS //////////////
@@ -60,15 +72,8 @@ contract RCTreasury is Ownable {
     }
 
     ////////////////////////////////////
-    ////////// INITIALISATION //////////
+    //////////// ADD MARKETS ///////////
     ////////////////////////////////////
-
-    function setFactoryAddress() external returns(bool) {
-        require(!factoryAddressSet, "Factory already set");
-        factoryAddressSet = true;
-        factoryAddress = msg.sender;
-        return true;
-    }
 
     function addMarket(address _newMarket) external returns(bool) {
         require(msg.sender == factoryAddress, "Not factory");
@@ -79,17 +84,35 @@ contract RCTreasury is Ownable {
     ////////////////////////////////////
     ///// ADJUSTABLE PARAMETERS ////////
     ////////////////////////////////////
+    /// @dev aka governance functions
 
-    function updateMinRental(uint256 _newDivisor) public onlyOwner() {
+    function updateMinRental(uint256 _newDivisor) external onlyOwner() {
         minRentalDivisor = _newDivisor;
     }
 
-    function updateHotPotatoPayment(uint256 _newDivisor) public onlyOwner() {
+    function updateHotPotatoPayment(uint256 _newDivisor) external onlyOwner() {
         hotPotatoDivisor = _newDivisor;
     }
 
-    function updateMaxContractBalance(uint256 _newBalanceLimit) public onlyOwner() {
+    function updateMaxContractBalance(uint256 _newBalanceLimit) external onlyOwner() {
         maxContractBalance = _newBalanceLimit;
+    }
+
+    ////////////////////////////////////
+    ///////////// UPGRADES /////////////
+    ////////////////////////////////////
+    /// @dev deploying and setting a new factory is effectively an upgrade
+    /// @dev only the uber owner can do this, which can be set to burn address to relinquish upgrade ability
+    /// @dev ... while maintaining governance over adjustable paramters
+
+    function setFactoryAddress(address _newFactory) external {
+        require(msg.sender == uberOwner, "Access denied");
+        factoryAddress = _newFactory;
+    }
+
+    function changeUberOwner(address _newUberOwner) external {
+        require(msg.sender == uberOwner, "Access denied");
+        uberOwner = _newUberOwner;
     }
 
     ////////////////////////////////////
