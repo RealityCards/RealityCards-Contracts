@@ -141,8 +141,19 @@ module.exports = async (deployer, network, accounts) => {
     await time.increase(time.duration.weeks(1))
 
     // 4 users renting the first card of market#1
-    for (var i = 1; i < 5; i++) {
-      let user = accounts[i - 1]
+    for (var i = 1; i <= 10; i++) {
+      // user0 = 1 dai
+      // user1 = 2
+      // user2 = 3
+      // user3 = 4
+      // user0 = 5
+      // user1 = 6
+      // user2 = 7
+      // user3 = 8
+      // user0 = 9
+      // user1 = 10
+
+      let user = accounts[(i - 1) % 4]
       let amount = web3.utils.toWei(i.toString(), 'ether')
       await realitycards.newRental(amount, 0, 0, {from: user, value: amount})
 
@@ -151,9 +162,9 @@ module.exports = async (deployer, network, accounts) => {
 
     // 4 users each renting a card of market#2
     for (var i = 1; i < 5; i++) {
-      user = accounts[i - 1]
+      user = accounts[(i - 1) % 4]
       amount = web3.utils.toWei((i * 2).toString(), 'ether')
-      await realitycards2.newRental(amount, 0, i - 1, {
+      await realitycards2.newRental(amount, 0, (i - 1) % 4, {
         from: user,
         value: amount
       })
@@ -181,6 +192,15 @@ module.exports = async (deployer, network, accounts) => {
         from: user
       })
     }
+
+    // user0 exits & withdraws all deposit
+    await realitycards2.exit(0, {
+      from: user0
+    })
+    let depositOfUser0 = await treasury.deposits.call(user0)
+    await treasury.withdrawDeposit(depositOfUser0, {
+      from: user0
+    })
 
     // Uncomment the following lines to test the values when the market is locked
     // await time.increase(time.duration.weeks(2))
