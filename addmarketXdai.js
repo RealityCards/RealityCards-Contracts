@@ -9,7 +9,7 @@ var factoryAddress = '0xc54335607A823c29D41e725E8eDe0cA08c10Fe1F';
 var marketOpeningTime = 1607097600; //Fri, 04 Dec 2020 16:00:00 +0000 
 var marketLockingTime = 1609459200; // Fri, 01 Jan 2021 00:00:00
 var oracleResolutionTime = 1609459200; // Fri, 01 Jan 2021 00:00:00
-var numberOfTokens = 4;
+var numberOfTokens = 3;
 var question = 'na';
 var tokenName = "RealityCards_Eth2Balance";
 
@@ -50,10 +50,9 @@ module.exports = function() {
 
     //mint nfts
     let market = await realityCardsMarket.at(lastAddress);
-    await market.mintNfts("https://cdn.realitycards.io/nftmetadata/eth2/token0.json");
-    await market.mintNfts("https://cdn.realitycards.io/nftmetadata/eth2/token1.json");
-    await market.mintNfts("https://cdn.realitycards.io/nftmetadata/eth2/token2.json");
-    await market.mintNfts("https://cdn.realitycards.io/nftmetadata/eth2/token3.json");
+    await market.mintNfts("https://cdn.realitycards.io/nftmetadata/eth2b/token0.json");
+    await market.mintNfts("https://cdn.realitycards.io/nftmetadata/eth2b/token1.json");
+    await market.mintNfts("https://cdn.realitycards.io/nftmetadata/eth2b/token2.json");
     // await market.openMarket();
     console.log("NFTs minted");
     process.exit();
