@@ -8,6 +8,7 @@ import "@nomiclabs/buidler/console.sol";
 import "./interfaces/IRealitio.sol";
 import "./interfaces/IFactory.sol";
 import "./interfaces/ITreasury.sol";
+import './interfaces/IRCOracleProxyXdai.sol';
 
 /// @title Reality Cards Market
 /// @author Andrew Stanger
@@ -22,8 +23,6 @@ contract RCMarketXdaiV1 is ERC721Full {
     ///// CONTRACT SETUP /////
     /// @dev = how many outcomes/teams/NFTs etc 
     uint256 public numberOfTokens;
-    /// @dev the question ID of the question on realitio
-    bytes32 public questionId;
     /// @dev only for _revertToPreviousOwner to prevent gas limits
     uint256 public constant MAX_ITERATIONS = 10;
     uint256 public constant MAX_UINT256 = 2**256 - 1;
@@ -35,8 +34,8 @@ contract RCMarketXdaiV1 is ERC721Full {
     bool public constant isMarket = true;
 
     ///// CONTRACT VARIABLES /////
-    IRealitio public realitio;
     ITreasury public treasury;
+    IRCOracleProxyXdai public oracleProxy;
 
     ///// PRICE, DEPOSITS, RENT /////
     /// @dev in attodai (so 100xdai = 100000000000000000000)
@@ -121,7 +120,6 @@ contract RCMarketXdaiV1 is ERC721Full {
     /// @param _affiliateAddress where to send affiliate's cut, if any
     /// @param _cardSpecificAffiliateAddresses where to send card specific affiliate's cut, if any
     /// @param _marketCreatorAddress where to send market creator's cut, if any
-    /// @param _question the question on the Oracle
     function initialize(
         uint256 _mode,
         uint32[] memory _timestamps,
@@ -130,8 +128,6 @@ contract RCMarketXdaiV1 is ERC721Full {
         address _affiliateAddress,
         address[] memory _cardSpecificAffiliateAddresses,
         address _marketCreatorAddress,
-        uint256 _templateId, 
-        string memory _question, 
         string memory _tokenName
     ) public initializer {
         assert(_mode <= 2);
@@ -152,8 +148,6 @@ contract RCMarketXdaiV1 is ERC721Full {
         marketCreatorAddress = _marketCreatorAddress;
         affiliateAddress = _affiliateAddress;
         cardSpecificAffiliateAddresses = _cardSpecificAffiliateAddresses;
-        uint32 _timeout = _factory.realitioTimeout();
-        address _arbitrator = _factory.arbitrator();
         uint256[5] memory _potDistribution = _factory.getPotDistribution();
         minimumPriceIncrease = _factory.minimumPriceIncrease();
         artistCut = _potDistribution[0];
@@ -190,8 +184,8 @@ contract RCMarketXdaiV1 is ERC721Full {
         require(marketLockingTime + 1 weeks > oracleResolutionTime && marketLockingTime <= oracleResolutionTime, "Invalid timestamps" );
         
         // external contract variables:
-        realitio = _factory.realitio();
         treasury = _factory.treasury();
+        oracleProxy = _factory.oracleProxy();
 
         // create the NFTs
         for (uint i = 0; i < numberOfTokens; i++) { 
@@ -204,13 +198,6 @@ contract RCMarketXdaiV1 is ERC721Full {
             _incrementState();
         }
         
-        // create the question on Realitio
-        /// @dev temporarily removing this
-        _question;
-        _templateId;
-        _arbitrator;
-        _timeout;
-        // questionId = _postQuestion(_templateId, _question, _arbitrator, _timeout, _oracleResolutionTime, 0);
     } 
 
     ////////////////////////////////////
@@ -279,31 +266,20 @@ contract RCMarketXdaiV1 is ERC721Full {
     }
 
     ////////////////////////////////////
-    ////// REALITIO CONTRACT CALLS /////
+    //// ORACLE PROXY CONTRACT CALLS ///
     ////////////////////////////////////
-    /// @dev these functions do not operate effectively currently, as mainnet oracle has yet to be hooked up
-
-    // /// @notice posts the question to realit.io
-    // function _postQuestion(uint256 template_id, string memory question, address arbitrator, uint32 timeout, uint32 opening_ts, uint256 nonce) internal returns (bytes32) {
-    //     return realitio.askQuestion(template_id, question, arbitrator, timeout, opening_ts, nonce);
-    // }
-
-    // /// @notice gets an existing question's content hash
-    // function _getHashExistingQuestion(bytes32 _questionId) internal view returns (bytes32) {
-    //     return realitio.getContentHash(_questionId);
-    // }
 
     /// @notice gets the winning outcome from realitio
     /// @dev the returned value is equivilent to tokenId
     /// @dev this function call will revert if it has not yet resolved
     function _getWinner() internal view returns(uint256) {
-        bytes32 _winningOutcome = realitio.resultFor(questionId);
-        return uint256(_winningOutcome);
+        uint256 _winningOutcome = oracleProxy.getWinner(address(this));
+        return _winningOutcome;
     }
 
     /// @notice has the question been finalized on realitio?
     function _isQuestionFinalized() internal view returns (bool) {
-        return realitio.isFinalized(questionId);
+        return oracleProxy.isFinalized(address(this));
     }
 
     ////////////////////////////////////

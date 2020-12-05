@@ -5,9 +5,9 @@ import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@nomiclabs/buidler/console.sol";
 import './lib/CloneFactory.sol';
-import "./interfaces/IRealitio.sol";
 import "./interfaces/ITreasury.sol";
 import './interfaces/IRCMarketXdaiV1.sol';
+import './interfaces/IRCOracleProxyXdai.sol';
 
 /// @title Reality Cards Factory
 /// @author Andrew Stanger
@@ -21,8 +21,8 @@ contract RCFactory is Ownable, CloneFactory {
     ////////////////////////////////////
 
     ///// CONTRACT VARIABLES /////
-    IRealitio public realitio;
     ITreasury public treasury;
+    IRCOracleProxyXdai public oracleProxy;
 
     ///// CONTRACT ADDRESSES /////
     // reference contract
@@ -32,8 +32,6 @@ contract RCFactory is Ownable, CloneFactory {
     mapping(address => bool) public mappingOfMarkets; // not used for anything 
 
     ///// ADJUSTABLE PARAMETERS /////
-    uint32 public realitioTimeout;
-    address public arbitrator;
     // artist / winner / market creator / affiliate / card specific affiliate
     uint256[5] public potDistribution;
     uint256 public sponsorshipRequired;
@@ -62,17 +60,16 @@ contract RCFactory is Ownable, CloneFactory {
     ////////////////////////////////////
 
     /// @dev Treasury must be deployed before Factory
-    constructor(ITreasury _treasuryAddress, IRealitio _realitio) public 
+    constructor(ITreasury _treasuryAddress, IRCOracleProxyXdai _oracleProxyAddress) public 
     {
         // at initiation, uberOwner and owner will be the same
         uberOwner = msg.sender;
 
+        // initialise contract variables
         treasury = _treasuryAddress;
+        oracleProxy = _oracleProxyAddress;
 
         // initialise market parameters
-        updateRealitioTimeout(86400); // 24 hours
-        updateRealitioAddress(_realitio);
-        updateArbitrator(0xA6EAd513D05347138184324392d8ceb24C116118); // kleros
         // artist // winner // creator // affiliate // card specific affiliates
         updatePotDistribution(20,0,0,20,100); // 2% artist, 2% affiliate, 10% card specific affiliate default
         updateMinimumPriceIncrease(10); // 10% default
@@ -99,19 +96,6 @@ contract RCFactory is Ownable, CloneFactory {
     ////////////////////////////////////
 
     /// CALLED WITHIN CONSTRUCTOR
-
-    function updateRealitioTimeout(uint32 _newTimeout) public onlyOwner {
-        require(_newTimeout >= 86400, "24 hours min");
-        realitioTimeout = _newTimeout;
-    }
-
-    function updateRealitioAddress(IRealitio _newRealitioAddress) public onlyOwner {
-        realitio = IRealitio(_newRealitioAddress);
-    }
-
-    function updateArbitrator(address _newArbitrator) public onlyOwner {
-        arbitrator = _newArbitrator;
-    } 
 
     /// @dev in 10s of basis points (so 1000 = 100%)
     function updatePotDistribution(uint256 _artistCut, uint256 _winnerCut, uint256 _creatorCut, uint256 _affiliateCut, uint256 _cardSpecificAffiliateCut) public onlyOwner {
@@ -203,10 +187,11 @@ contract RCFactory is Ownable, CloneFactory {
             _affiliateAddress: _affiliateAddress,
             _cardSpecificAffiliateAddresses: _cardSpecificAffiliateAddresses,
             _marketCreatorAddress: msg.sender,
-            _templateId: 2,
-            _question: _realitioQuestion,
             _tokenName: _tokenName
         });
+
+        // post question to Oracle
+        oracleProxy.sendQuestionToMainnetBridge(_newAddress, _realitioQuestion, _timestamps[2]);
         
         assert(treasury.addMarket(_newAddress));
         marketAddresses[_mode].push(_newAddress);
