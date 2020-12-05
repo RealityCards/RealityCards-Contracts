@@ -11,6 +11,7 @@ const {
 var RCFactory = artifacts.require('./RCFactory.sol');
 var RCTreasury = artifacts.require('./RCTreasury.sol');
 var RCMarket = artifacts.require('./RCMarketXdaiV1.sol');
+var RCMarket2 = artifacts.require('./mockups/RCMarketXdaiV2.sol');
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 
 const delay = duration => new Promise(resolve => setTimeout(resolve, duration));
@@ -3052,7 +3053,7 @@ it('check that sending ether direct is the same as a deposit', async () => {
 
 it('check onlyOwner is on everything it should be', async () => {
     // first check that they can only be called by owner
-    await expectRevert(rcfactory.setReferenceContractAddress(user1,{from: user1}), "caller is not the owner");
+    await expectRevert(rcfactory.setReferenceContractAddress(user1,{from: user1}), "Access denied");
     await expectRevert(rcfactory.updateRealitioTimeout(1), "24 hours min");
     await expectRevert(rcfactory.updateArbitrator(user1,{from: user1}), "caller is not the owner");
     await expectRevert(rcfactory.updateRealitioAddress(user1,{from: user1}), "caller is not the owner");
@@ -3460,17 +3461,6 @@ it('test updateMaxContractBalance function and deposit limit hit', async () => {
     await expectRevert(treasury.deposit(user0,{value: web3.utils.toWei('500', 'ether')}), "Limit hit");
 });
 
-it('check cant set new reference contract', async () => {
-    // check can't deploy second reference contract
-    await expectRevert(rcfactory.setReferenceContractAddress(user0), "Reference already set"); 
-});
-
-it('check cant create market without reference contract', async () => {
-    var treasury2 = await RCTreasury.new();
-    var rcfactory2 = await RCFactory.new(treasury2.address, user0);
-    await expectRevert(rcfactory2.createMarket(0,'0x0',[1,1],['x','x'],user0,user0,[user0,user0],'x','x'),"No reference contract");
-});
-
 it('test addOrRemoveMarketCreator and enableOrDisableMarketCreatorWhitelist', async () => {
     // check user1 cant create market
     var latestTime = await time.latest();
@@ -3695,6 +3685,38 @@ it('test uberOwner Treasury', async () => {
     await newRentalCustomContract(realitycards2,144,4,user3);
     var price = await realitycards2.price.call(4);
     assert.equal(price, web3.utils.toWei('144', 'ether'));
+    // check that the original market still works
+    await newRental(69,4,user3);
+    var price = await realitycards.price.call(4);
+    assert.equal(price, web3.utils.toWei('69', 'ether'));
+});
+
+it('test uberOwner factory', async () => {
+    // market creation shit
+    var latestTime = await time.latest();
+    var oneYear = new BN('31104000');
+    var oneYearInTheFuture = oneYear.add(latestTime);
+    var marketLockingTime = oneYearInTheFuture; 
+    var oracleResolutionTime = oneYearInTheFuture;
+    var timestamps = [0,marketLockingTime,oracleResolutionTime];
+    var artistAddress = '0x0000000000000000000000000000000000000000';
+    var affiliateAddress = '0x0000000000000000000000000000000000000000';
+    // first, change owner
+    await rcfactory.changeUberOwner(user5);
+    // now try and change again and change reference from prevous owner, should fail
+    await expectRevert(rcfactory.changeUberOwner(user0), "Access denied");
+    await expectRevert(rcfactory.setReferenceContractAddress(user0), "Access denied");
+    // deploy new reference, update address
+    rcreference2 = await RCMarket2.new();
+    await rcfactory.setReferenceContractAddress(rcreference2.address, {from: user5});
+    // deploy new market from new reference contract, check that price is doubling
+    await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,tokenName);
+    var marketAddress = await rcfactory.getMostRecentMarket.call(0);
+    realitycards2 = await RCMarket.at(marketAddress);
+    await depositDai(144,user3);
+    await newRentalCustomContract(realitycards2,144,4,user3);
+    var price = await realitycards2.price.call(4);
+    assert.equal(price, web3.utils.toWei('288', 'ether'));
     // check that the original market still works
     await newRental(69,4,user3);
     var price = await realitycards.price.call(4);

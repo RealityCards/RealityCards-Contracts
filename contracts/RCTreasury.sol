@@ -82,9 +82,8 @@ contract RCTreasury is Ownable {
     }
 
     ////////////////////////////////////
-    ///// ADJUSTABLE PARAMETERS ////////
+    //////////// GOVERNANCE ////////////
     ////////////////////////////////////
-    /// @dev aka governance functions
 
     function updateMinRental(uint256 _newDivisor) external onlyOwner() {
         minRentalDivisor = _newDivisor;
@@ -103,7 +102,7 @@ contract RCTreasury is Ownable {
     ////////////////////////////////////
     /// @dev deploying and setting a new factory is effectively an upgrade
     /// @dev only the uber owner can do this, which can be set to burn address to relinquish upgrade ability
-    /// @dev ... while maintaining governance over adjustable paramters
+    /// @dev ... while maintaining governance over parameters paramters
 
     function setFactoryAddress(address _newFactory) external {
         require(msg.sender == uberOwner, "Access denied");

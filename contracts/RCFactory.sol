@@ -27,7 +27,6 @@ contract RCFactory is Ownable, CloneFactory {
     ///// CONTRACT ADDRESSES /////
     // reference contract
     address public referenceContractAddress; 
-    bool public referenceContractSet = false;
     // market addresses, mode // address
     mapping(uint256 => address[]) public marketAddresses;
     mapping(address => bool) public mappingOfMarkets; // not used for anything 
@@ -47,6 +46,10 @@ contract RCFactory is Ownable, CloneFactory {
     bool public marketCreatorWhitelistEnabled = true;
     mapping(address => bool) public marketCreatorWhitelist;
 
+    ///// UBER OWNER /////
+    /// @dev high level owner who can change the factory address
+    address public uberOwner;
+
     ////////////////////////////////////
     //////// EVENTS ////////////////////
     ////////////////////////////////////
@@ -61,8 +64,11 @@ contract RCFactory is Ownable, CloneFactory {
     /// @dev Treasury must be deployed before Factory
     constructor(ITreasury _treasuryAddress, IRealitio _realitio) public 
     {
+        // at initiation, uberOwner and owner will be the same
+        uberOwner = msg.sender;
+
         treasury = _treasuryAddress;
-        
+
         // initialise market parameters
         updateRealitioTimeout(86400); // 24 hours
         updateRealitioAddress(_realitio);
@@ -70,21 +76,6 @@ contract RCFactory is Ownable, CloneFactory {
         // artist // winner // creator // affiliate // card specific affiliates
         updatePotDistribution(20,0,0,20,100); // 2% artist, 2% affiliate, 10% card specific affiliate default
         updateMinimumPriceIncrease(10); // 10% default
-    }
-
-    ////////////////////////////////////
-    /////// REFERENCE CONTRACT /////////
-    ////////////////////////////////////
-
-    /// @notice set the reference contract for the contract logic
-    function setReferenceContractAddress(address _referenceContractAddress) public onlyOwner {
-        require(!referenceContractSet, "Reference already set");
-        referenceContractSet = true;
-        // check it's an RC contract
-        IRCMarketXdaiV1 newContractVariable = IRCMarketXdaiV1(_referenceContractAddress);
-        assert(newContractVariable.isMarket());
-        // set 
-        referenceContractAddress = _referenceContractAddress;
     }
 
     ////////////////////////////////////
@@ -104,9 +95,8 @@ contract RCFactory is Ownable, CloneFactory {
     }
 
     ////////////////////////////////////
-    ////// ADJUSTABLE PARAMETERS ///////
+    //////////// GOVERNANCE ////////////
     ////////////////////////////////////
-    /// @dev aka governance functions
 
     /// CALLED WITHIN CONSTRUCTOR
 
@@ -159,7 +149,29 @@ contract RCFactory is Ownable, CloneFactory {
         hiddenMarkets[_market] = hiddenMarkets[_market] ? false : true;
         emit LogMarketHidden(_market);
     }
-    
+
+    ////////////////////////////////////
+    ///////////// UPGRADES /////////////
+    ////////////////////////////////////
+    /// @dev deploying and setting a new reference contract is effectively an upgrade
+    /// @dev only the uber owner can do this, which can be set to burn address to relinquish upgrade ability
+    /// @dev ... while maintaining governance over adjustable parameters
+
+    /// @notice set the reference contract for the contract logic
+    function setReferenceContractAddress(address _referenceContractAddress) external {
+        require(msg.sender == uberOwner, "Access denied");
+        // check it's an RC contract
+        IRCMarketXdaiV1 newContractVariable = IRCMarketXdaiV1(_referenceContractAddress);
+        assert(newContractVariable.isMarket());
+        // set 
+        referenceContractAddress = _referenceContractAddress;
+    }
+
+    function changeUberOwner(address _newUberOwner) external {
+        require(msg.sender == uberOwner, "Access denied");
+        uberOwner = _newUberOwner;
+    }
+
     ////////////////////////////////////
     //////// MARKET CREATION ///////////
     ////////////////////////////////////
@@ -176,7 +188,6 @@ contract RCFactory is Ownable, CloneFactory {
         string memory _realitioQuestion,
         string memory _tokenName
     ) public payable returns (address)  {
-        require(referenceContractSet, "No reference contract");
         require(msg.value >= sponsorshipRequired, "Insufficient sponsorship");
 
         if (marketCreatorWhitelistEnabled) {
