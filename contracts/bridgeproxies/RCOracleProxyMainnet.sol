@@ -14,7 +14,6 @@ contract RCOracleProxyMainnet
     address public oracleProxyXdaiAddress;
     
     mapping (address => bytes32) public questionIds;
-    mapping (address => bool) public marketFinalised;
 
     // CONSTRUCTOR
 

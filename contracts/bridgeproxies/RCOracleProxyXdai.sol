@@ -14,7 +14,7 @@ contract RCOracleProxyXdai
     address public oracleProxyMainnetAddress;
     
     mapping (address => bytes32) public questionIds;
-    mapping (address => bool) public marketFinalised;
+    mapping (address => bool) public marketFinalized;
     mapping (address => uint256) public winningOutcome;
 
     // CONSTRUCTOR
@@ -42,18 +42,18 @@ contract RCOracleProxyXdai
     function setWinner(address _marketAddress, uint256 _winningOutcome) external {
         // require(msg.sender == bridgeXdaiAddress, "Not bridge");
         // require(bridge.messageSender() == oracleProxyMainnetAddress, "Not proxy");
-        marketFinalised[_marketAddress] = true;
+        marketFinalized[_marketAddress] = true;
         winningOutcome[_marketAddress] = _winningOutcome;
     }
     
     // CALLED FROM MARKET CONTRACTS
     
     function isFinalized(address _marketAddress) external view returns(bool) {
-        return(marketFinalised[_marketAddress]);
+        return(marketFinalized[_marketAddress]);
     }
     
     function getWinner(address _marketAddress) external view returns(uint256) {
-        require(marketFinalised[_marketAddress], "Not finalised");
+        require(marketFinalized[_marketAddress], "Not finalised");
         return winningOutcome[_marketAddress];
     }
 }

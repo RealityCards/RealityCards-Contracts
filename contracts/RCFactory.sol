@@ -172,6 +172,7 @@ contract RCFactory is Ownable, CloneFactory {
         string memory _realitioQuestion,
         string memory _tokenName
     ) public payable returns (address)  {
+        
         require(msg.value >= sponsorshipRequired, "Insufficient sponsorship");
 
         if (marketCreatorWhitelistEnabled) {
@@ -192,8 +193,11 @@ contract RCFactory is Ownable, CloneFactory {
 
         // post question to Oracle
         oracleProxy.sendQuestionToMainnetBridge(_newAddress, _realitioQuestion, _timestamps[2]);
-        
+
+        // tell Treasury about new market
         assert(treasury.addMarket(_newAddress));
+
+        // update internals
         marketAddresses[_mode].push(_newAddress);
         mappingOfMarkets[_newAddress] = true;
 
