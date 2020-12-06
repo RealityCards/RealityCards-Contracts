@@ -11,8 +11,11 @@ const {
 var RCFactory = artifacts.require('./RCFactory.sol');
 var RCTreasury = artifacts.require('./RCTreasury.sol');
 var RCMarket = artifacts.require('./RCMarketXdaiV1.sol');
+var XdaiProxy = artifacts.require('./bridgeproxies/RCOracleProxyXdai.sol');
+var MainnetProxy = artifacts.require('./bridgeproxies/RCOracleProxyMainnet.sol');
 var RCMarket2 = artifacts.require('./mockups/RCMarketXdaiV2.sol');
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
+var BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
 
 const delay = duration => new Promise(resolve => setTimeout(resolve, duration));
 
@@ -46,9 +49,14 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     realitio = await RealitioMockup.new();
+    bridge = await BridgeMockup.new();
+    xdaiproxy = await XdaiProxy.new(bridge.address);
+    mainnetproxy = await MainnetProxy.new(bridge.address, realitio.address);
+    await xdaiproxy.setOracleProxyMainnetAddress(mainnetproxy.address);
+    await mainnetproxy.setOracleProxyXdaiAddress(xdaiproxy.address);
     treasury = await RCTreasury.new();
     rcreference = await RCMarket.new();
-    rcfactory = await RCFactory.new(treasury.address, realitio.address);
+    rcfactory = await RCFactory.new(treasury.address, xdaiproxy.address);
     await treasury.setFactoryAddress(rcfactory.address);
     await rcfactory.setReferenceContractAddress(rcreference.address);
     await rcfactory.createMarket(

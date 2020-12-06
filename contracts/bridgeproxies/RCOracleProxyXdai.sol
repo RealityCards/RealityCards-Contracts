@@ -9,18 +9,24 @@ import '../interfaces/IBridgeContract.sol';
 
 contract RCOracleProxyXdai
 {
-    address public RCBridgeProxyMainnetAddress;
-    address public bridgeXdaiAddress = 0x75Df5AF045d91108662D8080fD1FEFAd6aA0bb59;
-    IBridgeContract bridgeContractInstance = IBridgeContract(bridgeXdaiAddress);
+    IBridgeContract public bridge;
+
+    address public oracleProxyMainnetAddress;
     
     mapping (address => bytes32) public questionIds;
     mapping (address => bool) public marketFinalised;
     mapping (address => uint256) public winningOutcome;
+
+    // CONSTRUCTOR
+
+    constructor(address _bridgeXdaiAddress) public {
+        bridge = IBridgeContract(_bridgeXdaiAddress);
+    }
     
     // INITIALISATION
     
-    function setRCBridgeProxyMainnetAddress(address _newAddress) external {
-        RCBridgeProxyMainnetAddress = _newAddress;
+    function setOracleProxyMainnetAddress(address _newAddress) external {
+        oracleProxyMainnetAddress = _newAddress;
     }
     
     // SENDING DATA TO THE MAINNET PROXY
@@ -28,14 +34,14 @@ contract RCOracleProxyXdai
     function sendQuestionToMainnetBridge(address _marketAddress, string memory _question, uint32 _oracleResolutionTime) public {
         bytes4 _methodSelector = IRCOracleProxyMainnet(address(0)).postQuestionToOracle.selector;
         bytes memory data = abi.encodeWithSelector(_methodSelector, _marketAddress, _question, _oracleResolutionTime);
-        bridgeContractInstance.requireToPassMessage(RCBridgeProxyMainnetAddress,data,200000);
+        bridge.requireToPassMessage(oracleProxyMainnetAddress,data,200000);
     }
     
     // RECEIVING DATA FROM THE MAINNET PROXY
     
     function setWinner(address _marketAddress, uint256 _winningOutcome) external {
         // require(msg.sender == bridgeXdaiAddress, "Not bridge");
-        // require(bridgeContractInstance.messageSender() == RCBridgeProxyMainnetAddress, "Not proxy");
+        // require(bridge.messageSender() == oracleProxyMainnetAddress, "Not proxy");
         marketFinalised[_marketAddress] = true;
         winningOutcome[_marketAddress] = _winningOutcome;
     }

@@ -60,14 +60,14 @@ contract RCFactory is Ownable, CloneFactory {
     ////////////////////////////////////
 
     /// @dev Treasury must be deployed before Factory
-    constructor(ITreasury _treasuryAddress, IRCOracleProxyXdai _oracleProxyAddress) public 
+    constructor(ITreasury _treasuryAddress, IRCOracleProxyXdai _oracleProxyXdaiAddress) public 
     {
         // at initiation, uberOwner and owner will be the same
         uberOwner = msg.sender;
 
         // initialise contract variables
         treasury = _treasuryAddress;
-        oracleProxy = _oracleProxyAddress;
+        oracleProxy = _oracleProxyXdaiAddress;
 
         // initialise market parameters
         // artist // winner // creator // affiliate // card specific affiliates
