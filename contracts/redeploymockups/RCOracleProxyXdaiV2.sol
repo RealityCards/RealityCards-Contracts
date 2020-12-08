@@ -2,12 +2,10 @@ pragma solidity 0.5.13;
 
 import '../interfaces/IRCOracleProxyMainnet.sol';
 import '../interfaces/IBridgeContract.sol';
-import "@nomiclabs/buidler/console.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 
-/// @title Reality Cards Oracle Proxy- xDai side
-/// @author Andrew Stanger
-contract RCOracleProxyXdai is Ownable
+// a mockup to test changing the proxy, this is as per the original but always doubles the returned winner
+contract RCOracleProxyXdaiV2 is Ownable
 {
     IBridgeContract public bridge;
 
@@ -55,7 +53,7 @@ contract RCOracleProxyXdai is Ownable
         require(msg.sender == address(bridge), "Not bridge");
         require(bridge.messageSender() == oracleProxyMainnetAddress, "Not proxy");
         marketFinalized[_marketAddress] = true;
-        winningOutcome[_marketAddress] = _winningOutcome;
+        winningOutcome[_marketAddress] = (_winningOutcome * 2);
     }
     
     // CALLED FROM MARKET CONTRACTS

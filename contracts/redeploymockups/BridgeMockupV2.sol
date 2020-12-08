@@ -5,8 +5,7 @@ import "@nomiclabs/buidler/console.sol";
 import '../interfaces/IRCOracleProxyXdai.sol';
 import '../interfaces/IRCOracleProxyMainnet.sol';
 
-// test
-
+// a mockup to test changing the proxy, this is as per the original has a new number variable which is read
 contract BridgeMockupV2
 {
     address public oracleProxyMainnetAddress;

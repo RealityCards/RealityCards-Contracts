@@ -17,9 +17,11 @@ var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 var BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
 
 // redeploys
-var MainnetProxy2 = artifacts.require('./mockups/RCOracleProxyMainnet2.sol');
-var RCMarket2 = artifacts.require('./mockups/RCMarketXdaiV2.sol');
-var BridgeMockup2 = artifacts.require('./mockups/BridgeMockupV2.sol');
+var MainnetProxy2 = artifacts.require('./redeploymockups/RCOracleProxyMainnet2.sol');
+var XdaiProxy2 = artifacts.require('./redeploymockups/RCOracleProxyXdaiV2.sol');
+var RCMarket2 = artifacts.require('./redeploymockups/RCMarketXdaiV2.sol');
+var BridgeMockup2 = artifacts.require('./redeploymockups/BridgeMockupV2.sol');
+var RealitioMockup2 = artifacts.require("./redeploymockups/RealitioMockupV2.sol");
 
 const delay = duration => new Promise(resolve => setTimeout(resolve, duration));
 
@@ -3773,7 +3775,7 @@ it('test RCOracleProxyXdai', async () => {
     await bridge.setOracleProxyMainnetAddress(mainnetproxy2.address);
     realitycards2 = await createMarketWithArtistSet();
     await realitio.setResult(2);
-    // should be zero even though 2 was set
+    // should be 69 even though 2 was set
     await mainnetproxy2.getWinnerFromOracle(realitycards2.address);
     await time.increase(time.duration.years(1)); 
     await realitycards2.lockMarket(); 
@@ -3787,6 +3789,83 @@ it('test RCOracleProxyXdai', async () => {
     var number = await bridge2.number();
     assert.equal(number,69);
     // setFactoryAddress is already tested in test uberOwner Treasury
+});
+
+it('test RCOracleProxyMainnet various', async () => {
+    // check reverts on owned functions
+    await expectRevert(mainnetproxy.setOracleProxyXdaiAddress(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(mainnetproxy.setBridgeMainnetAddress(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(mainnetproxy.setRealitioAddress(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(mainnetproxy.setArbitrator(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(mainnetproxy.setTimeout(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(mainnetproxy.postQuestionToOracleAdmin(user0,"x",0, {from: user1}), "caller is not the owner");
+    // check reverts on other functions 
+    await expectRevert(mainnetproxy.postQuestionToOracle(user0, "x", 0), "Not bridge");
+    // test changing xdai proxy
+    var xdaiproxy2 = await XdaiProxy2.new(bridge.address, rcfactory.address);
+    await xdaiproxy2.setOracleProxyMainnetAddress(mainnetproxy.address);
+    await xdaiproxy2.setBridgeXdaiAddress(bridge.address);
+    await xdaiproxy2.setFactoryAddress(rcfactory.address);
+    await mainnetproxy.setOracleProxyXdaiAddress(xdaiproxy2.address);
+    await bridge.setOracleProxyXdaiAddress(xdaiproxy2.address);
+    await rcfactory.updateOracleProxyXdaiAddress(xdaiproxy2.address);
+    realitycards2 = await createMarketWithArtistSet();
+    await realitio.setResult(2);
+    // should be 4 even though 2 was set
+    await mainnetproxy.getWinnerFromOracle(realitycards2.address);
+    await time.increase(time.duration.years(1)); 
+    await realitycards2.lockMarket(); 
+    await realitycards2.determineWinner();
+    var winner = await realitycards2.winningOutcome();
+    assert.equal(winner,4);
+    // test changing setBridgeMainnetAddress
+    await mainnetproxy.setBridgeMainnetAddress(user0);
+    var newproxy = await mainnetproxy.bridge.call();
+    assert.equal(newproxy,user0)
+    
+});
+
+it('test RCOracleProxyMainnet, various 2', async () => {
+    // change relaitio, winner should return 69
+    realitio2 = await RealitioMockup2.new();
+    await mainnetproxy.setRealitioAddress(realitio2.address);
+    realitycards2 = await createMarketWithArtistSet();
+    await realitio2.setResult(2);
+    await mainnetproxy.getWinnerFromOracle(realitycards2.address);
+    await time.increase(time.duration.years(1)); 
+    await realitycards2.lockMarket(); 
+    await realitycards2.determineWinner();
+    var winner = await realitycards2.winningOutcome();
+    assert.equal(winner,69);
+    // change arbitrator
+    await mainnetproxy.setArbitrator(user0);
+    var newarb = await mainnetproxy.arbitrator.call();
+    assert.equal(newarb,user0)
+    // change timeout
+    await mainnetproxy.setTimeout(69);
+    var newtime = await mainnetproxy.timeout.call();
+    assert.equal(newtime,69)
+});
+
+it('test postQuestionToOracleAdmin', async () => {
+    // first, check it cant be called cos already posted
+    await expectRevert(mainnetproxy.postQuestionToOracleAdmin(realitycards.address,"x",0),"Already posted");
+    // fuck up the bridge and post a new market
+    await bridge.setOracleProxyMainnetAddress(user0);
+    realitycards2 = await createMarketWithArtistSet();
+    await mainnetproxy.postQuestionToOracleAdmin(realitycards2.address,"x",0)
+    await realitio.setResult(2);
+    await time.increase(time.duration.years(1)); 
+    await realitycards2.lockMarket();
+    await mainnetproxy.getWinnerFromOracle(realitycards2.address);
+    // bridge still fucked so should think not resolved
+    await expectRevert(realitycards2.determineWinner(),"Oracle not resolved");
+    // fix bridge, should work
+    await bridge.setOracleProxyMainnetAddress(mainnetproxy.address);
+    await mainnetproxy.getWinnerFromOracle(realitycards2.address);
+    await realitycards2.determineWinner();
+    var winner = await realitycards2.winningOutcome.call();
+    assert.equal(winner,2)
 });
 
 });

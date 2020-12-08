@@ -1,5 +1,6 @@
 pragma solidity 0.5.13;
 
+import "@nomiclabs/buidler/console.sol";
 import '../interfaces/IRealitio.sol';
 import '../interfaces/IRCOracleProxyXdai.sol';
 import '../interfaces/IBridgeContract.sol';
@@ -21,7 +22,7 @@ contract RCOracleProxyMainnet is Ownable
     // CONSTRUCTOR
 
     constructor(address _bridgeMainnetAddress, address _realitioAddress) public {
-        setBridgeXdaiAddress(_bridgeMainnetAddress);
+        setBridgeMainnetAddress(_bridgeMainnetAddress);
         setRealitioAddress(_realitioAddress);
         setArbitrator(0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D); //kleros
         setTimeout(86400); // 24 hours
@@ -34,7 +35,7 @@ contract RCOracleProxyMainnet is Ownable
         oracleProxyXdaiAddress = _newAddress;
     }
 
-    function setBridgeXdaiAddress(address _newAddress) onlyOwner public {
+    function setBridgeMainnetAddress(address _newAddress) onlyOwner public {
         bridge = IBridgeContract(_newAddress);
     }
 
@@ -48,6 +49,18 @@ contract RCOracleProxyMainnet is Ownable
 
     function setTimeout(uint32 _newTimeout) onlyOwner public {
         timeout = _newTimeout;
+    }
+
+    /// @dev admin can post question if not already posted
+    /// @dev for situations where bridge failed
+    function postQuestionToOracleAdmin(address _marketAddress, string calldata _question, uint32 _oracleResolutionTime) onlyOwner external {
+        require(questionIds[_marketAddress] == 0, "Already posted");
+        // hard coded values
+        uint256 _template_id = 2;
+        uint256 _nonce = 0;
+        // post to Oracle
+        bytes32 _questionId = realitio.askQuestion(_template_id, _question, arbitrator, timeout, _oracleResolutionTime, _nonce);
+        questionIds[_marketAddress] = _questionId;
     }
     
     // POSTING QUESTION TO THE ORACLE
@@ -67,6 +80,7 @@ contract RCOracleProxyMainnet is Ownable
 
     /// @dev can be called by anyone
     function getWinnerFromOracle(address _marketAddress) external returns(bool) {
+
         bytes32 _questionId = questionIds[_marketAddress];
         bool _isFinalized = realitio.isFinalized(_questionId);
         
