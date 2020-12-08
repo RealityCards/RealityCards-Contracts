@@ -59,11 +59,13 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     realitio = await RealitioMockup.new();
     bridge = await BridgeMockup.new();
     // bridge contracts
-    xdaiproxy = await XdaiProxy.new(bridge.address);
+    xdaiproxy = await XdaiProxy.new(bridge.address, rcfactory.address);
     mainnetproxy = await MainnetProxy.new(bridge.address, realitio.address);
     await rcfactory.updateOracleProxyXdaiAddress(xdaiproxy.address);
     await xdaiproxy.setOracleProxyMainnetAddress(mainnetproxy.address);
     await mainnetproxy.setOracleProxyXdaiAddress(xdaiproxy.address);
+    await bridge.setOracleProxyMainnetAddress(mainnetproxy.address);
+    await bridge.setOracleProxyXdaiAddress(xdaiproxy.address);
     // market creation
     await rcfactory.createMarket(
         0,
