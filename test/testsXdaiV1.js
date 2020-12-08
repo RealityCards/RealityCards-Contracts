@@ -13,9 +13,13 @@ var RCTreasury = artifacts.require('./RCTreasury.sol');
 var RCMarket = artifacts.require('./RCMarketXdaiV1.sol');
 var XdaiProxy = artifacts.require('./bridgeproxies/RCOracleProxyXdai.sol');
 var MainnetProxy = artifacts.require('./bridgeproxies/RCOracleProxyMainnet.sol');
-var RCMarket2 = artifacts.require('./mockups/RCMarketXdaiV2.sol');
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 var BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
+
+// redeploys
+var MainnetProxy2 = artifacts.require('./mockups/RCOracleProxyMainnet2.sol');
+var RCMarket2 = artifacts.require('./mockups/RCMarketXdaiV2.sol');
+var BridgeMockup2 = artifacts.require('./mockups/BridgeMockupV2.sol');
 
 const delay = duration => new Promise(resolve => setTimeout(resolve, duration));
 
@@ -3751,6 +3755,38 @@ it('test uberOwner factory', async () => {
     await newRental(69,4,user3);
     var price = await realitycards.price.call(4);
     assert.equal(price, web3.utils.toWei('69', 'ether'));
+});
+
+it('test RCOracleProxyXdai', async () => {
+    // check reverts on owned functions
+    await expectRevert(xdaiproxy.setOracleProxyMainnetAddress(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(xdaiproxy.setBridgeXdaiAddress(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(xdaiproxy.setFactoryAddress(user0, {from: user1}), "caller is not the owner");
+    // check reverts on other functions 
+    await expectRevert(xdaiproxy.sendQuestionToBridge(user0, "x", 0), "Not factory");
+    await expectRevert(xdaiproxy.setWinner(user0, 0), "Not bridge");
+    await expectRevert(xdaiproxy.getWinner(user0), "Not finalised");
+    // test changing mainnet proxy
+    mainnetproxy2 = await MainnetProxy2.new(bridge.address, realitio.address);
+    await xdaiproxy.setOracleProxyMainnetAddress(mainnetproxy2.address);
+    await mainnetproxy2.setOracleProxyXdaiAddress(xdaiproxy.address);
+    await bridge.setOracleProxyMainnetAddress(mainnetproxy2.address);
+    realitycards2 = await createMarketWithArtistSet();
+    await realitio.setResult(2);
+    // should be zero even though 2 was set
+    await mainnetproxy2.getWinnerFromOracle(realitycards2.address);
+    await time.increase(time.duration.years(1)); 
+    await realitycards2.lockMarket(); 
+    await realitycards2.determineWinner();
+    var winner = await realitycards2.winningOutcome();
+    assert.equal(winner,69);
+    // test changing bridge, bridge should now have number = 69
+    bridge2 = await BridgeMockup2.new();
+    await xdaiproxy.setBridgeXdaiAddress(bridge2.address);
+    await createMarketWithArtistSet();
+    var number = await bridge2.number();
+    assert.equal(number,69);
+    // setFactoryAddress is already tested in test uberOwner Treasury
 });
 
 });
