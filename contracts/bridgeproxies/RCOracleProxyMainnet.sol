@@ -4,13 +4,12 @@ import '../interfaces/IRealitio.sol';
 import '../interfaces/IRCOracleProxyXdai.sol';
 import '../interfaces/IBridgeContract.sol';
 
-/// @title Reality Cards Oracle Proxy- mainnet side
-/// @author Andrew Stanger
+////////////////////
+
 contract RCOracleProxyMainnet 
 {
     IRealitio public realitio;
-    IBridgeContract public bridge;
-    uint public number = 3; 
+    IBridgeContract public bridge; 
 
     address public oracleProxyXdaiAddress;
     
@@ -32,7 +31,6 @@ contract RCOracleProxyMainnet
     // POSTING QUESTION TO THE ORACLE
     
     function postQuestionToOracle(address _marketAddress, string calldata _question, uint32 _oracleResolutionTime) external {
-        require(false,"STFU");
         // hard coded values
         // string memory _question = 'TEST PLEASE IGNORE 1␟"1","2"␟politics␟en_US';
         uint256 _template_id = 2;
@@ -66,9 +64,5 @@ contract RCOracleProxyMainnet
         bytes memory data = abi.encodeWithSelector(_methodSelector, _marketAddress, _winningOutcome);
         bridge.requireToPassMessage(oracleProxyXdaiAddress,data,200000);
     } 
-
-    function() external {
-        require(false,"STFU");
-    }
     
 }

@@ -2,7 +2,6 @@ pragma solidity 0.5.13;
 pragma experimental ABIEncoderV2;
 
 // this is a mockup to test a new reference contract. It is unchanged from the original except that the rental price is doubled from what is passed as an argument
-// should never be deployed to a public chain. 
 
 import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/ERC721Full.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
