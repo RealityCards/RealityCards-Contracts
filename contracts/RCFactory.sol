@@ -60,14 +60,13 @@ contract RCFactory is Ownable, CloneFactory {
     ////////////////////////////////////
 
     /// @dev Treasury must be deployed before Factory
-    constructor(ITreasury _treasuryAddress, IRCOracleProxyXdai _oracleProxyXdaiAddress) public 
+    constructor(ITreasury _treasuryAddress) public 
     {
         // at initiation, uberOwner and owner will be the same
         uberOwner = msg.sender;
 
-        // initialise contract variables
+        // initialise contract variable
         treasury = _treasuryAddress;
-        oracleProxy = _oracleProxyXdaiAddress;
 
         // initialise market parameters
         // artist // winner // creator // affiliate // card specific affiliates
@@ -95,7 +94,7 @@ contract RCFactory is Ownable, CloneFactory {
     //////////// GOVERNANCE ////////////
     ////////////////////////////////////
 
-    /// CALLED WITHIN CONSTRUCTOR
+    /// CALLED WITHIN CONSTRUCTOR (public)
 
     /// @dev in 10s of basis points (so 1000 = 100%)
     function updatePotDistribution(uint256 _artistCut, uint256 _winnerCut, uint256 _creatorCut, uint256 _affiliateCut, uint256 _cardSpecificAffiliateCut) public onlyOwner {
@@ -112,7 +111,7 @@ contract RCFactory is Ownable, CloneFactory {
         minimumPriceIncrease = _percentIncrease;
     }
 
-    /// NOT CALLED WITHIN CONSTRUCTOR
+    /// NOT CALLED WITHIN CONSTRUCTOR (external)
 
     /// @notice add or remove an address from market creator whitelist
     function addOrRemoveMarketCreator(address _marketCreator) external onlyOwner {
@@ -134,6 +133,10 @@ contract RCFactory is Ownable, CloneFactory {
         emit LogMarketHidden(_market);
     }
 
+    function updateOracleProxyXdaiAddress(IRCOracleProxyXdai _newAddress) external onlyOwner {
+        oracleProxy = _newAddress;
+    }
+
     ////////////////////////////////////
     ///////////// UPGRADES /////////////
     ////////////////////////////////////
@@ -142,13 +145,13 @@ contract RCFactory is Ownable, CloneFactory {
     /// @dev ... while maintaining governance over adjustable parameters
 
     /// @notice set the reference contract for the contract logic
-    function setReferenceContractAddress(address _referenceContractAddress) external {
+    function setReferenceContractAddress(address _newAddress) external {
         require(msg.sender == uberOwner, "Access denied");
         // check it's an RC contract
-        IRCMarketXdaiV1 newContractVariable = IRCMarketXdaiV1(_referenceContractAddress);
+        IRCMarketXdaiV1 newContractVariable = IRCMarketXdaiV1(_newAddress);
         assert(newContractVariable.isMarket());
         // set 
-        referenceContractAddress = _referenceContractAddress;
+        referenceContractAddress = _newAddress;
     }
 
     function changeUberOwner(address _newUberOwner) external {
@@ -172,7 +175,6 @@ contract RCFactory is Ownable, CloneFactory {
         string memory _realitioQuestion,
         string memory _tokenName
     ) public payable returns (address)  {
-        
         require(msg.value >= sponsorshipRequired, "Insufficient sponsorship");
 
         if (marketCreatorWhitelistEnabled) {
@@ -192,7 +194,8 @@ contract RCFactory is Ownable, CloneFactory {
         });
 
         // post question to Oracle
-        oracleProxy.sendQuestionToMainnetBridge(_newAddress, _realitioQuestion, _timestamps[2]);
+        require(address(oracleProxy) != address(0), "xDai proxy not set");
+        oracleProxy.sendQuestionToBridge(_newAddress, _realitioQuestion, _timestamps[2]);
 
         // tell Treasury about new market
         assert(treasury.addMarket(_newAddress));
@@ -211,4 +214,3 @@ contract RCFactory is Ownable, CloneFactory {
     }
 
 }
-

@@ -31,7 +31,7 @@ contract RCOracleProxyXdai
     
     // SENDING DATA TO THE MAINNET PROXY
     
-    function sendQuestionToMainnetBridge(address _marketAddress, string memory _question, uint32 _oracleResolutionTime) public {
+    function sendQuestionToBridge(address _marketAddress, string memory _question, uint32 _oracleResolutionTime) public {
         bytes4 _methodSelector = IRCOracleProxyMainnet(address(0)).postQuestionToOracle.selector;
         bytes memory data = abi.encodeWithSelector(_methodSelector, _marketAddress, _question, _oracleResolutionTime);
         bridge.requireToPassMessage(oracleProxyMainnetAddress,data,200000);
