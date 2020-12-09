@@ -148,7 +148,6 @@ contract RCMarket is ERC721Full {
         numberOfTokens = _tokenURIs.length;
         marketOpeningTime = _timestamps[0];
         marketLockingTime = _timestamps[1];
-        // oracleResolutionTime = _timestamps[2];
         artistAddress = _artistAddress;
         marketCreatorAddress = _marketCreatorAddress;
         affiliateAddress = _affiliateAddress;
@@ -209,10 +208,7 @@ contract RCMarket is ERC721Full {
     event LogContractLocked(bool indexed didTheEventFinish);
     event LogWinnerKnown(uint256 indexed winningOutcome);
     event LogWinningsPaid(address indexed paidTo, uint256 indexed amountPaid);
-    event LogArtistPaid(address indexed paidTo, uint256 indexed amountPaid);
-    event LogAffiliatePaid(address indexed paidTo, uint256 indexed amountPaid);
-    event LogCreatorPaid(address indexed paidTo, uint256 indexed amountPaid);
-    event LogCardRecipientPaid(address indexed paidTo, uint256 indexed amountPaid);
+    event LogStakeholderPaid(address indexed paidTo, uint256 indexed amountPaid);
     event LogRentReturned(address indexed returnedTo, uint256 indexed amountReturned);
     event LogTimeHeldUpdated(uint256 indexed newTimeHeld, address indexed owner, uint256 indexed tokenId);
     event LogStateChange(uint256 indexed newState);
@@ -347,7 +343,7 @@ contract RCMarket is ERC721Full {
         assert(treasury.payout(_recipient, _amount));
     }
 
-    /// @dev the below functions pay artist, creator, affiliate, card specific affiliates as appropriate
+    /// @dev the below functions pay stakeholders (artist, creator, affiliate, card specific affiliates)
     /// @dev they are not called within determineWinner() because of the risk of an
     /// @dev ....  address being a contract which refuses payment, then nobody could get winnings
 
@@ -355,29 +351,34 @@ contract RCMarket is ERC721Full {
     function payArtist() external checkState(States.WITHDRAW) {
         require(!artistPaid, "Artist already paid");
         artistPaid = true;
-        if (artistCut > 0) {
-            uint256 _artistPayment = (totalCollected.mul(artistCut)).div(1000);
-            if (_artistPayment > 0) {
-                _payout(artistAddress, _artistPayment);
-            }
-            emit LogArtistPaid(artistAddress, _artistPayment);
-        }
+        _processStakeholderPayment(artistCut, artistAddress);
+    }
+
+    /// @notice pay market creator
+    function payMarketCreator() external checkState(States.WITHDRAW) {
+        require(totalTimeHeld[winningOutcome] > 0, "No winner");
+        require(!creatorPaid, "Creator already paid");
+        creatorPaid = true;
+        _processStakeholderPayment(creatorCut, marketCreatorAddress);
     }
 
     /// @notice pay affiliate
     function payAffiliate() external checkState(States.WITHDRAW) {
         require(!affiliatePaid, "Affiliate already paid");
         affiliatePaid = true;
-        if (affiliateCut > 0) {
-            uint256 _affiliatePayment = (totalCollected.mul(affiliateCut)).div(1000);
-            if (_affiliatePayment > 0) {
-                _payout(affiliateAddress, _affiliatePayment);
-            }
-            emit LogAffiliatePaid(affiliateAddress, _affiliatePayment);
+        _processStakeholderPayment(affiliateCut, affiliateAddress);
+    }
+
+    function _processStakeholderPayment(uint256 _cut, address _recipient) internal {
+        if (_cut > 0) {
+            uint256 _payment = (totalCollected.mul(_cut)).div(1000);
+            _payout(_recipient, _payment);
+            emit LogStakeholderPaid(_recipient, _payment);
         }
     }
 
     /// @notice pay card recipients
+    /// @dev does not call _processStakeholderPayment because it works differently
     function payCardSpecificAffiliate() external checkState(States.WITHDRAW) {
         require(!cardSpecificAffiliatePaid, "Card recipients already paid");
         cardSpecificAffiliatePaid = true;
@@ -387,22 +388,8 @@ contract RCMarket is ERC721Full {
                 if (_cardSpecificAffiliatePayment > 0) {
                     _payout(cardSpecificAffiliateAddresses[i], _cardSpecificAffiliatePayment);
                 }
-                emit LogCardRecipientPaid(cardSpecificAffiliateAddresses[i], _cardSpecificAffiliatePayment);
+                emit LogStakeholderPaid(cardSpecificAffiliateAddresses[i], _cardSpecificAffiliatePayment);
             }
-        }
-    }
-
-    /// @notice pay market creator
-    function payMarketCreator() external checkState(States.WITHDRAW) {
-        require(totalTimeHeld[winningOutcome] > 0, "No winner");
-        require(!creatorPaid, "Creator already paid");
-        creatorPaid = true;
-        if (creatorCut > 0) {
-            uint256 _marketCreatorsCut = (totalCollected.mul(creatorCut)).div(1000);
-            if (_marketCreatorsCut > 0) {
-                _payout(marketCreatorAddress, _marketCreatorsCut);
-            }
-            emit LogCreatorPaid(marketCreatorAddress, _marketCreatorsCut);
         }
     }
 
