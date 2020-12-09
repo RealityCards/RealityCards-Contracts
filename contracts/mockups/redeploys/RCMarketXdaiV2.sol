@@ -7,9 +7,9 @@ import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/ERC721Fu
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "@openzeppelin/upgrades/contracts/Initializable.sol";
 import "@nomiclabs/buidler/console.sol";
-import "../interfaces/IRealitio.sol";
-import "../interfaces/IFactory.sol";
-import "../interfaces/ITreasury.sol";
+import "../../interfaces/IRealitio.sol";
+import "../../interfaces/IFactory.sol";
+import "../../interfaces/ITreasury.sol";
 
 /// @title Reality Cards Market
 /// @author Andrew Stanger

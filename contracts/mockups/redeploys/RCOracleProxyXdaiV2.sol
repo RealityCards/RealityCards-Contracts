@@ -1,7 +1,7 @@
 pragma solidity 0.5.13;
 
-import '../interfaces/IRCOracleProxyMainnet.sol';
-import '../interfaces/IBridgeContract.sol';
+import '../../interfaces/IRCOracleProxyMainnet.sol';
+import '../../interfaces/IBridgeContract.sol';
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 
 // a mockup to test changing the proxy, this is as per the original but always doubles the returned winner

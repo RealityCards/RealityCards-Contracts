@@ -410,7 +410,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     }
 
     ////////////////////////////////////
-    ///// MAIN FUNCTIONS- EXTERNAL /////
+    ///// CORE FUNCTIONS- EXTERNAL /////
     ////////////////////////////////////
     /// @dev basically functions that have checkState(States.OPEN) modifier
 
@@ -549,7 +549,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     }
 
     ////////////////////////////////////
-    ///// MAIN FUNCTIONS- INTERNAL /////
+    ///// CORE FUNCTIONS- INTERNAL /////
     ////////////////////////////////////
 
     /// @notice collects rent for a specific token

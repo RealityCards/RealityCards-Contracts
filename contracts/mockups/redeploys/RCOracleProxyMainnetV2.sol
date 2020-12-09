@@ -1,12 +1,12 @@
 pragma solidity 0.5.13;
 
-import '../interfaces/IRealitio.sol';
-import '../interfaces/IRCOracleProxyXdai.sol';
-import '../interfaces/IBridgeContract.sol';
+import '../../interfaces/IRealitio.sol';
+import '../../interfaces/IRCOracleProxyXdai.sol';
+import '../../interfaces/IBridgeContract.sol';
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 
 // a mockup to test changing the proxy, this is as per the original but always returns winner of 69
-contract RCOracleProxyMainnet2 is Ownable
+contract RCOracleProxyMainnetV2 is Ownable
 {
     IRealitio public realitio;
     IBridgeContract public bridge; 

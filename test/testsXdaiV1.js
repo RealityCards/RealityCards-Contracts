@@ -17,11 +17,11 @@ var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 var BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
 
 // redeploys
-var MainnetProxy2 = artifacts.require('./redeploymockups/RCOracleProxyMainnet2.sol');
-var XdaiProxy2 = artifacts.require('./redeploymockups/RCOracleProxyXdaiV2.sol');
-var RCMarket2 = artifacts.require('./redeploymockups/RCMarketXdaiV2.sol');
-var BridgeMockup2 = artifacts.require('./redeploymockups/BridgeMockupV2.sol');
-var RealitioMockup2 = artifacts.require("./redeploymockups/RealitioMockupV2.sol");
+var MainnetProxy2 = artifacts.require('./mockups/redeploys/RCOracleProxyMainnetV2.sol');
+var XdaiProxy2 = artifacts.require('./mockups/redeploys/RCOracleProxyXdaiV2.sol');
+var RCMarket2 = artifacts.require('./mockups/redeploys/RCMarketXdaiV2.sol');
+var BridgeMockup2 = artifacts.require('./mockups/redeploys/BridgeMockupV2.sol');
+var RealitioMockup2 = artifacts.require("./mockups/redeploys/RealitioMockupV2.sol");
 
 const delay = duration => new Promise(resolve => setTimeout(resolve, duration));
 
