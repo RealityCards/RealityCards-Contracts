@@ -1,7 +1,7 @@
 /* globals artifacts */
 var RealityCardsTreasury = artifacts.require("./RCTreasury.sol");
 var RealityCardsFactory = artifacts.require("./RCFactory.sol");
-var RealityCardsMarketXdaiV1 = artifacts.require("./RCMarketXdaiV1.sol")
+var RealityCardsMarketXdaiV1 = artifacts.require("./RCMarket.sol")
 
 
 // MAINNET ADDRESSES

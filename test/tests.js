@@ -10,7 +10,7 @@ const {
 
 var RCFactory = artifacts.require('./RCFactory.sol');
 var RCTreasury = artifacts.require('./RCTreasury.sol');
-var RCMarket = artifacts.require('./RCMarketXdaiV1.sol');
+var RCMarket = artifacts.require('./RCMarket.sol');
 var XdaiProxy = artifacts.require('./bridgeproxies/RCOracleProxyXdai.sol');
 var MainnetProxy = artifacts.require('./bridgeproxies/RCOracleProxyMainnet.sol');
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
@@ -59,7 +59,6 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     rcfactory = await RCFactory.new(treasury.address);
     rcreference = await RCMarket.new();
     await treasury.setFactoryAddress(rcfactory.address);
-    await rcfactory.setReferenceContractAddress(rcreference.address);
     await rcfactory.setReferenceContractAddress(rcreference.address);
     // mockups 
     realitio = await RealitioMockup.new();
@@ -3745,6 +3744,9 @@ it('test uberOwner factory', async () => {
     // deploy new reference, update address
     rcreference2 = await RCMarket2.new();
     await rcfactory.setReferenceContractAddress(rcreference2.address, {from: user5});
+    // check version has increased 
+    var version = await rcfactory.referenceContractVersion.call();
+    assert.equal(version,2);
     // deploy new market from new reference contract, check that price is doubling
     await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,tokenName);
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);

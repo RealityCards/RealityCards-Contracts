@@ -12,7 +12,7 @@ import './interfaces/IRCOracleProxyXdai.sol';
 
 /// @title Reality Cards Market
 /// @author Andrew Stanger
-contract RCMarketXdaiV1 is ERC721Full {
+contract RCMarket is ERC721Full {
 
     using SafeMath for uint256;
 

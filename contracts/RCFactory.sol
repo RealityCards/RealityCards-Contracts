@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@nomiclabs/buidler/console.sol";
 import './lib/CloneFactory.sol';
 import "./interfaces/ITreasury.sol";
-import './interfaces/IRCMarketXdaiV1.sol';
+import './interfaces/IRCMarket.sol';
 import './interfaces/IRCOracleProxyXdai.sol';
 
 /// @title Reality Cards Factory
@@ -27,6 +27,8 @@ contract RCFactory is Ownable, CloneFactory {
     ///// CONTRACT ADDRESSES /////
     // reference contract
     address public referenceContractAddress; 
+    // increments each time a new reference contract is added
+    uint256 public referenceContractVersion;
     // market addresses, mode // address
     mapping(uint256 => address[]) public marketAddresses;
     mapping(address => bool) public mappingOfMarkets; // not used for anything 
@@ -52,7 +54,7 @@ contract RCFactory is Ownable, CloneFactory {
     //////// EVENTS ////////////////////
     ////////////////////////////////////
 
-    event LogMarketCreated(address contractAddress, address treasuryAddress, string[] tokenURIs, uint32[] timestamps, uint256 mode, string ipfsHash);
+    event LogMarketCreated(address contractAddress, address treasuryAddress, string[] tokenURIs, uint32[] timestamps, uint256 mode, string ipfsHash, uint256 referenceContractVersion);
     event LogMarketHidden(address market);
 
     ////////////////////////////////////
@@ -148,10 +150,12 @@ contract RCFactory is Ownable, CloneFactory {
     function setReferenceContractAddress(address _newAddress) external {
         require(msg.sender == uberOwner, "Access denied");
         // check it's an RC contract
-        IRCMarketXdaiV1 newContractVariable = IRCMarketXdaiV1(_newAddress);
+        IRCMarket newContractVariable = IRCMarket(_newAddress);
         assert(newContractVariable.isMarket());
         // set 
         referenceContractAddress = _newAddress;
+        // increment version
+        referenceContractVersion = referenceContractVersion.add(1);
     }
 
     function changeUberOwner(address _newUberOwner) external {
@@ -182,7 +186,7 @@ contract RCFactory is Ownable, CloneFactory {
         }
 
         address _newAddress = createClone(referenceContractAddress);
-        IRCMarketXdaiV1(_newAddress).initialize({
+        IRCMarket(_newAddress).initialize({
             _mode: _mode,
             _timestamps: _timestamps,
             _tokenURIs: _tokenURIs,
@@ -206,10 +210,10 @@ contract RCFactory is Ownable, CloneFactory {
 
         // pay sponsorship, if applicable
         if (msg.value > 0) {
-            IRCMarketXdaiV1(_newAddress).sponsor.value(msg.value)();
+            IRCMarket(_newAddress).sponsor.value(msg.value)();
         }
 
-        emit LogMarketCreated(address(_newAddress), address(treasury), _tokenURIs, _timestamps,  _mode, _ipfsHash);
+        emit LogMarketCreated(address(_newAddress), address(treasury), _tokenURIs, _timestamps,  _mode, _ipfsHash, referenceContractVersion);
         return _newAddress;
     }
 
