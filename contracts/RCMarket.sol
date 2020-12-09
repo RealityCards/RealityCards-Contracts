@@ -36,6 +36,7 @@ contract RCMarket is ERC721Full {
     ///// CONTRACT VARIABLES /////
     ITreasury public treasury;
     IRCOracleProxyXdai public oracleProxy;
+    IFactory public factory;
 
     ///// PRICE, DEPOSITS, RENT /////
     /// @dev in attodai (so 100xdai = 100000000000000000000)
@@ -84,7 +85,7 @@ contract RCMarket is ERC721Full {
     //// @dev when the market locks 
     uint32 public marketLockingTime; 
     //// @dev when the question can be answered on realitio
-    uint32 public oracleResolutionTime;
+    // uint32 public oracleResolutionTime;
 
     ///// PAYOUT VARIABLES /////
     uint256 public winningOutcome;
@@ -131,7 +132,11 @@ contract RCMarket is ERC721Full {
         string memory _tokenName
     ) public initializer {
         assert(_mode <= 2);
-        IFactory _factory = IFactory(msg.sender);
+
+        // external contract variables:
+        factory = IFactory(msg.sender);
+        treasury = factory.treasury();
+        oracleProxy = factory.oracleProxy();
         
         // initialiiize!
         ERC721.initialize();
@@ -143,13 +148,13 @@ contract RCMarket is ERC721Full {
         numberOfTokens = _tokenURIs.length;
         marketOpeningTime = _timestamps[0];
         marketLockingTime = _timestamps[1];
-        oracleResolutionTime = _timestamps[2];
+        // oracleResolutionTime = _timestamps[2];
         artistAddress = _artistAddress;
         marketCreatorAddress = _marketCreatorAddress;
         affiliateAddress = _affiliateAddress;
         cardSpecificAffiliateAddresses = _cardSpecificAffiliateAddresses;
-        uint256[5] memory _potDistribution = _factory.getPotDistribution();
-        minimumPriceIncrease = _factory.minimumPriceIncrease();
+        uint256[5] memory _potDistribution = factory.getPotDistribution();
+        minimumPriceIncrease = factory.minimumPriceIncrease();
         artistCut = _potDistribution[0];
         winnerCut = _potDistribution[1];
         creatorCut = _potDistribution[2];
@@ -179,13 +184,6 @@ contract RCMarket is ERC721Full {
         if (_mode == 1) {
             winnerCut = (((uint256(1000).sub(artistCut)).sub(creatorCut)).sub(affiliateCut)).sub(cardSpecificAffiliateCut);
         } 
-
-        // resolution time must not be less than locking time, and not greater by more than one week
-        require(marketLockingTime + 1 weeks > oracleResolutionTime && marketLockingTime <= oracleResolutionTime, "Invalid timestamps" );
-        
-        // external contract variables:
-        treasury = _factory.treasury();
-        oracleProxy = _factory.oracleProxy();
 
         // create the NFTs
         for (uint i = 0; i < numberOfTokens; i++) { 
@@ -245,12 +243,6 @@ contract RCMarket is ERC721Full {
         if (marketLockingTime <= now) {
             lockMarket();
         }
-    }
-
-    /// @notice checks the token exists
-    modifier tokenExists(uint256 _tokenId) {
-        require(_tokenId < numberOfTokens, "This token does not exist");
-       _;
     }
 
     /// @notice what it says on the tin
@@ -335,7 +327,7 @@ contract RCMarket is ERC721Full {
         uint256 _numerator = _remainingPot.mul(_winnersTimeHeld);
         _winningsToTransfer = _winningsToTransfer.add(_numerator.div(totalTimeHeld[winningOutcome]));
         require(_winningsToTransfer > 0, "Not a winner");
-        assert(treasury.payout(msg.sender, _winningsToTransfer));
+        _payout(msg.sender, _winningsToTransfer);
         emit LogWinningsPaid(msg.sender, _winningsToTransfer);
     }
 
@@ -346,8 +338,13 @@ contract RCMarket is ERC721Full {
         uint256 _rentCollected = collectedPerUser[msg.sender];
         require(_rentCollected > 0, "Paid no rent");
         uint256 _rentCollectedAdjusted = (_rentCollected.mul(_remainingCut)).div(1000);
-        assert(treasury.payout(msg.sender, _rentCollectedAdjusted));
+        _payout(msg.sender, _rentCollectedAdjusted);
         emit LogRentReturned(msg.sender, _rentCollectedAdjusted);
+    }
+
+    /// @notice all payouts happen through here
+    function _payout(address _recipient, uint256 _amount) internal {
+        assert(treasury.payout(_recipient, _amount));
     }
 
     /// @dev the below functions pay artist, creator, affiliate, card specific affiliates as appropriate
@@ -361,7 +358,7 @@ contract RCMarket is ERC721Full {
         if (artistCut > 0) {
             uint256 _artistPayment = (totalCollected.mul(artistCut)).div(1000);
             if (_artistPayment > 0) {
-                assert(treasury.payout(artistAddress, _artistPayment));
+                _payout(artistAddress, _artistPayment);
             }
             emit LogArtistPaid(artistAddress, _artistPayment);
         }
@@ -374,7 +371,7 @@ contract RCMarket is ERC721Full {
         if (affiliateCut > 0) {
             uint256 _affiliatePayment = (totalCollected.mul(affiliateCut)).div(1000);
             if (_affiliatePayment > 0) {
-                assert(treasury.payout(affiliateAddress, _affiliatePayment));
+                _payout(affiliateAddress, _affiliatePayment);
             }
             emit LogAffiliatePaid(affiliateAddress, _affiliatePayment);
         }
@@ -388,7 +385,7 @@ contract RCMarket is ERC721Full {
             for (uint i = 0; i < numberOfTokens; i++) {
                 uint256 _cardSpecificAffiliatePayment = (collectedPerToken[i].mul(cardSpecificAffiliateCut)).div(1000);
                 if (_cardSpecificAffiliatePayment > 0) {
-                    assert(treasury.payout(cardSpecificAffiliateAddresses[i], _cardSpecificAffiliatePayment));
+                    _payout(cardSpecificAffiliateAddresses[i], _cardSpecificAffiliatePayment);
                 }
                 emit LogCardRecipientPaid(cardSpecificAffiliateAddresses[i], _cardSpecificAffiliatePayment);
             }
@@ -403,7 +400,7 @@ contract RCMarket is ERC721Full {
         if (creatorCut > 0) {
             uint256 _marketCreatorsCut = (totalCollected.mul(creatorCut)).div(1000);
             if (_marketCreatorsCut > 0) {
-                assert(treasury.payout(marketCreatorAddress, _marketCreatorsCut));
+                _payout(marketCreatorAddress, _marketCreatorsCut);
             }
             emit LogCreatorPaid(marketCreatorAddress, _marketCreatorsCut);
         }
@@ -438,9 +435,10 @@ contract RCMarket is ERC721Full {
     }
 
     /// @notice to rent a token
-    function newRental(uint256 _newPrice, uint256 _timeHeldLimit, uint256 _tokenId) public payable autoUnlock() autoLock() checkState(States.OPEN) tokenExists(_tokenId) {
+    function newRental(uint256 _newPrice, uint256 _timeHeldLimit, uint256 _tokenId) public payable autoUnlock() autoLock() checkState(States.OPEN) {
         require(_newPrice >= (price[_tokenId].mul(minimumPriceIncrease.add(100))).div(100), "Price too low");
         require(_newPrice >= 1 ether, "Minimum rental 1 Dai");
+        require(_tokenId < numberOfTokens, "This token does not exist");
         _collectRent(_tokenId);
         address _currentOwner = ownerOf(_tokenId);
 
@@ -490,7 +488,7 @@ contract RCMarket is ERC721Full {
     }
 
     /// @notice to change your timeHeldLimit without having to re-rent
-    function updateTimeHeldLimit(uint256 _timeHeldLimit, uint256 _tokenId) external checkState(States.OPEN) tokenExists(_tokenId) {
+    function updateTimeHeldLimit(uint256 _timeHeldLimit, uint256 _tokenId) external checkState(States.OPEN) {
         _collectRent(_tokenId);
         uint256 _minRentalTime = uint256(1 days).div(treasury.minRentalDivisor());
         require(_timeHeldLimit == 0 || _timeHeldLimit >= timeHeld[_tokenId][msg.sender].add(_minRentalTime), "Limit too low");
@@ -504,7 +502,7 @@ contract RCMarket is ERC721Full {
     /// @notice stop renting a token
     /// @dev public because called by exitAll()
     /// @dev doesn't need to be current owner so user can prevent ownership returning to them
-    function exit(uint256 _tokenId) public checkState(States.OPEN) tokenExists(_tokenId) {
+    function exit(uint256 _tokenId) public checkState(States.OPEN) {
         // if current owner, collect rent, revert if necessary
         if (ownerOf(_tokenId) == msg.sender) {
             // collectRent first, so correct rent to now is taken
@@ -665,10 +663,14 @@ contract RCMarket is ERC721Full {
     /// @notice gives each Card to the longest owner
     function _processNFTsAfterEvent() internal {
         for (uint i = 0; i < numberOfTokens; i++) {
-            if (longestOwner[i] != address(0)) {
-                // if never owned, longestOwner[i] will = zero
-                _transferTokenTo(ownerOf(i), longestOwner[i], price[i], i);
-            } 
+            if (factory.burnIfUnapproved() && !factory.isMarketApproved(address(this))) {
+                _burn(i);
+            } else {
+                if (longestOwner[i] != address(0)) {
+                    // if never owned, longestOwner[i] will = zero
+                    _transferTokenTo(ownerOf(i), longestOwner[i], price[i], i);
+                } 
+            }
         }
     }
 
@@ -696,16 +698,6 @@ contract RCMarket is ERC721Full {
     function _incrementState() internal {
         assert(uint256(state) < 4);
         state = States(uint256(state) + 1);
-        emit LogStateChange(uint256(state));
-    }
-
-    /// @dev change state to WITHDRAW to lock contract and return all funds
-    /// @dev in case Oracle never resolves, or a bug is found 
-    function circuitBreaker() external {
-        require(now > (oracleResolutionTime + 4 weeks), "Too early");
-        state = States.WITHDRAW;
-        _processNFTsAfterEvent();
-        emit LogWinnerKnown(winningOutcome);
         emit LogStateChange(uint256(state));
     }
 

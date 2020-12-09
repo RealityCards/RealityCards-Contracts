@@ -37,14 +37,18 @@ contract RCFactory is Ownable, CloneFactory {
     // artist / winner / market creator / affiliate / card specific affiliate
     uint256[5] public potDistribution;
     uint256 public sponsorshipRequired;
-    // so markets can be hidden from the interface
-    mapping(address => bool) public hiddenMarkets;
     // adjust required price increase
     uint256 public minimumPriceIncrease;
 
-    ///// MARKET CREATION /////
-    bool public marketCreatorWhitelistEnabled = true;
+    ///// MARKET CREATION & HIDING /////
+    /// @dev if false, anyone can create markets
+    bool public marketCreatorWhitelistEnabled;
+    /// @dev who can create markets if above true. Also used to unhide hidden markets. 
     mapping(address => bool) public marketCreatorWhitelist;
+    // so markets can be hidden from the interface
+    mapping(address => bool) public isMarketApproved;
+    // if true, cards are burnt at the end of events for hidden markets to enforce scarcity
+    bool public burnIfUnapproved = true;
 
     ///// UBER OWNER /////
     /// @dev high level owner who can change the factory address
@@ -55,7 +59,7 @@ contract RCFactory is Ownable, CloneFactory {
     ////////////////////////////////////
 
     event LogMarketCreated(address contractAddress, address treasuryAddress, string[] tokenURIs, uint32[] timestamps, uint256 mode, string ipfsHash, uint256 referenceContractVersion);
-    event LogMarketHidden(address market);
+    event LogMarketHidden(address market, bool hidden);
 
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
@@ -126,17 +130,26 @@ contract RCFactory is Ownable, CloneFactory {
         marketCreatorWhitelistEnabled = marketCreatorWhitelistEnabled ? false : true;
     }
 
+    /// @notice how much xdai must be sent in the createMarket tx which forms the initial pot
     function updateSponsorshipRequired(uint256 _dai) external onlyOwner {
         sponsorshipRequired = _dai;
     }
 
-    function hideOrUnhideMarket(address _market) external onlyOwner {
-        hiddenMarkets[_market] = hiddenMarkets[_market] ? false : true;
-        emit LogMarketHidden(_market);
-    }
-
+    /// @notice where the question to post to the oracle is first sent to
     function updateOracleProxyXdaiAddress(IRCOracleProxyXdai _newAddress) external onlyOwner {
         oracleProxy = _newAddress;
+    }
+
+    /// @notice markets are default hidden from the interface, this reveals them
+    /// @dev uses the marketCreatorWhitelist
+    function approveOrUnapproveMarket(address _market) external {
+        require(marketCreatorWhitelist[msg.sender] || owner() == msg.sender, "Not approved");
+        isMarketApproved[_market] = isMarketApproved[_market] ? false : true;
+        emit LogMarketHidden(_market, isMarketApproved[_market]);
+    }
+
+    function burnCardsIfUnapproved() onlyOwner external {
+        burnIfUnapproved = burnIfUnapproved ? false : true;
     }
 
     ////////////////////////////////////
@@ -184,6 +197,9 @@ contract RCFactory is Ownable, CloneFactory {
         if (marketCreatorWhitelistEnabled) {
             require(marketCreatorWhitelist[msg.sender] || owner() == msg.sender, "Not approved");
         }
+
+        // resolution time must not be less than locking time, and not greater by more than one week
+        require(_timestamps[1] + 1 weeks > _timestamps[2] && _timestamps[1] <= _timestamps[2], "Invalid timestamps" );
 
         address _newAddress = createClone(referenceContractAddress);
         IRCMarket(_newAddress).initialize({
