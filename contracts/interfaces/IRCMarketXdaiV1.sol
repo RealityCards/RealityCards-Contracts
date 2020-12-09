@@ -14,8 +14,6 @@ interface IRCMarketXdaiV1 {
         address _affiliateAddress,
         address[] calldata _cardSpecificAffiliateAddresses,
         address _marketCreatorAddress,
-        uint256 _templateId, 
-        string calldata _question, 
         string calldata _tokenName
     ) external; 
 

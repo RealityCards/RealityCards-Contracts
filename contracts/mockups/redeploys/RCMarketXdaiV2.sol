@@ -1,15 +1,15 @@
 pragma solidity 0.5.13;
 pragma experimental ABIEncoderV2;
 
-// this is a mockup to test a new reference contract. It is unchanged from the original except that the price is doubled
+// this is a mockup to test a new reference contract. It is unchanged from the original except that the rental price is doubled from what is passed as an argument
 
 import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/ERC721Full.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "@openzeppelin/upgrades/contracts/Initializable.sol";
 import "@nomiclabs/buidler/console.sol";
-import "../interfaces/IRealitio.sol";
-import "../interfaces/IFactory.sol";
-import "../interfaces/ITreasury.sol";
+import "../../interfaces/IRealitio.sol";
+import "../../interfaces/IFactory.sol";
+import "../../interfaces/ITreasury.sol";
 
 /// @title Reality Cards Market
 /// @author Andrew Stanger
@@ -123,7 +123,6 @@ contract RCMarketXdaiV2 is ERC721Full {
     /// @param _affiliateAddress where to send affiliate's cut, if any
     /// @param _cardSpecificAffiliateAddresses where to send card specific affiliate's cut, if any
     /// @param _marketCreatorAddress where to send market creator's cut, if any
-    /// @param _question the question on the Oracle
     function initialize(
         uint256 _mode,
         uint32[] memory _timestamps,
@@ -132,8 +131,6 @@ contract RCMarketXdaiV2 is ERC721Full {
         address _affiliateAddress,
         address[] memory _cardSpecificAffiliateAddresses,
         address _marketCreatorAddress,
-        uint256 _templateId, 
-        string memory _question, 
         string memory _tokenName
     ) public initializer {
         assert(_mode <= 2);
@@ -154,8 +151,6 @@ contract RCMarketXdaiV2 is ERC721Full {
         marketCreatorAddress = _marketCreatorAddress;
         affiliateAddress = _affiliateAddress;
         cardSpecificAffiliateAddresses = _cardSpecificAffiliateAddresses;
-        uint32 _timeout = _factory.realitioTimeout();
-        address _arbitrator = _factory.arbitrator();
         uint256[5] memory _potDistribution = _factory.getPotDistribution();
         minimumPriceIncrease = _factory.minimumPriceIncrease();
         artistCut = _potDistribution[0];
@@ -192,7 +187,6 @@ contract RCMarketXdaiV2 is ERC721Full {
         require(marketLockingTime + 1 weeks > oracleResolutionTime && marketLockingTime <= oracleResolutionTime, "Invalid timestamps" );
         
         // external contract variables:
-        realitio = _factory.realitio();
         treasury = _factory.treasury();
 
         // create the NFTs
@@ -206,13 +200,6 @@ contract RCMarketXdaiV2 is ERC721Full {
             _incrementState();
         }
         
-        // create the question on Realitio
-        /// @dev temporarily removing this
-        _question;
-        _templateId;
-        _arbitrator;
-        _timeout;
-        // questionId = _postQuestion(_templateId, _question, _arbitrator, _timeout, _oracleResolutionTime, 0);
     } 
 
     ////////////////////////////////////
