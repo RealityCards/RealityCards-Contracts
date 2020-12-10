@@ -3859,6 +3859,7 @@ it('test RCOracleProxyXdai', async () => {
     await expectRevert(xdaiproxy.setOracleProxyMainnetAddress(user0, {from: user1}), "caller is not the owner");
     await expectRevert(xdaiproxy.setBridgeXdaiAddress(user0, {from: user1}), "caller is not the owner");
     await expectRevert(xdaiproxy.setFactoryAddress(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(xdaiproxy.amicableResolution(user0, 3, {from: user1}), "caller is not the owner");
     // check reverts on other functions 
     await expectRevert(xdaiproxy.sendQuestionToBridge(user0, "x", 0), "Not factory");
     await expectRevert(xdaiproxy.setWinner(user0, 0), "Not bridge");
@@ -4043,6 +4044,24 @@ it('check cant rent if market paused', async () => {
     await treasury.pauseMarket(realitycards.address);
     depositDai(144,user0);
     await expectRevert(newRental(144,0,user1), "Rentals are disabled");
+});
+
+it('test amicableResolution', async () => {
+    // normal setup, dont call the bridge, see if payout works
+    await time.increase(time.duration.years(1)); 
+    await expectRevert(xdaiproxy.amicableResolution(realitycards.address,2, {from: user1}), "caller is not the owner");
+    await xdaiproxy.amicableResolution(realitycards.address,2);
+    await realitycards.lockMarket();
+    await realitycards.determineWinner();
+    var winner = await realitycards.winningOutcome();
+    assert.equal(winner,2);
+    // new market, resolve the normal way, check cant use amicableResolution
+    var realitycards2 = await createMarketWithArtistSet();
+    await time.increase(time.duration.years(1)); 
+    await realitycards2.lockMarket();
+    await realitio.setResult(2);
+    await mainnetproxy.getWinnerFromOracle(realitycards2.address);
+    await expectRevert(xdaiproxy.amicableResolution(realitycards.address,2),"Event finalised");
 });
 
 });

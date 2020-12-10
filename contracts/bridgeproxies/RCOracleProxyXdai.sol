@@ -53,6 +53,13 @@ contract RCOracleProxyXdai is Ownable
     function setFactoryAddress(address _newAddress) onlyOwner public {
         factoryAddress = _newAddress;
     }
+
+    /// @dev admin override of the Oracle, if not yet settled, for amicable resolution, or bridge fails
+    function amicableResolution(address _marketAddress, uint256 _winningOutcome) onlyOwner public {
+        require(!marketFinalized[_marketAddress], "Event finalised");
+        marketFinalized[_marketAddress] = true;
+        winningOutcome[_marketAddress] = _winningOutcome;
+    }
     
     ////////////////////////////////////
     ///////// CORE FUNCTIONS ///////////
@@ -68,6 +75,7 @@ contract RCOracleProxyXdai is Ownable
     
     /// @dev called by mainnet oracle proxy via the arbitrary message bridge, sets the winning outcome
     function setWinner(address _marketAddress, uint256 _winningOutcome) external {
+        require(!marketFinalized[_marketAddress], "Event finalised");
         require(msg.sender == address(bridge), "Not bridge");
         require(bridge.messageSender() == oracleProxyMainnetAddress, "Not proxy");
         marketFinalized[_marketAddress] = true;
