@@ -45,10 +45,12 @@ contract RCFactory is Ownable, CloneFactory {
     bool public marketCreatorWhitelistEnabled;
     /// @dev who can create markets if above true. Also used to unhide hidden markets. 
     mapping(address => bool) public marketCreatorWhitelist;
-    // so markets can be hidden from the interface
+    /// @dev  so markets can be hidden from the interface
     mapping(address => bool) public isMarketApproved;
-    // if true, cards are burnt at the end of events for hidden markets to enforce scarcity
+    /// @dev if true, cards are burnt at the end of events for hidden markets to enforce scarcity
     bool public burnIfUnapproved = true;
+    /// @dev prevents the same slug being used twice
+    mapping(string => bool) public existingSlug;
 
     ///// UBER OWNER /////
     /// @dev high level owner who can change the factory address
@@ -190,10 +192,16 @@ contract RCFactory is Ownable, CloneFactory {
         address _affiliateAddress,
         address[] memory _cardSpecificAffiliateAddresses,
         string memory _realitioQuestion,
-        string memory _tokenName
+        string[2] memory _eventDetails // 0 = token name, 1 = slug
     ) public payable returns (address)  {
+        // check sponsorship
         require(msg.value >= sponsorshipRequired, "Insufficient sponsorship");
 
+        // check slug not used before
+        require(!existingSlug[_eventDetails[1]], "Duplicate slug");
+        existingSlug[_eventDetails[1]] = true;
+
+        // check market creator is approved
         if (marketCreatorWhitelistEnabled) {
             require(marketCreatorWhitelist[msg.sender] || owner() == msg.sender, "Not approved");
         }
@@ -201,6 +209,7 @@ contract RCFactory is Ownable, CloneFactory {
         // resolution time must not be less than locking time, and not greater by more than one week
         require(_timestamps[1] + 1 weeks > _timestamps[2] && _timestamps[1] <= _timestamps[2], "Invalid timestamps" );
 
+        // create the market
         address _newAddress = createClone(referenceContractAddress);
         IRCMarket(_newAddress).initialize({
             _mode: _mode,
@@ -210,7 +219,7 @@ contract RCFactory is Ownable, CloneFactory {
             _affiliateAddress: _affiliateAddress,
             _cardSpecificAffiliateAddresses: _cardSpecificAffiliateAddresses,
             _marketCreatorAddress: msg.sender,
-            _tokenName: _tokenName
+            _tokenName: _eventDetails[0]
         });
 
         // post question to Oracle

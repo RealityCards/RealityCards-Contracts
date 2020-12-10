@@ -29,7 +29,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
 
   var realitycards;
   var tokenURIs = ['x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x']; // 20 tokens
-  var tokenName = 'RCToken'; 
+  var eventDetails = ['RCToken','x']; 
   var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
   var maxuint256 = 4294967295;
 
@@ -81,7 +81,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         affiliateAddress,
         cardRecipients,
         question,
-        tokenName,
+        eventDetails,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards = await RCMarket.at(marketAddress);
@@ -96,6 +96,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
     var artistAddress = user8;
     var affiliateAddress = user7;
+    var eventDetails = ['RCToken','y'];
     await rcfactory.createMarket(
         0,
         '0x0',
@@ -105,7 +106,33 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         affiliateAddress,
         cardRecipients,
         question,
-        tokenName,
+        eventDetails,
+      );
+    var marketAddress = await rcfactory.getMostRecentMarket.call(0);
+    realitycards2 = await RCMarket.at(marketAddress);
+    return realitycards2;
+  }
+
+  async function createMarketWithArtistSet2() {
+    var latestTime = await time.latest();
+    var oneYear = new BN('31104000');
+    var oneYearInTheFuture = oneYear.add(latestTime);
+    var marketLockingTime = oneYearInTheFuture; 
+    var oracleResolutionTime = oneYearInTheFuture;
+    var timestamps = [0,marketLockingTime,oracleResolutionTime];
+    var artistAddress = user8;
+    var affiliateAddress = user7;
+    var eventDetails = ['RCToken','z'];
+    await rcfactory.createMarket(
+        0,
+        '0x0',
+        timestamps,
+        tokenURIs,
+        artistAddress,
+        affiliateAddress,
+        cardRecipients,
+        question,
+        eventDetails,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -121,6 +148,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
+    var eventDetails = ['RCToken','y'];
     await rcfactory.createMarket(
         mode,
         '0x0',
@@ -130,7 +158,33 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         affiliateAddress,
         cardRecipients,
         question,
-        tokenName,
+        eventDetails,
+      );
+    var marketAddress = await rcfactory.getMostRecentMarket.call(mode);
+    realitycards2 = await RCMarket.at(marketAddress);
+    return realitycards2;
+  }
+
+  async function createMarketCustomMode2(mode) {
+    var latestTime = await time.latest();
+    var oneYear = new BN('31104000');
+    var oneYearInTheFuture = oneYear.add(latestTime);
+    var marketLockingTime = oneYearInTheFuture; 
+    var oracleResolutionTime = oneYearInTheFuture;
+    var timestamps = [0,marketLockingTime,oracleResolutionTime];
+    var artistAddress = '0x0000000000000000000000000000000000000000';
+    var affiliateAddress = '0x0000000000000000000000000000000000000000';
+    var eventDetails = ['RCToken','z'];
+    await rcfactory.createMarket(
+        mode,
+        '0x0',
+        timestamps,
+        tokenURIs,
+        artistAddress,
+        affiliateAddress,
+        cardRecipients,
+        question,
+        eventDetails,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(mode);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -147,6 +201,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     var cardRecipients = [user5,user6,user7,user8,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0];
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
+    var eventDetails = ['RCToken','y'];
     await rcfactory.createMarket(
         0,
         '0x0',
@@ -156,7 +211,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         affiliateAddress,
         cardRecipients,
         question,
-        tokenName,
+        eventDetails,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -172,6 +227,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
     var artistAddress = user8;
     var affiliateAddress = user7;
+    var eventDetails = ['RCToken','y'];
     await rcfactory.createMarket(
         mode,
         '0x0',
@@ -181,7 +237,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         affiliateAddress,
         cardRecipients,
         question,
-        tokenName,
+        eventDetails,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(mode);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -198,6 +254,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     var artistAddress = user8;
     var affiliateAddress = user7;
     var cardRecipients = [user5,user6,user7,user8,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0];
+    var eventDetails = ['RCToken','y'];
     await rcfactory.createMarket(
         0,
         '0x0',
@@ -207,7 +264,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         affiliateAddress,
         cardRecipients,
         question,
-        tokenName,
+        eventDetails,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -224,6 +281,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
     var artistAddress = user8;
     var affiliateAddress = user7;
+    var eventDetails = ['RCToken','y'];
     var cardRecipients = [user5,user6,user7,user8,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0];
     await rcfactory.createMarket(
         0,
@@ -234,7 +292,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         affiliateAddress,
         cardRecipients,
         question,
-        tokenName, {value: amount, from: user}
+        eventDetails, {value: amount, from: user}
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -245,6 +303,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     var artistAddress = user8;
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     var timestamps = [marketOpeningTime,marketLockingTime,oracleResolutionTime];
+    var eventDetails = ['RCToken','y'];
     await rcfactory.createMarket(
         0,
         '0x0',
@@ -254,7 +313,28 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         affiliateAddress,
         cardRecipients,
         question,
-        tokenName,
+        eventDetails,
+      );
+    var marketAddress = await rcfactory.getMostRecentMarket.call(0);
+    realitycards2 = await RCMarket.at(marketAddress);
+    return realitycards2;
+  }
+
+  async function createMarketCustomeTimestamps2(marketOpeningTime,marketLockingTime,oracleResolutionTime) {
+    var artistAddress = user8;
+    var affiliateAddress = '0x0000000000000000000000000000000000000000';
+    var timestamps = [marketOpeningTime,marketLockingTime,oracleResolutionTime];
+    var eventDetails = ['RCToken','z'];
+    await rcfactory.createMarket(
+        0,
+        '0x0',
+        timestamps,
+        tokenURIs,
+        artistAddress,
+        affiliateAddress,
+        cardRecipients,
+        question,
+        eventDetails,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -2855,27 +2935,29 @@ it('check oracleResolutionTime and marketLockingTime expected failures', async (
     var templateId = 2;
     var artistAddress = user8;
     var affiliateAddress = user8;
-    var tokenName = "x";
+    var eventDetails = ['RCToken','y']; 
     // resolution time before locking, expect failure
     var oracleResolutionTime = 69419;
     var marketLockingTime = 69420; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress,affiliateAddress,cardRecipients, question,tokenName), "Invalid timestamps");
+    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress,affiliateAddress,cardRecipients, question,eventDetails), "Invalid timestamps");
     // resolution time > 1 weeks after locking, expect failure
     var oracleResolutionTime = 604810;
     var marketLockingTime = 0; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress, affiliateAddress,cardRecipients, question,tokenName), "Invalid timestamps");
+    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress, affiliateAddress,cardRecipients, question,eventDetails), "Invalid timestamps");
     // resolution time < 1 week  after locking, no failure
     var oracleResolutionTime = 604790;
     var marketLockingTime = 0; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress, affiliateAddress,cardRecipients, question,tokenName);
+    var eventDetails = ['RCToken','z']; 
+    await rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress, affiliateAddress,cardRecipients, question,eventDetails);
     // same time, no failure
     var oracleResolutionTime = 0;
     var marketLockingTime = 0; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress, affiliateAddress,cardRecipients, question,tokenName);
+    var eventDetails = ['RCToken','a']; 
+    await rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress, affiliateAddress,cardRecipients, question,eventDetails);
   });
 
   it('test longestTimeHeld & longestOwner', async () => {
@@ -3068,7 +3150,7 @@ it('test marketOpeningTime stuff', async () => {
     var oneYear = new BN('31104000');
     var oneMonthInTheFuture = oneMonth.add(latestTime);
     var oneYearInTheFuture = oneYear.add(latestTime);
-    var realitycards3 = await createMarketCustomeTimestamps(oneMonthInTheFuture,oneYearInTheFuture,oneYearInTheFuture);
+    var realitycards3 = await createMarketCustomeTimestamps2(oneMonthInTheFuture,oneYearInTheFuture,oneYearInTheFuture);
     // check that if in the future, state 0 originally
     // just use the default realitycards
     var state = await realitycards3.state();
@@ -3509,20 +3591,22 @@ it('test addOrRemoveMarketCreator and enableOrDisableMarketCreatorWhitelist', as
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
     var artistAddress = user8;
     var affiliateAddress = user8;
+    var eventDetails = ['x','y'];
     await rcfactory.enableOrDisableMarketCreatorWhitelist();
-    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,tokenName,{from: user1}), "Not approved");
+    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,eventDetails,{from: user1}), "Not approved");
     // first check that only owner can call
     await expectRevert(rcfactory.addOrRemoveMarketCreator(user1,{from: user1}), "caller is not the owner");
     // add user1 to whitelist 
     await rcfactory.addOrRemoveMarketCreator(user1);
     //try again, should work
-    await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,tokenName,{from: user1});
+    await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,eventDetails,{from: user1});
     // remove them, should fail again
     await rcfactory.addOrRemoveMarketCreator(user1);
     await expectRevert(rcfactory.addOrRemoveMarketCreator(user1,{from: user1}), "caller is not the owner");
     // disable whitelist, should work
     await rcfactory.enableOrDisableMarketCreatorWhitelist();
-    await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,tokenName,{from: user1});
+    var eventDetails = ['x','z'];
+    await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,eventDetails,{from: user1});
     // re-enable whitelist, should not work again
     await rcfactory.enableOrDisableMarketCreatorWhitelist();
     await expectRevert(rcfactory.addOrRemoveMarketCreator(user1,{from: user1}), "caller is not the owner"); 
@@ -3684,7 +3768,7 @@ it('test updateMinimumPriceIncrease', async () => {
     await expectRevert(newRentalCustomContract(realitycards2,1.05,0,user1), "Price too low");
     // update min to 5%, try again
     await rcfactory.updateMinimumPriceIncrease(5);
-    var realitycards3 = await createMarketCustomMode(0);
+    var realitycards3 = await createMarketCustomMode2(0);
     await newRentalCustomContract(realitycards3,1.05,0,user1);
     // check rent all cards works
     await realitycards3.rentAllCards({from:user0});
@@ -3703,6 +3787,7 @@ it('test uberOwner Treasury', async () => {
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
+    var eventDetails = ['x','r'];
     // first, change owner
     await treasury.changeUberOwner(user5);
     // now try and change again and change factory from prevous owner, should fail
@@ -3714,10 +3799,11 @@ it('test uberOwner Treasury', async () => {
     await rcfactory2.setReferenceContractAddress(rcreference.address);
     await rcfactory2.updateOracleProxyXdaiAddress(xdaiproxy.address);
     // create market with old factory, should fail
-    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,tokenName), "Not factory");
+    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,eventDetails), "Not factory");
     // create market with new factory and do some standard stuff
     await xdaiproxy.setFactoryAddress(rcfactory2.address);
-    await rcfactory2.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,tokenName);
+    var eventDetails = ['x','a'];
+    await rcfactory2.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,eventDetails);
     var marketAddress = await rcfactory2.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
     await depositDai(144,user3);
@@ -3752,7 +3838,8 @@ it('test uberOwner factory', async () => {
     var version = await rcfactory.referenceContractVersion.call();
     assert.equal(version,2);
     // deploy new market from new reference contract, check that price is doubling
-    await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,tokenName);
+    var eventDetails = ['x','z'];
+    await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,eventDetails);
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
     await depositDai(144,user3);
@@ -3791,7 +3878,7 @@ it('test RCOracleProxyXdai', async () => {
     // test changing bridge, bridge should now have number = 69
     bridge2 = await BridgeMockup2.new();
     await xdaiproxy.setBridgeXdaiAddress(bridge2.address);
-    await createMarketWithArtistSet();
+    await createMarketWithArtistSet2();
     var number = await bridge2.number();
     assert.equal(number,69);
     // setFactoryAddress is already tested in test uberOwner Treasury
@@ -3935,6 +4022,12 @@ it('test approveOrUnapproveMarket', async () => {
         await realitycards2.ownerOf.call(i);
     }
 
+});
+
+it('test duplicate slug', async () => {
+    // first, check that recent market is hidden
+    createMarketWithArtistSet();
+    await expectRevert(createMarketWithArtistSet(), "Duplicate slug");
 });
 
 });
