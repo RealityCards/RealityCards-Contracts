@@ -37,6 +37,12 @@ contract RCTreasury is Ownable {
     /// @dev max deposit balance, to minimise funds at risk
     uint256 public maxContractBalance = 1000000 ether; // default 1m
 
+    ///// SAFETY /////
+    /// @dev if true, cannot deposit or rent any cards across all events
+    bool public globalPause;
+    /// @dev if true, cannot rent any cards for specific market
+    mapping (address => bool) public marketPaused;
+
     ///// UBER OWNER /////
     /// @dev high level owner who can change the factory address
     address public uberOwner;
@@ -85,16 +91,29 @@ contract RCTreasury is Ownable {
     //////////// GOVERNANCE ////////////
     ////////////////////////////////////
 
+    /// @dev minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
     function updateMinRental(uint256 _newDivisor) external onlyOwner() {
         minRentalDivisor = _newDivisor;
     }
 
+    /// @dev if hot potato mode, how much rent new owner must pay current owner (1 week divisor: i.e. 7 = 1 day, 14 = 12 hours)
     function updateHotPotatoPayment(uint256 _newDivisor) external onlyOwner() {
         hotPotatoDivisor = _newDivisor;
     }
 
+    /// @dev max deposit balance, to minimise funds at risk
     function updateMaxContractBalance(uint256 _newBalanceLimit) external onlyOwner() {
         maxContractBalance = _newBalanceLimit;
+    }
+
+    /// @dev if true, cannot deposit or rent any cards, can still withdraw
+    function setGlobalPause() public onlyOwner() {
+        globalPause = globalPause ? false : true;
+    }
+
+    /// @dev if true, cannot rent any cards for specific market
+    function pauseMarket(address _market) public onlyOwner() {
+        marketPaused[_market] = marketPaused[_market] ? false : true;
     }
 
     ////////////////////////////////////
@@ -121,6 +140,7 @@ contract RCTreasury is Ownable {
     /// @dev it is passed the user instead of using msg.value because might be called
     /// @dev ... via contract (newRental function, specifically) instead of direct
     function deposit(address _user) public payable balancedBooks() returns(bool) {
+        require(!globalPause, "Deposits are disabled");
         require(msg.value > 0, "Must deposit something");
         require(address(this).balance <= maxContractBalance, "Limit hit");
         deposits[_user] = deposits[_user].add(msg.value);
@@ -153,6 +173,8 @@ contract RCTreasury is Ownable {
     /// @dev if current owner rents again, _newOwner and _currentOwner will be the same, this is fine; 
     /// @dev ... card specific deposit will just be increased 
     function allocateCardSpecificDeposit(address _newOwner, address _currentOwner, uint256 _tokenId, uint256 _newPrice) external balancedBooks() onlyMarkets() returns(bool) {
+        require(!globalPause, "Rentals are disabled");
+        require(!marketPaused[msg.sender], "Rentals are disabled");
         uint256 _depositToAllocate = _newPrice.div(minRentalDivisor);
         require(deposits[_newOwner] >= _depositToAllocate, "Insufficient deposit");
 

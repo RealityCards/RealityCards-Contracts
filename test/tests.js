@@ -3746,6 +3746,8 @@ it('check onlyOwner is on relevant Treasury functions', async () => {
     await expectRevert(treasury.updateHotPotatoPayment(7*24, {from: user1}), "caller is not the owner");
     await expectRevert(treasury.updateMinRental(7*24, {from: user1}), "caller is not the owner");
     await expectRevert(treasury.updateMaxContractBalance(7*24, {from: user1}), "caller is not the owner");
+    await expectRevert(treasury.setGlobalPause({from: user1}), "caller is not the owner");
+    await expectRevert(treasury.pauseMarket(realitycards.address,{from: user1}), "caller is not the owner");
 });
 
 it('check onlyOwner is on relevant Factory functions', async () => {
@@ -4021,13 +4023,26 @@ it('test approveOrUnapproveMarket', async () => {
     for (i = 0; i < 20; i++) {
         await realitycards2.ownerOf.call(i);
     }
-
 });
 
 it('test duplicate slug', async () => {
     // first, check that recent market is hidden
     createMarketWithArtistSet();
     await expectRevert(createMarketWithArtistSet(), "Duplicate slug");
+});
+
+it('check cant rent or deposit if globalpause', async () => {
+    // setup
+    await treasury.setGlobalPause();
+    await expectRevert(depositDai(144,user0), "Deposits are disabled");
+    await expectRevert(newRental(144,0,user1), "Rentals are disabled");
+});
+
+it('check cant rent if market paused', async () => {
+    // setup
+    await treasury.pauseMarket(realitycards.address);
+    depositDai(144,user0);
+    await expectRevert(newRental(144,0,user1), "Rentals are disabled");
 });
 
 });
