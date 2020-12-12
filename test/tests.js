@@ -1838,7 +1838,7 @@ it('test sponsor via market creation with card affiliate cut', async () => {
     // 10% card specific affiliates
     await rcfactory.updatePotDistribution(0,0,0,0,100);
     // add user3 to whitelist 
-    await rcfactory.addOrRemoveMarketCreator(user3);
+    await rcfactory.addOrRemoveGovernor(user3);
     var realitycards2 = await createMarketWithArtistAndCardAffiliatesAndSponsorship(200,user3);
     // await realitycards2.sponsor({ value: web3.utils.toWei('200', 'ether'), from: user3 });
     await newRentalWithDepositCustomContract(realitycards2,5,0,user0,1000); // paid 50
@@ -3581,7 +3581,7 @@ it('test updateMaxContractBalance function and deposit limit hit', async () => {
     await expectRevert(treasury.deposit(user0,{value: web3.utils.toWei('500', 'ether')}), "Limit hit");
 });
 
-it('test addOrRemoveMarketCreator and enableOrDisableMarketCreatorWhitelist', async () => {
+it('test addOrRemoveGovernor and updateMarketCreationGovernorsOnly', async () => {
     // check user1 cant create market
     var latestTime = await time.latest();
     var oneYear = new BN('31104000');
@@ -3592,24 +3592,24 @@ it('test addOrRemoveMarketCreator and enableOrDisableMarketCreatorWhitelist', as
     var artistAddress = user8;
     var affiliateAddress = user8;
     var eventDetails = ['x','y'];
-    await rcfactory.enableOrDisableMarketCreatorWhitelist();
+    await rcfactory.updateMarketCreationGovernorsOnly();
     await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,eventDetails,{from: user1}), "Not approved");
     // first check that only owner can call
-    await expectRevert(rcfactory.addOrRemoveMarketCreator(user1,{from: user1}), "caller is not the owner");
+    await expectRevert(rcfactory.addOrRemoveGovernor(user1,{from: user1}), "caller is not the owner");
     // add user1 to whitelist 
-    await rcfactory.addOrRemoveMarketCreator(user1);
+    await rcfactory.addOrRemoveGovernor(user1);
     //try again, should work
     await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,eventDetails,{from: user1});
     // remove them, should fail again
-    await rcfactory.addOrRemoveMarketCreator(user1);
-    await expectRevert(rcfactory.addOrRemoveMarketCreator(user1,{from: user1}), "caller is not the owner");
+    await rcfactory.addOrRemoveGovernor(user1);
+    await expectRevert(rcfactory.addOrRemoveGovernor(user1,{from: user1}), "caller is not the owner");
     // disable whitelist, should work
-    await rcfactory.enableOrDisableMarketCreatorWhitelist();
+    await rcfactory.updateMarketCreationGovernorsOnly();
     var eventDetails = ['x','z'];
     await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,eventDetails,{from: user1});
     // re-enable whitelist, should not work again
-    await rcfactory.enableOrDisableMarketCreatorWhitelist();
-    await expectRevert(rcfactory.addOrRemoveMarketCreator(user1,{from: user1}), "caller is not the owner"); 
+    await rcfactory.updateMarketCreationGovernorsOnly();
+    await expectRevert(rcfactory.addOrRemoveGovernor(user1,{from: user1}), "caller is not the owner"); 
 });
 
 it('test rentAllCards', async () => {
@@ -3707,7 +3707,7 @@ it('test auto lock', async () => {
 
 it('test sponsor via market creation', async () => {
     await rcfactory.updateSponsorshipRequired(ether('200'));
-    await rcfactory.addOrRemoveMarketCreator(user3);
+    await rcfactory.addOrRemoveGovernor(user3);
     await expectRevert(createMarketWithArtistAndCardAffiliatesAndSponsorship(100,user3), "Insufficient sponsorship");
     var realitycards2 = await createMarketWithArtistAndCardAffiliatesAndSponsorship(200,user3);
     var totalCollected = await realitycards2.totalCollected();
@@ -3752,12 +3752,13 @@ it('check onlyOwner is on relevant Treasury functions', async () => {
 
 it('check onlyOwner is on relevant Factory functions', async () => {
     await expectRevert(rcfactory.updatePotDistribution(0,0,0,0,0, {from: user1}), "caller is not the owner");
-    await expectRevert(rcfactory.addOrRemoveMarketCreator(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(rcfactory.enableOrDisableMarketCreatorWhitelist({from: user1}), "caller is not the owner");
+    await expectRevert(rcfactory.addOrRemoveGovernor(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(rcfactory.updateMarketCreationGovernorsOnly({from: user1}), "caller is not the owner");
     await expectRevert(rcfactory.updateSponsorshipRequired(7*24, {from: user1}), "caller is not the owner");
     await expectRevert(rcfactory.approveOrUnapproveMarket(user0, {from: user1}), "Not approved");
     await expectRevert(rcfactory.updateMinimumPriceIncrease(4, {from: user1}), "caller is not the owner");
     await expectRevert(rcfactory.burnCardsIfUnapproved({from: user1}), "caller is not the owner");
+    await expectRevert(rcfactory.updateAdvancedWarning({from: user1}), "caller is not the owner");
 });
 
 it('test updateMinimumPriceIncrease', async () => {
@@ -3992,7 +3993,7 @@ it('test approveOrUnapproveMarket', async () => {
     // atttempt to unhide it with someone not on the whitelist
     await expectRevert(rcfactory.approveOrUnapproveMarket(realitycards.address, {from: user1}), "Not approved");
     // add user 1 and try again, check that its not hidden
-    await rcfactory.addOrRemoveMarketCreator(user1);
+    await rcfactory.addOrRemoveGovernor(user1);
     await rcfactory.approveOrUnapproveMarket(realitycards.address, {from: user1});
     hidden = await rcfactory.isMarketApproved.call(realitycards.address);
     assert.equal(hidden,true);
@@ -4062,6 +4063,29 @@ it('test amicableResolution', async () => {
     await realitio.setResult(2);
     await mainnetproxy.getWinnerFromOracle(realitycards2.address);
     await expectRevert(xdaiproxy.amicableResolution(realitycards.address,2),"Event finalised");
+});
+
+it('test advancedWarning', async () => {
+    await rcfactory.updateAdvancedWarning(86400);
+    var latestTime = await time.latest();
+    var oneYear = new BN('31104000');
+    var oneYearInTheFuture = oneYear.add(latestTime);
+    var marketLockingTime = oneYearInTheFuture; 
+    var oracleResolutionTime = oneYearInTheFuture;
+    var timestamps = [0,marketLockingTime,oracleResolutionTime];
+    var artistAddress = '0x0000000000000000000000000000000000000000';
+    var affiliateAddress = '0x0000000000000000000000000000000000000000';
+    var eventDetails = ['x','r'];
+    // opening time zero, should fail
+    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,eventDetails),"Market opening time not set");
+    // opening time not 1 day in the future, should fail
+    var timestamps = [latestTime,marketLockingTime,oracleResolutionTime];
+    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,eventDetails),"Market opens too soon");
+    var twoDays = new BN('172800');
+    var twoDaysInTheFuture = twoDays.add(latestTime);
+    // opening time 2 days in the future, should not fail
+    var timestamps = [twoDaysInTheFuture,marketLockingTime,oracleResolutionTime];
+    rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,eventDetails);
 });
 
 });

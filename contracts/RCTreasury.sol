@@ -88,8 +88,9 @@ contract RCTreasury is Ownable {
     }
 
     ////////////////////////////////////
-    //////////// GOVERNANCE ////////////
+    /////// GOVERNANCE- OWNER //////////
     ////////////////////////////////////
+    /// @dev all functions should be onlyOwner
 
     /// @dev minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
     function updateMinRental(uint256 _newDivisor) external onlyOwner() {
@@ -117,11 +118,12 @@ contract RCTreasury is Ownable {
     }
 
     ////////////////////////////////////
-    ///////////// UPGRADES /////////////
+    ////// GOVERNANCE- UBER OWNER //////
     ////////////////////////////////////
+    /// @dev uber owner required for upgrades
     /// @dev deploying and setting a new factory is effectively an upgrade
     /// @dev only the uber owner can do this, which can be set to burn address to relinquish upgrade ability
-    /// @dev ... while maintaining governance over parameters paramters
+    /// @dev ... while maintaining governance over other governanace functions
 
     function setFactoryAddress(address _newFactory) external {
         require(msg.sender == uberOwner, "Access denied");

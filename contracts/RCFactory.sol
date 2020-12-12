@@ -15,6 +15,7 @@ import './interfaces/IRCOracleProxyXdai.sol';
 contract RCFactory is Ownable, CloneFactory {
 
     using SafeMath for uint256;
+    using SafeMath for uint32;
 
     ////////////////////////////////////
     //////// VARIABLES /////////////////
@@ -25,26 +26,29 @@ contract RCFactory is Ownable, CloneFactory {
     IRCOracleProxyXdai public oracleProxy;
 
     ///// CONTRACT ADDRESSES /////
-    // reference contract
+    /// @dev reference contract
     address public referenceContractAddress; 
-    // increments each time a new reference contract is added
+    /// @dev increments each time a new reference contract is added
     uint256 public referenceContractVersion;
-    // market addresses, mode // address
+    /// @dev market addresses, mode // address
     mapping(uint256 => address[]) public marketAddresses;
     mapping(address => bool) public mappingOfMarkets; // not used for anything 
 
     ///// ADJUSTABLE PARAMETERS /////
-    // artist / winner / market creator / affiliate / card specific affiliate
+    /// @dev artist / winner / market creator / affiliate / card specific affiliate
     uint256[5] public potDistribution;
+    /// @dev minimum xDai that must be sent when creating market which forms iniital pot
     uint256 public sponsorshipRequired;
-    // adjust required price increase
+    /// @dev adjust required price increase
     uint256 public minimumPriceIncrease;
+    /// @dev how far in the future market opening time must be
+    uint32 public advancedWarning;
 
     ///// MARKET CREATION & HIDING /////
     /// @dev if false, anyone can create markets
-    bool public marketCreatorWhitelistEnabled;
+    bool public marketCreationGovernorsOnly;
     /// @dev who can create markets if above true. Also used to unhide hidden markets. 
-    mapping(address => bool) public marketCreatorWhitelist;
+    mapping(address => bool) public governors;
     /// @dev  so markets can be hidden from the interface
     mapping(address => bool) public isMarketApproved;
     /// @dev if true, cards are burnt at the end of events for hidden markets to enforce scarcity
@@ -99,8 +103,9 @@ contract RCFactory is Ownable, CloneFactory {
     }
 
     ////////////////////////////////////
-    //////////// GOVERNANCE ////////////
+    /////// GOVERNANCE- OWNER //////////
     ////////////////////////////////////
+    /// @dev all functions should be onlyOwner
 
     /// CALLED WITHIN CONSTRUCTOR (public)
 
@@ -121,15 +126,9 @@ contract RCFactory is Ownable, CloneFactory {
 
     /// NOT CALLED WITHIN CONSTRUCTOR (external)
 
-    /// @notice add or remove an address from market creator whitelist
-    function addOrRemoveMarketCreator(address _marketCreator) external onlyOwner {
-        marketCreatorWhitelist[_marketCreator] = marketCreatorWhitelist[_marketCreator] ? false : true;
-    }
-
-    /// @notice allows createMarket to be called by anyone
-    /// @dev if called again will enable it again
-    function enableOrDisableMarketCreatorWhitelist() external onlyOwner {
-        marketCreatorWhitelistEnabled = marketCreatorWhitelistEnabled ? false : true;
+    /// @notice whether or not only governors can create the market
+    function updateMarketCreationGovernorsOnly() external onlyOwner {
+        marketCreationGovernorsOnly = marketCreationGovernorsOnly ? false : true;
     }
 
     /// @notice how much xdai must be sent in the createMarket tx which forms the initial pot
@@ -142,24 +141,41 @@ contract RCFactory is Ownable, CloneFactory {
         oracleProxy = _newAddress;
     }
 
-    /// @notice markets are default hidden from the interface, this reveals them
-    /// @dev uses the marketCreatorWhitelist
-    function approveOrUnapproveMarket(address _market) external {
-        require(marketCreatorWhitelist[msg.sender] || owner() == msg.sender, "Not approved");
-        isMarketApproved[_market] = isMarketApproved[_market] ? false : true;
-        emit LogMarketHidden(_market, isMarketApproved[_market]);
-    }
-
+    /// @notice if true, Cards are burnt upon market resolution for unapproved markets
     function burnCardsIfUnapproved() onlyOwner external {
         burnIfUnapproved = burnIfUnapproved ? false : true;
     }
 
+    /// @notice how many seconds in the future market opening time must be
+    function updateAdvancedWarning(uint32 _newAdvancedWarning) onlyOwner external {
+        advancedWarning = _newAdvancedWarning;
+    }
+
     ////////////////////////////////////
-    ///////////// UPGRADES /////////////
+    ///// GOVERNANCE- GOVERNORS ////////
     ////////////////////////////////////
+    /// @dev multiple addresses have the ability to approve markets
+
+     /// @notice add or remove an address from market creator whitelist, should be onlyOwner
+    function addOrRemoveGovernor(address _governor) external onlyOwner {
+        governors[_governor] = governors[_governor] ? false : true;
+    }
+
+    /// @notice markets are default hidden from the interface, this reveals them
+    /// @dev uses the governors
+    function approveOrUnapproveMarket(address _market) external {
+        require(governors[msg.sender] || owner() == msg.sender, "Not approved");
+        isMarketApproved[_market] = isMarketApproved[_market] ? false : true;
+        emit LogMarketHidden(_market, isMarketApproved[_market]);
+    }
+
+    ////////////////////////////////////
+    ////// GOVERNANCE- UBER OWNER //////
+    ////////////////////////////////////
+    /// @dev uber owner required for upgrades
     /// @dev deploying and setting a new reference contract is effectively an upgrade
-    /// @dev only the uber owner can do this, which can be set to burn address to relinquish upgrade ability
-    /// @dev ... while maintaining governance over adjustable parameters
+    /// @dev different owner so can be set to multisig, or burn address to relinquish upgrade ability
+    /// @dev ... while maintaining governance over other governanace functions
 
     /// @notice set the reference contract for the contract logic
     function setReferenceContractAddress(address _newAddress) external {
@@ -186,7 +202,7 @@ contract RCFactory is Ownable, CloneFactory {
     function createMarket(
         uint32 _mode,
         string memory _ipfsHash,
-        uint32[] memory _timestamps,
+        uint32[] memory _timestamps, 
         string[] memory _tokenURIs,
         address _artistAddress,
         address _affiliateAddress,
@@ -202,12 +218,18 @@ contract RCFactory is Ownable, CloneFactory {
         existingSlug[_eventDetails[1]] = true;
 
         // check market creator is approved
-        if (marketCreatorWhitelistEnabled) {
-            require(marketCreatorWhitelist[msg.sender] || owner() == msg.sender, "Not approved");
+        if (marketCreationGovernorsOnly) {
+            require(governors[msg.sender] || owner() == msg.sender, "Not approved");
         }
 
-        // resolution time must not be less than locking time, and not greater by more than one week
-        require(_timestamps[1] + 1 weeks > _timestamps[2] && _timestamps[1] <= _timestamps[2], "Invalid timestamps" );
+        // check timestamps
+        // check market opening time
+        if (advancedWarning != 0) {
+            require(_timestamps[0] >= advancedWarning, "Market opening time not set"); 
+            require(_timestamps[0].sub(advancedWarning) > now, "Market opens too soon" );
+        }
+        // check closing and oracle resolution time
+        require(_timestamps[1].add(1 weeks) > _timestamps[2] && _timestamps[1] <= _timestamps[2], "Invalid timestamps" );
 
         // create the market
         address _newAddress = createClone(referenceContractAddress);
