@@ -55,8 +55,8 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     // main contracts
-    treasury = await RCTreasury.new(user0);
-    rcfactory = await RCFactory.new(treasury.address,user0);
+    treasury = await RCTreasury.new();
+    rcfactory = await RCFactory.new(treasury.address);
     rcreference = await RCMarket.new();
     await treasury.setFactoryAddress(rcfactory.address);
     await rcfactory.setReferenceContractAddress(rcreference.address);
@@ -64,8 +64,8 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     realitio = await RealitioMockup.new();
     bridge = await BridgeMockup.new();
     // bridge contracts
-    xdaiproxy = await XdaiProxy.new(bridge.address, rcfactory.address,user0);
-    mainnetproxy = await MainnetProxy.new(bridge.address, realitio.address,user0);
+    xdaiproxy = await XdaiProxy.new(bridge.address, rcfactory.address);
+    mainnetproxy = await MainnetProxy.new(bridge.address, realitio.address);
     await rcfactory.updateOracleProxyXdaiAddress(xdaiproxy.address);
     await xdaiproxy.setOracleProxyMainnetAddress(mainnetproxy.address);
     await mainnetproxy.setOracleProxyXdaiAddress(xdaiproxy.address);
@@ -3758,7 +3758,7 @@ it('check onlyOwner is on relevant Factory functions', async () => {
     await expectRevert(rcfactory.approveOrUnapproveMarket(user0, {from: user1}), "Not approved");
     await expectRevert(rcfactory.updateMinimumPriceIncrease(4, {from: user1}), "caller is not the owner");
     await expectRevert(rcfactory.burnCardsIfUnapproved({from: user1}), "caller is not the owner");
-    await expectRevert(rcfactory.updateAdvancedWarning(48,{from: user1}), "caller is not the owner");
+    await expectRevert(rcfactory.updateAdvancedWarning({from: user1}), "caller is not the owner");
 });
 
 it('test updateMinimumPriceIncrease', async () => {
@@ -3797,7 +3797,7 @@ it('test uberOwner Treasury', async () => {
     await expectRevert(treasury.changeUberOwner(user0), "Access denied");
     await expectRevert(treasury.setFactoryAddress(user0), "Access denied");
     // deploy new factory, update address
-    rcfactory2 = await RCFactory.new(treasury.address,user0);
+    rcfactory2 = await RCFactory.new(treasury.address);
     await treasury.setFactoryAddress(rcfactory2.address,{from: user5});
     await rcfactory2.setReferenceContractAddress(rcreference.address);
     await rcfactory2.updateOracleProxyXdaiAddress(xdaiproxy.address);

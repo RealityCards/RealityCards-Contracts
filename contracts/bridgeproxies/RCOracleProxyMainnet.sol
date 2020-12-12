@@ -30,14 +30,11 @@ contract RCOracleProxyMainnet is Ownable
     ////////// CONSTRUCTOR /////////////
     ////////////////////////////////////
 
-    constructor(address _bridgeMainnetAddress, address _realitioAddress, address _owner) public {
+    constructor(address _bridgeMainnetAddress, address _realitioAddress) public {
         setBridgeMainnetAddress(_bridgeMainnetAddress);
         setRealitioAddress(_realitioAddress);
         setArbitrator(0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D); // kleros
         setTimeout(86400); // 24 hours
-
-        // set owner
-        transferOwnership(_owner);
     }
 
     ////////////////////////////////////

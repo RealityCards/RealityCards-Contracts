@@ -29,12 +29,9 @@ contract RCOracleProxyXdai is Ownable
     ////////// CONSTRUCTOR /////////////
     ////////////////////////////////////
 
-    constructor(address _bridgeXdaiAddress, address _factoryAddress, address _owner) public {
+    constructor(address _bridgeXdaiAddress, address _factoryAddress) public {
         setBridgeXdaiAddress(_bridgeXdaiAddress);
         setFactoryAddress(_factoryAddress);
-
-        // set owner
-        transferOwnership(_owner);
     }
     
     ////////////////////////////////////
