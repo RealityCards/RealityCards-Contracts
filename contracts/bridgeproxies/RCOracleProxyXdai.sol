@@ -21,7 +21,6 @@ contract RCOracleProxyXdai is Ownable
     address public factoryAddress;
     
     // market resolution variables
-    mapping (address => bytes32) public questionIds;
     mapping (address => bool) public marketFinalized;
     mapping (address => uint256) public winningOutcome;
 

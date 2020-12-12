@@ -1,15 +1,17 @@
 //require("dotenv").config();
 
 var realityCardsFactory = artifacts.require("RCFactory");
-var factoryAddress = '0x7b74bDe552304f464e6Cb68f374f6fa8f2cE42eC';
+var factoryAddress = '0x853aA66d14c332f590427994d49BE2EAe8bF8F88';
 
 
 // variables market specific
-var marketLockingTime = 1601251201; // Monday, 28-Sep-20 00:00:01 UTC in RFC 2822
-var oracleResolutionTime = 1601251201; // Monday, 28-Sep-20 00:00:01 UTC in RFC 2822
-var question = 'na';
-var tokenName = "RealityCards_UNIPRICE";
-var artistAddress = "0x34A971cA2fd6DA2Ce2969D716dF922F17aAA1dB0";
+var marketLockingTime = 0; 
+var oracleResolutionTime = 0; 
+var question = 'Test1␟"X","Y","Z"␟news-politics␟en_US';
+var eventDetails = ['RCToken','y']; 
+var artistAddress = "0x0000000000000000000000000000000000000000";
+var affiliateAddress = "0x0000000000000000000000000000000000000000";
+var cardSpecificAffiliateAddresses = ['0x0000000000000000000000000000000000000000','0x0000000000000000000000000000000000000000'];
 
 // kovan overrides (*COMMENT OUT IF MAINNET*)
 // var marketLockingTime = 100; 
@@ -19,13 +21,11 @@ var timestamps = [0,marketLockingTime,oracleResolutionTime];
 var tokenURIs = [
     'https://cdn.realitycards.io/nftmetadata/uni/token0.json',
     'https://cdn.realitycards.io/nftmetadata/uni/token1.json',
-    'https://cdn.realitycards.io/nftmetadata/uni/token2.json',
-    'https://cdn.realitycards.io/nftmetadata/uni/token3.json'
 ]; 
 
 module.exports = function() {
   async function createMarket() {
-    //create market
+    // create market
     let factory = await realityCardsFactory.at(factoryAddress);
     console.log("CREATING XDAI MARKET");
     var transaction = await factory.createMarket(
@@ -34,8 +34,10 @@ module.exports = function() {
         timestamps,
         tokenURIs,
         artistAddress,
+        affiliateAddress,
+        cardSpecificAffiliateAddresses,
         question,
-        tokenName
+        eventDetails,
       );
 
     var lastAddress = await factory.getMostRecentMarket.call(0);

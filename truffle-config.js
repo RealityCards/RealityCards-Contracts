@@ -31,7 +31,7 @@ module.exports = {
       },
       network_id: 1,
       gas: 12000000,
-      gasPrice: 151000000000, // 20 gwei
+      gasPrice: 50000000000,
       networkCheckTimeout: 12000,
     },
     ropsten: {
@@ -81,8 +81,36 @@ module.exports = {
         return new HDWalletProvider(MNEMONIC, "https://dai.poa.network");
       },
       network_id: 100,
-      gas: 5000000,
+      gas: 12000000,
       gasPrice: 1000000000,
+    },
+    stage1: {
+        provider: function() {
+          return new HDWalletProvider(MNEMONIC, "https://dai.poa.network");
+        },
+        network_id: 100,
+        gas: 12000000,
+        gasPrice: 1000000000,
+      },
+    stage2: {
+        provider: () => {
+          return new HDWalletProvider(
+            MNEMONIC,
+            `https://mainnet.infura.io/v3/${INFURA_KEY}`
+          );
+        },
+        network_id: 1,
+        gas: 1000000,
+        gasPrice: 50000000000,
+        networkCheckTimeout: 12000,
+      },
+    stage3: {
+    provider: function() {
+        return new HDWalletProvider(MNEMONIC, "https://dai.poa.network");
+    },
+    network_id: 100,
+    gas: 12000000,
+    gasPrice: 1000000000,
     },
   },
   compilers: {
