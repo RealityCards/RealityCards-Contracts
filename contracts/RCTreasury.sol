@@ -58,9 +58,10 @@ contract RCTreasury is Ownable {
     //////// CONSTRUCTOR ///////////////
     ////////////////////////////////////
 
-    constructor() public {
-        // at initiation, uberOwner and owner will be the same
-        uberOwner = msg.sender;
+    constructor(address _owner) public {
+        // set owners
+        transferOwnership(_owner);
+        uberOwner = _owner;
     }
 
     ////////////////////////////////////

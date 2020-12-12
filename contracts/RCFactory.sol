@@ -57,7 +57,7 @@ contract RCFactory is Ownable, CloneFactory {
     mapping(string => bool) public existingSlug;
 
     ///// UBER OWNER /////
-    /// @dev high level owner who can change the factory address
+    /// @dev high level owner who can change the market reference contract
     address public uberOwner;
 
     ////////////////////////////////////
@@ -72,11 +72,8 @@ contract RCFactory is Ownable, CloneFactory {
     ////////////////////////////////////
 
     /// @dev Treasury must be deployed before Factory
-    constructor(ITreasury _treasuryAddress) public 
+    constructor(ITreasury _treasuryAddress, address _owner) public 
     {
-        // at initiation, uberOwner and owner will be the same
-        uberOwner = msg.sender;
-
         // initialise contract variable
         treasury = _treasuryAddress;
 
@@ -84,6 +81,10 @@ contract RCFactory is Ownable, CloneFactory {
         // artist // winner // creator // affiliate // card specific affiliates
         updatePotDistribution(20,0,0,20,100); // 2% artist, 2% affiliate, 10% card specific affiliate default
         updateMinimumPriceIncrease(10); // 10% default
+
+        // set owners
+        transferOwnership(_owner); 
+        uberOwner = _owner;
     }
 
     ////////////////////////////////////
@@ -156,7 +157,7 @@ contract RCFactory is Ownable, CloneFactory {
     ////////////////////////////////////
     /// @dev multiple addresses have the ability to approve markets
 
-     /// @notice add or remove an address from market creator whitelist, should be onlyOwner
+     /// @notice add or remove an address to governors list, should be onlyOwner
     function addOrRemoveGovernor(address _governor) external onlyOwner {
         governors[_governor] = governors[_governor] ? false : true;
     }
