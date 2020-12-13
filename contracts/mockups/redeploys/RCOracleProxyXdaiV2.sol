@@ -15,7 +15,8 @@ contract RCOracleProxyXdaiV2 is Ownable
     mapping (address => bytes32) public questionIds;
     mapping (address => bool) public marketFinalized;
     mapping (address => uint256) public winningOutcome;
-
+    
+    mapping (address => bool) public isMarket;
     // CONSTRUCTOR
 
     constructor(address _bridgeXdaiAddress, address _factoryAddress) public {
@@ -36,6 +37,13 @@ contract RCOracleProxyXdaiV2 is Ownable
 
     function setFactoryAddress(address _newAddress) onlyOwner public {
         factoryAddress = _newAddress;
+    }
+
+    /// @dev so only RC NFTs can be upgraded
+    function addMarket(address _newMarket) external returns(bool) {
+        require(msg.sender == factoryAddress, "Not factory");
+        isMarket[_newMarket] = true;
+        return true;
     }
     
     // SENDING DATA TO THE MAINNET PROXY

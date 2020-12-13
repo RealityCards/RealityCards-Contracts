@@ -28,7 +28,7 @@ const delay = duration => new Promise(resolve => setTimeout(resolve, duration));
 contract('RealityCardsTests XdaiV1', (accounts) => {
 
   var realitycards;
-  var tokenURIs = ['x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x']; // 20 tokens
+  var tokenURIs = ['x','x','x','uri','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x']; // 20 tokens
   var eventDetails = ['RCToken','x']; 
   var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
   var maxuint256 = 4294967295;
@@ -3758,7 +3758,7 @@ it('check onlyOwner is on relevant Factory functions', async () => {
     await expectRevert(rcfactory.approveOrUnapproveMarket(user0, {from: user1}), "Not approved");
     await expectRevert(rcfactory.updateMinimumPriceIncrease(4, {from: user1}), "caller is not the owner");
     await expectRevert(rcfactory.burnCardsIfUnapproved({from: user1}), "caller is not the owner");
-    await expectRevert(rcfactory.updateAdvancedWarning({from: user1}), "caller is not the owner");
+    await expectRevert(rcfactory.updateAdvancedWarning(23,{from: user1}), "caller is not the owner");
 });
 
 it('test updateMinimumPriceIncrease', async () => {
@@ -4086,6 +4086,36 @@ it('test advancedWarning', async () => {
     // opening time 2 days in the future, should not fail
     var timestamps = [twoDaysInTheFuture,marketLockingTime,oracleResolutionTime];
     rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,eventDetails);
+});
+
+it('test NFT upgrade', async () => {
+    await rcfactory.approveOrUnapproveMarket(realitycards.address);
+    await depositDai(1000,user1);
+    await depositDai(1000,user2);
+    await newRental(10,3,user1);
+    await time.increase(time.duration.weeks(4));
+    await newRental(500,3,user2);
+    await time.increase(time.duration.years(1));
+    await realitio.setResult(3);
+    await realitycards.lockMarket();
+    await mainnetproxy.getWinnerFromOracle(realitycards.address);
+    await expectRevert(realitycards.upgradeNft(3, {from: user1}),"Incorrect state");
+    await realitycards.determineWinner();
+    await realitycards.withdraw({from: user1});
+    await expectRevert(realitycards.upgradeNft(3, {from: user2}), "Not owner");
+    await realitycards.upgradeNft(3, {from: user1});
+    var ownerxdai = await realitycards.ownerOf(3);
+    assert.equal(ownerxdai,realitycards.address);
+    var ownermainnet = await mainnetproxy.ownerOf(0);
+    assert.equal(ownermainnet,user1);
+    // check token uri
+    var tokenuri = await mainnetproxy.tokenURI(0);
+    assert.equal("uri",tokenuri);
+    // test cant call certain functions directly
+    await expectRevert(xdaiproxy.upgradeNft(3), "Not market");
+    await expectRevert(mainnetproxy.upgradeNft("asdfsadf",user0), "Not bridge");
+    await withdrawDeposit(1000,user1);
+
 });
 
 });

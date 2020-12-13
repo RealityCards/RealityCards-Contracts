@@ -254,17 +254,6 @@ contract RCMarket is ERC721Full {
     }
 
     ////////////////////////////////////
-    /////// INCREMENTING STATE /////////
-    ////////////////////////////////////
-
-    /// @dev should only be called thrice
-    function _incrementState() internal {
-        assert(uint256(state) < 4);
-        state = States(uint256(state) + 1);
-        emit LogStateChange(uint256(state));
-    }
-
-    ////////////////////////////////////
     //// ORACLE PROXY CONTRACT CALLS ///
     ////////////////////////////////////
 
@@ -686,6 +675,13 @@ contract RCMarket is ERC721Full {
         require(_currentOwner != address(0) && _newOwner != address(0) , "Cannot send to/from zero address");
         price[_tokenId] = _newPrice;
         _transferFrom(_currentOwner, _newOwner, _tokenId);
+    }
+
+     /// @dev should only be called thrice
+    function _incrementState() internal {
+        assert(uint256(state) < 4);
+        state = States(uint256(state) + 1);
+        emit LogStateChange(uint256(state));
     }
 
     ////////////////////////////////////
