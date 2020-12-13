@@ -7,7 +7,7 @@ import "@nomiclabs/buidler/console.sol";
 import './lib/CloneFactory.sol';
 import "./interfaces/ITreasury.sol";
 import './interfaces/IRCMarket.sol';
-import './interfaces/IRCOracleProxyXdai.sol';
+import './interfaces/IRCProxyXdai.sol';
 
 /// @title Reality Cards Factory
 /// @author Andrew Stanger
@@ -23,7 +23,7 @@ contract RCFactory is Ownable, CloneFactory {
 
     ///// CONTRACT VARIABLES /////
     ITreasury public treasury;
-    IRCOracleProxyXdai public oracleProxy;
+    IRCProxyXdai public oracleProxy;
 
     ///// CONTRACT ADDRESSES /////
     /// @dev reference contract
@@ -41,8 +41,10 @@ contract RCFactory is Ownable, CloneFactory {
     uint256 public sponsorshipRequired;
     /// @dev adjust required price increase
     uint256 public minimumPriceIncrease;
-    /// @dev how far in the future market opening time must be
+    /// @dev market opening time must be at least this many seconds in the future
     uint32 public advancedWarning;
+    /// @dev market closing time must be no more than this many seconds in the future
+    uint32 public maximumDuration;
 
     ///// MARKET CREATION & HIDING /////
     /// @dev if false, anyone can create markets
@@ -55,6 +57,9 @@ contract RCFactory is Ownable, CloneFactory {
     bool public burnIfUnapproved = true;
     /// @dev prevents the same slug being used twice
     mapping(string => bool) public existingSlug;
+    /// @dev counts the total NFTs minted across all events
+    /// @dev ... so the appropriate token id is used when upgrading to mainnet
+    uint256 public totalNftMintCount;
 
     ///// UBER OWNER /////
     /// @dev high level owner who can change the factory address
@@ -137,7 +142,7 @@ contract RCFactory is Ownable, CloneFactory {
     }
 
     /// @notice where the question to post to the oracle is first sent to
-    function updateOracleProxyXdaiAddress(IRCOracleProxyXdai _newAddress) external onlyOwner {
+    function updateOracleProxyXdaiAddress(IRCProxyXdai _newAddress) external onlyOwner {
         oracleProxy = _newAddress;
     }
 
@@ -146,9 +151,14 @@ contract RCFactory is Ownable, CloneFactory {
         burnIfUnapproved = burnIfUnapproved ? false : true;
     }
 
-    /// @notice how many seconds in the future market opening time must be
+    /// @notice market opening time must be at least this many seconds in the future
     function updateAdvancedWarning(uint32 _newAdvancedWarning) onlyOwner external {
         advancedWarning = _newAdvancedWarning;
+    }
+
+    /// @notice market closing time must be no more than this many seconds in the future
+    function updateMaximumDuration(uint32 _newMaximumDuration) onlyOwner external {
+        maximumDuration = _newMaximumDuration;
     }
 
     ////////////////////////////////////
@@ -228,8 +238,12 @@ contract RCFactory is Ownable, CloneFactory {
             require(_timestamps[0] >= advancedWarning, "Market opening time not set"); 
             require(_timestamps[0].sub(advancedWarning) > now, "Market opens too soon" );
         }
-        // check closing and oracle resolution time
-        require(_timestamps[1].add(1 weeks) > _timestamps[2] && _timestamps[1] <= _timestamps[2], "Invalid timestamps" );
+        // check market locking time
+        if (maximumDuration != 0) {
+            require(_timestamps[1] < now.add(maximumDuration), "Market locks too late");
+        }
+        // check oracle resolution time
+        require(_timestamps[1].add(1 weeks) > _timestamps[2] && _timestamps[1] <= _timestamps[2], "Oracle resolution time error" );
 
         // create the market
         address _newAddress = createClone(referenceContractAddress);
@@ -237,6 +251,7 @@ contract RCFactory is Ownable, CloneFactory {
             _mode: _mode,
             _timestamps: _timestamps,
             _tokenURIs: _tokenURIs,
+            _totalNftMintCount: totalNftMintCount,
             _artistAddress: _artistAddress,
             _affiliateAddress: _affiliateAddress,
             _cardSpecificAffiliateAddresses: _cardSpecificAffiliateAddresses,
@@ -244,12 +259,16 @@ contract RCFactory is Ownable, CloneFactory {
             _tokenName: _eventDetails[0]
         });
 
+        // increment totalNftMintCount
+        totalNftMintCount = totalNftMintCount.add(_tokenURIs.length);
+
         // post question to Oracle
         require(address(oracleProxy) != address(0), "xDai proxy not set");
         oracleProxy.sendQuestionToBridge(_newAddress, _realitioQuestion, _timestamps[2]);
 
-        // tell Treasury about new market
+        // tell Treasury and Bridge Proxy about new market
         assert(treasury.addMarket(_newAddress));
+        assert(oracleProxy.addMarket(_newAddress));
 
         // update internals
         marketAddresses[_mode].push(_newAddress);

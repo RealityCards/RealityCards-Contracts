@@ -1,14 +1,14 @@
 //require("dotenv").config();
 
 var realityCardsFactory = artifacts.require("RCFactory");
-var factoryAddress = '0x853aA66d14c332f590427994d49BE2EAe8bF8F88';
+var factoryAddress = '0xBf4992e9f896D6bE553ef70D58a6454ABBEA2534';
 
 
 // variables market specific
-var marketLockingTime = 0; 
-var oracleResolutionTime = 0; 
-var question = 'Test1␟"X","Y","Z"␟news-politics␟en_US';
-var eventDetails = ['RCToken','y']; 
+var marketLockingTime = 1607866534; 
+var oracleResolutionTime = 1607866534; 
+var question = 'Test4␟"X","Y","Z"␟news-politics␟en_US';
+var eventDetails = ['RCToken','zaasdasdfsf']; 
 var artistAddress = "0x0000000000000000000000000000000000000000";
 var affiliateAddress = "0x0000000000000000000000000000000000000000";
 var cardSpecificAffiliateAddresses = ['0x0000000000000000000000000000000000000000','0x0000000000000000000000000000000000000000'];

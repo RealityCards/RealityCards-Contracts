@@ -1,11 +1,11 @@
 pragma solidity 0.5.13;
 
-import '../../interfaces/IRCOracleProxyMainnet.sol';
+import '../../interfaces/IRCProxyMainnet.sol';
 import '../../interfaces/IBridgeContract.sol';
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 
 // a mockup to test changing the proxy, this is as per the original but always doubles the returned winner
-contract RCOracleProxyXdaiV2 is Ownable
+contract RCProxyXdaiV2 is Ownable
 {
     IBridgeContract public bridge;
 
@@ -15,7 +15,8 @@ contract RCOracleProxyXdaiV2 is Ownable
     mapping (address => bytes32) public questionIds;
     mapping (address => bool) public marketFinalized;
     mapping (address => uint256) public winningOutcome;
-
+    
+    mapping (address => bool) public isMarket;
     // CONSTRUCTOR
 
     constructor(address _bridgeXdaiAddress, address _factoryAddress) public {
@@ -37,12 +38,19 @@ contract RCOracleProxyXdaiV2 is Ownable
     function setFactoryAddress(address _newAddress) onlyOwner public {
         factoryAddress = _newAddress;
     }
+
+    /// @dev so only RC NFTs can be upgraded
+    function addMarket(address _newMarket) external returns(bool) {
+        require(msg.sender == factoryAddress, "Not factory");
+        isMarket[_newMarket] = true;
+        return true;
+    }
     
     // SENDING DATA TO THE MAINNET PROXY
     
     function sendQuestionToBridge(address _marketAddress, string memory _question, uint32 _oracleResolutionTime) public {
         require(msg.sender == factoryAddress, "Not factory");
-        bytes4 _methodSelector = IRCOracleProxyMainnet(address(0)).postQuestionToOracle.selector;
+        bytes4 _methodSelector = IRCProxyMainnet(address(0)).postQuestionToOracle.selector;
         bytes memory data = abi.encodeWithSelector(_methodSelector, _marketAddress, _question, _oracleResolutionTime);
         bridge.requireToPassMessage(oracleProxyMainnetAddress,data,200000);
     }

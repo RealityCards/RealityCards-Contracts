@@ -2,35 +2,36 @@ pragma solidity 0.5.13;
 
 import "@nomiclabs/buidler/console.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721Full.sol";
 import '../interfaces/IRealitio.sol';
-import '../interfaces/IRCOracleProxyXdai.sol';
+import '../interfaces/IRCProxyXdai.sol';
 import '../interfaces/IBridgeContract.sol';
 
-/// @title Reality Cards Oracle Proxy- Mainnet side
+/// @title Reality Cards Proxy- Mainnet side
 /// @author Andrew Stanger
-contract RCOracleProxyMainnet is Ownable
+contract RCProxyMainnet is Ownable, ERC721Full
 {
     ////////////////////////////////////
     //////// VARIABLES /////////////////
     ////////////////////////////////////
 
-    // contract variables
+    /// @dev contract variables
     IRealitio public realitio;
     IBridgeContract public bridge; 
 
-    // governance variables
+    /// @dev governance variables
     address public oracleProxyXdaiAddress;
     address public arbitrator;
     uint32 public timeout;
     
-    // market resolution variables
+    /// @dev market resolution variables
     mapping (address => bytes32) public questionIds;
 
     ////////////////////////////////////
     ////////// CONSTRUCTOR /////////////
     ////////////////////////////////////
 
-    constructor(address _bridgeMainnetAddress, address _realitioAddress) public {
+    constructor(address _bridgeMainnetAddress, address _realitioAddress) ERC721Full("RealityCards", "RC")  public {
         setBridgeMainnetAddress(_bridgeMainnetAddress);
         setRealitioAddress(_realitioAddress);
         setArbitrator(0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D); // kleros
@@ -44,7 +45,7 @@ contract RCOracleProxyMainnet is Ownable
     event LogQuestionPostedToOracle(address indexed marketAddress, bytes32 indexed questionId);
 
     ////////////////////////////////////
-    ////////// GOVERNANCE //////////////
+    /////// GOVERNANCE - SETUP /////////
     ////////////////////////////////////
     
     /// @dev address of xdai oracle proxy, called by the xdai side of the arbitrary message bridge
@@ -57,6 +58,10 @@ contract RCOracleProxyMainnet is Ownable
     function setBridgeMainnetAddress(address _newAddress) onlyOwner public {
         bridge = IBridgeContract(_newAddress);
     }
+
+    ////////////////////////////////////
+    /////// GOVERNANCE - ORACLE ////////
+    ////////////////////////////////////
 
     /// @dev address reality.eth contracts
     function setRealitioAddress(address _newAddress) onlyOwner public {
@@ -81,9 +86,20 @@ contract RCOracleProxyMainnet is Ownable
         questionIds[_marketAddress] = _questionId;
         emit LogQuestionPostedToOracle(_marketAddress, _questionId);
     }
+
+    ////////////////////////////////////
+    //// GOVERNANCE - NFT UPGRADES /////
+    ////////////////////////////////////
+
+    /// @dev admin can create NFTs
+    /// @dev for situations where bridge failed
+    function upgradeNftAdmin(uint256 _newTokenId, string calldata _tokenUri, address _owner) onlyOwner external {
+        _mint(_owner, _newTokenId);
+        _setTokenURI(_newTokenId, _tokenUri);
+    }  
     
     ////////////////////////////////////
-    ///////// CORE FUNCTIONS ///////////
+    ///// CORE FUNCTIONS - ORACLE //////
     ////////////////////////////////////
     
     ///@notice called by xdai proxy via bridge, posts question to Oracle
@@ -102,10 +118,21 @@ contract RCOracleProxyMainnet is Ownable
         // if finalised, send result over to xDai proxy
         if (_isFinalized) {
             bytes32 _winningOutcome = realitio.resultFor(_questionId);
-            bytes4 _methodSelector = IRCOracleProxyXdai(address(0)).setWinner.selector;
+            bytes4 _methodSelector = IRCProxyXdai(address(0)).setWinner.selector;
             bytes memory data = abi.encodeWithSelector(_methodSelector, _marketAddress, _winningOutcome);
             bridge.requireToPassMessage(oracleProxyXdaiAddress,data,200000);
         }
         return _isFinalized;
+    }
+
+    ////////////////////////////////////
+    /// CORE FUNCTIONS - NFT UPGRADES //
+    ////////////////////////////////////
+
+    function upgradeNft(uint256 _newTokenId, string calldata _tokenUri, address _owner) external {
+        require(msg.sender == address(bridge), "Not bridge");
+        require(bridge.messageSender() == oracleProxyXdaiAddress, "Not proxy");
+        _mint(_owner, _newTokenId);
+        _setTokenURI(_newTokenId, _tokenUri);
     }  
 }

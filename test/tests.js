@@ -11,14 +11,14 @@ const {
 var RCFactory = artifacts.require('./RCFactory.sol');
 var RCTreasury = artifacts.require('./RCTreasury.sol');
 var RCMarket = artifacts.require('./RCMarket.sol');
-var XdaiProxy = artifacts.require('./bridgeproxies/RCOracleProxyXdai.sol');
-var MainnetProxy = artifacts.require('./bridgeproxies/RCOracleProxyMainnet.sol');
+var XdaiProxy = artifacts.require('./bridgeproxies/RCProxyXdai.sol');
+var MainnetProxy = artifacts.require('./bridgeproxies/RCProxyMainnet.sol');
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 var BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
 
 // redeploys
-var MainnetProxy2 = artifacts.require('./mockups/redeploys/RCOracleProxyMainnetV2.sol');
-var XdaiProxy2 = artifacts.require('./mockups/redeploys/RCOracleProxyXdaiV2.sol');
+var MainnetProxy2 = artifacts.require('./mockups/redeploys/RCProxyMainnetV2.sol');
+var XdaiProxy2 = artifacts.require('./mockups/redeploys/RCProxyXdaiV2.sol');
 var RCMarket2 = artifacts.require('./mockups/redeploys/RCMarketXdaiV2.sol');
 var BridgeMockup2 = artifacts.require('./mockups/redeploys/BridgeMockupV2.sol');
 var RealitioMockup2 = artifacts.require("./mockups/redeploys/RealitioMockupV2.sol");
@@ -28,7 +28,7 @@ const delay = duration => new Promise(resolve => setTimeout(resolve, duration));
 contract('RealityCardsTests XdaiV1', (accounts) => {
 
   var realitycards;
-  var tokenURIs = ['x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x']; // 20 tokens
+  var tokenURIs = ['x','x','x','uri','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x']; // 20 tokens
   var eventDetails = ['RCToken','x']; 
   var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
   var maxuint256 = 4294967295;
@@ -2940,12 +2940,12 @@ it('check oracleResolutionTime and marketLockingTime expected failures', async (
     var oracleResolutionTime = 69419;
     var marketLockingTime = 69420; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress,affiliateAddress,cardRecipients, question,eventDetails), "Invalid timestamps");
+    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress,affiliateAddress,cardRecipients, question,eventDetails), "Oracle resolution time error");
     // resolution time > 1 weeks after locking, expect failure
     var oracleResolutionTime = 604810;
     var marketLockingTime = 0; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress, affiliateAddress,cardRecipients, question,eventDetails), "Invalid timestamps");
+    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress, affiliateAddress,cardRecipients, question,eventDetails), "Oracle resolution time error");
     // resolution time < 1 week  after locking, no failure
     var oracleResolutionTime = 604790;
     var marketLockingTime = 0; 
@@ -3758,7 +3758,8 @@ it('check onlyOwner is on relevant Factory functions', async () => {
     await expectRevert(rcfactory.approveOrUnapproveMarket(user0, {from: user1}), "Not approved");
     await expectRevert(rcfactory.updateMinimumPriceIncrease(4, {from: user1}), "caller is not the owner");
     await expectRevert(rcfactory.burnCardsIfUnapproved({from: user1}), "caller is not the owner");
-    await expectRevert(rcfactory.updateAdvancedWarning({from: user1}), "caller is not the owner");
+    await expectRevert(rcfactory.updateAdvancedWarning(23,{from: user1}), "caller is not the owner");
+    await expectRevert(rcfactory.updateMaximumDuration(23,{from: user1}), "caller is not the owner");
 });
 
 it('test updateMinimumPriceIncrease', async () => {
@@ -3855,7 +3856,7 @@ it('test uberOwner factory', async () => {
     assert.equal(price, web3.utils.toWei('69', 'ether'));
 });
 
-it('test RCOracleProxyXdai', async () => {
+it('test RCProxyXdai', async () => {
     // check reverts on owned functions
     await expectRevert(xdaiproxy.setOracleProxyMainnetAddress(user0, {from: user1}), "caller is not the owner");
     await expectRevert(xdaiproxy.setBridgeXdaiAddress(user0, {from: user1}), "caller is not the owner");
@@ -3888,7 +3889,7 @@ it('test RCOracleProxyXdai', async () => {
     // setFactoryAddress is already tested in test uberOwner Treasury
 });
 
-it('test RCOracleProxyMainnet various', async () => {
+it('test RCProxyMainnet various', async () => {
     // check reverts on owned functions
     await expectRevert(mainnetproxy.setOracleProxyXdaiAddress(user0, {from: user1}), "caller is not the owner");
     await expectRevert(mainnetproxy.setBridgeMainnetAddress(user0, {from: user1}), "caller is not the owner");
@@ -3922,7 +3923,7 @@ it('test RCOracleProxyMainnet various', async () => {
     
 });
 
-it('test RCOracleProxyMainnet, various 2', async () => {
+it('test RCProxyMainnet, various 2', async () => {
     // change relaitio, winner should return 69
     realitio2 = await RealitioMockup2.new();
     await mainnetproxy.setRealitioAddress(realitio2.address);
@@ -4087,6 +4088,78 @@ it('test advancedWarning', async () => {
     var timestamps = [twoDaysInTheFuture,marketLockingTime,oracleResolutionTime];
     rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,eventDetails);
 });
+
+it('test NFT upgrade', async () => {
+    await rcfactory.approveOrUnapproveMarket(realitycards.address);
+    await depositDai(1000,user1);
+    await depositDai(1000,user2);
+    await depositDai(1000,user3);
+    await newRental(10,3,user1);
+    await time.increase(time.duration.weeks(4));
+    await newRental(500,3,user2);
+    await time.increase(time.duration.years(1));
+    await realitio.setResult(3);
+    await realitycards.lockMarket();
+    await mainnetproxy.getWinnerFromOracle(realitycards.address);
+    await expectRevert(realitycards.upgradeNft(3, {from: user1}),"Incorrect state");
+    await realitycards.determineWinner();
+    await realitycards.withdraw({from: user1});
+    await expectRevert(realitycards.upgradeNft(3, {from: user2}), "Not owner");
+    await realitycards.upgradeNft(3, {from: user1});
+    var ownerxdai = await realitycards.ownerOf(3);
+    assert.equal(ownerxdai,realitycards.address);
+    var ownermainnet = await mainnetproxy.ownerOf(3);
+    assert.equal(ownermainnet,user1);
+    // check token uri
+    var tokenuri = await mainnetproxy.tokenURI(3);
+    assert.equal("uri",tokenuri);
+    // test cant call certain functions directly
+    await expectRevert(xdaiproxy.upgradeNft(3,3), "Not market");
+    await expectRevert(mainnetproxy.upgradeNft(3,"asdfsadf",user0), "Not bridge");
+    // now, create new market and make sure token IDs on mainnet increment correctly
+    var nftMintCount = await rcfactory.totalNftMintCount.call();
+    assert.equal(nftMintCount,20);
+    var realitycards2 = await createMarketWithArtistSet();
+    await rcfactory.approveOrUnapproveMarket(realitycards2.address);
+    await newRentalCustomContract(realitycards2,1,5,user3); 
+    await time.increase(time.duration.years(1));
+    await realitio.setResult(5);
+    await realitycards2.lockMarket();
+    await mainnetproxy.getWinnerFromOracle(realitycards2.address);
+    await realitycards2.determineWinner();
+    await realitycards2.upgradeNft(5, {from: user3});
+    var ownermainnet = await mainnetproxy.ownerOf(25);
+    assert.equal(ownermainnet,user3);
+    var tokenuri = await mainnetproxy.tokenURI(25);
+    assert.equal("x",tokenuri);
+    await withdrawDeposit(1000,user1);
+    await withdrawDeposit(1000,user3);
+
+});
+
+it('test advancedWarning', async () => {
+    await rcfactory.updateMaximumDuration(604800); // one week
+    var latestTime = await time.latest();
+    var twoWeeks = new BN('1210000');
+    var twoWeeksInTheFuture = twoWeeks.add(latestTime);
+    var marketLockingTime = twoWeeksInTheFuture; 
+    var oracleResolutionTime = twoWeeksInTheFuture;
+    var timestamps = [0,marketLockingTime,oracleResolutionTime];
+    var artistAddress = '0x0000000000000000000000000000000000000000';
+    var affiliateAddress = '0x0000000000000000000000000000000000000000';
+    var eventDetails = ['x','r'];
+    // locking time two weeks should fail
+    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,eventDetails),"Market locks too late");
+    // locking time now two weeks in future should pass
+    var twoDays = new BN('172800');
+    var twoDaysInTheFuture = twoDays.add(latestTime);
+    var marketLockingTime = twoDaysInTheFuture; 
+    var oracleResolutionTime = twoDaysInTheFuture;
+    var timestamps = [twoDaysInTheFuture,marketLockingTime,oracleResolutionTime];
+    rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,eventDetails);
+});
+
+
 
 });
 

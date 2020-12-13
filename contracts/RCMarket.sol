@@ -8,7 +8,7 @@ import "@nomiclabs/buidler/console.sol";
 import "./interfaces/IRealitio.sol";
 import "./interfaces/IFactory.sol";
 import "./interfaces/ITreasury.sol";
-import './interfaces/IRCOracleProxyXdai.sol';
+import './interfaces/IRCProxyXdai.sol';
 
 /// @title Reality Cards Market
 /// @author Andrew Stanger
@@ -32,10 +32,13 @@ contract RCMarket is ERC721Full {
     uint256 public mode;
     /// @dev so the Factory can check its a market
     bool public constant isMarket = true;
+    /// @dev counts the total NFTs minted across all events at the time market created
+    /// @dev ... so the appropriate token id is used when upgrading to mainnet
+    uint256 public totalNftMintCount;
 
     ///// CONTRACT VARIABLES /////
     ITreasury public treasury;
-    IRCOracleProxyXdai public oracleProxy;
+    IRCProxyXdai public oracleProxy;
     IFactory public factory;
 
     ///// PRICE, DEPOSITS, RENT /////
@@ -125,6 +128,7 @@ contract RCMarket is ERC721Full {
         uint256 _mode,
         uint32[] memory _timestamps,
         string[] memory _tokenURIs,
+        uint256 _totalNftMintCount,
         address _artistAddress,
         address _affiliateAddress,
         address[] memory _cardSpecificAffiliateAddresses,
@@ -146,6 +150,7 @@ contract RCMarket is ERC721Full {
         // assign arguments to public variables
         mode = _mode;
         numberOfTokens = _tokenURIs.length;
+        totalNftMintCount = _totalNftMintCount;
         marketOpeningTime = _timestamps[0];
         marketLockingTime = _timestamps[1];
         artistAddress = _artistAddress;
@@ -215,6 +220,7 @@ contract RCMarket is ERC721Full {
     event LogUpdateTimeHeldLimit(address indexed owner, uint256 newLimit, uint256 tokenId);
     event LogExit(address indexed owner, uint256 tokenId);
     event LogSponsor(uint256 amount);
+    event LogNftUpgraded(uint256 currentTokenId, uint256 _newTokenId);
 
     ////////////////////////////////////
     /////////// MODIFIERS //////////////
@@ -677,25 +683,34 @@ contract RCMarket is ERC721Full {
         _transferFrom(_currentOwner, _newOwner, _tokenId);
     }
 
-    ////////////////////////////////////
-    ///////// OTHER FUNCTIONS //////////
-    ////////////////////////////////////
-
-    /// @dev should only be called thrice
+     /// @dev should only be called thrice
     function _incrementState() internal {
         assert(uint256(state) < 4);
         state = States(uint256(state) + 1);
         emit LogStateChange(uint256(state));
     }
 
+    ////////////////////////////////////
+    ////////// NFT TRANSFERS ///////////
+    ////////////////////////////////////
+
     /// @dev transfers only possible in withdraw state, so override the existing functions
     function transferFrom(address from, address to, uint256 tokenId) public checkState(States.WITHDRAW) onlyTokenOwner(tokenId) {
         _transferFrom(from, to, tokenId);
     }
 
+    /// @dev transfers only possible in withdraw state, so override the existing functions
     function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) public checkState(States.WITHDRAW) onlyTokenOwner(tokenId) {
         _transferFrom(from, to, tokenId);
         _data;
+    }
+
+    /// @dev send NFT to mainnet
+    function upgradeNft(uint256 _currentTokenId) external checkState(States.WITHDRAW) onlyTokenOwner(_currentTokenId) {
+        uint256 _newTokenId = totalNftMintCount.add(_currentTokenId);
+        oracleProxy.upgradeNft(_currentTokenId, _newTokenId);
+        _transferFrom(ownerOf(_currentTokenId), address(this), _currentTokenId);
+        emit LogNftUpgraded(_currentTokenId, _newTokenId);
     }
 
 }
