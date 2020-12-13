@@ -11,14 +11,14 @@ const {
 var RCFactory = artifacts.require('./RCFactory.sol');
 var RCTreasury = artifacts.require('./RCTreasury.sol');
 var RCMarket = artifacts.require('./RCMarket.sol');
-var XdaiProxy = artifacts.require('./bridgeproxies/RCOracleProxyXdai.sol');
-var MainnetProxy = artifacts.require('./bridgeproxies/RCOracleProxyMainnet.sol');
+var XdaiProxy = artifacts.require('./bridgeproxies/RCProxyXdai.sol');
+var MainnetProxy = artifacts.require('./bridgeproxies/RCProxyMainnet.sol');
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 var BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
 
 // redeploys
-var MainnetProxy2 = artifacts.require('./mockups/redeploys/RCOracleProxyMainnetV2.sol');
-var XdaiProxy2 = artifacts.require('./mockups/redeploys/RCOracleProxyXdaiV2.sol');
+var MainnetProxy2 = artifacts.require('./mockups/redeploys/RCProxyMainnetV2.sol');
+var XdaiProxy2 = artifacts.require('./mockups/redeploys/RCProxyXdaiV2.sol');
 var RCMarket2 = artifacts.require('./mockups/redeploys/RCMarketXdaiV2.sol');
 var BridgeMockup2 = artifacts.require('./mockups/redeploys/BridgeMockupV2.sol');
 var RealitioMockup2 = artifacts.require("./mockups/redeploys/RealitioMockupV2.sol");
@@ -3855,7 +3855,7 @@ it('test uberOwner factory', async () => {
     assert.equal(price, web3.utils.toWei('69', 'ether'));
 });
 
-it('test RCOracleProxyXdai', async () => {
+it('test RCProxyXdai', async () => {
     // check reverts on owned functions
     await expectRevert(xdaiproxy.setOracleProxyMainnetAddress(user0, {from: user1}), "caller is not the owner");
     await expectRevert(xdaiproxy.setBridgeXdaiAddress(user0, {from: user1}), "caller is not the owner");
@@ -3888,7 +3888,7 @@ it('test RCOracleProxyXdai', async () => {
     // setFactoryAddress is already tested in test uberOwner Treasury
 });
 
-it('test RCOracleProxyMainnet various', async () => {
+it('test RCProxyMainnet various', async () => {
     // check reverts on owned functions
     await expectRevert(mainnetproxy.setOracleProxyXdaiAddress(user0, {from: user1}), "caller is not the owner");
     await expectRevert(mainnetproxy.setBridgeMainnetAddress(user0, {from: user1}), "caller is not the owner");
@@ -3922,7 +3922,7 @@ it('test RCOracleProxyMainnet various', async () => {
     
 });
 
-it('test RCOracleProxyMainnet, various 2', async () => {
+it('test RCProxyMainnet, various 2', async () => {
     // change relaitio, winner should return 69
     realitio2 = await RealitioMockup2.new();
     await mainnetproxy.setRealitioAddress(realitio2.address);

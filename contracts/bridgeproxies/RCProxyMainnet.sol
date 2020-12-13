@@ -4,12 +4,12 @@ import "@nomiclabs/buidler/console.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721Full.sol";
 import '../interfaces/IRealitio.sol';
-import '../interfaces/IRCOracleProxyXdai.sol';
+import '../interfaces/IRCProxyXdai.sol';
 import '../interfaces/IBridgeContract.sol';
 
 /// @title Reality Cards Oracle Proxy- Mainnet side
 /// @author Andrew Stanger
-contract RCOracleProxyMainnet is Ownable, ERC721Full
+contract RCProxyMainnet is Ownable, ERC721Full
 {
     ////////////////////////////////////
     //////// VARIABLES /////////////////
@@ -122,7 +122,7 @@ contract RCOracleProxyMainnet is Ownable, ERC721Full
         // if finalised, send result over to xDai proxy
         if (_isFinalized) {
             bytes32 _winningOutcome = realitio.resultFor(_questionId);
-            bytes4 _methodSelector = IRCOracleProxyXdai(address(0)).setWinner.selector;
+            bytes4 _methodSelector = IRCProxyXdai(address(0)).setWinner.selector;
             bytes memory data = abi.encodeWithSelector(_methodSelector, _marketAddress, _winningOutcome);
             bridge.requireToPassMessage(oracleProxyXdaiAddress,data,200000);
         }

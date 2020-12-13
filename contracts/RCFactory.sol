@@ -7,7 +7,7 @@ import "@nomiclabs/buidler/console.sol";
 import './lib/CloneFactory.sol';
 import "./interfaces/ITreasury.sol";
 import './interfaces/IRCMarket.sol';
-import './interfaces/IRCOracleProxyXdai.sol';
+import './interfaces/IRCProxyXdai.sol';
 
 /// @title Reality Cards Factory
 /// @author Andrew Stanger
@@ -23,7 +23,7 @@ contract RCFactory is Ownable, CloneFactory {
 
     ///// CONTRACT VARIABLES /////
     ITreasury public treasury;
-    IRCOracleProxyXdai public oracleProxy;
+    IRCProxyXdai public oracleProxy;
 
     ///// CONTRACT ADDRESSES /////
     /// @dev reference contract
@@ -137,7 +137,7 @@ contract RCFactory is Ownable, CloneFactory {
     }
 
     /// @notice where the question to post to the oracle is first sent to
-    function updateOracleProxyXdaiAddress(IRCOracleProxyXdai _newAddress) external onlyOwner {
+    function updateOracleProxyXdaiAddress(IRCProxyXdai _newAddress) external onlyOwner {
         oracleProxy = _newAddress;
     }
 

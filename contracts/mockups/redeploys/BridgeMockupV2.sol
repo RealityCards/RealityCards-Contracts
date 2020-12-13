@@ -2,8 +2,8 @@ pragma solidity 0.5.13;
 
 import "@nomiclabs/buidler/console.sol";
 
-import '../../interfaces/IRCOracleProxyXdai.sol';
-import '../../interfaces/IRCOracleProxyMainnet.sol';
+import '../../interfaces/IRCProxyXdai.sol';
+import '../../interfaces/IRCProxyMainnet.sol';
 
 // a mockup to test changing the proxy, this is as per the original has a new number variable which is read
 contract BridgeMockupV2

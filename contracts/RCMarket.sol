@@ -8,7 +8,7 @@ import "@nomiclabs/buidler/console.sol";
 import "./interfaces/IRealitio.sol";
 import "./interfaces/IFactory.sol";
 import "./interfaces/ITreasury.sol";
-import './interfaces/IRCOracleProxyXdai.sol';
+import './interfaces/IRCProxyXdai.sol';
 
 /// @title Reality Cards Market
 /// @author Andrew Stanger
@@ -35,7 +35,7 @@ contract RCMarket is ERC721Full {
 
     ///// CONTRACT VARIABLES /////
     ITreasury public treasury;
-    IRCOracleProxyXdai public oracleProxy;
+    IRCProxyXdai public oracleProxy;
     IFactory public factory;
 
     ///// PRICE, DEPOSITS, RENT /////

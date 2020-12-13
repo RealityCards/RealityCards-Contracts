@@ -2,13 +2,13 @@ pragma solidity 0.5.13;
 
 import "@nomiclabs/buidler/console.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
-import '../interfaces/IRCOracleProxyMainnet.sol';
+import '../interfaces/IRCProxyMainnet.sol';
 import '../interfaces/IBridgeContract.sol';
 import '../interfaces/IRCMarket.sol';
 
 /// @title Reality Cards Oracle Proxy- xDai side
 /// @author Andrew Stanger
-contract RCOracleProxyXdai is Ownable
+contract RCProxyXdai is Ownable
 {
     ////////////////////////////////////
     //////// VARIABLES /////////////////
@@ -82,7 +82,7 @@ contract RCOracleProxyXdai is Ownable
     /// @dev called by factory upon market creation, posts question to Oracle via arbitrary message bridge
     function sendQuestionToBridge(address _marketAddress, string calldata _question, uint32 _oracleResolutionTime) external {
         require(msg.sender == factoryAddress, "Not factory");
-        bytes4 _methodSelector = IRCOracleProxyMainnet(address(0)).postQuestionToOracle.selector;
+        bytes4 _methodSelector = IRCProxyMainnet(address(0)).postQuestionToOracle.selector;
         bytes memory data = abi.encodeWithSelector(_methodSelector, _marketAddress, _question, _oracleResolutionTime);
         bridge.requireToPassMessage(oracleProxyMainnetAddress,data,200000);
     }
@@ -116,7 +116,7 @@ contract RCOracleProxyXdai is Ownable
         IRCMarket _market = IRCMarket(msg.sender);
         string memory _tokenUri = _market.tokenURI(_tokenId);
         address _owner = _market.ownerOf(_tokenId);
-        bytes4 _methodSelector = IRCOracleProxyMainnet(address(0)).upgradeNft.selector;
+        bytes4 _methodSelector = IRCProxyMainnet(address(0)).upgradeNft.selector;
         bytes memory data = abi.encodeWithSelector(_methodSelector, _tokenUri, _owner);
         bridge.requireToPassMessage(oracleProxyMainnetAddress,data,200000);
     }

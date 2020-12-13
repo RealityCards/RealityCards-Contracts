@@ -100,7 +100,7 @@ module.exports = {
           );
         },
         network_id: 1,
-        gas: 1000000,
+        gas: 3000000,
         gasPrice: 30000000000,
         networkCheckTimeout: 12000,
       },

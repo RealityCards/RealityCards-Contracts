@@ -2,8 +2,8 @@ pragma solidity 0.5.13;
 
 import "@nomiclabs/buidler/console.sol";
 
-import '../interfaces/IRCOracleProxyXdai.sol';
-import '../interfaces/IRCOracleProxyMainnet.sol';
+import '../interfaces/IRCProxyXdai.sol';
+import '../interfaces/IRCProxyMainnet.sol';
 
 // this is only for ganache testing. Public chain deployments will use the existing Realitio contracts. 
 
