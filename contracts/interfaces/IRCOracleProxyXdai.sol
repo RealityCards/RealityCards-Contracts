@@ -5,4 +5,6 @@ interface IRCOracleProxyXdai {
     function sendQuestionToBridge(address _marketAddress, string calldata _question, uint32 _oracleResolutionTime) external;
     function isFinalized(address _marketAddress) external view returns(bool);
     function getWinner(address _marketAddress) external view returns(uint256); 
+    function upgradeNft(uint256) external;
+    function addMarket(address) external returns (bool);
 }

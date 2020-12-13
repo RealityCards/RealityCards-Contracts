@@ -51,3 +51,10 @@ module.exports = async (deployer, network) =>
         await xdaiproxy.setOracleProxyMainnetAddress(mainnetProxyAddress);
     } 
 };
+
+// Most recent deployments:
+
+// Treasury: 0x3F6eE1b70cbb5b7F1CC336f43718226e6E1C4D36
+// Factory: 0x853aA66d14c332f590427994d49BE2EAe8bF8F88
+// ProxyXdai: 0x185851568aEAcb621Daa3F969717803eBC08d44e
+// ProxyMainnet: 0xbB2EB0BCf9A54f7Eec6C56ff7c582f9A7dAC4BdC

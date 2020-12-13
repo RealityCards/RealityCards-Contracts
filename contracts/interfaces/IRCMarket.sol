@@ -17,4 +17,7 @@ interface IRCMarket {
         string calldata _tokenName
     ) external; 
 
+    function tokenURI(uint256) external view returns (string memory);  
+    function ownerOf(uint256 tokenId) external view returns  (address);
+
 }

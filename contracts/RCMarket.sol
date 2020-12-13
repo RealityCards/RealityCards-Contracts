@@ -254,6 +254,17 @@ contract RCMarket is ERC721Full {
     }
 
     ////////////////////////////////////
+    /////// INCREMENTING STATE /////////
+    ////////////////////////////////////
+
+    /// @dev should only be called thrice
+    function _incrementState() internal {
+        assert(uint256(state) < 4);
+        state = States(uint256(state) + 1);
+        emit LogStateChange(uint256(state));
+    }
+
+    ////////////////////////////////////
     //// ORACLE PROXY CONTRACT CALLS ///
     ////////////////////////////////////
 
@@ -678,24 +689,24 @@ contract RCMarket is ERC721Full {
     }
 
     ////////////////////////////////////
-    ///////// OTHER FUNCTIONS //////////
+    ////////// NFT TRANSFERS ///////////
     ////////////////////////////////////
-
-    /// @dev should only be called thrice
-    function _incrementState() internal {
-        assert(uint256(state) < 4);
-        state = States(uint256(state) + 1);
-        emit LogStateChange(uint256(state));
-    }
 
     /// @dev transfers only possible in withdraw state, so override the existing functions
     function transferFrom(address from, address to, uint256 tokenId) public checkState(States.WITHDRAW) onlyTokenOwner(tokenId) {
         _transferFrom(from, to, tokenId);
     }
 
+    /// @dev transfers only possible in withdraw state, so override the existing functions
     function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) public checkState(States.WITHDRAW) onlyTokenOwner(tokenId) {
         _transferFrom(from, to, tokenId);
         _data;
+    }
+
+    /// @dev send NFT to mainnet
+    function upgradeNft(uint256 _tokenId) external checkState(States.WITHDRAW) onlyTokenOwner(_tokenId) {
+        oracleProxy.upgradeNft(_tokenId);
+        _transferFrom(ownerOf(_tokenId), address(this), _tokenId);
     }
 
 }

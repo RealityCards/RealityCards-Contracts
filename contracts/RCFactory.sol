@@ -248,8 +248,9 @@ contract RCFactory is Ownable, CloneFactory {
         require(address(oracleProxy) != address(0), "xDai proxy not set");
         oracleProxy.sendQuestionToBridge(_newAddress, _realitioQuestion, _timestamps[2]);
 
-        // tell Treasury about new market
+        // tell Treasury and Bridge Proxy about new market
         assert(treasury.addMarket(_newAddress));
+        assert(oracleProxy.addMarket(_newAddress));
 
         // update internals
         marketAddresses[_mode].push(_newAddress);

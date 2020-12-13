@@ -81,6 +81,7 @@ contract RCTreasury is Ownable {
     //////////// ADD MARKETS ///////////
     ////////////////////////////////////
 
+    /// @dev so only markets can move funds from deposits to marketPots and vice versa
     function addMarket(address _newMarket) external returns(bool) {
         require(msg.sender == factoryAddress, "Not factory");
         isMarket[_newMarket] = true;
