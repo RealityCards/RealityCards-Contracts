@@ -41,8 +41,10 @@ contract RCFactory is Ownable, CloneFactory {
     uint256 public sponsorshipRequired;
     /// @dev adjust required price increase
     uint256 public minimumPriceIncrease;
-    /// @dev how far in the future market opening time must be
+    /// @dev market opening time must be at least this many seconds in the future
     uint32 public advancedWarning;
+    /// @dev market closing time must be no more than this many seconds in the future
+    uint32 public maximumDuration;
 
     ///// MARKET CREATION & HIDING /////
     /// @dev if false, anyone can create markets
@@ -146,9 +148,14 @@ contract RCFactory is Ownable, CloneFactory {
         burnIfUnapproved = burnIfUnapproved ? false : true;
     }
 
-    /// @notice how many seconds in the future market opening time must be
+    /// @notice market opening time must be at least this many seconds in the future
     function updateAdvancedWarning(uint32 _newAdvancedWarning) onlyOwner external {
         advancedWarning = _newAdvancedWarning;
+    }
+
+    /// @notice market closing time must be no more than this many seconds in the future
+    function updateMaximumDuration(uint32 _newMaximumDuration) onlyOwner external {
+        maximumDuration = _newMaximumDuration;
     }
 
     ////////////////////////////////////
@@ -228,8 +235,12 @@ contract RCFactory is Ownable, CloneFactory {
             require(_timestamps[0] >= advancedWarning, "Market opening time not set"); 
             require(_timestamps[0].sub(advancedWarning) > now, "Market opens too soon" );
         }
-        // check closing and oracle resolution time
-        require(_timestamps[1].add(1 weeks) > _timestamps[2] && _timestamps[1] <= _timestamps[2], "Invalid timestamps" );
+        // check market locking time
+        if (maximumDuration != 0) {
+            require(_timestamps[1] < now.add(maximumDuration), "Market locks too late");
+        }
+        // check oracle resolution time
+        require(_timestamps[1].add(1 weeks) > _timestamps[2] && _timestamps[1] <= _timestamps[2], "Oracle resolution time error" );
 
         // create the market
         address _newAddress = createClone(referenceContractAddress);
