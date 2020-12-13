@@ -6,7 +6,7 @@ import '../interfaces/IRCProxyMainnet.sol';
 import '../interfaces/IBridgeContract.sol';
 import '../interfaces/IRCMarket.sol';
 
-/// @title Reality Cards Oracle Proxy- xDai side
+/// @title Reality Cards Proxy- xDai side
 /// @author Andrew Stanger
 contract RCProxyXdai is Ownable
 {
@@ -111,13 +111,13 @@ contract RCProxyXdai is Ownable
     /// CORE FUNCTIONS - NFT UPGRADES //
     ////////////////////////////////////
 
-    function upgradeNft(uint256 _tokenId) external {
+    function upgradeNft(uint256 _currentTokenId, uint256 _newTokenId) external {
         require(isMarket[msg.sender], "Not market");
         IRCMarket _market = IRCMarket(msg.sender);
-        string memory _tokenUri = _market.tokenURI(_tokenId);
-        address _owner = _market.ownerOf(_tokenId);
+        string memory _tokenUri = _market.tokenURI(_currentTokenId);
+        address _owner = _market.ownerOf(_currentTokenId);
         bytes4 _methodSelector = IRCProxyMainnet(address(0)).upgradeNft.selector;
-        bytes memory data = abi.encodeWithSelector(_methodSelector, _tokenUri, _owner);
+        bytes memory data = abi.encodeWithSelector(_methodSelector, _newTokenId, _tokenUri, _owner);
         bridge.requireToPassMessage(oracleProxyMainnetAddress,data,200000);
     }
 }

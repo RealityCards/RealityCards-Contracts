@@ -127,6 +127,7 @@ contract RCMarketXdaiV2 is ERC721Full {
         uint256 _mode,
         uint32[] memory _timestamps,
         string[] memory _tokenURIs,
+        uint256 _totalNftMintCount,
         address _artistAddress,
         address _affiliateAddress,
         address[] memory _cardSpecificAffiliateAddresses,

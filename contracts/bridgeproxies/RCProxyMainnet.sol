@@ -7,7 +7,7 @@ import '../interfaces/IRealitio.sol';
 import '../interfaces/IRCProxyXdai.sol';
 import '../interfaces/IBridgeContract.sol';
 
-/// @title Reality Cards Oracle Proxy- Mainnet side
+/// @title Reality Cards Proxy- Mainnet side
 /// @author Andrew Stanger
 contract RCProxyMainnet is Ownable, ERC721Full
 {
@@ -26,9 +26,6 @@ contract RCProxyMainnet is Ownable, ERC721Full
     
     /// @dev market resolution variables
     mapping (address => bytes32) public questionIds;
-
-    /// @dev nft upgrade variables
-    uint256 public nftCount;
 
     ////////////////////////////////////
     ////////// CONSTRUCTOR /////////////
@@ -96,10 +93,9 @@ contract RCProxyMainnet is Ownable, ERC721Full
 
     /// @dev admin can create NFTs
     /// @dev for situations where bridge failed
-    function upgradeNftAdmin(string calldata _tokenUri, address _owner) onlyOwner external {
-        _mint(_owner, nftCount);
-        _setTokenURI(nftCount, _tokenUri);
-        nftCount = nftCount + 1; 
+    function upgradeNftAdmin(uint256 _newTokenId, string calldata _tokenUri, address _owner) onlyOwner external {
+        _mint(_owner, _newTokenId);
+        _setTokenURI(_newTokenId, _tokenUri);
     }  
     
     ////////////////////////////////////
@@ -133,11 +129,10 @@ contract RCProxyMainnet is Ownable, ERC721Full
     /// CORE FUNCTIONS - NFT UPGRADES //
     ////////////////////////////////////
 
-    function upgradeNft(string calldata _tokenUri, address _owner) external {
+    function upgradeNft(uint256 _newTokenId, string calldata _tokenUri, address _owner) external {
         require(msg.sender == address(bridge), "Not bridge");
         require(bridge.messageSender() == oracleProxyXdaiAddress, "Not proxy");
-        _mint(_owner, nftCount);
-        _setTokenURI(nftCount, _tokenUri);
-        nftCount = nftCount + 1; 
+        _mint(_owner, _newTokenId);
+        _setTokenURI(_newTokenId, _tokenUri);
     }  
 }

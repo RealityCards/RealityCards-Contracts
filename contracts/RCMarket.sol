@@ -32,6 +32,9 @@ contract RCMarket is ERC721Full {
     uint256 public mode;
     /// @dev so the Factory can check its a market
     bool public constant isMarket = true;
+    /// @dev counts the total NFTs minted across all events at the time market created
+    /// @dev ... so the appropriate token id is used when upgrading to mainnet
+    uint256 public totalNftMintCount;
 
     ///// CONTRACT VARIABLES /////
     ITreasury public treasury;
@@ -125,6 +128,7 @@ contract RCMarket is ERC721Full {
         uint256 _mode,
         uint32[] memory _timestamps,
         string[] memory _tokenURIs,
+        uint256 _totalNftMintCount,
         address _artistAddress,
         address _affiliateAddress,
         address[] memory _cardSpecificAffiliateAddresses,
@@ -146,6 +150,7 @@ contract RCMarket is ERC721Full {
         // assign arguments to public variables
         mode = _mode;
         numberOfTokens = _tokenURIs.length;
+        totalNftMintCount = _totalNftMintCount;
         marketOpeningTime = _timestamps[0];
         marketLockingTime = _timestamps[1];
         artistAddress = _artistAddress;
@@ -215,6 +220,7 @@ contract RCMarket is ERC721Full {
     event LogUpdateTimeHeldLimit(address indexed owner, uint256 newLimit, uint256 tokenId);
     event LogExit(address indexed owner, uint256 tokenId);
     event LogSponsor(uint256 amount);
+    event LogNftUpgraded(uint256 currentTokenId, uint256 _newTokenId);
 
     ////////////////////////////////////
     /////////// MODIFIERS //////////////
@@ -700,9 +706,11 @@ contract RCMarket is ERC721Full {
     }
 
     /// @dev send NFT to mainnet
-    function upgradeNft(uint256 _tokenId) external checkState(States.WITHDRAW) onlyTokenOwner(_tokenId) {
-        oracleProxy.upgradeNft(_tokenId);
-        _transferFrom(ownerOf(_tokenId), address(this), _tokenId);
+    function upgradeNft(uint256 _currentTokenId) external checkState(States.WITHDRAW) onlyTokenOwner(_currentTokenId) {
+        uint256 _newTokenId = totalNftMintCount.add(_currentTokenId);
+        oracleProxy.upgradeNft(_currentTokenId, _newTokenId);
+        _transferFrom(ownerOf(_currentTokenId), address(this), _currentTokenId);
+        emit LogNftUpgraded(_currentTokenId, _newTokenId);
     }
 
 }

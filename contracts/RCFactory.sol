@@ -57,6 +57,9 @@ contract RCFactory is Ownable, CloneFactory {
     bool public burnIfUnapproved = true;
     /// @dev prevents the same slug being used twice
     mapping(string => bool) public existingSlug;
+    /// @dev counts the total NFTs minted across all events
+    /// @dev ... so the appropriate token id is used when upgrading to mainnet
+    uint256 public totalNftMintCount;
 
     ///// UBER OWNER /////
     /// @dev high level owner who can change the factory address
@@ -248,12 +251,16 @@ contract RCFactory is Ownable, CloneFactory {
             _mode: _mode,
             _timestamps: _timestamps,
             _tokenURIs: _tokenURIs,
+            _totalNftMintCount: totalNftMintCount,
             _artistAddress: _artistAddress,
             _affiliateAddress: _affiliateAddress,
             _cardSpecificAffiliateAddresses: _cardSpecificAffiliateAddresses,
             _marketCreatorAddress: msg.sender,
             _tokenName: _eventDetails[0]
         });
+
+        // increment totalNftMintCount
+        totalNftMintCount = totalNftMintCount.add(_tokenURIs.length);
 
         // post question to Oracle
         require(address(oracleProxy) != address(0), "xDai proxy not set");
