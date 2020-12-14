@@ -5,15 +5,15 @@ var factoryAddress = '0x2c5a84D055Edd26AFA0A8dEe4D9780331A9DEC4D';
 
 
 // variables market specific
-// var marketLockingTime = 1608018142; 
-// var oracleResolutionTime = 1608018142; 
+var marketLockingTime = 1608018142; 
+var oracleResolutionTime = 1608018142; 
 var question = 'na';
 var tokenName = "RealityCards_UNIPRICE";
 var artistAddress = "0x34A971cA2fd6DA2Ce2969D716dF922F17aAA1dB0";
 
 // kovan overrides (*COMMENT OUT IF MAINNET*)
-var marketLockingTime = 100; 
-var oracleResolutionTime = 100; 
+// var marketLockingTime = 100; 
+// var oracleResolutionTime = 100; 
 
 var timestamps = [0,marketLockingTime,oracleResolutionTime];
 var tokenURIs = [
@@ -30,7 +30,7 @@ module.exports = function() {
     console.log("CREATING XDAI MARKET");
     var transaction = await factory.createMarket(
         0,
-        'QmcYZj4bkkAx1u1HD4C82wVmcvHCzFPkxaWSJgvjWjfKiL',
+        'QmegrRe2t3Mu7mMffo79LtGKxAqRFjL8U2F8uzDhg25gtk',
         timestamps,
         tokenURIs,
         artistAddress,
