@@ -53,6 +53,12 @@ contract RCFactory is Ownable, CloneFactory {
     mapping(address => bool) public governors;
     /// @dev  so markets can be hidden from the interface
     mapping(address => bool) public isMarketApproved;
+    /// @dev  so markets can be hidden from the interface
+    mapping(address => bool) public isArtistApproved;
+    /// @dev  so markets can be hidden from the interface
+    mapping(address => bool) public isAffiliateApproved;
+    /// @dev  so markets can be hidden from the interface
+    mapping(address => bool) public isCardSpecificAffiliateApproved;
     /// @dev if true, cards are burnt at the end of events for hidden markets to enforce scarcity
     bool public burnIfUnapproved = true;
     /// @dev prevents the same slug being used twice
@@ -164,7 +170,7 @@ contract RCFactory is Ownable, CloneFactory {
     ////////////////////////////////////
     ///// GOVERNANCE- GOVERNORS ////////
     ////////////////////////////////////
-    /// @dev multiple addresses have the ability to approve markets
+    /// @dev multiple addresses have the ability to approve markets, and add approved artists and affiliates
 
      /// @notice add or remove an address from market creator whitelist, should be onlyOwner
     function addOrRemoveGovernor(address _governor) external onlyOwner {
@@ -172,11 +178,28 @@ contract RCFactory is Ownable, CloneFactory {
     }
 
     /// @notice markets are default hidden from the interface, this reveals them
-    /// @dev uses the governors
     function approveOrUnapproveMarket(address _market) external {
         require(governors[msg.sender] || owner() == msg.sender, "Not approved");
         isMarketApproved[_market] = isMarketApproved[_market] ? false : true;
         emit LogMarketHidden(_market, isMarketApproved[_market]);
+    }
+
+    /// @notice artistAddress, passed in createMarket, must be approved
+    function addOrRemoveArtist(address _artist) external {
+        require(governors[msg.sender] || owner() == msg.sender, "Not approved");
+        isArtistApproved[_artist] = isArtistApproved[_artist] ? false : true;
+    }
+
+    /// @notice affiliateAddress, passed in createMarket, must be approved
+    function addOrRemoveAffiliate(address _affiliate) external {
+        require(governors[msg.sender] || owner() == msg.sender, "Not approved");
+        isAffiliateApproved[_affiliate] = isAffiliateApproved[_affiliate] ? false : true;
+    }
+
+    /// @notice cardSpecificAffiliateAddress, passed in createMarket, must be approved
+    function addOrRemoveCardSpecificAffiliate(address _affiliate) external {
+        require(governors[msg.sender] || owner() == msg.sender, "Not approved");
+        isCardSpecificAffiliateApproved[_affiliate] = isCardSpecificAffiliateApproved[_affiliate] ? false : true;
     }
 
     ////////////////////////////////////
@@ -226,6 +249,13 @@ contract RCFactory is Ownable, CloneFactory {
         // check slug not used before
         require(!existingSlug[_eventDetails[1]], "Duplicate slug");
         existingSlug[_eventDetails[1]] = true;
+
+        // check payout addresses
+        require(isArtistApproved[_artistAddress] || _artistAddress == address(0), "Artist not approved");
+        require(isAffiliateApproved[_affiliateAddress] || _affiliateAddress == address(0), "Affiliate not approved");
+        for (uint i = 0; i < _cardSpecificAffiliateAddresses.length; i++) { 
+            require(isCardSpecificAffiliateApproved[_cardSpecificAffiliateAddresses[i]] || _cardSpecificAffiliateAddresses[i] == address(0), "Card affiliate not approved");
+        }
 
         // check market creator is approved
         if (marketCreationGovernorsOnly) {

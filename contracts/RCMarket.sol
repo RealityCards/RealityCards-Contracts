@@ -35,6 +35,8 @@ contract RCMarket is ERC721Full {
     /// @dev counts the total NFTs minted across all events at the time market created
     /// @dev ... so the appropriate token id is used when upgrading to mainnet
     uint256 public totalNftMintCount;
+    /// @dev contractURI for opensea 
+    string public contractURI;
 
     ///// CONTRACT VARIABLES /////
     ITreasury public treasury;
@@ -136,6 +138,9 @@ contract RCMarket is ERC721Full {
         string memory _tokenName
     ) public initializer {
         assert(_mode <= 2);
+
+        // add contractURI
+        contractURI = "https://cdn.realitycards.io/contractmetadata.json";
 
         // external contract variables:
         factory = IFactory(msg.sender);

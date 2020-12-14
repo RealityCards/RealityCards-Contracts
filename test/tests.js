@@ -71,6 +71,15 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     await mainnetproxy.setOracleProxyXdaiAddress(xdaiproxy.address);
     await bridge.setOracleProxyMainnetAddress(mainnetproxy.address);
     await bridge.setOracleProxyXdaiAddress(xdaiproxy.address);
+    // add peeps to card recipients approvals
+    await rcfactory.addOrRemoveCardSpecificAffiliate(user5);
+    await rcfactory.addOrRemoveCardSpecificAffiliate(user6);
+    await rcfactory.addOrRemoveCardSpecificAffiliate(user7);
+    await rcfactory.addOrRemoveCardSpecificAffiliate(user8);
+    await rcfactory.addOrRemoveCardSpecificAffiliate(user0);
+    await rcfactory.addOrRemoveAffiliate(user7);
+    await rcfactory.addOrRemoveAffiliate(user8);
+    await rcfactory.addOrRemoveArtist(user8);
     // market creation
     await rcfactory.createMarket(
         0,
@@ -3799,6 +3808,11 @@ it('test uberOwner Treasury', async () => {
     await expectRevert(treasury.setFactoryAddress(user0), "Access denied");
     // deploy new factory, update address
     rcfactory2 = await RCFactory.new(treasury.address);
+    await rcfactory2.addOrRemoveCardSpecificAffiliate(user5);
+    await rcfactory2.addOrRemoveCardSpecificAffiliate(user6);
+    await rcfactory2.addOrRemoveCardSpecificAffiliate(user7);
+    await rcfactory2.addOrRemoveCardSpecificAffiliate(user8);
+    await rcfactory2.addOrRemoveCardSpecificAffiliate(user0);
     await treasury.setFactoryAddress(rcfactory2.address,{from: user5});
     await rcfactory2.setReferenceContractAddress(rcreference.address);
     await rcfactory2.updateOracleProxyXdaiAddress(xdaiproxy.address);
@@ -3943,27 +3957,6 @@ it('test RCProxyMainnet, various 2', async () => {
     await mainnetproxy.setTimeout(69);
     var newtime = await mainnetproxy.timeout.call();
     assert.equal(newtime,69)
-});
-
-it('test postQuestionToOracleAdmin', async () => {
-    // first, check it cant be called cos already posted
-    await expectRevert(mainnetproxy.postQuestionToOracleAdmin(realitycards.address,"x",0),"Already posted");
-    // fuck up the bridge and post a new market
-    await bridge.setOracleProxyMainnetAddress(user0);
-    realitycards2 = await createMarketWithArtistSet();
-    await mainnetproxy.postQuestionToOracleAdmin(realitycards2.address,"x",0)
-    await realitio.setResult(2);
-    await time.increase(time.duration.years(1)); 
-    await realitycards2.lockMarket();
-    await mainnetproxy.getWinnerFromOracle(realitycards2.address);
-    // bridge still fucked so should think not resolved
-    await expectRevert(realitycards2.determineWinner(),"Oracle not resolved");
-    // fix bridge, should work
-    await bridge.setOracleProxyMainnetAddress(mainnetproxy.address);
-    await mainnetproxy.getWinnerFromOracle(realitycards2.address);
-    await realitycards2.determineWinner();
-    var winner = await realitycards2.winningOutcome.call();
-    assert.equal(winner,2)
 });
 
 it('test postQuestionToOracleAdmin', async () => {
@@ -4157,6 +4150,36 @@ it('test advancedWarning', async () => {
     var oracleResolutionTime = twoDaysInTheFuture;
     var timestamps = [twoDaysInTheFuture,marketLockingTime,oracleResolutionTime];
     rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,eventDetails);
+});
+
+it('test addOrRemoveArtist, addOrRemoveAffiliate, addOrRemoveCardSpecificAffiliate', async () => {
+    var timestamps = [0,0,0];
+    var artistAddress = user2;
+    var affiliateAddress = user2;
+    var cardRecipients = ['0x0000000000000000000000000000000000000000',user6,user7,user8,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user2];
+    var eventDetails = ['x','r'];
+    // locking time two weeks should fail
+    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,eventDetails),"Artist not approved");
+    await rcfactory.addOrRemoveArtist(user2);
+    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,eventDetails),"Affiliate not approved");
+    await rcfactory.addOrRemoveAffiliate(user2);
+    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,eventDetails),"Card affiliate not approved");
+    await rcfactory.addOrRemoveCardSpecificAffiliate(user2);
+    await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,eventDetails);
+    // check that not owner cant make changes
+    await expectRevert(rcfactory.addOrRemoveArtist(user4, {from: user2}), "Not approved");
+    await expectRevert(rcfactory.addOrRemoveAffiliate(user4, {from: user2}), "Not approved");
+    await expectRevert(rcfactory.addOrRemoveCardSpecificAffiliate(user4, {from: user2}), "Not approved");
+    await rcfactory.addOrRemoveGovernor(user2);
+    // should be fine now
+    await rcfactory.addOrRemoveArtist(user4, {from: user2});
+    await rcfactory.addOrRemoveAffiliate(user4, {from: user2});
+    await rcfactory.addOrRemoveCardSpecificAffiliate(user4, {from: user2});
+    // remove user 2 from whitelist and same errors 
+    await rcfactory.addOrRemoveGovernor(user2);
+    await expectRevert(rcfactory.addOrRemoveArtist(user4, {from: user2}), "Not approved");
+    await expectRevert(rcfactory.addOrRemoveAffiliate(user4, {from: user2}), "Not approved");
+    await expectRevert(rcfactory.addOrRemoveCardSpecificAffiliate(user4, {from: user2}), "Not approved");
 });
 
 
