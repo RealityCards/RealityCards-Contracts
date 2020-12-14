@@ -36,7 +36,7 @@ contract RCFactory is Ownable, CloneFactory {
     uint256[2] public potDistribution;
 
     ///// MARKET CREATION /////
-    bool marketCreatorWhitelistEnabled = true;
+    bool marketCreatorWhitelistEnabled;
     mapping(address => bool) public marketCreatorWhitelist;
 
     ////////////////////////////////////
