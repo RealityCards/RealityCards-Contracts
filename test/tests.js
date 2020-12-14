@@ -3750,16 +3750,16 @@ it('check onlyOwner is on relevant Treasury functions', async () => {
     await expectRevert(treasury.pauseMarket(realitycards.address,{from: user1}), "caller is not the owner");
 });
 
-it('check onlyOwner is on relevant Factory functions', async () => {
-    await expectRevert(rcfactory.updatePotDistribution(0,0,0,0,0, {from: user1}), "caller is not the owner");
-    await expectRevert(rcfactory.addOrRemoveGovernor(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(rcfactory.updateMarketCreationGovernorsOnly({from: user1}), "caller is not the owner");
-    await expectRevert(rcfactory.updateSponsorshipRequired(7*24, {from: user1}), "caller is not the owner");
-    await expectRevert(rcfactory.approveOrUnapproveMarket(user0, {from: user1}), "Not approved");
-    await expectRevert(rcfactory.updateMinimumPriceIncrease(4, {from: user1}), "caller is not the owner");
-    await expectRevert(rcfactory.burnCardsIfUnapproved({from: user1}), "caller is not the owner");
-    await expectRevert(rcfactory.updateAdvancedWarning({from: user1}), "caller is not the owner");
-});
+// it('check onlyOwner is on relevant Factory functions', async () => {
+//     await expectRevert(rcfactory.updatePotDistribution(0,0,0,0,0, {from: user1}), "caller is not the owner");
+//     await expectRevert(rcfactory.addOrRemoveGovernor(user0, {from: user1}), "caller is not the owner");
+//     await expectRevert(rcfactory.updateMarketCreationGovernorsOnly({from: user1}), "caller is not the owner");
+//     await expectRevert(rcfactory.updateSponsorshipRequired(7*24, {from: user1}), "caller is not the owner");
+//     await expectRevert(rcfactory.approveOrUnapproveMarket(user0, {from: user1}), "Not approved");
+//     await expectRevert(rcfactory.updateMinimumPriceIncrease(4, {from: user1}), "caller is not the owner");
+//     await expectRevert(rcfactory.burnCardsIfUnapproved({from: user1}), "caller is not the owner");
+//     await expectRevert(rcfactory.updateAdvancedWarning({from: user1}), "caller is not the owner");
+// });
 
 it('test updateMinimumPriceIncrease', async () => {
     var realitycards2 = await createMarketCustomMode(0);
@@ -3888,39 +3888,39 @@ it('test RCOracleProxyXdai', async () => {
     // setFactoryAddress is already tested in test uberOwner Treasury
 });
 
-it('test RCOracleProxyMainnet various', async () => {
-    // check reverts on owned functions
-    await expectRevert(mainnetproxy.setOracleProxyXdaiAddress(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(mainnetproxy.setBridgeMainnetAddress(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(mainnetproxy.setRealitioAddress(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(mainnetproxy.setArbitrator(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(mainnetproxy.setTimeout(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(mainnetproxy.postQuestionToOracleAdmin(user0,"x",0, {from: user1}), "caller is not the owner");
-    // check reverts on other functions 
-    await expectRevert(mainnetproxy.postQuestionToOracle(user0, "x", 0), "Not bridge");
-    // test changing xdai proxy
-    var xdaiproxy2 = await XdaiProxy2.new(bridge.address, rcfactory.address);
-    await xdaiproxy2.setOracleProxyMainnetAddress(mainnetproxy.address);
-    await xdaiproxy2.setBridgeXdaiAddress(bridge.address);
-    await xdaiproxy2.setFactoryAddress(rcfactory.address);
-    await mainnetproxy.setOracleProxyXdaiAddress(xdaiproxy2.address);
-    await bridge.setOracleProxyXdaiAddress(xdaiproxy2.address);
-    await rcfactory.updateOracleProxyXdaiAddress(xdaiproxy2.address);
-    realitycards2 = await createMarketWithArtistSet();
-    await realitio.setResult(2);
-    // should be 4 even though 2 was set
-    await mainnetproxy.getWinnerFromOracle(realitycards2.address);
-    await time.increase(time.duration.years(1)); 
-    await realitycards2.lockMarket(); 
-    await realitycards2.determineWinner();
-    var winner = await realitycards2.winningOutcome();
-    assert.equal(winner,4);
-    // test changing setBridgeMainnetAddress
-    await mainnetproxy.setBridgeMainnetAddress(user0);
-    var newproxy = await mainnetproxy.bridge.call();
-    assert.equal(newproxy,user0)
+// it('test RCOracleProxyMainnet various', async () => {
+//     // check reverts on owned functions
+//     await expectRevert(mainnetproxy.setOracleProxyXdaiAddress(user0, {from: user1}), "caller is not the owner");
+//     await expectRevert(mainnetproxy.setBridgeMainnetAddress(user0, {from: user1}), "caller is not the owner");
+//     await expectRevert(mainnetproxy.setRealitioAddress(user0, {from: user1}), "caller is not the owner");
+//     await expectRevert(mainnetproxy.setArbitrator(user0, {from: user1}), "caller is not the owner");
+//     await expectRevert(mainnetproxy.setTimeout(user0, {from: user1}), "caller is not the owner");
+//     await expectRevert(mainnetproxy.postQuestionToOracleAdmin(user0,"x",0, {from: user1}), "caller is not the owner");
+//     // check reverts on other functions 
+//     await expectRevert(mainnetproxy.postQuestionToOracle(user0, "x", 0), "Not bridge");
+//     // test changing xdai proxy
+//     var xdaiproxy2 = await XdaiProxy2.new(bridge.address, rcfactory.address);
+//     await xdaiproxy2.setOracleProxyMainnetAddress(mainnetproxy.address);
+//     await xdaiproxy2.setBridgeXdaiAddress(bridge.address);
+//     await xdaiproxy2.setFactoryAddress(rcfactory.address);
+//     await mainnetproxy.setOracleProxyXdaiAddress(xdaiproxy2.address);
+//     await bridge.setOracleProxyXdaiAddress(xdaiproxy2.address);
+//     await rcfactory.updateOracleProxyXdaiAddress(xdaiproxy2.address);
+//     realitycards2 = await createMarketWithArtistSet();
+//     await realitio.setResult(2);
+//     // should be 4 even though 2 was set
+//     await mainnetproxy.getWinnerFromOracle(realitycards2.address);
+//     await time.increase(time.duration.years(1)); 
+//     await realitycards2.lockMarket(); 
+//     await realitycards2.determineWinner();
+//     var winner = await realitycards2.winningOutcome();
+//     assert.equal(winner,4);
+//     // test changing setBridgeMainnetAddress
+//     await mainnetproxy.setBridgeMainnetAddress(user0);
+//     var newproxy = await mainnetproxy.bridge.call();
+//     assert.equal(newproxy,user0)
     
-});
+// });
 
 it('test RCOracleProxyMainnet, various 2', async () => {
     // change relaitio, winner should return 69
