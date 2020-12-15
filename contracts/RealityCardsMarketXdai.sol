@@ -384,10 +384,10 @@ contract RealityCardsMarketXdai is Ownable, ERC721Full {
     function newRental(uint256 _newPrice, uint256 _tokenId) external payable checkState(States.OPEN) tokenExists(_tokenId) {
         uint256 _deposit = msg.value;
         uint256 _currentPricePlusTenPercent = price[_tokenId].mul(11).div(10);
-        uint256 _oneHoursDeposit = _newPrice.div(24);
+        uint256 _oneMinDeposit = _newPrice.div(24*60);
         uint256 _updatedDeposit = _deposit.add(deposits[_tokenId][msg.sender]);
         require(_newPrice >= _currentPricePlusTenPercent, "Price not 10% higher");
-        require(_updatedDeposit >= _oneHoursDeposit, "One hour's rent minimum");
+        require(_updatedDeposit >= _oneMinDeposit, "One minute's rent minimum");
         require(_newPrice >= 1 ether, "Minimum rental 1 Dai");
         
         collectRentAllTokens();
