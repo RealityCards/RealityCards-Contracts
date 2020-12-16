@@ -136,6 +136,8 @@ contract RCMarketXdaiV2 is ERC721Full {
     ) public initializer {
         assert(_mode <= 2);
         IFactory _factory = IFactory(msg.sender);
+
+        _totalNftMintCount;
         
         // initialiiize!
         ERC721.initialize();

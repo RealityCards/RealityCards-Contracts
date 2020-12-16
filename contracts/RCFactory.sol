@@ -75,7 +75,7 @@ contract RCFactory is Ownable, CloneFactory {
     //////// EVENTS ////////////////////
     ////////////////////////////////////
 
-    event LogMarketCreated(address contractAddress, address treasuryAddress, string[] tokenURIs, uint32[] timestamps, uint256 mode, string ipfsHash, uint256 referenceContractVersion);
+    event LogMarketCreated(address contractAddress, address treasuryAddress, string[] tokenURIs, uint32[] timestamps, string slug, string ipfsHash, uint256 referenceContractVersion);
     event LogMarketHidden(address market, bool hidden);
 
     ////////////////////////////////////
@@ -309,7 +309,7 @@ contract RCFactory is Ownable, CloneFactory {
             IRCMarket(_newAddress).sponsor.value(msg.value)();
         }
 
-        emit LogMarketCreated(address(_newAddress), address(treasury), _tokenURIs, _timestamps,  _mode, _ipfsHash, referenceContractVersion);
+        emit LogMarketCreated(address(_newAddress), address(treasury), _tokenURIs, _timestamps,  _eventDetails[1], _ipfsHash, referenceContractVersion);
         return _newAddress;
     }
 

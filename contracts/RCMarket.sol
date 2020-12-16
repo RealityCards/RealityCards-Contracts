@@ -205,6 +205,8 @@ contract RCMarket is ERC721Full {
             _incrementState();
         }
         
+        // 2 because there is another event within the factory
+        emit LogMarketCreated2(_mode, _artistAddress, _marketCreatorAddress, _affiliateAddress, artistCut, winnerCut, creatorCut, affiliateCut, cardSpecificAffiliateCut);
     } 
 
     ////////////////////////////////////
@@ -226,6 +228,7 @@ contract RCMarket is ERC721Full {
     event LogExit(address indexed owner, uint256 tokenId);
     event LogSponsor(uint256 amount);
     event LogNftUpgraded(uint256 currentTokenId, uint256 _newTokenId);
+    event LogMarketCreated2(uint256 mode, address artistAddress, address marketCreatorAddress, address affiliateAddress, uint256 artistCut, uint256 winnerCut, uint256 creatorCut, uint256 affiliateCut, uint256 cardSpecificAffiliateCut);
 
     ////////////////////////////////////
     /////////// MODIFIERS //////////////
