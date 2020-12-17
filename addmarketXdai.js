@@ -9,7 +9,7 @@ var factoryAddress = '0xAc10E57949B159D297E56Ee57d81746F60223b88';
 var marketOpeningTime = 1608148800; // Wednesday, 16-Dec-20 20:00:00 UTC
 var marketLockingTime = 1608156000; // Wednesday, 16-Dec-20 22:00:00 UTC
 var oracleResolutionTime = 1608156000; // Wednesday, 16-Dec-20 22:00:00 UTC
-var numberOfTokens = 2;
+var numberOfTokens = 3;
 var question = 'na';
 var tokenName = "RealityCards_PremierLeague";
 
@@ -52,7 +52,8 @@ module.exports = function() {
     let market = await realityCardsMarket.at(lastAddress);
     await market.mintNfts("https://cdn.realitycards.io/nftmetadata/premierleague/token0.json");
     await market.mintNfts("https://cdn.realitycards.io/nftmetadata/premierleague/token1.json");
-    // await market.openMarket();
+    await market.mintNfts("https://cdn.realitycards.io/nftmetadata/premierleague/token2.json");
+    await market.openMarket();
     console.log("NFTs minted");
     process.exit();
   }
