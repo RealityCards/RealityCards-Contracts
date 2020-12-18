@@ -1,4 +1,4 @@
-const {BN, time} = require('@openzeppelin/test-helpers')
+const { BN, time } = require('@openzeppelin/test-helpers')
 const argv = require('minimist')(process.argv.slice(2), {
   string: ['ipfs_hash']
 })
@@ -155,7 +155,7 @@ module.exports = async (deployer, network, accounts) => {
 
       let user = accounts[(i - 1) % 4]
       let amount = web3.utils.toWei(i.toString(), 'ether')
-      await realitycards.newRental(amount, 0, 0, {from: user, value: amount})
+      await realitycards.newRental(amount, 0, 0, { from: user, value: amount })
 
       await time.increase(time.duration.hours(Math.floor(Math.random() * 9))) // hold for a few hours
     }
@@ -206,9 +206,85 @@ module.exports = async (deployer, network, accounts) => {
     // await time.increase(time.duration.weeks(2))
     // await realitycards2.lockMarket()
 
+    // market 3
+    let threeDays = new BN('259200')
+    let threeDaysInTheFuture = threeDays.add(latestTime)
+    timestamps = [latestTime, threeDaysInTheFuture, threeDaysInTheFuture]
+
+    await factory.createMarket(
+      0,
+      ipfsHashes[2], // ALREADY USED BY MARKET#2
+      timestamps,
+      tokenURIs,
+      artistAddress,
+      question,
+      tokenName
+    )
+
+    var marketAddress3 = await factory.getMostRecentMarket.call(0)
+    console.log('marketAddress #3: ', marketAddress3)
+
+    realitycards3 = await RealityCardsMarketXdaiV1.at(marketAddress3)
+
+    // user8 renting a bunch of cards to test the active positions table
+    await rent(user8, realitycards2, '1')
+    await time.increase(time.duration.hours(Math.floor(Math.random() * 12) + 1))
+    await rent(user7, realitycards2, '1')
+
+    await rent(user8, realitycards2, '0')
+    await rent(user8, realitycards2, '2')
+    await time.increase(time.duration.hours(Math.floor(Math.random() * 12) + 1))
+    await rent(user7, realitycards2, '2')
+
+    await rent(user8, realitycards, '3')
+    await time.increase(time.duration.hours(Math.floor(Math.random() * 12) + 1))
+    await rent(user7, realitycards, '3')
+
+    await rent(user8, realitycards, '2')
+
+    await time.increase(time.duration.hours(Math.floor(Math.random() * 12) + 1))
+
+    // lock and determine winner for market 2
+    // await time.increase(time.duration.weeks(3))
+    // await realitycards2.lockMarket()
+    // await time.increase(time.duration.hours(24))
+    // try {
+    //   await realitycards2.determineWinner()
+    // } catch (err) {
+    //   console.log(err)
+    // }
+
     console.log('factory.address: ', factory.address)
     console.log('treasury.address: ', treasury.address)
   } else {
     console.log('No deploy script for this network')
   }
+}
+
+const rent = (user, market, tokenId) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let tokenPrice = '0'
+      let newPrice = '0'
+      let dep = 0
+      let ran = 1
+
+      tokenPrice = await market.price(tokenId)
+      newPrice = parseInt(tokenPrice) + 0.11 * parseInt(tokenPrice)
+      if (newPrice == 0) {
+        newPrice = 1 + Math.floor(Math.random() * 6) + 1
+        newPrice = await web3.utils.toWei(newPrice.toString(), 'ether')
+      }
+      ran = Math.floor(Math.random() * 23) + 1
+      dep = newPrice / ran
+      await market.newRental(newPrice.toString(), 0, tokenId, {
+        from: user,
+        value: dep
+      })
+      resolve('done!')
+    } catch (err) {
+      console.log('RENT CARD ERROR: ', err)
+      reject(err)
+    }
+  })
 }
