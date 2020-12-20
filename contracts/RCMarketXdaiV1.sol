@@ -301,6 +301,21 @@ contract RCMarketXdaiV1 is ERC721Full {
         emit LogWinnerKnown(winningOutcome);
     }
 
+    /// @dev temporary function used for testing purposes. TO BE DELETED !!!
+    function determineWinner2(uint256 _winner) external checkState(States.LOCKED) {
+        winningOutcome = _winner;
+        _incrementState();
+        // transfer NFTs to the longest owners
+        _processNFTsAfterEvent();
+        // pay artist
+        _payArtist();
+        // pay market creator if not invalid
+        if (totalTimeHeld[winningOutcome] > 0) {
+            _payMarketCreator();
+        }
+        emit LogWinnerKnown(winningOutcome);
+    }
+
     /// @notice pays out winnings, or returns funds
     /// @dev public because called by withdrawWinningsAndDeposit
     function withdraw() public checkState(States.WITHDRAW) {

@@ -245,14 +245,10 @@ module.exports = async (deployer, network, accounts) => {
     await time.increase(time.duration.hours(Math.floor(Math.random() * 12) + 1))
 
     // lock and determine winner for market 2
-    // await time.increase(time.duration.weeks(3))
-    // await realitycards2.lockMarket()
-    // await time.increase(time.duration.hours(24))
-    // try {
-    //   await realitycards2.determineWinner()
-    // } catch (err) {
-    //   console.log(err)
-    // }
+    await time.increase(time.duration.weeks(3))
+    await realitycards2.lockMarket()
+    await time.increase(time.duration.hours(24))
+    await realitycards2.determineWinner2('1')
 
     console.log('factory.address: ', factory.address)
     console.log('treasury.address: ', treasury.address)
