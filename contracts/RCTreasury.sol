@@ -127,7 +127,7 @@ contract RCTreasury is Ownable {
 
         newOwner = _newOwner;
         price = _price;
-        depositToAllocate = _depositToAllocat;
+        depositToAllocate = _depositToAllocate;
         newOwnersDeposit = deposits[_newOwner];
 
         // require(deposits[_newOwner] >= _depositToAllocate, "Insufficient deposit :( ");
