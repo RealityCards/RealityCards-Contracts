@@ -115,9 +115,9 @@ contract RCTreasury is Ownable {
     /// only markets can call these functions
 
     /// @dev moves ten minutes' deposit into a seperate pot
-    function allocateCardSpecificDeposit(address _newOwner, address _previousOwner, uint256 _tokenId, uint256 _price) external balancedBooks() onlyMarkets() returns(bool) {
+    function allocateCardSpecificDeposit(address _newOwner, address _previousOwner, uint256 _tokenId, uint256 _price) external balancedBooks() returns(bool) {
         uint256 _depositToAllocate = _price.div(minimumRentalDivisor);
-        require(deposits[_newOwner] >= _depositToAllocate, "Insufficient deposit");
+        require(deposits[_newOwner] >= _depositToAllocate, "Insufficient deposit :( ");
 
         // first, unallocate card specific deposit of previous owner
         if (cardSpecificDeposits[msg.sender][_previousOwner][_tokenId] > 0) {
