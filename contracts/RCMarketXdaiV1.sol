@@ -522,7 +522,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     ///// MAIN FUNCTIONS- INTERNAL /////
     ////////////////////////////////////
 
-    function rentOwed(_tokenId) external view returns (uint) {
+    function rentOwed(uint256 _tokenId) external view returns (uint) {
         return (price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(1 days));
     }
 
