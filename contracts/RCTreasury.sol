@@ -114,36 +114,23 @@ contract RCTreasury is Ownable {
     ////////////////////////////////////
     /// only markets can call these functions
 
-    address public newOwner;
-    uint256 public price;
-    uint256 public depositToAllocate;
-    uint256 public newOwnersDeposit;
-
-
-
     /// @dev moves ten minutes' deposit into a seperate pot
     function allocateCardSpecificDeposit(address _newOwner, address _previousOwner, uint256 _tokenId, uint256 _price) external balancedBooks() returns(bool) {
         uint256 _depositToAllocate = _price.div(minimumRentalDivisor);
+        require(deposits[_newOwner] >= _depositToAllocate, "Insufficient deposit :( ");
 
-        newOwner = _newOwner;
-        price = _price;
-        depositToAllocate = _depositToAllocat;
-        newOwnersDeposit = deposits[_newOwner];
+        // first, unallocate card specific deposit of previous owner
+        if (cardSpecificDeposits[msg.sender][_previousOwner][_tokenId] > 0) {
+            deposits[_previousOwner] = deposits[_previousOwner].add(cardSpecificDeposits[msg.sender][_previousOwner][_tokenId]);
+            cardSpecificDeposits[msg.sender][_previousOwner][_tokenId] = 0;
+        }
 
-        // require(deposits[_newOwner] >= _depositToAllocate, "Insufficient deposit :( ");
-
-        // // first, unallocate card specific deposit of previous owner
-        // if (cardSpecificDeposits[msg.sender][_previousOwner][_tokenId] > 0) {
-        //     deposits[_previousOwner] = deposits[_previousOwner].add(cardSpecificDeposits[msg.sender][_previousOwner][_tokenId]);
-        //     cardSpecificDeposits[msg.sender][_previousOwner][_tokenId] = 0;
-        // }
-
-        // // allocate card specific deposit for new owner
-        // // balance should have been cleared out as per the above
-        // assert(cardSpecificDeposits[msg.sender][_newOwner][_tokenId] == 0);
-        // deposits[_newOwner] = deposits[_newOwner].sub(_depositToAllocate);
-        // cardSpecificDeposits[msg.sender][_newOwner][_tokenId] = cardSpecificDeposits[msg.sender][_newOwner][_tokenId].add(_depositToAllocate);
-        // return true;
+        // allocate card specific deposit for new owner
+        // balance should have been cleared out as per the above
+        assert(cardSpecificDeposits[msg.sender][_newOwner][_tokenId] == 0);
+        deposits[_newOwner] = deposits[_newOwner].sub(_depositToAllocate);
+        cardSpecificDeposits[msg.sender][_newOwner][_tokenId] = cardSpecificDeposits[msg.sender][_newOwner][_tokenId].add(_depositToAllocate);
+        return true;
     }
 
     /// @dev a rental payment is equivilent to moving to market pot from user's deposit
