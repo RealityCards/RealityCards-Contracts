@@ -522,6 +522,14 @@ contract RCMarketXdaiV1 is ERC721Full {
     ///// MAIN FUNCTIONS- INTERNAL /////
     ////////////////////////////////////
 
+    function rentOwed(_tokenId) external view returns (uint) {
+        return (price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(1 days));
+    }
+
+    function returnNow() external view returns (uint) {
+        return (now);
+    }
+
     /// @notice collects rent for a specific token
     /// @dev also calculates and updates how long the current user has held the token for
     /// @dev is not a problem if called externally, but making internal over public to save gas
