@@ -132,7 +132,7 @@ contract RCTreasury is Ownable {
 
         // require(deposits[_newOwner] >= _depositToAllocate, "Insufficient deposit :( ");
 
-        // // first, unallocate card specific deposit of previous owner
+        // first, unallocate card specific deposit of previous owner
         // if (cardSpecificDeposits[msg.sender][_previousOwner][_tokenId] > 0) {
         //     deposits[_previousOwner] = deposits[_previousOwner].add(cardSpecificDeposits[msg.sender][_previousOwner][_tokenId]);
         //     cardSpecificDeposits[msg.sender][_previousOwner][_tokenId] = 0;
@@ -143,7 +143,7 @@ contract RCTreasury is Ownable {
         // assert(cardSpecificDeposits[msg.sender][_newOwner][_tokenId] == 0);
         // deposits[_newOwner] = deposits[_newOwner].sub(_depositToAllocate);
         // cardSpecificDeposits[msg.sender][_newOwner][_tokenId] = cardSpecificDeposits[msg.sender][_newOwner][_tokenId].add(_depositToAllocate);
-        // return true;
+        return true;
     }
 
     /// @dev a rental payment is equivilent to moving to market pot from user's deposit
