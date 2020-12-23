@@ -250,6 +250,10 @@ module.exports = async (deployer, network, accounts) => {
     await time.increase(time.duration.hours(24))
     await realitycards2.determineWinner2('1')
 
+    // collect rent so cards return to unowned
+    await realitycards.collectRentAllTokens();
+    await realitycards3.collectRentAllTokens();
+
     console.log('factory.address: ', factory.address)
     console.log('treasury.address: ', treasury.address)
   } else {
