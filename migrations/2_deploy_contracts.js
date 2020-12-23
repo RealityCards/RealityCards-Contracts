@@ -251,6 +251,7 @@ module.exports = async (deployer, network, accounts) => {
     await realitycards2.determineWinner2('1')
 
     // collect rent so cards return to unowned
+    console.log('collecting rent for open markets');
     await realitycards.collectRentAllTokens();
     await realitycards3.collectRentAllTokens();
 
