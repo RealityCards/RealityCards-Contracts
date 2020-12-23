@@ -1,7 +1,5 @@
 pragma solidity 0.5.13;
-pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/ERC721Full.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "@openzeppelin/upgrades/contracts/Initializable.sol";
 import "@nomiclabs/buidler/console.sol";
@@ -9,10 +7,11 @@ import "./interfaces/IRealitio.sol";
 import "./interfaces/IFactory.sol";
 import "./interfaces/ITreasury.sol";
 import './interfaces/IRCProxyXdai.sol';
+import './interfaces/IRCNftHubXdai.sol';
 
 /// @title Reality Cards Market
 /// @author Andrew Stanger
-contract RCMarket is ERC721Full {
+contract RCMarket is Initializable {
 
     using SafeMath for uint256;
 
@@ -33,15 +32,16 @@ contract RCMarket is ERC721Full {
     /// @dev so the Factory can check its a market
     bool public constant isMarket = true;
     /// @dev counts the total NFTs minted across all events at the time market created
-    /// @dev ... so the appropriate token id is used when upgrading to mainnet
+    /// @dev nft tokenId = card Id + totalNftMintCount
     uint256 public totalNftMintCount;
     /// @dev contractURI for opensea 
     string public contractURI;
 
     ///// CONTRACT VARIABLES /////
     ITreasury public treasury;
-    IRCProxyXdai public oracleProxy;
     IFactory public factory;
+    IRCProxyXdai public oracleproxy;
+    IRCNftHubXdai public nfthub;
 
     ///// PRICE, DEPOSITS, RENT /////
     /// @dev in attodai (so 100xdai = 100000000000000000000)
@@ -121,7 +121,6 @@ contract RCMarket is ERC721Full {
     
     /// @param _mode 0 = normal, 1 = winner takes all, 2 = hot potato
     /// @param _timestamps for market opening, locking, and oracle resolution
-    /// @param _tokenURIs NFT metadata
     /// @param _artistAddress where to send artist's cut, if any
     /// @param _affiliateAddress where to send affiliate's cut, if any
     /// @param _cardSpecificAffiliateAddresses where to send card specific affiliate's cut, if any
@@ -129,32 +128,27 @@ contract RCMarket is ERC721Full {
     function initialize(
         uint256 _mode,
         uint32[] memory _timestamps,
-        string[] memory _tokenURIs,
+        uint256 _numberOfTokens,
         uint256 _totalNftMintCount,
         address _artistAddress,
         address _affiliateAddress,
         address[] memory _cardSpecificAffiliateAddresses,
-        address _marketCreatorAddress,
-        string memory _tokenName
+        address _marketCreatorAddress
     ) public initializer {
         assert(_mode <= 2);
-
-        // add contractURI
-        contractURI = "https://cdn.realitycards.io/contractmetadata.json";
 
         // external contract variables:
         factory = IFactory(msg.sender);
         treasury = factory.treasury();
-        oracleProxy = factory.oracleProxy();
+        oracleproxy = factory.oracleproxy();
+        nfthub = factory.nfthub();
         
         // initialiiize!
-        ERC721.initialize();
-        ERC721Metadata.initialize(_tokenName,"RC");
         winningOutcome = MAX_UINT256; // default invalid
 
         // assign arguments to public variables
         mode = _mode;
-        numberOfTokens = _tokenURIs.length;
+        numberOfTokens = _numberOfTokens;
         totalNftMintCount = _totalNftMintCount;
         marketOpeningTime = _timestamps[0];
         marketLockingTime = _timestamps[1];
@@ -189,16 +183,15 @@ contract RCMarket is ERC721Full {
             }
         }
 
+        // check card affiliate array is the right size, if being used
+        if (cardSpecificAffiliateCut > 0) {
+            require(_cardSpecificAffiliateAddresses.length == _numberOfTokens, "Card affiliate error");
+        }
+
         // if winner takes all mode, set winnerCut to max
         if (_mode == 1) {
             winnerCut = (((uint256(1000).sub(artistCut)).sub(creatorCut)).sub(affiliateCut)).sub(cardSpecificAffiliateCut);
         } 
-
-        // create the NFTs
-        for (uint i = 0; i < numberOfTokens; i++) { 
-            _mint(address(this), i); 
-            _setTokenURI(i, _tokenURIs[i]);
-        }
 
         // move to OPEN immediately if market opening time in the past
         if (marketOpeningTime <= now) {
@@ -275,13 +268,37 @@ contract RCMarket is ERC721Full {
     /// @dev the returned value is equivilent to tokenId
     /// @dev this function call will revert if it has not yet resolved
     function _getWinner() internal view returns(uint256) {
-        uint256 _winningOutcome = oracleProxy.getWinner(address(this));
+        uint256 _winningOutcome = oracleproxy.getWinner(address(this));
         return _winningOutcome;
     }
 
     /// @notice has the question been finalized on realitio?
     function _isQuestionFinalized() internal view returns (bool) {
-        return oracleProxy.isFinalized(address(this));
+        return oracleproxy.isFinalized(address(this));
+    }
+
+    ////////////////////////////////////
+    /////// NFT HUB CONTRACT CALLS /////
+    ////////////////////////////////////
+
+    /// @notice gets the owner of the NFT
+    function ownerOf(uint256 _tokenId) public view returns(uint256) {
+        uint256 _actualTokenId = _tokenId.add(totalNftMintCount);
+        return nfthub.ownerOf(_actualTokenId);
+    }
+
+    /// @notice gets tokenURI
+    function tokenURI(uint256 _tokenId) public view returns(uint256) {
+        uint256 _actualTokenId = _tokenId.add(totalNftMintCount);
+        return nfthub.tokenURI(_actualTokenId);
+    }
+
+    /// @notice transfer ERC 721 between users
+    function _transferTokenTo(address _currentOwner, address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
+        require(_currentOwner != address(0) && _newOwner != address(0) , "Cannot send to/from zero address");
+        uint256 _actualTokenId = _tokenId.add(totalNftMintCount);
+        price[_tokenId] = _newPrice;
+        assert(nfthub.transferNft(_currentOwner, _newOwner, _actualTokenId));
     }
 
     ////////////////////////////////////
@@ -665,7 +682,8 @@ contract RCMarket is ERC721Full {
     function _processNFTsAfterEvent() internal {
         for (uint i = 0; i < numberOfTokens; i++) {
             if (factory.burnIfUnapproved() && !factory.isMarketApproved(address(this))) {
-                _burn(i);
+                //////// NEEDS WORK, TO MOVE THIS FUNCTIONALITY TO UPGRADENFT FUNCTION //////
+                // _burn(i);
             } else {
                 if (longestOwner[i] != address(0)) {
                     // if never owned, longestOwner[i] will = zero
@@ -683,14 +701,6 @@ contract RCMarket is ERC721Full {
         emit LogForeclosure(_currentOwner, _tokenId);
     }
 
-    /// @notice transfer ERC 721 between users
-    /// @dev there is no event emitted as this is handled in ERC721.sol
-    function _transferTokenTo(address _currentOwner, address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
-        require(_currentOwner != address(0) && _newOwner != address(0) , "Cannot send to/from zero address");
-        price[_tokenId] = _newPrice;
-        _transferFrom(_currentOwner, _newOwner, _tokenId);
-    }
-
      /// @dev should only be called thrice
     function _incrementState() internal {
         assert(uint256(state) < 4);
@@ -699,26 +709,17 @@ contract RCMarket is ERC721Full {
     }
 
     ////////////////////////////////////
-    ////////// NFT TRANSFERS ///////////
+    /////////// UPGRADE NFT ////////////
     ////////////////////////////////////
 
-    /// @dev transfers only possible in withdraw state, so override the existing functions
-    function transferFrom(address from, address to, uint256 tokenId) public checkState(States.WITHDRAW) onlyTokenOwner(tokenId) {
-        _transferFrom(from, to, tokenId);
-    }
-
-    /// @dev transfers only possible in withdraw state, so override the existing functions
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) public checkState(States.WITHDRAW) onlyTokenOwner(tokenId) {
-        _transferFrom(from, to, tokenId);
-        _data;
-    }
-
     /// @dev send NFT to mainnet
-    function upgradeNft(uint256 _currentTokenId) external checkState(States.WITHDRAW) onlyTokenOwner(_currentTokenId) {
-        uint256 _newTokenId = totalNftMintCount.add(_currentTokenId);
-        oracleProxy.upgradeNft(_currentTokenId, _newTokenId);
-        _transferFrom(ownerOf(_currentTokenId), address(this), _currentTokenId);
-        emit LogNftUpgraded(_currentTokenId, _newTokenId);
+    function upgradeNft(uint256 _tokenId) external checkState(States.WITHDRAW) onlyTokenOwner(_tokenId) {
+        string memory _tokenUri = tokenURI(_tokenId);
+        address _owner = ownerOf(_tokenId);
+        uint256 _actualTokenId = _tokenId.add(totalNftMintCount);
+        oracleproxy.upgradeNft(_actualTokenId, _tokenUri, _owner);
+        _transferTokenTo(ownerOf(_tokenId), address(this), price[_tokenId], _tokenId);
+        emit LogNftUpgraded(_tokenId, _actualTokenId);
     }
 
 }

@@ -111,13 +111,10 @@ contract RCProxyXdai is Ownable
     /// CORE FUNCTIONS - NFT UPGRADES //
     ////////////////////////////////////
 
-    function upgradeNft(uint256 _currentTokenId, uint256 _newTokenId) external {
+    function upgradeNft(uint256 _tokenId, string calldata _tokenUri, address _owner) external {
         require(isMarket[msg.sender], "Not market");
-        IRCMarket _market = IRCMarket(msg.sender);
-        string memory _tokenUri = _market.tokenURI(_currentTokenId);
-        address _owner = _market.ownerOf(_currentTokenId);
         bytes4 _methodSelector = IRCProxyMainnet(address(0)).upgradeNft.selector;
-        bytes memory data = abi.encodeWithSelector(_methodSelector, _newTokenId, _tokenUri, _owner);
+        bytes memory data = abi.encodeWithSelector(_methodSelector, _tokenId, _tokenUri, _owner);
         bridge.requireToPassMessage(oracleProxyMainnetAddress,data,200000);
     }
 }

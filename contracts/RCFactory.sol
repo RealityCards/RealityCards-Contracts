@@ -8,6 +8,7 @@ import './lib/CloneFactory.sol';
 import "./interfaces/ITreasury.sol";
 import './interfaces/IRCMarket.sol';
 import './interfaces/IRCProxyXdai.sol';
+import './interfaces/IRCNftHubXdai.sol';
 
 /// @title Reality Cards Factory
 /// @author Andrew Stanger
@@ -23,7 +24,8 @@ contract RCFactory is Ownable, CloneFactory {
 
     ///// CONTRACT VARIABLES /////
     ITreasury public treasury;
-    IRCProxyXdai public oracleProxy;
+    IRCProxyXdai public oracleproxy;
+    IRCNftHubXdai public nfthub;
 
     ///// CONTRACT ADDRESSES /////
     /// @dev reference contract
@@ -149,7 +151,12 @@ contract RCFactory is Ownable, CloneFactory {
 
     /// @notice where the question to post to the oracle is first sent to
     function updateOracleProxyXdaiAddress(IRCProxyXdai _newAddress) external onlyOwner {
-        oracleProxy = _newAddress;
+        oracleproxy = _newAddress;
+    }
+
+    /// @notice where the question to post to the oracle is first sent to
+    function updateNftHubXdaiAddress(IRCNftHubXdai _newAddress) external onlyOwner {
+        nfthub = _newAddress;
     }
 
     /// @notice if true, Cards are burnt upon market resolution for unapproved markets
@@ -251,8 +258,11 @@ contract RCFactory is Ownable, CloneFactory {
         existingSlug[_eventDetails[1]] = true;
 
         // check payout addresses
+        // artist
         require(isArtistApproved[_artistAddress] || _artistAddress == address(0), "Artist not approved");
+        // affiliate
         require(isAffiliateApproved[_affiliateAddress] || _affiliateAddress == address(0), "Affiliate not approved");
+        // card affiliates
         for (uint i = 0; i < _cardSpecificAffiliateAddresses.length; i++) { 
             require(isCardSpecificAffiliateApproved[_cardSpecificAffiliateAddresses[i]] || _cardSpecificAffiliateAddresses[i] == address(0), "Card affiliate not approved");
         }
@@ -275,30 +285,38 @@ contract RCFactory is Ownable, CloneFactory {
         // check oracle resolution time
         require(_timestamps[1].add(1 weeks) > _timestamps[2] && _timestamps[1] <= _timestamps[2], "Oracle resolution time error" );
 
+        uint256 _numberOfTokens = _tokenURIs.length;
+
         // create the market
         address _newAddress = createClone(referenceContractAddress);
         IRCMarket(_newAddress).initialize({
             _mode: _mode,
             _timestamps: _timestamps,
-            _tokenURIs: _tokenURIs,
+            _numberOfTokens: _numberOfTokens,
             _totalNftMintCount: totalNftMintCount,
             _artistAddress: _artistAddress,
             _affiliateAddress: _affiliateAddress,
             _cardSpecificAffiliateAddresses: _cardSpecificAffiliateAddresses,
-            _marketCreatorAddress: msg.sender,
-            _tokenName: _eventDetails[0]
+            _marketCreatorAddress: msg.sender
         });
 
+        // create the NFTs
+        require(address(nfthub) != address(0), "nfthub not set");
+        for (uint i = 0; i < _numberOfTokens; i++) { 
+            uint256 _tokenId = i.add(totalNftMintCount);
+            assert(nfthub.mintNft(_newAddress, _tokenId, _tokenURIs[i]));
+        }
+
         // increment totalNftMintCount
-        totalNftMintCount = totalNftMintCount.add(_tokenURIs.length);
+        totalNftMintCount = totalNftMintCount.add(_numberOfTokens);
 
         // post question to Oracle
-        require(address(oracleProxy) != address(0), "xDai proxy not set");
-        oracleProxy.sendQuestionToBridge(_newAddress, _realitioQuestion, _timestamps[2]);
+        require(address(oracleproxy) != address(0), "xDai proxy not set");
+        oracleproxy.sendQuestionToBridge(_newAddress, _realitioQuestion, _timestamps[2]);
 
         // tell Treasury and Bridge Proxy about new market
         assert(treasury.addMarket(_newAddress));
-        assert(oracleProxy.addMarket(_newAddress));
+        assert(oracleproxy.addMarket(_newAddress));
 
         // update internals
         marketAddresses[_mode].push(_newAddress);

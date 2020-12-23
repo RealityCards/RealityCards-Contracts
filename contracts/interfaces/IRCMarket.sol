@@ -9,13 +9,12 @@ interface IRCMarket {
     function initialize(
         uint256 _mode, 
         uint32[] calldata _timestamps,
-        string[] calldata _tokenURIs,
+        uint256 _numberOfTokens,
         uint256 _totalNftMintCount,
         address _artistAddress,
         address _affiliateAddress,
         address[] calldata _cardSpecificAffiliateAddresses,
-        address _marketCreatorAddress,
-        string calldata _tokenName
+        address _marketCreatorAddress
     ) external; 
 
     function tokenURI(uint256) external view returns (string memory);  

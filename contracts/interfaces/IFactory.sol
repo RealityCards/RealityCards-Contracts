@@ -4,11 +4,13 @@ import "./ICash.sol";
 import "./IRealitio.sol";
 import "./ITreasury.sol";
 import './IRCProxyXdai.sol';
+import './IRCNftHubXdai.sol';
 
 interface IFactory
 {
     function realitio() external returns (IRealitio);
-    function oracleProxy() external returns (IRCProxyXdai);
+    function oracleproxy() external returns (IRCProxyXdai);
+    function nfthub() external returns (IRCNftHubXdai);
     function cash() external returns (ICash);
     function treasury() external returns (ITreasury);
     function realitioTimeout() external returns (uint32);
