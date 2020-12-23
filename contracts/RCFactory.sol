@@ -77,7 +77,7 @@ contract RCFactory is Ownable, CloneFactory {
     //////// EVENTS ////////////////////
     ////////////////////////////////////
 
-    event LogMarketCreated(address contractAddress, address treasuryAddress, string[] tokenURIs, uint32[] timestamps, string slug, string ipfsHash, uint256 referenceContractVersion);
+    event LogMarketCreated(address contractAddress, address treasuryAddress, string[] tokenURIs, string slug, string ipfsHash, uint256 referenceContractVersion);
     event LogMarketHidden(address market, bool hidden);
 
     ////////////////////////////////////
@@ -248,14 +248,14 @@ contract RCFactory is Ownable, CloneFactory {
         address _affiliateAddress,
         address[] memory _cardSpecificAffiliateAddresses,
         string memory _realitioQuestion,
-        string[2] memory _eventDetails // 0 = token name, 1 = slug
+        string memory _slug 
     ) public payable returns (address)  {
         // check sponsorship
         require(msg.value >= sponsorshipRequired, "Insufficient sponsorship");
 
         // check slug not used before
-        require(!existingSlug[_eventDetails[1]], "Duplicate slug");
-        existingSlug[_eventDetails[1]] = true;
+        require(!existingSlug[_slug], "Duplicate slug");
+        existingSlug[_slug] = true;
 
         // check payout addresses
         // artist
@@ -327,7 +327,7 @@ contract RCFactory is Ownable, CloneFactory {
             IRCMarket(_newAddress).sponsor.value(msg.value)();
         }
 
-        emit LogMarketCreated(address(_newAddress), address(treasury), _tokenURIs, _timestamps,  _eventDetails[1], _ipfsHash, referenceContractVersion);
+        emit LogMarketCreated(address(_newAddress), address(treasury), _tokenURIs, _slug, _ipfsHash, referenceContractVersion);
         return _newAddress;
     }
 

@@ -199,7 +199,7 @@ contract RCMarket is Initializable {
         }
         
         // 2 because there is another event within the factory
-        emit LogMarketCreated2(_mode, _artistAddress, _marketCreatorAddress, _affiliateAddress, artistCut, winnerCut, creatorCut, affiliateCut, cardSpecificAffiliateCut);
+        emit LogMarketCreated2(_mode, _timestamps, _artistAddress, _marketCreatorAddress, _affiliateAddress, artistCut, winnerCut, creatorCut, affiliateCut, cardSpecificAffiliateCut);
     } 
 
     ////////////////////////////////////
@@ -221,7 +221,7 @@ contract RCMarket is Initializable {
     event LogExit(address indexed owner, uint256 tokenId);
     event LogSponsor(uint256 amount);
     event LogNftUpgraded(uint256 currentTokenId, uint256 _newTokenId);
-    event LogMarketCreated2(uint256 mode, address artistAddress, address marketCreatorAddress, address affiliateAddress, uint256 artistCut, uint256 winnerCut, uint256 creatorCut, uint256 affiliateCut, uint256 cardSpecificAffiliateCut);
+    event LogMarketCreated2(uint256 mode, uint32[] timestamps, address artistAddress, address marketCreatorAddress, address affiliateAddress, uint256 artistCut, uint256 winnerCut, uint256 creatorCut, uint256 affiliateCut, uint256 cardSpecificAffiliateCut);
 
     ////////////////////////////////////
     /////////// MODIFIERS //////////////
@@ -282,13 +282,13 @@ contract RCMarket is Initializable {
     ////////////////////////////////////
 
     /// @notice gets the owner of the NFT
-    function ownerOf(uint256 _tokenId) public view returns(uint256) {
+    function ownerOf(uint256 _tokenId) public view returns(address) {
         uint256 _actualTokenId = _tokenId.add(totalNftMintCount);
         return nfthub.ownerOf(_actualTokenId);
     }
 
     /// @notice gets tokenURI
-    function tokenURI(uint256 _tokenId) public view returns(uint256) {
+    function tokenURI(uint256 _tokenId) public view returns(string memory) {
         uint256 _actualTokenId = _tokenId.add(totalNftMintCount);
         return nfthub.tokenURI(_actualTokenId);
     }

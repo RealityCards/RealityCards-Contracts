@@ -24,7 +24,7 @@ contract RCNftHubXdai is Ownable, ERC721Full
     /////////// CONSTRUCTOR ////////////
     ////////////////////////////////////
 
-    constructor(address _factoryAddress) ERC721("RealityCards", "RC") public {
+    constructor(address _factoryAddress) ERC721Full("RealityCards", "RC") public {
         setFactoryAddress(_factoryAddress);
     } 
 
@@ -73,11 +73,18 @@ contract RCNftHubXdai is Ownable, ERC721Full
 
     /// @dev transfers only possible via market
     function transferFrom(address from, address to, uint256 tokenId) public {
+        from;
+        to;
+        tokenId;
         require(false, "Verboten");
     }
 
     /// @dev transfers only possible via market
     function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) public {
+        from;
+        to;
+        tokenId;
+        _data;
         require(false, "Verboten");
     }
 
