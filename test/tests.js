@@ -4197,7 +4197,25 @@ it('test addOrRemoveArtist, addOrRemoveAffiliate, addOrRemoveCardSpecificAffilia
     await expectRevert(rcfactory.addOrRemoveCardSpecificAffiliate(user4, {from: user2}), "Not approved");
 });
 
+it('xdai nft hub check failures', async () => {
+    await expectRevert(xdainfthub.addMarket(user0),"Not factory");
+    await expectRevert(xdainfthub.setFactoryAddress(user0, {from: user1}),"Ownable: caller is not the owner");
+    await expectRevert(xdainfthub.mintNft(user0,0,'d'),"Not factory");
+    await expectRevert(xdainfthub.transferNft(user0,user0,9),"Not market");
+});
 
+it('check token Ids of second market make sense', async () => {
+    user = user0;
+    await depositDai(10,user6);
+    // await newRental(144,0,user);
+    //second market
+    realitycards2 = await createMarketWithArtistSet();
+    await realitycards2.newRental(web3.utils.toWei('1', 'ether'),maxuint256,0,{ from: user6});
+    var ownerMarket = await realitycards2.ownerOf.call(0);
+    assert.equal(ownerMarket,user6);
+    var ownerNftHub = await xdainfthub.ownerOf.call(20);
+    assert.equal(ownerNftHub,user6);
+});
 
 });
 
