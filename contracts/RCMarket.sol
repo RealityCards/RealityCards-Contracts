@@ -111,9 +111,9 @@ contract RCMarket is Initializable {
     uint256 public creatorCut;
     bool public creatorPaid = false;
     /// @dev card specific recipients
-    address[] public cardSpecificAffiliateAddresses;
-    uint256 public cardSpecificAffiliateCut;
-    bool public cardSpecificAffiliatePaid = false;
+    address[] public cardAffiliateAddresses;
+    uint256 public cardAffiliateCut;
+    bool public cardAffiliatePaid = false;
 
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
@@ -125,7 +125,7 @@ contract RCMarket is Initializable {
     /// @param _totalNftMintCount total existing Cards across all markets
     /// @param _artistAddress where to send artist's cut, if any
     /// @param _affiliateAddress where to send affiliate's cut, if any
-    /// @param _cardSpecificAffiliateAddresses where to send card specific affiliate's cut, if any
+    /// @param _cardAffiliateAddresses where to send card specific affiliate's cut, if any
     /// @param _marketCreatorAddress where to send market creator's cut, if any
     function initialize(
         uint256 _mode,
@@ -134,7 +134,7 @@ contract RCMarket is Initializable {
         uint256 _totalNftMintCount,
         address _artistAddress,
         address _affiliateAddress,
-        address[] memory _cardSpecificAffiliateAddresses,
+        address[] memory _cardAffiliateAddresses,
         address _marketCreatorAddress
     ) public initializer {
         assert(_mode <= 2);
@@ -157,14 +157,14 @@ contract RCMarket is Initializable {
         artistAddress = _artistAddress;
         marketCreatorAddress = _marketCreatorAddress;
         affiliateAddress = _affiliateAddress;
-        cardSpecificAffiliateAddresses = _cardSpecificAffiliateAddresses;
+        cardAffiliateAddresses = _cardAffiliateAddresses;
         uint256[5] memory _potDistribution = factory.getPotDistribution();
         minimumPriceIncrease = factory.minimumPriceIncrease();
         artistCut = _potDistribution[0];
         winnerCut = _potDistribution[1];
         creatorCut = _potDistribution[2];
         affiliateCut = _potDistribution[3];
-        cardSpecificAffiliateCut = _potDistribution[4];
+        cardAffiliateCut = _potDistribution[4];
 
         // reduce artist cut to zero if zero adddress set
         if (_artistAddress == address(0)) {
@@ -178,21 +178,21 @@ contract RCMarket is Initializable {
 
         // reduce card specifc affiliate cut to zero if zero adddress set
         for (uint i = 0; i < numberOfTokens; i++) { 
-            if (_cardSpecificAffiliateAddresses[i] == address(0)) {
-                if (cardSpecificAffiliateCut != 0) {
-                    cardSpecificAffiliateCut = 0;
+            if (_cardAffiliateAddresses[i] == address(0)) {
+                if (cardAffiliateCut != 0) {
+                    cardAffiliateCut = 0;
                 }
             }
         }
 
         // check card affiliate array is the right size, if being used
-        if (cardSpecificAffiliateCut > 0) {
-            require(_cardSpecificAffiliateAddresses.length == _numberOfTokens, "Card affiliate error");
+        if (cardAffiliateCut > 0) {
+            require(_cardAffiliateAddresses.length == _numberOfTokens, "Card affiliate error");
         }
 
         // if winner takes all mode, set winnerCut to max
         if (_mode == 1) {
-            winnerCut = (((uint256(1000).sub(artistCut)).sub(creatorCut)).sub(affiliateCut)).sub(cardSpecificAffiliateCut);
+            winnerCut = (((uint256(1000).sub(artistCut)).sub(creatorCut)).sub(affiliateCut)).sub(cardAffiliateCut);
         } 
 
         // move to OPEN immediately if market opening time in the past
@@ -201,7 +201,7 @@ contract RCMarket is Initializable {
         }
         
         // 2 because there is another event within the factory
-        emit LogMarketCreated2(_mode, _timestamps, _artistAddress, _marketCreatorAddress, _affiliateAddress, artistCut, winnerCut, creatorCut, affiliateCut, cardSpecificAffiliateCut);
+        emit LogMarketCreated2(_mode, _timestamps, _artistAddress, _marketCreatorAddress, _affiliateAddress, artistCut, winnerCut, creatorCut, affiliateCut, cardAffiliateCut);
     } 
 
     ////////////////////////////////////
@@ -223,7 +223,7 @@ contract RCMarket is Initializable {
     event LogExit(address indexed owner, uint256 tokenId);
     event LogSponsor(uint256 amount);
     event LogNftUpgraded(uint256 currentTokenId, uint256 _newTokenId);
-    event LogMarketCreated2(uint256 mode, uint32[] timestamps, address artistAddress, address marketCreatorAddress, address affiliateAddress, uint256 artistCut, uint256 winnerCut, uint256 creatorCut, uint256 affiliateCut, uint256 cardSpecificAffiliateCut);
+    event LogMarketCreated2(uint256 mode, uint32[] timestamps, address artistAddress, address marketCreatorAddress, address affiliateAddress, uint256 artistCut, uint256 winnerCut, uint256 creatorCut, uint256 affiliateCut, uint256 cardAffiliateCut);
 
     ////////////////////////////////////
     /////////// MODIFIERS //////////////
@@ -324,7 +324,7 @@ contract RCMarket is Initializable {
     function lockMarket() public checkState(States.OPEN) {
         require(marketLockingTime < now, "Market has not finished");
         // do a final rent collection before the contract is locked down
-        collectRentAllTokens();
+        collectRentAllCards();
         _incrementState();
         emit LogContractLocked(true);
     }
@@ -356,7 +356,7 @@ contract RCMarket is Initializable {
     /// @notice pays winnings
     function _payoutWinnings() internal {
         uint256 _winningsToTransfer;
-        uint256 _remainingCut = ((((uint256(1000).sub(artistCut)).sub(affiliateCut))).sub(cardSpecificAffiliateCut).sub(winnerCut)).sub(creatorCut); 
+        uint256 _remainingCut = ((((uint256(1000).sub(artistCut)).sub(affiliateCut))).sub(cardAffiliateCut).sub(winnerCut)).sub(creatorCut); 
         // calculate longest owner's extra winnings, if relevant
         if (longestOwner[winningOutcome] == msg.sender && winnerCut > 0){
             _winningsToTransfer = (totalCollected.mul(winnerCut)).div(1000);
@@ -374,7 +374,7 @@ contract RCMarket is Initializable {
     /// @notice returns all funds to users in case of invalid outcome
     function _returnRent() internal {
         // deduct artist share and card specific share if relevant but NOT market creator share or winner's share (no winner, market creator does not deserve)
-        uint256 _remainingCut = ((uint256(1000).sub(artistCut)).sub(affiliateCut)).sub(cardSpecificAffiliateCut);      
+        uint256 _remainingCut = ((uint256(1000).sub(artistCut)).sub(affiliateCut)).sub(cardAffiliateCut);      
         uint256 _rentCollected = collectedPerUser[msg.sender];
         require(_rentCollected > 0, "Paid no rent");
         uint256 _rentCollectedAdjusted = (_rentCollected.mul(_remainingCut)).div(1000);
@@ -423,16 +423,16 @@ contract RCMarket is Initializable {
 
     /// @notice pay card recipients
     /// @dev does not call _processStakeholderPayment because it works differently
-    function payCardSpecificAffiliate() external checkState(States.WITHDRAW) {
-        require(!cardSpecificAffiliatePaid, "Card recipients already paid");
-        cardSpecificAffiliatePaid = true;
-        if (cardSpecificAffiliateCut > 0) {
+    function payCardAffiliate() external checkState(States.WITHDRAW) {
+        require(!cardAffiliatePaid, "Card recipients already paid");
+        cardAffiliatePaid = true;
+        if (cardAffiliateCut > 0) {
             for (uint i = 0; i < numberOfTokens; i++) {
-                uint256 _cardSpecificAffiliatePayment = (collectedPerToken[i].mul(cardSpecificAffiliateCut)).div(1000);
-                if (_cardSpecificAffiliatePayment > 0) {
-                    _payout(cardSpecificAffiliateAddresses[i], _cardSpecificAffiliatePayment);
+                uint256 _cardAffiliatePayment = (collectedPerToken[i].mul(cardAffiliateCut)).div(1000);
+                if (_cardAffiliatePayment > 0) {
+                    _payout(cardAffiliateAddresses[i], _cardAffiliatePayment);
                 }
-                emit LogStakeholderPaid(cardSpecificAffiliateAddresses[i], _cardSpecificAffiliatePayment);
+                emit LogStakeholderPaid(cardAffiliateAddresses[i], _cardAffiliatePayment);
             }
         }
     }
@@ -444,7 +444,7 @@ contract RCMarket is Initializable {
 
     /// @notice collects rent for all tokens
     /// @dev cannot be external because it is called within the lockContract function, therefore public
-    function collectRentAllTokens() public checkState(States.OPEN) {
+    function collectRentAllCards() public checkState(States.OPEN) {
        for (uint i = 0; i < numberOfTokens; i++) {
             _collectRent(i);
         }

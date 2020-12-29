@@ -94,27 +94,27 @@ contract RCTreasury is Ownable {
     /// @dev all functions should be onlyOwner
 
     /// @dev minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
-    function updateMinRental(uint256 _newDivisor) external onlyOwner() {
+    function setMinRental(uint256 _newDivisor) external onlyOwner {
         minRentalDivisor = _newDivisor;
     }
 
     /// @dev if hot potato mode, how much rent new owner must pay current owner (1 week divisor: i.e. 7 = 1 day, 14 = 12 hours)
-    function updateHotPotatoPayment(uint256 _newDivisor) external onlyOwner() {
+    function setHotPotatoPayment(uint256 _newDivisor) external onlyOwner {
         hotPotatoDivisor = _newDivisor;
     }
 
     /// @dev max deposit balance, to minimise funds at risk
-    function updateMaxContractBalance(uint256 _newBalanceLimit) external onlyOwner() {
+    function setMaxContractBalance(uint256 _newBalanceLimit) external onlyOwner {
         maxContractBalance = _newBalanceLimit;
     }
 
     /// @dev if true, cannot deposit or rent any cards, can still withdraw
-    function setGlobalPause() public onlyOwner() {
+    function setGlobalPause() public onlyOwner {
         globalPause = globalPause ? false : true;
     }
 
     /// @dev if true, cannot rent any cards for specific market
-    function pauseMarket(address _market) public onlyOwner() {
+    function setPauseMarket(address _market) public onlyOwner {
         marketPaused[_market] = marketPaused[_market] ? false : true;
     }
 
@@ -127,12 +127,12 @@ contract RCTreasury is Ownable {
     /// @dev ... while maintaining governance over other governanace functions
 
     function setFactoryAddress(address _newFactory) external {
-        require(msg.sender == uberOwner, "Access denied");
+        require(msg.sender == uberOwner, "Verboten");
         factoryAddress = _newFactory;
     }
 
     function changeUberOwner(address _newUberOwner) external {
-        require(msg.sender == uberOwner, "Access denied");
+        require(msg.sender == uberOwner, "Verboten");
         uberOwner = _newUberOwner;
     }
 

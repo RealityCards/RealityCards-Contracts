@@ -60,7 +60,7 @@ contract RCFactory is Ownable, CloneFactory {
     /// @dev  so markets can be hidden from the interface
     mapping(address => bool) public isAffiliateApproved;
     /// @dev  so markets can be hidden from the interface
-    mapping(address => bool) public isCardSpecificAffiliateApproved;
+    mapping(address => bool) public isCardAffiliateApproved;
     /// @dev if true, cards are burnt at the end of events for hidden markets to enforce scarcity
     bool public trapIfUnapproved = true;
     /// @dev prevents the same slug being used twice
@@ -95,8 +95,8 @@ contract RCFactory is Ownable, CloneFactory {
 
         // initialise market parameters
         // artist // winner // creator // affiliate // card specific affiliates
-        updatePotDistribution(20,0,0,20,100); // 2% artist, 2% affiliate, 10% card specific affiliate default
-        updateMinimumPriceIncrease(10); // 10% default
+        setPotDistribution(20,0,0,20,100); // 2% artist, 2% affiliate, 10% card specific affiliate default
+        setMinimumPriceIncrease(10); // 10% default
     }
 
     ////////////////////////////////////
@@ -116,6 +116,15 @@ contract RCFactory is Ownable, CloneFactory {
     }
 
     ////////////////////////////////////
+    //////////// MODIFERS //////////////
+    ////////////////////////////////////
+
+    modifier onlyGovernors() {
+        require(governors[msg.sender] || owner() == msg.sender, "Not approved");
+        _;
+    }
+
+    ////////////////////////////////////
     /////// GOVERNANCE- OWNER //////////
     ////////////////////////////////////
     /// @dev all functions should be onlyOwner
@@ -123,90 +132,88 @@ contract RCFactory is Ownable, CloneFactory {
     /// CALLED WITHIN CONSTRUCTOR (public)
 
     /// @dev in 10s of basis points (so 1000 = 100%)
-    function updatePotDistribution(uint256 _artistCut, uint256 _winnerCut, uint256 _creatorCut, uint256 _affiliateCut, uint256 _cardSpecificAffiliateCut) public onlyOwner {
-        require(_artistCut.add(_affiliateCut).add(_creatorCut).add(_winnerCut).add(_affiliateCut).add(_cardSpecificAffiliateCut) <= 1000, "Cuts too big");
+    function setPotDistribution(uint256 _artistCut, uint256 _winnerCut, uint256 _creatorCut, uint256 _affiliateCut, uint256 _cardAffiliateCut) public onlyOwner {
+        require(_artistCut.add(_affiliateCut).add(_creatorCut).add(_winnerCut).add(_affiliateCut).add(_cardAffiliateCut) <= 1000, "Cuts too big");
         potDistribution[0] = _artistCut;
         potDistribution[1] = _winnerCut;
         potDistribution[2] = _creatorCut;
         potDistribution[3] = _affiliateCut;
-        potDistribution[4] = _cardSpecificAffiliateCut;
+        potDistribution[4] = _cardAffiliateCut;
     }
 
     /// @dev in %
-    function updateMinimumPriceIncrease(uint256 _percentIncrease) public onlyOwner {
+    function setMinimumPriceIncrease(uint256 _percentIncrease) public onlyOwner {
         minimumPriceIncrease = _percentIncrease;
     }
 
     /// NOT CALLED WITHIN CONSTRUCTOR (external)
 
     /// @notice whether or not only governors can create the market
-    function updateMarketCreationGovernorsOnly() external onlyOwner {
+    function setMarketCreationGovernorsOnly() external onlyOwner {
         marketCreationGovernorsOnly = marketCreationGovernorsOnly ? false : true;
     }
 
     /// @notice how much xdai must be sent in the createMarket tx which forms the initial pot
-    function updateSponsorshipRequired(uint256 _dai) external onlyOwner {
+    function setSponsorshipRequired(uint256 _dai) external onlyOwner {
         sponsorshipRequired = _dai;
     }
 
     /// @notice where the question to post to the oracle is first sent to
-    function updateOracleProxyXdaiAddress(IRCProxyXdai _newAddress) external onlyOwner {
+    function setOracleProxyXdaiAddress(IRCProxyXdai _newAddress) external onlyOwner {
         oracleproxy = _newAddress;
     }
 
     /// @notice where the question to post to the oracle is first sent to
-    function updateNftHubXdaiAddress(IRCNftHubXdai _newAddress) external onlyOwner {
+    function setNftHubXdaiAddress(IRCNftHubXdai _newAddress) external onlyOwner {
         nfthub = _newAddress;
     }
 
-    /// @notice if true, Cards are burnt upon market resolution for unapproved markets
-    function trapCardsIfUnapproved() onlyOwner external {
+    /// @notice if true, Cards in unapproved markets can't be upgraded
+    function setTrapCardsIfUnapproved() onlyOwner external {
         trapIfUnapproved = trapIfUnapproved ? false : true;
     }
 
     /// @notice market opening time must be at least this many seconds in the future
-    function updateAdvancedWarning(uint32 _newAdvancedWarning) onlyOwner external {
+    function setAdvancedWarning(uint32 _newAdvancedWarning) onlyOwner external {
         advancedWarning = _newAdvancedWarning;
     }
 
     /// @notice market closing time must be no more than this many seconds in the future
-    function updateMaximumDuration(uint32 _newMaximumDuration) onlyOwner external {
+    function setMaximumDuration(uint32 _newMaximumDuration) onlyOwner external {
         maximumDuration = _newMaximumDuration;
+    }
+
+    // EDIT GOVERNORS
+
+    /// @notice add or remove an address from market creator whitelist
+    function addOrRemoveGovernor(address _governor) external onlyOwner {
+        governors[_governor] = governors[_governor] ? false : true;
     }
 
     ////////////////////////////////////
     ///// GOVERNANCE- GOVERNORS ////////
     ////////////////////////////////////
-    /// @dev multiple addresses have the ability to approve markets, and add approved artists and affiliates
-
-     /// @notice add or remove an address from market creator whitelist, should be onlyOwner
-    function addOrRemoveGovernor(address _governor) external onlyOwner {
-        governors[_governor] = governors[_governor] ? false : true;
-    }
+    /// @dev should all be onlyGovernors
 
     /// @notice markets are default hidden from the interface, this reveals them
-    function approveOrUnapproveMarket(address _market) external {
-        require(governors[msg.sender] || owner() == msg.sender, "Not approved");
+    function approveOrUnapproveMarket(address _market) external onlyGovernors {
         isMarketApproved[_market] = isMarketApproved[_market] ? false : true;
         emit LogMarketHidden(_market, isMarketApproved[_market]);
     }
 
     /// @notice artistAddress, passed in createMarket, must be approved
-    function addOrRemoveArtist(address _artist) external {
-        require(governors[msg.sender] || owner() == msg.sender, "Not approved");
+    function addOrRemoveArtist(address _artist) external onlyGovernors {
         isArtistApproved[_artist] = isArtistApproved[_artist] ? false : true;
     }
 
     /// @notice affiliateAddress, passed in createMarket, must be approved
-    function addOrRemoveAffiliate(address _affiliate) external {
-        require(governors[msg.sender] || owner() == msg.sender, "Not approved");
+    function addOrRemoveAffiliate(address _affiliate) external onlyGovernors {
         isAffiliateApproved[_affiliate] = isAffiliateApproved[_affiliate] ? false : true;
     }
 
-    /// @notice cardSpecificAffiliateAddress, passed in createMarket, must be approved
-    function addOrRemoveCardSpecificAffiliate(address _affiliate) external {
-        require(governors[msg.sender] || owner() == msg.sender, "Not approved");
-        isCardSpecificAffiliateApproved[_affiliate] = isCardSpecificAffiliateApproved[_affiliate] ? false : true;
+    /// @notice cardAffiliateAddress, passed in createMarket, must be approved
+    function addOrRemoveCardAffiliate(address _affiliate) external onlyGovernors {
+        isCardAffiliateApproved[_affiliate] = isCardAffiliateApproved[_affiliate] ? false : true;
     }
 
     ////////////////////////////////////
@@ -219,7 +226,7 @@ contract RCFactory is Ownable, CloneFactory {
 
     /// @notice set the reference contract for the contract logic
     function setReferenceContractAddress(address _newAddress) external {
-        require(msg.sender == uberOwner, "Access denied");
+        require(msg.sender == uberOwner, "Verboten");
         // check it's an RC contract
         IRCMarket newContractVariable = IRCMarket(_newAddress);
         assert(newContractVariable.isMarket());
@@ -230,7 +237,7 @@ contract RCFactory is Ownable, CloneFactory {
     }
 
     function changeUberOwner(address _newUberOwner) external {
-        require(msg.sender == uberOwner, "Access denied");
+        require(msg.sender == uberOwner, "Verboten");
         uberOwner = _newUberOwner;
     }
 
@@ -246,7 +253,7 @@ contract RCFactory is Ownable, CloneFactory {
         string[] memory _tokenURIs,
         address _artistAddress,
         address _affiliateAddress,
-        address[] memory _cardSpecificAffiliateAddresses,
+        address[] memory _cardAffiliateAddresses,
         string memory _realitioQuestion,
         string memory _slug 
     ) public payable returns (address)  {
@@ -263,8 +270,8 @@ contract RCFactory is Ownable, CloneFactory {
         // affiliate
         require(isAffiliateApproved[_affiliateAddress] || _affiliateAddress == address(0), "Affiliate not approved");
         // card affiliates
-        for (uint i = 0; i < _cardSpecificAffiliateAddresses.length; i++) { 
-            require(isCardSpecificAffiliateApproved[_cardSpecificAffiliateAddresses[i]] || _cardSpecificAffiliateAddresses[i] == address(0), "Card affiliate not approved");
+        for (uint i = 0; i < _cardAffiliateAddresses.length; i++) { 
+            require(isCardAffiliateApproved[_cardAffiliateAddresses[i]] || _cardAffiliateAddresses[i] == address(0), "Card affiliate not approved");
         }
 
         // check market creator is approved
@@ -296,7 +303,7 @@ contract RCFactory is Ownable, CloneFactory {
             _totalNftMintCount: totalNftMintCount,
             _artistAddress: _artistAddress,
             _affiliateAddress: _affiliateAddress,
-            _cardSpecificAffiliateAddresses: _cardSpecificAffiliateAddresses,
+            _cardAffiliateAddresses: _cardAffiliateAddresses,
             _marketCreatorAddress: msg.sender
         });
 

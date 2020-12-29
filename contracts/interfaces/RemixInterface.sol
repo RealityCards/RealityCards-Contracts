@@ -23,7 +23,7 @@ interface RealityCardsInterface {
     function determineWinner2(uint) external ;
     function withdraw() external ;
     function withdrawDepositAfterMarketEnded() external;
-    function collectRentAllTokens() external;
+    function collectRentAllCards() external;
     function newRental(uint256 _newPrice, uint256 _tokenId, uint256 _deposit) external ;
     function depositDai(uint256 _dai, uint256 _tokenId) external ;
     function changePrice(uint256 _newPrice, uint256 _tokenId) external ;

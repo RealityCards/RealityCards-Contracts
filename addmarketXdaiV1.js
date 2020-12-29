@@ -11,7 +11,7 @@ var question = 'Test4␟"X","Y","Z"␟news-politics␟en_US';
 var eventDetails = ['RCToken','zaasdasdfsf']; 
 var artistAddress = "0x0000000000000000000000000000000000000000";
 var affiliateAddress = "0x0000000000000000000000000000000000000000";
-var cardSpecificAffiliateAddresses = ['0x0000000000000000000000000000000000000000','0x0000000000000000000000000000000000000000'];
+var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000','0x0000000000000000000000000000000000000000'];
 
 // kovan overrides (*COMMENT OUT IF MAINNET*)
 // var marketLockingTime = 100; 
@@ -35,7 +35,7 @@ module.exports = function() {
         tokenURIs,
         artistAddress,
         affiliateAddress,
-        cardSpecificAffiliateAddresses,
+        cardAffiliateAddresses,
         question,
         eventDetails,
       );

@@ -34,7 +34,7 @@ module.exports = async (deployer, network) =>
         await deployer.deploy(XdaiProxy, ambAddressXdai, rcfactory.address);
         xdaiproxy = await XdaiProxy.deployed();
         // tell factory about it 
-        await rcfactory.updateOracleProxyXdaiAddress(xdaiproxy.address);
+        await rcfactory.setOracleProxyXdaiAddress(xdaiproxy.address);
     } 
     else if (network === "stage2") // mainnet
     {

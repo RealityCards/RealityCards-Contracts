@@ -69,7 +69,7 @@ contract RCProxyXdai is Ownable
     }
 
     /// @dev admin override of the Oracle, if not yet settled, for amicable resolution, or bridge fails
-    function amicableResolution(address _marketAddress, uint256 _winningOutcome) onlyOwner public {
+    function setAmicableResolution(address _marketAddress, uint256 _winningOutcome) onlyOwner public {
         require(!marketFinalized[_marketAddress], "Event finalised");
         marketFinalized[_marketAddress] = true;
         winningOutcome[_marketAddress] = _winningOutcome;

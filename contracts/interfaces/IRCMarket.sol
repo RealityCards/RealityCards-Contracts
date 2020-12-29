@@ -13,7 +13,7 @@ interface IRCMarket {
         uint256 _totalNftMintCount,
         address _artistAddress,
         address _affiliateAddress,
-        address[] calldata _cardSpecificAffiliateAddresses,
+        address[] calldata _cardAffiliateAddresses,
         address _marketCreatorAddress
     ) external; 
 
