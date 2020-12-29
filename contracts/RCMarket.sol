@@ -121,6 +121,8 @@ contract RCMarket is Initializable {
     
     /// @param _mode 0 = normal, 1 = winner takes all, 2 = hot potato
     /// @param _timestamps for market opening, locking, and oracle resolution
+    /// @param _numberOfTokens how many Cards in this market
+    /// @param _totalNftMintCount total existing Cards across all markets
     /// @param _artistAddress where to send artist's cut, if any
     /// @param _affiliateAddress where to send affiliate's cut, if any
     /// @param _cardSpecificAffiliateAddresses where to send card specific affiliate's cut, if any
@@ -264,6 +266,18 @@ contract RCMarket is Initializable {
     //// ORACLE PROXY CONTRACT CALLS ///
     ////////////////////////////////////
 
+    /// @dev send NFT to mainnet
+    /// @dev upgrades not possible if market not approved
+    function upgradeNft(uint256 _tokenId) external checkState(States.WITHDRAW) onlyTokenOwner(_tokenId) {
+        require(!factory.trapIfUnapproved() || factory.isMarketApproved(address(this)), "Upgrade blocked");
+        string memory _tokenUri = tokenURI(_tokenId);
+        address _owner = ownerOf(_tokenId);
+        uint256 _actualTokenId = _tokenId.add(totalNftMintCount);
+        oracleproxy.upgradeNft(_actualTokenId, _tokenUri, _owner);
+        _transferCard(ownerOf(_tokenId), address(this), _tokenId);
+        emit LogNftUpgraded(_tokenId, _actualTokenId);
+    }
+
     /// @notice gets the winning outcome from realitio
     /// @dev the returned value is equivilent to tokenId
     /// @dev this function call will revert if it has not yet resolved
@@ -294,10 +308,9 @@ contract RCMarket is Initializable {
     }
 
     /// @notice transfer ERC 721 between users
-    function _transferTokenTo(address _currentOwner, address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
+    function _transferCard(address _currentOwner, address _newOwner, uint256 _tokenId) internal {
         require(_currentOwner != address(0) && _newOwner != address(0) , "Cannot send to/from zero address");
         uint256 _actualTokenId = _tokenId.add(totalNftMintCount);
-        price[_tokenId] = _newPrice;
         assert(nfthub.transferNft(_currentOwner, _newOwner, _actualTokenId));
     }
 
@@ -483,11 +496,12 @@ contract RCMarket is Initializable {
                 assert(treasury.payCurrentOwner(msg.sender, _currentOwner, price[_tokenId]));
             }
             // update internals
+            price[_tokenId] = _newPrice;
             currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].add(1); 
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].owner = msg.sender; 
             // externals
-            _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
+            _transferCard(_currentOwner, msg.sender, _tokenId);
             emit LogNewRental(msg.sender, _timeHeldLimit, _newPrice, _tokenId); 
         }
 
@@ -673,7 +687,8 @@ contract RCMarket is Initializable {
             // transfer to previous owner
             address _currentOwner = ownerOf(_tokenId);
             uint256 _oldPrice = ownerTracker[_tokenId][_index].price;
-            _transferTokenTo(_currentOwner, _previousOwner, _oldPrice, _tokenId);
+            price[_tokenId] = _oldPrice;
+            _transferCard(_currentOwner, _previousOwner, _tokenId);
             emit LogReturnToPreviousOwner(_tokenId, _previousOwner);
         }
     }
@@ -681,23 +696,18 @@ contract RCMarket is Initializable {
     /// @notice gives each Card to the longest owner
     function _processNFTsAfterEvent() internal {
         for (uint i = 0; i < numberOfTokens; i++) {
-            if (factory.burnIfUnapproved() && !factory.isMarketApproved(address(this))) {
-                //////// NEEDS WORK, TO MOVE THIS FUNCTIONALITY TO UPGRADENFT FUNCTION //////
-                // _burn(i);
-            } else {
-                if (longestOwner[i] != address(0)) {
-                    // if never owned, longestOwner[i] will = zero
-                    _transferTokenTo(ownerOf(i), longestOwner[i], price[i], i);
-                } 
-            }
+            if (longestOwner[i] != address(0)) {
+                // if never owned, longestOwner[i] will = zero
+                _transferCard(ownerOf(i), longestOwner[i], i);
+            } 
         }
     }
 
     /// @notice return token to the contract and return price to zero
     function _foreclose(uint256 _tokenId) internal {
         address _currentOwner = ownerOf(_tokenId);
-        // third field is price, ie price goes to zero
-        _transferTokenTo(_currentOwner, address(this), 0, _tokenId);
+        price[_tokenId] = 0;
+        _transferCard(_currentOwner, address(this), _tokenId);
         emit LogForeclosure(_currentOwner, _tokenId);
     }
 
@@ -706,20 +716,6 @@ contract RCMarket is Initializable {
         assert(uint256(state) < 4);
         state = States(uint256(state) + 1);
         emit LogStateChange(uint256(state));
-    }
-
-    ////////////////////////////////////
-    /////////// UPGRADE NFT ////////////
-    ////////////////////////////////////
-
-    /// @dev send NFT to mainnet
-    function upgradeNft(uint256 _tokenId) external checkState(States.WITHDRAW) onlyTokenOwner(_tokenId) {
-        string memory _tokenUri = tokenURI(_tokenId);
-        address _owner = ownerOf(_tokenId);
-        uint256 _actualTokenId = _tokenId.add(totalNftMintCount);
-        oracleproxy.upgradeNft(_actualTokenId, _tokenUri, _owner);
-        _transferTokenTo(ownerOf(_tokenId), address(this), price[_tokenId], _tokenId);
-        emit LogNftUpgraded(_tokenId, _actualTokenId);
     }
 
 }

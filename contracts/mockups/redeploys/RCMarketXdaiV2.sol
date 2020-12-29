@@ -1,19 +1,17 @@
 pragma solidity 0.5.13;
-pragma experimental ABIEncoderV2;
 
-// this is a mockup to test a new reference contract. It is unchanged from the original except that the rental price is doubled from what is passed as an argument
-
-import "@openzeppelin/contracts-ethereum-package/contracts/token/ERC721/ERC721Full.sol";
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "@openzeppelin/upgrades/contracts/Initializable.sol";
 import "@nomiclabs/buidler/console.sol";
 import "../../interfaces/IRealitio.sol";
 import "../../interfaces/IFactory.sol";
 import "../../interfaces/ITreasury.sol";
+import '../../interfaces/IRCProxyXdai.sol';
+import '../../interfaces/IRCNftHubXdai.sol';
 
-/// @title Reality Cards Market
-/// @author Andrew Stanger
-contract RCMarketXdaiV2 is ERC721Full {
+/// @dev this is a mockup to test a new reference contract. It is unchanged from the original except that the rental price is doubled from what is passed as an argument
+
+contract RCMarketXdaiV2 is Initializable {
 
     using SafeMath for uint256;
 
@@ -24,8 +22,6 @@ contract RCMarketXdaiV2 is ERC721Full {
     ///// CONTRACT SETUP /////
     /// @dev = how many outcomes/teams/NFTs etc 
     uint256 public numberOfTokens;
-    /// @dev the question ID of the question on realitio
-    bytes32 public questionId;
     /// @dev only for _revertToPreviousOwner to prevent gas limits
     uint256 public constant MAX_ITERATIONS = 10;
     uint256 public constant MAX_UINT256 = 2**256 - 1;
@@ -35,10 +31,17 @@ contract RCMarketXdaiV2 is ERC721Full {
     uint256 public mode;
     /// @dev so the Factory can check its a market
     bool public constant isMarket = true;
+    /// @dev counts the total NFTs minted across all events at the time market created
+    /// @dev nft tokenId = card Id + totalNftMintCount
+    uint256 public totalNftMintCount;
+    /// @dev contractURI for opensea 
+    string public contractURI;
 
     ///// CONTRACT VARIABLES /////
-    IRealitio public realitio;
     ITreasury public treasury;
+    IFactory public factory;
+    IRCProxyXdai public oracleproxy;
+    IRCNftHubXdai public nfthub;
 
     ///// PRICE, DEPOSITS, RENT /////
     /// @dev in attodai (so 100xdai = 100000000000000000000)
@@ -87,7 +90,7 @@ contract RCMarketXdaiV2 is ERC721Full {
     //// @dev when the market locks 
     uint32 public marketLockingTime; 
     //// @dev when the question can be answered on realitio
-    uint32 public oracleResolutionTime;
+    // uint32 public oracleResolutionTime;
 
     ///// PAYOUT VARIABLES /////
     uint256 public winningOutcome;
@@ -118,7 +121,8 @@ contract RCMarketXdaiV2 is ERC721Full {
     
     /// @param _mode 0 = normal, 1 = winner takes all, 2 = hot potato
     /// @param _timestamps for market opening, locking, and oracle resolution
-    /// @param _tokenURIs NFT metadata
+    /// @param _numberOfTokens how many Cards in this market
+    /// @param _totalNftMintCount total existing Cards across all markets
     /// @param _artistAddress where to send artist's cut, if any
     /// @param _affiliateAddress where to send affiliate's cut, if any
     /// @param _cardSpecificAffiliateAddresses where to send card specific affiliate's cut, if any
@@ -126,36 +130,36 @@ contract RCMarketXdaiV2 is ERC721Full {
     function initialize(
         uint256 _mode,
         uint32[] memory _timestamps,
-        string[] memory _tokenURIs,
+        uint256 _numberOfTokens,
         uint256 _totalNftMintCount,
         address _artistAddress,
         address _affiliateAddress,
         address[] memory _cardSpecificAffiliateAddresses,
-        address _marketCreatorAddress,
-        string memory _tokenName
+        address _marketCreatorAddress
     ) public initializer {
         assert(_mode <= 2);
-        IFactory _factory = IFactory(msg.sender);
 
-        _totalNftMintCount;
+        // external contract variables:
+        factory = IFactory(msg.sender);
+        treasury = factory.treasury();
+        oracleproxy = factory.oracleproxy();
+        nfthub = factory.nfthub();
         
         // initialiiize!
-        ERC721.initialize();
-        ERC721Metadata.initialize(_tokenName,"RC");
         winningOutcome = MAX_UINT256; // default invalid
 
         // assign arguments to public variables
         mode = _mode;
-        numberOfTokens = _tokenURIs.length;
+        numberOfTokens = _numberOfTokens;
+        totalNftMintCount = _totalNftMintCount;
         marketOpeningTime = _timestamps[0];
         marketLockingTime = _timestamps[1];
-        oracleResolutionTime = _timestamps[2];
         artistAddress = _artistAddress;
         marketCreatorAddress = _marketCreatorAddress;
         affiliateAddress = _affiliateAddress;
         cardSpecificAffiliateAddresses = _cardSpecificAffiliateAddresses;
-        uint256[5] memory _potDistribution = _factory.getPotDistribution();
-        minimumPriceIncrease = _factory.minimumPriceIncrease();
+        uint256[5] memory _potDistribution = factory.getPotDistribution();
+        minimumPriceIncrease = factory.minimumPriceIncrease();
         artistCut = _potDistribution[0];
         winnerCut = _potDistribution[1];
         creatorCut = _potDistribution[2];
@@ -181,28 +185,23 @@ contract RCMarketXdaiV2 is ERC721Full {
             }
         }
 
+        // check card affiliate array is the right size, if being used
+        if (cardSpecificAffiliateCut > 0) {
+            require(_cardSpecificAffiliateAddresses.length == _numberOfTokens, "Card affiliate error");
+        }
+
         // if winner takes all mode, set winnerCut to max
         if (_mode == 1) {
             winnerCut = (((uint256(1000).sub(artistCut)).sub(creatorCut)).sub(affiliateCut)).sub(cardSpecificAffiliateCut);
         } 
-
-        // resolution time must not be less than locking time, and not greater by more than one week
-        require(marketLockingTime + 1 weeks > oracleResolutionTime && marketLockingTime <= oracleResolutionTime, "Invalid timestamps" );
-        
-        // external contract variables:
-        treasury = _factory.treasury();
-
-        // create the NFTs
-        for (uint i = 0; i < numberOfTokens; i++) { 
-            _mint(address(this), i); 
-            _setTokenURI(i, _tokenURIs[i]);
-        }
 
         // move to OPEN immediately if market opening time in the past
         if (marketOpeningTime <= now) {
             _incrementState();
         }
         
+        // 2 because there is another event within the factory
+        emit LogMarketCreated2(_mode, _timestamps, _artistAddress, _marketCreatorAddress, _affiliateAddress, artistCut, winnerCut, creatorCut, affiliateCut, cardSpecificAffiliateCut);
     } 
 
     ////////////////////////////////////
@@ -216,16 +215,15 @@ contract RCMarketXdaiV2 is ERC721Full {
     event LogContractLocked(bool indexed didTheEventFinish);
     event LogWinnerKnown(uint256 indexed winningOutcome);
     event LogWinningsPaid(address indexed paidTo, uint256 indexed amountPaid);
-    event LogArtistPaid(address indexed paidTo, uint256 indexed amountPaid);
-    event LogAffiliatePaid(address indexed paidTo, uint256 indexed amountPaid);
-    event LogCreatorPaid(address indexed paidTo, uint256 indexed amountPaid);
-    event LogCardRecipientPaid(address indexed paidTo, uint256 indexed amountPaid);
+    event LogStakeholderPaid(address indexed paidTo, uint256 indexed amountPaid);
     event LogRentReturned(address indexed returnedTo, uint256 indexed amountReturned);
     event LogTimeHeldUpdated(uint256 indexed newTimeHeld, address indexed owner, uint256 indexed tokenId);
     event LogStateChange(uint256 indexed newState);
     event LogUpdateTimeHeldLimit(address indexed owner, uint256 newLimit, uint256 tokenId);
     event LogExit(address indexed owner, uint256 tokenId);
     event LogSponsor(uint256 amount);
+    event LogNftUpgraded(uint256 currentTokenId, uint256 _newTokenId);
+    event LogMarketCreated2(uint256 mode, uint32[] timestamps, address artistAddress, address marketCreatorAddress, address affiliateAddress, uint256 artistCut, uint256 winnerCut, uint256 creatorCut, uint256 affiliateCut, uint256 cardSpecificAffiliateCut);
 
     ////////////////////////////////////
     /////////// MODIFIERS //////////////
@@ -252,12 +250,6 @@ contract RCMarketXdaiV2 is ERC721Full {
         }
     }
 
-    /// @notice checks the token exists
-    modifier tokenExists(uint256 _tokenId) {
-        require(_tokenId < numberOfTokens, "This token does not exist");
-       _;
-    }
-
     /// @notice what it says on the tin
     modifier amountNotZero(uint256 _dai) {
         require(_dai > 0, "Amount must be above zero");
@@ -271,31 +263,53 @@ contract RCMarketXdaiV2 is ERC721Full {
     }
 
     ////////////////////////////////////
-    ////// REALITIO CONTRACT CALLS /////
+    //// ORACLE PROXY CONTRACT CALLS ///
     ////////////////////////////////////
-    /// @dev these functions do not operate effectively currently, as mainnet oracle has yet to be hooked up
 
-    // /// @notice posts the question to realit.io
-    // function _postQuestion(uint256 template_id, string memory question, address arbitrator, uint32 timeout, uint32 opening_ts, uint256 nonce) internal returns (bytes32) {
-    //     return realitio.askQuestion(template_id, question, arbitrator, timeout, opening_ts, nonce);
-    // }
-
-    // /// @notice gets an existing question's content hash
-    // function _getHashExistingQuestion(bytes32 _questionId) internal view returns (bytes32) {
-    //     return realitio.getContentHash(_questionId);
-    // }
+    /// @dev send NFT to mainnet
+    function upgradeNft(uint256 _tokenId) external checkState(States.WITHDRAW) onlyTokenOwner(_tokenId) {
+        string memory _tokenUri = tokenURI(_tokenId);
+        address _owner = ownerOf(_tokenId);
+        uint256 _actualTokenId = _tokenId.add(totalNftMintCount);
+        oracleproxy.upgradeNft(_actualTokenId, _tokenUri, _owner);
+        _transferCard(ownerOf(_tokenId), address(this), _tokenId);
+        emit LogNftUpgraded(_tokenId, _actualTokenId);
+    }
 
     /// @notice gets the winning outcome from realitio
     /// @dev the returned value is equivilent to tokenId
     /// @dev this function call will revert if it has not yet resolved
     function _getWinner() internal view returns(uint256) {
-        bytes32 _winningOutcome = realitio.resultFor(questionId);
-        return uint256(_winningOutcome);
+        uint256 _winningOutcome = oracleproxy.getWinner(address(this));
+        return _winningOutcome;
     }
 
     /// @notice has the question been finalized on realitio?
     function _isQuestionFinalized() internal view returns (bool) {
-        return realitio.isFinalized(questionId);
+        return oracleproxy.isFinalized(address(this));
+    }
+
+    ////////////////////////////////////
+    /////// NFT HUB CONTRACT CALLS /////
+    ////////////////////////////////////
+
+    /// @notice gets the owner of the NFT
+    function ownerOf(uint256 _tokenId) public view returns(address) {
+        uint256 _actualTokenId = _tokenId.add(totalNftMintCount);
+        return nfthub.ownerOf(_actualTokenId);
+    }
+
+    /// @notice gets tokenURI
+    function tokenURI(uint256 _tokenId) public view returns(string memory) {
+        uint256 _actualTokenId = _tokenId.add(totalNftMintCount);
+        return nfthub.tokenURI(_actualTokenId);
+    }
+
+    /// @notice transfer ERC 721 between users
+    function _transferCard(address _currentOwner, address _newOwner, uint256 _tokenId) internal {
+        require(_currentOwner != address(0) && _newOwner != address(0) , "Cannot send to/from zero address");
+        uint256 _actualTokenId = _tokenId.add(totalNftMintCount);
+        assert(nfthub.transferNft(_currentOwner, _newOwner, _actualTokenId));
     }
 
     ////////////////////////////////////
@@ -351,7 +365,7 @@ contract RCMarketXdaiV2 is ERC721Full {
         uint256 _numerator = _remainingPot.mul(_winnersTimeHeld);
         _winningsToTransfer = _winningsToTransfer.add(_numerator.div(totalTimeHeld[winningOutcome]));
         require(_winningsToTransfer > 0, "Not a winner");
-        assert(treasury.payout(msg.sender, _winningsToTransfer));
+        _payout(msg.sender, _winningsToTransfer);
         emit LogWinningsPaid(msg.sender, _winningsToTransfer);
     }
 
@@ -362,11 +376,16 @@ contract RCMarketXdaiV2 is ERC721Full {
         uint256 _rentCollected = collectedPerUser[msg.sender];
         require(_rentCollected > 0, "Paid no rent");
         uint256 _rentCollectedAdjusted = (_rentCollected.mul(_remainingCut)).div(1000);
-        assert(treasury.payout(msg.sender, _rentCollectedAdjusted));
+        _payout(msg.sender, _rentCollectedAdjusted);
         emit LogRentReturned(msg.sender, _rentCollectedAdjusted);
     }
 
-    /// @dev the below functions pay artist, creator, affiliate, card specific affiliates as appropriate
+    /// @notice all payouts happen through here
+    function _payout(address _recipient, uint256 _amount) internal {
+        assert(treasury.payout(_recipient, _amount));
+    }
+
+    /// @dev the below functions pay stakeholders (artist, creator, affiliate, card specific affiliates)
     /// @dev they are not called within determineWinner() because of the risk of an
     /// @dev ....  address being a contract which refuses payment, then nobody could get winnings
 
@@ -374,41 +393,7 @@ contract RCMarketXdaiV2 is ERC721Full {
     function payArtist() external checkState(States.WITHDRAW) {
         require(!artistPaid, "Artist already paid");
         artistPaid = true;
-        if (artistCut > 0) {
-            uint256 _artistPayment = (totalCollected.mul(artistCut)).div(1000);
-            if (_artistPayment > 0) {
-                assert(treasury.payout(artistAddress, _artistPayment));
-            }
-            emit LogArtistPaid(artistAddress, _artistPayment);
-        }
-    }
-
-    /// @notice pay affiliate
-    function payAffiliate() external checkState(States.WITHDRAW) {
-        require(!affiliatePaid, "Affiliate already paid");
-        affiliatePaid = true;
-        if (affiliateCut > 0) {
-            uint256 _affiliatePayment = (totalCollected.mul(affiliateCut)).div(1000);
-            if (_affiliatePayment > 0) {
-                assert(treasury.payout(affiliateAddress, _affiliatePayment));
-            }
-            emit LogAffiliatePaid(affiliateAddress, _affiliatePayment);
-        }
-    }
-
-    /// @notice pay card recipients
-    function payCardSpecificAffiliate() external checkState(States.WITHDRAW) {
-        require(!cardSpecificAffiliatePaid, "Card recipients already paid");
-        cardSpecificAffiliatePaid = true;
-        if (cardSpecificAffiliateCut > 0) {
-            for (uint i = 0; i < numberOfTokens; i++) {
-                uint256 _cardSpecificAffiliatePayment = (collectedPerToken[i].mul(cardSpecificAffiliateCut)).div(1000);
-                if (_cardSpecificAffiliatePayment > 0) {
-                    assert(treasury.payout(cardSpecificAffiliateAddresses[i], _cardSpecificAffiliatePayment));
-                }
-                emit LogCardRecipientPaid(cardSpecificAffiliateAddresses[i], _cardSpecificAffiliatePayment);
-            }
-        }
+        _processStakeholderPayment(artistCut, artistAddress);
     }
 
     /// @notice pay market creator
@@ -416,17 +401,42 @@ contract RCMarketXdaiV2 is ERC721Full {
         require(totalTimeHeld[winningOutcome] > 0, "No winner");
         require(!creatorPaid, "Creator already paid");
         creatorPaid = true;
-        if (creatorCut > 0) {
-            uint256 _marketCreatorsCut = (totalCollected.mul(creatorCut)).div(1000);
-            if (_marketCreatorsCut > 0) {
-                assert(treasury.payout(marketCreatorAddress, _marketCreatorsCut));
+        _processStakeholderPayment(creatorCut, marketCreatorAddress);
+    }
+
+    /// @notice pay affiliate
+    function payAffiliate() external checkState(States.WITHDRAW) {
+        require(!affiliatePaid, "Affiliate already paid");
+        affiliatePaid = true;
+        _processStakeholderPayment(affiliateCut, affiliateAddress);
+    }
+
+    function _processStakeholderPayment(uint256 _cut, address _recipient) internal {
+        if (_cut > 0) {
+            uint256 _payment = (totalCollected.mul(_cut)).div(1000);
+            _payout(_recipient, _payment);
+            emit LogStakeholderPaid(_recipient, _payment);
+        }
+    }
+
+    /// @notice pay card recipients
+    /// @dev does not call _processStakeholderPayment because it works differently
+    function payCardSpecificAffiliate() external checkState(States.WITHDRAW) {
+        require(!cardSpecificAffiliatePaid, "Card recipients already paid");
+        cardSpecificAffiliatePaid = true;
+        if (cardSpecificAffiliateCut > 0) {
+            for (uint i = 0; i < numberOfTokens; i++) {
+                uint256 _cardSpecificAffiliatePayment = (collectedPerToken[i].mul(cardSpecificAffiliateCut)).div(1000);
+                if (_cardSpecificAffiliatePayment > 0) {
+                    _payout(cardSpecificAffiliateAddresses[i], _cardSpecificAffiliatePayment);
+                }
+                emit LogStakeholderPaid(cardSpecificAffiliateAddresses[i], _cardSpecificAffiliatePayment);
             }
-            emit LogCreatorPaid(marketCreatorAddress, _marketCreatorsCut);
         }
     }
 
     ////////////////////////////////////
-    ///// MAIN FUNCTIONS- EXTERNAL /////
+    ///// CORE FUNCTIONS- EXTERNAL /////
     ////////////////////////////////////
     /// @dev basically functions that have checkState(States.OPEN) modifier
 
@@ -454,13 +464,14 @@ contract RCMarketXdaiV2 is ERC721Full {
     }
 
     /// @notice to rent a token
-    function newRental(uint256 _newPrice, uint256 _timeHeldLimit, uint256 _tokenId) public payable autoUnlock() autoLock() checkState(States.OPEN) tokenExists(_tokenId) {
+    function newRental(uint256 _newPrice, uint256 _timeHeldLimit, uint256 _tokenId) public payable autoUnlock() autoLock() checkState(States.OPEN) {
         require(_newPrice >= (price[_tokenId].mul(minimumPriceIncrease.add(100))).div(100), "Price too low");
         require(_newPrice >= 1 ether, "Minimum rental 1 Dai");
+        require(_tokenId < numberOfTokens, "This token does not exist");
         _collectRent(_tokenId);
         address _currentOwner = ownerOf(_tokenId);
 
-        ///////// ONLY NEW BIT IN V2 ////////
+        // only difference 
         _newPrice = _newPrice.mul(2);
 
         // below must be after collectRent so timeHeld is up to date
@@ -486,11 +497,12 @@ contract RCMarketXdaiV2 is ERC721Full {
                 assert(treasury.payCurrentOwner(msg.sender, _currentOwner, price[_tokenId]));
             }
             // update internals
+            price[_tokenId] = _newPrice;
             currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].add(1); 
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].owner = msg.sender; 
             // externals
-            _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
+            _transferCard(_currentOwner, msg.sender, _tokenId);
             emit LogNewRental(msg.sender, _timeHeldLimit, _newPrice, _tokenId); 
         }
 
@@ -509,7 +521,7 @@ contract RCMarketXdaiV2 is ERC721Full {
     }
 
     /// @notice to change your timeHeldLimit without having to re-rent
-    function updateTimeHeldLimit(uint256 _timeHeldLimit, uint256 _tokenId) external checkState(States.OPEN) tokenExists(_tokenId) {
+    function updateTimeHeldLimit(uint256 _timeHeldLimit, uint256 _tokenId) external checkState(States.OPEN) {
         _collectRent(_tokenId);
         uint256 _minRentalTime = uint256(1 days).div(treasury.minRentalDivisor());
         require(_timeHeldLimit == 0 || _timeHeldLimit >= timeHeld[_tokenId][msg.sender].add(_minRentalTime), "Limit too low");
@@ -523,7 +535,7 @@ contract RCMarketXdaiV2 is ERC721Full {
     /// @notice stop renting a token
     /// @dev public because called by exitAll()
     /// @dev doesn't need to be current owner so user can prevent ownership returning to them
-    function exit(uint256 _tokenId) public checkState(States.OPEN) tokenExists(_tokenId) {
+    function exit(uint256 _tokenId) public checkState(States.OPEN) {
         // if current owner, collect rent, revert if necessary
         if (ownerOf(_tokenId) == msg.sender) {
             // collectRent first, so correct rent to now is taken
@@ -568,7 +580,7 @@ contract RCMarketXdaiV2 is ERC721Full {
     }
 
     ////////////////////////////////////
-    ///// MAIN FUNCTIONS- INTERNAL /////
+    ///// CORE FUNCTIONS- INTERNAL /////
     ////////////////////////////////////
 
     /// @notice collects rent for a specific token
@@ -676,7 +688,8 @@ contract RCMarketXdaiV2 is ERC721Full {
             // transfer to previous owner
             address _currentOwner = ownerOf(_tokenId);
             uint256 _oldPrice = ownerTracker[_tokenId][_index].price;
-            _transferTokenTo(_currentOwner, _previousOwner, _oldPrice, _tokenId);
+            price[_tokenId] = _oldPrice;
+            _transferCard(_currentOwner, _previousOwner, _tokenId);
             emit LogReturnToPreviousOwner(_tokenId, _previousOwner);
         }
     }
@@ -684,58 +697,28 @@ contract RCMarketXdaiV2 is ERC721Full {
     /// @notice gives each Card to the longest owner
     function _processNFTsAfterEvent() internal {
         for (uint i = 0; i < numberOfTokens; i++) {
-            if (longestOwner[i] != address(0)) {
-                // if never owned, longestOwner[i] will = zero
-                _transferTokenTo(ownerOf(i), longestOwner[i], price[i], i);
-            } 
+
+                if (longestOwner[i] != address(0)) {
+                    // if never owned, longestOwner[i] will = zero
+                    _transferCard(ownerOf(i), longestOwner[i], i);
+                } 
+            
         }
     }
 
     /// @notice return token to the contract and return price to zero
     function _foreclose(uint256 _tokenId) internal {
         address _currentOwner = ownerOf(_tokenId);
-        // third field is price, ie price goes to zero
-        _transferTokenTo(_currentOwner, address(this), 0, _tokenId);
+        price[_tokenId] = 0;
+        _transferCard(_currentOwner, address(this), _tokenId);
         emit LogForeclosure(_currentOwner, _tokenId);
     }
 
-    /// @notice transfer ERC 721 between users
-    /// @dev there is no event emitted as this is handled in ERC721.sol
-    function _transferTokenTo(address _currentOwner, address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
-        require(_currentOwner != address(0) && _newOwner != address(0) , "Cannot send to/from zero address");
-        price[_tokenId] = _newPrice;
-        _transferFrom(_currentOwner, _newOwner, _tokenId);
-    }
-
-    ////////////////////////////////////
-    ///////// OTHER FUNCTIONS //////////
-    ////////////////////////////////////
-
-    /// @dev should only be called thrice
+     /// @dev should only be called thrice
     function _incrementState() internal {
         assert(uint256(state) < 4);
         state = States(uint256(state) + 1);
         emit LogStateChange(uint256(state));
-    }
-
-    /// @dev change state to WITHDRAW to lock contract and return all funds
-    /// @dev in case Oracle never resolves, or a bug is found 
-    function circuitBreaker() external {
-        require(now > (oracleResolutionTime + 4 weeks), "Too early");
-        state = States.WITHDRAW;
-        _processNFTsAfterEvent();
-        emit LogWinnerKnown(winningOutcome);
-        emit LogStateChange(uint256(state));
-    }
-
-    /// @dev transfers only possible in withdraw state, so override the existing functions
-    function transferFrom(address from, address to, uint256 tokenId) public checkState(States.WITHDRAW) onlyTokenOwner(tokenId) {
-        _transferFrom(from, to, tokenId);
-    }
-
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) public checkState(States.WITHDRAW) onlyTokenOwner(tokenId) {
-        _transferFrom(from, to, tokenId);
-        _data;
     }
 
 }

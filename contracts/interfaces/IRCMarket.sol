@@ -19,5 +19,6 @@ interface IRCMarket {
 
     function tokenURI(uint256) external view returns (string memory);  
     function ownerOf(uint256 tokenId) external view returns  (address);
+    function state() external view returns (uint256);
 
 }

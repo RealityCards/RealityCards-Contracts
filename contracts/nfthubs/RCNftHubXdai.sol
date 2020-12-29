@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC721/ERC721Full.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@nomiclabs/buidler/console.sol";
 import '../interfaces/IRCProxyXdai.sol';
+import '../interfaces/IRCMarket.sol';
 
 /// @title Reality Cards NFT Hub- xDai side
 /// @author Andrew Stanger
@@ -16,6 +17,8 @@ contract RCNftHubXdai is Ownable, ERC721Full
 
     /// @dev so only markets can move NFTs
     mapping (address => bool) public isMarket;
+    /// @dev the market each NFT belongs to, so that it can only be moved in withdraw state
+    mapping(uint256 => address) public marketTracker;
 
     /// @dev governance variables
     address public factoryAddress;
@@ -57,6 +60,7 @@ contract RCNftHubXdai is Ownable, ERC721Full
         require(msg.sender == factoryAddress, "Not factory");
         _mint(_originalOwner, _tokenId); 
         _setTokenURI(_tokenId, _tokenURI);
+        marketTracker[_tokenId] = _originalOwner;
         return true;
     }
 
@@ -70,22 +74,21 @@ contract RCNftHubXdai is Ownable, ERC721Full
     ////////////////////////////////////
     //////////// OVERRIDES /////////////
     ////////////////////////////////////
+    /// @dev ensures NFTs can only be moved when market is resolved
 
-    /// @dev transfers only possible via market
     function transferFrom(address from, address to, uint256 tokenId) public {
-        from;
-        to;
-        tokenId;
-        require(false, "Verboten");
+        IRCMarket market = IRCMarket(marketTracker[tokenId]);
+        require(market.state() == 3, "Incorrect state");
+        require(ownerOf(tokenId) == msg.sender, "Not owner");
+        _transferFrom(from, to, tokenId);
     }
 
-    /// @dev transfers only possible via market
     function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) public {
-        from;
-        to;
-        tokenId;
+        IRCMarket market = IRCMarket(marketTracker[tokenId]);
+        require(market.state() == 3, "Incorrect state");
+        require(ownerOf(tokenId) == msg.sender, "Not owner");
+        _transferFrom(from, to, tokenId);
         _data;
-        require(false, "Verboten");
     }
 
 }

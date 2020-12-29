@@ -4,16 +4,15 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@nomiclabs/buidler/console.sol";
-import './lib/CloneFactory.sol';
-import "./interfaces/ITreasury.sol";
-import './interfaces/IRCMarket.sol';
-import './interfaces/IRCProxyXdai.sol';
-import './interfaces/IRCNftHubXdai.sol';
+import '../../lib/CloneFactory.sol';
+import "../../interfaces/ITreasury.sol";
+import '../../interfaces/IRCMarket.sol';
+import '../../interfaces/IRCProxyXdai.sol';
+import '../../interfaces/IRCNftHubXdai.sol';
 
-/// @title Reality Cards Factory
-/// @author Andrew Stanger
+// mockup for testing, same except that nftmintcount is set at 20
 
-contract RCFactory is Ownable, CloneFactory {
+contract RCFactoryV2 is Ownable, CloneFactory {
 
     using SafeMath for uint256;
     using SafeMath for uint32;
@@ -67,7 +66,7 @@ contract RCFactory is Ownable, CloneFactory {
     mapping(string => bool) public existingSlug;
     /// @dev counts the total NFTs minted across all events
     /// @dev ... so the appropriate token id is used when upgrading to mainnet
-    uint256 public totalNftMintCount;
+    uint256 public totalNftMintCount = 20;
 
     ///// UBER OWNER /////
     /// @dev high level owner who can change the factory address

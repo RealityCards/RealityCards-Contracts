@@ -18,6 +18,6 @@ interface IFactory
     function deposit() external payable returns(bool);
     function getPotDistribution() external returns(uint256[5] memory);
     function minimumPriceIncrease() external returns (uint256);
-    function burnIfUnapproved() external returns(bool);
+    function trapIfUnapproved() external returns(bool);
     function isMarketApproved(address) external returns(bool);
 }
