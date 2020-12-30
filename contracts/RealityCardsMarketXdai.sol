@@ -548,20 +548,20 @@ contract RealityCardsMarketXdai is Ownable, ERC721Full {
         assert(deposits[_tokenId][msg.sender] >= _daiToWithdraw);
         address _currentOwner = ownerOf(_tokenId);
 
-        // must rent for minimum of 1 hour for current owner
-        if(_currentOwner == msg.sender) {
-            uint256 _oneHour = 3600;
-            uint256 _secondsOwned = now.sub(timeAcquired[_tokenId]);
-            if (_secondsOwned < _oneHour) { 
-                uint256 _oneHoursDeposit = price[_tokenId].div(24);
-                uint256 _secondsStillToPay = _oneHour.sub(_secondsOwned);
-                uint256 _minDepositToLeave = _oneHoursDeposit.mul(_secondsStillToPay).div(_oneHour);
-                uint256 _maxDaiToWithdraw = deposits[_tokenId][msg.sender].sub(_minDepositToLeave);
-                if (_maxDaiToWithdraw < _daiToWithdraw) {
-                    _daiToWithdraw = _maxDaiToWithdraw;
-                }
-            }
-        }
+        // must rent for minimum of 1 mninute for current owner
+        // if(_currentOwner == msg.sender) {
+        //     uint256 _oneMinute = 60;
+        //     uint256 _secondsOwned = now.sub(timeAcquired[_tokenId]);
+        //     if (_secondsOwned < _oneMinute) { 
+        //         uint256 _oneDeposit = price[_tokenId].div(24);
+        //         uint256 _secondsStillToPay = _oneHour.sub(_secondsOwned);
+        //         uint256 _minDepositToLeave = _oneHoursDeposit.mul(_secondsStillToPay).div(_oneHour);
+        //         uint256 _maxDaiToWithdraw = deposits[_tokenId][msg.sender].sub(_minDepositToLeave);
+        //         if (_maxDaiToWithdraw < _daiToWithdraw) {
+        //             _daiToWithdraw = _maxDaiToWithdraw;
+        //         }
+        //     }
+        // }
 
         deposits[_tokenId][msg.sender] = deposits[_tokenId][msg.sender].sub(_daiToWithdraw);
         
