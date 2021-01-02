@@ -116,6 +116,7 @@ contract RCProxyMainnet is Ownable, ERC721Full
     }
 
     /// @dev can be called by anyone, reads winner from Oracle and sends to xdai proxy via bridge
+    /// @dev can be called more than once, not a problem, xdai proxy will reject a second call
     function getWinnerFromOracle(address _marketAddress) external returns(bool) {
         bytes32 _questionId = questionIds[_marketAddress];
         bool _isFinalized = realitio.isFinalized(_questionId);

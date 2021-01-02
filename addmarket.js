@@ -1,14 +1,14 @@
 //require("dotenv").config();
 
 var realityCardsFactory = artifacts.require("RCFactory");
-var factoryAddress = '0xBf4992e9f896D6bE553ef70D58a6454ABBEA2534';
+var factoryAddress = '0x060e1BF56e238F3263fC9870c472936EEc09CeEb';
 
 
 // variables market specific
-var marketLockingTime = 1607866534; 
-var oracleResolutionTime = 1607866534; 
-var question = 'Test4␟"X","Y","Z"␟news-politics␟en_US';
-var eventDetails = ['RCToken','zaasdasdfsf']; 
+var marketLockingTime = 1609405525; 
+var oracleResolutionTime = 1609405525; 
+var question = 'Test10␟"X","Y","Z"␟news-politics␟en_US';
+var slug = '10'; 
 var artistAddress = "0x0000000000000000000000000000000000000000";
 var affiliateAddress = "0x0000000000000000000000000000000000000000";
 var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000','0x0000000000000000000000000000000000000000'];
@@ -37,11 +37,11 @@ module.exports = function() {
         affiliateAddress,
         cardAffiliateAddresses,
         question,
-        eventDetails,
+        slug,
       );
 
     var lastAddress = await factory.getMostRecentMarket.call(0);
-    console.log("Market created and NFTs minted at address: ", lastAddress);
+    console.log("Market created at address: ", lastAddress);
     console.log("Block number: ", transaction.receipt.blockNumber);
     process.exit();
   }

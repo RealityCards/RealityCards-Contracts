@@ -78,7 +78,7 @@ module.exports = {
     },
     xdai: {
       provider: function() {
-        return new HDWalletProvider(MNEMONIC, "https://dai.poa.network");
+        return new HDWalletProvider(MNEMONIC, "http://rpc.xdaichain.com");
       },
       network_id: 100,
       gas: 12000000,
@@ -86,7 +86,7 @@ module.exports = {
     },
     stage1: {
         provider: function() {
-          return new HDWalletProvider(MNEMONIC, "https://dai.poa.network");
+          return new HDWalletProvider(MNEMONIC, "http://rpc.xdaichain.com");
         },
         network_id: 100,
         gas: 12000000,
@@ -101,12 +101,12 @@ module.exports = {
         },
         network_id: 1,
         gas: 3000000,
-        gasPrice: 30000000000,
+        gasPrice: 125000000000,
         networkCheckTimeout: 12000,
       },
     stage3: {
     provider: function() {
-        return new HDWalletProvider(MNEMONIC, "https://dai.poa.network");
+        return new HDWalletProvider(MNEMONIC, "http://rpc.xdaichain.com");
     },
     network_id: 100,
     gas: 12000000,
