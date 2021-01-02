@@ -176,19 +176,18 @@ contract RCMarketXdaiV2 is Initializable {
             affiliateCut = 0;
         }
 
-        // reduce card specifc affiliate cut to zero if zero adddress set
-        for (uint i = 0; i < numberOfTokens; i++) { 
-            if (_cardAffiliateAddresses[i] == address(0)) {
-                if (cardAffiliateCut != 0) {
+        // check the validity of card affiliate array. 
+        // if not valid, reduce payout to zero
+        if (_cardAffiliateAddresses.length == _numberOfTokens) {
+            for (uint i = 0; i < _numberOfTokens; i++) { 
+                if (_cardAffiliateAddresses[i] == address(0)) {
                     cardAffiliateCut = 0;
                 }
             }
+        } else {
+            cardAffiliateCut = 0;
         }
 
-        // check card affiliate array is the right size, if being used
-        if (cardAffiliateCut > 0) {
-            require(_cardAffiliateAddresses.length == _numberOfTokens, "Card affiliate error");
-        }
 
         // if winner takes all mode, set winnerCut to max
         if (_mode == 1) {

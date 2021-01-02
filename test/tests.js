@@ -27,7 +27,7 @@ var RealitioMockup2 = artifacts.require("./mockups/redeploys/RealitioMockupV2.so
 
 const delay = duration => new Promise(resolve => setTimeout(resolve, duration));
 
-contract('RealityCardsTests XdaiV1', (accounts) => {
+contract('RealityCardsTests', (accounts) => {
 
   var realitycards;
   var tokenURIs = ['x','x','x','uri','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x']; // 20 tokens
@@ -45,7 +45,8 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
   user7 = accounts[7];
   user8 = accounts[8];
   andrewsAddress = accounts[9];
-  var cardRecipients = ['0x0000000000000000000000000000000000000000',user6,user7,user8,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0];
+// throws a tantrum if cardRecipients is not outside beforeEach for some reason
+var cardRecipients = ['0x0000000000000000000000000000000000000000'];
 
   beforeEach(async () => {
     var latestTime = await time.latest();
@@ -78,15 +79,6 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     // tell the xdai proxy and bridge the mainnet proxy address
     await xdaiproxy.setProxyMainnetAddress(mainnetproxy.address);
     await bridge.setProxyMainnetAddress(mainnetproxy.address);
-    // add peeps to card recipients approvals
-    await rcfactory.addOrRemoveCardAffiliate(user5);
-    await rcfactory.addOrRemoveCardAffiliate(user6);
-    await rcfactory.addOrRemoveCardAffiliate(user7);
-    await rcfactory.addOrRemoveCardAffiliate(user8);
-    await rcfactory.addOrRemoveCardAffiliate(user0);
-    await rcfactory.addOrRemoveAffiliate(user7);
-    await rcfactory.addOrRemoveAffiliate(user8);
-    await rcfactory.addOrRemoveArtist(user8);
     // market creation
     await rcfactory.createMarket(
         0,
@@ -111,7 +103,9 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     var oracleResolutionTime = oneYearInTheFuture;
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
     var artistAddress = user8;
+    await rcfactory.addOrRemoveArtist(user8);
     var affiliateAddress = user7;
+    await rcfactory.addOrRemoveAffiliate(user7);
     var slug = 'y';
     await rcfactory.createMarket(
         0,
@@ -138,6 +132,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
     var artistAddress = user8;
     var affiliateAddress = user7;
+    // artist and affiliate already approved from createMarketWithArtistSet
     var slug = 'z';
     await rcfactory.createMarket(
         0,
@@ -215,6 +210,11 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     var oracleResolutionTime = oneYearInTheFuture;
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
     var cardRecipients = [user5,user6,user7,user8,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0];
+    await rcfactory.addOrRemoveCardAffiliate(user5);
+    await rcfactory.addOrRemoveCardAffiliate(user6);
+    await rcfactory.addOrRemoveCardAffiliate(user7);
+    await rcfactory.addOrRemoveCardAffiliate(user8);
+    await rcfactory.addOrRemoveCardAffiliate(user0);
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     var slug = 'y';
@@ -243,6 +243,8 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
     var artistAddress = user8;
     var affiliateAddress = user7;
+    await rcfactory.addOrRemoveAffiliate(user7);
+    await rcfactory.addOrRemoveArtist(user8);
     var slug = 'y';
     await rcfactory.createMarket(
         mode,
@@ -270,6 +272,13 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     var artistAddress = user8;
     var affiliateAddress = user7;
     var cardRecipients = [user5,user6,user7,user8,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0];
+    await rcfactory.addOrRemoveCardAffiliate(user5);
+    await rcfactory.addOrRemoveCardAffiliate(user6);
+    await rcfactory.addOrRemoveCardAffiliate(user7);
+    await rcfactory.addOrRemoveCardAffiliate(user8);
+    await rcfactory.addOrRemoveCardAffiliate(user0);
+    await rcfactory.addOrRemoveAffiliate(user7);
+    await rcfactory.addOrRemoveArtist(user8);
     var slug = 'y';
     await rcfactory.createMarket(
         0,
@@ -299,6 +308,13 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     var affiliateAddress = user7;
     var slug = 'y';
     var cardRecipients = [user5,user6,user7,user8,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0];
+    await rcfactory.addOrRemoveCardAffiliate(user5);
+    await rcfactory.addOrRemoveCardAffiliate(user6);
+    await rcfactory.addOrRemoveCardAffiliate(user7);
+    await rcfactory.addOrRemoveCardAffiliate(user8);
+    await rcfactory.addOrRemoveCardAffiliate(user0);
+    await rcfactory.addOrRemoveAffiliate(user7);
+    await rcfactory.addOrRemoveArtist(user8);
     await rcfactory.createMarket(
         0,
         '0x0',
@@ -317,6 +333,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
 
   async function createMarketCustomeTimestamps(marketOpeningTime,marketLockingTime,oracleResolutionTime) {
     var artistAddress = user8;
+    await rcfactory.addOrRemoveArtist(user8);
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     var timestamps = [marketOpeningTime,marketLockingTime,oracleResolutionTime];
     var slug = 'y';
@@ -338,6 +355,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
 
   async function createMarketCustomeTimestamps2(marketOpeningTime,marketLockingTime,oracleResolutionTime) {
     var artistAddress = user8;
+    // await rcfactory.addOrRemoveArtist(user8);
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     var timestamps = [marketOpeningTime,marketLockingTime,oracleResolutionTime];
     var slug = 'z';
@@ -2949,8 +2967,8 @@ it('check oracleResolutionTime and marketLockingTime expected failures', async (
     var arbitrator = "0xA6EAd513D05347138184324392d8ceb24C116118";
     var timeout = 86400;
     var templateId = 2;
-    var artistAddress = user8;
-    var affiliateAddress = user8;
+    var artistAddress = '0x0000000000000000000000000000000000000000';
+    var affiliateAddress = '0x0000000000000000000000000000000000000000';
     var slug = 'y'; 
     // resolution time before locking, expect failure
     var oracleResolutionTime = 69419;
@@ -3605,8 +3623,8 @@ it('test addOrRemoveGovernor and setMarketCreationGovernorsOnly', async () => {
     var marketLockingTime = oneYearInTheFuture; 
     var oracleResolutionTime = oneYearInTheFuture; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    var artistAddress = user8;
-    var affiliateAddress = user8;
+    var artistAddress = '0x0000000000000000000000000000000000000000';
+    var affiliateAddress = '0x0000000000000000000000000000000000000000';
     var slug = 'x2';
     await rcfactory.setMarketCreationGovernorsOnly();
     await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,slug,{from: user1}), "Not approved");
@@ -3725,6 +3743,14 @@ it('test sponsor via market creation', async () => {
     await rcfactory.setSponsorshipRequired(ether('200'));
     await rcfactory.addOrRemoveGovernor(user3);
     await expectRevert(createMarketWithArtistAndCardAffiliatesAndSponsorship(100,user3), "Insufficient sponsorship");
+    // undo approvals from the above as they are done again in following function
+    await rcfactory.addOrRemoveArtist(user8);
+    await rcfactory.addOrRemoveAffiliate(user7);
+    await rcfactory.addOrRemoveCardAffiliate(user5);
+    await rcfactory.addOrRemoveCardAffiliate(user6);
+    await rcfactory.addOrRemoveCardAffiliate(user7);
+    await rcfactory.addOrRemoveCardAffiliate(user8);
+    await rcfactory.addOrRemoveCardAffiliate(user0);
     var realitycards2 = await createMarketWithArtistAndCardAffiliatesAndSponsorship(200,user3);
     var totalCollected = await realitycards2.totalCollected();
     var totalCollectedShouldBe = web3.utils.toWei('200', 'ether');
@@ -3854,6 +3880,7 @@ it('test uberOwner factory', async () => {
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
+    var cardRecipients = ['0x0000000000000000000000000000000000000000'];
     // first, change owner
     await rcfactory.changeUberOwner(user5);
     // now try and change again and change reference from prevous owner, should fail
@@ -4039,9 +4066,10 @@ it('test approveOrUnapproveMarket', async () => {
 });
 
 it('test duplicate slug', async () => {
-    // first, check that recent market is hidden
-    createMarketWithArtistSet();
-    await expectRevert(createMarketWithArtistSet(), "Duplicate slug");
+    var timestamps = [0,0,0];
+    var artistAddress = '0x0000000000000000000000000000000000000000';
+    var affiliateAddress = '0x0000000000000000000000000000000000000000';
+    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,slug), "Duplicate slug");
 });
 
 it('check cant rent or deposit if globalpause', async () => {
@@ -4181,6 +4209,10 @@ it('test addOrRemoveArtist, addOrRemoveAffiliate, addOrRemoveCardAffiliate', asy
     await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,slug),"Affiliate not approved");
     await rcfactory.addOrRemoveAffiliate(user2);
     await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,slug),"Card affiliate not approved");
+    await rcfactory.addOrRemoveCardAffiliate(user0);
+    await rcfactory.addOrRemoveCardAffiliate(user6);
+    await rcfactory.addOrRemoveCardAffiliate(user7);
+    await rcfactory.addOrRemoveCardAffiliate(user8);
     await rcfactory.addOrRemoveCardAffiliate(user2);
     await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,slug);
     // check that not owner cant make changes
