@@ -2621,126 +2621,126 @@ it('test withdraw- invalid mode 0- with artist/creator/card affiliate cut', asyn
     await withdrawDeposit(1000,user7);
     });
 
-// it('test circuitBreaker', async () => {
-//     /////// SETUP //////
-//     await depositDai(1000,user0);
-//     await depositDai(1000,user1);
-//     await depositDai(1000,user2);
-//     // rent losing teams
-//     await newRental(1,0,user0); // collected 28
-//     await newRental(2,1,user1); // collected 56
-//     // rent winning team
-//     await newRental(1,2,user0); // collected 7
-//     await time.increase(time.duration.weeks(1));
-//     await newRental(2,2,user1); // collected 14
-//     await time.increase(time.duration.weeks(1));
-//     await newRental(3,2,user2); // collected 42
-//     await time.increase(time.duration.weeks(2)); 
-//     // exit all, progress time so marketLockingTime in the past
-//     await realitycards.exitAll({from: user0});
-//     await realitycards.exitAll({from: user1});
-//     await realitycards.exitAll({from: user2});
-//     await time.increase(time.duration.years(1)); 
-//     // winner 1: 
-//     // totalcollected = 147, 
-//     // total days = 28 
-//     // user 0 owned for 7 days
-//     // user 1 owned for 7 days
-//     // user 2 owned for 14 days
-//     ////////////////////////
-//     await realitycards.lockMarket(); 
-//     await time.increase(time.duration.weeks(24));
-//     await realitycards.circuitBreaker(); 
-//     ////////////////////////
-//     // total deposits = 139, check:
-//     var totalCollected = await realitycards.totalCollected.call();
-//     var totalCollectedShouldBe = web3.utils.toWei('147', 'ether');
-//     var difference = Math.abs(totalCollected.toString()-totalCollectedShouldBe.toString());
-//     assert.isBelow(difference/totalCollected,0.00001);
-//     //check user0 winnings
-//     var depositBefore = await treasury.deposits.call(user0); 
-//     await withdraw(user0);
-//     var depositAfter = await treasury.deposits.call(user0); 
-//     var winningsSentToUser = depositAfter - depositBefore;
-//     var winningsShouldBe = ether('35');
-//     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
-//     assert.isBelow(difference/winningsSentToUser,0.00001);
-//     //check user0 cant withdraw again
-//     await expectRevert(withdraw(user0), "Already withdrawn");
-//     //check user1 winnings
-//     var depositBefore = await treasury.deposits.call(user1); 
-//     await withdraw(user1);
-//     var depositAfter = await treasury.deposits.call(user1); 
-//     var winningsSentToUser = depositAfter - depositBefore;
-//     var winningsShouldBe = ether('70');
-//     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
-//     assert.isBelow(difference/winningsSentToUser,0.00001);
-//     //check user2 winnings
-//     var depositBefore = await treasury.deposits.call(user2); 
-//     await withdraw(user2);
-//     var depositAfter = await treasury.deposits.call(user2); 
-//     var winningsSentToUser = depositAfter - depositBefore;
-//     var winningsShouldBe = ether('42');
-//     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
-//     assert.isBelow(difference/winningsSentToUser,0.00001);
-//     // check random user can't withdraw
-//     await expectRevert(realitycards.withdraw({ from: user6 }), "Paid no rent");
-//     // check market pot is empty
-//     var marketPot = await treasury.marketPot.call(realitycards.address);
-//     assert.isBelow(Math.abs(marketPot.toString()),10);
-//     // withdraw for next test
-//     await withdrawDeposit(1000,user0);
-//     await withdrawDeposit(1000,user1);
-//     await withdrawDeposit(1000,user2);
-//     });
+it('test circuitBreaker', async () => {
+    /////// SETUP //////
+    await depositDai(1000,user0);
+    await depositDai(1000,user1);
+    await depositDai(1000,user2);
+    // rent losing teams
+    await newRental(1,0,user0); // collected 28
+    await newRental(2,1,user1); // collected 56
+    // rent winning team
+    await newRental(1,2,user0); // collected 7
+    await time.increase(time.duration.weeks(1));
+    await newRental(2,2,user1); // collected 14
+    await time.increase(time.duration.weeks(1));
+    await newRental(3,2,user2); // collected 42
+    await time.increase(time.duration.weeks(2)); 
+    // exit all, progress time so marketLockingTime in the past
+    await realitycards.exitAll({from: user0});
+    await realitycards.exitAll({from: user1});
+    await realitycards.exitAll({from: user2});
+    await time.increase(time.duration.years(1)); 
+    // winner 1: 
+    // totalcollected = 147, 
+    // total days = 28 
+    // user 0 owned for 7 days
+    // user 1 owned for 7 days
+    // user 2 owned for 14 days
+    ////////////////////////
+    await realitycards.lockMarket(); 
+    await time.increase(time.duration.weeks(24));
+    await realitycards.circuitBreaker(); 
+    ////////////////////////
+    // total deposits = 139, check:
+    var totalCollected = await realitycards.totalCollected.call();
+    var totalCollectedShouldBe = web3.utils.toWei('147', 'ether');
+    var difference = Math.abs(totalCollected.toString()-totalCollectedShouldBe.toString());
+    assert.isBelow(difference/totalCollected,0.00001);
+    //check user0 winnings
+    var depositBefore = await treasury.deposits.call(user0); 
+    await withdraw(user0);
+    var depositAfter = await treasury.deposits.call(user0); 
+    var winningsSentToUser = depositAfter - depositBefore;
+    var winningsShouldBe = ether('35');
+    var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
+    assert.isBelow(difference/winningsSentToUser,0.00001);
+    //check user0 cant withdraw again
+    await expectRevert(withdraw(user0), "Already withdrawn");
+    //check user1 winnings
+    var depositBefore = await treasury.deposits.call(user1); 
+    await withdraw(user1);
+    var depositAfter = await treasury.deposits.call(user1); 
+    var winningsSentToUser = depositAfter - depositBefore;
+    var winningsShouldBe = ether('70');
+    var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
+    assert.isBelow(difference/winningsSentToUser,0.00001);
+    //check user2 winnings
+    var depositBefore = await treasury.deposits.call(user2); 
+    await withdraw(user2);
+    var depositAfter = await treasury.deposits.call(user2); 
+    var winningsSentToUser = depositAfter - depositBefore;
+    var winningsShouldBe = ether('42');
+    var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
+    assert.isBelow(difference/winningsSentToUser,0.00001);
+    // check random user can't withdraw
+    await expectRevert(realitycards.withdraw({ from: user6 }), "Paid no rent");
+    // check market pot is empty
+    var marketPot = await treasury.marketPot.call(realitycards.address);
+    assert.isBelow(Math.abs(marketPot.toString()),10);
+    // withdraw for next test
+    await withdrawDeposit(1000,user0);
+    await withdrawDeposit(1000,user1);
+    await withdrawDeposit(1000,user2);
+    });
 
-// it('test circuitBreaker less than 1 month', async () => {
-//     /////// SETUP //////
-//     await depositDai(1000,user0);
-//     await newRental(1,0,user0); // collected 28
-//     await time.increase(time.duration.weeks(3));
-//     // exit all, progress time so marketLockingTime in the past
-//     await realitycards.exitAll({from: user0});
-//     await time.increase(time.duration.years(1)); 
-//     await realitycards.lockMarket(); 
-//     await expectRevert(realitycards.circuitBreaker(), "Too early");
-//     await time.increase(time.duration.weeks(3));
-//     await realitycards.circuitBreaker();
-//     // withdraw for next test
-//     await withdrawDeposit(1000,user0);
-//     });
+it('test circuitBreaker less than 3 months', async () => {
+    /////// SETUP //////
+    await depositDai(1000,user0);
+    await newRental(1,0,user0); // collected 28
+    await time.increase(time.duration.weeks(3));
+    // exit all, progress time so marketLockingTime in the past
+    await realitycards.exitAll({from: user0});
+    await time.increase(time.duration.years(1)); 
+    await realitycards.lockMarket(); 
+    await expectRevert(realitycards.circuitBreaker(), "Too early");
+    await time.increase(time.duration.weeks(13));
+    await realitycards.circuitBreaker();
+    // withdraw for next test
+    await withdrawDeposit(1000,user0);
+    });
 
-// it('test NFT allocation after event- circuit breaker', async () => {
-//     await depositDai(1000,user0);
-//     await depositDai(1000,user1);
-//     await depositDai(1000,user2);
-//     await newRental(1,0,user0); 
-//     await newRental(1,1,user1); 
-//     await newRental(1,2,user2);
-//     await time.increase(time.duration.weeks(1));
-//     await newRental(2,0,user1); //user 1 winner
-//     await time.increase(time.duration.weeks(2));
-//     // exit all, progress time so marketLockingTime in the past
-//     await realitycards.exitAll({from: user0});
-//     await realitycards.exitAll({from: user1});
-//     await realitycards.exitAll({from: user2});
-//     await time.increase(time.duration.years(1)); 
-//     ////////////////////////
-//     await realitycards.lockMarket(); 
-//     await time.increase(time.duration.weeks(2));
-//     await realitycards.circuitBreaker();
-//     var owner = await realitycards.ownerOf(0);
-//     assert.equal(owner,user1);
-//     var owner = await realitycards.ownerOf(1);
-//     assert.equal(owner,user1);
-//     var owner = await realitycards.ownerOf(2);
-//     assert.equal(owner,user2);
-//     var owner = await realitycards.ownerOf(5);
-//     assert.equal(owner,realitycards.address);
-//     await withdrawDeposit(1000,user0);
-//     await withdrawDeposit(1000,user1);
-//     await withdrawDeposit(1000,user2);
-// });
+it('test NFT allocation after event- circuit breaker', async () => {
+    await depositDai(1000,user0);
+    await depositDai(1000,user1);
+    await depositDai(1000,user2);
+    await newRental(1,0,user0); 
+    await newRental(1,1,user1); 
+    await newRental(1,2,user2);
+    await time.increase(time.duration.weeks(1));
+    await newRental(2,0,user1); //user 1 winner
+    await time.increase(time.duration.weeks(2));
+    // exit all, progress time so marketLockingTime in the past
+    await realitycards.exitAll({from: user0});
+    await realitycards.exitAll({from: user1});
+    await realitycards.exitAll({from: user2});
+    await time.increase(time.duration.years(1)); 
+    ////////////////////////
+    await realitycards.lockMarket(); 
+    await time.increase(time.duration.weeks(12));
+    await realitycards.circuitBreaker();
+    var owner = await realitycards.ownerOf(0);
+    assert.equal(owner,user1);
+    var owner = await realitycards.ownerOf(1);
+    assert.equal(owner,user1);
+    var owner = await realitycards.ownerOf(2);
+    assert.equal(owner,user2);
+    var owner = await realitycards.ownerOf(5);
+    assert.equal(owner,realitycards.address);
+    await withdrawDeposit(1000,user0);
+    await withdrawDeposit(1000,user1);
+    await withdrawDeposit(1000,user2);
+});
 
 it('check expected failures with market resolution: question not resolved but market ended', async () => {
     await depositDai(1000,user0);

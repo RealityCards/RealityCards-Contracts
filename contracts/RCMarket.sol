@@ -85,12 +85,13 @@ contract RCMarket is Initializable {
                     uint256 price; }
 
     ///// TIMESTAMPS ///// 
-    //// @dev when the market opens 
+    /// @dev when the market opens 
     uint32 public marketOpeningTime; 
-    //// @dev when the market locks 
+    /// @dev when the market locks 
     uint32 public marketLockingTime; 
-    //// @dev when the question can be answered on realitio
-    // uint32 public oracleResolutionTime;
+    /// @dev when the question can be answered on realitio
+    /// @dev only needed for circuit breaker
+    uint32 public oracleResolutionTime;
 
     ///// PAYOUT VARIABLES /////
     uint256 public winningOutcome;
@@ -154,6 +155,7 @@ contract RCMarket is Initializable {
         totalNftMintCount = _totalNftMintCount;
         marketOpeningTime = _timestamps[0];
         marketLockingTime = _timestamps[1];
+        oracleResolutionTime = _timestamps[2];
         artistAddress = _artistAddress;
         marketCreatorAddress = _marketCreatorAddress;
         affiliateAddress = _affiliateAddress;
@@ -716,6 +718,20 @@ contract RCMarket is Initializable {
         assert(uint256(state) < 4);
         state = States(uint256(state) + 1);
         emit LogStateChange(uint256(state));
+    }
+
+    ////////////////////////////////////
+    /////////// CIRCUIT BREAKER ////////
+    ////////////////////////////////////
+
+    /// @dev alternative to determineWinner, in case Oracle never resolves for any reason
+    /// @dev does not set a winner so same as invalid outcome
+    /// @dev market does not need to be locked, just in case lockMarket bugs out
+    function circuitBreaker() external {
+        require(now > (oracleResolutionTime + 12 weeks), "Too early");
+        _incrementState();
+        _processNFTsAfterEvent(); 
+        state = States.WITHDRAW;
     }
 
 }
