@@ -54,7 +54,7 @@ contract RCProxyXdai is Ownable
     
     /// @dev address of mainnet oracle proxy, called by the mainnet side of the arbitrary message bridge
     /// @dev not set in constructor, address not known at deployment
-    function setOracleProxyMainnetAddress(address _newAddress) onlyOwner external {
+    function setProxyMainnetAddress(address _newAddress) onlyOwner external {
         oracleProxyMainnetAddress = _newAddress;
     }
 

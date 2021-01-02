@@ -11,7 +11,7 @@ const {
 var RCFactory = artifacts.require('./RCFactory.sol');
 var RCTreasury = artifacts.require('./RCTreasury.sol');
 var RCMarket = artifacts.require('./RCMarket.sol');
-var XdaiNftHub = artifacts.require('./nfthubs/RCNftHubXdai.sol');
+var NftHub = artifacts.require('./RCNftHub.sol');
 var XdaiProxy = artifacts.require('./bridgeproxies/RCProxyXdai.sol');
 var MainnetProxy = artifacts.require('./bridgeproxies/RCProxyMainnet.sol');
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
@@ -59,23 +59,25 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     // main contracts
     treasury = await RCTreasury.new();
     rcfactory = await RCFactory.new(treasury.address);
+    nfthub = await NftHub.new(rcfactory.address);
     rcreference = await RCMarket.new();
+    // tell treasury about factory, tell factory about nft hub and reference
     await treasury.setFactoryAddress(rcfactory.address);
     await rcfactory.setReferenceContractAddress(rcreference.address);
+    await rcfactory.setNftHubAddress(nfthub.address);
     // mockups 
     realitio = await RealitioMockup.new();
     bridge = await BridgeMockup.new();
-    // nft hubs
-    xdainfthub = await XdaiNftHub.new(rcfactory.address);
-    await rcfactory.setNftHubXdaiAddress(xdainfthub.address);
     // bridge contracts
     xdaiproxy = await XdaiProxy.new(bridge.address, rcfactory.address);
     mainnetproxy = await MainnetProxy.new(bridge.address, realitio.address);
-    await rcfactory.setOracleProxyXdaiAddress(xdaiproxy.address);
-    await xdaiproxy.setOracleProxyMainnetAddress(mainnetproxy.address);
-    await mainnetproxy.setOracleProxyXdaiAddress(xdaiproxy.address);
-    await bridge.setOracleProxyMainnetAddress(mainnetproxy.address);
-    await bridge.setOracleProxyXdaiAddress(xdaiproxy.address);
+    // tell the factory, mainnet proxy and bridge the xdai proxy address
+    await rcfactory.setProxyXdaiAddress(xdaiproxy.address);
+    await mainnetproxy.setProxyXdaiAddress(xdaiproxy.address);
+    await bridge.setProxyXdaiAddress(xdaiproxy.address);
+    // tell the xdai proxy and bridge the mainnet proxy address
+    await xdaiproxy.setProxyMainnetAddress(mainnetproxy.address);
+    await bridge.setProxyMainnetAddress(mainnetproxy.address);
     // add peeps to card recipients approvals
     await rcfactory.addOrRemoveCardAffiliate(user5);
     await rcfactory.addOrRemoveCardAffiliate(user6);
@@ -415,7 +417,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
 
   // check name
   it('getName', async () => {
-    var name = await xdainfthub.name.call();
+    var name = await nfthub.name.call();
     assert.equal(name, 'RealityCards');
   });
 
@@ -2879,26 +2881,26 @@ it('check that users cannot transfer their NFTs until withdraw state', async() =
     var owner = await realitycards.ownerOf(2);
     assert.equal(owner, user);
     // buidler giving me shit when I try and intercept revert message so just testing revert, in OPEN state
-    await expectRevert(xdainfthub.transferFrom(user,user1,2), "Incorrect state");
-    await expectRevert(xdainfthub.safeTransferFrom(user,user1,2), "Incorrect state");
-    await expectRevert(xdainfthub.safeTransferFrom(user,user1,2,web3.utils.asciiToHex("123456789")), "Incorrect state");
+    await expectRevert(nfthub.transferFrom(user,user1,2), "Incorrect state");
+    await expectRevert(nfthub.safeTransferFrom(user,user1,2), "Incorrect state");
+    await expectRevert(nfthub.safeTransferFrom(user,user1,2,web3.utils.asciiToHex("123456789")), "Incorrect state");
     await time.increase(time.duration.years(1)); 
     await realitycards.lockMarket();
     // should fail cos LOCKED
-    await expectRevert(xdainfthub.transferFrom(user,user1,2), "Incorrect state");
-    await expectRevert(xdainfthub.safeTransferFrom(user,user1,2), "Incorrect state");
-    await expectRevert(xdainfthub.safeTransferFrom(user,user1,2,web3.utils.asciiToHex("123456789")), "Incorrect state");
+    await expectRevert(nfthub.transferFrom(user,user1,2), "Incorrect state");
+    await expectRevert(nfthub.safeTransferFrom(user,user1,2), "Incorrect state");
+    await expectRevert(nfthub.safeTransferFrom(user,user1,2,web3.utils.asciiToHex("123456789")), "Incorrect state");
     await realitio.setResult(2);
     await mainnetproxy.getWinnerFromOracle(realitycards.address);
     await realitycards.determineWinner();
     // these shoudl all fail cos wrong owner:
     var owner = await realitycards.ownerOf(2);
     assert.equal(owner, user);
-    await expectRevert(xdainfthub.transferFrom(user,user1,2,{from: user1}), "Not owner");
-    await expectRevert(xdainfthub.safeTransferFrom(user1,user1,2,{from: user1}), "Not owner");
+    await expectRevert(nfthub.transferFrom(user,user1,2,{from: user1}), "Not owner");
+    await expectRevert(nfthub.safeTransferFrom(user1,user1,2,{from: user1}), "Not owner");
     // these should not
-    await xdainfthub.transferFrom(user,user1,2,{from: user});
-    await xdainfthub.safeTransferFrom(user1,user,2,{from: user1});
+    await nfthub.transferFrom(user,user1,2,{from: user});
+    await nfthub.safeTransferFrom(user1,user,2,{from: user1});
   });
 
   it('make sure functions cant be called in the wrong state', async() => {
@@ -3820,15 +3822,15 @@ it('test uberOwner Treasury', async () => {
     await rcfactory2.addOrRemoveCardAffiliate(user0);
     await treasury.setFactoryAddress(rcfactory2.address,{from: user5});
     await xdaiproxy.setFactoryAddress(rcfactory2.address);
-    await xdainfthub.setFactoryAddress(rcfactory2.address);
+    await nfthub.setFactoryAddress(rcfactory2.address);
     await rcfactory2.setReferenceContractAddress(rcreference.address);
-    await rcfactory2.setOracleProxyXdaiAddress(xdaiproxy.address);
+    await rcfactory2.setProxyXdaiAddress(xdaiproxy.address);
     // create market with old factory, should fail
     await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,slug), "Not factory");
     // create market with new factory and do some standard stuff
     var slug = 'xa';
-    // xdainfthub = await XdaiNftHub.new(rcfactory.address);
-    await rcfactory2.setNftHubXdaiAddress(xdainfthub.address);
+    // nfthub = await NftHub.new(rcfactory.address);
+    await rcfactory2.setNftHubAddress(nfthub.address);
     await rcfactory2.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,slug);
     var marketAddress = await rcfactory2.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -3880,7 +3882,7 @@ it('test uberOwner factory', async () => {
 
 it('test RCProxyXdai', async () => {
     // check reverts on owned functions
-    await expectRevert(xdaiproxy.setOracleProxyMainnetAddress(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(xdaiproxy.setProxyMainnetAddress(user0, {from: user1}), "caller is not the owner");
     await expectRevert(xdaiproxy.setBridgeXdaiAddress(user0, {from: user1}), "caller is not the owner");
     await expectRevert(xdaiproxy.setFactoryAddress(user0, {from: user1}), "caller is not the owner");
     await expectRevert(xdaiproxy.setAmicableResolution(user0, 3, {from: user1}), "caller is not the owner");
@@ -3890,9 +3892,9 @@ it('test RCProxyXdai', async () => {
     await expectRevert(xdaiproxy.getWinner(user0), "Not finalised");
     // test changing mainnet proxy
     mainnetproxy2 = await MainnetProxy2.new(bridge.address, realitio.address);
-    await xdaiproxy.setOracleProxyMainnetAddress(mainnetproxy2.address);
-    await mainnetproxy2.setOracleProxyXdaiAddress(xdaiproxy.address);
-    await bridge.setOracleProxyMainnetAddress(mainnetproxy2.address);
+    await xdaiproxy.setProxyMainnetAddress(mainnetproxy2.address);
+    await mainnetproxy2.setProxyXdaiAddress(xdaiproxy.address);
+    await bridge.setProxyMainnetAddress(mainnetproxy2.address);
     realitycards2 = await createMarketWithArtistSet();
     await realitio.setResult(2);
     // should be 69 even though 2 was set
@@ -3913,7 +3915,7 @@ it('test RCProxyXdai', async () => {
 
 it('test RCProxyMainnet various', async () => {
     // check reverts on owned functions
-    await expectRevert(mainnetproxy.setOracleProxyXdaiAddress(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(mainnetproxy.setProxyXdaiAddress(user0, {from: user1}), "caller is not the owner");
     await expectRevert(mainnetproxy.setBridgeMainnetAddress(user0, {from: user1}), "caller is not the owner");
     await expectRevert(mainnetproxy.setRealitioAddress(user0, {from: user1}), "caller is not the owner");
     await expectRevert(mainnetproxy.setArbitrator(user0, {from: user1}), "caller is not the owner");
@@ -3923,12 +3925,12 @@ it('test RCProxyMainnet various', async () => {
     await expectRevert(mainnetproxy.postQuestionToOracle(user0, "x", 0), "Not bridge");
     // test changing xdai proxy
     var xdaiproxy2 = await XdaiProxy2.new(bridge.address, rcfactory.address);
-    await xdaiproxy2.setOracleProxyMainnetAddress(mainnetproxy.address);
+    await xdaiproxy2.setProxyMainnetAddress(mainnetproxy.address);
     await xdaiproxy2.setBridgeXdaiAddress(bridge.address);
     await xdaiproxy2.setFactoryAddress(rcfactory.address);
-    await mainnetproxy.setOracleProxyXdaiAddress(xdaiproxy2.address);
-    await bridge.setOracleProxyXdaiAddress(xdaiproxy2.address);
-    await rcfactory.setOracleProxyXdaiAddress(xdaiproxy2.address);
+    await mainnetproxy.setProxyXdaiAddress(xdaiproxy2.address);
+    await bridge.setProxyXdaiAddress(xdaiproxy2.address);
+    await rcfactory.setProxyXdaiAddress(xdaiproxy2.address);
     realitycards2 = await createMarketWithArtistSet();
     await realitio.setResult(2);
     // should be 4 even though 2 was set
@@ -3971,7 +3973,7 @@ it('test postQuestionToOracleAdmin', async () => {
     // first, check it cant be called cos already posted
     await expectRevert(mainnetproxy.postQuestionToOracleAdmin(realitycards.address,"x",0),"Already posted");
     // fuck up the bridge and post a new market
-    await bridge.setOracleProxyMainnetAddress(user0);
+    await bridge.setProxyMainnetAddress(user0);
     realitycards2 = await createMarketWithArtistSet();
     await mainnetproxy.postQuestionToOracleAdmin(realitycards2.address,"x",0)
     await realitio.setResult(2);
@@ -3981,7 +3983,7 @@ it('test postQuestionToOracleAdmin', async () => {
     // bridge still fucked so should think not resolved
     await expectRevert(realitycards2.determineWinner(),"Oracle not resolved");
     // fix bridge, should work
-    await bridge.setOracleProxyMainnetAddress(mainnetproxy.address);
+    await bridge.setProxyMainnetAddress(mainnetproxy.address);
     await mainnetproxy.getWinnerFromOracle(realitycards2.address);
     await realitycards2.determineWinner();
     var winner = await realitycards2.winningOutcome.call();
@@ -4198,10 +4200,10 @@ it('test addOrRemoveArtist, addOrRemoveAffiliate, addOrRemoveCardAffiliate', asy
 });
 
 it('xdai nft hub check failures', async () => {
-    await expectRevert(xdainfthub.addMarket(user0),"Not factory");
-    await expectRevert(xdainfthub.setFactoryAddress(user0, {from: user1}),"Ownable: caller is not the owner");
-    await expectRevert(xdainfthub.mintNft(user0,0,'d'),"Not factory");
-    await expectRevert(xdainfthub.transferNft(user0,user0,9),"Not market");
+    await expectRevert(nfthub.addMarket(user0),"Not factory");
+    await expectRevert(nfthub.setFactoryAddress(user0, {from: user1}),"Ownable: caller is not the owner");
+    await expectRevert(nfthub.mintNft(user0,0,'d'),"Not factory");
+    await expectRevert(nfthub.transferNft(user0,user0,9),"Not market");
 });
 
 it('check token Ids of second market make sense', async () => {
@@ -4213,7 +4215,7 @@ it('check token Ids of second market make sense', async () => {
     await realitycards2.newRental(web3.utils.toWei('1', 'ether'),maxuint256,0,{ from: user6});
     var ownerMarket = await realitycards2.ownerOf.call(0);
     assert.equal(ownerMarket,user6);
-    var ownerNftHub = await xdainfthub.ownerOf.call(20);
+    var ownerNftHub = await nfthub.ownerOf.call(20);
     assert.equal(ownerNftHub,user6);
 });
 

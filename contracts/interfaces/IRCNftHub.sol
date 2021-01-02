@@ -1,6 +1,6 @@
 pragma solidity 0.5.13;
 
-interface IRCNftHubXdai {
+interface IRCNftHub {
     function ownerOf(uint256) external view returns (address);
     function tokenURI(uint256) external view returns (string memory);
     function addMarket(address) external returns (bool);

@@ -1,17 +1,15 @@
 pragma solidity 0.5.13;
 
-import "./ICash.sol";
 import "./IRealitio.sol";
 import "./ITreasury.sol";
 import './IRCProxyXdai.sol';
-import './IRCNftHubXdai.sol';
+import './IRCNftHub.sol';
 
 interface IFactory
 {
     function realitio() external returns (IRealitio);
     function oracleproxy() external returns (IRCProxyXdai);
-    function nfthub() external returns (IRCNftHubXdai);
-    function cash() external returns (ICash);
+    function nfthub() external returns (IRCNftHub);
     function treasury() external returns (ITreasury);
     function realitioTimeout() external returns (uint32);
     function arbitrator() external returns (address);

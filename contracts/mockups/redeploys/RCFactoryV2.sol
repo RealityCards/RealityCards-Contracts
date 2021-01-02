@@ -8,7 +8,7 @@ import '../../lib/CloneFactory.sol';
 import "../../interfaces/ITreasury.sol";
 import '../../interfaces/IRCMarket.sol';
 import '../../interfaces/IRCProxyXdai.sol';
-import '../../interfaces/IRCNftHubXdai.sol';
+import '../../interfaces/IRCNftHub.sol';
 
 // mockup for testing, same except that nftmintcount is set at 20
 
@@ -24,7 +24,7 @@ contract RCFactoryV2 is Ownable, CloneFactory {
     ///// CONTRACT VARIABLES /////
     ITreasury public treasury;
     IRCProxyXdai public oracleproxy;
-    IRCNftHubXdai public nfthub;
+    IRCNftHub public nfthub;
 
     ///// CONTRACT ADDRESSES /////
     /// @dev reference contract
@@ -149,12 +149,12 @@ contract RCFactoryV2 is Ownable, CloneFactory {
     }
 
     /// @notice where the question to post to the oracle is first sent to
-    function setOracleProxyXdaiAddress(IRCProxyXdai _newAddress) external onlyOwner {
+    function setProxyXdaiAddress(IRCProxyXdai _newAddress) external onlyOwner {
         oracleproxy = _newAddress;
     }
 
     /// @notice where the question to post to the oracle is first sent to
-    function setNftHubXdaiAddress(IRCNftHubXdai _newAddress) external onlyOwner {
+    function setNftHubAddress(IRCNftHub _newAddress) external onlyOwner {
         nfthub = _newAddress;
     }
 

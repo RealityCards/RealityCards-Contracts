@@ -26,11 +26,11 @@ contract BridgeMockup
         }
     }
 
-    function setOracleProxyMainnetAddress(address _newAddress) external {
+    function setProxyMainnetAddress(address _newAddress) external {
         oracleProxyMainnetAddress = _newAddress;
     }
 
-    function setOracleProxyXdaiAddress(address _newAddress) external {
+    function setProxyXdaiAddress(address _newAddress) external {
         oracleProxyXdaiAddress = _newAddress;
     }
 }

@@ -2,7 +2,7 @@
 var RCTreasury = artifacts.require("./RCTreasury.sol");
 var RCFactory = artifacts.require("./RCFactory.sol");
 var RCMarket = artifacts.require("./RCMarket.sol")
-var XdaiNftHub = artifacts.require('./nfthubs/RCNftHubXdai.sol');
+var NftHub = artifacts.require('./RCNftHub.sol');
 var XdaiProxy = artifacts.require('./bridgeproxies/RCProxyXdai.sol');
 var MainnetProxy = artifacts.require('./bridgeproxies/RCProxyMainnet.sol');
 
@@ -21,26 +21,24 @@ module.exports = async (deployer, network) =>
 {
     if (network === "stage1") // xdai
     {
-        // deploy treasury, factory, and reference market
+        // deploy treasury, factory, reference market and nft hub
         await deployer.deploy(RCTreasury);
         treasury = await RCTreasury.deployed();
         await deployer.deploy(RCFactory,treasury.address);
         rcfactory = await RCFactory.deployed();
         await deployer.deploy(RCMarket);
         rcreference = await RCMarket.deployed();
-        // tell treasury about the factory
+        await deployer.deploy(NftHub,rcfactory.address);
+        xdainfthub = await NftHub.deployed();
+        // tell treasury about factory, tell factory about nft hub and reference
         await treasury.setFactoryAddress(rcfactory.address);
-        // tell factory about the reference market
         await rcfactory.setReferenceContractAddress(rcreference.address);
-        // deploy xdai nft hub
-        await deployer.deploy(XdaiNftHub,rcfactory.address);
-        xdainfthub = await XdaiNftHub.deployed();
+        await rcfactory.setNftHubAddress(xdainfthub.address);
         // deploy xdai proxy
         await deployer.deploy(XdaiProxy, ambAddressXdai, rcfactory.address);
         xdaiproxy = await XdaiProxy.deployed();
-        // tell factory about nft hub and the proxy
-        await rcfactory.setOracleProxyXdaiAddress(xdaiproxy.address);
-        await rcfactory.setNftHubXdaiAddress(xdainfthub.address);
+        // tell factory about the proxy
+        await rcfactory.setProxyXdaiAddress(xdaiproxy.address);
     } 
     else if (network === "stage2") // mainnet
     {
@@ -48,13 +46,13 @@ module.exports = async (deployer, network) =>
         await deployer.deploy(MainnetProxy, ambAddressMainnet, realitioAddress);
         mainnetproxy = await MainnetProxy.deployed();
         // set xdai proxy address
-        await mainnetproxy.setOracleProxyXdaiAddress(xdaiProxyAddress);
+        await mainnetproxy.setProxyXdaiAddress(xdaiProxyAddress);
     } 
     else if (network === "stage3") // xdai
     {
         // set mainnet proxy address
         xdaiproxy = await XdaiProxy.deployed();
-        await xdaiproxy.setOracleProxyMainnetAddress(mainnetProxyAddress);
+        await xdaiproxy.setProxyMainnetAddress(mainnetProxyAddress);
     } 
 };
 

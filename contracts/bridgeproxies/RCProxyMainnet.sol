@@ -54,7 +54,7 @@ contract RCProxyMainnet is Ownable, ERC721Full
     
     /// @dev address of xdai oracle proxy, called by the xdai side of the arbitrary message bridge
     /// @dev not set in constructor, address not known at deployment
-    function setOracleProxyXdaiAddress(address _newAddress) onlyOwner external {
+    function setProxyXdaiAddress(address _newAddress) onlyOwner external {
         oracleProxyXdaiAddress = _newAddress;
     }
 

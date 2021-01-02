@@ -7,7 +7,7 @@ import "../../interfaces/IRealitio.sol";
 import "../../interfaces/IFactory.sol";
 import "../../interfaces/ITreasury.sol";
 import '../../interfaces/IRCProxyXdai.sol';
-import '../../interfaces/IRCNftHubXdai.sol';
+import '../../interfaces/IRCNftHub.sol';
 
 /// @dev this is a mockup to test a new reference contract. It is unchanged from the original except that the rental price is doubled from what is passed as an argument
 
@@ -41,7 +41,7 @@ contract RCMarketXdaiV2 is Initializable {
     ITreasury public treasury;
     IFactory public factory;
     IRCProxyXdai public oracleproxy;
-    IRCNftHubXdai public nfthub;
+    IRCNftHub public nfthub;
 
     ///// PRICE, DEPOSITS, RENT /////
     /// @dev in attodai (so 100xdai = 100000000000000000000)
