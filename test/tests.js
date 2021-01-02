@@ -3945,7 +3945,7 @@ it('test RCProxyMainnet various', async () => {
     var newproxy = await mainnetproxy.bridge.call();
     assert.equal(newproxy,user0)
     
-});
+ });
 
 it('test RCProxyMainnet, various 2', async () => {
     // change relaitio, winner should return 69
