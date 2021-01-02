@@ -2,8 +2,8 @@ pragma solidity 0.5.13;
 
 import "@nomiclabs/buidler/console.sol";
 
-import '../interfaces/IRCOracleProxyXdai.sol';
-import '../interfaces/IRCOracleProxyMainnet.sol';
+import '../interfaces/IRCProxyXdai.sol';
+import '../interfaces/IRCProxyMainnet.sol';
 
 // this is only for ganache testing. Public chain deployments will use the existing Realitio contracts. 
 
@@ -26,11 +26,11 @@ contract BridgeMockup
         }
     }
 
-    function setOracleProxyMainnetAddress(address _newAddress) external {
+    function setProxyMainnetAddress(address _newAddress) external {
         oracleProxyMainnetAddress = _newAddress;
     }
 
-    function setOracleProxyXdaiAddress(address _newAddress) external {
+    function setProxyXdaiAddress(address _newAddress) external {
         oracleProxyXdaiAddress = _newAddress;
     }
 }

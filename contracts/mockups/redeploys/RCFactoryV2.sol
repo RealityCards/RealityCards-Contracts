@@ -4,16 +4,15 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@nomiclabs/buidler/console.sol";
-import './lib/CloneFactory.sol';
-import "./interfaces/ITreasury.sol";
-import './interfaces/IRCMarket.sol';
-import './interfaces/IRCProxyXdai.sol';
-import './interfaces/IRCNftHub.sol';
+import '../../lib/CloneFactory.sol';
+import "../../interfaces/ITreasury.sol";
+import '../../interfaces/IRCMarket.sol';
+import '../../interfaces/IRCProxyXdai.sol';
+import '../../interfaces/IRCNftHub.sol';
 
-/// @title Reality Cards Factory
-/// @author Andrew Stanger
+// mockup for testing, same except that nftmintcount is set at 20
 
-contract RCFactory is Ownable, CloneFactory {
+contract RCFactoryV2 is Ownable, CloneFactory {
 
     using SafeMath for uint256;
     using SafeMath for uint32;
@@ -67,7 +66,7 @@ contract RCFactory is Ownable, CloneFactory {
     mapping(string => bool) public existingSlug;
     /// @dev counts the total NFTs minted across all events
     /// @dev ... so the appropriate token id is used when upgrading to mainnet
-    uint256 public totalNftMintCount;
+    uint256 public totalNftMintCount = 20;
 
     ///// UBER OWNER /////
     /// @dev high level owner who can change the factory address
@@ -116,15 +115,6 @@ contract RCFactory is Ownable, CloneFactory {
     }
 
     ////////////////////////////////////
-    //////////// MODIFERS //////////////
-    ////////////////////////////////////
-
-    modifier onlyGovernors() {
-        require(governors[msg.sender] || owner() == msg.sender, "Not approved");
-        _;
-    }
-
-    ////////////////////////////////////
     /////// GOVERNANCE- OWNER //////////
     ////////////////////////////////////
     /// @dev all functions should be onlyOwner
@@ -168,7 +158,7 @@ contract RCFactory is Ownable, CloneFactory {
         nfthub = _newAddress;
     }
 
-    /// @notice if true, Cards in unapproved markets can't be upgraded
+    /// @notice if true, Cards are burnt upon market resolution for unapproved markets
     function setTrapCardsIfUnapproved() onlyOwner external {
         trapIfUnapproved = trapIfUnapproved ? false : true;
     }
@@ -183,36 +173,38 @@ contract RCFactory is Ownable, CloneFactory {
         maximumDuration = _newMaximumDuration;
     }
 
-    // EDIT GOVERNORS
+    ////////////////////////////////////
+    ///// GOVERNANCE- GOVERNORS ////////
+    ////////////////////////////////////
+    /// @dev multiple addresses have the ability to approve markets, and add approved artists and affiliates
 
-    /// @notice add or remove an address from market creator whitelist
+     /// @notice add or remove an address from market creator whitelist, should be onlyOwner
     function addOrRemoveGovernor(address _governor) external onlyOwner {
         governors[_governor] = governors[_governor] ? false : true;
     }
 
-    ////////////////////////////////////
-    ///// GOVERNANCE- GOVERNORS ////////
-    ////////////////////////////////////
-    /// @dev should all be onlyGovernors
-
     /// @notice markets are default hidden from the interface, this reveals them
-    function approveOrUnapproveMarket(address _market) external onlyGovernors {
+    function approveOrUnapproveMarket(address _market) external {
+        require(governors[msg.sender] || owner() == msg.sender, "Not approved");
         isMarketApproved[_market] = isMarketApproved[_market] ? false : true;
         emit LogMarketHidden(_market, isMarketApproved[_market]);
     }
 
     /// @notice artistAddress, passed in createMarket, must be approved
-    function addOrRemoveArtist(address _artist) external onlyGovernors {
+    function addOrRemoveArtist(address _artist) external {
+        require(governors[msg.sender] || owner() == msg.sender, "Not approved");
         isArtistApproved[_artist] = isArtistApproved[_artist] ? false : true;
     }
 
     /// @notice affiliateAddress, passed in createMarket, must be approved
-    function addOrRemoveAffiliate(address _affiliate) external onlyGovernors {
+    function addOrRemoveAffiliate(address _affiliate) external {
+        require(governors[msg.sender] || owner() == msg.sender, "Not approved");
         isAffiliateApproved[_affiliate] = isAffiliateApproved[_affiliate] ? false : true;
     }
 
     /// @notice cardAffiliateAddress, passed in createMarket, must be approved
-    function addOrRemoveCardAffiliate(address _affiliate) external onlyGovernors {
+    function addOrRemoveCardAffiliate(address _affiliate) external {
+        require(governors[msg.sender] || owner() == msg.sender, "Not approved");
         isCardAffiliateApproved[_affiliate] = isCardAffiliateApproved[_affiliate] ? false : true;
     }
 
@@ -226,7 +218,7 @@ contract RCFactory is Ownable, CloneFactory {
 
     /// @notice set the reference contract for the contract logic
     function setReferenceContractAddress(address _newAddress) external {
-        require(msg.sender == uberOwner, "Verboten");
+        require(msg.sender == uberOwner, "Access denied");
         // check it's an RC contract
         IRCMarket newContractVariable = IRCMarket(_newAddress);
         assert(newContractVariable.isMarket());
@@ -237,7 +229,7 @@ contract RCFactory is Ownable, CloneFactory {
     }
 
     function changeUberOwner(address _newUberOwner) external {
-        require(msg.sender == uberOwner, "Verboten");
+        require(msg.sender == uberOwner, "Access denied");
         uberOwner = _newUberOwner;
     }
 

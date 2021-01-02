@@ -11,14 +11,16 @@ const {
 var RCFactory = artifacts.require('./RCFactory.sol');
 var RCTreasury = artifacts.require('./RCTreasury.sol');
 var RCMarket = artifacts.require('./RCMarket.sol');
-var XdaiProxy = artifacts.require('./bridgeproxies/RCOracleProxyXdai.sol');
-var MainnetProxy = artifacts.require('./bridgeproxies/RCOracleProxyMainnet.sol');
+var NftHub = artifacts.require('./RCNftHub.sol');
+var XdaiProxy = artifacts.require('./bridgeproxies/RCProxyXdai.sol');
+var MainnetProxy = artifacts.require('./bridgeproxies/RCProxyMainnet.sol');
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 var BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
 
 // redeploys
-var MainnetProxy2 = artifacts.require('./mockups/redeploys/RCOracleProxyMainnetV2.sol');
-var XdaiProxy2 = artifacts.require('./mockups/redeploys/RCOracleProxyXdaiV2.sol');
+var RCFactory2 = artifacts.require('./RCFactoryV2.sol');
+var MainnetProxy2 = artifacts.require('./mockups/redeploys/RCProxyMainnetV2.sol');
+var XdaiProxy2 = artifacts.require('./mockups/redeploys/RCProxyXdaiV2.sol');
 var RCMarket2 = artifacts.require('./mockups/redeploys/RCMarketXdaiV2.sol');
 var BridgeMockup2 = artifacts.require('./mockups/redeploys/BridgeMockupV2.sol');
 var RealitioMockup2 = artifacts.require("./mockups/redeploys/RealitioMockupV2.sol");
@@ -28,8 +30,8 @@ const delay = duration => new Promise(resolve => setTimeout(resolve, duration));
 contract('RealityCardsTests XdaiV1', (accounts) => {
 
   var realitycards;
-  var tokenURIs = ['x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x']; // 20 tokens
-  var eventDetails = ['RCToken','x']; 
+  var tokenURIs = ['x','x','x','uri','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x']; // 20 tokens
+  var slug = 'x'; 
   var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
   var maxuint256 = 4294967295;
 
@@ -57,20 +59,34 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     // main contracts
     treasury = await RCTreasury.new();
     rcfactory = await RCFactory.new(treasury.address);
+    nfthub = await NftHub.new(rcfactory.address);
     rcreference = await RCMarket.new();
+    // tell treasury about factory, tell factory about nft hub and reference
     await treasury.setFactoryAddress(rcfactory.address);
     await rcfactory.setReferenceContractAddress(rcreference.address);
+    await rcfactory.setNftHubAddress(nfthub.address);
     // mockups 
     realitio = await RealitioMockup.new();
     bridge = await BridgeMockup.new();
     // bridge contracts
     xdaiproxy = await XdaiProxy.new(bridge.address, rcfactory.address);
     mainnetproxy = await MainnetProxy.new(bridge.address, realitio.address);
-    await rcfactory.updateOracleProxyXdaiAddress(xdaiproxy.address);
-    await xdaiproxy.setOracleProxyMainnetAddress(mainnetproxy.address);
-    await mainnetproxy.setOracleProxyXdaiAddress(xdaiproxy.address);
-    await bridge.setOracleProxyMainnetAddress(mainnetproxy.address);
-    await bridge.setOracleProxyXdaiAddress(xdaiproxy.address);
+    // tell the factory, mainnet proxy and bridge the xdai proxy address
+    await rcfactory.setProxyXdaiAddress(xdaiproxy.address);
+    await mainnetproxy.setProxyXdaiAddress(xdaiproxy.address);
+    await bridge.setProxyXdaiAddress(xdaiproxy.address);
+    // tell the xdai proxy and bridge the mainnet proxy address
+    await xdaiproxy.setProxyMainnetAddress(mainnetproxy.address);
+    await bridge.setProxyMainnetAddress(mainnetproxy.address);
+    // add peeps to card recipients approvals
+    await rcfactory.addOrRemoveCardAffiliate(user5);
+    await rcfactory.addOrRemoveCardAffiliate(user6);
+    await rcfactory.addOrRemoveCardAffiliate(user7);
+    await rcfactory.addOrRemoveCardAffiliate(user8);
+    await rcfactory.addOrRemoveCardAffiliate(user0);
+    await rcfactory.addOrRemoveAffiliate(user7);
+    await rcfactory.addOrRemoveAffiliate(user8);
+    await rcfactory.addOrRemoveArtist(user8);
     // market creation
     await rcfactory.createMarket(
         0,
@@ -81,7 +97,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         affiliateAddress,
         cardRecipients,
         question,
-        eventDetails,
+        slug,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards = await RCMarket.at(marketAddress);
@@ -96,7 +112,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
     var artistAddress = user8;
     var affiliateAddress = user7;
-    var eventDetails = ['RCToken','y'];
+    var slug = 'y';
     await rcfactory.createMarket(
         0,
         '0x0',
@@ -106,7 +122,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         affiliateAddress,
         cardRecipients,
         question,
-        eventDetails,
+        slug,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -122,7 +138,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
     var artistAddress = user8;
     var affiliateAddress = user7;
-    var eventDetails = ['RCToken','z'];
+    var slug = 'z';
     await rcfactory.createMarket(
         0,
         '0x0',
@@ -132,7 +148,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         affiliateAddress,
         cardRecipients,
         question,
-        eventDetails,
+        slug,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -148,7 +164,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
-    var eventDetails = ['RCToken','y'];
+    var slug = 'y';
     await rcfactory.createMarket(
         mode,
         '0x0',
@@ -158,7 +174,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         affiliateAddress,
         cardRecipients,
         question,
-        eventDetails,
+        slug,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(mode);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -174,7 +190,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
-    var eventDetails = ['RCToken','z'];
+    var slug = 'z';
     await rcfactory.createMarket(
         mode,
         '0x0',
@@ -184,7 +200,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         affiliateAddress,
         cardRecipients,
         question,
-        eventDetails,
+        slug,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(mode);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -201,7 +217,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     var cardRecipients = [user5,user6,user7,user8,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0];
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
-    var eventDetails = ['RCToken','y'];
+    var slug = 'y';
     await rcfactory.createMarket(
         0,
         '0x0',
@@ -211,7 +227,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         affiliateAddress,
         cardRecipients,
         question,
-        eventDetails,
+        slug,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -227,7 +243,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
     var artistAddress = user8;
     var affiliateAddress = user7;
-    var eventDetails = ['RCToken','y'];
+    var slug = 'y';
     await rcfactory.createMarket(
         mode,
         '0x0',
@@ -237,7 +253,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         affiliateAddress,
         cardRecipients,
         question,
-        eventDetails,
+        slug,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(mode);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -254,7 +270,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     var artistAddress = user8;
     var affiliateAddress = user7;
     var cardRecipients = [user5,user6,user7,user8,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0];
-    var eventDetails = ['RCToken','y'];
+    var slug = 'y';
     await rcfactory.createMarket(
         0,
         '0x0',
@@ -264,7 +280,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         affiliateAddress,
         cardRecipients,
         question,
-        eventDetails,
+        slug,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -281,7 +297,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
     var artistAddress = user8;
     var affiliateAddress = user7;
-    var eventDetails = ['RCToken','y'];
+    var slug = 'y';
     var cardRecipients = [user5,user6,user7,user8,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0];
     await rcfactory.createMarket(
         0,
@@ -292,7 +308,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         affiliateAddress,
         cardRecipients,
         question,
-        eventDetails, {value: amount, from: user}
+        slug, {value: amount, from: user}
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -303,7 +319,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     var artistAddress = user8;
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     var timestamps = [marketOpeningTime,marketLockingTime,oracleResolutionTime];
-    var eventDetails = ['RCToken','y'];
+    var slug = 'y';
     await rcfactory.createMarket(
         0,
         '0x0',
@@ -313,7 +329,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         affiliateAddress,
         cardRecipients,
         question,
-        eventDetails,
+        slug,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -324,7 +340,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
     var artistAddress = user8;
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     var timestamps = [marketOpeningTime,marketLockingTime,oracleResolutionTime];
-    var eventDetails = ['RCToken','z'];
+    var slug = 'z';
     await rcfactory.createMarket(
         0,
         '0x0',
@@ -334,7 +350,7 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
         affiliateAddress,
         cardRecipients,
         question,
-        eventDetails,
+        slug,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -401,8 +417,8 @@ contract('RealityCardsTests XdaiV1', (accounts) => {
 
   // check name
   it('getName', async () => {
-    var name = await realitycards.name.call();
-    assert.equal(name, 'RCToken');
+    var name = await nfthub.name.call();
+    assert.equal(name, 'RealityCards');
   });
 
     // check fundamentals first
@@ -451,7 +467,7 @@ it('test various after collectRent', async () => {
     await depositDai(100,user);
     await newRental(1,4,user);
     await time.increase(time.duration.weeks(1));
-    await realitycards.collectRentAllTokens();
+    await realitycards.collectRentAllCards();
     // tests
     //test deposits
     var deposit = await treasury.deposits.call(user); 
@@ -469,7 +485,7 @@ it('test various after collectRent', async () => {
     assert.equal(currentTime.toString(),timeLastCollected.toString());
     //wait a week and repeat the above
     await time.increase(time.duration.weeks(1));
-    await realitycards.collectRentAllTokens();
+    await realitycards.collectRentAllCards();
     //test deposits
     var deposit = await treasury.deposits.call(user); 
     var depositShouldBe = web3.utils.toWei('86', 'ether');
@@ -496,14 +512,14 @@ it('ccollectRent function with foreclose and revertPreviousOwner', async () => {
     await depositDai(10,user1);
     await newRental(2,1,user1);
     await time.increase(time.duration.weeks(1));
-    await realitycards.collectRentAllTokens();
+    await realitycards.collectRentAllCards();
     // check reverted
     var owner = await realitycards.ownerOf.call(1);
     assert.equal(owner, user0);
     var price = await realitycards.price.call(1);
     assert.equal(price, web3.utils.toWei('1', 'ether'));
     await time.increase(time.duration.weeks(1));
-    await realitycards.collectRentAllTokens();
+    await realitycards.collectRentAllCards();
     var owner = await realitycards.ownerOf.call(1);
     assert.equal(owner, realitycards.address);
     var price = await realitycards.price.call(1);
@@ -520,21 +536,21 @@ it('test timeHeld and totalTimeHeld', async () => {
     await newRental(3,0,user2);
     //tests
     await time.increase(time.duration.days(3));
-    await realitycards.collectRentAllTokens();
+    await realitycards.collectRentAllCards();
     // u2 3 days
     var timeHeld = await realitycards.timeHeld.call(0, user2);
     var timeHeldShouldBe = time.duration.days(3);
     var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
     assert.isBelow(difference,4);
     await time.increase(time.duration.days(3));
-    await realitycards.collectRentAllTokens();
+    await realitycards.collectRentAllCards();
     // u2 one more day
     var timeHeld = await realitycards.timeHeld.call(0, user2);
     var timeHeldShouldBe = time.duration.days(4);
     var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
     assert.isBelow(difference,2);
     await time.increase(time.duration.days(3));
-    await realitycards.collectRentAllTokens();
+    await realitycards.collectRentAllCards();
     // u2 still 4 days, u1 5 days, u0 0 days
     var timeHeld = await realitycards.timeHeld.call(0, user2);
     var timeHeldShouldBe = time.duration.days(4);
@@ -545,7 +561,7 @@ it('test timeHeld and totalTimeHeld', async () => {
     var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
     assert.isBelow(difference/timeHeld,0.001);
     await time.increase(time.duration.days(3));
-    await realitycards.collectRentAllTokens();
+    await realitycards.collectRentAllCards();
     // u1 5 days, u0 3 days
     var timeHeld = await realitycards.timeHeld.call(0, user1);
     var timeHeldShouldBe = time.duration.days(5);
@@ -556,7 +572,7 @@ it('test timeHeld and totalTimeHeld', async () => {
     var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
     assert.isBelow(difference/timeHeld,0.001);
     await time.increase(time.duration.days(1));
-    await realitycards.collectRentAllTokens();
+    await realitycards.collectRentAllCards();
     // u1 5 days, u0 6 day
     var timeHeld = await realitycards.timeHeld.call(0, user1);
     var timeHeldShouldBe = time.duration.days(5);
@@ -571,20 +587,20 @@ it('test timeHeld and totalTimeHeld', async () => {
     await depositDai(10,user5);
     await newRental(10,0,user5);
     await time.increase(time.duration.days(2));
-    await realitycards.collectRentAllTokens();
+    await realitycards.collectRentAllCards();
     var timeHeld = await realitycards.timeHeld.call(0, user5);
     var timeHeldShouldBe = time.duration.days(1);
     var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
     assert.isBelow(difference/timeHeld,0.001);
     await time.increase(time.duration.days(7));
-    await realitycards.collectRentAllTokens();
+    await realitycards.collectRentAllCards();
     // u0 8 days
     var timeHeld = await realitycards.timeHeld.call(0, user0);
     var timeHeldShouldBe = time.duration.days(10);
     var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
     assert.isBelow(difference/timeHeld,0.001);
     await time.increase(time.duration.days(9));
-    await realitycards.collectRentAllTokens();
+    await realitycards.collectRentAllCards();
     // u0 10 days
     var timeHeld = await realitycards.timeHeld.call(0, user0);
     var timeHeldShouldBe = time.duration.days(10);
@@ -663,7 +679,7 @@ it('test exit- more than ten mins', async () => {
     await newRental(10,0,user0);
     await newRental(144,0,user1);
     await time.increase(time.duration.hours(1)); 
-    await realitycards.collectRentAllTokens();
+    await realitycards.collectRentAllCards();
     // user 1 should still be owner, held for 1 hour
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner, user1);
@@ -676,7 +692,7 @@ it('test exit- more than ten mins', async () => {
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner, user0);
     await time.increase(time.duration.hours(1)); 
-    await realitycards.collectRentAllTokens();
+    await realitycards.collectRentAllCards();
     var timeHeld = await realitycards.timeHeld.call(0, user1);
     var timeHeldShouldBe = time.duration.hours(1);
     var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
@@ -693,7 +709,7 @@ it('test exit- more than ten mins', async () => {
         await newRental(10,0,user0);
         await newRental(144,0,user1);
         await time.increase(time.duration.minutes(5)); 
-        await realitycards.collectRentAllTokens();
+        await realitycards.collectRentAllCards();
         // user 1 should be owner, held for 5 mins
         var owner = await realitycards.ownerOf.call(0);
         assert.equal(owner, user1);
@@ -707,7 +723,7 @@ it('test exit- more than ten mins', async () => {
         assert.equal(owner, user1);
         // increase by an hour, user 0 will own and u1 should have ten minutes ownership time
         await time.increase(time.duration.hours(1)); 
-        await realitycards.collectRentAllTokens();
+        await realitycards.collectRentAllCards();
         var owner = await realitycards.ownerOf.call(0);
         assert.equal(owner, user0);
         var timeHeld = await realitycards.timeHeld.call(0, user1);
@@ -715,7 +731,7 @@ it('test exit- more than ten mins', async () => {
         var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
         assert.isBelow(difference/timeHeldShouldBe,0.01);
         // to be safe, chcek that u0 has owned for 55 mins
-        await realitycards.collectRentAllTokens();
+        await realitycards.collectRentAllCards();
         var timeHeld = await realitycards.timeHeld.call(0, user0);
         var timeHeldShouldBe = time.duration.minutes(55);
         var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
@@ -727,15 +743,15 @@ it('test exit- more than ten mins', async () => {
 
     it('test exit- reduce rental time to one min', async () => {
         // check function is owned to change limit
-        await expectRevert(treasury.updateMinRental(12,{from: user1}), "caller is not the owner");
+        await expectRevert(treasury.setMinRental(12,{from: user1}), "caller is not the owner");
         // change to one min
-        await treasury.updateMinRental(1440);
+        await treasury.setMinRental(1440);
         await depositDai(144,user0);
         await depositDai(144,user1);
         await newRental(10,0,user0);
         await newRental(144,0,user1);
         await time.increase(time.duration.seconds(30)); 
-        await realitycards.collectRentAllTokens();
+        await realitycards.collectRentAllCards();
         // user 1 should be owner, held for 30 secs
         var owner = await realitycards.ownerOf.call(0);
         assert.equal(owner, user1);
@@ -749,7 +765,7 @@ it('test exit- more than ten mins', async () => {
         assert.equal(owner, user1);
         // increase by 90 secs, user 0 will own and u1 should have ten minutes ownership time
         await time.increase(time.duration.seconds(90)); 
-        await realitycards.collectRentAllTokens();
+        await realitycards.collectRentAllCards();
         var owner = await realitycards.ownerOf.call(0);
         assert.equal(owner, user0);
         var timeHeld = await realitycards.timeHeld.call(0, user1);
@@ -757,7 +773,7 @@ it('test exit- more than ten mins', async () => {
         var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
         assert.isBelow(difference/timeHeldShouldBe,0.01);
         // to be safe, chcek that u0 has owned for 1 min
-        await realitycards.collectRentAllTokens();
+        await realitycards.collectRentAllCards();
         var timeHeld = await realitycards.timeHeld.call(0, user0);
         var timeHeldShouldBe = time.duration.minutes(1);
         var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
@@ -873,7 +889,7 @@ it('test exit- more than ten mins', async () => {
 
 it('test winner/withdraw mode 0- with artist/creator cut', async () => {
     // 6% artist 4% creator
-    await rcfactory.updatePotDistribution(60,0,40,0,100);
+    await rcfactory.setPotDistribution(60,0,40,0,100);
     var realitycards2 = await createMarketWithArtistSet();
     /////// SETUP //////
     // var amount = web3.utils.toWei('144', 'ether')
@@ -968,7 +984,7 @@ it('test winner/withdraw mode 0- with artist/creator cut', async () => {
 
 it('test winner/withdraw mode 0- with artist/winner/creator cut', async () => {
     // 6% artist 4% creator
-    await rcfactory.updatePotDistribution(60,100,40,0,100);
+    await rcfactory.setPotDistribution(60,100,40,0,100);
     var realitycards2 = await createMarketWithArtistSet();
     /////// SETUP //////
     // var amount = web3.utils.toWei('144', 'ether')
@@ -1066,7 +1082,7 @@ it('test winner/withdraw mode 0- with artist/winner/creator cut', async () => {
 
 it('test winner/withdraw mode 0- with artist/affiliate/winner/creator cut', async () => {
     // 6% artist 4% creator
-    await rcfactory.updatePotDistribution(60,100,40,100,100);
+    await rcfactory.setPotDistribution(60,100,40,100,100);
     var realitycards2 = await createMarketWithArtistSet();
     /////// SETUP //////
     // var amount = web3.utils.toWei('144', 'ether')
@@ -1229,7 +1245,7 @@ it('test winner/withdraw mode 0- with artist/affiliate/winner/creator cut', asyn
 
 it('test winner/withdraw mode 1- with artist/creator cut', async () => {
     // 6% artist 4% creator
-    await rcfactory.updatePotDistribution(60,43,40,0,100);
+    await rcfactory.setPotDistribution(60,43,40,0,100);
     var realitycards2 = await createMarketCustomModeWithArtist(1);
     /////// SETUP //////
     await depositDai(1000,user0);
@@ -1449,7 +1465,7 @@ it('test winner/withdraw mode 0- with card affiliate but zero artist/creator cut
     assert.isBelow(difference/winningsSentToUser,0.00001);
     // now check that card specifics got the correct payout
     // token 0, collected = 28
-    await realitycards2.payCardSpecificAffiliate();
+    await realitycards2.payCardAffiliate();
     var deposit = await treasury.deposits.call(user5);
     var depositShouldBe = ether('28').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
@@ -1464,8 +1480,8 @@ it('test winner/withdraw mode 0- with card affiliate but zero artist/creator cut
     var depositShouldBe = ether('63').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
     assert.isBelow(difference/deposit,0.00001);
-    // check cant call payCardSpecificAffiliate() twice
-    await expectRevert(realitycards2.payCardSpecificAffiliate(), "Card recipients already paid");
+    // check cant call payCardAffiliate() twice
+    await expectRevert(realitycards2.payCardAffiliate(), "Card recipients already paid");
     // check market pot is empty
     var marketPot = await treasury.marketPot.call(realitycards2.address);
     assert.isBelow(Math.abs(marketPot.toString()),10);
@@ -1480,7 +1496,7 @@ it('test winner/withdraw mode 0- with card affiliate but zero artist/creator cut
 
 it('test winner/withdraw mode 0 with artist/creator/card affiliate cut', async () => {
     // 6% artist 4% creator
-    await rcfactory.updatePotDistribution(60,0,40,0,100);
+    await rcfactory.setPotDistribution(60,0,40,0,100);
     var realitycards2 = await createMarketWithArtistAndCardAffiliates();
     /////// SETUP //////
     // var amount = web3.utils.toWei('144', 'ether')
@@ -1567,7 +1583,7 @@ it('test winner/withdraw mode 0 with artist/creator/card affiliate cut', async (
     await expectRevert(realitycards2.withdraw({ from: user6 }), "Not a winner");
     // now check that card specifics got the correct payout
     // token 0, collected = 28
-    await realitycards2.payCardSpecificAffiliate();
+    await realitycards2.payCardAffiliate();
     var deposit = await treasury.deposits.call(user5);
     var depositShouldBe = ether('28').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
@@ -1582,8 +1598,8 @@ it('test winner/withdraw mode 0 with artist/creator/card affiliate cut', async (
     var depositShouldBe = ether('63').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
     assert.isBelow(difference/deposit,0.00001);
-    // check cant call payCardSpecificAffiliate() twice
-    await expectRevert(realitycards2.payCardSpecificAffiliate(), "Card recipients already paid");
+    // check cant call payCardAffiliate() twice
+    await expectRevert(realitycards2.payCardAffiliate(), "Card recipients already paid");
     // check market pot is empty
     var marketPot = await treasury.marketPot.call(realitycards2.address);
     assert.isBelow(Math.abs(marketPot.toString()),10);
@@ -1598,7 +1614,7 @@ it('test winner/withdraw mode 0 with artist/creator/card affiliate cut', async (
 
 it('test winner/withdraw mode 0- with artist/winner/creator/card affiliate cut', async () => {
     // 6% artist 4% creator
-    await rcfactory.updatePotDistribution(60,100,40,0,100);
+    await rcfactory.setPotDistribution(60,100,40,0,100);
     var realitycards2 = await createMarketWithArtistAndCardAffiliates();
     /////// SETUP //////
     // var amount = web3.utils.toWei('144', 'ether')
@@ -1685,7 +1701,7 @@ it('test winner/withdraw mode 0- with artist/winner/creator/card affiliate cut',
     await expectRevert(realitycards2.withdraw({ from: user6 }), "Not a winner");
     // now check that card specifics got the correct payout
     // token 0, collected = 28
-    await realitycards2.payCardSpecificAffiliate();
+    await realitycards2.payCardAffiliate();
     var deposit = await treasury.deposits.call(user5);
     var depositShouldBe = ether('28').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
@@ -1700,8 +1716,8 @@ it('test winner/withdraw mode 0- with artist/winner/creator/card affiliate cut',
     var depositShouldBe = ether('63').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
     assert.isBelow(difference/deposit,0.00001);
-    // check cant call payCardSpecificAffiliate() twice
-    await expectRevert(realitycards2.payCardSpecificAffiliate(), "Card recipients already paid");
+    // check cant call payCardAffiliate() twice
+    await expectRevert(realitycards2.payCardAffiliate(), "Card recipients already paid");
     // check market pot is empty
     var marketPot = await treasury.marketPot.call(realitycards2.address);
     assert.isBelow(Math.abs(marketPot.toString()),10);
@@ -1793,7 +1809,7 @@ it('test winner/withdraw mode 0- with artist/winner/creator/card affiliate cut',
 
 it('test sponsor with card affiliate cut', async () => {
     // 10% card specific affiliates
-    await rcfactory.updatePotDistribution(0,0,0,0,100);
+    await rcfactory.setPotDistribution(0,0,0,0,100);
     var realitycards2 = await createMarketWithArtistAndCardAffiliates();
     await realitycards2.sponsor({ value: web3.utils.toWei('200', 'ether'), from: user3 });
     await newRentalWithDepositCustomContract(realitycards2,5,0,user0,1000); // paid 50
@@ -1807,7 +1823,7 @@ it('test sponsor with card affiliate cut', async () => {
     await mainnetproxy.getWinnerFromOracle(realitycards2.address);
     await realitycards2.determineWinner();
     // token 0
-    await realitycards2.payCardSpecificAffiliate();
+    await realitycards2.payCardAffiliate();
     var deposit = await treasury.deposits.call(user5);
     var depositShouldBe = ether('60').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
@@ -1836,7 +1852,7 @@ it('test sponsor with card affiliate cut', async () => {
 
 it('test sponsor via market creation with card affiliate cut', async () => {
     // 10% card specific affiliates
-    await rcfactory.updatePotDistribution(0,0,0,0,100);
+    await rcfactory.setPotDistribution(0,0,0,0,100);
     // add user3 to whitelist 
     await rcfactory.addOrRemoveGovernor(user3);
     var realitycards2 = await createMarketWithArtistAndCardAffiliatesAndSponsorship(200,user3);
@@ -1852,7 +1868,7 @@ it('test sponsor via market creation with card affiliate cut', async () => {
     await mainnetproxy.getWinnerFromOracle(realitycards2.address);
     await realitycards2.determineWinner();
     // token 0
-    await realitycards2.payCardSpecificAffiliate();
+    await realitycards2.payCardAffiliate();
     var deposit = await treasury.deposits.call(user5);
     var depositShouldBe = ether('60').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
@@ -1938,7 +1954,7 @@ it('test sponsor via market creation with card affiliate cut', async () => {
 
 it('test sponsor- invalid with card affiliate cut', async () => {
     // 10% card specific affiliates
-    await rcfactory.updatePotDistribution(0,0,0,0,100);
+    await rcfactory.setPotDistribution(0,0,0,0,100);
     var realitycards2 = await createMarketWithArtistAndCardAffiliates();
     await realitycards2.sponsor({ value: web3.utils.toWei('200', 'ether'), from: user3 });
     await newRentalWithDepositCustomContract(realitycards2,5,0,user0,1000); // paid 50
@@ -1952,7 +1968,7 @@ it('test sponsor- invalid with card affiliate cut', async () => {
     await mainnetproxy.getWinnerFromOracle(realitycards2.address);
     await realitycards2.determineWinner();
     // token 0
-    await realitycards2.payCardSpecificAffiliate();
+    await realitycards2.payCardAffiliate();
     var deposit = await treasury.deposits.call(user5);
     var depositShouldBe = ether('60').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
@@ -2072,7 +2088,7 @@ it('test withdraw- invalid mode 0- zero artist/creator cut', async () => {
 it('test withdraw- invalid mode 0- with artist/creator cut', async () => {
     /////// SETUP //////
     // 6% artist 4% creator
-    await rcfactory.updatePotDistribution(50,62,20,0,100);
+    await rcfactory.setPotDistribution(50,62,20,0,100);
     var realitycards2 = await createMarketWithArtistSet();
     await treasury.send(web3.utils.toWei('1000', 'ether')); // sneaky direct send instead of deposit
     await depositDai(1000,user1);
@@ -2155,7 +2171,7 @@ it('test withdraw- invalid mode 0- with artist/creator cut', async () => {
     it('test withdraw- invalid mode 0- with artist/affiliate/creator cut', async () => {
         /////// SETUP //////
         // 6% artist 4% creator
-        await rcfactory.updatePotDistribution(50,62,20,100,100);
+        await rcfactory.setPotDistribution(50,62,20,100,100);
         var realitycards2 = await createMarketWithArtistSet();
         await treasury.send(web3.utils.toWei('1000', 'ether')); // sneaky direct send instead of deposit
         await depositDai(1000,user1);
@@ -2318,7 +2334,7 @@ it('test withdraw- invalid mode 1- zero artist/creator cut', async () => {
     it('test withdraw- invalid mode 1- with artist/creator cut', async () => {
         /////// SETUP //////
         // 6% artist 4% creator
-        await rcfactory.updatePotDistribution(50,13,20,0,100);
+        await rcfactory.setPotDistribution(50,13,20,0,100);
         var realitycards2 = await createMarketCustomModeWithArtist(1);
         await treasury.send(web3.utils.toWei('1000', 'ether')); // sneaky direct send instead of deposit
         await depositDai(1000,user1);
@@ -2470,7 +2486,7 @@ it('test withdraw- invalid mode 0- zero artist/creator cut', async () => {
     assert.isBelow(difference/winningsSentToUser,0.00001);
         // now check that card specifics got the correct payout
     // token 0, collected = 28
-    await realitycards2.payCardSpecificAffiliate();
+    await realitycards2.payCardAffiliate();
     var deposit = await treasury.deposits.call(user5);
     var depositShouldBe = ether('28').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
@@ -2486,8 +2502,8 @@ it('test withdraw- invalid mode 0- zero artist/creator cut', async () => {
     var depositShouldBe = ether('63').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
     assert.isBelow(difference/deposit,0.00001);
-    // check cant call payCardSpecificAffiliate() twice
-    await expectRevert(realitycards2.payCardSpecificAffiliate(), "Card recipients already paid");
+    // check cant call payCardAffiliate() twice
+    await expectRevert(realitycards2.payCardAffiliate(), "Card recipients already paid");
     // check market pot is empty
     var marketPot = await treasury.marketPot.call(realitycards2.address);
     assert.isBelow(Math.abs(marketPot.toString()),10);
@@ -2503,7 +2519,7 @@ it('test withdraw- invalid mode 0- zero artist/creator cut', async () => {
 it('test withdraw- invalid mode 0- with artist/creator/card affiliate cut', async () => {
     /////// SETUP //////
     // 6% artist 4% creator
-    await rcfactory.updatePotDistribution(50,13,20,0,100);
+    await rcfactory.setPotDistribution(50,13,20,0,100);
     var realitycards2 = await createMarketWithArtistAndCardAffiliates(0);
     await treasury.send(web3.utils.toWei('1000', 'ether')); // sneaky direct send instead of deposit
     await depositDai(1000,user1);
@@ -2576,7 +2592,7 @@ it('test withdraw- invalid mode 0- with artist/creator/card affiliate cut', asyn
     assert.isBelow(difference/depositArtist,0.00001);
     // now check that card specifics got the correct payout
     // token 0, collected = 28
-    await realitycards2.payCardSpecificAffiliate();
+    await realitycards2.payCardAffiliate();
     var deposit = await treasury.deposits.call(user5);
     var depositShouldBe = ether('28').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
@@ -2591,8 +2607,8 @@ it('test withdraw- invalid mode 0- with artist/creator/card affiliate cut', asyn
     var depositShouldBe = ether('63').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
     assert.isBelow(difference/deposit,0.00001);
-    // check cant call payCardSpecificAffiliate() twice
-    await expectRevert(realitycards2.payCardSpecificAffiliate(), "Card recipients already paid");
+    // check cant call payCardAffiliate() twice
+    await expectRevert(realitycards2.payCardAffiliate(), "Card recipients already paid");
     // check market pot is empty
     var marketPot = await treasury.marketPot.call(realitycards2.address);
     assert.isBelow(Math.abs(marketPot.toString()),10);
@@ -2828,7 +2844,7 @@ it('test payRent/deposits after 0 mins, 5 mins, 15 mins, 20 mins', async () => {
     assert.equal(depositSpecific, web3.utils.toWei('1', 'ether'));
     // 5 mins
     await time.increase(time.duration.minutes(5));
-    await realitycards.collectRentAllTokens(); 
+    await realitycards.collectRentAllCards(); 
     var deposit = await treasury.deposits.call(user); 
     assert.equal(deposit, web3.utils.toWei('143', 'ether')); 
     marketAddress = await rcfactory.getMostRecentMarket.call(0);
@@ -2838,7 +2854,7 @@ it('test payRent/deposits after 0 mins, 5 mins, 15 mins, 20 mins', async () => {
     assert.isBelow(difference/depositSpecificShouldBe,0.01);
     // 15 mins
     await time.increase(time.duration.minutes(10));
-    await realitycards.collectRentAllTokens(); 
+    await realitycards.collectRentAllCards(); 
     var deposit = await treasury.deposits.call(user); 
     var depositShouldBe = web3.utils.toWei('142.5', 'ether');
     var difference = Math.abs(deposit.toString()-depositShouldBe.toString());
@@ -2847,7 +2863,7 @@ it('test payRent/deposits after 0 mins, 5 mins, 15 mins, 20 mins', async () => {
     assert.equal(depositSpecific, 0);
     // 20 mins
     await time.increase(time.duration.minutes(5));
-    await realitycards.collectRentAllTokens(); 
+    await realitycards.collectRentAllCards(); 
     var deposit = await treasury.deposits.call(user); 
     var depositShouldBe = web3.utils.toWei('142', 'ether');
     var difference = Math.abs(deposit.toString()-depositShouldBe.toString());
@@ -2865,26 +2881,26 @@ it('check that users cannot transfer their NFTs until withdraw state', async() =
     var owner = await realitycards.ownerOf(2);
     assert.equal(owner, user);
     // buidler giving me shit when I try and intercept revert message so just testing revert, in OPEN state
-    await expectRevert(realitycards.transferFrom(user,user1,2), "Incorrect state");
-    await expectRevert(realitycards.safeTransferFrom(user,user1,2), "Incorrect state");
-    await expectRevert(realitycards.safeTransferFrom(user,user1,2,web3.utils.asciiToHex("123456789")), "Incorrect state");
+    await expectRevert(nfthub.transferFrom(user,user1,2), "Incorrect state");
+    await expectRevert(nfthub.safeTransferFrom(user,user1,2), "Incorrect state");
+    await expectRevert(nfthub.safeTransferFrom(user,user1,2,web3.utils.asciiToHex("123456789")), "Incorrect state");
     await time.increase(time.duration.years(1)); 
     await realitycards.lockMarket();
     // should fail cos LOCKED
-    await expectRevert(realitycards.transferFrom(user,user1,2), "Incorrect state");
-    await expectRevert(realitycards.safeTransferFrom(user,user1,2), "Incorrect state");
-    await expectRevert(realitycards.safeTransferFrom(user,user1,2,web3.utils.asciiToHex("123456789")), "Incorrect state");
+    await expectRevert(nfthub.transferFrom(user,user1,2), "Incorrect state");
+    await expectRevert(nfthub.safeTransferFrom(user,user1,2), "Incorrect state");
+    await expectRevert(nfthub.safeTransferFrom(user,user1,2,web3.utils.asciiToHex("123456789")), "Incorrect state");
     await realitio.setResult(2);
     await mainnetproxy.getWinnerFromOracle(realitycards.address);
     await realitycards.determineWinner();
-    // // these shoudl all fail cos wrong owner:
+    // these shoudl all fail cos wrong owner:
     var owner = await realitycards.ownerOf(2);
     assert.equal(owner, user);
-    await expectRevert(realitycards.transferFrom(user,user1,2,{from: user1}), "Not owner");
-    await expectRevert(realitycards.safeTransferFrom(user1,user1,2,{from: user1}), "Not owner");
+    await expectRevert(nfthub.transferFrom(user,user1,2,{from: user1}), "Not owner");
+    await expectRevert(nfthub.safeTransferFrom(user1,user1,2,{from: user1}), "Not owner");
     // these should not
-    await realitycards.transferFrom(user,user1,2,{from: user});
-    await realitycards.safeTransferFrom(user1,user,2,{from: user1});
+    await nfthub.transferFrom(user,user1,2,{from: user});
+    await nfthub.safeTransferFrom(user1,user,2,{from: user1});
   });
 
   it('make sure functions cant be called in the wrong state', async() => {
@@ -2897,21 +2913,21 @@ it('check that users cannot transfer their NFTs until withdraw state', async() =
     await expectRevert(realitycards2.withdraw(), "Incorrect state");
     await expectRevert(realitycards2.payArtist(), "Incorrect state");
     await expectRevert(realitycards2.payMarketCreator(), "Incorrect state");
-    await expectRevert(realitycards2.payCardSpecificAffiliate(), "Incorrect state");
+    await expectRevert(realitycards2.payCardAffiliate(), "Incorrect state");
     // increment state
     await time.increase(time.duration.years(1)); 
     await realitycards2.lockMarket();
     var state = await realitycards2.state.call();
     assert.equal(2,state);
     // currently in state 'LOCKED' the following should all fail 
-    await expectRevert(realitycards2.collectRentAllTokens(), "Incorrect state");
+    await expectRevert(realitycards2.collectRentAllCards(), "Incorrect state");
     await expectRevert(realitycards2.newRental(0,maxuint256,0), "Incorrect state");
     await expectRevert(realitycards2.exit(0), "Incorrect state");
     await expectRevert(realitycards2.rentAllCards(), "Incorrect state");
     await expectRevert(realitycards2.sponsor({value: 3}), "Incorrect state");
     await expectRevert(realitycards2.payArtist(), "Incorrect state");
     await expectRevert(realitycards2.payMarketCreator(), "Incorrect state");
-    await expectRevert(realitycards2.payCardSpecificAffiliate(), "Incorrect state");
+    await expectRevert(realitycards2.payCardAffiliate(), "Incorrect state");
     // increment state
     await realitio.setResult(1);
     await mainnetproxy.getWinnerFromOracle(realitycards2.address);
@@ -2921,7 +2937,7 @@ it('check that users cannot transfer their NFTs until withdraw state', async() =
     // currently in state 'WITHDRAW' the following should all fail 
     await expectRevert(realitycards2.lockMarket(), "Incorrect state");
     await expectRevert(realitycards2.determineWinner(), "Incorrect state");
-    await expectRevert(realitycards2.collectRentAllTokens(), "Incorrect state");
+    await expectRevert(realitycards2.collectRentAllCards(), "Incorrect state");
     await expectRevert(realitycards2.newRental(0,maxuint256,0), "Incorrect state");
     await expectRevert(realitycards2.exit(0), "Incorrect state");
     await expectRevert(realitycards2.sponsor({value: 3}), "Incorrect state");
@@ -2935,29 +2951,29 @@ it('check oracleResolutionTime and marketLockingTime expected failures', async (
     var templateId = 2;
     var artistAddress = user8;
     var affiliateAddress = user8;
-    var eventDetails = ['RCToken','y']; 
+    var slug = 'y'; 
     // resolution time before locking, expect failure
     var oracleResolutionTime = 69419;
     var marketLockingTime = 69420; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress,affiliateAddress,cardRecipients, question,eventDetails), "Invalid timestamps");
+    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress,affiliateAddress,cardRecipients, question,slug), "Oracle resolution time error");
     // resolution time > 1 weeks after locking, expect failure
     var oracleResolutionTime = 604810;
     var marketLockingTime = 0; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress, affiliateAddress,cardRecipients, question,eventDetails), "Invalid timestamps");
+    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress, affiliateAddress,cardRecipients, question,slug), "Oracle resolution time error");
     // resolution time < 1 week  after locking, no failure
     var oracleResolutionTime = 604790;
     var marketLockingTime = 0; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    var eventDetails = ['RCToken','z']; 
-    await rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress, affiliateAddress,cardRecipients, question,eventDetails);
+    var slug = 'z'; 
+    await rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress, affiliateAddress,cardRecipients, question,slug);
     // same time, no failure
     var oracleResolutionTime = 0;
     var marketLockingTime = 0; 
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
-    var eventDetails = ['RCToken','a']; 
-    await rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress, affiliateAddress,cardRecipients, question,eventDetails);
+    var slug = 'a'; 
+    await rcfactory.createMarket(0,'0x0',timestamps, tokenURIs, artistAddress, affiliateAddress,cardRecipients, question,slug);
   });
 
   it('test longestTimeHeld & longestOwner', async () => {
@@ -2965,7 +2981,7 @@ it('check oracleResolutionTime and marketLockingTime expected failures', async (
     await newRental(1,2,user0);
     // await newRental(web3.utils.toWei('1', 'ether'),2,web3.utils.toWei('10', 'ether'),user0 ); 
     await time.increase(time.duration.days(1)); 
-    await realitycards.collectRentAllTokens();
+    await realitycards.collectRentAllCards();
     var maxTimeHeld = await realitycards.longestTimeHeld(2);
     var maxTimeHeldShouldBe = time.duration.days(1);
     var difference = Math.abs(maxTimeHeld.toString() - maxTimeHeldShouldBe.toString());
@@ -2978,7 +2994,7 @@ it('check oracleResolutionTime and marketLockingTime expected failures', async (
     await newRental(2,2,user1);
     // await newRental(web3.utils.toWei('2', 'ether'),2,web3.utils.toWei('10', 'ether'),user1 ); 
     await time.increase(time.duration.days(2));
-    await realitycards.collectRentAllTokens();
+    await realitycards.collectRentAllCards();
     var maxTimeHeld = await realitycards.longestTimeHeld(2);
     var maxTimeHeldShouldBe = time.duration.days(2);
     var difference = Math.abs(maxTimeHeld.toString() - maxTimeHeldShouldBe.toString());
@@ -3072,7 +3088,7 @@ it('test exit but then can rent again', async () => {
     await newRental(10,0,user0);
     await newRental(144,0,user1);
     await time.increase(time.duration.hours(1)); 
-    await realitycards.collectRentAllTokens();
+    await realitycards.collectRentAllCards();
     // exit, ownership reverts back to 1
     await realitycards.exit(0,{ from: user1 });
     var owner = await realitycards.ownerOf.call(0);
@@ -3082,7 +3098,7 @@ it('test exit but then can rent again', async () => {
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner, user1);
     await time.increase(time.duration.hours(1)); 
-    await realitycards.collectRentAllTokens();
+    await realitycards.collectRentAllCards();
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner, user1);
     // withdraw for next test
@@ -3105,7 +3121,7 @@ it('test _revertToPreviousOwner will not revert to user if exit flag set', async
     assert.equal(owner, user2);
     // user 2 has enough for 12 hours, so go 13 hours and check user0 owns it
     await time.increase(time.duration.hours(13)); 
-    await realitycards.collectRentAllTokens();
+    await realitycards.collectRentAllCards();
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner, user0);
     // withdraw for next test
@@ -3218,11 +3234,11 @@ it('test timeHeldLimit', async() => {
     await newRentalCustomTimeLimit(5,1,0,user1);
     // do a minor interval to check it isnt reverting yet
     await time.increase(time.duration.hours(11));
-    await realitycards.collectRentAllTokens();
+    await realitycards.collectRentAllCards();
     var owner = await realitycards.ownerOf(0);
     assert.equal(owner,user1);
     await time.increase(time.duration.weeks(10));
-    await realitycards.collectRentAllTokens();
+    await realitycards.collectRentAllCards();
     // check that only owned for 1 day
     var timeHeld = await realitycards.timeHeld.call(0, user1);
     var timeHeldShouldBe = time.duration.days(1);
@@ -3242,7 +3258,7 @@ it('test timeHeldLimit', async() => {
     await newRentalCustomTimeLimit(1,1,1,user2);
     await newRentalCustomTimeLimit(144,100,1,user3);
     await time.increase(time.duration.days(2));
-    await realitycards.collectRentAllTokens();
+    await realitycards.collectRentAllCards();
     // check that only owned for 1 day
     var timeHeld = await realitycards.timeHeld.call(1, user3);
     var timeHeldShouldBe = time.duration.days(1);
@@ -3263,7 +3279,7 @@ it('test timeHeldLimit failures both newRental and updateTimeHeldLimit', async()
     // first: check timeHeldLimit cant be below ten mins
     await expectRevert(realitycards.newRental(web3.utils.toWei('1', 'ether'),'500',0,{ from: user0}), "Limit too low");
     // change divisor and check it still gives the same error, set to 1 min and try 50 seconds
-    await treasury.updateMinRental(1440);
+    await treasury.setMinRental(1440);
     await expectRevert(realitycards.newRental(web3.utils.toWei('1', 'ether'),'50',0,{ from: user0}), "Limit too low");
     // but 70 second should work
     await realitycards.newRental(web3.utils.toWei('1', 'ether'),'70',0);
@@ -3354,11 +3370,11 @@ it('test timeHeldLimit using updateTimeHeldLimit', async() => {
     await realitycards.updateTimeHeldLimit(86400,0,{from: user1});
     // do a minor interval to check it isnt reverting yet
     await time.increase(time.duration.hours(11));
-    await realitycards.collectRentAllTokens();
+    await realitycards.collectRentAllCards();
     var owner = await realitycards.ownerOf(0);
     assert.equal(owner,user1);
     await time.increase(time.duration.weeks(10));
-    await realitycards.collectRentAllTokens();
+    await realitycards.collectRentAllCards();
     // check that only owned for 1 day
     var timeHeld = await realitycards.timeHeld.call(0, user1);
     var timeHeldShouldBe = time.duration.days(1);
@@ -3378,7 +3394,7 @@ it('test timeHeldLimit using updateTimeHeldLimit', async() => {
     await newRentalCustomTimeLimit(1,1,1,user2);
     await newRentalCustomTimeLimit(144,100,1,user3);
     await time.increase(time.duration.days(2));
-    await realitycards.collectRentAllTokens();
+    await realitycards.collectRentAllCards();
     // check that only owned for 1 day
     var timeHeld = await realitycards.timeHeld.call(1, user3);
     var timeHeldShouldBe = time.duration.days(1);
@@ -3486,7 +3502,7 @@ it('test winner/withdraw recreated using newRentalWithDeposit', async () => {
 
 it('test winner/withdraw with invalid market and artist and creator fees', async () => {
     // 6% artist 4% creator but invalid so 0% creator
-    await rcfactory.updatePotDistribution(60,0,40,0,100);
+    await rcfactory.setPotDistribution(60,0,40,0,100);
     var realitycards2 = await createMarketWithArtistSet();
     /////// SETUP //////
     // var amount = web3.utils.toWei('144', 'ether')
@@ -3572,16 +3588,16 @@ it('test winner/withdraw with invalid market and artist and creator fees', async
     await withdrawDeposit(1000,user8);
 });
 
-it('test updateMaxContractBalance function and deposit limit hit', async () => {
+it('test setMaxContractBalance function and deposit limit hit', async () => {
     // change deposit balance limit to 500 ether
-    await treasury.updateMaxContractBalance(web3.utils.toWei('500', 'ether'));
+    await treasury.setMaxContractBalance(web3.utils.toWei('500', 'ether'));
     // 400 should work
     await depositDai(400,user0);
     // another 400 should not
     await expectRevert(treasury.deposit(user0,{value: web3.utils.toWei('500', 'ether')}), "Limit hit");
 });
 
-it('test addOrRemoveGovernor and updateMarketCreationGovernorsOnly', async () => {
+it('test addOrRemoveGovernor and setMarketCreationGovernorsOnly', async () => {
     // check user1 cant create market
     var latestTime = await time.latest();
     var oneYear = new BN('31104000');
@@ -3591,24 +3607,24 @@ it('test addOrRemoveGovernor and updateMarketCreationGovernorsOnly', async () =>
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
     var artistAddress = user8;
     var affiliateAddress = user8;
-    var eventDetails = ['x','y'];
-    await rcfactory.updateMarketCreationGovernorsOnly();
-    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,eventDetails,{from: user1}), "Not approved");
+    var slug = 'x2';
+    await rcfactory.setMarketCreationGovernorsOnly();
+    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,slug,{from: user1}), "Not approved");
     // first check that only owner can call
     await expectRevert(rcfactory.addOrRemoveGovernor(user1,{from: user1}), "caller is not the owner");
     // add user1 to whitelist 
     await rcfactory.addOrRemoveGovernor(user1);
     //try again, should work
-    await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,eventDetails,{from: user1});
+    await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,slug,{from: user1});
     // remove them, should fail again
     await rcfactory.addOrRemoveGovernor(user1);
     await expectRevert(rcfactory.addOrRemoveGovernor(user1,{from: user1}), "caller is not the owner");
     // disable whitelist, should work
-    await rcfactory.updateMarketCreationGovernorsOnly();
-    var eventDetails = ['x','z'];
-    await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,eventDetails,{from: user1});
+    await rcfactory.setMarketCreationGovernorsOnly();
+    var slug = 'sx';
+    await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,slug,{from: user1});
     // re-enable whitelist, should not work again
-    await rcfactory.updateMarketCreationGovernorsOnly();
+    await rcfactory.setMarketCreationGovernorsOnly();
     await expectRevert(rcfactory.addOrRemoveGovernor(user1,{from: user1}), "caller is not the owner"); 
 });
 
@@ -3706,7 +3722,7 @@ it('test auto lock', async () => {
 });
 
 it('test sponsor via market creation', async () => {
-    await rcfactory.updateSponsorshipRequired(ether('200'));
+    await rcfactory.setSponsorshipRequired(ether('200'));
     await rcfactory.addOrRemoveGovernor(user3);
     await expectRevert(createMarketWithArtistAndCardAffiliatesAndSponsorship(100,user3), "Insufficient sponsorship");
     var realitycards2 = await createMarketWithArtistAndCardAffiliatesAndSponsorship(200,user3);
@@ -3720,11 +3736,11 @@ it('ensure only factory can add markets', async () => {
     await expectRevert(treasury.addMarket(user3), "Not factory");
 });
 
-it('test updateHotPotatoPayment', async () => {
+it('test setHotPotatoPayment', async () => {
     var realitycards2 = await createMarketCustomMode(2);
     // first check only owner is set
-    await expectRevert(treasury.updateHotPotatoPayment(7*24, {from: user1}), "caller is not the owner");
-    await treasury.updateHotPotatoPayment(7*24, {from: user0});
+    await expectRevert(treasury.setHotPotatoPayment(7*24, {from: user1}), "caller is not the owner");
+    await treasury.setHotPotatoPayment(7*24, {from: user0});
     /////// SETUP //////
     await depositDai(1000,user0);
     await depositDai(1000,user1);
@@ -3743,25 +3759,26 @@ it('test updateHotPotatoPayment', async () => {
 });
 
 it('check onlyOwner is on relevant Treasury functions', async () => {
-    await expectRevert(treasury.updateHotPotatoPayment(7*24, {from: user1}), "caller is not the owner");
-    await expectRevert(treasury.updateMinRental(7*24, {from: user1}), "caller is not the owner");
-    await expectRevert(treasury.updateMaxContractBalance(7*24, {from: user1}), "caller is not the owner");
+    await expectRevert(treasury.setHotPotatoPayment(7*24, {from: user1}), "caller is not the owner");
+    await expectRevert(treasury.setMinRental(7*24, {from: user1}), "caller is not the owner");
+    await expectRevert(treasury.setMaxContractBalance(7*24, {from: user1}), "caller is not the owner");
     await expectRevert(treasury.setGlobalPause({from: user1}), "caller is not the owner");
-    await expectRevert(treasury.pauseMarket(realitycards.address,{from: user1}), "caller is not the owner");
+    await expectRevert(treasury.setPauseMarket(realitycards.address,{from: user1}), "caller is not the owner");
 });
 
-// it('check onlyOwner is on relevant Factory functions', async () => {
-//     await expectRevert(rcfactory.updatePotDistribution(0,0,0,0,0, {from: user1}), "caller is not the owner");
-//     await expectRevert(rcfactory.addOrRemoveGovernor(user0, {from: user1}), "caller is not the owner");
-//     await expectRevert(rcfactory.updateMarketCreationGovernorsOnly({from: user1}), "caller is not the owner");
-//     await expectRevert(rcfactory.updateSponsorshipRequired(7*24, {from: user1}), "caller is not the owner");
-//     await expectRevert(rcfactory.approveOrUnapproveMarket(user0, {from: user1}), "Not approved");
-//     await expectRevert(rcfactory.updateMinimumPriceIncrease(4, {from: user1}), "caller is not the owner");
-//     await expectRevert(rcfactory.burnCardsIfUnapproved({from: user1}), "caller is not the owner");
-//     await expectRevert(rcfactory.updateAdvancedWarning({from: user1}), "caller is not the owner");
-// });
+it('check onlyOwner is on relevant Factory functions', async () => {
+    await expectRevert(rcfactory.setPotDistribution(0,0,0,0,0, {from: user1}), "caller is not the owner");
+    await expectRevert(rcfactory.addOrRemoveGovernor(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(rcfactory.setMarketCreationGovernorsOnly({from: user1}), "caller is not the owner");
+    await expectRevert(rcfactory.setSponsorshipRequired(7*24, {from: user1}), "caller is not the owner");
+    await expectRevert(rcfactory.approveOrUnapproveMarket(user0, {from: user1}), "Not approved");
+    await expectRevert(rcfactory.setMinimumPriceIncrease(4, {from: user1}), "caller is not the owner");
+    await expectRevert(rcfactory.setTrapCardsIfUnapproved({from: user1}), "caller is not the owner");
+    await expectRevert(rcfactory.setAdvancedWarning(23,{from: user1}), "caller is not the owner");
+    await expectRevert(rcfactory.setMaximumDuration(23,{from: user1}), "caller is not the owner");
+});
 
-it('test updateMinimumPriceIncrease', async () => {
+it('test setMinimumPriceIncrease', async () => {
     var realitycards2 = await createMarketCustomMode(0);
     /////// SETUP //////
     await depositDai(1000,user0);
@@ -3770,7 +3787,7 @@ it('test updateMinimumPriceIncrease', async () => {
     // 5% increase, should fail
     await expectRevert(newRentalCustomContract(realitycards2,1.05,0,user1), "Price too low");
     // update min to 5%, try again
-    await rcfactory.updateMinimumPriceIncrease(5);
+    await rcfactory.setMinimumPriceIncrease(5);
     var realitycards3 = await createMarketCustomMode2(0);
     await newRentalCustomContract(realitycards3,1.05,0,user1);
     // check rent all cards works
@@ -3790,23 +3807,31 @@ it('test uberOwner Treasury', async () => {
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
-    var eventDetails = ['x','r'];
+    var slug = 'xr';
     // first, change owner
     await treasury.changeUberOwner(user5);
     // now try and change again and change factory from prevous owner, should fail
-    await expectRevert(treasury.changeUberOwner(user0), "Access denied");
-    await expectRevert(treasury.setFactoryAddress(user0), "Access denied");
+    await expectRevert(treasury.changeUberOwner(user0), "Verboten");
+    await expectRevert(treasury.setFactoryAddress(user0), "Verboten");
     // deploy new factory, update address
-    rcfactory2 = await RCFactory.new(treasury.address);
+    rcfactory2 = await RCFactory2.new(treasury.address);
+    await rcfactory2.addOrRemoveCardAffiliate(user5);
+    await rcfactory2.addOrRemoveCardAffiliate(user6);
+    await rcfactory2.addOrRemoveCardAffiliate(user7);
+    await rcfactory2.addOrRemoveCardAffiliate(user8);
+    await rcfactory2.addOrRemoveCardAffiliate(user0);
     await treasury.setFactoryAddress(rcfactory2.address,{from: user5});
-    await rcfactory2.setReferenceContractAddress(rcreference.address);
-    await rcfactory2.updateOracleProxyXdaiAddress(xdaiproxy.address);
-    // create market with old factory, should fail
-    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,eventDetails), "Not factory");
-    // create market with new factory and do some standard stuff
     await xdaiproxy.setFactoryAddress(rcfactory2.address);
-    var eventDetails = ['x','a'];
-    await rcfactory2.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,eventDetails);
+    await nfthub.setFactoryAddress(rcfactory2.address);
+    await rcfactory2.setReferenceContractAddress(rcreference.address);
+    await rcfactory2.setProxyXdaiAddress(xdaiproxy.address);
+    // create market with old factory, should fail
+    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,slug), "Not factory");
+    // create market with new factory and do some standard stuff
+    var slug = 'xa';
+    // nfthub = await NftHub.new(rcfactory.address);
+    await rcfactory2.setNftHubAddress(nfthub.address);
+    await rcfactory2.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,slug);
     var marketAddress = await rcfactory2.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
     await depositDai(144,user3);
@@ -3832,8 +3857,8 @@ it('test uberOwner factory', async () => {
     // first, change owner
     await rcfactory.changeUberOwner(user5);
     // now try and change again and change reference from prevous owner, should fail
-    await expectRevert(rcfactory.changeUberOwner(user0), "Access denied");
-    await expectRevert(rcfactory.setReferenceContractAddress(user0), "Access denied");
+    await expectRevert(rcfactory.changeUberOwner(user0), "Verboten");
+    await expectRevert(rcfactory.setReferenceContractAddress(user0), "Verboten");
     // deploy new reference, update address
     rcreference2 = await RCMarket2.new();
     await rcfactory.setReferenceContractAddress(rcreference2.address, {from: user5});
@@ -3841,8 +3866,8 @@ it('test uberOwner factory', async () => {
     var version = await rcfactory.referenceContractVersion.call();
     assert.equal(version,2);
     // deploy new market from new reference contract, check that price is doubling
-    var eventDetails = ['x','z'];
-    await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,eventDetails);
+    var slug = 'xq';
+    await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,slug);
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
     await depositDai(144,user3);
@@ -3855,21 +3880,21 @@ it('test uberOwner factory', async () => {
     assert.equal(price, web3.utils.toWei('69', 'ether'));
 });
 
-it('test RCOracleProxyXdai', async () => {
+it('test RCProxyXdai', async () => {
     // check reverts on owned functions
-    await expectRevert(xdaiproxy.setOracleProxyMainnetAddress(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(xdaiproxy.setProxyMainnetAddress(user0, {from: user1}), "caller is not the owner");
     await expectRevert(xdaiproxy.setBridgeXdaiAddress(user0, {from: user1}), "caller is not the owner");
     await expectRevert(xdaiproxy.setFactoryAddress(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(xdaiproxy.amicableResolution(user0, 3, {from: user1}), "caller is not the owner");
+    await expectRevert(xdaiproxy.setAmicableResolution(user0, 3, {from: user1}), "caller is not the owner");
     // check reverts on other functions 
     await expectRevert(xdaiproxy.sendQuestionToBridge(user0, "x", 0), "Not factory");
     await expectRevert(xdaiproxy.setWinner(user0, 0), "Not bridge");
     await expectRevert(xdaiproxy.getWinner(user0), "Not finalised");
     // test changing mainnet proxy
     mainnetproxy2 = await MainnetProxy2.new(bridge.address, realitio.address);
-    await xdaiproxy.setOracleProxyMainnetAddress(mainnetproxy2.address);
-    await mainnetproxy2.setOracleProxyXdaiAddress(xdaiproxy.address);
-    await bridge.setOracleProxyMainnetAddress(mainnetproxy2.address);
+    await xdaiproxy.setProxyMainnetAddress(mainnetproxy2.address);
+    await mainnetproxy2.setProxyXdaiAddress(xdaiproxy.address);
+    await bridge.setProxyMainnetAddress(mainnetproxy2.address);
     realitycards2 = await createMarketWithArtistSet();
     await realitio.setResult(2);
     // should be 69 even though 2 was set
@@ -3888,41 +3913,41 @@ it('test RCOracleProxyXdai', async () => {
     // setFactoryAddress is already tested in test uberOwner Treasury
 });
 
-// it('test RCOracleProxyMainnet various', async () => {
-//     // check reverts on owned functions
-//     await expectRevert(mainnetproxy.setOracleProxyXdaiAddress(user0, {from: user1}), "caller is not the owner");
-//     await expectRevert(mainnetproxy.setBridgeMainnetAddress(user0, {from: user1}), "caller is not the owner");
-//     await expectRevert(mainnetproxy.setRealitioAddress(user0, {from: user1}), "caller is not the owner");
-//     await expectRevert(mainnetproxy.setArbitrator(user0, {from: user1}), "caller is not the owner");
-//     await expectRevert(mainnetproxy.setTimeout(user0, {from: user1}), "caller is not the owner");
-//     await expectRevert(mainnetproxy.postQuestionToOracleAdmin(user0,"x",0, {from: user1}), "caller is not the owner");
-//     // check reverts on other functions 
-//     await expectRevert(mainnetproxy.postQuestionToOracle(user0, "x", 0), "Not bridge");
-//     // test changing xdai proxy
-//     var xdaiproxy2 = await XdaiProxy2.new(bridge.address, rcfactory.address);
-//     await xdaiproxy2.setOracleProxyMainnetAddress(mainnetproxy.address);
-//     await xdaiproxy2.setBridgeXdaiAddress(bridge.address);
-//     await xdaiproxy2.setFactoryAddress(rcfactory.address);
-//     await mainnetproxy.setOracleProxyXdaiAddress(xdaiproxy2.address);
-//     await bridge.setOracleProxyXdaiAddress(xdaiproxy2.address);
-//     await rcfactory.updateOracleProxyXdaiAddress(xdaiproxy2.address);
-//     realitycards2 = await createMarketWithArtistSet();
-//     await realitio.setResult(2);
-//     // should be 4 even though 2 was set
-//     await mainnetproxy.getWinnerFromOracle(realitycards2.address);
-//     await time.increase(time.duration.years(1)); 
-//     await realitycards2.lockMarket(); 
-//     await realitycards2.determineWinner();
-//     var winner = await realitycards2.winningOutcome();
-//     assert.equal(winner,4);
-//     // test changing setBridgeMainnetAddress
-//     await mainnetproxy.setBridgeMainnetAddress(user0);
-//     var newproxy = await mainnetproxy.bridge.call();
-//     assert.equal(newproxy,user0)
+it('test RCProxyMainnet various', async () => {
+    // check reverts on owned functions
+    await expectRevert(mainnetproxy.setProxyXdaiAddress(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(mainnetproxy.setBridgeMainnetAddress(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(mainnetproxy.setRealitioAddress(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(mainnetproxy.setArbitrator(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(mainnetproxy.setTimeout(1234, {from: user1}), "caller is not the owner");
+    await expectRevert(mainnetproxy.postQuestionToOracleAdmin(user0,"x",0, {from: user1}), "caller is not the owner");
+    // check reverts on other functions 
+    await expectRevert(mainnetproxy.postQuestionToOracle(user0, "x", 0), "Not bridge");
+    // test changing xdai proxy
+    var xdaiproxy2 = await XdaiProxy2.new(bridge.address, rcfactory.address);
+    await xdaiproxy2.setProxyMainnetAddress(mainnetproxy.address);
+    await xdaiproxy2.setBridgeXdaiAddress(bridge.address);
+    await xdaiproxy2.setFactoryAddress(rcfactory.address);
+    await mainnetproxy.setProxyXdaiAddress(xdaiproxy2.address);
+    await bridge.setProxyXdaiAddress(xdaiproxy2.address);
+    await rcfactory.setProxyXdaiAddress(xdaiproxy2.address);
+    realitycards2 = await createMarketWithArtistSet();
+    await realitio.setResult(2);
+    // should be 4 even though 2 was set
+    await mainnetproxy.getWinnerFromOracle(realitycards2.address);
+    await time.increase(time.duration.years(1)); 
+    await realitycards2.lockMarket(); 
+    await realitycards2.determineWinner();
+    var winner = await realitycards2.winningOutcome();
+    assert.equal(winner,4);
+    // test changing setBridgeMainnetAddress
+    await mainnetproxy.setBridgeMainnetAddress(user0);
+    var newproxy = await mainnetproxy.bridge.call();
+    assert.equal(newproxy,user0)
     
-// });
+ });
 
-it('test RCOracleProxyMainnet, various 2', async () => {
+it('test RCProxyMainnet, various 2', async () => {
     // change relaitio, winner should return 69
     realitio2 = await RealitioMockup2.new();
     await mainnetproxy.setRealitioAddress(realitio2.address);
@@ -3948,7 +3973,7 @@ it('test postQuestionToOracleAdmin', async () => {
     // first, check it cant be called cos already posted
     await expectRevert(mainnetproxy.postQuestionToOracleAdmin(realitycards.address,"x",0),"Already posted");
     // fuck up the bridge and post a new market
-    await bridge.setOracleProxyMainnetAddress(user0);
+    await bridge.setProxyMainnetAddress(user0);
     realitycards2 = await createMarketWithArtistSet();
     await mainnetproxy.postQuestionToOracleAdmin(realitycards2.address,"x",0)
     await realitio.setResult(2);
@@ -3958,28 +3983,7 @@ it('test postQuestionToOracleAdmin', async () => {
     // bridge still fucked so should think not resolved
     await expectRevert(realitycards2.determineWinner(),"Oracle not resolved");
     // fix bridge, should work
-    await bridge.setOracleProxyMainnetAddress(mainnetproxy.address);
-    await mainnetproxy.getWinnerFromOracle(realitycards2.address);
-    await realitycards2.determineWinner();
-    var winner = await realitycards2.winningOutcome.call();
-    assert.equal(winner,2)
-});
-
-it('test postQuestionToOracleAdmin', async () => {
-    // first, check it cant be called cos already posted
-    await expectRevert(mainnetproxy.postQuestionToOracleAdmin(realitycards.address,"x",0),"Already posted");
-    // fuck up the bridge and post a new market
-    await bridge.setOracleProxyMainnetAddress(user0);
-    realitycards2 = await createMarketWithArtistSet();
-    await mainnetproxy.postQuestionToOracleAdmin(realitycards2.address,"x",0)
-    await realitio.setResult(2);
-    await time.increase(time.duration.years(1)); 
-    await realitycards2.lockMarket();
-    await mainnetproxy.getWinnerFromOracle(realitycards2.address);
-    // bridge still fucked so should think not resolved
-    await expectRevert(realitycards2.determineWinner(),"Oracle not resolved");
-    // fix bridge, should work
-    await bridge.setOracleProxyMainnetAddress(mainnetproxy.address);
+    await bridge.setProxyMainnetAddress(mainnetproxy.address);
     await mainnetproxy.getWinnerFromOracle(realitycards2.address);
     await realitycards2.determineWinner();
     var winner = await realitycards2.winningOutcome.call();
@@ -3997,33 +4001,40 @@ it('test approveOrUnapproveMarket', async () => {
     await rcfactory.approveOrUnapproveMarket(realitycards.address, {from: user1});
     hidden = await rcfactory.isMarketApproved.call(realitycards.address);
     assert.equal(hidden,true);
-    // hide it again, then check that cards are burnt
+    // hide it again, then check that cards cant be upgraded
     await rcfactory.approveOrUnapproveMarket(realitycards.address, {from: user1});
     hidden = await rcfactory.isMarketApproved.call(realitycards.address);
     assert.equal(hidden,false);
-    // await depositDai(100,user0);
-    // await newRental(1,0,user0);
+    await depositDai(100,user0);
+    for (i = 0; i < 20; i++) {
+        await newRental(1,i,user0);
+    }
     await realitio.setResult(2);
     await time.increase(time.duration.years(1));
     await realitycards.lockMarket();
     await mainnetproxy.getWinnerFromOracle(realitycards.address);
     await realitycards.determineWinner();
     for (i = 0; i < 20; i++) {
-        await expectRevert(realitycards.ownerOf.call(i), "owner query for nonexistent token");
+        await expectRevert(realitycards.upgradeNft(i), "Upgrade blocked");
     }
-    // new market, dont approve it, but switch burnIfUnapproved to false
+    // new market, dont approve it, but switch setTrapCardsIfUnapproved to false
     realitycards2 = await createMarketWithArtistSet();
+    await depositDai(100,user0);
+    for (i = 0; i < 20; i++) {
+        await newRentalCustomContract(realitycards2,1,i,user0);
+    }
     hidden = await rcfactory.isMarketApproved.call(realitycards2.address);
     assert.equal(hidden,false);
-    await rcfactory.burnCardsIfUnapproved();
-    var burnIfHidden = await rcfactory.burnIfUnapproved.call();
-    assert.equal(burnIfHidden,false);
+    await rcfactory.setTrapCardsIfUnapproved();
+    var trapIfUnapproved = await rcfactory.trapIfUnapproved.call();
+    assert.equal(trapIfUnapproved,false);
     await time.increase(time.duration.years(1));
     await realitycards2.lockMarket();
     await mainnetproxy.getWinnerFromOracle(realitycards2.address);
     await realitycards2.determineWinner();
+    var owner = await realitycards2.ownerOf.call(0);
     for (i = 0; i < 20; i++) {
-        await realitycards2.ownerOf.call(i);
+        await realitycards2.upgradeNft(i);
     }
 });
 
@@ -4042,31 +4053,31 @@ it('check cant rent or deposit if globalpause', async () => {
 
 it('check cant rent if market paused', async () => {
     // setup
-    await treasury.pauseMarket(realitycards.address);
+    await treasury.setPauseMarket(realitycards.address);
     depositDai(144,user0);
     await expectRevert(newRental(144,0,user1), "Rentals are disabled");
 });
 
-it('test amicableResolution', async () => {
+it('test setAmicableResolution', async () => {
     // normal setup, dont call the bridge, see if payout works
     await time.increase(time.duration.years(1)); 
-    await expectRevert(xdaiproxy.amicableResolution(realitycards.address,2, {from: user1}), "caller is not the owner");
-    await xdaiproxy.amicableResolution(realitycards.address,2);
+    await expectRevert(xdaiproxy.setAmicableResolution(realitycards.address,2, {from: user1}), "caller is not the owner");
+    await xdaiproxy.setAmicableResolution(realitycards.address,2);
     await realitycards.lockMarket();
     await realitycards.determineWinner();
     var winner = await realitycards.winningOutcome();
     assert.equal(winner,2);
-    // new market, resolve the normal way, check cant use amicableResolution
+    // new market, resolve the normal way, check cant use setAmicableResolution
     var realitycards2 = await createMarketWithArtistSet();
     await time.increase(time.duration.years(1)); 
     await realitycards2.lockMarket();
     await realitio.setResult(2);
     await mainnetproxy.getWinnerFromOracle(realitycards2.address);
-    await expectRevert(xdaiproxy.amicableResolution(realitycards.address,2),"Event finalised");
+    await expectRevert(xdaiproxy.setAmicableResolution(realitycards.address,2),"Event finalised");
 });
 
 it('test advancedWarning', async () => {
-    await rcfactory.updateAdvancedWarning(86400);
+    await rcfactory.setAdvancedWarning(86400);
     var latestTime = await time.latest();
     var oneYear = new BN('31104000');
     var oneYearInTheFuture = oneYear.add(latestTime);
@@ -4075,17 +4086,137 @@ it('test advancedWarning', async () => {
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
-    var eventDetails = ['x','r'];
+    var slug = 'g';
     // opening time zero, should fail
-    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,eventDetails),"Market opening time not set");
+    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,slug),"Market opening time not set");
     // opening time not 1 day in the future, should fail
     var timestamps = [latestTime,marketLockingTime,oracleResolutionTime];
-    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,eventDetails),"Market opens too soon");
+    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,slug),"Market opens too soon");
     var twoDays = new BN('172800');
     var twoDaysInTheFuture = twoDays.add(latestTime);
     // opening time 2 days in the future, should not fail
     var timestamps = [twoDaysInTheFuture,marketLockingTime,oracleResolutionTime];
-    rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,eventDetails);
+    rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,slug);
+});
+
+it('test NFT upgrade', async () => {
+    await rcfactory.approveOrUnapproveMarket(realitycards.address);
+    await depositDai(1000,user1);
+    await depositDai(1000,user2);
+    await depositDai(1000,user3);
+    await newRental(10,3,user1);
+    await time.increase(time.duration.weeks(4));
+    await newRental(500,3,user2);
+    await time.increase(time.duration.years(1));
+    await realitio.setResult(3);
+    await realitycards.lockMarket();
+    await mainnetproxy.getWinnerFromOracle(realitycards.address);
+    await expectRevert(realitycards.upgradeNft(3, {from: user1}),"Incorrect state");
+    await realitycards.determineWinner();
+    await realitycards.withdraw({from: user1});
+    await expectRevert(realitycards.upgradeNft(3, {from: user2}), "Not owner");
+    await realitycards.upgradeNft(3, {from: user1});
+    var ownerxdai = await realitycards.ownerOf(3);
+    assert.equal(ownerxdai,realitycards.address);
+    var ownermainnet = await mainnetproxy.ownerOf(3);
+    assert.equal(ownermainnet,user1);
+    // check token uri
+    var tokenuri = await mainnetproxy.tokenURI(3);
+    assert.equal("uri",tokenuri);
+    // test cant call certain functions directly
+    await expectRevert(xdaiproxy.upgradeNft(3,"asdfsadf",user0), "Not market");
+    await expectRevert(mainnetproxy.upgradeNft(3,"asdfsadf",user0), "Not bridge");
+    // now, create new market and make sure token IDs on mainnet increment correctly
+    var nftMintCount = await rcfactory.totalNftMintCount.call();
+    assert.equal(nftMintCount,20);
+    var realitycards2 = await createMarketWithArtistSet();
+    await rcfactory.approveOrUnapproveMarket(realitycards2.address);
+    await newRentalCustomContract(realitycards2,1,5,user3); 
+    await time.increase(time.duration.years(1));
+    await realitio.setResult(5);
+    await realitycards2.lockMarket();
+    await mainnetproxy.getWinnerFromOracle(realitycards2.address);
+    await realitycards2.determineWinner();
+    await realitycards2.upgradeNft(5, {from: user3});
+    var ownermainnet = await mainnetproxy.ownerOf(25);
+    assert.equal(ownermainnet,user3);
+    var tokenuri = await mainnetproxy.tokenURI(25);
+    assert.equal("x",tokenuri);
+    await withdrawDeposit(1000,user1);
+    await withdrawDeposit(1000,user3);
+
+});
+
+it('test setMaximumDuration', async () => {
+    await rcfactory.setMaximumDuration(604800); // one week
+    var latestTime = await time.latest();
+    var twoWeeks = new BN('1210000');
+    var twoWeeksInTheFuture = twoWeeks.add(latestTime);
+    var marketLockingTime = twoWeeksInTheFuture; 
+    var oracleResolutionTime = twoWeeksInTheFuture;
+    var timestamps = [0,marketLockingTime,oracleResolutionTime];
+    var artistAddress = '0x0000000000000000000000000000000000000000';
+    var affiliateAddress = '0x0000000000000000000000000000000000000000';
+    var slug = 'r';
+    // locking time two weeks should fail
+    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,slug),"Market locks too late");
+    // locking time now two weeks in future should pass
+    var twoDays = new BN('172800');
+    var twoDaysInTheFuture = twoDays.add(latestTime);
+    var marketLockingTime = twoDaysInTheFuture; 
+    var oracleResolutionTime = twoDaysInTheFuture;
+    var timestamps = [twoDaysInTheFuture,marketLockingTime,oracleResolutionTime];
+    rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,slug);
+});
+
+it('test addOrRemoveArtist, addOrRemoveAffiliate, addOrRemoveCardAffiliate', async () => {
+    var timestamps = [0,0,0];
+    var artistAddress = user2;
+    var affiliateAddress = user2;
+    var cardRecipients = ['0x0000000000000000000000000000000000000000',user6,user7,user8,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user2];
+    var slug = 'z';
+    // locking time two weeks should fail
+    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,slug),"Artist not approved");
+    await rcfactory.addOrRemoveArtist(user2);
+    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,slug),"Affiliate not approved");
+    await rcfactory.addOrRemoveAffiliate(user2);
+    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,slug),"Card affiliate not approved");
+    await rcfactory.addOrRemoveCardAffiliate(user2);
+    await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,slug);
+    // check that not owner cant make changes
+    await expectRevert(rcfactory.addOrRemoveArtist(user4, {from: user2}), "Not approved");
+    await expectRevert(rcfactory.addOrRemoveAffiliate(user4, {from: user2}), "Not approved");
+    await expectRevert(rcfactory.addOrRemoveCardAffiliate(user4, {from: user2}), "Not approved");
+    await rcfactory.addOrRemoveGovernor(user2);
+    // should be fine now
+    await rcfactory.addOrRemoveArtist(user4, {from: user2});
+    await rcfactory.addOrRemoveAffiliate(user4, {from: user2});
+    await rcfactory.addOrRemoveCardAffiliate(user4, {from: user2});
+    // remove user 2 from whitelist and same errors 
+    await rcfactory.addOrRemoveGovernor(user2);
+    await expectRevert(rcfactory.addOrRemoveArtist(user4, {from: user2}), "Not approved");
+    await expectRevert(rcfactory.addOrRemoveAffiliate(user4, {from: user2}), "Not approved");
+    await expectRevert(rcfactory.addOrRemoveCardAffiliate(user4, {from: user2}), "Not approved");
+});
+
+it('xdai nft hub check failures', async () => {
+    await expectRevert(nfthub.addMarket(user0),"Not factory");
+    await expectRevert(nfthub.setFactoryAddress(user0, {from: user1}),"Ownable: caller is not the owner");
+    await expectRevert(nfthub.mintNft(user0,0,'d'),"Not factory");
+    await expectRevert(nfthub.transferNft(user0,user0,9),"Not market");
+});
+
+it('check token Ids of second market make sense', async () => {
+    user = user0;
+    await depositDai(10,user6);
+    // await newRental(144,0,user);
+    //second market
+    realitycards2 = await createMarketWithArtistSet();
+    await realitycards2.newRental(web3.utils.toWei('1', 'ether'),maxuint256,0,{ from: user6});
+    var ownerMarket = await realitycards2.ownerOf.call(0);
+    assert.equal(ownerMarket,user6);
+    var ownerNftHub = await nfthub.ownerOf.call(20);
+    assert.equal(ownerNftHub,user6);
 });
 
 });

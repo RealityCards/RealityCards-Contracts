@@ -2,8 +2,8 @@ pragma solidity 0.5.13;
 
 import "@nomiclabs/buidler/console.sol";
 
-import '../../interfaces/IRCOracleProxyXdai.sol';
-import '../../interfaces/IRCOracleProxyMainnet.sol';
+import '../../interfaces/IRCProxyXdai.sol';
+import '../../interfaces/IRCProxyMainnet.sol';
 
 // a mockup to test changing the proxy, this is as per the original has a new number variable which is read
 contract BridgeMockupV2
@@ -27,11 +27,11 @@ contract BridgeMockupV2
         }
     }
 
-    function setOracleProxyMainnetAddress(address _newAddress) external {
+    function setProxyMainnetAddress(address _newAddress) external {
         oracleProxyMainnetAddress = _newAddress;
     }
 
-    function setOracleProxyXdaiAddress(address _newAddress) external {
+    function setProxyXdaiAddress(address _newAddress) external {
         oracleProxyXdaiAddress = _newAddress;
     }
 

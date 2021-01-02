@@ -1,12 +1,12 @@
 pragma solidity 0.5.13;
 
 import '../../interfaces/IRealitio.sol';
-import '../../interfaces/IRCOracleProxyXdai.sol';
+import '../../interfaces/IRCProxyXdai.sol';
 import '../../interfaces/IBridgeContract.sol';
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 
 // a mockup to test changing the proxy, this is as per the original but always returns winner of 69
-contract RCOracleProxyMainnetV2 is Ownable
+contract RCProxyMainnetV2 is Ownable
 {
     IRealitio public realitio;
     IBridgeContract public bridge; 
@@ -29,7 +29,7 @@ contract RCOracleProxyMainnetV2 is Ownable
     // OWNED FUNCTIONS
     
     /// @dev not set in constructor, address not known at deployment
-    function setOracleProxyXdaiAddress(address _newAddress) onlyOwner external {
+    function setProxyXdaiAddress(address _newAddress) onlyOwner external {
         oracleProxyXdaiAddress = _newAddress;
     }
 
@@ -72,7 +72,7 @@ contract RCOracleProxyMainnetV2 is Ownable
         // if finalised, send result over to xDai proxy
         if (_isFinalized) {
             bytes32 _winningOutcome = bytes32(uint(69));
-            bytes4 _methodSelector = IRCOracleProxyXdai(address(0)).setWinner.selector;
+            bytes4 _methodSelector = IRCProxyXdai(address(0)).setWinner.selector;
             bytes memory data = abi.encodeWithSelector(_methodSelector, _marketAddress, _winningOutcome);
             bridge.requireToPassMessage(oracleProxyXdaiAddress,data,200000);
         }

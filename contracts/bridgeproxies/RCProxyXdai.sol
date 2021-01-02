@@ -2,27 +2,31 @@ pragma solidity 0.5.13;
 
 import "@nomiclabs/buidler/console.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
-import '../interfaces/IRCOracleProxyMainnet.sol';
+import '../interfaces/IRCProxyMainnet.sol';
 import '../interfaces/IBridgeContract.sol';
+import '../interfaces/IRCMarket.sol';
 
-/// @title Reality Cards Oracle Proxy- xDai side
+/// @title Reality Cards Proxy- xDai side
 /// @author Andrew Stanger
-contract RCOracleProxyXdai is Ownable
+contract RCProxyXdai is Ownable
 {
     ////////////////////////////////////
     //////// VARIABLES /////////////////
     ////////////////////////////////////
 
-    // contract variables
+    /// @dev contract variables
     IBridgeContract public bridge;
 
-    // governance variables
+    /// @dev governance variables
     address public oracleProxyMainnetAddress;
     address public factoryAddress;
     
-    // market resolution variables
+    /// @dev market resolution variables
     mapping (address => bool) public marketFinalized;
     mapping (address => uint256) public winningOutcome;
+
+    /// @dev so only markets can upgrade NFTs
+    mapping (address => bool) public isMarket;
 
     ////////////////////////////////////
     ////////// CONSTRUCTOR /////////////
@@ -32,6 +36,17 @@ contract RCOracleProxyXdai is Ownable
         setBridgeXdaiAddress(_bridgeXdaiAddress);
         setFactoryAddress(_factoryAddress);
     }
+
+    ////////////////////////////////////
+    //////////// ADD MARKETS ///////////
+    ////////////////////////////////////
+
+    /// @dev so only RC NFTs can be upgraded
+    function addMarket(address _newMarket) external returns(bool) {
+        require(msg.sender == factoryAddress, "Not factory");
+        isMarket[_newMarket] = true;
+        return true;
+    }
     
     ////////////////////////////////////
     ////////// GOVERNANCE //////////////
@@ -39,7 +54,7 @@ contract RCOracleProxyXdai is Ownable
     
     /// @dev address of mainnet oracle proxy, called by the mainnet side of the arbitrary message bridge
     /// @dev not set in constructor, address not known at deployment
-    function setOracleProxyMainnetAddress(address _newAddress) onlyOwner external {
+    function setProxyMainnetAddress(address _newAddress) onlyOwner external {
         oracleProxyMainnetAddress = _newAddress;
     }
 
@@ -54,20 +69,20 @@ contract RCOracleProxyXdai is Ownable
     }
 
     /// @dev admin override of the Oracle, if not yet settled, for amicable resolution, or bridge fails
-    function amicableResolution(address _marketAddress, uint256 _winningOutcome) onlyOwner public {
+    function setAmicableResolution(address _marketAddress, uint256 _winningOutcome) onlyOwner public {
         require(!marketFinalized[_marketAddress], "Event finalised");
         marketFinalized[_marketAddress] = true;
         winningOutcome[_marketAddress] = _winningOutcome;
     }
     
     ////////////////////////////////////
-    ///////// CORE FUNCTIONS ///////////
+    ///// CORE FUNCTIONS - ORACLE //////
     ////////////////////////////////////
 
     /// @dev called by factory upon market creation, posts question to Oracle via arbitrary message bridge
-    function sendQuestionToBridge(address _marketAddress, string memory _question, uint32 _oracleResolutionTime) public {
+    function sendQuestionToBridge(address _marketAddress, string calldata _question, uint32 _oracleResolutionTime) external {
         require(msg.sender == factoryAddress, "Not factory");
-        bytes4 _methodSelector = IRCOracleProxyMainnet(address(0)).postQuestionToOracle.selector;
+        bytes4 _methodSelector = IRCProxyMainnet(address(0)).postQuestionToOracle.selector;
         bytes memory data = abi.encodeWithSelector(_methodSelector, _marketAddress, _question, _oracleResolutionTime);
         bridge.requireToPassMessage(oracleProxyMainnetAddress,data,200000);
     }
@@ -90,5 +105,16 @@ contract RCOracleProxyXdai is Ownable
     function getWinner(address _marketAddress) external view returns(uint256) {
         require(marketFinalized[_marketAddress], "Not finalised");
         return winningOutcome[_marketAddress];
+    }
+
+    ////////////////////////////////////
+    /// CORE FUNCTIONS - NFT UPGRADES //
+    ////////////////////////////////////
+
+    function upgradeNft(uint256 _tokenId, string calldata _tokenUri, address _owner) external {
+        require(isMarket[msg.sender], "Not market");
+        bytes4 _methodSelector = IRCProxyMainnet(address(0)).upgradeNft.selector;
+        bytes memory data = abi.encodeWithSelector(_methodSelector, _tokenId, _tokenUri, _owner);
+        bridge.requireToPassMessage(oracleProxyMainnetAddress,data,200000);
     }
 }
