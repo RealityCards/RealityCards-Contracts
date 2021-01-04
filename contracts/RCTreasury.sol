@@ -69,7 +69,8 @@ contract RCTreasury is Ownable {
 
     modifier balancedBooks() {
         _;
-        assert(address(this).balance == totalDeposits + totalMarketPots);
+        // using >= not == because forced Ether send via selfdestruct will not trigger a deposit
+        assert(address(this).balance >= totalDeposits + totalMarketPots);
     }
 
     modifier onlyMarkets {

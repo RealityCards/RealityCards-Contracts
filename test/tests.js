@@ -16,6 +16,7 @@ var XdaiProxy = artifacts.require('./bridgeproxies/RCProxyXdai.sol');
 var MainnetProxy = artifacts.require('./bridgeproxies/RCProxyMainnet.sol');
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 var BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
+var SelfDestructMockup = artifacts.require("./mockups/SelfDestructMockup.sol");
 
 // redeploys
 var RCFactory2 = artifacts.require('./RCFactoryV2.sol');
@@ -4249,6 +4250,15 @@ it('check token Ids of second market make sense', async () => {
     assert.equal(ownerMarket,user6);
     var ownerNftHub = await nfthub.ownerOf.call(20);
     assert.equal(ownerNftHub,user6);
+});
+
+it('test force sending Ether to Treasury via self destruct', async () => {
+    selfdestruct = await SelfDestructMockup.new();
+    // send ether direct to self destruct contract
+    await selfdestruct.send(web3.utils.toWei('1000', 'ether')); 
+    await selfdestruct.killme(treasury.address);
+    // do a regs deposit
+    await depositDai(100,user6);
 });
 
 });
