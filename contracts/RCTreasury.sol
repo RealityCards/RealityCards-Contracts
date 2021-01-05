@@ -69,7 +69,7 @@ contract RCTreasury is Ownable {
 
     modifier balancedBooks() {
         _;
-        // using >= not == because forced Ether send via selfdestruct will not trigger a deposit
+        // using >= not == because forced Ether send via selfdestruct will not trigger a deposit via the fallback
         assert(address(this).balance >= totalDeposits + totalMarketPots);
     }
 
@@ -248,7 +248,7 @@ contract RCTreasury is Ownable {
         return true;
     }
  
-    /// @dev sending ether direct is equal to a deposit, if this was not here balancedBooks modifier would break. 
+    /// @dev sending ether direct is equal to a deposit
     function() external payable {
         assert(deposit(msg.sender));
     }

@@ -502,7 +502,6 @@ contract RCMarket is Initializable {
             ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].owner = msg.sender; 
             // externals
             _transferCard(_currentOwner, msg.sender, _tokenId);
-            emit LogNewRental(msg.sender, _timeHeldLimit, _newPrice, _tokenId); 
         }
 
         // update timeHeldLimit for user
@@ -517,6 +516,8 @@ contract RCMarket is Initializable {
         if (exitFlag[msg.sender][_tokenId]) {
             exitFlag[msg.sender][_tokenId] = false;
         }
+
+        emit LogNewRental(msg.sender, _timeHeldLimit, _newPrice, _tokenId); 
     }
 
     /// @notice to change your timeHeldLimit without having to re-rent
