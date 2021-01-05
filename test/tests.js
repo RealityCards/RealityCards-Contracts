@@ -2781,9 +2781,17 @@ it('newRental check failures', async () => {
     await depositDai(1000,user0);
     // check newRental stuff
     await expectRevert(realitycards.newRental(web3.utils.toWei('0.5', 'ether'),maxuint256,0,{ from: user}), "Minimum rental 1 Dai");
-    await newRental(1,0,user0);
-    await expectRevert(realitycards.newRental(web3.utils.toWei('1', 'ether'),maxuint256,0,{ from: user}), "Price too low");
     await expectRevert(realitycards.newRental(web3.utils.toWei('1', 'ether'),maxuint256,23,{ from: user}), "This token does not exist");
+    // check 10% thing
+    await newRental(1,0,user0); 
+    var validPriceBool = await realitycards.newRental.call(web3.utils.toWei('1.05', 'ether'),maxuint256,0,{ from: user});
+    assert.equal(validPriceBool, false);
+    // check that card is not actually rented
+    await realitycards.newRental(web3.utils.toWei('1.05', 'ether'),maxuint256,0,{ from: user});
+    var price = await realitycards.price.call(0);
+    assert.equal(price,web3.utils.toWei('1', 'ether'));
+    var validPriceBool = await realitycards.newRental.call(web3.utils.toWei('1.1', 'ether'),maxuint256,0,{ from: user});
+    assert.equal(validPriceBool, true);
     // withdraw for next test
     await withdrawDeposit(1000,user0);
     });
@@ -3806,19 +3814,24 @@ it('check onlyOwner is on relevant Factory functions', async () => {
 });
 
 it('test setMinimumPriceIncrease', async () => {
+    user = user0;
     var realitycards2 = await createMarketCustomMode(0);
     /////// SETUP //////
     await depositDai(1000,user0);
     await depositDai(1000,user1);
     await newRentalCustomContract(realitycards2,1,0,user0); 
-    // 5% increase, should fail
-    await expectRevert(newRentalCustomContract(realitycards2,1.05,0,user1), "Price too low");
+    // 5% increase, should return false
+    var validPriceBool = await realitycards2.newRental.call(web3.utils.toWei('1.05', 'ether'),maxuint256,0,{ from: user});
+    assert.equal(validPriceBool, false);
     // update min to 5%, try again
     await rcfactory.setMinimumPriceIncrease(5);
     var realitycards3 = await createMarketCustomMode2(0);
-    await newRentalCustomContract(realitycards3,1.05,0,user1);
+    var validPriceBool = await realitycards3.newRental.call(web3.utils.toWei('1.05', 'ether'),maxuint256,0,{ from: user});
+    assert.equal(validPriceBool, true);
+    await realitycards3.newRental(web3.utils.toWei('1.05', 'ether'),maxuint256,0,{ from: user});
     // check rent all cards works
-    await realitycards3.rentAllCards({from:user0});
+    var price = await realitycards3.price(0);
+    await realitycards3.rentAllCards({from:user1});
     var price = await realitycards3.price(0);
     var priceShouldBe = ether('1.1025');
     assert.equal(price.toString(),priceShouldBe.toString());

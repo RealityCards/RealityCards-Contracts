@@ -465,59 +465,66 @@ contract RCMarket is Initializable {
         }
     }
 
-    /// @notice to rent a token
-    function newRental(uint256 _newPrice, uint256 _timeHeldLimit, uint256 _tokenId) public payable autoUnlock() autoLock() checkState(States.OPEN) {
-        require(_newPrice >= (price[_tokenId].mul(minimumPriceIncrease.add(100))).div(100), "Price too low");
+    /// @notice to rent a Card
+    function newRental(uint256 _newPrice, uint256 _timeHeldLimit, uint256 _tokenId) public payable autoUnlock() autoLock() checkState(States.OPEN) returns(bool) {
         require(_newPrice >= 1 ether, "Minimum rental 1 Dai");
         require(_tokenId < numberOfTokens, "This token does not exist");
-        _collectRent(_tokenId);
-        address _currentOwner = ownerOf(_tokenId);
 
-        // below must be after collectRent so timeHeld is up to date
-        // _timeHeldLimit = 0 = no limit
-        uint256 _minRentalTime = uint256(1 days).div(treasury.minRentalDivisor());
-        require(_timeHeldLimit == 0 || _timeHeldLimit >= timeHeld[_tokenId][msg.sender].add(_minRentalTime), "Limit too low"); 
+        bool _validPrice = false;
 
-        // process deposit, if sent
-        if (msg.value > 0) {
-            assert(treasury.deposit.value(msg.value)(msg.sender));
-        }
+        if (_newPrice >= (price[_tokenId].mul(minimumPriceIncrease.add(100))).div(100)) {
+            _collectRent(_tokenId);
+            _validPrice = true;
+            address _currentOwner = ownerOf(_tokenId);
 
-        // allocate minimum rental deposit (or increase if same owner)
-        assert(treasury.allocateCardSpecificDeposit(msg.sender, _currentOwner, _tokenId, _newPrice));
+            // below must be after collectRent so timeHeld is up to date
+            // _timeHeldLimit = 0 = no limit
+            uint256 _minRentalTime = uint256(1 days).div(treasury.minRentalDivisor());
+            require(_timeHeldLimit == 0 || _timeHeldLimit >= timeHeld[_tokenId][msg.sender].add(_minRentalTime), "Limit too low"); 
 
-        if (_currentOwner == msg.sender) { 
-            // bought by current owner- just change price
-            price[_tokenId] = _newPrice;
-            ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
-        } else {   
-             // if hot potato mode, pay current owner
-            if (mode == 2) {
-                assert(treasury.payCurrentOwner(msg.sender, _currentOwner, price[_tokenId]));
+            // process deposit, if sent
+            if (msg.value > 0) {
+                assert(treasury.deposit.value(msg.value)(msg.sender));
             }
-            // update internals
-            price[_tokenId] = _newPrice;
-            currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].add(1); 
-            ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
-            ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].owner = msg.sender; 
-            // externals
-            _transferCard(_currentOwner, msg.sender, _tokenId);
-        }
 
-        // update timeHeldLimit for user
-        if (_timeHeldLimit == 0) {
-                _timeHeldLimit = MAX_UINT256; // so 0 defaults to no limit
+            // allocate minimum rental deposit (or increase if same owner)
+            assert(treasury.allocateCardSpecificDeposit(msg.sender, _currentOwner, _tokenId, _newPrice));
+
+            if (_currentOwner == msg.sender) { 
+                // bought by current owner- just change price
+                price[_tokenId] = _newPrice;
+                ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
+            } else {   
+                // if hot potato mode, pay current owner
+                if (mode == 2) {
+                    assert(treasury.payCurrentOwner(msg.sender, _currentOwner, price[_tokenId]));
+                }
+                // update internals
+                price[_tokenId] = _newPrice;
+                currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].add(1); 
+                ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
+                ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].owner = msg.sender; 
+                // externals
+                _transferCard(_currentOwner, msg.sender, _tokenId);
             }
-        if (timeHeldLimit[_tokenId][msg.sender] != _timeHeldLimit) {
-            timeHeldLimit[_tokenId][msg.sender] = _timeHeldLimit;
-        }
-        
-        // make sure exit flag is set back to false
-        if (exitFlag[msg.sender][_tokenId]) {
-            exitFlag[msg.sender][_tokenId] = false;
+
+            // update timeHeldLimit for user
+            if (_timeHeldLimit == 0) {
+                    _timeHeldLimit = MAX_UINT256; // so 0 defaults to no limit
+                }
+            if (timeHeldLimit[_tokenId][msg.sender] != _timeHeldLimit) {
+                timeHeldLimit[_tokenId][msg.sender] = _timeHeldLimit;
+            }
+            
+            // make sure exit flag is set back to false
+            if (exitFlag[msg.sender][_tokenId]) {
+                exitFlag[msg.sender][_tokenId] = false;
+            }
+
+            emit LogNewRental(msg.sender, _timeHeldLimit, _newPrice, _tokenId); 
         }
 
-        emit LogNewRental(msg.sender, _timeHeldLimit, _newPrice, _tokenId); 
+        return _validPrice;
     }
 
     /// @notice to change your timeHeldLimit without having to re-rent
