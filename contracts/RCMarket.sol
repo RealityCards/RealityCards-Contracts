@@ -451,7 +451,15 @@ contract RCMarket is Initializable {
     }
 
     /// @notice rent every Card at the minimum price
-    function rentAllCards() external {
+    function rentAllCards(uint256 _maxSumOfPrices) external {
+        // check that not being front run
+        uint256 _actualSumOfPrices;
+        for (uint i = 0; i < numberOfTokens; i++) {
+            _actualSumOfPrices = _actualSumOfPrices.add(price[i]);
+        }
+
+        require(_actualSumOfPrices <= _maxSumOfPrices, "Prices too high");
+
         for (uint i = 0; i < numberOfTokens; i++) {
             if (ownerOf(i) != msg.sender) {
                 uint _newPrice;
@@ -487,7 +495,7 @@ contract RCMarket is Initializable {
                 assert(treasury.deposit.value(msg.value)(msg.sender));
             }
 
-            // allocate minimum rental deposit (or increase if same owner)
+            // allocate minimum rental deposit (or increase if same owner) and unallocate current owner's minimum deposit
             assert(treasury.allocateCardSpecificDeposit(msg.sender, _currentOwner, _tokenId, _newPrice));
 
             if (_currentOwner == msg.sender) { 
