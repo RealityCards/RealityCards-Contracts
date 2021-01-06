@@ -444,7 +444,6 @@ contract RCMarketXdaiV1 is ERC721Full {
             timeAcquired[_tokenId] = now;
             // externals
             _transferTokenTo(_currentOwner, msg.sender, _newPrice, _tokenId);
-            emit LogNewRental(msg.sender, _newPrice, _tokenId); 
         }
 
         // update timeHeldLimit for user
@@ -465,6 +464,8 @@ contract RCMarketXdaiV1 is ERC721Full {
         if (marketLockingTime < now) {
             lockMarket();
         } 
+
+        emit LogNewRental(msg.sender, _newPrice, _tokenId); 
     }
 
     /// @notice to change your timeHeldLimit without having to re-rent
