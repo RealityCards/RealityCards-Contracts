@@ -2950,7 +2950,6 @@ it('check that users cannot transfer their NFTs until withdraw state', async() =
     await expectRevert(realitycards2.collectRentAllCards(), "Incorrect state");
     await expectRevert(realitycards2.newRental(0,maxuint256,0), "Incorrect state");
     await expectRevert(realitycards2.exit(0), "Incorrect state");
-    await expectRevert(realitycards2.rentAllCards(), "Incorrect state");
     await expectRevert(realitycards2.sponsor({value: 3}), "Incorrect state");
     await expectRevert(realitycards2.payArtist(), "Incorrect state");
     await expectRevert(realitycards2.payMarketCreator(), "Incorrect state");
@@ -3659,7 +3658,7 @@ it('test rentAllCards', async () => {
     await depositDai(1000,user0);
     await depositDai(1000,user1);
     await newRental(10,0,user1);
-    await realitycards.rentAllCards();
+    await realitycards.rentAllCards(web3.utils.toWei('100000', 'ether'));
     for (i = 0; i < 20; i++) {
         var owner = await realitycards.ownerOf.call(i);
         assert.equal(owner, user0);
@@ -3671,6 +3670,9 @@ it('test rentAllCards', async () => {
         var price = await realitycards.price.call(i);
         assert.equal(price, web3.utils.toWei('1', 'ether'));
     }
+    // sum of all prices is 19 + 11 = 30
+    await expectRevert(realitycards.rentAllCards(web3.utils.toWei('25', 'ether')), "Prices too high"); 
+    realitycards.rentAllCards(web3.utils.toWei('30', 'ether'));
     // withdraw
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
