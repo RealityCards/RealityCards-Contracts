@@ -213,7 +213,7 @@ module.exports = async (deployer, network, accounts) => {
 
     await factory.createMarket(
       0,
-      ipfsHashes[2], // ALREADY USED BY MARKET#2
+      ipfsHashes[2],
       timestamps,
       tokenURIs,
       artistAddress,
@@ -249,6 +249,46 @@ module.exports = async (deployer, network, accounts) => {
     await realitycards2.lockMarket()
     await time.increase(time.duration.hours(24))
     await realitycards2.determineWinner2('1')
+
+    // Collect rent for all cards
+    await realitycards.collectRentAllTokens()
+    await realitycards.collectRentAllTokens()
+    await realitycards.collectRentAllTokens()
+
+    // Test ownership time with exact values (NEW MARKET)
+
+    // market 4
+    // latestTime = await time.latest()
+    // threeWeeksInTheFuture = threeWeeks.add(latestTime)
+    // timestamps = [latestTime, threeWeeksInTheFuture, threeWeeksInTheFuture]
+
+    // await factory.createMarket(
+    //   0,
+    //   ipfsHashes[3],
+    //   timestamps,
+    //   tokenURIs,
+    //   artistAddress,
+    //   question,
+    //   tokenName
+    // )
+
+    // var marketAddress4 = await factory.getMostRecentMarket.call(0)
+    // console.log('marketAddress #4: ', marketAddress4)
+
+    // realitycards4 = await RealityCardsMarketXdaiV1.at(marketAddress4)
+
+    // marketState = await realitycards4.state.call()
+    // console.log('marketState: ', marketState.toString())
+
+    // price = await web3.utils.toWei('10', 'ether')
+    // deposit = await web3.utils.toWei('40', 'ether')
+    // await realitycards4.newRental(price, 0, '0', {
+    //   from: user8,
+    //   value: deposit
+    // })
+
+    // await time.increase(time.duration.days(4))
+    // await realitycards4.collectRentAllTokens()
 
     console.log('factory.address: ', factory.address)
     console.log('treasury.address: ', treasury.address)
