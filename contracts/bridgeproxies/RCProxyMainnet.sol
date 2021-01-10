@@ -1,6 +1,6 @@
 pragma solidity 0.5.13;
 
-import "@nomiclabs/buidler/console.sol";
+import "hardhat/console.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721Full.sol";
 import '../interfaces/IRealitio.sol';

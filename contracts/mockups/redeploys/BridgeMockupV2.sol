@@ -1,6 +1,6 @@
 pragma solidity 0.5.13;
 
-import "@nomiclabs/buidler/console.sol";
+import "hardhat/console.sol";
 
 import '../../interfaces/IRCProxyXdai.sol';
 import '../../interfaces/IRCProxyMainnet.sol';

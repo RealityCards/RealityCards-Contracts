@@ -3,7 +3,7 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@nomiclabs/buidler/console.sol";
+import "hardhat/console.sol";
 import '../../lib/CloneFactory.sol';
 import "../../interfaces/ITreasury.sol";
 import '../../interfaces/IRCMarket.sol';

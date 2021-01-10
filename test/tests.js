@@ -3833,7 +3833,7 @@ it('test setMinimumPriceIncrease', async () => {
     await realitycards3.newRental(web3.utils.toWei('1.05', 'ether'),maxuint256,0,{ from: user});
     // check rent all cards works
     var price = await realitycards3.price(0);
-    await realitycards3.rentAllCards({from:user1});
+    await realitycards3.rentAllCards(web3.utils.toWei('100', 'ether'),{from:user1});
     var price = await realitycards3.price(0);
     var priceShouldBe = ether('1.1025');
     assert.equal(price.toString(),priceShouldBe.toString());

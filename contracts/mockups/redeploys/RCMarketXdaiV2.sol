@@ -2,7 +2,7 @@ pragma solidity 0.5.13;
 
 import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "@openzeppelin/upgrades/contracts/Initializable.sol";
-import "@nomiclabs/buidler/console.sol";
+import "hardhat/console.sol";
 import "../../interfaces/IRealitio.sol";
 import "../../interfaces/IFactory.sol";
 import "../../interfaces/ITreasury.sol";

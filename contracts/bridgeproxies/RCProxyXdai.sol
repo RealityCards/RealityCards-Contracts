@@ -1,6 +1,6 @@
 pragma solidity 0.5.13;
 
-import "@nomiclabs/buidler/console.sol";
+import "hardhat/console.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 import '../interfaces/IRCProxyMainnet.sol';
 import '../interfaces/IBridgeContract.sol';

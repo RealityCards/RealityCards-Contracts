@@ -1,6 +1,6 @@
 pragma solidity 0.5.13;
 
-import "@nomiclabs/buidler/console.sol";
+import "hardhat/console.sol";
 
 // a mockup to test changing the proxy, this is as per the original but always says the winner is 69
 contract RealitioMockupV2

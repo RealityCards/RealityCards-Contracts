@@ -3,7 +3,7 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721Full.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
-import "@nomiclabs/buidler/console.sol";
+import "hardhat/console.sol";
 import './interfaces/IRCProxyXdai.sol';
 import './interfaces/IRCMarket.sol';
 

@@ -1,17 +1,18 @@
 pragma solidity 0.5.13;
 
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
 import "@openzeppelin/upgrades/contracts/Initializable.sol";
-import "@nomiclabs/buidler/console.sol";
+import "hardhat/console.sol";
 import "./interfaces/IRealitio.sol";
 import "./interfaces/IFactory.sol";
 import "./interfaces/ITreasury.sol";
 import './interfaces/IRCProxyXdai.sol';
 import './interfaces/IRCNftHub.sol';
+import './lib/NativeMetaTransaction.sol';
 
 /// @title Reality Cards Market
 /// @author Andrew Stanger
-contract RCMarket is Initializable {
+/// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!!
+contract RCMarket is Initializable, NativeMetaTransaction {
 
     using SafeMath for uint256;
 
@@ -140,6 +141,9 @@ contract RCMarket is Initializable {
     ) public initializer {
         assert(_mode <= 2);
 
+        // initialise MetaTransactions
+        _initializeEIP712("RealityCardsMarket","1");
+
         // external contract variables:
         factory = IFactory(msg.sender);
         treasury = factory.treasury();
@@ -258,7 +262,7 @@ contract RCMarket is Initializable {
 
     /// @notice what it says on the tin
     modifier onlyTokenOwner(uint256 _tokenId) {
-        require(msg.sender == ownerOf(_tokenId), "Not owner");
+        require(msgSender() == ownerOf(_tokenId), "Not owner");
        _;
     }
 
@@ -344,8 +348,8 @@ contract RCMarket is Initializable {
     /// @notice pays out winnings, or returns funds
     /// @dev public because called by withdrawWinningsAndDeposit
     function withdraw() external checkState(States.WITHDRAW) {
-        require(!userAlreadyWithdrawn[msg.sender], "Already withdrawn");
-        userAlreadyWithdrawn[msg.sender] = true;
+        require(!userAlreadyWithdrawn[msgSender()], "Already withdrawn");
+        userAlreadyWithdrawn[msgSender()] = true;
         if (totalTimeHeld[winningOutcome] > 0) {
             _payoutWinnings();
         } else {
@@ -358,28 +362,28 @@ contract RCMarket is Initializable {
         uint256 _winningsToTransfer;
         uint256 _remainingCut = ((((uint256(1000).sub(artistCut)).sub(affiliateCut))).sub(cardAffiliateCut).sub(winnerCut)).sub(creatorCut); 
         // calculate longest owner's extra winnings, if relevant
-        if (longestOwner[winningOutcome] == msg.sender && winnerCut > 0){
+        if (longestOwner[winningOutcome] == msgSender() && winnerCut > 0){
             _winningsToTransfer = (totalCollected.mul(winnerCut)).div(1000);
         }
         // calculate normal winnings, if any
         uint256 _remainingPot = (totalCollected.mul(_remainingCut)).div(1000);
-        uint256 _winnersTimeHeld = timeHeld[winningOutcome][msg.sender];
+        uint256 _winnersTimeHeld = timeHeld[winningOutcome][msgSender()];
         uint256 _numerator = _remainingPot.mul(_winnersTimeHeld);
         _winningsToTransfer = _winningsToTransfer.add(_numerator.div(totalTimeHeld[winningOutcome]));
         require(_winningsToTransfer > 0, "Not a winner");
-        _payout(msg.sender, _winningsToTransfer);
-        emit LogWinningsPaid(msg.sender, _winningsToTransfer);
+        _payout(msgSender(), _winningsToTransfer);
+        emit LogWinningsPaid(msgSender(), _winningsToTransfer);
     }
 
     /// @notice returns all funds to users in case of invalid outcome
     function _returnRent() internal {
         // deduct artist share and card specific share if relevant but NOT market creator share or winner's share (no winner, market creator does not deserve)
         uint256 _remainingCut = ((uint256(1000).sub(artistCut)).sub(affiliateCut)).sub(cardAffiliateCut);      
-        uint256 _rentCollected = collectedPerUser[msg.sender];
+        uint256 _rentCollected = collectedPerUser[msgSender()];
         require(_rentCollected > 0, "Paid no rent");
         uint256 _rentCollectedAdjusted = (_rentCollected.mul(_remainingCut)).div(1000);
-        _payout(msg.sender, _rentCollectedAdjusted);
-        emit LogRentReturned(msg.sender, _rentCollectedAdjusted);
+        _payout(msgSender(), _rentCollectedAdjusted);
+        emit LogRentReturned(msgSender(), _rentCollectedAdjusted);
     }
 
     /// @notice all payouts happen through here
@@ -457,11 +461,10 @@ contract RCMarket is Initializable {
         for (uint i = 0; i < numberOfTokens; i++) {
             _actualSumOfPrices = _actualSumOfPrices.add(price[i]);
         }
-
         require(_actualSumOfPrices <= _maxSumOfPrices, "Prices too high");
 
         for (uint i = 0; i < numberOfTokens; i++) {
-            if (ownerOf(i) != msg.sender) {
+            if (ownerOf(i) != msgSender()) {
                 uint _newPrice;
                 if (price[i]>0) {
                     _newPrice = (price[i].mul(minimumPriceIncrease.add(100))).div(100);
@@ -488,48 +491,48 @@ contract RCMarket is Initializable {
             // below must be after collectRent so timeHeld is up to date
             // _timeHeldLimit = 0 = no limit
             uint256 _minRentalTime = uint256(1 days).div(treasury.minRentalDivisor());
-            require(_timeHeldLimit == 0 || _timeHeldLimit >= timeHeld[_tokenId][msg.sender].add(_minRentalTime), "Limit too low"); 
+            require(_timeHeldLimit == 0 || _timeHeldLimit >= timeHeld[_tokenId][msgSender()].add(_minRentalTime), "Limit too low"); 
 
             // process deposit, if sent
             if (msg.value > 0) {
-                assert(treasury.deposit.value(msg.value)(msg.sender));
+                assert(treasury.deposit.value(msg.value)(msgSender()));
             }
 
             // allocate minimum rental deposit (or increase if same owner) and unallocate current owner's minimum deposit
-            assert(treasury.allocateCardSpecificDeposit(msg.sender, _currentOwner, _tokenId, _newPrice));
+            assert(treasury.allocateCardSpecificDeposit(msgSender(), _currentOwner, _tokenId, _newPrice));
 
-            if (_currentOwner == msg.sender) { 
+            if (_currentOwner == msgSender()) { 
                 // bought by current owner- just change price
                 price[_tokenId] = _newPrice;
                 ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
             } else {   
                 // if hot potato mode, pay current owner
                 if (mode == 2) {
-                    assert(treasury.payCurrentOwner(msg.sender, _currentOwner, price[_tokenId]));
+                    assert(treasury.payCurrentOwner(msgSender(), _currentOwner, price[_tokenId]));
                 }
                 // update internals
                 price[_tokenId] = _newPrice;
                 currentOwnerIndex[_tokenId] = currentOwnerIndex[_tokenId].add(1); 
                 ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].price = _newPrice;
-                ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].owner = msg.sender; 
+                ownerTracker[_tokenId][currentOwnerIndex[_tokenId]].owner = msgSender(); 
                 // externals
-                _transferCard(_currentOwner, msg.sender, _tokenId);
+                _transferCard(_currentOwner, msgSender(), _tokenId);
             }
 
             // update timeHeldLimit for user
             if (_timeHeldLimit == 0) {
                     _timeHeldLimit = MAX_UINT256; // so 0 defaults to no limit
                 }
-            if (timeHeldLimit[_tokenId][msg.sender] != _timeHeldLimit) {
-                timeHeldLimit[_tokenId][msg.sender] = _timeHeldLimit;
+            if (timeHeldLimit[_tokenId][msgSender()] != _timeHeldLimit) {
+                timeHeldLimit[_tokenId][msgSender()] = _timeHeldLimit;
             }
             
             // make sure exit flag is set back to false
-            if (exitFlag[msg.sender][_tokenId]) {
-                exitFlag[msg.sender][_tokenId] = false;
+            if (exitFlag[msgSender()][_tokenId]) {
+                exitFlag[msgSender()][_tokenId] = false;
             }
 
-            emit LogNewRental(msg.sender, _timeHeldLimit, _newPrice, _tokenId); 
+            emit LogNewRental(msgSender(), _timeHeldLimit, _newPrice, _tokenId); 
         }
 
         return _validPrice;
@@ -539,12 +542,12 @@ contract RCMarket is Initializable {
     function updateTimeHeldLimit(uint256 _timeHeldLimit, uint256 _tokenId) external checkState(States.OPEN) {
         _collectRent(_tokenId);
         uint256 _minRentalTime = uint256(1 days).div(treasury.minRentalDivisor());
-        require(_timeHeldLimit == 0 || _timeHeldLimit >= timeHeld[_tokenId][msg.sender].add(_minRentalTime), "Limit too low");
+        require(_timeHeldLimit == 0 || _timeHeldLimit >= timeHeld[_tokenId][msgSender()].add(_minRentalTime), "Limit too low");
         if (_timeHeldLimit == 0) {
             _timeHeldLimit = MAX_UINT256; // so 0 defaults to no limit
         } 
-        timeHeldLimit[_tokenId][msg.sender] = _timeHeldLimit;
-        emit LogUpdateTimeHeldLimit(msg.sender, _timeHeldLimit, _tokenId); 
+        timeHeldLimit[_tokenId][msgSender()] = _timeHeldLimit;
+        emit LogUpdateTimeHeldLimit(msgSender(), _timeHeldLimit, _tokenId); 
     }
 
     /// @notice stop renting a token
@@ -552,22 +555,22 @@ contract RCMarket is Initializable {
     /// @dev doesn't need to be current owner so user can prevent ownership returning to them
     function exit(uint256 _tokenId) public checkState(States.OPEN) {
         // if current owner, collect rent, revert if necessary
-        if (ownerOf(_tokenId) == msg.sender) {
+        if (ownerOf(_tokenId) == msgSender()) {
             // collectRent first, so correct rent to now is taken
             _collectRent(_tokenId);
             // if still the current owner and used all card specific deposit, revert immediately
-            if (ownerOf(_tokenId) == msg.sender) {
-                if (treasury.cardSpecificDeposits(address(this), msg.sender, _tokenId) == 0) {
-                    exitFlag[msg.sender][_tokenId] = true; // else they might get it back at lower price on revert
+            if (ownerOf(_tokenId) == msgSender()) {
+                if (treasury.cardSpecificDeposits(address(this), msgSender(), _tokenId) == 0) {
+                    exitFlag[msgSender()][_tokenId] = true; // else they might get it back at lower price on revert
                     _revertToPreviousOwner(_tokenId);
                     }
                 }
         }
         // set exit flag if not already set in all cases
-        if (!exitFlag[msg.sender][_tokenId]) {
-                exitFlag[msg.sender][_tokenId] = true;
+        if (!exitFlag[msgSender()][_tokenId]) {
+                exitFlag[msgSender()][_tokenId] = true;
         }
-        emit LogExit(msg.sender, _tokenId); 
+        emit LogExit(msgSender(), _tokenId); 
     }
 
     /// @notice stop renting all tokens
@@ -586,7 +589,7 @@ contract RCMarket is Initializable {
         assert(treasury.sponsor.value(msg.value)());
         totalCollected = totalCollected.add(msg.value);
         // just so user can get it back if invalid outcome
-        collectedPerUser[msg.sender] = collectedPerUser[msg.sender].add(msg.value); 
+        collectedPerUser[msgSender()] = collectedPerUser[msgSender()].add(msg.value); 
         // allocate equally to each token, in case card specific affiliates
         for (uint i = 0; i < numberOfTokens; i++) {
             collectedPerToken[i] =  collectedPerToken[i].add(msg.value.div(numberOfTokens));

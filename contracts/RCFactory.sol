@@ -2,18 +2,18 @@ pragma solidity 0.5.13;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/ownership/Ownable.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@nomiclabs/buidler/console.sol";
+import "hardhat/console.sol";
 import './lib/CloneFactory.sol';
 import "./interfaces/ITreasury.sol";
 import './interfaces/IRCMarket.sol';
 import './interfaces/IRCProxyXdai.sol';
 import './interfaces/IRCNftHub.sol';
+import './lib/NativeMetaTransaction.sol';
 
 /// @title Reality Cards Factory
 /// @author Andrew Stanger
-
-contract RCFactory is Ownable, CloneFactory {
+/// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!!
+contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
 
     using SafeMath for uint256;
     using SafeMath for uint32;
@@ -85,8 +85,11 @@ contract RCFactory is Ownable, CloneFactory {
     ////////////////////////////////////
 
     /// @dev Treasury must be deployed before Factory
-    constructor(ITreasury _treasuryAddress) public 
+    constructor(ITreasury _treasuryAddress) public
     {
+        // initialise MetaTransactions
+        _initializeEIP712("RealityCardsFactory","1");
+
         // at initiation, uberOwner and owner will be the same
         uberOwner = msg.sender;
 
@@ -120,14 +123,14 @@ contract RCFactory is Ownable, CloneFactory {
     ////////////////////////////////////
 
     modifier onlyGovernors() {
-        require(governors[msg.sender] || owner() == msg.sender, "Not approved");
+        require(governors[msgSender()] || owner() == msgSender(), "Not approved");
         _;
     }
 
     ////////////////////////////////////
     /////// GOVERNANCE- OWNER //////////
     ////////////////////////////////////
-    /// @dev all functions should be onlyOwner
+    /// @dev all functions should have onlyOwner modifier
 
     /// CALLED WITHIN CONSTRUCTOR (public)
 
@@ -193,7 +196,7 @@ contract RCFactory is Ownable, CloneFactory {
     ////////////////////////////////////
     ///// GOVERNANCE- GOVERNORS ////////
     ////////////////////////////////////
-    /// @dev should all be onlyGovernors
+    /// @dev all functions should have onlyGovernors modifier
 
     /// @notice markets are default hidden from the interface, this reveals them
     function approveOrUnapproveMarket(address _market) external onlyGovernors {
@@ -276,7 +279,7 @@ contract RCFactory is Ownable, CloneFactory {
 
         // check market creator is approved
         if (marketCreationGovernorsOnly) {
-            require(governors[msg.sender] || owner() == msg.sender, "Not approved");
+            require(governors[msgSender()] || owner() == msgSender(), "Not approved");
         }
 
         // check timestamps
@@ -304,7 +307,7 @@ contract RCFactory is Ownable, CloneFactory {
             _artistAddress: _artistAddress,
             _affiliateAddress: _affiliateAddress,
             _cardAffiliateAddresses: _cardAffiliateAddresses,
-            _marketCreatorAddress: msg.sender
+            _marketCreatorAddress: msgSender()
         });
 
         // create the NFTs
