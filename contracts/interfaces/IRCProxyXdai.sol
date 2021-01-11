@@ -5,7 +5,7 @@ interface IRCProxyXdai {
     function sendQuestionToBridge(address _marketAddress, string calldata _question, uint32 _oracleResolutionTime) external;
     function isFinalized(address _marketAddress) external view returns(bool);
     function getWinner(address _marketAddress) external view returns(uint256); 
-    function upgradeNft(uint256,uint256) external;
+    function upgradeCard(uint256, string calldata, address) external;
     function addMarket(address) external returns (bool);
     function daiTransferred(address _user, uint256 _amount) external;
 }

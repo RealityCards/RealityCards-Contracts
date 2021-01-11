@@ -2,18 +2,17 @@ pragma solidity 0.5.13;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "hardhat/console.sol";
-import './lib/CloneFactory.sol';
-import "./interfaces/ITreasury.sol";
-import './interfaces/IRCMarket.sol';
-import './interfaces/IRCProxyXdai.sol';
-import './interfaces/IRCNftHub.sol';
-import './lib/NativeMetaTransaction.sol';
+import '../../lib/CloneFactory.sol';
+import "../../interfaces/ITreasury.sol";
+import '../../interfaces/IRCMarket.sol';
+import '../../interfaces/IRCProxyXdai.sol';
+import '../../interfaces/IRCNftHub.sol';
 
-/// @title Reality Cards Factory
-/// @author Andrew Stanger
-/// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!!
-contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
+// mockup for testing, same except that nftmintcount is set at 20
+
+contract RCFactoryV2 is Ownable, CloneFactory {
 
     using SafeMath for uint256;
     using SafeMath for uint32;
@@ -24,7 +23,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
 
     ///// CONTRACT VARIABLES /////
     ITreasury public treasury;
-    IRCProxyXdai public proxy;
+    IRCProxyXdai public oracleproxy;
     IRCNftHub public nfthub;
 
     ///// CONTRACT ADDRESSES /////
@@ -67,7 +66,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
     mapping(string => bool) public existingSlug;
     /// @dev counts the total NFTs minted across all events
     /// @dev ... so the appropriate token id is used when upgrading to mainnet
-    uint256 public totalNftMintCount;
+    uint256 public totalNftMintCount = 20;
 
     ///// UBER OWNER /////
     /// @dev high level owner who can change the factory address
@@ -85,11 +84,8 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
     ////////////////////////////////////
 
     /// @dev Treasury must be deployed before Factory
-    constructor(ITreasury _treasuryAddress) public
+    constructor(ITreasury _treasuryAddress) public 
     {
-        // initialise MetaTransactions
-        _initializeEIP712("RealityCardsFactory","1");
-
         // at initiation, uberOwner and owner will be the same
         uberOwner = msg.sender;
 
@@ -119,18 +115,9 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
     }
 
     ////////////////////////////////////
-    //////////// MODIFERS //////////////
-    ////////////////////////////////////
-
-    modifier onlyGovernors() {
-        require(governors[msgSender()] || owner() == msgSender(), "Not approved");
-        _;
-    }
-
-    ////////////////////////////////////
     /////// GOVERNANCE- OWNER //////////
     ////////////////////////////////////
-    /// @dev all functions should have onlyOwner modifier
+    /// @dev all functions should be onlyOwner
 
     /// CALLED WITHIN CONSTRUCTOR (public)
 
@@ -163,7 +150,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
 
     /// @notice where the question to post to the oracle is first sent to
     function setProxyXdaiAddress(IRCProxyXdai _newAddress) external onlyOwner {
-        proxy = _newAddress;
+        oracleproxy = _newAddress;
     }
 
     /// @notice where the question to post to the oracle is first sent to
@@ -171,7 +158,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
         nfthub = _newAddress;
     }
 
-    /// @notice if true, Cards in unapproved markets can't be upgraded
+    /// @notice if true, Cards are burnt upon market resolution for unapproved markets
     function setTrapCardsIfUnapproved() onlyOwner external {
         trapIfUnapproved = trapIfUnapproved ? false : true;
     }
@@ -186,36 +173,38 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
         maximumDuration = _newMaximumDuration;
     }
 
-    // EDIT GOVERNORS
+    ////////////////////////////////////
+    ///// GOVERNANCE- GOVERNORS ////////
+    ////////////////////////////////////
+    /// @dev multiple addresses have the ability to approve markets, and add approved artists and affiliates
 
-    /// @notice add or remove an address from market creator whitelist
+     /// @notice add or remove an address from market creator whitelist, should be onlyOwner
     function addOrRemoveGovernor(address _governor) external onlyOwner {
         governors[_governor] = governors[_governor] ? false : true;
     }
 
-    ////////////////////////////////////
-    ///// GOVERNANCE- GOVERNORS ////////
-    ////////////////////////////////////
-    /// @dev all functions should have onlyGovernors modifier
-
     /// @notice markets are default hidden from the interface, this reveals them
-    function approveOrUnapproveMarket(address _market) external onlyGovernors {
+    function approveOrUnapproveMarket(address _market) external {
+        require(governors[msg.sender] || owner() == msg.sender, "Not approved");
         isMarketApproved[_market] = isMarketApproved[_market] ? false : true;
         emit LogMarketHidden(_market, isMarketApproved[_market]);
     }
 
     /// @notice artistAddress, passed in createMarket, must be approved
-    function addOrRemoveArtist(address _artist) external onlyGovernors {
+    function addOrRemoveArtist(address _artist) external {
+        require(governors[msg.sender] || owner() == msg.sender, "Not approved");
         isArtistApproved[_artist] = isArtistApproved[_artist] ? false : true;
     }
 
     /// @notice affiliateAddress, passed in createMarket, must be approved
-    function addOrRemoveAffiliate(address _affiliate) external onlyGovernors {
+    function addOrRemoveAffiliate(address _affiliate) external {
+        require(governors[msg.sender] || owner() == msg.sender, "Not approved");
         isAffiliateApproved[_affiliate] = isAffiliateApproved[_affiliate] ? false : true;
     }
 
     /// @notice cardAffiliateAddress, passed in createMarket, must be approved
-    function addOrRemoveCardAffiliate(address _affiliate) external onlyGovernors {
+    function addOrRemoveCardAffiliate(address _affiliate) external {
+        require(governors[msg.sender] || owner() == msg.sender, "Not approved");
         isCardAffiliateApproved[_affiliate] = isCardAffiliateApproved[_affiliate] ? false : true;
     }
 
@@ -229,7 +218,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
 
     /// @notice set the reference contract for the contract logic
     function setReferenceContractAddress(address _newAddress) external {
-        require(msg.sender == uberOwner, "Verboten");
+        require(msg.sender == uberOwner, "Access denied");
         // check it's an RC contract
         IRCMarket newContractVariable = IRCMarket(_newAddress);
         assert(newContractVariable.isMarket());
@@ -240,7 +229,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
     }
 
     function changeUberOwner(address _newUberOwner) external {
-        require(msg.sender == uberOwner, "Verboten");
+        require(msg.sender == uberOwner, "Access denied");
         uberOwner = _newUberOwner;
     }
 
@@ -279,7 +268,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
 
         // check market creator is approved
         if (marketCreationGovernorsOnly) {
-            require(governors[msgSender()] || owner() == msgSender(), "Not approved");
+            require(governors[msg.sender] || owner() == msg.sender, "Not approved");
         }
 
         // check timestamps
@@ -307,7 +296,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
             _artistAddress: _artistAddress,
             _affiliateAddress: _affiliateAddress,
             _cardAffiliateAddresses: _cardAffiliateAddresses,
-            _marketCreatorAddress: msgSender()
+            _marketCreatorAddress: msg.sender
         });
 
         // create the NFTs
@@ -321,12 +310,12 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
         totalNftMintCount = totalNftMintCount.add(_numberOfTokens);
 
         // post question to Oracle
-        require(address(proxy) != address(0), "xDai proxy not set");
-        proxy.sendQuestionToBridge(_newAddress, _realitioQuestion, _timestamps[2]);
+        require(address(oracleproxy) != address(0), "xDai proxy not set");
+        oracleproxy.sendQuestionToBridge(_newAddress, _realitioQuestion, _timestamps[2]);
 
         // tell Treasury and Bridge Proxy about new market
         assert(treasury.addMarket(_newAddress));
-        assert(proxy.addMarket(_newAddress));
+        assert(oracleproxy.addMarket(_newAddress));
         assert(nfthub.addMarket(_newAddress));
 
         // update internals

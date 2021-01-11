@@ -1,6 +1,6 @@
 pragma solidity 0.5.13;
 
-import "@nomiclabs/buidler/console.sol";
+import "hardhat/console.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721Full.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -26,12 +26,15 @@ contract RCProxyMainnet is Ownable, ERC721Full
     IERC20Dai public dai;
 
     /// @dev governance variables
-    address public oracleProxyXdaiAddress;
+    address public proxyXdaiAddress;
     address public arbitrator;
     uint32 public timeout;
     
     /// @dev market resolution variables
     mapping (address => bytes32) public questionIds;
+
+    /// @dev contractURI for opensea 
+    string public contractURI;
 
     ////////////////////////////////////
     ////////// CONSTRUCTOR /////////////
@@ -44,6 +47,7 @@ contract RCProxyMainnet is Ownable, ERC721Full
         setXdaiProxyAddress(_xDaiProxyAddress);
         setArbitrator(0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D); // kleros
         setTimeout(86400); // 24 hours
+        contractURI = "https://cdn.realitycards.io/contractmetadata.json";
     }
 
     ////////////////////////////////////
@@ -58,8 +62,8 @@ contract RCProxyMainnet is Ownable, ERC721Full
     
     /// @dev address of xdai oracle proxy, called by the xdai side of the arbitrary message bridge
     /// @dev not set in constructor, address not known at deployment
-    function setOracleProxyXdaiAddress(address _newAddress) onlyOwner external {
-        oracleProxyXdaiAddress = _newAddress;
+    function setProxyXdaiAddress(address _newAddress) onlyOwner external {
+        proxyXdaiAddress = _newAddress;
     }
 
     /// @dev address of arbitrary message bridge, mainnet side
@@ -111,7 +115,7 @@ contract RCProxyMainnet is Ownable, ERC721Full
 
     /// @dev admin can create NFTs
     /// @dev for situations where bridge failed
-    function upgradeNftAdmin(uint256 _newTokenId, string calldata _tokenUri, address _owner) onlyOwner external {
+    function upgradeCardAdmin(uint256 _newTokenId, string calldata _tokenUri, address _owner) onlyOwner external {
         _mint(_owner, _newTokenId);
         _setTokenURI(_newTokenId, _tokenUri);
     }  
@@ -123,13 +127,14 @@ contract RCProxyMainnet is Ownable, ERC721Full
     ///@notice called by xdai proxy via bridge, posts question to Oracle
     function postQuestionToOracle(address _marketAddress, string calldata _question, uint32 _oracleResolutionTime) external {
         require(msg.sender == address(bridge), "Not bridge");
-        require(bridge.messageSender() == oracleProxyXdaiAddress, "Not proxy");
+        require(bridge.messageSender() == proxyXdaiAddress, "Not proxy");
         bytes32 _questionId = realitio.askQuestion(2, _question, arbitrator, timeout, _oracleResolutionTime, 0);
         questionIds[_marketAddress] = _questionId;
         emit LogQuestionPostedToOracle(_marketAddress, _questionId);
     }
 
     /// @dev can be called by anyone, reads winner from Oracle and sends to xdai proxy via bridge
+    /// @dev can be called more than once, not a problem, xdai proxy will reject a second call
     function getWinnerFromOracle(address _marketAddress) external returns(bool) {
         bytes32 _questionId = questionIds[_marketAddress];
         bool _isFinalized = realitio.isFinalized(_questionId);
@@ -138,7 +143,7 @@ contract RCProxyMainnet is Ownable, ERC721Full
             bytes32 _winningOutcome = realitio.resultFor(_questionId);
             bytes4 _methodSelector = IRCProxyXdai(address(0)).setWinner.selector;
             bytes memory data = abi.encodeWithSelector(_methodSelector, _marketAddress, _winningOutcome);
-            bridge.requireToPassMessage(oracleProxyXdaiAddress,data,200000);
+            bridge.requireToPassMessage(proxyXdaiAddress,data,200000);
         }
         return _isFinalized;
     }
@@ -147,9 +152,9 @@ contract RCProxyMainnet is Ownable, ERC721Full
     /// CORE FUNCTIONS - NFT UPGRADES //
     ////////////////////////////////////
 
-    function upgradeNft(uint256 _newTokenId, string calldata _tokenUri, address _owner) external {
+    function upgradeCard(uint256 _newTokenId, string calldata _tokenUri, address _owner) external {
         require(msg.sender == address(bridge), "Not bridge");
-        require(bridge.messageSender() == oracleProxyXdaiAddress, "Not proxy");
+        require(bridge.messageSender() == proxyXdaiAddress, "Not proxy");
         _mint(_owner, _newTokenId);
         _setTokenURI(_newTokenId, _tokenUri);
     }  

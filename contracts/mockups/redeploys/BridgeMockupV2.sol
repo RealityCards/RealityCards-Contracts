@@ -1,6 +1,6 @@
 pragma solidity 0.5.13;
 
-import "@nomiclabs/buidler/console.sol";
+import "hardhat/console.sol";
 
 import '../../interfaces/IRCProxyXdai.sol';
 import '../../interfaces/IRCProxyMainnet.sol';
@@ -27,11 +27,11 @@ contract BridgeMockupV2
         }
     }
 
-    function setOracleProxyMainnetAddress(address _newAddress) external {
+    function setProxyMainnetAddress(address _newAddress) external {
         oracleProxyMainnetAddress = _newAddress;
     }
 
-    function setOracleProxyXdaiAddress(address _newAddress) external {
+    function setProxyXdaiAddress(address _newAddress) external {
         oracleProxyXdaiAddress = _newAddress;
     }
 

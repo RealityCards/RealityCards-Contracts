@@ -1,13 +1,13 @@
 pragma solidity 0.5.13;
 
 import "@openzeppelin/contracts/ownership/Ownable.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@nomiclabs/buidler/console.sol";
+import "hardhat/console.sol";
+import './lib/NativeMetaTransaction.sol';
 
 /// @title Reality Cards Treasury
 /// @author Andrew Stanger
-
-contract RCTreasury is Ownable {
+/// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!!
+contract RCTreasury is Ownable, NativeMetaTransaction {
 
     using SafeMath for uint256;
 
@@ -59,6 +59,9 @@ contract RCTreasury is Ownable {
     ////////////////////////////////////
 
     constructor() public {
+        // initialise MetaTransactions
+        _initializeEIP712("RealityCardsTreasury","1");
+
         // at initiation, uberOwner and owner will be the same
         uberOwner = msg.sender;
     }
@@ -69,7 +72,8 @@ contract RCTreasury is Ownable {
 
     modifier balancedBooks() {
         _;
-        assert(address(this).balance == totalDeposits + totalMarketPots);
+        // using >= not == because forced Ether send via selfdestruct will not trigger a deposit via the fallback
+        assert(address(this).balance >= totalDeposits + totalMarketPots);
     }
 
     modifier onlyMarkets {
@@ -94,27 +98,27 @@ contract RCTreasury is Ownable {
     /// @dev all functions should be onlyOwner
 
     /// @dev minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
-    function updateMinRental(uint256 _newDivisor) external onlyOwner() {
+    function setMinRental(uint256 _newDivisor) external onlyOwner {
         minRentalDivisor = _newDivisor;
     }
 
     /// @dev if hot potato mode, how much rent new owner must pay current owner (1 week divisor: i.e. 7 = 1 day, 14 = 12 hours)
-    function updateHotPotatoPayment(uint256 _newDivisor) external onlyOwner() {
+    function setHotPotatoPayment(uint256 _newDivisor) external onlyOwner {
         hotPotatoDivisor = _newDivisor;
     }
 
     /// @dev max deposit balance, to minimise funds at risk
-    function updateMaxContractBalance(uint256 _newBalanceLimit) external onlyOwner() {
+    function setMaxContractBalance(uint256 _newBalanceLimit) external onlyOwner {
         maxContractBalance = _newBalanceLimit;
     }
 
     /// @dev if true, cannot deposit or rent any cards, can still withdraw
-    function setGlobalPause() public onlyOwner() {
+    function setGlobalPause() public onlyOwner {
         globalPause = globalPause ? false : true;
     }
 
     /// @dev if true, cannot rent any cards for specific market
-    function pauseMarket(address _market) public onlyOwner() {
+    function setPauseMarket(address _market) public onlyOwner {
         marketPaused[_market] = marketPaused[_market] ? false : true;
     }
 
@@ -127,12 +131,12 @@ contract RCTreasury is Ownable {
     /// @dev ... while maintaining governance over other governanace functions
 
     function setFactoryAddress(address _newFactory) external {
-        require(msg.sender == uberOwner, "Access denied");
+        require(msg.sender == uberOwner, "Verboten");
         factoryAddress = _newFactory;
     }
 
     function changeUberOwner(address _newUberOwner) external {
-        require(msg.sender == uberOwner, "Access denied");
+        require(msg.sender == uberOwner, "Verboten");
         uberOwner = _newUberOwner;
     }
 
@@ -154,17 +158,17 @@ contract RCTreasury is Ownable {
 
     /// @dev this is the only function where funds leave the contract
     function withdrawDeposit(uint256 _dai) external balancedBooks()  {
-        require(deposits[msg.sender] > 0, "Nothing to withdraw");
-        if (_dai > deposits[msg.sender]) {
-            _dai = deposits[msg.sender];
+        require(deposits[msgSender()] > 0, "Nothing to withdraw");
+        if (_dai > deposits[msgSender()]) {
+            _dai = deposits[msgSender()];
         }
-        deposits[msg.sender] = deposits[msg.sender].sub(_dai);
+        deposits[msgSender()] = deposits[msgSender()].sub(_dai);
         totalDeposits = totalDeposits.sub(_dai);
-        address _thisAddressNotPayable = msg.sender;
+        address _thisAddressNotPayable = msgSender();
         address payable _recipient = address(uint160(_thisAddressNotPayable));
         (bool _success, ) = _recipient.call.value(_dai)("");
         require(_success, "Transfer failed");
-        emit LogDepositWithdrawal(_dai, msg.sender);
+        emit LogDepositWithdrawal(_dai, msgSender());
     }
 
     ////////////////////////////////////
@@ -176,20 +180,21 @@ contract RCTreasury is Ownable {
     /// @dev if current owner rents again, _newOwner and _currentOwner will be the same, this is fine; 
     /// @dev ... card specific deposit will just be increased 
     function allocateCardSpecificDeposit(address _newOwner, address _currentOwner, uint256 _tokenId, uint256 _newPrice) external balancedBooks() onlyMarkets() returns(bool) {
+        address _marketAddress = msg.sender;
         require(!globalPause, "Rentals are disabled");
-        require(!marketPaused[msg.sender], "Rentals are disabled");
+        require(!marketPaused[_marketAddress], "Rentals are disabled");
         uint256 _depositToAllocate = _newPrice.div(minRentalDivisor);
         require(deposits[_newOwner] >= _depositToAllocate, "Insufficient deposit");
 
         // first, unallocate card specific deposit of previous owner
-        if (cardSpecificDeposits[msg.sender][_currentOwner][_tokenId] > 0) {
-            deposits[_currentOwner] = deposits[_currentOwner].add(cardSpecificDeposits[msg.sender][_currentOwner][_tokenId]);
-            cardSpecificDeposits[msg.sender][_currentOwner][_tokenId] = 0;
+        if (cardSpecificDeposits[_marketAddress][_currentOwner][_tokenId] > 0) {
+            deposits[_currentOwner] = deposits[_currentOwner].add(cardSpecificDeposits[_marketAddress][_currentOwner][_tokenId]);
+            cardSpecificDeposits[_marketAddress][_currentOwner][_tokenId] = 0;
         }
 
         // allocate card specific deposit for new owner
         deposits[_newOwner] = deposits[_newOwner].sub(_depositToAllocate);
-        cardSpecificDeposits[msg.sender][_newOwner][_tokenId] = _depositToAllocate;
+        cardSpecificDeposits[_marketAddress][_newOwner][_tokenId] = _depositToAllocate;
         return true;
     }
 
@@ -207,7 +212,8 @@ contract RCTreasury is Ownable {
     /// @dev no require statement checking that user has sufficient deposit because _dai should have been reduced to the 
     /// @dev ... appropriate amount before this function is called (plus, safemath would enforce it anyway). 
     function payRent(address _user, uint256 _dai, uint256 _tokenId, bool _exitFlag) external balancedBooks() onlyMarkets() returns(bool) {
-        uint256 _cardSpecificDeposit = cardSpecificDeposits[msg.sender][_user][_tokenId];
+        address _marketAddress = msg.sender;
+        uint256 _cardSpecificDeposit = cardSpecificDeposits[_marketAddress][_user][_tokenId];
         // exitFlag true = only pay rent up to balance of cardSpecificDeposit and no more
         if (!_exitFlag) {
             if (_cardSpecificDeposit == 0) {
@@ -216,16 +222,16 @@ contract RCTreasury is Ownable {
             } else if (_cardSpecificDeposit < _dai) {
                 // specific deposit left, but not enough, zero it out and take remainder from general deposit
                 deposits[_user] = deposits[_user].sub(_dai.sub(_cardSpecificDeposit));
-                cardSpecificDeposits[msg.sender][_user][_tokenId] = 0;
+                cardSpecificDeposits[_marketAddress][_user][_tokenId] = 0;
             } else {
                 // specific deposit sufficient
-                cardSpecificDeposits[msg.sender][_user][_tokenId] = _cardSpecificDeposit.sub(_dai);
+                cardSpecificDeposits[_marketAddress][_user][_tokenId] = _cardSpecificDeposit.sub(_dai);
             }
         } else {
-            cardSpecificDeposits[msg.sender][_user][_tokenId] = _cardSpecificDeposit.sub(_dai);
+            cardSpecificDeposits[_marketAddress][_user][_tokenId] = _cardSpecificDeposit.sub(_dai);
         } 
         
-        marketPot[msg.sender] = marketPot[msg.sender].add(_dai);
+        marketPot[_marketAddress] = marketPot[_marketAddress].add(_dai);
         totalMarketPots = totalMarketPots.add(_dai);
         totalDeposits = totalDeposits.sub(_dai);
         return true;
@@ -233,7 +239,8 @@ contract RCTreasury is Ownable {
 
     /// @dev a payout is equivalent to moving from market pot to user's deposit (the opposite of payRent)
     function payout(address _user, uint256 _dai) external balancedBooks() onlyMarkets() returns(bool) {
-        marketPot[msg.sender] = marketPot[msg.sender].sub(_dai);
+        address _marketAddress = msg.sender;
+        marketPot[_marketAddress] = marketPot[_marketAddress].sub(_dai);
         deposits[_user] = deposits[_user].add(_dai);
         totalMarketPots = totalMarketPots.sub(_dai);
         totalDeposits = totalDeposits.add(_dai);
@@ -242,14 +249,15 @@ contract RCTreasury is Ownable {
 
     /// @notice ability to add liqudity to the pot without being able to win (called by market sponsor function). 
     function sponsor() external payable balancedBooks() onlyMarkets() returns(bool) {
-        marketPot[msg.sender] = marketPot[msg.sender].add(msg.value);
+        address _marketAddress = msgSender();
+        marketPot[_marketAddress] = marketPot[_marketAddress].add(msg.value);
         totalMarketPots = totalMarketPots.add(msg.value);
         return true;
     }
  
-    /// @dev sending ether direct is equal to a deposit, if this was not here balancedBooks modifier would break. 
+    /// @dev sending ether direct is equal to a deposit
     function() external payable {
-        assert(deposit(msg.sender));
+        assert(deposit(msgSender()));
     }
 
 }

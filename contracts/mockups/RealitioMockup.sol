@@ -1,6 +1,6 @@
 pragma solidity 0.5.13;
 
-import "@nomiclabs/buidler/console.sol";
+import "hardhat/console.sol";
 
 // this is only for ganache testing. Public chain deployments will use the existing Realitio contracts. 
 
