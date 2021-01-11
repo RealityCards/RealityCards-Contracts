@@ -2,6 +2,7 @@ pragma solidity 0.5.13;
 
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import '../interfaces/IRCProxyMainnet.sol';
 import '../interfaces/IBridgeContract.sol';
 import '../interfaces/IRCMarket.sol';
@@ -11,6 +12,7 @@ import '../interfaces/ITreasury.sol';
 /// @author Andrew Stanger
 contract RCProxyXdai is Ownable
 {
+    using SafeMath for uint256;
     ////////////////////////////////////
     //////// VARIABLES /////////////////
     ////////////////////////////////////
@@ -31,11 +33,17 @@ contract RCProxyXdai is Ownable
     mapping (address => bool) public isMarket;
 
     /// @dev dai deposit variables
+    uint256 validatorCount;
+    mapping (address => bool) isValidator;
+    mapping (uint256 => Deposit) deposits;
+    mapping (uint256 => mapping(address => bool)) hasConfirmedDeposit;
+
     struct Deposit {
         address user;
         uint256 amount;
+        uint256 confirmations;
+        bool executed;
     }
-    Deposit[] public openDeposits;
 
     ////////////////////////////////////
     ////////// CONSTRUCTOR /////////////
@@ -83,6 +91,21 @@ contract RCProxyXdai is Ownable
         marketFinalized[_marketAddress] = true;
         winningOutcome[_marketAddress] = _winningOutcome;
     }
+
+    /// @dev modify validators for dai deposits
+    function setValidator(address _validatorAddress, bool _add) onlyOwner public {
+        if(_add) {
+            if(!isValidator[_validatorAddress]) {
+                isValidator[_validatorAddress] = true;
+                validatorCount = validatorCount.add(1);
+            }
+        } else {
+            if(isValidator[_validatorAddress]) {
+                isValidator[_validatorAddress] = false;
+                validatorCount = validatorCount.sub(1);
+            }
+        }
+    }
     
     ////////////////////////////////////
     ///// CORE FUNCTIONS - ORACLE //////
@@ -127,42 +150,32 @@ contract RCProxyXdai is Ownable
         bridge.requireToPassMessage(proxyMainnetAddress,data,200000);
     }
 
-    function daiTransferred(address _user, uint256 _amount) external {
-        require(msg.sender == address(bridge), "Not bridge");
-        require(bridge.messageSender() == oracleProxyMainnetAddress, "Not proxy");
-        // if there is enough balance in this contract to do the deposit ...
-        if(address(this).balance >= _amount) {
+    function confirmDaiDeposit(address _user, uint256 _amount, uint256 _nonce) external {
+        require(isValidator[msg.sender], "Not a validator");
+
+        // If the deposit is new, create it
+        if(deposits[_nonce].user == address(0)) {
+            Deposit memory newDeposit = Deposit(_user, _amount, 0, false);
+            deposits[_nonce] = newDeposit;
+        }
+
+        // Only valid if these match
+        require(deposits[_nonce].user == _user, "Addresses don't match");
+        
+        // Add 1 confirmation, if this hasn't been done already
+        // Note: allowing to execute this twice in case there was
+        // not enough money initially
+        if(!hasConfirmedDeposit[_nonce][msg.sender]) {
+            hasConfirmedDeposit[_nonce][msg.sender] = true;
+            deposits[_nonce].confirmations = deposits[_nonce].confirmations.add(1);
+        }
+
+        // Execute if not already done so, enough confirmations and enough money
+        if(!deposits[_nonce].executed && deposits[_nonce].confirmations >= (validatorCount.div(2)).add(1) && address(this).balance >= _amount) {
+            deposits[_nonce].executed = true;
             // do the deposit directly
             ITreasury treasury = ITreasury(treasuryAddress);
             assert(treasury.deposit.value(_amount)(_user));
-        } else {
-            // otherwise queue for later processing
-            openDeposits.push(Deposit(_user, _amount));
-        }
-    }
-
-    function openDepositsExist() public view returns(bool) {
-       if(openDeposits.length == 0) {
-           return false;
-       }
-       return true;
-    }
-
-    function processOpenDeposits() public {
-        if(openDeposits.length == 0) return;
-        for(uint256 i = openDeposits.length; i > 0; i--) {
-            ITreasury treasury = ITreasury(treasuryAddress);
-            // if the contract has the necessary balance to facilitate this deposit...
-            if(address(this).balance >= openDeposits[i-1].amount) {
-                // do the deposit
-                bool success = treasury.deposit.value(openDeposits[i-1].amount)(openDeposits[i-1].user);
-                // if it was successfull...
-                if(success) {
-                    // delete this from the open deposits
-                    delete openDeposits[i-1];
-                    openDeposits.length--;
-                }
-            }
         }
     }
 }

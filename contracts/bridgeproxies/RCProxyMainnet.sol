@@ -36,6 +36,9 @@ contract RCProxyMainnet is Ownable, ERC721Full
     /// @dev contractURI for opensea 
     string public contractURI;
 
+    /// @dev dai deposits
+    uint256 internal depositNonce;
+
     ////////////////////////////////////
     ////////// CONSTRUCTOR /////////////
     ////////////////////////////////////
@@ -55,6 +58,7 @@ contract RCProxyMainnet is Ownable, ERC721Full
     ////////////////////////////////////
 
     event LogQuestionPostedToOracle(address indexed marketAddress, bytes32 indexed questionId);
+    event DaiDeposited(address indexed user, uint256 amount, uint256 nonce);
 
     ////////////////////////////////////
     /////// GOVERNANCE - SETUP /////////
@@ -164,7 +168,7 @@ contract RCProxyMainnet is Ownable, ERC721Full
     ////////////////////////////////////
 
     function depositDai(uint256 _amount) external {
-        _depositDai(_amount, msg.sender);
+        _depositDai(_amount, msg.sender); 
     }
 
     function permitAndDepositDai(address holder, address spender, uint256 nonce, uint256 expiry, bool allowed, uint8 v, bytes32 r, bytes32 s, uint256 _amount) external {
@@ -178,11 +182,8 @@ contract RCProxyMainnet is Ownable, ERC721Full
         require(alternateReceiverBridge.withinLimit(_amount), "deposit not within bridge limits");
 
         // Send the amount of tokens via the alternate receiver bridge
-        alternateReceiverBridge.relayTokens(_sender, address(proxyXdai), _amount);        
+        alternateReceiverBridge.relayTokens(_sender, address(proxyXdai), _amount);
 
-        // Call xDai proxy through the AMB
-        bytes4 _methodSelector = IRCProxyXdai(address(0)).daiTransferred.selector;
-        bytes memory data = abi.encodeWithSelector(_methodSelector, _sender, _amount);
-        bridge.requireToPassMessage(oracleProxyXdaiAddress,data,300000);
+        emit DaiDeposited(_sender, _amount, depositNonce++);
     }
 }
