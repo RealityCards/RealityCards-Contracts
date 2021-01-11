@@ -100,31 +100,6 @@ contract RCMarketXdaiV1 is ERC721Full {
     /// @dev market creator's address
     address public marketCreatorAddress;
 
-    // WORK TO DO 
-    // BIG ROCKS
-    // add pausiable & some panic/withdraw mode
-    // oracle token bridge etc
-    // different owner for the serious stuff
-    // mode for must sponsor for new markets 
-    // 
-    //
-    //
-    //
-    // PEBBLES
-    // maybe: add a delegate call to treasury in newRental so treasury can prevent payRent being called for a user that never rented a Card
-    // ugprade to solidity v7
-
-    // TESTS TO DO
-    // more tests on artist/creator, including returnRent mode
-    // check all the tokens are minted, do tests on last one
-    // check you cant call initialize more than once
-    // check the new minimum rental divisor thing
-
-    // PARAMETERS TO MAKE VARIABLE/OWNED
-    // min rental time
-    // create an owned function in treasury to change the factory address
-    // treasury update factory
-
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
     ////////////////////////////////////
@@ -205,6 +180,7 @@ contract RCMarketXdaiV1 is ERC721Full {
     event LogRentReturned(address indexed returnedTo, uint256 indexed amountReturned);
     event LogTimeHeldUpdated(uint256 indexed newTimeHeld, address indexed owner, uint256 indexed tokenId);
     event LogStateChange(uint256 indexed newState);
+    event LogTransferCardToLongestOwner(uint256 tokenId, address longestOwner);
 
     ////////////////////////////////////
     /////////// MODIFIERS //////////////
@@ -638,6 +614,7 @@ contract RCMarketXdaiV1 is ERC721Full {
             if (longestOwner[i] != address(0)) {
                 // if never owned, longestOwner[i] will = zero
                 _transferTokenTo(ownerOf(i), longestOwner[i], price[i], i);
+                emit LogTransferCardToLongestOwner(i, longestOwner[i]);
             } 
         }
     }
