@@ -7,4 +7,5 @@ interface IRCProxyXdai {
     function getWinner(address _marketAddress) external view returns(uint256); 
     function upgradeNft(uint256,uint256) external;
     function addMarket(address) external returns (bool);
+    function daiTransferred(address _user, uint256 _amount) external;
 }
