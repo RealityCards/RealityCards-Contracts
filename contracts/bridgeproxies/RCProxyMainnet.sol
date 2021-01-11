@@ -20,7 +20,7 @@ contract RCProxyMainnet is Ownable, ERC721Full
     IBridgeContract public bridge; 
 
     /// @dev governance variables
-    address public oracleProxyXdaiAddress;
+    address public proxyXdaiAddress;
     address public arbitrator;
     uint32 public timeout;
     
@@ -55,7 +55,7 @@ contract RCProxyMainnet is Ownable, ERC721Full
     /// @dev address of xdai oracle proxy, called by the xdai side of the arbitrary message bridge
     /// @dev not set in constructor, address not known at deployment
     function setProxyXdaiAddress(address _newAddress) onlyOwner external {
-        oracleProxyXdaiAddress = _newAddress;
+        proxyXdaiAddress = _newAddress;
     }
 
     /// @dev address of arbitrary message bridge, mainnet side
@@ -109,7 +109,7 @@ contract RCProxyMainnet is Ownable, ERC721Full
     ///@notice called by xdai proxy via bridge, posts question to Oracle
     function postQuestionToOracle(address _marketAddress, string calldata _question, uint32 _oracleResolutionTime) external {
         require(msg.sender == address(bridge), "Not bridge");
-        require(bridge.messageSender() == oracleProxyXdaiAddress, "Not proxy");
+        require(bridge.messageSender() == proxyXdaiAddress, "Not proxy");
         bytes32 _questionId = realitio.askQuestion(2, _question, arbitrator, timeout, _oracleResolutionTime, 0);
         questionIds[_marketAddress] = _questionId;
         emit LogQuestionPostedToOracle(_marketAddress, _questionId);
@@ -125,7 +125,7 @@ contract RCProxyMainnet is Ownable, ERC721Full
             bytes32 _winningOutcome = realitio.resultFor(_questionId);
             bytes4 _methodSelector = IRCProxyXdai(address(0)).setWinner.selector;
             bytes memory data = abi.encodeWithSelector(_methodSelector, _marketAddress, _winningOutcome);
-            bridge.requireToPassMessage(oracleProxyXdaiAddress,data,200000);
+            bridge.requireToPassMessage(proxyXdaiAddress,data,200000);
         }
         return _isFinalized;
     }
@@ -136,7 +136,7 @@ contract RCProxyMainnet is Ownable, ERC721Full
 
     function upgradeCard(uint256 _newTokenId, string calldata _tokenUri, address _owner) external {
         require(msg.sender == address(bridge), "Not bridge");
-        require(bridge.messageSender() == oracleProxyXdaiAddress, "Not proxy");
+        require(bridge.messageSender() == proxyXdaiAddress, "Not proxy");
         _mint(_owner, _newTokenId);
         _setTokenURI(_newTokenId, _tokenUri);
     }  

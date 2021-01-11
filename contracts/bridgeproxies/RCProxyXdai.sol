@@ -18,7 +18,7 @@ contract RCProxyXdai is Ownable
     IBridgeContract public bridge;
 
     /// @dev governance variables
-    address public oracleProxyMainnetAddress;
+    address public proxyMainnetAddress;
     address public factoryAddress;
     
     /// @dev market resolution variables
@@ -55,7 +55,7 @@ contract RCProxyXdai is Ownable
     /// @dev address of mainnet oracle proxy, called by the mainnet side of the arbitrary message bridge
     /// @dev not set in constructor, address not known at deployment
     function setProxyMainnetAddress(address _newAddress) onlyOwner external {
-        oracleProxyMainnetAddress = _newAddress;
+        proxyMainnetAddress = _newAddress;
     }
 
     /// @dev address of arbitrary message bridge, xdai side
@@ -84,14 +84,14 @@ contract RCProxyXdai is Ownable
         require(msg.sender == factoryAddress, "Not factory");
         bytes4 _methodSelector = IRCProxyMainnet(address(0)).postQuestionToOracle.selector;
         bytes memory data = abi.encodeWithSelector(_methodSelector, _marketAddress, _question, _oracleResolutionTime);
-        bridge.requireToPassMessage(oracleProxyMainnetAddress,data,200000);
+        bridge.requireToPassMessage(proxyMainnetAddress,data,200000);
     }
     
     /// @dev called by mainnet oracle proxy via the arbitrary message bridge, sets the winning outcome
     function setWinner(address _marketAddress, uint256 _winningOutcome) external {
         require(!marketFinalized[_marketAddress], "Event finalised");
         require(msg.sender == address(bridge), "Not bridge");
-        require(bridge.messageSender() == oracleProxyMainnetAddress, "Not proxy");
+        require(bridge.messageSender() == proxyMainnetAddress, "Not proxy");
         marketFinalized[_marketAddress] = true;
         winningOutcome[_marketAddress] = _winningOutcome;
     }
@@ -115,6 +115,6 @@ contract RCProxyXdai is Ownable
         require(isMarket[msg.sender], "Not market");
         bytes4 _methodSelector = IRCProxyMainnet(address(0)).upgradeCard.selector;
         bytes memory data = abi.encodeWithSelector(_methodSelector, _tokenId, _tokenUri, _owner);
-        bridge.requireToPassMessage(oracleProxyMainnetAddress,data,200000);
+        bridge.requireToPassMessage(proxyMainnetAddress,data,200000);
     }
 }

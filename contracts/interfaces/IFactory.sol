@@ -8,7 +8,7 @@ import './IRCNftHub.sol';
 interface IFactory
 {
     function realitio() external returns (IRealitio);
-    function oracleproxy() external returns (IRCProxyXdai);
+    function proxy() external returns (IRCProxyXdai);
     function nfthub() external returns (IRCNftHub);
     function treasury() external returns (ITreasury);
     function realitioTimeout() external returns (uint32);

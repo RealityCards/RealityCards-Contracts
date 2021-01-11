@@ -41,7 +41,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     ///// CONTRACT VARIABLES /////
     ITreasury public treasury;
     IFactory public factory;
-    IRCProxyXdai public oracleproxy;
+    IRCProxyXdai public proxy;
     IRCNftHub public nfthub;
 
     ///// PRICE, DEPOSITS, RENT /////
@@ -147,7 +147,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         // external contract variables:
         factory = IFactory(msg.sender);
         treasury = factory.treasury();
-        oracleproxy = factory.oracleproxy();
+        proxy = factory.proxy();
         nfthub = factory.nfthub();
         
         // initialiiize!
@@ -278,7 +278,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         string memory _tokenUri = tokenURI(_tokenId);
         address _owner = ownerOf(_tokenId);
         uint256 _actualTokenId = _tokenId.add(totalNftMintCount);
-        oracleproxy.upgradeCard(_actualTokenId, _tokenUri, _owner);
+        proxy.upgradeCard(_actualTokenId, _tokenUri, _owner);
         _transferCard(ownerOf(_tokenId), address(this), _tokenId);
         emit LogNftUpgraded(_tokenId, _actualTokenId);
     }
@@ -287,13 +287,13 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @dev the returned value is equivilent to tokenId
     /// @dev this function call will revert if it has not yet resolved
     function _getWinner() internal view returns(uint256) {
-        uint256 _winningOutcome = oracleproxy.getWinner(address(this));
+        uint256 _winningOutcome = proxy.getWinner(address(this));
         return _winningOutcome;
     }
 
     /// @notice has the question been finalized on realitio?
     function _isQuestionFinalized() internal view returns (bool) {
-        return oracleproxy.isFinalized(address(this));
+        return proxy.isFinalized(address(this));
     }
 
     ////////////////////////////////////

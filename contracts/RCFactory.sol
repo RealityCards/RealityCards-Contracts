@@ -24,7 +24,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
 
     ///// CONTRACT VARIABLES /////
     ITreasury public treasury;
-    IRCProxyXdai public oracleproxy;
+    IRCProxyXdai public proxy;
     IRCNftHub public nfthub;
 
     ///// CONTRACT ADDRESSES /////
@@ -163,7 +163,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
 
     /// @notice where the question to post to the oracle is first sent to
     function setProxyXdaiAddress(IRCProxyXdai _newAddress) external onlyOwner {
-        oracleproxy = _newAddress;
+        proxy = _newAddress;
     }
 
     /// @notice where the question to post to the oracle is first sent to
@@ -321,12 +321,12 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
         totalNftMintCount = totalNftMintCount.add(_numberOfTokens);
 
         // post question to Oracle
-        require(address(oracleproxy) != address(0), "xDai proxy not set");
-        oracleproxy.sendQuestionToBridge(_newAddress, _realitioQuestion, _timestamps[2]);
+        require(address(proxy) != address(0), "xDai proxy not set");
+        proxy.sendQuestionToBridge(_newAddress, _realitioQuestion, _timestamps[2]);
 
         // tell Treasury and Bridge Proxy about new market
         assert(treasury.addMarket(_newAddress));
-        assert(oracleproxy.addMarket(_newAddress));
+        assert(proxy.addMarket(_newAddress));
         assert(nfthub.addMarket(_newAddress));
 
         // update internals
