@@ -6,5 +6,5 @@ interface IRCNftHub {
     function addMarket(address) external returns (bool);
     function mintNft(address,uint256,string calldata) external returns (bool);
     function transferNft(address,address,uint256) external returns (bool);
-    function upgradeNft(address,uint256) external returns (bool);
+    function upgradeCard(address,uint256) external returns (bool);
 }

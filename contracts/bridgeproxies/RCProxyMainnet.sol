@@ -97,7 +97,7 @@ contract RCProxyMainnet is Ownable, ERC721Full
 
     /// @dev admin can create NFTs
     /// @dev for situations where bridge failed
-    function upgradeNftAdmin(uint256 _newTokenId, string calldata _tokenUri, address _owner) onlyOwner external {
+    function upgradeCardAdmin(uint256 _newTokenId, string calldata _tokenUri, address _owner) onlyOwner external {
         _mint(_owner, _newTokenId);
         _setTokenURI(_newTokenId, _tokenUri);
     }  
@@ -134,7 +134,7 @@ contract RCProxyMainnet is Ownable, ERC721Full
     /// CORE FUNCTIONS - NFT UPGRADES //
     ////////////////////////////////////
 
-    function upgradeNft(uint256 _newTokenId, string calldata _tokenUri, address _owner) external {
+    function upgradeCard(uint256 _newTokenId, string calldata _tokenUri, address _owner) external {
         require(msg.sender == address(bridge), "Not bridge");
         require(bridge.messageSender() == oracleProxyXdaiAddress, "Not proxy");
         _mint(_owner, _newTokenId);

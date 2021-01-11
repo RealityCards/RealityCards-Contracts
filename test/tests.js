@@ -4058,7 +4058,7 @@ it('test approveOrUnapproveMarket', async () => {
     await mainnetproxy.getWinnerFromOracle(realitycards.address);
     await realitycards.determineWinner();
     for (i = 0; i < 20; i++) {
-        await expectRevert(realitycards.upgradeNft(i), "Upgrade blocked");
+        await expectRevert(realitycards.upgradeCard(i), "Upgrade blocked");
     }
     // new market, dont approve it, but switch setTrapCardsIfUnapproved to false
     realitycards2 = await createMarketWithArtistSet();
@@ -4077,7 +4077,7 @@ it('test approveOrUnapproveMarket', async () => {
     await realitycards2.determineWinner();
     var owner = await realitycards2.ownerOf.call(0);
     for (i = 0; i < 20; i++) {
-        await realitycards2.upgradeNft(i);
+        await realitycards2.upgradeCard(i);
     }
 });
 
@@ -4155,11 +4155,11 @@ it('test NFT upgrade', async () => {
     await realitio.setResult(3);
     await realitycards.lockMarket();
     await mainnetproxy.getWinnerFromOracle(realitycards.address);
-    await expectRevert(realitycards.upgradeNft(3, {from: user1}),"Incorrect state");
+    await expectRevert(realitycards.upgradeCard(3, {from: user1}),"Incorrect state");
     await realitycards.determineWinner();
     await realitycards.withdraw({from: user1});
-    await expectRevert(realitycards.upgradeNft(3, {from: user2}), "Not owner");
-    await realitycards.upgradeNft(3, {from: user1});
+    await expectRevert(realitycards.upgradeCard(3, {from: user2}), "Not owner");
+    await realitycards.upgradeCard(3, {from: user1});
     var ownerxdai = await realitycards.ownerOf(3);
     assert.equal(ownerxdai,realitycards.address);
     var ownermainnet = await mainnetproxy.ownerOf(3);
@@ -4168,8 +4168,8 @@ it('test NFT upgrade', async () => {
     var tokenuri = await mainnetproxy.tokenURI(3);
     assert.equal("uri",tokenuri);
     // test cant call certain functions directly
-    await expectRevert(xdaiproxy.upgradeNft(3,"asdfsadf",user0), "Not market");
-    await expectRevert(mainnetproxy.upgradeNft(3,"asdfsadf",user0), "Not bridge");
+    await expectRevert(xdaiproxy.upgradeCard(3,"asdfsadf",user0), "Not market");
+    await expectRevert(mainnetproxy.upgradeCard(3,"asdfsadf",user0), "Not bridge");
     // now, create new market and make sure token IDs on mainnet increment correctly
     var nftMintCount = await rcfactory.totalNftMintCount.call();
     assert.equal(nftMintCount,20);
@@ -4181,7 +4181,7 @@ it('test NFT upgrade', async () => {
     await realitycards2.lockMarket();
     await mainnetproxy.getWinnerFromOracle(realitycards2.address);
     await realitycards2.determineWinner();
-    await realitycards2.upgradeNft(5, {from: user3});
+    await realitycards2.upgradeCard(5, {from: user3});
     var ownermainnet = await mainnetproxy.ownerOf(25);
     assert.equal(ownermainnet,user3);
     var tokenuri = await mainnetproxy.tokenURI(25);

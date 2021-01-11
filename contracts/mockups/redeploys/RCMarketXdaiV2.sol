@@ -266,11 +266,11 @@ contract RCMarketXdaiV2 is Initializable {
     ////////////////////////////////////
 
     /// @dev send NFT to mainnet
-    function upgradeNft(uint256 _tokenId) external checkState(States.WITHDRAW) onlyTokenOwner(_tokenId) {
+    function upgradeCard(uint256 _tokenId) external checkState(States.WITHDRAW) onlyTokenOwner(_tokenId) {
         string memory _tokenUri = tokenURI(_tokenId);
         address _owner = ownerOf(_tokenId);
         uint256 _actualTokenId = _tokenId.add(totalNftMintCount);
-        oracleproxy.upgradeNft(_actualTokenId, _tokenUri, _owner);
+        oracleproxy.upgradeCard(_actualTokenId, _tokenUri, _owner);
         _transferCard(ownerOf(_tokenId), address(this), _tokenId);
         emit LogNftUpgraded(_tokenId, _actualTokenId);
     }
