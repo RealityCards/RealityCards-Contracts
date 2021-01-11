@@ -27,9 +27,6 @@ contract RCProxyMainnet is Ownable, ERC721Full
     /// @dev market resolution variables
     mapping (address => bytes32) public questionIds;
 
-    /// @dev contractURI for opensea 
-    string public contractURI;
-
     ////////////////////////////////////
     ////////// CONSTRUCTOR /////////////
     ////////////////////////////////////
@@ -39,7 +36,6 @@ contract RCProxyMainnet is Ownable, ERC721Full
         setRealitioAddress(_realitioAddress);
         setArbitrator(0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D); // kleros
         setTimeout(86400); // 24 hours
-        contractURI = "https://cdn.realitycards.io/contractmetadata.json";
     }
 
     ////////////////////////////////////
