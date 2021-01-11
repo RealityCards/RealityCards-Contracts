@@ -228,6 +228,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     event LogSponsor(uint256 amount);
     event LogNftUpgraded(uint256 currentTokenId, uint256 _newTokenId);
     event LogMarketCreated2(uint256 mode, uint32[] timestamps, address artistAddress, address marketCreatorAddress, address affiliateAddress, uint256 artistCut, uint256 winnerCut, uint256 creatorCut, uint256 affiliateCut, uint256 cardAffiliateCut);
+    event LogTransferCardToLongestOwner(uint256 tokenId, address longestOwner);
 
     ////////////////////////////////////
     /////////// MODIFIERS //////////////
@@ -341,7 +342,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         winningOutcome = _getWinner();
         _incrementState();
         // transfer NFTs to the longest owners
-        _processNFTsAfterEvent(); 
+        _processCardsAfterEvent(); 
         emit LogWinnerKnown(winningOutcome);
     }
 
@@ -713,11 +714,12 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     }
 
     /// @notice gives each Card to the longest owner
-    function _processNFTsAfterEvent() internal {
+    function _processCardsAfterEvent() internal {
         for (uint i = 0; i < numberOfTokens; i++) {
             if (longestOwner[i] != address(0)) {
                 // if never owned, longestOwner[i] will = zero
                 _transferCard(ownerOf(i), longestOwner[i], i);
+                emit LogTransferCardToLongestOwner(i, longestOwner[i]);
             } 
         }
     }
@@ -747,7 +749,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     function circuitBreaker() external {
         require(now > (oracleResolutionTime + 12 weeks), "Too early");
         _incrementState();
-        _processNFTsAfterEvent(); 
+        _processCardsAfterEvent(); 
         state = States.WITHDRAW;
     }
 
