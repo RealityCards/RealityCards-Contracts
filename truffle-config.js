@@ -7,7 +7,7 @@ const MNEMONIC = process.env.MNEMONIC;
 const ETHERSCAN_KEY = process.env.ETHERSCAN_KEY;
 
 module.exports = {
-  plugins: ["truffle-plugin-verify"],
+  plugins: ["truffle-plugin-verify", "truffle-security"],
   contracts_build_directory: path.join(__dirname, "./artifactsTruffle"),
   networks: {
     develop: {
