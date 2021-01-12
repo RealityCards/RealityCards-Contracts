@@ -116,6 +116,28 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     bool public cardAffiliatePaid = false;
 
     ////////////////////////////////////
+    //////// EVENTS ////////////////////
+    ////////////////////////////////////
+
+    event LogNewRental(address indexed newOwner, uint256 indexed newPrice, uint256 timeHeldLimit, uint256 indexed tokenId);
+    event LogForeclosure(address indexed prevOwner, uint256 indexed tokenId);
+    event LogRentCollection(uint256 indexed rentCollected, uint256 indexed tokenId, address indexed owner);
+    event LogReturnToPreviousOwner(uint256 indexed tokenId, address indexed previousOwner);
+    event LogContractLocked(bool indexed didTheEventFinish);
+    event LogWinnerKnown(uint256 indexed winningOutcome);
+    event LogWinningsPaid(address indexed paidTo, uint256 indexed amountPaid);
+    event LogStakeholderPaid(address indexed paidTo, uint256 indexed amountPaid);
+    event LogRentReturned(address indexed returnedTo, uint256 indexed amountReturned);
+    event LogTimeHeldUpdated(uint256 indexed newTimeHeld, address indexed owner, uint256 indexed tokenId);
+    event LogStateChange(uint256 indexed newState);
+    event LogUpdateTimeHeldLimit(address indexed owner, uint256 newLimit, uint256 tokenId);
+    event LogExit(address indexed owner, uint256 tokenId);
+    event LogSponsor(uint256 amount);
+    event LogNftUpgraded(uint256 currentTokenId, uint256 _newTokenId);
+    event LogPayoutDetails(address artistAddress, address marketCreatorAddress, address affiliateAddress, address[] cardAffiliateAddresses, uint256 artistCut, uint256 winnerCut, uint256 creatorCut, uint256 affiliateCut, uint256 cardAffiliateCut);
+    event LogTransferCardToLongestOwner(uint256 tokenId, address longestOwner);
+
+    ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
     ////////////////////////////////////
     
@@ -202,31 +224,8 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             _incrementState();
         }
         
-        // 2 because there is another event within the factory
-        emit LogMarketCreated2(_mode, _timestamps, _artistAddress, _marketCreatorAddress, _affiliateAddress, artistCut, winnerCut, creatorCut, affiliateCut, cardAffiliateCut);
+        emit LogPayoutDetails(_artistAddress, _marketCreatorAddress, _affiliateAddress, cardAffiliateAddresses, artistCut, winnerCut, creatorCut, affiliateCut, cardAffiliateCut);
     } 
-
-    ////////////////////////////////////
-    //////// EVENTS ////////////////////
-    ////////////////////////////////////
-
-    event LogNewRental(address indexed newOwner, uint256 indexed newPrice, uint256 timeHeldLimit, uint256 indexed tokenId);
-    event LogForeclosure(address indexed prevOwner, uint256 indexed tokenId);
-    event LogRentCollection(uint256 indexed rentCollected, uint256 indexed tokenId, address indexed owner);
-    event LogReturnToPreviousOwner(uint256 indexed tokenId, address indexed previousOwner);
-    event LogContractLocked(bool indexed didTheEventFinish);
-    event LogWinnerKnown(uint256 indexed winningOutcome);
-    event LogWinningsPaid(address indexed paidTo, uint256 indexed amountPaid);
-    event LogStakeholderPaid(address indexed paidTo, uint256 indexed amountPaid);
-    event LogRentReturned(address indexed returnedTo, uint256 indexed amountReturned);
-    event LogTimeHeldUpdated(uint256 indexed newTimeHeld, address indexed owner, uint256 indexed tokenId);
-    event LogStateChange(uint256 indexed newState);
-    event LogUpdateTimeHeldLimit(address indexed owner, uint256 newLimit, uint256 tokenId);
-    event LogExit(address indexed owner, uint256 tokenId);
-    event LogSponsor(uint256 amount);
-    event LogNftUpgraded(uint256 currentTokenId, uint256 _newTokenId);
-    event LogMarketCreated2(uint256 mode, uint32[] timestamps, address artistAddress, address marketCreatorAddress, address affiliateAddress, uint256 artistCut, uint256 winnerCut, uint256 creatorCut, uint256 affiliateCut, uint256 cardAffiliateCut);
-    event LogTransferCardToLongestOwner(uint256 tokenId, address longestOwner);
 
     ////////////////////////////////////
     /////////// MODIFIERS //////////////
