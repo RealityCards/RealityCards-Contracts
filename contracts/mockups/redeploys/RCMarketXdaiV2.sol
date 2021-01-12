@@ -34,8 +34,6 @@ contract RCMarketXdaiV2 is Initializable {
     /// @dev counts the total NFTs minted across all events at the time market created
     /// @dev nft tokenId = card Id + totalNftMintCount
     uint256 public totalNftMintCount;
-    /// @dev contractURI for opensea 
-    string public contractURI;
 
     ///// CONTRACT VARIABLES /////
     ITreasury public treasury;

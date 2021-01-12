@@ -24,6 +24,10 @@ contract RCProxyXdai is Ownable
     /// @dev market resolution variables
     mapping (address => bool) public marketFinalized;
     mapping (address => uint256) public winningOutcome;
+    mapping (address => question) public questions;
+    struct question { string question;
+                      uint32 oracleResolutionTime;
+                      bool set; }
 
     /// @dev so only markets can upgrade NFTs
     mapping (address => bool) public isMarket;
@@ -80,10 +84,19 @@ contract RCProxyXdai is Ownable
     ////////////////////////////////////
 
     /// @dev called by factory upon market creation, posts question to Oracle via arbitrary message bridge
-    function sendQuestionToBridge(address _marketAddress, string calldata _question, uint32 _oracleResolutionTime) external {
+    function saveQuestion(address _marketAddress, string calldata _question, uint32 _oracleResolutionTime) external {
         require(msg.sender == factoryAddress, "Not factory");
+        questions[_marketAddress].question = _question;
+        questions[_marketAddress].oracleResolutionTime = _oracleResolutionTime;
+        questions[_marketAddress].set = true;
+        postQuestionToBridge(_marketAddress);
+    }
+
+    /// @dev question is posted in a different function so it can be called again if bridge fails
+    function postQuestionToBridge(address _marketAddress) public {
+        require(questions[_marketAddress].set, "No question");
         bytes4 _methodSelector = IRCProxyMainnet(address(0)).postQuestionToOracle.selector;
-        bytes memory data = abi.encodeWithSelector(_methodSelector, _marketAddress, _question, _oracleResolutionTime);
+        bytes memory data = abi.encodeWithSelector(_methodSelector, _marketAddress, questions[_marketAddress].question, questions[_marketAddress].oracleResolutionTime);
         bridge.requireToPassMessage(proxyMainnetAddress,data,200000);
     }
     

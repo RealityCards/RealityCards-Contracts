@@ -311,7 +311,7 @@ contract RCFactoryV2 is Ownable, CloneFactory {
 
         // post question to Oracle
         require(address(oracleproxy) != address(0), "xDai proxy not set");
-        oracleproxy.sendQuestionToBridge(_newAddress, _realitioQuestion, _timestamps[2]);
+        oracleproxy.saveQuestion(_newAddress, _realitioQuestion, _timestamps[2]);
 
         // tell Treasury and Bridge Proxy about new market
         assert(treasury.addMarket(_newAddress));

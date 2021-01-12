@@ -311,7 +311,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
         });
 
         // create the NFTs
-        require(address(nfthub) != address(0), "nfthub not set");
+        require(address(nfthub) != address(0), "Nfthub not set");
         for (uint i = 0; i < _numberOfTokens; i++) { 
             uint256 _tokenId = i.add(totalNftMintCount);
             assert(nfthub.mintNft(_newAddress, _tokenId, _tokenURIs[i]));
@@ -322,7 +322,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
 
         // post question to Oracle
         require(address(proxy) != address(0), "xDai proxy not set");
-        proxy.sendQuestionToBridge(_newAddress, _realitioQuestion, _timestamps[2]);
+        proxy.saveQuestion(_newAddress, _realitioQuestion, _timestamps[2]);
 
         // tell Treasury and Bridge Proxy about new market
         assert(treasury.addMarket(_newAddress));
