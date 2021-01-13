@@ -1,80 +1,111 @@
 pragma solidity 0.5.13;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts-ethereum-package/contracts/ownership/Ownable.sol";
-import "@openzeppelin/contracts-ethereum-package/contracts/math/SafeMath.sol";
-import "@nomiclabs/buidler/console.sol";
+import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "hardhat/console.sol";
 import './lib/CloneFactory.sol';
-import "./interfaces/IRealitio.sol";
 import "./interfaces/ITreasury.sol";
-import './interfaces/IRCMarketXdaiV1.sol';
+import './interfaces/IRCMarket.sol';
+import './interfaces/IRCProxyXdai.sol';
+import './interfaces/IRCNftHub.sol';
+import './lib/NativeMetaTransaction.sol';
 
 /// @title Reality Cards Factory
 /// @author Andrew Stanger
-
-contract RCFactory is Ownable, CloneFactory {
+/// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!!
+contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
 
     using SafeMath for uint256;
+    using SafeMath for uint32;
 
     ////////////////////////////////////
     //////// VARIABLES /////////////////
     ////////////////////////////////////
 
     ///// CONTRACT VARIABLES /////
-    IRealitio public realitio;
     ITreasury public treasury;
+    IRCProxyXdai public proxy;
+    IRCNftHub public nfthub;
 
     ///// CONTRACT ADDRESSES /////
-    // version implied by position
-    mapping(uint256 => address[]) public referenceContractAddresses; 
+    /// @dev reference contract
+    address public referenceContractAddress; 
+    /// @dev increments each time a new reference contract is added
+    uint256 public referenceContractVersion;
+    /// @dev market addresses, mode // address
     mapping(uint256 => address[]) public marketAddresses;
-    mapping(address => bool) public mappingOfMarkets; //not currently used
+    mapping(address => bool) public mappingOfMarkets; // not used for anything 
 
-    ///// MARKET PARAMETERS /////
-    uint32 public realitioTimeout;
-    address public arbitrator;
-    uint256[2] public potDistribution;
+    ///// ADJUSTABLE PARAMETERS /////
+    /// @dev artist / winner / market creator / affiliate / card specific affiliate
+    uint256[5] public potDistribution;
+    /// @dev minimum xDai that must be sent when creating market which forms iniital pot
+    uint256 public sponsorshipRequired;
+    /// @dev adjust required price increase
+    uint256 public minimumPriceIncrease;
+    /// @dev market opening time must be at least this many seconds in the future
+    uint32 public advancedWarning;
+    /// @dev market closing time must be no more than this many seconds in the future
+    uint32 public maximumDuration;
 
-    ///// MARKET CREATION /////
-    bool marketCreatorWhitelistEnabled;
-    mapping(address => bool) public marketCreatorWhitelist;
+    ///// MARKET CREATION & HIDING /////
+    /// @dev if false, anyone can create markets
+    bool public marketCreationGovernorsOnly;
+    /// @dev who can create markets if above true. Also used to unhide hidden markets. 
+    mapping(address => bool) public governors;
+    /// @dev  so markets can be hidden from the interface
+    mapping(address => bool) public isMarketApproved;
+    /// @dev  so markets can be hidden from the interface
+    mapping(address => bool) public isArtistApproved;
+    /// @dev  so markets can be hidden from the interface
+    mapping(address => bool) public isAffiliateApproved;
+    /// @dev  so markets can be hidden from the interface
+    mapping(address => bool) public isCardAffiliateApproved;
+    /// @dev if true, cards are burnt at the end of events for hidden markets to enforce scarcity
+    bool public trapIfUnapproved = true;
+    /// @dev prevents the same slug being used twice
+    mapping(string => bool) public existingSlug;
+    /// @dev counts the total NFTs minted across all events
+    /// @dev ... so the appropriate token id is used when upgrading to mainnet
+    uint256 public totalNftMintCount;
+
+    ///// UBER OWNER /////
+    /// @dev high level owner who can change the factory address
+    address public uberOwner;
 
     ////////////////////////////////////
     //////// EVENTS ////////////////////
     ////////////////////////////////////
 
-    event LogMarketCreated(address contractAddress, address treasuryAddress, string[] tokenURIs, uint32[] timestamps, uint256 mode, uint256 version, string ipfsHash);
-    event LogNewReferenceContract(address contractAddress, uint256 mode, uint256 version);
+    event LogMarketCreated1(address contractAddress, address treasuryAddress, uint256 referenceContractVersion);
+    event LogMarketCreated2(address contractAddress, uint32 mode, string[] tokenURIs, string slug, string ipfsHash, uint32[] timestamp);
+    event LogMarketHidden(address market, bool hidden);
 
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
     ////////////////////////////////////
 
     /// @dev Treasury must be deployed before Factory
-    /// @dev Realitio address is passed for testing on mock realitio contract
-    constructor(ITreasury _treasuryAddress, IRealitio _realitio) public 
+    constructor(ITreasury _treasuryAddress) public
     {
+        // initialise MetaTransactions
+        _initializeEIP712("RealityCardsFactory","1");
+
+        // at initiation, uberOwner and owner will be the same
+        uberOwner = msg.sender;
+
+        // initialise contract variable
         treasury = _treasuryAddress;
-        Ownable.initialize(msg.sender);
 
         // initialise market parameters
-        updateRealitioTimeout(86400); // 24 hours
-        updateRealitioAddress(IRealitio(_realitio));
-        updateArbitrator(0xA6EAd513D05347138184324392d8ceb24C116118); // kleros
-        updatePotDistribution(0,0); // 0% artist, 0% market creators
+        // artist // winner // creator // affiliate // card specific affiliates
+        setPotDistribution(20,0,0,20,100); // 2% artist, 2% affiliate, 10% card specific affiliate default
+        setMinimumPriceIncrease(10); // 10% default
     }
 
     ////////////////////////////////////
     ///////// VIEW FUNCTIONS ///////////
     ////////////////////////////////////
-
-    function getMostRecentReferenceContract(uint256 _mode) public view returns (address) {
-        return referenceContractAddresses[_mode][referenceContractAddresses[_mode].length-1];
-    }
-
-    function getAllReferenceContracts(uint256 _mode) public view returns (address[] memory) {
-        return referenceContractAddresses[_mode];
-    }
 
     function getMostRecentMarket(uint256 _mode) public view returns (address) {
         return marketAddresses[_mode][marketAddresses[_mode].length-1];
@@ -84,108 +115,234 @@ contract RCFactory is Ownable, CloneFactory {
         return marketAddresses[_mode];
     }
 
-    function getPotDistribution() public view returns (uint256[2] memory) {
+    function getPotDistribution() public view returns (uint256[5] memory) {
         return potDistribution;
     }
 
     ////////////////////////////////////
-    /////// REFERENCE CONTRACT /////////
+    //////////// MODIFERS //////////////
     ////////////////////////////////////
 
-    /// @notice set the reference contract for the contract logic
-    /// @dev automatically increments version number if we 'upgrade' the contract
-    function setReferenceContractAddress(uint256 _mode, address _referenceContractAddress) public onlyOwner {
-        // check its an RC contract by reading the one constant
-        IRCMarketXdaiV1 newContractVariable = IRCMarketXdaiV1(_referenceContractAddress);
-        assert(newContractVariable.isMarket());
-        // push new reference contracts
-        referenceContractAddresses[_mode].push(_referenceContractAddress);
-        uint256 _version = referenceContractAddresses[_mode].length-1;
-        emit LogNewReferenceContract(_referenceContractAddress, _mode, _version);
+    modifier onlyGovernors() {
+        require(governors[msgSender()] || owner() == msgSender(), "Not approved");
+        _;
     }
 
     ////////////////////////////////////
-    /////// MARKET PARAMETERS //////////
+    /////// GOVERNANCE- OWNER //////////
     ////////////////////////////////////
-    /// @dev governance functions
+    /// @dev all functions should have onlyOwner modifier
 
-    function updateRealitioTimeout(uint32 _newTimeout) public onlyOwner {
-        require(_newTimeout >= 86400, "24 hours min");
-        realitioTimeout = _newTimeout;
-    }
+    /// CALLED WITHIN CONSTRUCTOR (public)
 
-    function updateRealitioAddress(IRealitio _newRealitioAddress) public onlyOwner {
-        realitio = IRealitio(_newRealitioAddress);
-    }
-
-    function updateArbitrator(address _newArbitrator) public onlyOwner {
-        arbitrator = _newArbitrator;
-    } 
-
-    /// @dev in basis points
-    function updatePotDistribution(uint256 _artistCut, uint256 _creatorCut) public onlyOwner {
-        require(_artistCut + _creatorCut <= 100, "Arist/creator cut too big");
+    /// @dev in 10s of basis points (so 1000 = 100%)
+    function setPotDistribution(uint256 _artistCut, uint256 _winnerCut, uint256 _creatorCut, uint256 _affiliateCut, uint256 _cardAffiliateCut) public onlyOwner {
+        require(_artistCut.add(_affiliateCut).add(_creatorCut).add(_winnerCut).add(_affiliateCut).add(_cardAffiliateCut) <= 1000, "Cuts too big");
         potDistribution[0] = _artistCut;
-        potDistribution[1] = _creatorCut;
+        potDistribution[1] = _winnerCut;
+        potDistribution[2] = _creatorCut;
+        potDistribution[3] = _affiliateCut;
+        potDistribution[4] = _cardAffiliateCut;
     }
+
+    /// @dev in %
+    function setMinimumPriceIncrease(uint256 _percentIncrease) public onlyOwner {
+        minimumPriceIncrease = _percentIncrease;
+    }
+
+    /// NOT CALLED WITHIN CONSTRUCTOR (external)
+
+    /// @notice whether or not only governors can create the market
+    function setMarketCreationGovernorsOnly() external onlyOwner {
+        marketCreationGovernorsOnly = marketCreationGovernorsOnly ? false : true;
+    }
+
+    /// @notice how much xdai must be sent in the createMarket tx which forms the initial pot
+    function setSponsorshipRequired(uint256 _dai) external onlyOwner {
+        sponsorshipRequired = _dai;
+    }
+
+    /// @notice where the question to post to the oracle is first sent to
+    function setProxyXdaiAddress(IRCProxyXdai _newAddress) external onlyOwner {
+        proxy = _newAddress;
+    }
+
+    /// @notice where the question to post to the oracle is first sent to
+    function setNftHubAddress(IRCNftHub _newAddress) external onlyOwner {
+        nfthub = _newAddress;
+    }
+
+    /// @notice if true, Cards in unapproved markets can't be upgraded
+    function setTrapCardsIfUnapproved() onlyOwner external {
+        trapIfUnapproved = trapIfUnapproved ? false : true;
+    }
+
+    /// @notice market opening time must be at least this many seconds in the future
+    function setAdvancedWarning(uint32 _newAdvancedWarning) onlyOwner external {
+        advancedWarning = _newAdvancedWarning;
+    }
+
+    /// @notice market closing time must be no more than this many seconds in the future
+    function setMaximumDuration(uint32 _newMaximumDuration) onlyOwner external {
+        maximumDuration = _newMaximumDuration;
+    }
+
+    // EDIT GOVERNORS
 
     /// @notice add or remove an address from market creator whitelist
-    function updateMarketCreatorWhitelist(address _marketCreator) public onlyOwner {
-        if (!marketCreatorWhitelist[_marketCreator]) {
-            marketCreatorWhitelist[_marketCreator] = true;
-        } else {
-            marketCreatorWhitelist[_marketCreator] = false;
-        }
-    }
-
-    /// @notice allows createMarket to be called by anyone
-    /// @dev if called again will enable it again
-    function disableMarketCreatorWhitelist() public onlyOwner {
-        if (marketCreatorWhitelistEnabled) {
-            marketCreatorWhitelistEnabled = false;
-        } else {
-            marketCreatorWhitelistEnabled = true;
-        }
+    function addOrRemoveGovernor(address _governor) external onlyOwner {
+        governors[_governor] = governors[_governor] ? false : true;
     }
 
     ////////////////////////////////////
-    /////// MARKET PARAMETERS //////////
+    ///// GOVERNANCE- GOVERNORS ////////
+    ////////////////////////////////////
+    /// @dev all functions should have onlyGovernors modifier
+
+    /// @notice markets are default hidden from the interface, this reveals them
+    function approveOrUnapproveMarket(address _market) external onlyGovernors {
+        isMarketApproved[_market] = isMarketApproved[_market] ? false : true;
+        emit LogMarketHidden(_market, isMarketApproved[_market]);
+    }
+
+    /// @notice artistAddress, passed in createMarket, must be approved
+    function addOrRemoveArtist(address _artist) external onlyGovernors {
+        isArtistApproved[_artist] = isArtistApproved[_artist] ? false : true;
+    }
+
+    /// @notice affiliateAddress, passed in createMarket, must be approved
+    function addOrRemoveAffiliate(address _affiliate) external onlyGovernors {
+        isAffiliateApproved[_affiliate] = isAffiliateApproved[_affiliate] ? false : true;
+    }
+
+    /// @notice cardAffiliateAddress, passed in createMarket, must be approved
+    function addOrRemoveCardAffiliate(address _affiliate) external onlyGovernors {
+        isCardAffiliateApproved[_affiliate] = isCardAffiliateApproved[_affiliate] ? false : true;
+    }
+
+    ////////////////////////////////////
+    ////// GOVERNANCE- UBER OWNER //////
+    ////////////////////////////////////
+    /// @dev uber owner required for upgrades
+    /// @dev deploying and setting a new reference contract is effectively an upgrade
+    /// @dev different owner so can be set to multisig, or burn address to relinquish upgrade ability
+    /// @dev ... while maintaining governance over other governanace functions
+
+    /// @notice set the reference contract for the contract logic
+    function setReferenceContractAddress(address _newAddress) external {
+        require(msg.sender == uberOwner, "Verboten");
+        // check it's an RC contract
+        IRCMarket newContractVariable = IRCMarket(_newAddress);
+        assert(newContractVariable.isMarket());
+        // set 
+        referenceContractAddress = _newAddress;
+        // increment version
+        referenceContractVersion = referenceContractVersion.add(1);
+    }
+
+    function changeUberOwner(address _newUberOwner) external {
+        require(msg.sender == uberOwner, "Verboten");
+        uberOwner = _newUberOwner;
+    }
+
+    ////////////////////////////////////
+    //////// MARKET CREATION ///////////
     ////////////////////////////////////
 
     /// @notice create a new market
     function createMarket(
         uint32 _mode,
         string memory _ipfsHash,
-        uint32[] memory _timestamps,
+        uint32[] memory _timestamps, 
         string[] memory _tokenURIs,
         address _artistAddress,
+        address _affiliateAddress,
+        address[] memory _cardAffiliateAddresses,
         string memory _realitioQuestion,
-        string memory _tokenName
-    ) public returns (address)  {
-        if (marketCreatorWhitelistEnabled) {
-            require(marketCreatorWhitelist[msg.sender] || owner() == msg.sender, "Not approved");
-        }
-        address _newAddress;
+        string memory _slug 
+    ) public payable returns (address)  {
+        // check sponsorship
+        require(msg.value >= sponsorshipRequired, "Insufficient sponsorship");
 
-        _newAddress = createClone(getMostRecentReferenceContract(_mode));
-        IRCMarketXdaiV1(_newAddress).initialize({
+        // check slug not used before
+        require(!existingSlug[_slug], "Duplicate slug");
+        existingSlug[_slug] = true;
+
+        // check payout addresses
+        // artist
+        require(isArtistApproved[_artistAddress] || _artistAddress == address(0), "Artist not approved");
+        // affiliate
+        require(isAffiliateApproved[_affiliateAddress] || _affiliateAddress == address(0), "Affiliate not approved");
+        // card affiliates
+        for (uint i = 0; i < _cardAffiliateAddresses.length; i++) { 
+            require(isCardAffiliateApproved[_cardAffiliateAddresses[i]] || _cardAffiliateAddresses[i] == address(0), "Card affiliate not approved");
+        }
+
+        // check market creator is approved
+        if (marketCreationGovernorsOnly) {
+            require(governors[msgSender()] || owner() == msgSender(), "Not approved");
+        }
+
+        // check timestamps
+        // check market opening time
+        if (advancedWarning != 0) {
+            require(_timestamps[0] >= advancedWarning, "Market opening time not set"); 
+            require(_timestamps[0].sub(advancedWarning) > now, "Market opens too soon" );
+        }
+        // check market locking time
+        if (maximumDuration != 0) {
+            require(_timestamps[1] < now.add(maximumDuration), "Market locks too late");
+        }
+        // check oracle resolution time
+        require(_timestamps[1].add(1 weeks) > _timestamps[2] && _timestamps[1] <= _timestamps[2], "Oracle resolution time error" );
+
+        uint256 _numberOfTokens = _tokenURIs.length;
+
+        // create the market and emit the appropriate events
+        // two events to avoid stack too deep error
+        address _newAddress = createClone(referenceContractAddress);
+        emit LogMarketCreated1(address(_newAddress), address(treasury), referenceContractVersion);
+        emit LogMarketCreated2(address(_newAddress), _mode, _tokenURIs, _slug, _ipfsHash, _timestamps);
+        IRCMarket(_newAddress).initialize({
             _mode: _mode,
             _timestamps: _timestamps,
-            _tokenURIs: _tokenURIs,
+            _numberOfTokens: _numberOfTokens,
+            _totalNftMintCount: totalNftMintCount,
             _artistAddress: _artistAddress,
-            _marketCreatorAddress: msg.sender,
-            _templateId: 2,
-            _question: _realitioQuestion,
-            _tokenName: _tokenName
+            _affiliateAddress: _affiliateAddress,
+            _cardAffiliateAddresses: _cardAffiliateAddresses,
+            _marketCreatorAddress: msgSender()
         });
-        
+
+        // create the NFTs
+        require(address(nfthub) != address(0), "Nfthub not set");
+        for (uint i = 0; i < _numberOfTokens; i++) { 
+            uint256 _tokenId = i.add(totalNftMintCount);
+            assert(nfthub.mintNft(_newAddress, _tokenId, _tokenURIs[i]));
+        }
+
+        // increment totalNftMintCount
+        totalNftMintCount = totalNftMintCount.add(_numberOfTokens);
+
+        // post question to Oracle
+        require(address(proxy) != address(0), "xDai proxy not set");
+        proxy.saveQuestion(_newAddress, _realitioQuestion, _timestamps[2]);
+
+        // tell Treasury and Bridge Proxy about new market
         assert(treasury.addMarket(_newAddress));
+        assert(proxy.addMarket(_newAddress));
+        assert(nfthub.addMarket(_newAddress));
+
+        // update internals
         marketAddresses[_mode].push(_newAddress);
         mappingOfMarkets[_newAddress] = true;
-        uint256 _version = referenceContractAddresses[_mode].length-1;
-        emit LogMarketCreated(address(_newAddress), address(treasury), _tokenURIs, _timestamps,  _mode, _version, _ipfsHash);
+
+        // pay sponsorship, if applicable
+        if (msg.value > 0) {
+            IRCMarket(_newAddress).sponsor.value(msg.value)();
+        }
+
         return _newAddress;
     }
 
 }
-
