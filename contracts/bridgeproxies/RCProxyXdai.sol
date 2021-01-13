@@ -49,9 +49,10 @@ contract RCProxyXdai is Ownable
     ////////// CONSTRUCTOR /////////////
     ////////////////////////////////////
 
-    constructor(address _bridgeXdaiAddress, address _factoryAddress) public {
+    constructor(address _bridgeXdaiAddress, address _factoryAddress, address _treasuryAddress) public {
         setBridgeXdaiAddress(_bridgeXdaiAddress);
         setFactoryAddress(_factoryAddress);
+        setTreasuryAddress(_treasuryAddress);
     }
 
     ////////////////////////////////////
@@ -83,6 +84,12 @@ contract RCProxyXdai is Ownable
     /// @dev address of RC factory contract, so only factory can post questions
     function setFactoryAddress(address _newAddress) onlyOwner public {
         factoryAddress = _newAddress;
+    }
+
+
+    /// @dev address of RC treasury contract
+    function setTreasuryAddress(address _newAddress) onlyOwner public {
+        treasuryAddress = _newAddress;
     }
 
     /// @dev admin override of the Oracle, if not yet settled, for amicable resolution, or bridge fails
