@@ -120,6 +120,7 @@ contract RCProxyMainnet is Ownable, ERC721Full
         bool _isFinalized = realitio.isFinalized(_questionId);
         // if finalised, send result over to xDai proxy
         if (_isFinalized) {
+            
             isFinalized[_marketAddress] = true;
             bytes32 _winningOutcome = realitio.resultFor(_questionId);
             bytes4 _methodSelector = IRCProxyXdai(address(0)).setWinner.selector;

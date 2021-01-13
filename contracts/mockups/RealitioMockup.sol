@@ -37,7 +37,7 @@ contract RealitioMockup
     }
 
     function isFinalized(bytes32 question_id) external view returns (bool) {
-        require(question_id == actualQuestionId, "here");
+        require(question_id == actualQuestionId, "questionId incorrect");
         if (result == 420) {
             return false;
         } else {
