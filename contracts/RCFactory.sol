@@ -78,7 +78,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
     ////////////////////////////////////
 
     event LogMarketCreated1(address contractAddress, address treasuryAddress, uint256 referenceContractVersion);
-    event LogMarketCreated2(address contractAddress, uint32 mode, string[] tokenURIs, string slug, string ipfsHash,uint32[] timestamp);
+    event LogMarketCreated2(address contractAddress, uint32 mode, string[] tokenURIs, string slug, string ipfsHash, uint32[] timestamp);
     event LogMarketHidden(address market, bool hidden);
 
     ////////////////////////////////////
@@ -298,8 +298,11 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
 
         uint256 _numberOfTokens = _tokenURIs.length;
 
-        // create the market
+        // create the market and emit the appropriate events
+        // two events to avoid stack too deep error
         address _newAddress = createClone(referenceContractAddress);
+        emit LogMarketCreated1(address(_newAddress), address(treasury), referenceContractVersion);
+        emit LogMarketCreated2(address(_newAddress), _mode, _tokenURIs, _slug, _ipfsHash, _timestamps);
         IRCMarket(_newAddress).initialize({
             _mode: _mode,
             _timestamps: _timestamps,
@@ -339,9 +342,6 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
             IRCMarket(_newAddress).sponsor.value(msg.value)();
         }
 
-        // two events because stack too deep error otherwise
-        emit LogMarketCreated1(address(_newAddress), address(treasury), referenceContractVersion);
-        emit LogMarketCreated2(address(_newAddress), _mode, _tokenURIs, _slug, _ipfsHash, _timestamps);
         return _newAddress;
     }
 

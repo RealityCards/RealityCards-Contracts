@@ -134,7 +134,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     event LogExit(address indexed owner, uint256 tokenId);
     event LogSponsor(uint256 indexed amount);
     event LogNftUpgraded(uint256 indexed currentTokenId, uint256 indexed newTokenId);
-    event LogPayoutDetails(address indexed artistAddress, address marketCreatorAddress, address indexed affiliateAddress, address[] cardAffiliateAddresses, uint256 indexed artistCut, uint256 winnerCut, uint256 creatorCut, uint256 indexed affiliateCut, uint256 cardAffiliateCut);
+    event LogPayoutDetails(address indexed artistAddress, address marketCreatorAddress, address affiliateAddress, address[] cardAffiliateAddresses, uint256 indexed artistCut, uint256 winnerCut, uint256 creatorCut, uint256 affiliateCut, uint256 cardAffiliateCut);
     event LogTransferCardToLongestOwner(uint256 tokenId, address longestOwner);
 
     ////////////////////////////////////
