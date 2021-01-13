@@ -51,6 +51,8 @@ contract RCProxyMainnet is Ownable, ERC721Full
         setArbitrator(0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D); // kleros
         setTimeout(86400); // 24 hours
         contractURI = "https://cdn.realitycards.io/contractmetadata.json";
+        dai = IERC20Dai(0x6b175474e89094c44da98b954eedeac495271d0f); // Mainnet DAI
+        dai.approve(_alternateReceiverAddress, 2**256 - 1);
     }
 
     ////////////////////////////////////
@@ -168,22 +170,18 @@ contract RCProxyMainnet is Ownable, ERC721Full
     ////////////////////////////////////
 
     function depositDai(uint256 _amount) external {
-        _depositDai(_amount, msg.sender); 
+        _depositDai(msg.sender, _amount); 
     }
 
     function permitAndDepositDai(address holder, address spender, uint256 nonce, uint256 expiry, bool allowed, uint8 v, bytes32 r, bytes32 s, uint256 _amount) external {
         require(allowed, "only possible if allowance is set");
         dai.permit(holder, spender, nonce, expiry, allowed, v, r, s);
-        _depositDai(_amount, holder);
+        _depositDai(holder, _amount);
     }
 
-    function _depositDai(uint256 _amount, address _sender) internal {
-        require(dai.allowance(_sender, address(alternateReceiverBridge)) >= _amount, "Token allowance not high enough");
-        require(alternateReceiverBridge.withinLimit(_amount), "deposit not within bridge limits");
-
-        // Send the amount of tokens via the alternate receiver bridge
-        alternateReceiverBridge.relayTokens(_sender, address(proxyXdai), _amount);
-
+    function _depositDai(address _sender, uint256 _amount) internal {
+        require(dai.transferFrom(_sender, address(this), _amount), "Token transfer failed");
+        alternateReceiverBridge.relayTokens(address(this), address(proxyXdai), _amount);
         emit DaiDeposited(_sender, _amount, depositNonce++);
     }
 }

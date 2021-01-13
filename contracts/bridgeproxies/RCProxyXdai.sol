@@ -161,6 +161,7 @@ contract RCProxyXdai is Ownable
 
         // Only valid if these match
         require(deposits[_nonce].user == _user, "Addresses don't match");
+        require(deposits[_nonce].amount == _amount, "Amounts don't match");
         
         // Add 1 confirmation, if this hasn't been done already
         // Note: allowing to execute this twice in case there was
