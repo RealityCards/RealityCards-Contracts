@@ -2,9 +2,8 @@ pragma solidity 0.5.13;
 
 import "hardhat/console.sol";
 
-// this is only for ganache testing. Public chain deployments will use the existing Realitio contracts. 
-
-contract RealitioMockup
+// a mockup to test changing the proxy, this is as per the original but always says the winner is 69
+contract RealitioMockupV2
 
 {
     uint result = 420;
@@ -33,11 +32,12 @@ contract RealitioMockup
     function resultFor(bytes32 question_id) external view returns (bytes32) {
         require(result != 420);
         require(question_id == actualQuestionId);
-        return bytes32(result);
+        return bytes32(uint(69));
     }
 
     function isFinalized(bytes32 question_id) external view returns (bool) {
-        require(question_id == actualQuestionId, "questionId incorrect");
+        // console.log(question_id);
+        require(question_id == actualQuestionId, "here");
         if (result == 420) {
             return false;
         } else {
