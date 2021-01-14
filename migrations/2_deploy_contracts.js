@@ -17,12 +17,13 @@ var BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
 var ambAddressXdai = '0x75Df5AF045d91108662D8080fD1FEFAd6aA0bb59';
 var ambAddressMainnet = '0x4C36d2919e407f0Cc2Ee3c993ccF8ac26d9CE64e';
 var realitioAddress = '0x325a2e0F3CCA2ddbaeBB4DfC38Df8D19ca165b47';
+var arbAddressMainnet = '0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016';
 
 // UPDATE THIS AFTER STAGE 1
-var xdaiProxyAddress = '0xf15C6a9809fe81e9C053F993067FdA5A2e2842Ed';
+var xdaiProxyAddress = '0x9e15161380f76311Ed7C33AdFF52f928Fb27D84D';
 
 // UPDATE THIS AFTER STAGE 2
-var mainnetProxyAddress = '0x9ACd4771D37bc9994410084173Bd049936c8E054';
+var mainnetProxyAddress = '0x5a38d0f63f72a882fd78a1dfdaa18bb5a041f9cf';
 
 module.exports = async (deployer, network, accounts) => 
 {
@@ -42,7 +43,7 @@ module.exports = async (deployer, network, accounts) =>
         await factory.setReferenceContractAddress(reference.address);
         await factory.setNftHubAddress(xdainfthub.address);
         // deploy xdai proxy
-        await deployer.deploy(XdaiProxy, ambAddressXdai, factory.address);
+        await deployer.deploy(XdaiProxy, ambAddressXdai, rcfactory.address, treasury.address);
         xdaiproxy = await XdaiProxy.deployed();
         // tell factory about the proxy
         await factory.setProxyXdaiAddress(xdaiproxy.address);
@@ -50,7 +51,7 @@ module.exports = async (deployer, network, accounts) =>
     else if (network === "stage2") // mainnet
     {
         // deploy mainnet proxy
-        await deployer.deploy(MainnetProxy, ambAddressMainnet, realitioAddress);
+        await deployer.deploy(MainnetProxy, ambAddressMainnet, realitioAddress, arbAddressMainnet);
         mainnetproxy = await MainnetProxy.deployed();
         // set xdai proxy address
         await mainnetproxy.setProxyXdaiAddress(xdaiProxyAddress);

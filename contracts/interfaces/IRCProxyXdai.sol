@@ -7,4 +7,5 @@ interface IRCProxyXdai {
     function getWinner(address _marketAddress) external view returns(uint256); 
     function upgradeCard(uint256, string calldata, address) external;
     function addMarket(address) external returns (bool);
+    function confirmDaiDeposit(address _user, uint256 _amount, uint256 _nonce) external;
 }

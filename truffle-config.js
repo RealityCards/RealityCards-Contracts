@@ -101,7 +101,7 @@ module.exports = {
         },
         network_id: 1,
         gas: 3000000,
-        gasPrice: 125000000000,
+        gasPrice: 140000000000,
         networkCheckTimeout: 12000,
       },
     stage3: {
