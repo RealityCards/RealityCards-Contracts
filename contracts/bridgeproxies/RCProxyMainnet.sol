@@ -22,7 +22,6 @@ contract RCProxyMainnet is Ownable, ERC721Full
     IRealitio public realitio;
     IBridgeContract public bridge;
     IAlternateReceiverBridge public alternateReceiverBridge;
-    IRCProxyXdai public proxyXdai;
     IERC20Dai public dai;
 
     /// @dev governance variables
@@ -41,13 +40,13 @@ contract RCProxyMainnet is Ownable, ERC721Full
     ////////// CONSTRUCTOR /////////////
     ////////////////////////////////////
 
-    constructor(address _bridgeMainnetAddress, address _realitioAddress, address _alternateReceiverAddress) ERC721Full("RealityCards", "RC")  public {
+    constructor(address _bridgeMainnetAddress, address _realitioAddress, address _alternateReceiverAddress, address _daiAddress) ERC721Full("RealityCards", "RC")  public {
         setBridgeMainnetAddress(_bridgeMainnetAddress);
         setRealitioAddress(_realitioAddress);
         setAlternateReceiverAddress(_alternateReceiverAddress);
+        setDaiAddress(_daiAddress); 
         setArbitrator(0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D); // kleros
         setTimeout(86400); // 24 hours
-        setDaiAddress(0x6B175474E89094C44Da98b954EedeAC495271d0F); // Mainnet DAI
     }
 
     ////////////////////////////////////
@@ -64,7 +63,7 @@ contract RCProxyMainnet is Ownable, ERC721Full
     /// @dev address of xdai oracle proxy, called by the xdai side of the arbitrary message bridge
     /// @dev not set in constructor, address not known at deployment
     function setProxyXdaiAddress(address _newAddress) onlyOwner external {
-        proxyXdai = IRCProxyXdai(_newAddress);
+        proxyXdaiAddress = _newAddress;
     }
 
     /// @dev address of arbitrary message bridge, mainnet side
@@ -128,8 +127,9 @@ contract RCProxyMainnet is Ownable, ERC721Full
     
     ///@notice called by xdai proxy via bridge, posts question to Oracle
     function postQuestionToOracle(address _marketAddress, string calldata _question, uint32 _oracleResolutionTime) external {
+        require(false,"asdf");
         require(msg.sender == address(bridge), "Not bridge");
-        require(bridge.messageSender() == address(proxyXdai), "Not proxy");
+        require(bridge.messageSender() == proxyXdaiAddress, "Not proxy");
         require(questionIds[_marketAddress] == 0, "Already posted");
         bytes32 _questionId = realitio.askQuestion(2, _question, arbitrator, timeout, _oracleResolutionTime, 0);
         questionIds[_marketAddress] = _questionId;
@@ -143,7 +143,6 @@ contract RCProxyMainnet is Ownable, ERC721Full
         bool _isFinalized = realitio.isFinalized(_questionId);
         // if finalised, send result over to xDai proxy
         if (_isFinalized) {
-            
             isFinalized[_marketAddress] = true;
             bytes32 _winningOutcome = realitio.resultFor(_questionId);
             bytes4 _methodSelector = IRCProxyXdai(address(0)).setWinner.selector;
@@ -159,7 +158,7 @@ contract RCProxyMainnet is Ownable, ERC721Full
 
     function upgradeCard(uint256 _newTokenId, string calldata _tokenUri, address _owner) external {
         require(msg.sender == address(bridge), "Not bridge");
-        require(bridge.messageSender() == address(proxyXdai), "Not proxy");
+        require(bridge.messageSender() == proxyXdaiAddress, "Not proxy");
         _mint(_owner, _newTokenId);
         _setTokenURI(_newTokenId, _tokenUri);
     }  
@@ -180,7 +179,7 @@ contract RCProxyMainnet is Ownable, ERC721Full
 
     function _depositDai(address _sender, uint256 _amount) internal {
         require(dai.transferFrom(_sender, address(this), _amount), "Token transfer failed");
-        alternateReceiverBridge.relayTokens(address(this), address(proxyXdai), _amount);
+        alternateReceiverBridge.relayTokens(address(this), proxyXdaiAddress, _amount);
         emit DaiDeposited(_sender, _amount, depositNonce++);
     }
 }

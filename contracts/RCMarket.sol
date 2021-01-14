@@ -334,7 +334,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @notice checks whether the Realitio question has resolved, and if yes, gets the winner
     /// @dev can be called by anyone 
     function determineWinner() external checkState(States.LOCKED) {
-        require(_isQuestionFinalized() == true, "Oracle not resolved");
+        require(_isQuestionFinalized(), "Oracle not resolved");
         // get the winner. This will revert if answer is not resolved.
         winningOutcome = _getWinner();
         _incrementState();
