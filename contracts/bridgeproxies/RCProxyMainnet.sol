@@ -127,7 +127,7 @@ contract RCProxyMainnet is Ownable, ERC721Full
     
     ///@notice called by xdai proxy via bridge, posts question to Oracle
     function postQuestionToOracle(address _marketAddress, string calldata _question, uint32 _oracleResolutionTime) external {
-        require(false,"asdf");
+        // require(false,"asdf");
         require(msg.sender == address(bridge), "Not bridge");
         require(bridge.messageSender() == proxyXdaiAddress, "Not proxy");
         require(questionIds[_marketAddress] == 0, "Already posted");

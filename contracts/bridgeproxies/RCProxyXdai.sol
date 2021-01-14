@@ -162,7 +162,6 @@ contract RCProxyXdai is Ownable
 
     /// @dev question is posted in a different function so it can be called again if bridge fails
     function postQuestionToBridge(address _marketAddress) public {
-        // require(false,"here");
         require(questions[_marketAddress].set, "No question");
         bytes4 _methodSelector = IRCProxyMainnet(address(0)).postQuestionToOracle.selector;
         bytes memory data = abi.encodeWithSelector(_methodSelector, _marketAddress, questions[_marketAddress].question, questions[_marketAddress].oracleResolutionTime);
@@ -171,7 +170,6 @@ contract RCProxyXdai is Ownable
     
     /// @dev called by mainnet oracle proxy via the arbitrary message bridge, sets the winning outcome
     function setWinner(address _marketAddress, uint256 _winningOutcome) external {
-        require(false,"great success if we get here");
         require(!marketFinalized[_marketAddress], "Event finalised");
         require(msg.sender == address(bridge), "Not bridge");
         require(bridge.messageSender() == proxyMainnetAddress, "Not proxy");

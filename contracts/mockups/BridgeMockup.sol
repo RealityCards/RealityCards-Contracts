@@ -14,9 +14,8 @@ contract BridgeMockup
 
     function requireToPassMessage(address _RCProxyAddress, bytes calldata _data, uint256 _gasLimit) external {
         _gasLimit;
-        console.log("mainnetproxy per bridge is",_RCProxyAddress);
         (bool _success, ) = _RCProxyAddress.call.value(0)(_data);
-        // require(_success,"failed");
+        require(_success,"failed");
     }
 
     function messageSender() external view returns(address)  {
