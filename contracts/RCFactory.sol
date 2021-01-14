@@ -63,8 +63,6 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
     mapping(address => bool) public isCardAffiliateApproved;
     /// @dev if true, cards are burnt at the end of events for hidden markets to enforce scarcity
     bool public trapIfUnapproved = true;
-    /// @dev prevents the same slug being used twice
-    mapping(string => bool) public existingSlug;
     /// @dev counts the total NFTs minted across all events
     /// @dev ... so the appropriate token id is used when upgrading to mainnet
     uint256 public totalNftMintCount;
@@ -78,7 +76,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
     ////////////////////////////////////
 
     event LogMarketCreated1(address contractAddress, address treasuryAddress, uint256 referenceContractVersion);
-    event LogMarketCreated2(address contractAddress, uint32 mode, string[] tokenURIs, string slug, string ipfsHash, uint32[] timestamp);
+    event LogMarketCreated2(address contractAddress, uint32 mode, string[] tokenURIs, string ipfsHash, uint32[] timestamp);
     event LogMarketHidden(address market, bool hidden);
 
     ////////////////////////////////////
@@ -258,15 +256,10 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
         address _artistAddress,
         address _affiliateAddress,
         address[] memory _cardAffiliateAddresses,
-        string memory _realitioQuestion,
-        string memory _slug 
+        string memory _realitioQuestion
     ) public payable returns (address)  {
         // check sponsorship
         require(msg.value >= sponsorshipRequired, "Insufficient sponsorship");
-
-        // check slug not used before
-        require(!existingSlug[_slug], "Duplicate slug");
-        existingSlug[_slug] = true;
 
         // check payout addresses
         // artist
@@ -302,7 +295,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
         // two events to avoid stack too deep error
         address _newAddress = createClone(referenceContractAddress);
         emit LogMarketCreated1(address(_newAddress), address(treasury), referenceContractVersion);
-        emit LogMarketCreated2(address(_newAddress), _mode, _tokenURIs, _slug, _ipfsHash, _timestamps);
+        emit LogMarketCreated2(address(_newAddress), _mode, _tokenURIs, _ipfsHash, _timestamps);
         IRCMarket(_newAddress).initialize({
             _mode: _mode,
             _timestamps: _timestamps,
