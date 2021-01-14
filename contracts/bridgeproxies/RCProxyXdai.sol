@@ -9,7 +9,7 @@ import '../interfaces/IRCMarket.sol';
 import '../interfaces/ITreasury.sol';
 
 /// @title Reality Cards Proxy- xDai side
-/// @author Andrew Stanger
+/// @author Andrew Stanger & Marvin Kruse
 contract RCProxyXdai is Ownable
 {
     using SafeMath for uint256;
@@ -37,13 +37,25 @@ contract RCProxyXdai is Ownable
     mapping (address => bool) public isValidator;
     mapping (uint256 => Deposit) public deposits;
     mapping (uint256 => mapping(address => bool)) public hasConfirmedDeposit;
+    /// @dev so only the float can be withdrawn and no more
+    uint256 public floatSize;
 
     struct Deposit {
         address user;
         uint256 amount;
         uint256 confirmations;
+        bool confirmed;
         bool executed;
     }
+
+    ////////////////////////////////////
+    //////// EVENTS ////////////////////
+    ////////////////////////////////////
+
+    event LogFloatIncreased(address indexed funder, uint256 amount);
+    event LogFloatWithdrawn(address indexed recipient, uint256 amount);
+    event LogDepositConfirmed(uint256 indexed nonce);
+    event LogDepositExecuted(uint256 indexed nonce);
 
     ////////////////////////////////////
     ////////// CONSTRUCTOR /////////////
@@ -67,9 +79,9 @@ contract RCProxyXdai is Ownable
     }
     
     ////////////////////////////////////
-    ////////// GOVERNANCE //////////////
+    /////// GOVERNANCE - SETUP /////////
     ////////////////////////////////////
-    
+
     /// @dev address of mainnet oracle proxy, called by the mainnet side of the arbitrary message bridge
     /// @dev not set in constructor, address not known at deployment
     function setProxyMainnetAddress(address _newAddress) onlyOwner external {
@@ -86,11 +98,14 @@ contract RCProxyXdai is Ownable
         factoryAddress = _newAddress;
     }
 
-
     /// @dev address of RC treasury contract
     function setTreasuryAddress(address _newAddress) onlyOwner public {
         treasuryAddress = _newAddress;
     }
+
+    ////////////////////////////////////
+    /////// GOVERNANCE - ORACLE ////////
+    ////////////////////////////////////
 
     /// @dev admin override of the Oracle, if not yet settled, for amicable resolution, or bridge fails
     function setAmicableResolution(address _marketAddress, uint256 _winningOutcome) onlyOwner public {
@@ -99,8 +114,22 @@ contract RCProxyXdai is Ownable
         winningOutcome[_marketAddress] = _winningOutcome;
     }
 
+    ////////////////////////////////////
+    ///// GOVERNANCE - DAI BRIDGE //////
+    ////////////////////////////////////
+
+    function withdrawFloat(uint256 _amount) onlyOwner external {
+        // will throw an error if goes negative because safeMath
+        floatSize = floatSize.sub(_amount);
+        address _thisAddressNotPayable = owner();
+        address payable _recipient = address(uint160(_thisAddressNotPayable));
+        (bool _success, ) = _recipient.call.value(_amount)("");
+        require(_success, "Transfer failed");
+        emit LogFloatWithdrawn(msg.sender, _amount);
+    }
+
     /// @dev modify validators for dai deposits
-    function setValidator(address _validatorAddress, bool _add) onlyOwner public {
+    function setValidator(address _validatorAddress, bool _add) onlyOwner external {
         if(_add) {
             if(!isValidator[_validatorAddress]) {
                 isValidator[_validatorAddress] = true;
@@ -161,12 +190,18 @@ contract RCProxyXdai is Ownable
     //// CORE FUNCTIONS - DAI BRIDGE ///
     ////////////////////////////////////
 
+    /// @dev add a float, so no need to wait for arrival of xdai from ARB
+    function() external payable {
+        floatSize = floatSize.add(msg.value);
+        emit LogFloatIncreased(msg.sender, msg.value);
+    }
+
     function confirmDaiDeposit(address _user, uint256 _amount, uint256 _nonce) external {
         require(isValidator[msg.sender], "Not a validator");
 
         // If the deposit is new, create it
         if(deposits[_nonce].user == address(0)) {
-            Deposit memory newDeposit = Deposit(_user, _amount, 0, false);
+            Deposit memory newDeposit = Deposit(_user, _amount, 0, false, false);
             deposits[_nonce] = newDeposit;
         }
 
@@ -182,12 +217,24 @@ contract RCProxyXdai is Ownable
             deposits[_nonce].confirmations = deposits[_nonce].confirmations.add(1);
         }
 
-        // Execute if not already done so, enough confirmations and enough money
-        if(!deposits[_nonce].executed && deposits[_nonce].confirmations >= (validatorCount.div(2)).add(1) && address(this).balance >= _amount) {
-            deposits[_nonce].executed = true;
-            // do the deposit directly
+        // Confirm if enough confirms and pass over for execution
+        if(!deposits[_nonce].confirmed && deposits[_nonce].confirmations >= (validatorCount.div(2)).add(1)) {
+            deposits[_nonce].confirmed = true;
+            executeDaiDeposit(_nonce);
+            emit LogDepositConfirmed(_nonce);
+        }
+    }
+
+    function executeDaiDeposit(uint256 _nonce) public {
+        require(deposits[_nonce].confirmed, "Not confirmed");
+        require(!deposits[_nonce].executed, "Already executed");
+        uint256 _amount = deposits[_nonce].amount;
+        address _user = deposits[_nonce].user;
+        if (address(this).balance >= _amount) {
             ITreasury treasury = ITreasury(treasuryAddress);
             assert(treasury.deposit.value(_amount)(_user));
+            deposits[_nonce].executed = true;
+            emit LogDepositExecuted(_nonce);
         }
     }
 }

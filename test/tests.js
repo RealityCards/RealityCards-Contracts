@@ -71,7 +71,7 @@ var cardRecipients = ['0x0000000000000000000000000000000000000000'];
     realitio = await RealitioMockup.new();
     bridge = await BridgeMockup.new();
     // bridge contracts
-    xdaiproxy = await XdaiProxy.new(bridge.address, rcfactory.address);
+    xdaiproxy = await XdaiProxy.new(bridge.address, rcfactory.address, treasury.address);
     mainnetproxy = await MainnetProxy.new(bridge.address, realitio.address, realitio.address); // its fine, we're not testing ARB yet
     // tell the factory, mainnet proxy and bridge the xdai proxy address
     await rcfactory.setProxyXdaiAddress(xdaiproxy.address);

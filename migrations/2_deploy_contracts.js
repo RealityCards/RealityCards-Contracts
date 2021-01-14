@@ -13,10 +13,10 @@ var realitioAddress = '0x325a2e0F3CCA2ddbaeBB4DfC38Df8D19ca165b47';
 var arbAddressMainnet = '0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016';
 
 // UPDATE THIS AFTER STAGE 1
-var xdaiProxyAddress = '0x558891E5ff96639a1934A39A780e063973C149D5';
+var xdaiProxyAddress = '0x9e15161380f76311Ed7C33AdFF52f928Fb27D84D';
 
 // UPDATE THIS AFTER STAGE 2
-var mainnetProxyAddress = '0xd358a629301975C8eaAa3A460f533C107E452879';
+var mainnetProxyAddress = '0x5a38d0f63f72a882fd78a1dfdaa18bb5a041f9cf';
 
 module.exports = async (deployer, network) => 
 {
@@ -36,7 +36,7 @@ module.exports = async (deployer, network) =>
         await rcfactory.setReferenceContractAddress(rcreference.address);
         await rcfactory.setNftHubAddress(xdainfthub.address);
         // deploy xdai proxy
-        await deployer.deploy(XdaiProxy, ambAddressXdai, rcfactory.address);
+        await deployer.deploy(XdaiProxy, ambAddressXdai, rcfactory.address, treasury.address);
         xdaiproxy = await XdaiProxy.deployed();
         // tell factory about the proxy
         await rcfactory.setProxyXdaiAddress(xdaiproxy.address);

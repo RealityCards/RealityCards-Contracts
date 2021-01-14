@@ -11,7 +11,7 @@ import '../interfaces/IAlternateReceiverBridge.sol';
 import '../interfaces/IERC20Dai.sol';
 
 /// @title Reality Cards Proxy- Mainnet side
-/// @author Andrew Stanger
+/// @author Andrew Stanger & Marvin Kruse
 contract RCProxyMainnet is Ownable, ERC721Full
 {
     ////////////////////////////////////
@@ -33,9 +33,6 @@ contract RCProxyMainnet is Ownable, ERC721Full
     /// @dev market resolution variables
     mapping (address => bytes32) public questionIds;
 
-    /// @dev contractURI for opensea 
-    string public contractURI;
-
     /// @dev dai deposits
     uint256 internal depositNonce;
 
@@ -49,9 +46,7 @@ contract RCProxyMainnet is Ownable, ERC721Full
         setAlternateReceiverAddress(_alternateReceiverAddress);
         setArbitrator(0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D); // kleros
         setTimeout(86400); // 24 hours
-        contractURI = "https://cdn.realitycards.io/contractmetadata.json";
-        dai = IERC20Dai(0x6b175474e89094c44da98b954eedeac495271d0f); // Mainnet DAI
-        dai.approve(_alternateReceiverAddress, 2**256 - 1);
+        setDaiAddress(0x6B175474E89094C44Da98b954EedeAC495271d0F); // Mainnet DAI
     }
 
     ////////////////////////////////////
@@ -79,6 +74,12 @@ contract RCProxyMainnet is Ownable, ERC721Full
     /// @dev address of alternate receiver bridge, mainnet side
     function setAlternateReceiverAddress(address _newAddress) onlyOwner public {
         alternateReceiverBridge = IAlternateReceiverBridge(_newAddress);
+    }
+
+    /// @dev address of dai contract, must also approve the ARB
+    function setDaiAddress(address _newAddress) onlyOwner public {
+        dai = IERC20Dai(_newAddress);
+        dai.approve(address(alternateReceiverBridge), 2**256 - 1);
     }
 
     ////////////////////////////////////
