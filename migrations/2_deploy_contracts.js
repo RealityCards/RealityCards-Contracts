@@ -10,12 +10,13 @@ var MainnetProxy = artifacts.require('./bridgeproxies/RCProxyMainnet.sol');
 var ambAddressXdai = '0x75Df5AF045d91108662D8080fD1FEFAd6aA0bb59';
 var ambAddressMainnet = '0x4C36d2919e407f0Cc2Ee3c993ccF8ac26d9CE64e';
 var realitioAddress = '0x325a2e0F3CCA2ddbaeBB4DfC38Df8D19ca165b47';
+var arbAddressMainnet = '0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016';
 
 // UPDATE THIS AFTER STAGE 1
-var xdaiProxyAddress = '0xf15C6a9809fe81e9C053F993067FdA5A2e2842Ed';
+var xdaiProxyAddress = '0x558891E5ff96639a1934A39A780e063973C149D5';
 
 // UPDATE THIS AFTER STAGE 2
-var mainnetProxyAddress = '0x9ACd4771D37bc9994410084173Bd049936c8E054';
+var mainnetProxyAddress = '0xd358a629301975C8eaAa3A460f533C107E452879';
 
 module.exports = async (deployer, network) => 
 {
@@ -43,7 +44,7 @@ module.exports = async (deployer, network) =>
     else if (network === "stage2") // mainnet
     {
         // deploy mainnet proxy
-        await deployer.deploy(MainnetProxy, ambAddressMainnet, realitioAddress);
+        await deployer.deploy(MainnetProxy, ambAddressMainnet, realitioAddress, arbAddressMainnet);
         mainnetproxy = await MainnetProxy.deployed();
         // set xdai proxy address
         await mainnetproxy.setProxyXdaiAddress(xdaiProxyAddress);

@@ -33,10 +33,10 @@ contract RCProxyXdai is Ownable
     mapping (address => bool) public isMarket;
 
     /// @dev dai deposit variables
-    uint256 validatorCount;
-    mapping (address => bool) isValidator;
-    mapping (uint256 => Deposit) deposits;
-    mapping (uint256 => mapping(address => bool)) hasConfirmedDeposit;
+    uint256 public validatorCount;
+    mapping (address => bool) public isValidator;
+    mapping (uint256 => Deposit) public deposits;
+    mapping (uint256 => mapping(address => bool)) public hasConfirmedDeposit;
 
     struct Deposit {
         address user;
@@ -156,6 +156,10 @@ contract RCProxyXdai is Ownable
         bytes memory data = abi.encodeWithSelector(_methodSelector, _tokenId, _tokenUri, _owner);
         bridge.requireToPassMessage(proxyMainnetAddress,data,200000);
     }
+
+    ////////////////////////////////////
+    //// CORE FUNCTIONS - DAI BRIDGE ///
+    ////////////////////////////////////
 
     function confirmDaiDeposit(address _user, uint256 _amount, uint256 _nonce) external {
         require(isValidator[msg.sender], "Not a validator");
