@@ -63,8 +63,6 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
     mapping(address => bool) public isCardAffiliateApproved;
     /// @dev if true, cards are burnt at the end of events for hidden markets to enforce scarcity
     bool public trapIfUnapproved = true;
-    /// @dev prevents the same slug being used twice
-    mapping(string => bool) public existingSlug;
     /// @dev counts the total NFTs minted across all events
     /// @dev ... so the appropriate token id is used when upgrading to mainnet
     uint256 public totalNftMintCount;
@@ -77,7 +75,8 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
     //////// EVENTS ////////////////////
     ////////////////////////////////////
 
-    event LogMarketCreated(address contractAddress, address treasuryAddress, string[] tokenURIs, string slug, string ipfsHash, uint256 referenceContractVersion);
+    event LogMarketCreated1(address contractAddress, address treasuryAddress, uint256 referenceContractVersion);
+    event LogMarketCreated2(address contractAddress, uint32 mode, string[] tokenURIs, string ipfsHash, uint32[] timestamp);
     event LogMarketHidden(address market, bool hidden);
 
     ////////////////////////////////////
@@ -257,15 +256,10 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
         address _artistAddress,
         address _affiliateAddress,
         address[] memory _cardAffiliateAddresses,
-        string memory _realitioQuestion,
-        string memory _slug 
+        string memory _realitioQuestion
     ) public payable returns (address)  {
         // check sponsorship
         require(msg.value >= sponsorshipRequired, "Insufficient sponsorship");
-
-        // check slug not used before
-        require(!existingSlug[_slug], "Duplicate slug");
-        existingSlug[_slug] = true;
 
         // check payout addresses
         // artist
@@ -297,8 +291,11 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
 
         uint256 _numberOfTokens = _tokenURIs.length;
 
-        // create the market
+        // create the market and emit the appropriate events
+        // two events to avoid stack too deep error
         address _newAddress = createClone(referenceContractAddress);
+        emit LogMarketCreated1(address(_newAddress), address(treasury), referenceContractVersion);
+        emit LogMarketCreated2(address(_newAddress), _mode, _tokenURIs, _ipfsHash, _timestamps);
         IRCMarket(_newAddress).initialize({
             _mode: _mode,
             _timestamps: _timestamps,
@@ -311,7 +308,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
         });
 
         // create the NFTs
-        require(address(nfthub) != address(0), "nfthub not set");
+        require(address(nfthub) != address(0), "Nfthub not set");
         for (uint i = 0; i < _numberOfTokens; i++) { 
             uint256 _tokenId = i.add(totalNftMintCount);
             assert(nfthub.mintNft(_newAddress, _tokenId, _tokenURIs[i]));
@@ -322,7 +319,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
 
         // post question to Oracle
         require(address(proxy) != address(0), "xDai proxy not set");
-        proxy.sendQuestionToBridge(_newAddress, _realitioQuestion, _timestamps[2]);
+        proxy.saveQuestion(_newAddress, _realitioQuestion, _timestamps[2]);
 
         // tell Treasury and Bridge Proxy about new market
         assert(treasury.addMarket(_newAddress));
@@ -338,7 +335,6 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
             IRCMarket(_newAddress).sponsor.value(msg.value)();
         }
 
-        emit LogMarketCreated(address(_newAddress), address(treasury), _tokenURIs, _slug, _ipfsHash, referenceContractVersion);
         return _newAddress;
     }
 

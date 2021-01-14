@@ -35,6 +35,7 @@ contract RCProxyMainnet is Ownable, ERC721Full
 
     /// @dev dai deposits
     uint256 internal depositNonce;
+    mapping (address => bool) public isFinalized;
 
     ////////////////////////////////////
     ////////// CONSTRUCTOR /////////////
@@ -129,18 +130,21 @@ contract RCProxyMainnet is Ownable, ERC721Full
     function postQuestionToOracle(address _marketAddress, string calldata _question, uint32 _oracleResolutionTime) external {
         require(msg.sender == address(bridge), "Not bridge");
         require(bridge.messageSender() == address(proxyXdai), "Not proxy");
+        require(questionIds[_marketAddress] == 0, "Already posted");
         bytes32 _questionId = realitio.askQuestion(2, _question, arbitrator, timeout, _oracleResolutionTime, 0);
         questionIds[_marketAddress] = _questionId;
         emit LogQuestionPostedToOracle(_marketAddress, _questionId);
     }
 
     /// @dev can be called by anyone, reads winner from Oracle and sends to xdai proxy via bridge
-    /// @dev can be called more than once, not a problem, xdai proxy will reject a second call
+    /// @dev can be called more than once in case bridge fails, xdai proxy will reject a second successful call
     function getWinnerFromOracle(address _marketAddress) external returns(bool) {
         bytes32 _questionId = questionIds[_marketAddress];
         bool _isFinalized = realitio.isFinalized(_questionId);
         // if finalised, send result over to xDai proxy
         if (_isFinalized) {
+            
+            isFinalized[_marketAddress] = true;
             bytes32 _winningOutcome = realitio.resultFor(_questionId);
             bytes4 _methodSelector = IRCProxyXdai(address(0)).setWinner.selector;
             bytes memory data = abi.encodeWithSelector(_methodSelector, _marketAddress, _winningOutcome);

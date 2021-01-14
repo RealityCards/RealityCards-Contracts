@@ -90,7 +90,6 @@ var cardRecipients = ['0x0000000000000000000000000000000000000000'];
         affiliateAddress,
         cardRecipients,
         question,
-        slug,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards = await RCMarket.at(marketAddress);
@@ -117,7 +116,6 @@ var cardRecipients = ['0x0000000000000000000000000000000000000000'];
         affiliateAddress,
         cardRecipients,
         question,
-        slug,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -144,7 +142,6 @@ var cardRecipients = ['0x0000000000000000000000000000000000000000'];
         affiliateAddress,
         cardRecipients,
         question,
-        slug,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -170,7 +167,6 @@ var cardRecipients = ['0x0000000000000000000000000000000000000000'];
         affiliateAddress,
         cardRecipients,
         question,
-        slug,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(mode);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -196,7 +192,6 @@ var cardRecipients = ['0x0000000000000000000000000000000000000000'];
         affiliateAddress,
         cardRecipients,
         question,
-        slug,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(mode);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -228,7 +223,6 @@ var cardRecipients = ['0x0000000000000000000000000000000000000000'];
         affiliateAddress,
         cardRecipients,
         question,
-        slug,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -256,7 +250,6 @@ var cardRecipients = ['0x0000000000000000000000000000000000000000'];
         affiliateAddress,
         cardRecipients,
         question,
-        slug,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(mode);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -290,7 +283,6 @@ var cardRecipients = ['0x0000000000000000000000000000000000000000'];
         affiliateAddress,
         cardRecipients,
         question,
-        slug,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -324,8 +316,7 @@ var cardRecipients = ['0x0000000000000000000000000000000000000000'];
         artistAddress,
         affiliateAddress,
         cardRecipients,
-        question,
-        slug, {value: amount, from: user}
+        question, {value: amount, from: user}
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -347,7 +338,6 @@ var cardRecipients = ['0x0000000000000000000000000000000000000000'];
         affiliateAddress,
         cardRecipients,
         question,
-        slug,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -369,7 +359,6 @@ var cardRecipients = ['0x0000000000000000000000000000000000000000'];
         affiliateAddress,
         cardRecipients,
         question,
-        slug,
       );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -4079,13 +4068,6 @@ it('test approveOrUnapproveMarket', async () => {
     for (i = 0; i < 20; i++) {
         await realitycards2.upgradeCard(i);
     }
-});
-
-it('test duplicate slug', async () => {
-    var timestamps = [0,0,0];
-    var artistAddress = '0x0000000000000000000000000000000000000000';
-    var affiliateAddress = '0x0000000000000000000000000000000000000000';
-    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question,slug), "Duplicate slug");
 });
 
 it('check cant rent or deposit if globalpause', async () => {
