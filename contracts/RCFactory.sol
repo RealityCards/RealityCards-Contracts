@@ -76,7 +76,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
     ////////////////////////////////////
 
     event LogMarketCreated1(address contractAddress, address treasuryAddress, uint256 referenceContractVersion);
-    event LogMarketCreated2(address contractAddress, uint32 mode, string[] tokenURIs, string ipfsHash, uint32[] timestamp);
+    event LogMarketCreated2(address contractAddress, uint32 mode, string[] tokenURIs, string ipfsHash, uint32[] timestamp, uint256 totalNftMintCount);
     event LogMarketHidden(address market, bool hidden);
 
     ////////////////////////////////////
@@ -295,7 +295,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
         // two events to avoid stack too deep error
         address _newAddress = createClone(referenceContractAddress);
         emit LogMarketCreated1(address(_newAddress), address(treasury), referenceContractVersion);
-        emit LogMarketCreated2(address(_newAddress), _mode, _tokenURIs, _ipfsHash, _timestamps);
+        emit LogMarketCreated2(address(_newAddress), _mode, _tokenURIs, _ipfsHash, _timestamps, totalNftMintCount);
         IRCMarket(_newAddress).initialize({
             _mode: _mode,
             _timestamps: _timestamps,
