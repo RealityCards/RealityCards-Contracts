@@ -2,17 +2,17 @@ pragma solidity 0.5.13;
 
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC721/ERC721Full.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import '../interfaces/IRealitio.sol';
 import '../interfaces/IRCProxyXdai.sol';
 import '../interfaces/IBridgeContract.sol';
 import '../interfaces/IAlternateReceiverBridge.sol';
 import '../interfaces/IERC20Dai.sol';
+import '../interfaces/IERC721.sol';
 
 /// @title Reality Cards Proxy- Mainnet side
 /// @author Andrew Stanger & Marvin Kruse
-contract RCProxyMainnet is Ownable, ERC721Full
+contract RCProxyMainnet is Ownable
 {
     ////////////////////////////////////
     //////// VARIABLES /////////////////
@@ -23,9 +23,11 @@ contract RCProxyMainnet is Ownable, ERC721Full
     IBridgeContract public bridge;
     IAlternateReceiverBridge public alternateReceiverBridge;
     IERC20Dai public dai;
+    IERC721 public nfthub;
 
     /// @dev governance variables
     address public proxyXdaiAddress;
+    address public nftHubAddress;
     address public arbitrator;
     uint32 public timeout;
     
@@ -40,9 +42,10 @@ contract RCProxyMainnet is Ownable, ERC721Full
     ////////// CONSTRUCTOR /////////////
     ////////////////////////////////////
 
-    constructor(address _bridgeMainnetAddress, address _realitioAddress, address _alternateReceiverAddress, address _daiAddress) ERC721Full("RealityCards", "RC")  public {
+    constructor(address _bridgeMainnetAddress, address _realitioAddress, address _nftHubAddress, address _alternateReceiverAddress, address _daiAddress) public {
         setBridgeMainnetAddress(_bridgeMainnetAddress);
         setRealitioAddress(_realitioAddress);
+        setNftHubAddress(_nftHubAddress);
         setAlternateReceiverAddress(_alternateReceiverAddress);
         setDaiAddress(_daiAddress); 
         setArbitrator(0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D); // kleros
@@ -69,6 +72,11 @@ contract RCProxyMainnet is Ownable, ERC721Full
     /// @dev address of arbitrary message bridge, mainnet side
     function setBridgeMainnetAddress(address _newAddress) onlyOwner public {
         bridge = IBridgeContract(_newAddress);
+    }
+
+    /// @dev address of alternate receiver bridge, mainnet side
+    function setNftHubAddress(address _newAddress) onlyOwner public {
+        nfthub = IERC721(_newAddress);
     }
 
     /// @dev address of alternate receiver bridge, mainnet side
@@ -117,8 +125,7 @@ contract RCProxyMainnet is Ownable, ERC721Full
     /// @dev admin can create NFTs
     /// @dev for situations where bridge failed
     function upgradeCardAdmin(uint256 _newTokenId, string calldata _tokenUri, address _owner) onlyOwner external {
-        _mint(_owner, _newTokenId);
-        _setTokenURI(_newTokenId, _tokenUri);
+        nfthub.mintNft(_newTokenId, _tokenUri, _owner);
     }  
     
     ////////////////////////////////////
@@ -158,8 +165,7 @@ contract RCProxyMainnet is Ownable, ERC721Full
     function upgradeCard(uint256 _newTokenId, string calldata _tokenUri, address _owner) external {
         require(msg.sender == address(bridge), "Not bridge");
         require(bridge.messageSender() == proxyXdaiAddress, "Not proxy");
-        _mint(_owner, _newTokenId);
-        _setTokenURI(_newTokenId, _tokenUri);
+        nfthub.mintNft(_newTokenId, _tokenUri, _owner);
     }  
 
     ////////////////////////////////////
