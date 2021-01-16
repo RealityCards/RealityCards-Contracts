@@ -7,7 +7,7 @@ import './lib/CloneFactory.sol';
 import "./interfaces/ITreasury.sol";
 import './interfaces/IRCMarket.sol';
 import './interfaces/IRCProxyXdai.sol';
-import './interfaces/IRCNftHub.sol';
+import './interfaces/IRCNftHubXdai.sol';
 import './lib/NativeMetaTransaction.sol';
 
 /// @title Reality Cards Factory
@@ -25,7 +25,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
     ///// CONTRACT VARIABLES /////
     ITreasury public treasury;
     IRCProxyXdai public proxy;
-    IRCNftHub public nfthub;
+    IRCNftHubXdai public nfthub;
 
     ///// CONTRACT ADDRESSES /////
     /// @dev reference contract
@@ -166,7 +166,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
     }
 
     /// @notice where the question to post to the oracle is first sent to
-    function setNftHubAddress(IRCNftHub _newAddress) external onlyOwner {
+    function setNftHubAddress(IRCNftHubXdai _newAddress) external onlyOwner {
         nfthub = _newAddress;
     }
 

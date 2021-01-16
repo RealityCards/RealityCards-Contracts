@@ -4,12 +4,12 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/token/ERC721/ERC721Full.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "hardhat/console.sol";
-import './interfaces/IRCProxyXdai.sol';
-import './interfaces/IRCMarket.sol';
+import '../interfaces/IRCProxyXdai.sol';
+import '../interfaces/IRCMarket.sol';
 
 /// @title Reality Cards NFT Hub- xDai side
 /// @author Andrew Stanger
-contract RCNftHub is Ownable, ERC721Full 
+contract RCNftHubXdai is Ownable, ERC721Full 
 {
     ////////////////////////////////////
     //////// VARIABLES /////////////////

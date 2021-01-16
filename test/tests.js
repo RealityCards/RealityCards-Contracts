@@ -12,7 +12,7 @@ const {
 var RCFactory = artifacts.require('./RCFactory.sol');
 var RCTreasury = artifacts.require('./RCTreasury.sol');
 var RCMarket = artifacts.require('./RCMarket.sol');
-var NftHub = artifacts.require('./RCNftHub.sol');
+var NftHubXDai = artifacts.require('./nfthubs/RCNftHubXdai.sol');
 var XdaiProxy = artifacts.require('./bridgeproxies/RCProxyXdai.sol');
 var MainnetProxy = artifacts.require('./bridgeproxies/RCProxyMainnet.sol');
 // mockups
@@ -63,7 +63,7 @@ var cardRecipients = ['0x0000000000000000000000000000000000000000'];
     // main contracts
     treasury = await RCTreasury.new();
     rcfactory = await RCFactory.new(treasury.address);
-    nfthub = await NftHub.new(rcfactory.address);
+    nfthub = await NftHubXDai.new(rcfactory.address);
     rcreference = await RCMarket.new();
     // tell treasury about factory, tell factory about nft hub and reference
     await treasury.setFactoryAddress(rcfactory.address);
@@ -3865,7 +3865,7 @@ it('test uberOwner Treasury', async () => {
     await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question), "Not factory");
     // create market with new factory and do some standard stuff
     var slug = 'xa';
-    // nfthub = await NftHub.new(rcfactory.address);
+    // nfthub = await NftHubXDai.new(rcfactory.address);
     await rcfactory2.setNftHubAddress(nfthub.address);
     await rcfactory2.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question);
     var marketAddress = await rcfactory2.getMostRecentMarket.call(0);

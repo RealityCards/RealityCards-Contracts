@@ -6,7 +6,7 @@ import "./interfaces/IRealitio.sol";
 import "./interfaces/IFactory.sol";
 import "./interfaces/ITreasury.sol";
 import './interfaces/IRCProxyXdai.sol';
-import './interfaces/IRCNftHub.sol';
+import './interfaces/IRCNftHubXdai.sol';
 import './lib/NativeMetaTransaction.sol';
 
 /// @title Reality Cards Market
@@ -40,7 +40,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     ITreasury public treasury;
     IFactory public factory;
     IRCProxyXdai public proxy;
-    IRCNftHub public nfthub;
+    IRCNftHubXdai public nfthub;
 
     ///// PRICE, DEPOSITS, RENT /////
     /// @dev in attodai (so 100xdai = 100000000000000000000)
