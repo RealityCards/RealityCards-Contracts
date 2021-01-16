@@ -275,7 +275,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         string memory _tokenUri = tokenURI(_tokenId);
         address _owner = ownerOf(_tokenId);
         uint256 _actualTokenId = _tokenId.add(totalNftMintCount);
-        proxy.upgradeCard(_actualTokenId, _tokenUri, _owner);
+        proxy.saveCardToUpgrade(_actualTokenId, _tokenUri, _owner);
         _transferCard(ownerOf(_tokenId), address(this), _tokenId);
         emit LogNftUpgraded(_tokenId, _actualTokenId);
     }

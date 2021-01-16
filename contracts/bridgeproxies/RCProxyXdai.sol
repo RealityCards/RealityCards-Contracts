@@ -25,16 +25,22 @@ contract RCProxyXdai is Ownable
     address public factoryAddress;
     address public treasuryAddress;
     
-    /// @dev market resolution variables
+    /// @dev oracle variables
     mapping (address => bool) public marketFinalized;
     mapping (address => uint256) public winningOutcome;
     mapping (address => question) public questions;
-    struct question { string question;
-                      uint32 oracleResolutionTime;
-                      bool set; }
+    struct question { 
+        string question;              
+        uint32 oracleResolutionTime;
+        bool set; }
 
-    /// @dev so only markets can upgrade NFTs
+    /// @dev NFT upgrade variables
     mapping (address => bool) public isMarket;
+    mapping(uint256 => nft) public upgradedNfts;
+    struct nft { 
+        string tokenURI;
+        address owner;
+        bool set; }
 
     /// @dev dai deposit variables
     uint256 public validatorCount;
@@ -43,14 +49,12 @@ contract RCProxyXdai is Ownable
     mapping (uint256 => mapping(address => bool)) public hasConfirmedDeposit;
     /// @dev so only the float can be withdrawn and no more
     uint256 public floatSize;
-
     struct Deposit {
         address user;
         uint256 amount;
         uint256 confirmations;
         bool confirmed;
-        bool executed;
-    }
+        bool executed; }
 
     ////////////////////////////////////
     //////// EVENTS ////////////////////
@@ -151,7 +155,7 @@ contract RCProxyXdai is Ownable
     ///// CORE FUNCTIONS - ORACLE //////
     ////////////////////////////////////
 
-    /// @dev called by factory upon market creation, posts question to Oracle via arbitrary message bridge
+    /// @dev called by factory upon market creation (thus impossible to be called twice), posts question to Oracle via arbitrary message bridge
     function saveQuestion(address _marketAddress, string calldata _question, uint32 _oracleResolutionTime) external {
         require(msg.sender == factoryAddress, "Not factory");
         questions[_marketAddress].question = _question;
@@ -161,6 +165,8 @@ contract RCProxyXdai is Ownable
     }
 
     /// @dev question is posted in a different function so it can be called again if bridge fails
+    /// @dev no harm if called again after successful posting because of 
+    /// @dev ... "require(questionIds[_marketAddress] == 0" in postQuestionToOracle() function on mainnet proxy
     function postQuestionToBridge(address _marketAddress) public {
         require(questions[_marketAddress].set, "No question");
         bytes4 _methodSelector = IRCProxyMainnet(address(0)).postQuestionToOracle.selector;
@@ -192,10 +198,22 @@ contract RCProxyXdai is Ownable
     /// CORE FUNCTIONS - NFT UPGRADES //
     ////////////////////////////////////
 
-    function upgradeCard(uint256 _tokenId, string calldata _tokenUri, address _owner) external {
+    function saveCardToUpgrade(uint256 _tokenId, string calldata _tokenUri, address _owner) external {
         require(isMarket[msg.sender], "Not market");
+        // sassert because hould be impossible to call this twice because upgraded card returned to market
+        assert(!upgradedNfts[_tokenId].set);
+        upgradedNfts[_tokenId].tokenURI = _tokenUri;
+        upgradedNfts[_tokenId].owner = _owner;
+        upgradedNfts[_tokenId].set = true;
+        postCardToUpgrade(_tokenId);
+    }
+
+     /// @dev card is upgraded in a different function so it can be called again if bridge fails
+     /// @dev no harm if called again after successful posting because can't mint nft with same tokenId twice 
+    function postCardToUpgrade(uint256 _tokenId) public {
+        require(upgradedNfts[_tokenId].set, "Nft not set");
         bytes4 _methodSelector = IRCProxyMainnet(address(0)).upgradeCard.selector;
-        bytes memory data = abi.encodeWithSelector(_methodSelector, _tokenId, _tokenUri, _owner);
+        bytes memory data = abi.encodeWithSelector(_methodSelector, _tokenId, upgradedNfts[_tokenId].tokenURI, upgradedNfts[_tokenId].owner);
         bridge.requireToPassMessage(proxyMainnetAddress,data,200000);
     }
 

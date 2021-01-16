@@ -5,7 +5,7 @@ interface IRCProxyXdai {
     function saveQuestion(address _marketAddress, string calldata _question, uint32 _oracleResolutionTime) external;
     function isFinalized(address _marketAddress) external view returns(bool);
     function getWinner(address _marketAddress) external view returns(uint256); 
-    function upgradeCard(uint256, string calldata, address) external;
+    function saveCardToUpgrade(uint256, string calldata, address) external;
     function addMarket(address) external returns (bool);
     function confirmDaiDeposit(address _user, uint256 _amount, uint256 _nonce) external;
 }

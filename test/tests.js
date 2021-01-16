@@ -4154,7 +4154,7 @@ it('test NFT upgrade', async () => {
     var tokenuri = await mainnetproxy.tokenURI(3);
     assert.equal("uri",tokenuri);
     // test cant call certain functions directly
-    await expectRevert(xdaiproxy.upgradeCard(3,"asdfsadf",user0), "Not market");
+    await expectRevert(xdaiproxy.saveCardToUpgrade(3,"asdfsadf",user0), "Not market");
     await expectRevert(mainnetproxy.upgradeCard(3,"asdfsadf",user0), "Not bridge");
     // now, create new market and make sure token IDs on mainnet increment correctly
     var nftMintCount = await rcfactory.totalNftMintCount.call();
