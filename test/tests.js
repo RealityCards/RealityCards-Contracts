@@ -71,14 +71,14 @@ contract('RealityCardsTests', (accounts) => {
     // tell treasury about factory, tell factory about nft hub and reference
     await treasury.setFactoryAddress(rcfactory.address);
     await rcfactory.setReferenceContractAddress(rcreference.address);
-    await rcfactory.setNftHubAddress(nfthubxdai.address);
+    await rcfactory.setNftHubAddress(nfthubxdai.address, 0);
     // mockups 
     realitio = await RealitioMockup.new();
     bridge = await BridgeMockup.new();
     dai = await DaiMockup.new();
     // bridge contracts
     xdaiproxy = await XdaiProxy.new(bridge.address, rcfactory.address, treasury.address);
-    mainnetproxy = await MainnetProxy.new(bridge.address, realitio.address, nfthubmainnet.address, realitio.address, dai.address); // its fine, we're not testing ARB yet
+    mainnetproxy = await MainnetProxy.new(bridge.address, realitio.address, nfthubmainnet.address, realitio.address, dai.address); // the second realitio.address is ARB, its fine, we're not testing ARB yet
     // console.log("xdaiproxy address per tests is",xdaiproxy.address);
     // console.log("mainnetproxy address per tests is",mainnetproxy.address);
     // tell the factory, mainnet proxy and bridge the xdai proxy address

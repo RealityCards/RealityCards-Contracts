@@ -96,7 +96,7 @@ module.exports = async (deployer, network, accounts) =>
         // tell treasury about factory, tell factory about nft hub and reference
         await treasury.setFactoryAddress(factory.address);
         await factory.setReferenceContractAddress(reference.address);
-        await factory.setNftHubAddress(nfthubxdai.address);
+        await factory.setNftHubAddress(nfthubxdai.address,0);
         // mockups 
         await deployer.deploy(RealitioMockup);
         realitio = await RealitioMockup.deployed();
