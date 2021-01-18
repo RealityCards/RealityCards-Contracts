@@ -6,7 +6,7 @@ import "./interfaces/IRealitio.sol";
 import "./interfaces/IFactory.sol";
 import "./interfaces/ITreasury.sol";
 import './interfaces/IRCProxyXdai.sol';
-import './interfaces/IRCNftHub.sol';
+import './interfaces/IRCNftHubXdai.sol';
 import './lib/NativeMetaTransaction.sol';
 
 /// @title Reality Cards Market
@@ -40,7 +40,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     ITreasury public treasury;
     IFactory public factory;
     IRCProxyXdai public proxy;
-    IRCNftHub public nfthub;
+    IRCNftHubXdai public nfthub;
 
     ///// PRICE, DEPOSITS, RENT /////
     /// @dev in attodai (so 100xdai = 100000000000000000000)
@@ -275,7 +275,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         string memory _tokenUri = tokenURI(_tokenId);
         address _owner = ownerOf(_tokenId);
         uint256 _actualTokenId = _tokenId.add(totalNftMintCount);
-        proxy.upgradeCard(_actualTokenId, _tokenUri, _owner);
+        proxy.saveCardToUpgrade(_actualTokenId, _tokenUri, _owner);
         _transferCard(ownerOf(_tokenId), address(this), _tokenId);
         emit LogNftUpgraded(_tokenId, _actualTokenId);
     }
@@ -334,7 +334,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @notice checks whether the Realitio question has resolved, and if yes, gets the winner
     /// @dev can be called by anyone 
     function determineWinner() external checkState(States.LOCKED) {
-        require(_isQuestionFinalized() == true, "Oracle not resolved");
+        require(_isQuestionFinalized(), "Oracle not resolved");
         // get the winner. This will revert if answer is not resolved.
         winningOutcome = _getWinner();
         _incrementState();

@@ -8,7 +8,7 @@ import '../../lib/CloneFactory.sol';
 import "../../interfaces/ITreasury.sol";
 import '../../interfaces/IRCMarket.sol';
 import '../../interfaces/IRCProxyXdai.sol';
-import '../../interfaces/IRCNftHub.sol';
+import '../../interfaces/IRCNftHubXdai.sol';
 
 // mockup for testing, same except that nftmintcount is set at 20
 
@@ -23,8 +23,8 @@ contract RCFactoryV2 is Ownable, CloneFactory {
 
     ///// CONTRACT VARIABLES /////
     ITreasury public treasury;
-    IRCProxyXdai public oracleproxy;
-    IRCNftHub public nfthub;
+    IRCProxyXdai public proxy;
+    IRCNftHubXdai public nfthub;
 
     ///// CONTRACT ADDRESSES /////
     /// @dev reference contract
@@ -76,7 +76,7 @@ contract RCFactoryV2 is Ownable, CloneFactory {
     //////// EVENTS ////////////////////
     ////////////////////////////////////
 
-    event LogMarketCreated(address contractAddress, address treasuryAddress, string[] tokenURIs, string slug, string ipfsHash, uint256 referenceContractVersion);
+    event LogMarketCreated(address contractAddress, address treasuryAddress, string[] tokenURIs, string ipfsHash, uint256 referenceContractVersion);
     event LogMarketHidden(address market, bool hidden);
 
     ////////////////////////////////////
@@ -150,11 +150,11 @@ contract RCFactoryV2 is Ownable, CloneFactory {
 
     /// @notice where the question to post to the oracle is first sent to
     function setProxyXdaiAddress(IRCProxyXdai _newAddress) external onlyOwner {
-        oracleproxy = _newAddress;
+        proxy = _newAddress;
     }
 
     /// @notice where the question to post to the oracle is first sent to
-    function setNftHubAddress(IRCNftHub _newAddress) external onlyOwner {
+    function setNftHubAddress(IRCNftHubXdai _newAddress) external onlyOwner {
         nfthub = _newAddress;
     }
 
@@ -246,15 +246,10 @@ contract RCFactoryV2 is Ownable, CloneFactory {
         address _artistAddress,
         address _affiliateAddress,
         address[] memory _cardAffiliateAddresses,
-        string memory _realitioQuestion,
-        string memory _slug 
+        string memory _realitioQuestion
     ) public payable returns (address)  {
         // check sponsorship
         require(msg.value >= sponsorshipRequired, "Insufficient sponsorship");
-
-        // check slug not used before
-        require(!existingSlug[_slug], "Duplicate slug");
-        existingSlug[_slug] = true;
 
         // check payout addresses
         // artist
@@ -310,12 +305,12 @@ contract RCFactoryV2 is Ownable, CloneFactory {
         totalNftMintCount = totalNftMintCount.add(_numberOfTokens);
 
         // post question to Oracle
-        require(address(oracleproxy) != address(0), "xDai proxy not set");
-        oracleproxy.saveQuestion(_newAddress, _realitioQuestion, _timestamps[2]);
+        require(address(proxy) != address(0), "xDai proxy not set");
+        proxy.saveQuestion(_newAddress, _realitioQuestion, _timestamps[2]);
 
         // tell Treasury and Bridge Proxy about new market
         assert(treasury.addMarket(_newAddress));
-        assert(oracleproxy.addMarket(_newAddress));
+        assert(proxy.addMarket(_newAddress));
         assert(nfthub.addMarket(_newAddress));
 
         // update internals
@@ -327,7 +322,7 @@ contract RCFactoryV2 is Ownable, CloneFactory {
             IRCMarket(_newAddress).sponsor.value(msg.value)();
         }
 
-        emit LogMarketCreated(address(_newAddress), address(treasury), _tokenURIs, _slug, _ipfsHash, referenceContractVersion);
+        emit LogMarketCreated(address(_newAddress), address(treasury), _tokenURIs, _ipfsHash, referenceContractVersion);
         return _newAddress;
     }
 
