@@ -7,11 +7,13 @@ const argv = require('minimist')(process.argv.slice(2), {
 var RCTreasury = artifacts.require("./RCTreasury.sol");
 var RCFactory = artifacts.require("./RCFactory.sol");
 var RCMarket = artifacts.require("./RCMarket.sol")
-var NftHub = artifacts.require('./RCNftHubXdai.sol');
+var NftHubXDai = artifacts.require('./nfthubs/RCNftHubXdai.sol');
+var NftHubMainnet = artifacts.require('./nfthubs/RCNftHubMainnet.sol');
 var XdaiProxy = artifacts.require('./bridgeproxies/RCProxyXdai.sol');
 var MainnetProxy = artifacts.require('./bridgeproxies/RCProxyMainnet.sol');
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 var BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
+var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
 
 // variables
 var ambAddressXdai = '0x75Df5AF045d91108662D8080fD1FEFAd6aA0bb59';
@@ -36,12 +38,12 @@ module.exports = async (deployer, network, accounts) =>
         factory = await RCFactory.deployed();
         await deployer.deploy(RCMarket);
         reference = await RCMarket.deployed();
-        await deployer.deploy(NftHub,factory.address);
-        xdainfthub = await NftHub.deployed();
+        await deployer.deploy(NftHubXDai,factory.address);
+        nfthubxdai = await NftHubXDai.deployed();
         // tell treasury about factory, tell factory about nft hub and reference
         await treasury.setFactoryAddress(factory.address);
         await factory.setReferenceContractAddress(reference.address);
-        await factory.setNftHubAddress(xdainfthub.address);
+        await factory.setNftHubAddress(nfthubxdai.address);
         // deploy xdai proxy
         await deployer.deploy(XdaiProxy, ambAddressXdai, rcfactory.address, treasury.address);
         xdaiproxy = await XdaiProxy.deployed();
@@ -87,21 +89,26 @@ module.exports = async (deployer, network, accounts) =>
         factory = await RCFactory.deployed();
         await deployer.deploy(RCMarket);
         reference = await RCMarket.deployed();
-        await deployer.deploy(NftHub,factory.address);
-        xdainfthub = await NftHub.deployed();
+        await deployer.deploy(NftHubXDai,factory.address);
+        nfthubxdai = await NftHubXDai.deployed();
+        await deployer.deploy(NftHubMainnet);
+        nfthubmainnet = await NftHubMainnet.deployed();
         // tell treasury about factory, tell factory about nft hub and reference
         await treasury.setFactoryAddress(factory.address);
         await factory.setReferenceContractAddress(reference.address);
-        await factory.setNftHubAddress(xdainfthub.address);
-        // // mockups 
+        await factory.setNftHubAddress(nfthubxdai.address);
+        // mockups 
         await deployer.deploy(RealitioMockup);
         realitio = await RealitioMockup.deployed();
         await deployer.deploy(BridgeMockup);
         bridge = await BridgeMockup.deployed();
+        await deployer.deploy(DaiMockup);
+        dai = await DaiMockup.deployed();
         // deploy bridge contracts
-        await deployer.deploy(XdaiProxy, bridge.address, factory.address);
+        await deployer.deploy(XdaiProxy, bridge.address, factory.address, treasury.address);
         xdaiproxy = await XdaiProxy.deployed();
-        await deployer.deploy(MainnetProxy, bridge.address, realitio.address);
+        await deployer.deploy(MainnetProxy, bridge.address, realitio.address, nfthubmainnet.address, realitio.address, dai.address);
+        // ^^ the second realitio.address is ARB, its fine, we're not testing ARB yet
         mainnetproxy = await MainnetProxy.deployed();
         // tell the factory, mainnet proxy and bridge the xdai proxy address
         await factory.setProxyXdaiAddress(xdaiproxy.address);
@@ -110,6 +117,7 @@ module.exports = async (deployer, network, accounts) =>
         // tell the xdai proxy and bridge the mainnet proxy address
         await xdaiproxy.setProxyMainnetAddress(mainnetproxy.address);
         await bridge.setProxyMainnetAddress(mainnetproxy.address);
+        await nfthubmainnet.setProxyMainnetAddress(mainnetproxy.address);
 
         // create market #1
         var tokenURIs = [
@@ -138,14 +146,13 @@ module.exports = async (deployer, network, accounts) =>
         // market 1
         await factory.createMarket(
           0,
-          "ipfsHashes[0]",
+          ipfsHashes[0],
           timestamps,
           tokenURIs,
           artistAddress,
           affiliateAddress,
           cardAffiliateAddress,
-          question,
-          "x"
+          question
         )
     
         var marketAddress = await factory.getMostRecentMarket.call(0)
@@ -166,14 +173,13 @@ module.exports = async (deployer, network, accounts) =>
     
         await factory.createMarket(
           0,
-          "ipfsHashes[1]",
+          ipfsHashes[1],
           timestamps,
           tokenURIs,
           artistAddress,
           affiliateAddress,
           cardAffiliateAddress,
-          question,
-          "y"
+          question
         )
     
         var marketAddress2 = await factory.getMostRecentMarket.call(0)
@@ -284,14 +290,13 @@ module.exports = async (deployer, network, accounts) =>
     
         await factory.createMarket(
             0,
-            "ipfsHashes[2]",
+            ipfsHashes[2],
             timestamps,
             tokenURIs,
             artistAddress,
             affiliateAddress,
             cardAffiliateAddress,
-            question,
-            "z"
+            question
         )
     
         var marketAddress3 = await factory.getMostRecentMarket.call(0)
