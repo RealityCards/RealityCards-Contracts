@@ -75,7 +75,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
     //////// EVENTS ////////////////////
     ////////////////////////////////////
 
-    event LogMarketCreated1(address contractAddress, address treasuryAddress, uint256 referenceContractVersion);
+    event LogMarketCreated1(address contractAddress, address treasuryAddress, address nftHubAddress, uint256 referenceContractVersion);
     event LogMarketCreated2(address contractAddress, uint32 mode, string[] tokenURIs, string ipfsHash, uint32[] timestamp, uint256 totalNftMintCount);
     event LogMarketHidden(address market, bool hidden);
 
@@ -165,9 +165,12 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
         proxy = _newAddress;
     }
 
-    /// @notice where the question to post to the oracle is first sent to
-    function setNftHubAddress(IRCNftHubXdai _newAddress) external onlyOwner {
+    /// @notice where the NFTs live
+    /// @dev nftMintCount will probably need to be reset to zero if new nft contract, but 
+    /// @dev ... keeping flexible in case returning to previous contract
+    function setNftHubAddress(IRCNftHubXdai _newAddress, uint256 _newNftMintCount) external onlyOwner {
         nfthub = _newAddress;
+        totalNftMintCount = _newNftMintCount;
     }
 
     /// @notice if true, Cards in unapproved markets can't be upgraded
@@ -294,7 +297,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
         // create the market and emit the appropriate events
         // two events to avoid stack too deep error
         address _newAddress = createClone(referenceContractAddress);
-        emit LogMarketCreated1(address(_newAddress), address(treasury), referenceContractVersion);
+        emit LogMarketCreated1(address(_newAddress), address(treasury), address(nfthub), referenceContractVersion);
         emit LogMarketCreated2(address(_newAddress), _mode, _tokenURIs, _ipfsHash, _timestamps, totalNftMintCount);
         IRCMarket(_newAddress).initialize({
             _mode: _mode,
