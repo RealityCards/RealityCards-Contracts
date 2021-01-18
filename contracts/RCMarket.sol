@@ -482,7 +482,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         bool _validPrice = false;
 
         if (_newPrice >= (price[_tokenId].mul(minimumPriceIncrease.add(100))).div(100)) {
-            _collectRent(_tokenId);
+            collectRentAllCards();
             _validPrice = true;
             address _currentOwner = ownerOf(_tokenId);
 
@@ -530,7 +530,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                 exitFlag[msgSender()][_tokenId] = false;
             }
 
-            emit LogNewRental(msgSender(), _timeHeldLimit, _newPrice, _tokenId); 
+            emit LogNewRental(msgSender(), _newPrice, _timeHeldLimit, _tokenId); 
         }
 
         return _validPrice;
@@ -538,7 +538,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
     /// @notice to change your timeHeldLimit without having to re-rent
     function updateTimeHeldLimit(uint256 _timeHeldLimit, uint256 _tokenId) external checkState(States.OPEN) {
-        _collectRent(_tokenId);
+        collectRentAllCards();
         uint256 _minRentalTime = uint256(1 days).div(treasury.minRentalDivisor());
         require(_timeHeldLimit == 0 || _timeHeldLimit >= timeHeld[_tokenId][msgSender()].add(_minRentalTime), "Limit too low");
         if (_timeHeldLimit == 0) {
@@ -555,7 +555,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         // if current owner, collect rent, revert if necessary
         if (ownerOf(_tokenId) == msgSender()) {
             // collectRent first, so correct rent to now is taken
-            _collectRent(_tokenId);
+            collectRentAllCards();
             // if still the current owner and used all card specific deposit, revert immediately
             if (ownerOf(_tokenId) == msgSender()) {
                 if (treasury.cardSpecificDeposits(address(this), msgSender(), _tokenId) == 0) {
