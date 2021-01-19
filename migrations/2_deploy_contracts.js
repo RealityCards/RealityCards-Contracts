@@ -344,6 +344,12 @@ module.exports = async (deployer, network, accounts) =>
         // await time.increase(time.duration.days(4))
         // await realitycards4.collectRentAllTokens()
     
+
+        const block = await web3.eth.getBlock('latest')
+        console.log('Final block timestamp according to ganache: ', block.timestamp)
+        console.log(new Date(block.timestamp * 1000).toLocaleDateString('en-US'))
+
+
         console.log('factory.address: ', factory.address)
         console.log('treasury.address: ', treasury.address)
       } else {
