@@ -54,6 +54,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     event LogDepositIncreased(uint256 indexed daiDeposited, address indexed sentBy);
     event LogDepositWithdrawal(uint256 indexed daiWithdrawn, address indexed returnedTo);
     event LogAllocateCardSpecificDeposit(address indexed user, uint256 indexed amount, bool increase);
+    event LogUseCardSpecificDeposit(address indexed user, uint256 indexed amount);
 
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
@@ -228,15 +229,15 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
                 // specific deposit left, but not enough, zero it out and take remainder from general deposit
                 deposits[_user] = deposits[_user].sub(_dai.sub(_cardSpecificDeposit));
                 cardSpecificDeposits[_marketAddress][_user][_tokenId] = 0;
-                emit LogAllocateCardSpecificDeposit(_user, _cardSpecificDeposit, false);
+                emit LogUseCardSpecificDeposit(_user, _cardSpecificDeposit);
             } else {
                 // specific deposit sufficient
                 cardSpecificDeposits[_marketAddress][_user][_tokenId] = _cardSpecificDeposit.sub(_dai);
-                emit LogAllocateCardSpecificDeposit(_user, _dai, false);
+                emit LogUseCardSpecificDeposit(_user, _dai);
             }
         } else {
             cardSpecificDeposits[_marketAddress][_user][_tokenId] = _cardSpecificDeposit.sub(_dai);
-            emit LogAllocateCardSpecificDeposit(_user, _cardSpecificDeposit, false);
+            emit LogUseCardSpecificDeposit(_user, _cardSpecificDeposit);
         } 
         
         marketPot[_marketAddress] = marketPot[_marketAddress].add(_dai);

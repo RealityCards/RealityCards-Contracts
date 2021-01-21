@@ -136,6 +136,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     event LogNftUpgraded(uint256 indexed currentTokenId, uint256 indexed newTokenId);
     event LogPayoutDetails(address indexed artistAddress, address marketCreatorAddress, address affiliateAddress, address[] cardAffiliateAddresses, uint256 indexed artistCut, uint256 winnerCut, uint256 creatorCut, uint256 affiliateCut, uint256 cardAffiliateCut);
     event LogTransferCardToLongestOwner(uint256 tokenId, address longestOwner);
+    event LogPayCurrentOwner(address from, address to, uint256 amount);
 
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
@@ -518,6 +519,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                 // if hot potato mode, pay current owner
                 if (mode == 2) {
                     assert(treasury.payCurrentOwner(msgSender(), _currentOwner, price[_tokenId]));
+                    emit LogPayCurrentOwner(msgSender(), _currentOwner, price[_tokenId]);
                 }
                 // update internals
                 price[_tokenId] = _newPrice;
