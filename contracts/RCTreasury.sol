@@ -228,12 +228,15 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
                 // specific deposit left, but not enough, zero it out and take remainder from general deposit
                 deposits[_user] = deposits[_user].sub(_dai.sub(_cardSpecificDeposit));
                 cardSpecificDeposits[_marketAddress][_user][_tokenId] = 0;
+                emit LogAllocateCardSpecificDeposit(_user, _cardSpecificDeposit, false);
             } else {
                 // specific deposit sufficient
                 cardSpecificDeposits[_marketAddress][_user][_tokenId] = _cardSpecificDeposit.sub(_dai);
+                emit LogAllocateCardSpecificDeposit(_user, _dai, false);
             }
         } else {
             cardSpecificDeposits[_marketAddress][_user][_tokenId] = _cardSpecificDeposit.sub(_dai);
+            emit LogAllocateCardSpecificDeposit(_user, _cardSpecificDeposit, false);
         } 
         
         marketPot[_marketAddress] = marketPot[_marketAddress].add(_dai);
