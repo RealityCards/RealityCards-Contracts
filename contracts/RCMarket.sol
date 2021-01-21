@@ -389,6 +389,17 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         assert(treasury.payout(_recipient, _amount));
     }
 
+    /// @notice gives each Card to the longest owner
+    function _processCardsAfterEvent() internal {
+        for (uint i = 0; i < numberOfTokens; i++) {
+            if (longestOwner[i] != address(0)) {
+                // if never owned, longestOwner[i] will = zero
+                _transferCard(ownerOf(i), longestOwner[i], i);
+                emit LogTransferCardToLongestOwner(i, longestOwner[i]);
+            } 
+        }
+    }
+
     /// @dev the below functions pay stakeholders (artist, creator, affiliate, card specific affiliates)
     /// @dev they are not called within determineWinner() because of the risk of an
     /// @dev ....  address being a contract which refuses payment, then nobody could get winnings
@@ -707,17 +718,6 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             price[_tokenId] = _oldPrice;
             _transferCard(_currentOwner, _previousOwner, _tokenId);
             emit LogReturnToPreviousOwner(_tokenId, _previousOwner);
-        }
-    }
-
-    /// @notice gives each Card to the longest owner
-    function _processCardsAfterEvent() internal {
-        for (uint i = 0; i < numberOfTokens; i++) {
-            if (longestOwner[i] != address(0)) {
-                // if never owned, longestOwner[i] will = zero
-                _transferCard(ownerOf(i), longestOwner[i], i);
-                emit LogTransferCardToLongestOwner(i, longestOwner[i]);
-            } 
         }
     }
 

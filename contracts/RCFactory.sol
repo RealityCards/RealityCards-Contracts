@@ -133,6 +133,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
 
     /// CALLED WITHIN CONSTRUCTOR (public)
 
+    /// @notice update stakeholder payouts 
     /// @dev in 10s of basis points (so 1000 = 100%)
     function setPotDistribution(uint256 _artistCut, uint256 _winnerCut, uint256 _creatorCut, uint256 _affiliateCut, uint256 _cardAffiliateCut) public onlyOwner {
         require(_artistCut.add(_affiliateCut).add(_creatorCut).add(_winnerCut).add(_affiliateCut).add(_cardAffiliateCut) <= 1000, "Cuts too big");
@@ -143,6 +144,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
         potDistribution[4] = _cardAffiliateCut;
     }
 
+    /// @notice how much above the current price a user must bid
     /// @dev in %
     function setMinimumPriceIncrease(uint256 _percentIncrease) public onlyOwner {
         minimumPriceIncrease = _percentIncrease;
@@ -224,6 +226,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
     ////////////////////////////////////
     ////// GOVERNANCE- UBER OWNER //////
     ////////////////////////////////////
+    //// ******** DANGER ZONE ******** ////
     /// @dev uber owner required for upgrades
     /// @dev deploying and setting a new reference contract is effectively an upgrade
     /// @dev different owner so can be set to multisig, or burn address to relinquish upgrade ability
@@ -264,7 +267,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
         // check sponsorship
         require(msg.value >= sponsorshipRequired, "Insufficient sponsorship");
 
-        // check payout addresses
+        // check stakeholder addresses
         // artist
         require(isArtistApproved[_artistAddress] || _artistAddress == address(0), "Artist not approved");
         // affiliate

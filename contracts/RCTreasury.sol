@@ -53,6 +53,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
     event LogDepositIncreased(uint256 indexed daiDeposited, address indexed sentBy);
     event LogDepositWithdrawal(uint256 indexed daiWithdrawn, address indexed returnedTo);
+    event LogAllocateCardSpecificDeposit(address indexed user, uint256 indexed amount, bool increase);
 
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
@@ -125,6 +126,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     ////////////////////////////////////
     ////// GOVERNANCE- UBER OWNER //////
     ////////////////////////////////////
+    //// ******** DANGER ZONE ******** ////
     /// @dev uber owner required for upgrades
     /// @dev deploying and setting a new factory is effectively an upgrade
     /// @dev only the uber owner can do this, which can be set to burn address to relinquish upgrade ability
@@ -188,13 +190,16 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
         // first, unallocate card specific deposit of previous owner
         if (cardSpecificDeposits[_marketAddress][_currentOwner][_tokenId] > 0) {
-            deposits[_currentOwner] = deposits[_currentOwner].add(cardSpecificDeposits[_marketAddress][_currentOwner][_tokenId]);
+            uint256 _depositToUnallocate = cardSpecificDeposits[_marketAddress][_currentOwner][_tokenId];
+            deposits[_currentOwner] = deposits[_currentOwner].add(_depositToUnallocate);
             cardSpecificDeposits[_marketAddress][_currentOwner][_tokenId] = 0;
+            emit LogAllocateCardSpecificDeposit(_currentOwner, _depositToUnallocate, false);
         }
 
         // allocate card specific deposit for new owner
         deposits[_newOwner] = deposits[_newOwner].sub(_depositToAllocate);
         cardSpecificDeposits[_marketAddress][_newOwner][_tokenId] = _depositToAllocate;
+        emit LogAllocateCardSpecificDeposit(_newOwner, _depositToAllocate, true);
         return true;
     }
 
