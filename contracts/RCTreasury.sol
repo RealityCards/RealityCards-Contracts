@@ -53,8 +53,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
     event LogDepositIncreased(uint256 indexed daiDeposited, address indexed sentBy);
     event LogDepositWithdrawal(uint256 indexed daiWithdrawn, address indexed returnedTo);
-    event LogAllocateCardSpecificDeposit(address indexed user, uint256 indexed amount, bool increase);
-    event LogUseCardSpecificDeposit(address indexed user, uint256 indexed amount);
+    event LogAdjustCardSpecificDeposit(address indexed user, uint256 indexed amount, bool increase);
 
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
@@ -194,13 +193,13 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
             uint256 _depositToUnallocate = cardSpecificDeposits[_marketAddress][_currentOwner][_tokenId];
             deposits[_currentOwner] = deposits[_currentOwner].add(_depositToUnallocate);
             cardSpecificDeposits[_marketAddress][_currentOwner][_tokenId] = 0;
-            emit LogAllocateCardSpecificDeposit(_currentOwner, _depositToUnallocate, false);
+            emit LogAdjustCardSpecificDeposit(_currentOwner, _depositToUnallocate, false);
         }
 
         // allocate card specific deposit for new owner
         deposits[_newOwner] = deposits[_newOwner].sub(_depositToAllocate);
         cardSpecificDeposits[_marketAddress][_newOwner][_tokenId] = _depositToAllocate;
-        emit LogAllocateCardSpecificDeposit(_newOwner, _depositToAllocate, true);
+        emit LogAdjustCardSpecificDeposit(_newOwner, _depositToAllocate, true);
         return true;
     }
 
@@ -229,15 +228,15 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
                 // specific deposit left, but not enough, zero it out and take remainder from general deposit
                 deposits[_user] = deposits[_user].sub(_dai.sub(_cardSpecificDeposit));
                 cardSpecificDeposits[_marketAddress][_user][_tokenId] = 0;
-                emit LogUseCardSpecificDeposit(_user, _cardSpecificDeposit);
+                emit LogAdjustCardSpecificDeposit(_user, _cardSpecificDeposit, false);
             } else {
                 // specific deposit sufficient
                 cardSpecificDeposits[_marketAddress][_user][_tokenId] = _cardSpecificDeposit.sub(_dai);
-                emit LogUseCardSpecificDeposit(_user, _dai);
+                emit LogAdjustCardSpecificDeposit(_user, _dai, false);
             }
         } else {
             cardSpecificDeposits[_marketAddress][_user][_tokenId] = _cardSpecificDeposit.sub(_dai);
-            emit LogUseCardSpecificDeposit(_user, _cardSpecificDeposit);
+            emit LogAdjustCardSpecificDeposit(_user, _cardSpecificDeposit, false);
         } 
         
         marketPot[_marketAddress] = marketPot[_marketAddress].add(_dai);
