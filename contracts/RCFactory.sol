@@ -76,7 +76,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
     ////////////////////////////////////
 
     event LogMarketCreated1(address contractAddress, address treasuryAddress, address nftHubAddress, uint256 referenceContractVersion);
-    event LogMarketCreated2(address contractAddress, uint32 mode, string[] tokenURIs, string ipfsHash, uint32[] timestamp, uint256 totalNftMintCount);
+    event LogMarketCreated2(address contractAddress, uint32 mode, string[] tokenURIs, string ipfsHash, uint32[] timestamps, uint256 totalNftMintCount);
     event LogMarketHidden(address market, bool hidden);
 
     ////////////////////////////////////

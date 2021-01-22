@@ -13,4 +13,5 @@ interface ITreasury
     function cardSpecificDeposits(address,address,uint256) external returns(uint256);
     function deposit(address) external payable returns (bool);
     function sponsor() external payable returns (bool);
-}
+    function hotPotatoDivisor() external payable returns (uint256);
+} 
