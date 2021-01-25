@@ -51,8 +51,11 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     //////// EVENTS ////////////////////
     ////////////////////////////////////
 
-    event LogDepositIncreased(uint256 indexed daiDeposited, address indexed sentBy);
-    event LogDepositWithdrawal(uint256 indexed daiWithdrawn, address indexed returnedTo);
+    event LogDepositIncreased(address indexed sentBy, uint256 indexed daiDeposited);
+    event LogDepositWithdrawal(address indexed returnedTo, uint256 indexed daiWithdrawn);
+    event LogAdjustMainDeposit(address indexed user, uint256 indexed amount, bool increase);
+    event LogAdjustLockedDeposit(address indexed user, uint256 indexed amount, bool increase);
+    event LogHotPotatoPayment(address from, address to, uint256 amount);
 
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
@@ -125,6 +128,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     ////////////////////////////////////
     ////// GOVERNANCE- UBER OWNER //////
     ////////////////////////////////////
+    //// ******** DANGER ZONE ******** ////
     /// @dev uber owner required for upgrades
     /// @dev deploying and setting a new factory is effectively an upgrade
     /// @dev only the uber owner can do this, which can be set to burn address to relinquish upgrade ability
@@ -144,15 +148,16 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// DEPOSIT & WITHDRAW FUNCTIONS ///
     ////////////////////////////////////
 
-    /// @dev it is passed the user instead of using msg.value because might be called
-    /// @dev ... via contract (newRental function, specifically) instead of direct
+    /// @dev it is passed the user instead of using msg.sender because might be called
+    /// @dev ... via contract (fallback, newRental) or dai->xdai bot
     function deposit(address _user) public payable balancedBooks() returns(bool) {
         require(!globalPause, "Deposits are disabled");
         require(msg.value > 0, "Must deposit something");
         require(address(this).balance <= maxContractBalance, "Limit hit");
         deposits[_user] = deposits[_user].add(msg.value);
         totalDeposits = totalDeposits.add(msg.value);
-        emit LogDepositIncreased(msg.value, _user);
+        emit LogDepositIncreased(_user, msg.value);
+        emit LogAdjustMainDeposit(_user, msg.value, true);
         return true;
     }
 
@@ -168,7 +173,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         address payable _recipient = address(uint160(_thisAddressNotPayable));
         (bool _success, ) = _recipient.call.value(_dai)("");
         require(_success, "Transfer failed");
-        emit LogDepositWithdrawal(_dai, msgSender());
+        emit LogDepositWithdrawal(msgSender(), _dai);
+        emit LogAdjustMainDeposit(msgSender(), _dai, false);
     }
 
     ////////////////////////////////////
@@ -188,13 +194,18 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
         // first, unallocate card specific deposit of previous owner
         if (cardSpecificDeposits[_marketAddress][_currentOwner][_tokenId] > 0) {
-            deposits[_currentOwner] = deposits[_currentOwner].add(cardSpecificDeposits[_marketAddress][_currentOwner][_tokenId]);
+            uint256 _depositToUnallocate = cardSpecificDeposits[_marketAddress][_currentOwner][_tokenId];
+            deposits[_currentOwner] = deposits[_currentOwner].add(_depositToUnallocate);
             cardSpecificDeposits[_marketAddress][_currentOwner][_tokenId] = 0;
+            emit LogAdjustMainDeposit(_currentOwner, _depositToUnallocate, true);
+            emit LogAdjustLockedDeposit(_currentOwner, _depositToUnallocate, false);
         }
 
         // allocate card specific deposit for new owner
         deposits[_newOwner] = deposits[_newOwner].sub(_depositToAllocate);
         cardSpecificDeposits[_marketAddress][_newOwner][_tokenId] = _depositToAllocate;
+        emit LogAdjustMainDeposit(_newOwner, _depositToAllocate, false);
+        emit LogAdjustLockedDeposit(_newOwner, _depositToAllocate, true);
         return true;
     }
 
@@ -205,6 +216,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         require(deposits[_newOwner] >= _requiredPayment, "Insufficient deposit");
         deposits[_newOwner] = deposits[_newOwner].sub(_requiredPayment);
         deposits[_currentOwner] = deposits[_currentOwner].add(_requiredPayment);
+        emit LogAdjustMainDeposit(_newOwner, _requiredPayment, false);
+        emit LogAdjustMainDeposit(_currentOwner, _requiredPayment, true);
+        emit LogHotPotatoPayment(_newOwner, _currentOwner, _requiredPayment);
         return true;
     }
 
@@ -219,16 +233,22 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
             if (_cardSpecificDeposit == 0) {
                 // no specific deposit left, take from general deposit 
                 deposits[_user] = deposits[_user].sub(_dai);
+                emit LogAdjustMainDeposit(_user, _dai, false);
             } else if (_cardSpecificDeposit < _dai) {
                 // specific deposit left, but not enough, zero it out and take remainder from general deposit
                 deposits[_user] = deposits[_user].sub(_dai.sub(_cardSpecificDeposit));
                 cardSpecificDeposits[_marketAddress][_user][_tokenId] = 0;
+                emit LogAdjustLockedDeposit(_user, _cardSpecificDeposit, false);
+                emit LogAdjustMainDeposit(_user, _dai.sub(_cardSpecificDeposit), false);
             } else {
                 // specific deposit sufficient
                 cardSpecificDeposits[_marketAddress][_user][_tokenId] = _cardSpecificDeposit.sub(_dai);
+                emit LogAdjustLockedDeposit(_user, _dai, false);
             }
         } else {
+            // _dai should already be reduced to max of cardSpecificDeposits if exit flag set 
             cardSpecificDeposits[_marketAddress][_user][_tokenId] = _cardSpecificDeposit.sub(_dai);
+            emit LogAdjustLockedDeposit(_user, _cardSpecificDeposit, false);
         } 
         
         marketPot[_marketAddress] = marketPot[_marketAddress].add(_dai);
@@ -244,6 +264,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         deposits[_user] = deposits[_user].add(_dai);
         totalMarketPots = totalMarketPots.sub(_dai);
         totalDeposits = totalDeposits.add(_dai);
+        emit LogAdjustMainDeposit(_user, _dai, true);
         return true;
     }
 

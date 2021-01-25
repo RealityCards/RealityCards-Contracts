@@ -131,7 +131,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     event LogTimeHeldUpdated(uint256 indexed newTimeHeld, address indexed owner, uint256 indexed tokenId);
     event LogStateChange(uint256 indexed newState);
     event LogUpdateTimeHeldLimit(address indexed owner, uint256 newLimit, uint256 tokenId);
-    event LogExit(address indexed owner, uint256 tokenId);
+    event LogExit(address indexed owner, uint256 tokenId, bool exit);
     event LogSponsor(uint256 indexed amount);
     event LogNftUpgraded(uint256 indexed currentTokenId, uint256 indexed newTokenId);
     event LogPayoutDetails(address indexed artistAddress, address marketCreatorAddress, address affiliateAddress, address[] cardAffiliateAddresses, uint256 indexed artistCut, uint256 winnerCut, uint256 creatorCut, uint256 affiliateCut, uint256 cardAffiliateCut);
@@ -389,6 +389,17 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         assert(treasury.payout(_recipient, _amount));
     }
 
+    /// @notice gives each Card to the longest owner
+    function _processCardsAfterEvent() internal {
+        for (uint i = 0; i < numberOfTokens; i++) {
+            if (longestOwner[i] != address(0)) {
+                // if never owned, longestOwner[i] will = zero
+                _transferCard(ownerOf(i), longestOwner[i], i);
+                emit LogTransferCardToLongestOwner(i, longestOwner[i]);
+            } 
+        }
+    }
+
     /// @dev the below functions pay stakeholders (artist, creator, affiliate, card specific affiliates)
     /// @dev they are not called within determineWinner() because of the risk of an
     /// @dev ....  address being a contract which refuses payment, then nobody could get winnings
@@ -506,6 +517,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             } else {   
                 // if hot potato mode, pay current owner
                 if (mode == 2) {
+                    // the required payment is calculated in the Treasury
                     assert(treasury.payCurrentOwner(msgSender(), _currentOwner, price[_tokenId]));
                 }
                 // update internals
@@ -528,6 +540,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             // make sure exit flag is set back to false
             if (exitFlag[msgSender()][_tokenId]) {
                 exitFlag[msgSender()][_tokenId] = false;
+                emit LogExit(msgSender(), _tokenId, false);
             }
 
             emit LogNewRental(msgSender(), _newPrice, _timeHeldLimit, _tokenId); 
@@ -568,7 +581,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         if (!exitFlag[msgSender()][_tokenId]) {
                 exitFlag[msgSender()][_tokenId] = true;
         }
-        emit LogExit(msgSender(), _tokenId); 
+        emit LogExit(msgSender(), _tokenId, true); 
     }
 
     /// @notice stop renting all tokens
@@ -707,17 +720,6 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             price[_tokenId] = _oldPrice;
             _transferCard(_currentOwner, _previousOwner, _tokenId);
             emit LogReturnToPreviousOwner(_tokenId, _previousOwner);
-        }
-    }
-
-    /// @notice gives each Card to the longest owner
-    function _processCardsAfterEvent() internal {
-        for (uint i = 0; i < numberOfTokens; i++) {
-            if (longestOwner[i] != address(0)) {
-                // if never owned, longestOwner[i] will = zero
-                _transferCard(ownerOf(i), longestOwner[i], i);
-                emit LogTransferCardToLongestOwner(i, longestOwner[i]);
-            } 
         }
     }
 

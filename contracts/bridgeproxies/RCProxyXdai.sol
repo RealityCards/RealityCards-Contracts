@@ -126,6 +126,7 @@ contract RCProxyXdai is Ownable
     ///// GOVERNANCE - DAI BRIDGE //////
     ////////////////////////////////////
 
+    /// @dev impossible to withdraw user funds, only added float 
     function withdrawFloat(uint256 _amount) onlyOwner external {
         // will throw an error if goes negative because safeMath
         floatSize = floatSize.sub(_amount);
