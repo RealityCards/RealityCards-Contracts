@@ -101,6 +101,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev all functions should be onlyOwner
 
     /// @dev minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
+    /// @dev this is here instead of the Factory because allocateCardSpecificDeposit uses it
     function setMinRental(uint256 _newDivisor) external onlyOwner {
         minRentalDivisor = _newDivisor;
     }
