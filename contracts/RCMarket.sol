@@ -53,18 +53,15 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     uint256 public totalCollected; 
     /// @dev the minimum required price increase
     uint256 public minimumPriceIncrease;
-
-    ///// ORDERBOOK /////
     /// @dev prevents user from cancelling and re-renting in the same block
     mapping (address => uint256) public ownershipLostTimestamp;
+
+    ///// ORDERBOOK /////
     /// @dev stores the orderbook. Doubly linked list. 
     mapping (uint256 => mapping(address => Bid)) public orderbook; // tokenID // user address // Bid
-    /// @dev the doubly linked list
-    /// @dev tells the contract to exit position after min rental duration (or immediately, if already rented for this long)
-    /// @dev if not current owner, prevents ownership reverting back to you
     struct Bid{
   		uint256 price;
-        uint256 timeHeldLimit // users can optionally set a maximum time to hold it for, after which it reverts
+        uint256 timeHeldLimit; // users can optionally set a maximum time to hold it for, after which it reverts
         address next; // who it will return to when current owner exits (i.e, next = going down the list)
         address prev; // who it returned from (i.e., prev = going up the list)
     }
@@ -72,7 +69,6 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     ///// TIME /////
     /// @dev how many seconds each user has held each token for, for determining winnings  
     mapping (uint256 => mapping (address => uint256) ) public timeHeld;
-
     /// @dev sums all the timeHelds for each. Used when paying out. Should always increment at the same time as timeHeld
     mapping (uint256 => uint256) public totalTimeHeld; 
     /// @dev used to determine the rent due. Rent is due for the period (now - timeLastCollected), at which point timeLastCollected is set to now.
@@ -481,16 +477,16 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                 } else {
                     _newPrice = 1 ether;
                 }
-                newRental(_newPrice, 0, i);
+                newRental(_newPrice, 0, address(0), i);
             }
         }
     }
 
     /// @notice to rent a Card
-    function newRental(uint256 _newPrice, uint256 _tokenId, uint256 _timeHeldLimit, address _startingPosition) public payable autoUnlock() autoLock() checkState(States.OPEN) {
+    function newRental(uint256 _newPrice, uint256 _timeHeldLimit, address _startingPosition, uint256 _tokenId) public payable autoUnlock() autoLock() checkState(States.OPEN) {
         require(_newPrice >= 1 ether, "Minimum rental 1 Dai");
         require(_tokenId < numberOfTokens, "This token does not exist");
-        require(ownershipLostTimestamp(msgSender()) != now, "Cannot lose and re-rent in same block");
+        require(ownershipLostTimestamp[msgSender()] != now, "Cannot lose and re-rent in same block");
 
         collectRentAllCards();
 
@@ -510,7 +506,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         }
 
         // add to orderbook or update existing entry as appropriate
-        if (orderbook[_tokenId][msgSender()] == 0) {
+        if (orderbook[_tokenId][msgSender()].price == 0) {
             _newBid(_newPrice, _tokenId, _timeHeldLimit, _startingPosition);
         } else {
             _updateBid(_newPrice, _tokenId, _timeHeldLimit, _startingPosition);
@@ -595,23 +591,25 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         //only collect rent if the token is owned (ie, if owned by the contract this implies unowned)
         if (ownerOf(_tokenId) != address(this)) {
             uint256 _rentOwed = price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(1 days);
-            address _currentOwner = ownerOf(_tokenId);
-            uint256 _deposit = treasury.deposits(_currentOwner);
+            address _collectRentFrom = ownerOf(_tokenId);
+            uint256 _deposit = treasury.deposits(_collectRentFrom);
             
             // get the maximum rent they can pay based on timeHeldLimit
             uint256 _rentOwedLimit;
-            if (timeHeldLimit[_tokenId][_currentOwner] == MAX_UINT256) {
+            uint256 _timeHeldLimit = orderbook[_tokenId][_collectRentFrom].timeHeldLimit;
+            if (_timeHeldLimit == MAX_UINT256) {
                 _rentOwedLimit = MAX_UINT256;
             } else {
-                _rentOwedLimit = price[_tokenId].mul(timeHeldLimit[_tokenId][_currentOwner].sub(timeHeld[_tokenId][_currentOwner])).div(1 days);
+                _rentOwedLimit = price[_tokenId].mul(_timeHeldLimit.sub(timeHeld[_tokenId][_collectRentFrom])).div(1 days);
             }
 
-            if (_rentOwed >= _totalDeposit || _rentOwed >= _rentOwedLimit)  {
-                // case 1: rentOwed is reduced to _totalDeposit
-                if (_totalDeposit <= _rentOwedLimit)
+            // if rent owed is too high, reduce
+            if (_rentOwed >= _deposit || _rentOwed >= _rentOwedLimit)  {
+                // case 1: rentOwed is reduced to _deposit
+                if (_deposit <= _rentOwedLimit)
                 {
-                    _timeOfThisCollection = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(_totalDeposit).div(_rentOwed)));
-                    _rentOwed = _totalDeposit; // take what's left     
+                    _timeOfThisCollection = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(_deposit).div(_rentOwed)));
+                    _rentOwed = _deposit; // take what's left     
                 // case 2: rentOwed is reduced to _rentOwedLimit
                 } else {
                     _timeOfThisCollection = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(_rentOwedLimit).div(_rentOwed)));
@@ -622,26 +620,23 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
             if (_rentOwed > 0) {
                 // decrease deposit by rent owed at the Treasury
-                assert(treasury.payRent(_currentOwner, _rentOwed, _tokenId, _exitFlag));
-                // update time held and amount collected variables
+                assert(treasury.payRent(_collectRentFrom, _rentOwed, _tokenId));
+                // update internals
                 uint256 _timeHeldToIncrement = (_timeOfThisCollection.sub(timeLastCollected[_tokenId]));
-                // note that if _revertToUnderbidder was called above, _currentOwner will no longer refer to the
-                // ... actual current owner. This is correct- we are updating the variables of the user who just
-                // ... had their rent collected, not the new owner, if there is one
-                timeHeld[_tokenId][_currentOwner] = timeHeld[_tokenId][_currentOwner].add(_timeHeldToIncrement);
+                timeHeld[_tokenId][_collectRentFrom] = timeHeld[_tokenId][_collectRentFrom].add(_timeHeldToIncrement);
                 totalTimeHeld[_tokenId] = totalTimeHeld[_tokenId].add(_timeHeldToIncrement);
-                collectedPerUser[_currentOwner] = collectedPerUser[_currentOwner].add(_rentOwed);
+                collectedPerUser[_collectRentFrom] = collectedPerUser[_collectRentFrom].add(_rentOwed);
                 collectedPerToken[_tokenId] = collectedPerToken[_tokenId].add(_rentOwed);
                 totalCollected = totalCollected.add(_rentOwed);
 
                 // longest owner tracking
-                if (timeHeld[_tokenId][_currentOwner] > longestTimeHeld[_tokenId]) {
-                    longestTimeHeld[_tokenId] = timeHeld[_tokenId][_currentOwner];
-                    longestOwner[_tokenId] = _currentOwner;
+                if (timeHeld[_tokenId][_collectRentFrom] > longestTimeHeld[_tokenId]) {
+                    longestTimeHeld[_tokenId] = timeHeld[_tokenId][_collectRentFrom];
+                    longestOwner[_tokenId] = _collectRentFrom;
                 }
 
-                emit LogTimeHeldUpdated(timeHeld[_tokenId][_currentOwner], _currentOwner, _tokenId);
-                emit LogRentCollection(_rentOwed, _tokenId, _currentOwner);
+                emit LogTimeHeldUpdated(timeHeld[_tokenId][_collectRentFrom], _collectRentFrom, _tokenId);
+                emit LogRentCollection(_rentOwed, _tokenId, _collectRentFrom);
             } 
         }
 
@@ -655,10 +650,10 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     {
         // check user not in the orderbook
         assert(orderbook[_tokenId][msgSender()].price == 0);
-        uint256 _minPriceToOwn = price[_tokenId].mul(minimumPriceIncrease.add(100))).div(100);
+        uint256 _minPriceToOwn = (price[_tokenId].mul(minimumPriceIncrease.add(100))).div(100);
         // case 1: user is sufficiently above highest bidder (or only bidder)
-        if(ownerOf(_tokenId) == address(this) || _newPrice >= _minPriceToOwn {
-            _setNewOwner(newPrice, _tokenId, _timeHeldLimit);
+        if(ownerOf(_tokenId) == address(this) || _newPrice >= _minPriceToOwn) {
+            _setNewOwner(_newPrice, _tokenId, _timeHeldLimit);
         } else {
         // case 2: user is not sufficiently above highest bidder
             _placeInList(_newPrice, _tokenId, _timeHeldLimit, _startingPosition);
@@ -668,13 +663,14 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @dev user is already in the orderbook
     function _updateBid(uint256 _newPrice, uint256 _tokenId, uint256 _timeHeldLimit, address _startingPosition) internal 
     {
+        uint256 _minPriceToOwn;
         // ensure user is in the orderbook
         assert(orderbook[_tokenId][msgSender()].price > 0);
         // case 1: user is currently the owner
         if(msgSender() == ownerOf(_tokenId)) { 
-            uint256 _minPriceToRemainOwner = price[_tokenId].mul(minimumPriceIncrease.add(100))).div(100);
+            _minPriceToOwn = (price[_tokenId].mul(minimumPriceIncrease.add(100))).div(100);
             // case 1A: new price is at least X% above current price- adjust price & timeHeldLimit
-            if(_newPrice >= _minPriceToRemainOwner) {
+            if(_newPrice >= _minPriceToOwn) {
                 orderbook[_tokenId][msgSender()].price = _newPrice;
                 orderbook[_tokenId][msgSender()].timeHeldLimit = _timeHeldLimit;
                 price[_tokenId] = _newPrice;
@@ -683,9 +679,9 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                 _revertToUnderbidder(_tokenId);
             // case 1C: new price is equal or below old price
             } else {
-                uint256 _minPriceToRemainOwner = orderbook[_tokenId][orderbook[msgSender()].next].price.mul(minimumPriceIncrease.add(100))).div(100);
+                _minPriceToOwn = (orderbook[_tokenId][orderbook[_tokenId][msgSender()].next].price.mul(minimumPriceIncrease.add(100))).div(100);
                 // case 1Ca: still the highest owner- adjust price & timeHeldLimit
-                if(_newPrice >= _minPriceToRemainOwner) {
+                if(_newPrice >= _minPriceToOwn) {
                     orderbook[_tokenId][msgSender()].price = _newPrice;
                     orderbook[_tokenId][msgSender()].timeHeldLimit = _timeHeldLimit;
                     price[_tokenId] = _newPrice;
@@ -702,7 +698,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             orderbook[_tokenId][orderbook[_tokenId][msgSender()].next].prev = orderbook[_tokenId][msgSender()].prev; 
             delete orderbook[_tokenId][msgSender()];
             // check if should be owner, add on top if so, otherwise _placeInList
-            uint256 _minPriceToOwn = price[_tokenId].mul(minimumPriceIncrease.add(100))).div(100);
+            _minPriceToOwn = (price[_tokenId].mul(minimumPriceIncrease.add(100))).div(100);
             if(_newPrice >= _minPriceToOwn) 
             {  
                 _setNewOwner(_newPrice, _tokenId, _timeHeldLimit);
@@ -743,16 +739,16 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         // check the starting location is not too low down the list
         require(orderbook[_tokenId][_startingPosition].price >= _newPrice, "Invalid starting location");
 
-        address _tempNext = _locationToStart;
+        address _tempNext = _startingPosition;
         address _tempPrev;
         uint256 _loopCount;
         uint256 _requiredPrice;
 
         // loop through orderbook until bid is at least _requiredPrice above that user
         do {
-            _tempPrev = tempNext;
-            _tempNext = orderbook[_tokenId][tempPrev].next;
-            _requiredPrice = orderbook[_tokenId][tempNext].price.mul(minimumPriceIncrease.add(100))).div(100);
+            _tempPrev = _tempNext;
+            _tempNext = orderbook[_tokenId][_tempPrev].next;
+            _requiredPrice = (orderbook[_tokenId][_tempNext].price.mul(minimumPriceIncrease.add(100))).div(100);
             _loopCount = _loopCount.add(1);
         } while (
             _newPrice < _requiredPrice && // equal to or above is ok
@@ -765,9 +761,9 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         }
 
         // add to the list
-        orderbook[_tokenId][msgSender()] = Bid(_newPrice, _timeHeldLimit, tempNext, tempPrev);
-        orderbook[_tokenId][tempPrev].next = msgSender();
-        orderbook[_tokenId][tempNext].prev = msgSender();
+        orderbook[_tokenId][msgSender()] = Bid(_newPrice, _timeHeldLimit, _tempNext, _tempPrev);
+        orderbook[_tokenId][_tempPrev].next = msgSender();
+        orderbook[_tokenId][_tempNext].prev = msgSender();
     }
 
     /// @notice if a users deposit runs out, either return to previous owner or foreclose
@@ -788,7 +784,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             delete orderbook[_tokenId][_tempPrev];
             // get required  and actual deposit of next user
             _tempNextDeposit = treasury.deposits(_tempNext);
-            _requiredDeposit = orderbook[_tokenId][_tempNext].price.div(minRentalDivisor);
+            _requiredDeposit = orderbook[_tokenId][_tempNext].price.div(treasury.minRentalDivisor());
             _loopCount = _loopCount.add(1);
         } while (
             _tempNext != address(this) && 
@@ -800,7 +796,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
              // transfer to previous owner
             address _currentOwner = ownerOf(_tokenId);
             price[_tokenId] = orderbook[_tokenId][_tempNext].price;
-            ownershipLostTimestamp(ownerOf(_tokenId)) = now;
+            ownershipLostTimestamp[ownerOf(_tokenId)] = now;
             _transferCard(_currentOwner, _tempNext, _tokenId);
             emit LogCardTransferredToUnderbidder(_tokenId, _tempNext);
         }

@@ -184,9 +184,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// only markets can call these functions
 
     /// @dev a rental payment is equivalent to moving to market pot from user's deposit, called by _collectRent in the market
-    /// @dev no require statement checking that user has sufficient deposit because _dai should have been reduced to the 
-    /// @dev ... appropriate amount before this function is called (plus, safemath would enforce it anyway). 
-    function payRent(address _user, uint256 _dai, uint256 _tokenId) external balancedBooks() onlyMarkets() returns(bool) {
+    function payRent(address _user, uint256 _dai) external balancedBooks() onlyMarkets() returns(bool) {
+        assert(deposits[_user] >= _dai); // assert because should have been reduced to user's deposit already
         deposits[_user] = deposits[_user].sub(_dai);
         marketPot[msg.sender] = marketPot[msg.sender].add(_dai);
         totalMarketPots = totalMarketPots.add(_dai);
@@ -197,6 +196,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
     /// @dev a payout is equivalent to moving from market pot to user's deposit (the opposite of payRent)
     function payout(address _user, uint256 _dai) external balancedBooks() onlyMarkets() returns(bool) {
+        assert(marketPot[msg.sender] >= _dai); 
         deposits[_user] = deposits[_user].add(_dai);
         marketPot[msg.sender] = marketPot[msg.sender].sub(_dai);
         totalMarketPots = totalMarketPots.sub(_dai);
