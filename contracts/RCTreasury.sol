@@ -183,30 +183,33 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     ////////////////////////////////////
     /// only markets can call these functions
 
-    /// @dev moves the amount required for minimum rental duration to seperate pot
-    /// @dev if current owner rents again, _newOwner and _currentOwner will be the same, this is fine; 
-    /// @dev ... card specific deposit will just be increased 
-    function allocateCardSpecificDeposit(address _newOwner, address _currentOwner, uint256 _tokenId, uint256 _newPrice) external balancedBooks() onlyMarkets() returns(bool) {
-        address _marketAddress = msg.sender;
-        require(!globalPause, "Rentals are disabled");
-        require(!marketPaused[_marketAddress], "Rentals are disabled");
-        uint256 _depositToAllocate = _newPrice.div(minRentalDivisor);
-        require(deposits[_newOwner] >= _depositToAllocate, "Insufficient deposit");
+    /// @dev a rental payment is equivalent to moving to market pot from user's deposit, called by _collectRent in the market
+    /// @dev no require statement checking that user has sufficient deposit because _dai should have been reduced to the 
+    /// @dev ... appropriate amount before this function is called (plus, safemath would enforce it anyway). 
+    function payRent(address _user, uint256 _dai, uint256 _tokenId) external balancedBooks() onlyMarkets() returns(bool) {
+        deposits[_user] = deposits[_user].sub(_dai);
+        marketPot[msg.sender] = marketPot[msg.sender].add(_dai);
+        totalMarketPots = totalMarketPots.add(_dai);
+        totalDeposits = totalDeposits.sub(_dai);
+        emit LogAdjustMainDeposit(_user, _dai, false);
+        return true;
+    }
 
-        // first, unallocate card specific deposit of previous owner
-        if (cardSpecificDeposits[_marketAddress][_currentOwner][_tokenId] > 0) {
-            uint256 _depositToUnallocate = cardSpecificDeposits[_marketAddress][_currentOwner][_tokenId];
-            deposits[_currentOwner] = deposits[_currentOwner].add(_depositToUnallocate);
-            cardSpecificDeposits[_marketAddress][_currentOwner][_tokenId] = 0;
-            emit LogAdjustMainDeposit(_currentOwner, _depositToUnallocate, true);
-            emit LogAdjustLockedDeposit(_currentOwner, _depositToUnallocate, false);
-        }
+    /// @dev a payout is equivalent to moving from market pot to user's deposit (the opposite of payRent)
+    function payout(address _user, uint256 _dai) external balancedBooks() onlyMarkets() returns(bool) {
+        deposits[_user] = deposits[_user].add(_dai);
+        marketPot[msg.sender] = marketPot[msg.sender].sub(_dai);
+        totalMarketPots = totalMarketPots.sub(_dai);
+        totalDeposits = totalDeposits.add(_dai);
+        emit LogAdjustMainDeposit(_user, _dai, true);
+        return true;
+    }
 
-        // allocate card specific deposit for new owner
-        deposits[_newOwner] = deposits[_newOwner].sub(_depositToAllocate);
-        cardSpecificDeposits[_marketAddress][_newOwner][_tokenId] = _depositToAllocate;
-        emit LogAdjustMainDeposit(_newOwner, _depositToAllocate, false);
-        emit LogAdjustLockedDeposit(_newOwner, _depositToAllocate, true);
+    /// @notice ability to add liqudity to the pot without being able to win (called by market sponsor function). 
+    function sponsor() external payable balancedBooks() onlyMarkets() returns(bool) {
+        address _marketAddress = msgSender();
+        marketPot[_marketAddress] = marketPot[_marketAddress].add(msg.value);
+        totalMarketPots = totalMarketPots.add(msg.value);
         return true;
     }
 
@@ -220,60 +223,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         emit LogAdjustMainDeposit(_newOwner, _requiredPayment, false);
         emit LogAdjustMainDeposit(_currentOwner, _requiredPayment, true);
         emit LogHotPotatoPayment(_newOwner, _currentOwner, _requiredPayment);
-        return true;
-    }
-
-    /// @dev a rental payment is equivalent to moving to market pot from user's deposit, called by _collectRent in the market
-    /// @dev no require statement checking that user has sufficient deposit because _dai should have been reduced to the 
-    /// @dev ... appropriate amount before this function is called (plus, safemath would enforce it anyway). 
-    function payRent(address _user, uint256 _dai, uint256 _tokenId, bool _exitFlag) external balancedBooks() onlyMarkets() returns(bool) {
-        address _marketAddress = msg.sender;
-        uint256 _cardSpecificDeposit = cardSpecificDeposits[_marketAddress][_user][_tokenId];
-        // exitFlag true = only pay rent up to balance of cardSpecificDeposit and no more
-        if (!_exitFlag) {
-            if (_cardSpecificDeposit == 0) {
-                // no specific deposit left, take from general deposit 
-                deposits[_user] = deposits[_user].sub(_dai);
-                emit LogAdjustMainDeposit(_user, _dai, false);
-            } else if (_cardSpecificDeposit < _dai) {
-                // specific deposit left, but not enough, zero it out and take remainder from general deposit
-                deposits[_user] = deposits[_user].sub(_dai.sub(_cardSpecificDeposit));
-                cardSpecificDeposits[_marketAddress][_user][_tokenId] = 0;
-                emit LogAdjustLockedDeposit(_user, _cardSpecificDeposit, false);
-                emit LogAdjustMainDeposit(_user, _dai.sub(_cardSpecificDeposit), false);
-            } else {
-                // specific deposit sufficient
-                cardSpecificDeposits[_marketAddress][_user][_tokenId] = _cardSpecificDeposit.sub(_dai);
-                emit LogAdjustLockedDeposit(_user, _dai, false);
-            }
-        } else {
-            // _dai should already be reduced to max of cardSpecificDeposits if exit flag set 
-            cardSpecificDeposits[_marketAddress][_user][_tokenId] = _cardSpecificDeposit.sub(_dai);
-            emit LogAdjustLockedDeposit(_user, _cardSpecificDeposit, false);
-        } 
-        
-        marketPot[_marketAddress] = marketPot[_marketAddress].add(_dai);
-        totalMarketPots = totalMarketPots.add(_dai);
-        totalDeposits = totalDeposits.sub(_dai);
-        return true;
-    }
-
-    /// @dev a payout is equivalent to moving from market pot to user's deposit (the opposite of payRent)
-    function payout(address _user, uint256 _dai) external balancedBooks() onlyMarkets() returns(bool) {
-        address _marketAddress = msg.sender;
-        marketPot[_marketAddress] = marketPot[_marketAddress].sub(_dai);
-        deposits[_user] = deposits[_user].add(_dai);
-        totalMarketPots = totalMarketPots.sub(_dai);
-        totalDeposits = totalDeposits.add(_dai);
-        emit LogAdjustMainDeposit(_user, _dai, true);
-        return true;
-    }
-
-    /// @notice ability to add liqudity to the pot without being able to win (called by market sponsor function). 
-    function sponsor() external payable balancedBooks() onlyMarkets() returns(bool) {
-        address _marketAddress = msgSender();
-        marketPot[_marketAddress] = marketPot[_marketAddress].add(msg.value);
-        totalMarketPots = totalMarketPots.add(msg.value);
         return true;
     }
  

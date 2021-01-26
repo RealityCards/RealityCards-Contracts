@@ -53,19 +53,16 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     uint256 public totalCollected; 
     /// @dev the minimum required price increase
     uint256 public minimumPriceIncrease;
-    /// @dev tells the contract to exit position after min rental duration
-    // NEEDS TO BE DONE PROPERLY
-    mapping (uint256 => bool) public exitFlag
 
     ///// ORDERBOOK /////
     /// @dev prevents user from cancelling and re-renting in the same block
-    mapping (address => uint256) public cancelTimestamp;
+    mapping (address => uint256) public ownershipLostTimestamp;
     /// @dev stores the orderbook. Doubly linked list. 
-    mapping (uint256 => mapping(address => Rental)) public orderbook; // tokenID // user address // Rental
+    mapping (uint256 => mapping(address => Bid)) public orderbook; // tokenID // user address // Bid
     /// @dev the doubly linked list
     /// @dev tells the contract to exit position after min rental duration (or immediately, if already rented for this long)
     /// @dev if not current owner, prevents ownership reverting back to you
-    struct Rental{
+    struct Bid{
   		uint256 price;
         uint256 timeHeldLimit // users can optionally set a maximum time to hold it for, after which it reverts
         address next; // who it will return to when current owner exits (i.e, next = going down the list)
@@ -493,15 +490,19 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     function newRental(uint256 _newPrice, uint256 _tokenId, uint256 _timeHeldLimit, address _startingPosition) public payable autoUnlock() autoLock() checkState(States.OPEN) {
         require(_newPrice >= 1 ether, "Minimum rental 1 Dai");
         require(_tokenId < numberOfTokens, "This token does not exist");
-        require(cancelTimestamp(msgSender()) != now, "Cannot cancel and re-rent in same block");
+        require(ownershipLostTimestamp(msgSender()) != now, "Cannot lose and re-rent in same block");
 
         collectRentAllCards();
 
+        // check _timeHeldLimit
         if (_timeHeldLimit == 0) {
             _timeHeldLimit = MAX_UINT256; // so 0 defaults to no limit
         }
         uint256 _minRentalTime = uint256(1 days).div(treasury.minRentalDivisor());
         require(_timeHeldLimit >= timeHeld[_tokenId][msgSender()].add(_minRentalTime), "Limit too low"); // must be after collectRent so timeHeld is up to date
+
+        // check sufficient deposit
+        require(treasury.deposits(msgSender()) >= _newPrice.div(_minRentalTime), "Insufficient deposit");
 
         // process deposit, if sent
         if (msg.value > 0) {
@@ -515,7 +516,6 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             _updateBid(_newPrice, _tokenId, _timeHeldLimit, _startingPosition);
         }
 
-        exitFlag[_tokenId] = false;
         emit LogNewRental(msgSender(), _newPrice, _timeHeldLimit, _tokenId); 
     }
 
@@ -542,15 +542,9 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             // collectRent first, so correct rent to now is taken
             _collectRent(_tokenId);
 
-            // if still the current owner after collecting Rent
+            // if still the current owner after collecting rent, revert to underbidder
             if (ownerOf(_tokenId) == msgSender()) {
-                // if used all card specific deposit, revert immediately
-                if (treasury.cardSpecificDeposits(address(this), msgSender(), _tokenId) == 0) {
-                    _revertToUnderbidder(_tokenId);
-                // otherwise revert when card specific deposit has run out
-                } else { 
-                    exitFlag[_tokenId] = true;
-                }
+                _revertToUnderbidder(_tokenId);
             // if not current owner no further action necessary because they will have been deleted from the orderbook
             } else {
                 assert(orderbook[_tokenId][msgSender()].price == 0);
@@ -602,9 +596,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         if (ownerOf(_tokenId) != address(this)) {
             uint256 _rentOwed = price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(1 days);
             address _currentOwner = ownerOf(_tokenId);
-            uint256 _cardSpecificDeposit = treasury.cardSpecificDeposits(address(this), _currentOwner, _tokenId);
-            uint256 _totalDeposit = treasury.deposits(_currentOwner).add(_cardSpecificDeposit);
-            bool _exitFlag = exitFlag[_tokenId];
+            uint256 _deposit = treasury.deposits(_currentOwner);
             
             // get the maximum rent they can pay based on timeHeldLimit
             uint256 _rentOwedLimit;
@@ -614,29 +606,20 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                 _rentOwedLimit = price[_tokenId].mul(timeHeldLimit[_tokenId][_currentOwner].sub(timeHeld[_tokenId][_currentOwner])).div(1 days);
             }
 
-            if (!_exitFlag) {
-                if (_rentOwed >= _totalDeposit || _rentOwed >= _rentOwedLimit)  {
-                    // case 1: rentOwed is reduced to _totalDeposit
-                    if (_totalDeposit <= _rentOwedLimit)
-                    {
-                        _timeOfThisCollection = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(_totalDeposit).div(_rentOwed)));
-                        _rentOwed = _totalDeposit; // take what's left     
-                    // case 2: rentOwed is reduced to _rentOwedLimit
-                    } else {
-                        _timeOfThisCollection = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(_rentOwedLimit).div(_rentOwed)));
-                        _rentOwed = _rentOwedLimit; // take up to the max   
-                    }
-                    _revertToUnderbidder(_tokenId);
-                } 
-            } else {
-                if (_rentOwed >= _cardSpecificDeposit) {
-                    // run out of deposit. Calculate time it was actually paid for, then revert to previous owner 
-                    _timeOfThisCollection = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(_cardSpecificDeposit).div(_rentOwed)));
-                    _rentOwed = _cardSpecificDeposit; // take what's left     
-                    _revertToUnderbidder(_tokenId);
-                } 
-            }
-            // _rentOwed will be 0 if _exitFlag set after cardSpecificDeposit used
+            if (_rentOwed >= _totalDeposit || _rentOwed >= _rentOwedLimit)  {
+                // case 1: rentOwed is reduced to _totalDeposit
+                if (_totalDeposit <= _rentOwedLimit)
+                {
+                    _timeOfThisCollection = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(_totalDeposit).div(_rentOwed)));
+                    _rentOwed = _totalDeposit; // take what's left     
+                // case 2: rentOwed is reduced to _rentOwedLimit
+                } else {
+                    _timeOfThisCollection = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(_rentOwedLimit).div(_rentOwed)));
+                    _rentOwed = _rentOwedLimit; // take up to the max   
+                }
+                _revertToUnderbidder(_tokenId);
+            } 
+
             if (_rentOwed > 0) {
                 // decrease deposit by rent owed at the Treasury
                 assert(treasury.payRent(_currentOwner, _rentOwed, _tokenId, _exitFlag));
@@ -685,7 +668,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @dev user is already in the orderbook
     function _updateBid(uint256 _newPrice, uint256 _tokenId, uint256 _timeHeldLimit, address _startingPosition) internal 
     {
-        // check user in the orderbook
+        // ensure user is in the orderbook
         assert(orderbook[_tokenId][msgSender()].price > 0);
         // case 1: user is currently the owner
         if(msgSender() == ownerOf(_tokenId)) { 
@@ -698,7 +681,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             // case 1B: new price is higher than current price but by less than X%- remove from list and do not add back
             } else if (_newPrice > price[_tokenId]) {
                 _revertToUnderbidder(_tokenId);
-            // case 1C: new price is below old price
+            // case 1C: new price is equal or below old price
             } else {
                 uint256 _minPriceToRemainOwner = orderbook[_tokenId][orderbook[msgSender()].next].price.mul(minimumPriceIncrease.add(100))).div(100);
                 // case 1Ca: still the highest owner- adjust price & timeHeldLimit
@@ -709,14 +692,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                 // case 1Cb: user is not owner anymore-  remove from list & add back
                 } else {
                     _revertToUnderbidder(_tokenId);
-                    // case 1Cba: due to deleted users with insufficient deposit, they may now be top of the list, if so _setNewOwner
-                    uint256 _minPriceToBecomenOwner = price[_tokenId].mul(minimumPriceIncrease.add(100))).div(100);
-                    if (_newPrice > _minPriceToBecomenOwner) {
-                        _setNewOwner(_newPrice, _tokenId, _timeHeldLimit);
-                    // case 1Cbb: not new owner, _placeInList
-                    } else {
-                        _placeInList(_newPrice, _tokenId, _startingPosition);
-                    }
+                    _newBid(_newPrice, _tokenId, _timeHeldLimit, _startingPosition);
                 }
             }
         // case 2: user is not currently the owner- remove and add them back 
@@ -746,8 +722,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         }
 
         // process new owner
-        assert(treasury.allocateCardSpecificDeposit(msgSender(), ownerOf(_tokenId), _tokenId, _newPrice));
-        orderbook[_tokenId][msgSender()] = Rental(_newPrice, _timeHeldLimit, ownerOf(_tokenId), address(this));
+        orderbook[_tokenId][msgSender()] = Bid(_newPrice, _timeHeldLimit, ownerOf(_tokenId), address(this));
         orderbook[_tokenId][ownerOf(_tokenId)].prev = msgSender();
         price[_tokenId] = _newPrice;
         _transferCard(ownerOf(_tokenId), msgSender(), _tokenId);
@@ -790,7 +765,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         }
 
         // add to the list
-        orderbook[_tokenId][msgSender()] = Rental(_newPrice, _timeHeldLimit, tempNext, tempPrev);
+        orderbook[_tokenId][msgSender()] = Bid(_newPrice, _timeHeldLimit, tempNext, tempPrev);
         orderbook[_tokenId][tempPrev].next = msgSender();
         orderbook[_tokenId][tempNext].prev = msgSender();
     }
@@ -798,6 +773,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @notice if a users deposit runs out, either return to previous owner or foreclose
     function _revertToUnderbidder(uint256 _tokenId) internal {
         address _tempNext = ownerOf(_tokenId);
+        address _tempPrev;
         uint256 _tempNextDeposit;
         uint256 _requiredDeposit;
         uint256 _loopCount;
@@ -805,13 +781,12 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         // loop through orderbook list for user with sufficient deposit, deleting users who fail the test
         do {
             // get the address of next person in the list
-            _tempNext = orderbook[_tokenId][_tempNext].next;
+            _tempPrev = _tempNext;
+            _tempNext = orderbook[_tokenId][_tempPrev].next;
             // remove the previous user
             orderbook[_tokenId][_tempNext].prev = address(this);
-            delete orderbook[_tokenId][_tempNext];
+            delete orderbook[_tokenId][_tempPrev];
             // get required  and actual deposit of next user
-            // check that user has zero card specic deposit first (only current owner should ever have any)
-            assert(treasury.cardSpecificDeposits(address(this),_tempNext,_tokenId) == 0);
             _tempNextDeposit = treasury.deposits(_tempNext);
             _requiredDeposit = orderbook[_tokenId][_tempNext].price.div(minRentalDivisor);
             _loopCount = _loopCount.add(1);
@@ -825,12 +800,10 @@ contract RCMarket is Initializable, NativeMetaTransaction {
              // transfer to previous owner
             address _currentOwner = ownerOf(_tokenId);
             price[_tokenId] = orderbook[_tokenId][_tempNext].price;
-            cancelTimestamp(ownerOf(_tokenId)) = now;
-            assert(treasury.allocateCardSpecificDeposit(_tempNext, _currentOwner, _tokenId, price[_tokenId]));
+            ownershipLostTimestamp(ownerOf(_tokenId)) = now;
             _transferCard(_currentOwner, _tempNext, _tokenId);
             emit LogCardTransferredToUnderbidder(_tokenId, _tempNext);
         }
-        exitFlag[_tokenId] = false;
     }
 
     /// @notice return token to the contract and return price to zero
