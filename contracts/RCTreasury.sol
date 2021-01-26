@@ -25,13 +25,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev keeps track of rental payments made in each market
     mapping (address => uint256) public marketPot;
     uint256 public totalMarketPots;
-    /// @dev to enforce minimum rental duration, small deposit is allocated to specific Card 
-    /// @dev market -> user -> tokenId -> deposit
-    mapping (address => mapping (address => mapping (uint256 => uint256))) public cardSpecificDeposits;
 
     ///// ADJUSTABLE PARAMETERS /////
-    /// @dev minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
-    uint256 public minRentalDivisor = 24*6; // defaults ten mins
     /// @dev if hot potato mode, how much rent new owner must pay current owner (1 week divisor: i.e. 7 = 1 day, 14 = 12 hours)
     uint256 public hotPotatoDivisor = 7; // defaults one day
     /// @dev max deposit balance, to minimise funds at risk
@@ -99,12 +94,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /////// GOVERNANCE- OWNER //////////
     ////////////////////////////////////
     /// @dev all functions should be onlyOwner
-
-    /// @dev minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
-    /// @dev this is here instead of the Factory because allocateCardSpecificDeposit uses it
-    function setMinRental(uint256 _newDivisor) external onlyOwner {
-        minRentalDivisor = _newDivisor;
-    }
 
     /// @dev if hot potato mode, how much rent new owner must pay current owner (1 week divisor: i.e. 7 = 1 day, 14 = 12 hours)
     function setHotPotatoPayment(uint256 _newDivisor) external onlyOwner {
@@ -185,6 +174,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
     /// @dev a rental payment is equivalent to moving to market pot from user's deposit, called by _collectRent in the market
     function payRent(address _user, uint256 _dai) external balancedBooks() onlyMarkets() returns(bool) {
+        require(!globalPause, "Rentals are disabled");
+        require(!marketPaused[msg.sender], "Rentals are disabled");
         assert(deposits[_user] >= _dai); // assert because should have been reduced to user's deposit already
         deposits[_user] = deposits[_user].sub(_dai);
         marketPot[msg.sender] = marketPot[msg.sender].add(_dai);

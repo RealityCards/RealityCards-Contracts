@@ -53,6 +53,8 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     uint256 public totalCollected; 
     /// @dev the minimum required price increase
     uint256 public minimumPriceIncrease;
+    /// @dev minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
+    uint256 public minRentalDivisor;
     /// @dev prevents user from cancelling and re-renting in the same block
     mapping (address => uint256) public ownershipLostTimestamp;
 
@@ -183,6 +185,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         cardAffiliateAddresses = _cardAffiliateAddresses;
         uint256[5] memory _potDistribution = factory.getPotDistribution();
         minimumPriceIncrease = factory.minimumPriceIncrease();
+        minRentalDivisor = factory.minRentalDivisor();
         artistCut = _potDistribution[0];
         winnerCut = _potDistribution[1];
         creatorCut = _potDistribution[2];
@@ -490,20 +493,20 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
         collectRentAllCards();
 
+         // process deposit, if sent
+        if (msg.value > 0) {
+            assert(treasury.deposit.value(msg.value)(msgSender()));
+        }
+
+        // check sufficient deposit
+        require(treasury.deposits(msgSender()) >= _newPrice.div(minRentalDivisor), "Insufficient deposit");
+
         // check _timeHeldLimit
         if (_timeHeldLimit == 0) {
             _timeHeldLimit = MAX_UINT256; // so 0 defaults to no limit
         }
-        uint256 _minRentalTime = uint256(1 days).div(treasury.minRentalDivisor());
+        uint256 _minRentalTime = uint256(1 days).div(minRentalDivisor);
         require(_timeHeldLimit >= timeHeld[_tokenId][msgSender()].add(_minRentalTime), "Limit too low"); // must be after collectRent so timeHeld is up to date
-
-        // check sufficient deposit
-        require(treasury.deposits(msgSender()) >= _newPrice.div(_minRentalTime), "Insufficient deposit");
-
-        // process deposit, if sent
-        if (msg.value > 0) {
-            assert(treasury.deposit.value(msg.value)(msgSender()));
-        }
 
         // add to orderbook or update existing entry as appropriate
         if (orderbook[_tokenId][msgSender()].price == 0) {
@@ -522,7 +525,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         if (_timeHeldLimit == 0) {
             _timeHeldLimit = MAX_UINT256; // so 0 defaults to no limit
         }
-        uint256 _minRentalTime = uint256(1 days).div(treasury.minRentalDivisor());
+        uint256 _minRentalTime = uint256(1 days).div(minRentalDivisor);
         require(_timeHeldLimit >= timeHeld[_tokenId][msgSender()].add(_minRentalTime), "Limit too low"); // must be after collectRent so timeHeld is up to date
 
         orderbook[_tokenId][msgSender()].timeHeldLimit = _timeHeldLimit;
@@ -587,9 +590,9 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @dev is not a problem if called externally, but making internal over public to save gas
     function _collectRent(uint256 _tokenId) internal {
         uint256 _timeOfThisCollection = now;
-
         //only collect rent if the token is owned (ie, if owned by the contract this implies unowned)
         if (ownerOf(_tokenId) != address(this)) {
+            
             uint256 _rentOwed = price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(1 days);
             address _collectRentFrom = ownerOf(_tokenId);
             uint256 _deposit = treasury.deposits(_collectRentFrom);
@@ -617,10 +620,10 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                 }
                 _revertToUnderbidder(_tokenId);
             } 
-
+            
             if (_rentOwed > 0) {
                 // decrease deposit by rent owed at the Treasury
-                assert(treasury.payRent(_collectRentFrom, _rentOwed, _tokenId));
+                assert(treasury.payRent(_collectRentFrom, _rentOwed));
                 // update internals
                 uint256 _timeHeldToIncrement = (_timeOfThisCollection.sub(timeLastCollected[_tokenId]));
                 timeHeld[_tokenId][_collectRentFrom] = timeHeld[_tokenId][_collectRentFrom].add(_timeHeldToIncrement);
@@ -784,7 +787,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             delete orderbook[_tokenId][_tempPrev];
             // get required  and actual deposit of next user
             _tempNextDeposit = treasury.deposits(_tempNext);
-            _requiredDeposit = orderbook[_tokenId][_tempNext].price.div(treasury.minRentalDivisor());
+            _requiredDeposit = orderbook[_tokenId][_tempNext].price.div(minRentalDivisor);
             _loopCount = _loopCount.add(1);
         } while (
             _tempNext != address(this) && 

@@ -43,6 +43,8 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
     uint256 public sponsorshipRequired;
     /// @dev adjust required price increase
     uint256 public minimumPriceIncrease;
+    /// @dev minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
+    uint256 public minRentalDivisor;
     /// @dev market opening time must be at least this many seconds in the future
     uint32 public advancedWarning;
     /// @dev market closing time must be no more than this many seconds in the future
@@ -99,6 +101,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
         // artist // winner // creator // affiliate // card specific affiliates
         setPotDistribution(20,0,0,20,100); // 2% artist, 2% affiliate, 10% card specific affiliate default
         setMinimumPriceIncrease(10); // 10% default
+        setMinRental(24*6); // defaults ten mins
     }
 
     ////////////////////////////////////
@@ -148,6 +151,11 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
     /// @dev in %
     function setMinimumPriceIncrease(uint256 _percentIncrease) public onlyOwner {
         minimumPriceIncrease = _percentIncrease;
+    }
+
+    /// @notice minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
+    function setMinRental(uint256 _newDivisor) public onlyOwner {
+        minRentalDivisor = _newDivisor;
     }
 
     /// NOT CALLED WITHIN CONSTRUCTOR (external)
