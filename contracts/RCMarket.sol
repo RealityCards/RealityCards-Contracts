@@ -486,6 +486,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     }
 
     /// @notice to rent a Card
+    /// @dev no event: it is emitted in _updateBid, _setNewOwner or _placeInList as appropriate, because price can change or rental can fail if called by winner and < 10% increase
     function newRental(uint256 _newPrice, uint256 _timeHeldLimit, address _startingPosition, uint256 _tokenId) public payable autoUnlock() autoLock() checkState(States.OPEN) {
         require(_newPrice >= 1 ether, "Minimum rental 1 Dai");
         require(_tokenId < numberOfTokens, "This token does not exist");
@@ -508,14 +509,12 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         uint256 _minRentalTime = uint256(1 days).div(minRentalDivisor);
         require(_timeHeldLimit >= timeHeld[_tokenId][msgSender()].add(_minRentalTime), "Limit too low"); // must be after collectRent so timeHeld is up to date
 
-        // add to orderbook or update existing entry as appropriate
+        // if not in the orderbook, _newBid else _updateBid
         if (orderbook[_tokenId][msgSender()].price == 0) {
             _newBid(_newPrice, _tokenId, _timeHeldLimit, _startingPosition);
         } else {
             _updateBid(_newPrice, _tokenId, _timeHeldLimit, _startingPosition);
         }
-
-        emit LogNewRental(msgSender(), _newPrice, _timeHeldLimit, _tokenId); 
     }
 
     /// @notice to change your timeHeldLimit without having to re-rent
@@ -538,7 +537,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     function exit(uint256 _tokenId) public checkState(States.OPEN) {
         // if current owner, collect rent, revert if necessary
         if (ownerOf(_tokenId) == msgSender()) {
-            // collectRent first, so correct rent to now is taken
+            // collectRent first
             _collectRent(_tokenId);
 
             // if still the current owner after collecting rent, revert to underbidder
@@ -649,8 +648,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     }
 
     /// @dev user is not in the orderbook
-    function _newBid(uint256 _newPrice, uint256 _tokenId, uint256 _timeHeldLimit, address _startingPosition) internal 
-    {
+    function _newBid(uint256 _newPrice, uint256 _tokenId, uint256 _timeHeldLimit, address _startingPosition) internal {
         // check user not in the orderbook
         assert(orderbook[_tokenId][msgSender()].price == 0);
         uint256 _minPriceToOwn = (price[_tokenId].mul(minimumPriceIncrease.add(100))).div(100);
@@ -659,36 +657,37 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             _setNewOwner(_newPrice, _tokenId, _timeHeldLimit);
         } else {
         // case 2: user is not sufficiently above highest bidder
-            _placeInList(_newPrice, _tokenId, _timeHeldLimit, _startingPosition);
+            _placeInList(_newPrice, _tokenId, _timeHeldLimit, _startingPosition); 
         }
     }
 
     /// @dev user is already in the orderbook
-    function _updateBid(uint256 _newPrice, uint256 _tokenId, uint256 _timeHeldLimit, address _startingPosition) internal 
-    {
+    function _updateBid(uint256 _newPrice, uint256 _tokenId, uint256 _timeHeldLimit, address _startingPosition) internal {
         uint256 _minPriceToOwn;
         // ensure user is in the orderbook
         assert(orderbook[_tokenId][msgSender()].price > 0);
         // case 1: user is currently the owner
         if(msgSender() == ownerOf(_tokenId)) { 
             _minPriceToOwn = (price[_tokenId].mul(minimumPriceIncrease.add(100))).div(100);
-            // case 1A: new price is at least X% above current price- adjust price & timeHeldLimit
+            // case 1A: new price is at least X% above current price- adjust price & timeHeldLimit. newRental event required. 
             if(_newPrice >= _minPriceToOwn) {
                 orderbook[_tokenId][msgSender()].price = _newPrice;
                 orderbook[_tokenId][msgSender()].timeHeldLimit = _timeHeldLimit;
                 price[_tokenId] = _newPrice;
-            // case 1B: new price is higher than current price but by less than X%- remove from list and do not add back
+                emit LogNewRental(msgSender(), _newPrice, _timeHeldLimit, _tokenId); 
+            // case 1B: new price is higher than current price but by less than X%- remove from list and do not add back. Rental fails thus no event.
             } else if (_newPrice > price[_tokenId]) {
                 _revertToUnderbidder(_tokenId);
             // case 1C: new price is equal or below old price
             } else {
                 _minPriceToOwn = (orderbook[_tokenId][orderbook[_tokenId][msgSender()].next].price.mul(minimumPriceIncrease.add(100))).div(100);
-                // case 1Ca: still the highest owner- adjust price & timeHeldLimit
+                // case 1Ca: still the highest owner- adjust price & timeHeldLimit. newRental event required.
                 if(_newPrice >= _minPriceToOwn) {
                     orderbook[_tokenId][msgSender()].price = _newPrice;
                     orderbook[_tokenId][msgSender()].timeHeldLimit = _timeHeldLimit;
                     price[_tokenId] = _newPrice;
-                // case 1Cb: user is not owner anymore-  remove from list & add back
+                    emit LogNewRental(msgSender(), _newPrice, _timeHeldLimit, _tokenId);
+                // case 1Cb: user is not owner anymore-  remove from list & add back. newRental event called in _setNewOwner or _placeInList via _newBid
                 } else {
                     _revertToUnderbidder(_tokenId);
                     _newBid(_newPrice, _tokenId, _timeHeldLimit, _startingPosition);
@@ -700,11 +699,12 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             orderbook[_tokenId][orderbook[_tokenId][msgSender()].prev].next = orderbook[_tokenId][msgSender()].next;
             orderbook[_tokenId][orderbook[_tokenId][msgSender()].next].prev = orderbook[_tokenId][msgSender()].prev; 
             delete orderbook[_tokenId][msgSender()];
-            // check if should be owner, add on top if so, otherwise _placeInList
             _minPriceToOwn = (price[_tokenId].mul(minimumPriceIncrease.add(100))).div(100);
+            // case 2A: should be owner, add on top. newRental event called in _setNewOwner
             if(_newPrice >= _minPriceToOwn) 
             {  
                 _setNewOwner(_newPrice, _tokenId, _timeHeldLimit);
+            // case 2B: should not be owner, add to list. newRental event called in _placeInList
             } else {
                 _placeInList(_newPrice, _tokenId, _timeHeldLimit, _startingPosition);
             } 
@@ -712,8 +712,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     }
 
     /// @dev only for when user is NOT already in the list and IS the highest bidder
-    function _setNewOwner(uint256 _newPrice, uint256 _tokenId, uint256 _timeHeldLimit) internal 
-    {  
+    function _setNewOwner(uint256 _newPrice, uint256 _tokenId, uint256 _timeHeldLimit) internal {  
         // if hot potato mode, pay current owner
         if (mode == 2) {
             // the required payment is calculated in the Treasury
@@ -725,11 +724,11 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         orderbook[_tokenId][ownerOf(_tokenId)].prev = msgSender();
         price[_tokenId] = _newPrice;
         _transferCard(ownerOf(_tokenId), msgSender(), _tokenId);
+        emit LogNewRental(msgSender(), _newPrice, _timeHeldLimit, _tokenId);
     }
 
     /// @dev only for when user is NOT already in the list and NOT the highest bidder
-    function _placeInList(uint256 _newPrice, uint256 _tokenId, uint256 _timeHeldLimit, address _startingPosition) internal
-    {
+    function _placeInList(uint256 _newPrice, uint256 _tokenId, uint256 _timeHeldLimit, address _startingPosition) internal {
         // if starting position is not set, start at the top
         if (_startingPosition == address(0)) {
             _startingPosition = ownerOf(_tokenId);
@@ -740,7 +739,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         }
 
         // check the starting location is not too low down the list
-        require(orderbook[_tokenId][_startingPosition].price >= _newPrice, "Invalid starting location");
+        require(orderbook[_tokenId][_startingPosition].price >= _newPrice, "Location too low");
 
         address _tempNext = _startingPosition;
         address _tempPrev;
@@ -756,7 +755,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         } while (
             _newPrice < _requiredPrice && // equal to or above is ok
             _loopCount < MAX_ITERATIONS );
-        require(_loopCount < MAX_ITERATIONS, "Incorrect starting location");
+        require(_loopCount < MAX_ITERATIONS, "Location too high");
 
         // reduce user's price to the user above them in the list if necessary, so prices are in order
         if (orderbook[_tokenId][_tempPrev].price < _newPrice) {
@@ -767,6 +766,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         orderbook[_tokenId][msgSender()] = Bid(_newPrice, _timeHeldLimit, _tempNext, _tempPrev);
         orderbook[_tokenId][_tempPrev].next = msgSender();
         orderbook[_tokenId][_tempNext].prev = msgSender();
+        emit LogNewRental(msgSender(), _newPrice, _timeHeldLimit, _tokenId);
     }
 
     /// @notice if a users deposit runs out, either return to previous owner or foreclose
