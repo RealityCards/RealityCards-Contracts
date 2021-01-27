@@ -508,7 +508,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             }
 
             // allocate minimum rental deposit (or increase if same owner) and unallocate current owner's minimum deposit
-            assert(treasury.allocateCardSpecificDeposit(msgSender(), _currentOwner, _tokenId, _newPrice));
+            // assert(treasury.allocateCardSpecificDeposit(msgSender(), _currentOwner, _tokenId, _newPrice));
 
             if (_currentOwner == msgSender()) { 
                 // bought by current owner- just change price
