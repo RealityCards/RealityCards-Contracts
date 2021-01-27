@@ -125,12 +125,12 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev ... while maintaining governance over other governanace functions
 
     function setFactoryAddress(address _newFactory) external {
-        require(msg.sender == uberOwner, "Verboten");
+        require(msg.sender == uberOwner, "Extremely Verboten");
         factoryAddress = _newFactory;
     }
 
     function changeUberOwner(address _newUberOwner) external {
-        require(msg.sender == uberOwner, "Verboten");
+        require(msg.sender == uberOwner, "Extremely Verboten");
         uberOwner = _newUberOwner;
     }
 
@@ -153,6 +153,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
     /// @dev this is the only function where funds leave the contract
     function withdrawDeposit(uint256 _dai) external balancedBooks()  {
+        require(!globalPause, "Withdrawals are disabled");
         require(deposits[msgSender()] > 0, "Nothing to withdraw");
         if (_dai > deposits[msgSender()]) {
             _dai = deposits[msgSender()];

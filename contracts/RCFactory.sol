@@ -242,7 +242,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
 
     /// @notice set the reference contract for the contract logic
     function setReferenceContractAddress(address _newAddress) external {
-        require(msg.sender == uberOwner, "Verboten");
+        require(msg.sender == uberOwner, "Extremely Verboten");
         // check it's an RC contract
         IRCMarket newContractVariable = IRCMarket(_newAddress);
         assert(newContractVariable.isMarket());
@@ -253,7 +253,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
     }
 
     function changeUberOwner(address _newUberOwner) external {
-        require(msg.sender == uberOwner, "Verboten");
+        require(msg.sender == uberOwner, "Extremely Verboten");
         uberOwner = _newUberOwner;
     }
 

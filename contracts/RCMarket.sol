@@ -675,9 +675,9 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                 orderbook[_tokenId][msgSender()].timeHeldLimit = _timeHeldLimit;
                 price[_tokenId] = _newPrice;
                 emit LogNewRental(msgSender(), _newPrice, _timeHeldLimit, _tokenId); 
-            // case 1B: new price is higher than current price but by less than X%- remove from list and do not add back. Rental fails thus no event.
+            // case 1B: new price is higher than current price but by less than X%- revert the tx to prevent frontrunning
             } else if (_newPrice > price[_tokenId]) {
-                _revertToUnderbidder(_tokenId);
+                require(false, "Not 10% higher");
             // case 1C: new price is equal or below old price
             } else {
                 _minPriceToOwn = (orderbook[_tokenId][orderbook[_tokenId][msgSender()].next].price.mul(minimumPriceIncrease.add(100))).div(100);

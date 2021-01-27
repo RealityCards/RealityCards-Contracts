@@ -4307,17 +4307,8 @@ it('test orderbook various', async () => {
     assert.equal(bid[2],user5);
     assert.equal(bid[3],realitycards.address);
     // update bid case 1B: was winner, higher but < 10%, should remove
-    await newRental(65, 0,user9); 
-    var owner = await realitycards.ownerOf.call(0);
-    assert.equal(owner,user5);
-    var price = await realitycards.price.call(0);
-    assert.equal(price,web3.utils.toWei('20', 'ether'));
-    var bid = await realitycards.orderbook.call(0,user9);
-    assert.equal(bid[0],0);
-    var bid = await realitycards.orderbook.call(0,user5);
-    assert.equal(bid[0],web3.utils.toWei('20', 'ether'));
-    assert.equal(bid[2],user0);
-    assert.equal(bid[3],realitycards.address);
+    await expectRevert(newRental(65, 0,user9), "Not 10% higher"); 
+    await realitycards.exit(0,{from: user9});
     // update bid case 1Ca: was winner, lower than prevous, but still winner, just update detials
     await newRentalCustomTimeLimit(15, 2, 0,user5);
     var owner = await realitycards.ownerOf.call(0);
