@@ -57,6 +57,9 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     uint256 public minRentalDivisor;
     /// @dev prevents user from cancelling and re-renting in the same block
     mapping (address => uint256) public ownershipLostTimestamp;
+    /// @dev used to emit the order of rentals if multiple in same block
+    mapping (uint256 => uint256) public timeOfLastRental; // id // time
+    mapping (uint256 => uint256) public rentalsPerBlock; // id // counter
 
     ///// ORDERBOOK /////
     /// @dev stores the orderbook. Doubly linked list. 
@@ -118,10 +121,11 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     //////// EVENTS ////////////////////
     ////////////////////////////////////
 
-    event LogNewRental(address indexed newOwner, uint256 indexed newPrice, uint256 timeHeldLimit, uint256 indexed tokenId);
+    event LogAddToOrderbook(address indexed newOwner, uint256 indexed newPrice, uint256 timeHeldLimit, uint256 indexed tokenId, uint256 order);
+    event LogNewOwner(address indexed newOwner);
     event LogForeclosure(address indexed prevOwner, uint256 indexed tokenId);
     event LogRentCollection(uint256 indexed rentCollected, uint256 indexed tokenId, address indexed owner);
-    event LogCardTransferredToUnderbidder(uint256 indexed tokenId, address indexed previousOwner);
+    event LogRemoveFromOrderbook(address indexed owner);
     event LogContractLocked(bool indexed didTheEventFinish);
     event LogWinnerKnown(uint256 indexed winningOutcome);
     event LogWinningsPaid(address indexed paidTo, uint256 indexed amountPaid);
@@ -314,6 +318,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         require(_from != address(0) && _to != address(0) , "Cannot send to/from zero address");
         uint256 _actualTokenId = _tokenId.add(totalNftMintCount);
         assert(nfthub.transferNft(_from, _to, _actualTokenId));
+        emit LogNewOwner(_to);
     }
 
     ////////////////////////////////////
@@ -552,6 +557,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             orderbook[_tokenId][orderbook[_tokenId][msgSender()].next].prev = orderbook[_tokenId][msgSender()].prev;
             orderbook[_tokenId][orderbook[_tokenId][msgSender()].prev].next = orderbook[_tokenId][msgSender()].next;
             delete orderbook[_tokenId][msgSender()];
+            emit LogRemoveFromOrderbook(msgSender());
         }
         emit LogExit(msgSender(), _tokenId, true); 
     }
@@ -674,7 +680,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                 orderbook[_tokenId][msgSender()].price = _newPrice;
                 orderbook[_tokenId][msgSender()].timeHeldLimit = _timeHeldLimit;
                 price[_tokenId] = _newPrice;
-                emit LogNewRental(msgSender(), _newPrice, _timeHeldLimit, _tokenId); 
+                _emitLogAddToOrderbook(_newPrice, _timeHeldLimit, _tokenId); 
             // case 1B: new price is higher than current price but by less than X%- revert the tx to prevent frontrunning
             } else if (_newPrice > price[_tokenId]) {
                 require(false, "Not 10% higher");
@@ -686,7 +692,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                     orderbook[_tokenId][msgSender()].price = _newPrice;
                     orderbook[_tokenId][msgSender()].timeHeldLimit = _timeHeldLimit;
                     price[_tokenId] = _newPrice;
-                    emit LogNewRental(msgSender(), _newPrice, _timeHeldLimit, _tokenId);
+                    _emitLogAddToOrderbook(_newPrice, _timeHeldLimit, _tokenId);
                 // case 1Cb: user is not owner anymore-  remove from list & add back. newRental event called in _setNewOwner or _placeInList via _newBid
                 } else {
                     _revertToUnderbidder(_tokenId);
@@ -698,7 +704,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             // remove from the list
             orderbook[_tokenId][orderbook[_tokenId][msgSender()].prev].next = orderbook[_tokenId][msgSender()].next;
             orderbook[_tokenId][orderbook[_tokenId][msgSender()].next].prev = orderbook[_tokenId][msgSender()].prev; 
-            delete orderbook[_tokenId][msgSender()];
+            delete orderbook[_tokenId][msgSender()]; // no LogRemoveFromOrderbook they are being added right back
             _minPriceToOwn = (price[_tokenId].mul(minimumPriceIncrease.add(100))).div(100);
             // case 2A: should be owner, add on top. newRental event called in _setNewOwner
             if(_newPrice >= _minPriceToOwn) 
@@ -724,7 +730,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         orderbook[_tokenId][ownerOf(_tokenId)].prev = msgSender();
         price[_tokenId] = _newPrice;
         _transferCard(ownerOf(_tokenId), msgSender(), _tokenId);
-        emit LogNewRental(msgSender(), _newPrice, _timeHeldLimit, _tokenId);
+        _emitLogAddToOrderbook(_newPrice, _timeHeldLimit, _tokenId);
     }
 
     /// @dev only for when user is NOT already in the list and NOT the highest bidder
@@ -766,10 +772,11 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         orderbook[_tokenId][msgSender()] = Bid(_newPrice, _timeHeldLimit, _tempNext, _tempPrev);
         orderbook[_tokenId][_tempPrev].next = msgSender();
         orderbook[_tokenId][_tempNext].prev = msgSender();
-        emit LogNewRental(msgSender(), _newPrice, _timeHeldLimit, _tokenId);
+        _emitLogAddToOrderbook(_newPrice, _timeHeldLimit, _tokenId);
     }
 
     /// @notice if a users deposit runs out, either return to previous owner or foreclose
+    /// @dev can be called by anyone via collectRent, therefore should never use msg.sender
     function _revertToUnderbidder(uint256 _tokenId) internal {
         address _tempNext = ownerOf(_tokenId);
         address _tempPrev;
@@ -785,6 +792,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             // remove the previous user
             orderbook[_tokenId][_tempNext].prev = address(this);
             delete orderbook[_tokenId][_tempPrev];
+            emit LogRemoveFromOrderbook(_tempPrev);
             // get required  and actual deposit of next user
             _tempNextDeposit = treasury.deposits(_tempNext);
             _requiredDeposit = orderbook[_tokenId][_tempNext].price.div(minRentalDivisor);
@@ -801,8 +809,18 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             price[_tokenId] = orderbook[_tokenId][_tempNext].price;
             ownershipLostTimestamp[ownerOf(_tokenId)] = now;
             _transferCard(_currentOwner, _tempNext, _tokenId);
-            emit LogCardTransferredToUnderbidder(_tokenId, _tempNext);
         }
+    }
+
+    /// @dev frontend needs to know the order that LogAddToOrderbook is emitted, if multiple times per block
+    function _emitLogAddToOrderbook(uint256 _newPrice, uint256 _timeHeldLimit, uint256 _tokenId) internal {
+        if (timeOfLastRental[_tokenId] != now) {
+            timeOfLastRental[_tokenId] == now;
+            rentalsPerBlock[_tokenId] = 0;
+        } else {
+            rentalsPerBlock[_tokenId] = rentalsPerBlock[_tokenId].add(1);
+        }
+        emit LogAddToOrderbook(msgSender(), _newPrice, _timeHeldLimit, _tokenId, rentalsPerBlock[_tokenId]);
     }
 
     /// @notice return token to the contract and return price to zero
