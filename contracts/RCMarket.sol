@@ -675,6 +675,10 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             if(_newPrice >= _minPriceToOwn) {
                 orderbook[_tokenId][msgSender()].price = _newPrice;
                 orderbook[_tokenId][msgSender()].timeHeldLimit = _timeHeldLimit;
+                // update updateTotalRentalAmount at Treasury
+                treasury.updateTotalRentalAmount(msgSender(),price[_tokenId],false);
+                treasury.updateTotalRentalAmount(msgSender(),_newPrice,true);
+                // change price and emit
                 price[_tokenId] = _newPrice;
                 emit LogAddToOrderbook(msgSender(), _newPrice, _timeHeldLimit, orderbook[_tokenId][msgSender()].prev, _tokenId);
             // case 1B: new price is higher than current price but by less than X%- revert the tx to prevent frontrunning
@@ -687,6 +691,10 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                 if(_newPrice >= _minPriceToOwn) {
                     orderbook[_tokenId][msgSender()].price = _newPrice;
                     orderbook[_tokenId][msgSender()].timeHeldLimit = _timeHeldLimit;
+                    // update updateTotalRentalAmount at Treasury
+                    treasury.updateTotalRentalAmount(msgSender(),price[_tokenId],false);
+                    treasury.updateTotalRentalAmount(msgSender(),_newPrice,true);
+                    // change price and emit
                     price[_tokenId] = _newPrice;
                     emit LogAddToOrderbook(msgSender(), _newPrice, _timeHeldLimit, orderbook[_tokenId][msgSender()].prev, _tokenId);
                 // case 1Cb: user is not owner anymore-  remove from list & add back. newRental event called in _setNewOwner or _placeInList via _newBid
@@ -720,10 +728,13 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             // the required payment is calculated in the Treasury
             assert(treasury.payCurrentOwner(msgSender(), ownerOf(_tokenId), price[_tokenId]));
         }
-
         // process new owner
         orderbook[_tokenId][msgSender()] = Bid(_newPrice, _timeHeldLimit, ownerOf(_tokenId), address(this));
         orderbook[_tokenId][ownerOf(_tokenId)].prev = msgSender();
+        // update updateTotalRentalAmount at Treasury
+        treasury.updateTotalRentalAmount(ownerOf(_tokenId),price[_tokenId],false);
+        treasury.updateTotalRentalAmount(msgSender(),_newPrice,true);
+        // change price and emit
         price[_tokenId] = _newPrice;
         // _transferCard must be after LogAddToOrderbook so LogNewOwner is not emitted before user is in the orderbook
         emit LogAddToOrderbook(msgSender(), _newPrice, _timeHeldLimit, orderbook[_tokenId][msgSender()].prev, _tokenId);
