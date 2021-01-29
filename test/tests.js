@@ -4225,6 +4225,8 @@ it('test orderbook various', async () => {
     await newRental(9,0,user1); // 5, 9
     await newRental(8,0,user2); // 6, 8
     await newRental(10,0,user3); // 3,1 10
+    var returnedPrice = await realitycards.newRental.call(ether('10.9'),0,zeroAddress,0,{from:user4}); 
+    assert.equal(returnedPrice.toString(), ether('10').toString());
     await newRental(10.9,0,user4); // 4, 10
     await newRental(20,0,user5); // 1, 20
     await newRental(5,0,user6); // 9, 5
