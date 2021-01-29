@@ -95,6 +95,8 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     uint256 public winningOutcome;
     /// @dev prevent users withdrawing twice
     mapping (address => bool) public userAlreadyWithdrawn;
+    /// @dev prevent users claiming twice
+    mapping (uint256 => mapping (address => bool) ) public userAlreadyClaimed; // token ID // user // bool
     /// @dev the artist
     address public artistAddress;
     uint256 public artistCut;
@@ -342,8 +344,6 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         // get the winner. This will revert if answer is not resolved.
         winningOutcome = _getWinner();
         _incrementState();
-        // transfer NFTs to the longest owners
-        _processCardsAfterEvent(); /// CAN GO TO LOCKMARKET
         emit LogWinnerKnown(winningOutcome);
     }
 
@@ -357,6 +357,17 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         } else {
              _returnRent();
         }
+    }
+
+    /// @notice the longest owner of each NFT gets to keep it
+    /// @dev LOCKED or WITHDRAW states are fine- does not need to wait for winner to be known
+    function claimCard(uint256 _tokenId) external  {
+        require(!userAlreadyClaimed[_tokenId][msgSender()], "Already claimed");
+        userAlreadyClaimed[_tokenId][msgSender()] = true;
+        require(state != States.CLOSED, "Incorrect state");
+        require(state != States.OPEN, "Incorrect state");
+        require(longestOwner[_tokenId] == msgSender(), "Not longest owner");
+        _transferCard(ownerOf(_tokenId), longestOwner[_tokenId], _tokenId);
     }
 
     /// @notice pays winnings
@@ -391,17 +402,6 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @notice all payouts happen through here
     function _payout(address _recipient, uint256 _amount) internal {
         assert(treasury.payout(_recipient, _amount));
-    }
-
-    /// @notice gives each Card to the longest owner
-    function _processCardsAfterEvent() internal {
-        for (uint i = 0; i < numberOfTokens; i++) {
-            if (longestOwner[i] != address(0)) {
-                // if never owned, longestOwner[i] will = zero
-                _transferCard(ownerOf(i), longestOwner[i], i);
-                emit LogTransferCardToLongestOwner(i, longestOwner[i]);
-            } 
-        }
     }
 
     /// @dev the below functions pay stakeholders (artist, creator, affiliate, card specific affiliates)
@@ -834,7 +834,6 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     function circuitBreaker() external {
         require(now > (oracleResolutionTime + 12 weeks), "Too early");
         _incrementState();
-        _processCardsAfterEvent(); 
         state = States.WITHDRAW;
     }
 

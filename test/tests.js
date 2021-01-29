@@ -2715,14 +2715,17 @@ it('test NFT allocation after event- circuit breaker', async () => {
     await realitycards.lockMarket(); 
     await time.increase(time.duration.weeks(12));
     await realitycards.circuitBreaker();
+    await realitycards.claimCard(0,{from: user1})
+    await realitycards.claimCard(1,{from: user1})
+    await expectRevert(realitycards.claimCard(2,{from: user1}),"Not longest owner");
+    await realitycards.claimCard(2,{from: user2})
+    await expectRevert(realitycards.claimCard(2,{from: user2}),"Already claimed");
     var owner = await realitycards.ownerOf(0);
     assert.equal(owner,user1);
     var owner = await realitycards.ownerOf(1);
     assert.equal(owner,user1);
     var owner = await realitycards.ownerOf(2);
     assert.equal(owner,user2);
-    var owner = await realitycards.ownerOf(5);
-    assert.equal(owner,realitycards.address);
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
@@ -2920,6 +2923,7 @@ it('check that users cannot transfer their NFTs until withdraw state', async() =
     await realitio.setResult(2);
     await mainnetproxy.getWinnerFromOracle(realitycards.address);
     await realitycards.determineWinner();
+    await realitycards.claimCard(2,{from:user});
     // these shoudl all fail cos wrong owner:
     var owner = await realitycards.ownerOf(2);
     assert.equal(owner, user);
@@ -2941,6 +2945,7 @@ it('check that users cannot transfer their NFTs until withdraw state', async() =
     await expectRevert(realitycards2.payArtist(), "Incorrect state");
     await expectRevert(realitycards2.payMarketCreator(), "Incorrect state");
     await expectRevert(realitycards2.payCardAffiliate(7), "Incorrect state");
+    await expectRevert(realitycards2.claimCard(7), "Incorrect state");
     // increment state
     await time.increase(time.duration.years(1)); 
     await realitycards2.lockMarket();
@@ -3052,14 +3057,16 @@ it('test NFT allocation after event- winner', async () => {
     await realitio.setResult(0);
     await mainnetproxy.getWinnerFromOracle(realitycards.address);
     await realitycards.determineWinner();
+    await realitycards.claimCard(0,{from:user1});
+    await realitycards.claimCard(1,{from:user1});
+    await realitycards.claimCard(2,{from:user2});
+    await expectRevert(realitycards.claimCard(2,{from:user2}),"Already claimed");
     var owner = await realitycards.ownerOf(0);
     assert.equal(owner,user1);
     var owner = await realitycards.ownerOf(1);
     assert.equal(owner,user1);
     var owner = await realitycards.ownerOf(2);
     assert.equal(owner,user2);
-    var owner = await realitycards.ownerOf(5);
-    assert.equal(owner,realitycards.address);
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
@@ -3990,7 +3997,9 @@ it('test approveOrUnapproveMarket', async () => {
     await realitycards.lockMarket();
     await mainnetproxy.getWinnerFromOracle(realitycards.address);
     await realitycards.determineWinner();
-    var owner = await realitycards.ownerOf.call(19);
+    for (i = 0; i < 20; i++) {
+        await realitycards.claimCard(i,{from:user0});
+    }
     for (i = 0; i < 20; i++) {
         await expectRevert(realitycards.upgradeCard(i), "Upgrade blocked");
     }
@@ -4011,7 +4020,9 @@ it('test approveOrUnapproveMarket', async () => {
     await realitycards2.lockMarket();
     await mainnetproxy.getWinnerFromOracle(realitycards2.address);
     await realitycards2.determineWinner();
-    var owner = await realitycards2.ownerOf.call(0);
+    for (i = 0; i < 20; i++) {
+        await realitycards2.claimCard(i,{from:user0});
+    }
     for (i = 0; i < 20; i++) {
         await realitycards2.upgradeCard(i);
     }
