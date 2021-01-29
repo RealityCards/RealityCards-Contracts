@@ -98,21 +98,21 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @dev the artist
     address public artistAddress;
     uint256 public artistCut;
-    bool public artistPaid = false;
+    bool public artistPaid;
     /// @dev the affiliate
     address public affiliateAddress;
     uint256 public affiliateCut;
-    bool public affiliatePaid = false;
+    bool public affiliatePaid;
     /// @dev the winner
     uint256 public winnerCut;
     /// @dev the market creator
     address public marketCreatorAddress;
     uint256 public creatorCut;
-    bool public creatorPaid = false;
+    bool public creatorPaid;
     /// @dev card specific recipients
     address[] public cardAffiliateAddresses;
     uint256 public cardAffiliateCut;
-    bool public cardAffiliatePaid = false;
+    mapping (uint256 => bool) public cardAffiliatePaid;
 
     ////////////////////////////////////
     //////// EVENTS ////////////////////
@@ -131,8 +131,8 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     event LogTimeHeldUpdated(uint256 indexed newTimeHeld, address indexed owner, uint256 indexed tokenId);
     event LogStateChange(uint256 indexed newState);
     event LogUpdateTimeHeldLimit(address indexed owner, uint256 newLimit, uint256 tokenId);
-    event LogExit(address indexed owner, uint256 tokenId, bool exit);
-    event LogSponsor(uint256 indexed amount);
+    event LogExit(address indexed owner, uint256 tokenId);
+    event LogSponsor(address indexed sponsor, uint256 indexed amount);
     event LogNftUpgraded(uint256 indexed currentTokenId, uint256 indexed newTokenId);
     event LogPayoutDetails(address indexed artistAddress, address marketCreatorAddress, address affiliateAddress, address[] cardAffiliateAddresses, uint256 indexed artistCut, uint256 winnerCut, uint256 creatorCut, uint256 affiliateCut, uint256 cardAffiliateCut);
     event LogTransferCardToLongestOwner(uint256 tokenId, address longestOwner);
@@ -221,6 +221,11 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         if (_mode == 1) {
             winnerCut = (((uint256(1000).sub(artistCut)).sub(creatorCut)).sub(affiliateCut)).sub(cardAffiliateCut);
         } 
+
+        // move to OPEN immediately if market opening time in the past
+        if (marketOpeningTime <= now) {
+            _incrementState();
+        }
 
         emit LogPayoutDetails(_artistAddress, _marketCreatorAddress, _affiliateAddress, cardAffiliateAddresses, artistCut, winnerCut, creatorCut, affiliateCut, cardAffiliateCut);
     } 
@@ -425,27 +430,23 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         _processStakeholderPayment(affiliateCut, affiliateAddress);
     }
 
+    /// @notice pay card affiliate
+    /// @dev does not call _processStakeholderPayment because it works differently
+    function payCardAffiliate(uint256 _tokenId) external checkState(States.WITHDRAW) {
+        require(!cardAffiliatePaid[_tokenId], "Card affiliate already paid");
+        cardAffiliatePaid[_tokenId] = true;
+        uint256 _cardAffiliatePayment = (collectedPerToken[_tokenId].mul(cardAffiliateCut)).div(1000);
+        if (_cardAffiliatePayment > 0) {
+            _payout(cardAffiliateAddresses[_tokenId], _cardAffiliatePayment);
+            emit LogStakeholderPaid(cardAffiliateAddresses[_tokenId], _cardAffiliatePayment);
+        }
+    }
+
     function _processStakeholderPayment(uint256 _cut, address _recipient) internal {
         if (_cut > 0) {
             uint256 _payment = (totalCollected.mul(_cut)).div(1000);
             _payout(_recipient, _payment);
             emit LogStakeholderPaid(_recipient, _payment);
-        }
-    }
-
-    /// @notice pay card recipients
-    /// @dev does not call _processStakeholderPayment because it works differently
-    function payCardAffiliate() external checkState(States.WITHDRAW) {
-        require(!cardAffiliatePaid, "Card recipients already paid");
-        cardAffiliatePaid = true;
-        if (cardAffiliateCut > 0) {
-            for (uint i = 0; i < numberOfTokens; i++) {
-                uint256 _cardAffiliatePayment = (collectedPerToken[i].mul(cardAffiliateCut)).div(1000);
-                if (_cardAffiliatePayment > 0) {
-                    _payout(cardAffiliateAddresses[i], _cardAffiliatePayment);
-                }
-                emit LogStakeholderPaid(cardAffiliateAddresses[i], _cardAffiliatePayment);
-            }
         }
     }
 
@@ -554,7 +555,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             delete orderbook[_tokenId][msgSender()];
             emit LogRemoveFromOrderbook(msgSender(), _tokenId);
         }
-        emit LogExit(msgSender(), _tokenId, true); 
+        emit LogExit(msgSender(), _tokenId); 
     }
 
     /// @notice stop renting all tokens
@@ -578,7 +579,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         for (uint i = 0; i < numberOfTokens; i++) {
             collectedPerToken[i] =  collectedPerToken[i].add(msg.value.div(numberOfTokens));
         }
-        emit LogSponsor(msg.value); 
+        emit LogSponsor(msg.sender, msg.value); 
     }
 
     ////////////////////////////////////
@@ -724,8 +725,9 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         orderbook[_tokenId][msgSender()] = Bid(_newPrice, _timeHeldLimit, ownerOf(_tokenId), address(this));
         orderbook[_tokenId][ownerOf(_tokenId)].prev = msgSender();
         price[_tokenId] = _newPrice;
-        _transferCard(ownerOf(_tokenId), msgSender(), _tokenId);
+        // _transferCard must be after LogAddToOrderbook so LogNewOwner is not emitted before user is in the orderbook
         emit LogAddToOrderbook(msgSender(), _newPrice, _timeHeldLimit, orderbook[_tokenId][msgSender()].prev, _tokenId);
+        _transferCard(ownerOf(_tokenId), msgSender(), _tokenId);
     }
 
     /// @dev only for when user is NOT already in the list and NOT the highest bidder
