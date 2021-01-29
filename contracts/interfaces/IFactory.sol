@@ -18,4 +18,5 @@ interface IFactory
     function minimumPriceIncrease() external returns (uint256);
     function trapIfUnapproved() external returns(bool);
     function isMarketApproved(address) external returns(bool);
+    function minRentalDivisor() external returns (uint256);
 }
