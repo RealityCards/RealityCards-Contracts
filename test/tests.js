@@ -35,7 +35,6 @@ contract('RealityCardsTests', (accounts) => {
 
   var realitycards;
   var tokenURIs = ['x','x','x','uri','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x']; // 20 tokens
-  var slug = 'x'; 
   var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
   var maxuint256 = 4294967295;
 
@@ -3155,6 +3154,8 @@ it('test marketOpeningTime stuff', async () => {
 it('check that non markets cannot call market only functions on Treasury', async () => {
     await expectRevert(treasury.payRent(user0,user0), "Not authorised");
     await expectRevert(treasury.payout(user0,0), "Not authorised");
+    await expectRevert(treasury.updateTotalRental(user0,0,0), "Not authorised");
+    await expectRevert(treasury.sponsor(), "Not authorised");
     await expectRevert(treasury.payCurrentOwner(user0,user0,0), "Not authorised");
 });
 
@@ -4490,6 +4491,81 @@ it('test exit', async () => {
     assert.equal(price,web3.utils.toWei('9', 'ether'));
 });
 
+it('test updateTotalRental', async () => {
+    await depositDai(10,user0);
+    await depositDai(100,user1);
+    await depositDai(10,user2);
+    await depositDai(10,user3);
+    // 2 rentals same market, check correct
+    await newRental(5,0,user0); 
+    await newRental(3,1,user0);
+    var totalRentals = await treasury.userTotalRentals(user0);
+    assert.equal(totalRentals.toString(),ether('8').toString());
+    // different market, still correct?
+    var realitycards2 = await createMarketWithArtistSet();
+    await newRentalCustomContract(realitycards2,1,7,user0);
+    var totalRentals = await treasury.userTotalRentals(user0);
+    assert.equal(totalRentals.toString(),ether('9').toString());
+    // change bid, still correct?
+    await newRental(6,0,user0);
+    var totalRentals = await treasury.userTotalRentals(user0);
+    assert.equal(totalRentals.toString(),ether('10').toString());
+    // someone else takes it off them, still correct?
+    await newRental(7,0,user1);
+    var totalRentals = await treasury.userTotalRentals(user0);
+    assert.equal(totalRentals.toString(),ether('4').toString());
+    // change price, should not change cos not owner
+    await newRental(7.5,0,user0);
+    var totalRentals = await treasury.userTotalRentals(user0);
+    assert.equal(totalRentals.toString(),ether('4').toString());
+    // new user exits, still correct?
+    await realitycards.exit(0,{from: user1});
+    var totalRentals = await treasury.userTotalRentals(user0);
+    assert.equal(totalRentals.toString(),ether('11').toString());
+    // this user exits, still correct?
+    await realitycards.exit(0,{from: user0});
+    var totalRentals = await treasury.userTotalRentals(user0);
+    assert.equal(totalRentals.toString(),ether('4').toString());
+    // increase rent to 1439 (max 1440) then rent again, check it fails
+    await newRental(1435,0,user0);
+    await expectRevert(newRental(5,3,user0), " Insufficient deposit");  
+    // someone bids even higher, I increase my bid above what I can afford, we all run out of deposit, should not return to me
+    await newRental(2000,0,user1);
+    await time.increase(time.duration.weeks(1));
+    await realitycards.collectRentAllCards();
+    // check owned by contract
+    var owner = await realitycards.ownerOf.call(0);
+    assert.equal(owner,realitycards.address);
+    // should only hold my 2nd market one
+    var totalRentals = await treasury.userTotalRentals(user0);
+    assert.equal(totalRentals.toString(),ether('1').toString());
+    // going through the full list now
+    // check updating bid: owner, for less, but still winner
+    await newRental(10,0,user2);
+    await newRental(15,0,user3);
+    var totalRentals = await treasury.userTotalRentals(user3);
+    assert.equal(totalRentals.toString(),ether('15').toString());
+    await newRental(14,0,user3);
+    var totalRentals = await treasury.userTotalRentals(user3);
+    assert.equal(totalRentals.toString(),ether('14').toString());
+    // check updating bid: owner, for less, not winner 
+    await newRental(10,0,user3);
+    var totalRentals = await treasury.userTotalRentals(user3);
+    assert.equal(totalRentals.toString(),ether('0').toString());
+    // check updating bid: not owner, should not be
+    await newRental(10.5,0,user3);
+    var totalRentals = await treasury.userTotalRentals(user3);
+    assert.equal(totalRentals.toString(),ether('0').toString());
+    // check updating bid: not owner, should b be
+    await newRental(11,0,user3);
+    var totalRentals = await treasury.userTotalRentals(user3);
+    assert.equal(totalRentals.toString(),ether('11').toString());
+    // check exit 
+    await realitycards.exit(0,{from: user3});
+    var totalRentals = await treasury.userTotalRentals(user3);
+    assert.equal(totalRentals.toString(),ether('0').toString());
+});
+
 });
 
 
@@ -4499,10 +4575,10 @@ it('test exit', async () => {
 // new bid: not X% higher
 // updating bid: owner, over X% above
 // updating bid: owner, beween 0 and X% above
-// updating bid: owner, less than X% above, still winner
-// updating bid: owner, less than X% above, not winner
+// updating bid: owner, less, still winner
+// updating bid: owner, less, not winner
 // updating bid: not owner, but should be
-// updating bid: not owner, but should be.
+// updating bid: not owner, should not be.
 // call exit
 // run out of deposit
 

@@ -491,7 +491,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         require(_tokenId < numberOfTokens, "This token does not exist");
         require(ownershipLostTimestamp[msgSender()] != now, "Cannot lose and re-rent in same block");
 
-        collectRentAllCards();
+        _collectRent(_tokenId);
 
          // process deposit, if sent
         if (msg.value > 0) {
@@ -520,7 +520,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
     /// @notice to change your timeHeldLimit without having to re-rent
     function updateTimeHeldLimit(uint256 _timeHeldLimit, uint256 _tokenId) external checkState(States.OPEN) {
-        collectRentAllCards();
+        _collectRent(_tokenId);
         
         if (_timeHeldLimit == 0) {
             _timeHeldLimit = MAX_UINT256; // so 0 defaults to no limit
