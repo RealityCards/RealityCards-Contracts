@@ -10,6 +10,7 @@ import '../interfaces/ITreasury.sol';
 
 /// @title Reality Cards Proxy- xDai side
 /// @author Andrew Stanger & Marvin Kruse
+/// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!! 
 contract RCProxyXdai is Ownable
 {
     using SafeMath for uint256;

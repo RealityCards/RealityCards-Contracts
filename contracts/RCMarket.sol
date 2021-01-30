@@ -142,6 +142,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     event LogNftUpgraded(uint256 indexed currentTokenId, uint256 indexed newTokenId);
     event LogPayoutDetails(address indexed artistAddress, address marketCreatorAddress, address affiliateAddress, address[] cardAffiliateAddresses, uint256 indexed artistCut, uint256 winnerCut, uint256 creatorCut, uint256 affiliateCut, uint256 cardAffiliateCut);
     event LogTransferCardToLongestOwner(uint256 tokenId, address longestOwner);
+    event LogSettings(uint256 indexed minRentalDivisor, uint256 indexed minimumPriceIncrease, uint256 hotPotatoDivisor);
 
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
@@ -178,9 +179,9 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
         // get adjustable parameters from the factory/treasury
         uint256[5] memory _potDistribution = factory.getPotDistribution();
+        minRentalDivisor = treasury.minRentalDivisor();
         minimumPriceIncrease = factory.minimumPriceIncrease();
         hotPotatoDivisor = factory.hotPotatoDivisor();
-        minRentalDivisor = treasury.minRentalDivisor();
         
         // initialiiize!
         winningOutcome = MAX_UINT256; // default invalid
@@ -235,6 +236,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         }
 
         emit LogPayoutDetails(_artistAddress, _marketCreatorAddress, _affiliateAddress, cardAffiliateAddresses, artistCut, winnerCut, creatorCut, affiliateCut, cardAffiliateCut);
+        emit LogSettings(minRentalDivisor, minimumPriceIncrease, hotPotatoDivisor);
     } 
 
     ////////////////////////////////////

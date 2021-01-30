@@ -12,6 +12,7 @@ import '../interfaces/IERC721.sol';
 
 /// @title Reality Cards Proxy- Mainnet side
 /// @author Andrew Stanger & Marvin Kruse
+/// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!!
 contract RCProxyMainnet is Ownable
 {
     ////////////////////////////////////

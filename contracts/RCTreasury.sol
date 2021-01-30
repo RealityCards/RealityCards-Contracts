@@ -17,29 +17,30 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
     /// @dev address of the Factory so only the Factory can add new markets
     address public factoryAddress;
-    /// @dev so only markets can move balances between deposits and market pots
+    /// @dev so only markets can use certain functions
     mapping (address => bool) public isMarket;
-    /// @dev keeps track of all the deposits for each user
+    /// @dev the deposit balance of each user
     mapping (address => uint256) public deposits;
+    /// @dev sum of all deposits 
     uint256 public totalDeposits;
-    /// @dev keeps track of rental payments made in each market
+    /// @dev the rental payments made in each market
     mapping (address => uint256) public marketPot;
+    /// @dev sum of all market pots 
     uint256 public totalMarketPots;
-    /// @dev holds sum of prices of all Cards a user is renting
+    /// @dev sum of prices of all Cards a user is renting
     mapping (address => uint256) public userTotalRentals;
-    /// @dev when last withdrawn (to prevent user's withdrawing within minRentalTime)
+    /// @dev when a user most recently rented (to prevent users withdrawing within minRentalTime)
     mapping (address => uint256) public lastRentalTime;
 
-    ///// ADJUSTABLE PARAMETERS /////
-    /// @dev only paramters that need to be are here, the rest are in the Factory
+     ///// GOVERNANCE VARIABLES /////
+    /// @dev only parameters that need to be are here, the rest are in the Factory
     /// @dev minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
     uint256 public minRentalDivisor;
-
     /// @dev max deposit balance, to minimise funds at risk
     uint256 public maxContractBalance;
 
     ///// SAFETY /////
-    /// @dev if true, cannot deposit or rent any cards across all events
+    /// @dev if true, cannot deposit, withdraw or rent any cards across all events
     bool public globalPause;
     /// @dev if true, cannot rent any cards for specific market
     mapping (address => bool) public marketPaused;
@@ -54,8 +55,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
     event LogDepositIncreased(address indexed sentBy, uint256 indexed daiDeposited);
     event LogDepositWithdrawal(address indexed returnedTo, uint256 indexed daiWithdrawn);
-    event LogAdjustMainDeposit(address indexed user, uint256 indexed amount, bool increase);
-    event LogAdjustLockedDeposit(address indexed user, uint256 indexed amount, bool increase);
+    event LogAdjustDeposit(address indexed user, uint256 indexed amount, bool increase);
     event LogHotPotatoPayment(address from, address to, uint256 amount);
 
     ////////////////////////////////////
@@ -70,15 +70,15 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         uberOwner = msg.sender;
 
         // initialise adjustable parameters
-        setMinRental(24*6); // defaults ten mins
-        setMaxContractBalance(1000000 ether); // default 1m)
+        setMinRental(24*6); // ten mins
+        setMaxContractBalance(1000000 ether); // 1m
     }
 
     ////////////////////////////////////
     /////////// MODIFIERS //////////////
     ////////////////////////////////////
 
-    modifier balancedBooks() {
+    modifier balancedBooks {
         _;
         // using >= not == because forced Ether send via selfdestruct will not trigger a deposit via the fallback
         assert(address(this).balance >= totalDeposits + totalMarketPots);
@@ -104,6 +104,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /////// GOVERNANCE- OWNER //////////
     ////////////////////////////////////
     /// @dev all functions should be onlyOwner
+    // min rental event emitted by market. Nothing else need be emitted.
 
     /// CALLED WITHIN CONSTRUCTOR (public)
 
@@ -119,7 +120,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
     /// NOT CALLED WITHIN CONSTRUCTOR (external)
 
-    /// @dev if true, cannot deposit or rent any cards, can still withdraw
+    /// @dev if true, cannot deposit, withdraw or rent any cards
     function setGlobalPause() external onlyOwner {
         globalPause = globalPause ? false : true;
     }
@@ -135,7 +136,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     //// ******** DANGER ZONE ******** ////
     /// @dev uber owner required for upgrades
     /// @dev deploying and setting a new factory is effectively an upgrade
-    /// @dev only the uber owner can do this, which can be set to burn address to relinquish upgrade ability
+    /// @dev this is seperated so owner so can be set to multisig, or burn address to relinquish upgrade ability
     /// @dev ... while maintaining governance over other governanace functions
 
     function setFactoryAddress(address _newFactory) external {
@@ -154,7 +155,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
     /// @dev it is passed the user instead of using msg.sender because might be called
     /// @dev ... via contract (fallback, newRental) or dai->xdai bot
-    function deposit(address _user) public payable balancedBooks() returns(bool) {
+    function deposit(address _user) public payable balancedBooks returns(bool) {
         require(!globalPause, "Deposits are disabled");
         require(msg.value > 0, "Must deposit something");
         require(address(this).balance <= maxContractBalance, "Limit hit");
@@ -162,12 +163,12 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         deposits[_user] = deposits[_user].add(msg.value);
         totalDeposits = totalDeposits.add(msg.value);
         emit LogDepositIncreased(_user, msg.value);
-        emit LogAdjustMainDeposit(_user, msg.value, true);
+        emit LogAdjustDeposit(_user, msg.value, true);
         return true;
     }
 
     /// @dev this is the only function where funds leave the contract
-    function withdrawDeposit(uint256 _dai) external balancedBooks()  {
+    function withdrawDeposit(uint256 _dai) external balancedBooks  {
         require(!globalPause, "Withdrawals are disabled");
         require(deposits[msgSender()] > 0, "Nothing to withdraw");
         require(now.sub(lastRentalTime[msgSender()]) > uint256(1 days).div(minRentalDivisor), "Too soon");
@@ -182,7 +183,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         (bool _success, ) = _recipient.call.value(_dai)("");
         require(_success, "Transfer failed");
         emit LogDepositWithdrawal(msgSender(), _dai);
-        emit LogAdjustMainDeposit(msgSender(), _dai, false);
+        emit LogAdjustDeposit(msgSender(), _dai, false);
     }
 
     ////////////////////////////////////
@@ -191,7 +192,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// only markets can call these functions
 
     /// @dev a rental payment is equivalent to moving to market pot from user's deposit, called by _collectRent in the market
-    function payRent(address _user, uint256 _dai) external balancedBooks() onlyMarkets() returns(bool) {
+    function payRent(address _user, uint256 _dai) external balancedBooks onlyMarkets returns(bool) {
         require(!globalPause, "Rentals are disabled");
         require(!marketPaused[msg.sender], "Rentals are disabled");
         assert(deposits[_user] >= _dai); // assert because should have been reduced to user's deposit already
@@ -199,48 +200,47 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         marketPot[msg.sender] = marketPot[msg.sender].add(_dai);
         totalMarketPots = totalMarketPots.add(_dai);
         totalDeposits = totalDeposits.sub(_dai);
-        emit LogAdjustMainDeposit(_user, _dai, false);
+        emit LogAdjustDeposit(_user, _dai, false);
         return true;
     }
 
     /// @dev a payout is equivalent to moving from market pot to user's deposit (the opposite of payRent)
-    function payout(address _user, uint256 _dai) external balancedBooks() onlyMarkets() returns(bool) {
+    function payout(address _user, uint256 _dai) external balancedBooks onlyMarkets returns(bool) {
         assert(marketPot[msg.sender] >= _dai); 
         deposits[_user] = deposits[_user].add(_dai);
         marketPot[msg.sender] = marketPot[msg.sender].sub(_dai);
         totalMarketPots = totalMarketPots.sub(_dai);
         totalDeposits = totalDeposits.add(_dai);
-        emit LogAdjustMainDeposit(_user, _dai, true);
+        emit LogAdjustDeposit(_user, _dai, true);
         return true;
     }
 
     /// @notice ability to add liqudity to the pot without being able to win (called by market sponsor function). 
-    function sponsor() external payable balancedBooks() onlyMarkets() returns(bool) {
-        address _marketAddress = msgSender();
-        marketPot[_marketAddress] = marketPot[_marketAddress].add(msg.value);
+    function sponsor() external payable balancedBooks onlyMarkets returns(bool) {
+        marketPot[msg.sender] = marketPot[msg.sender].add(msg.value);
         totalMarketPots = totalMarketPots.add(msg.value);
         return true;
     }
 
     /// @dev new owner pays current owner for hot potato mode
-    function processHarbergerPayment(address _newOwner, address _currentOwner, uint256 _requiredPayment) external balancedBooks() onlyMarkets() returns(bool) {
+    function processHarbergerPayment(address _newOwner, address _currentOwner, uint256 _requiredPayment) external balancedBooks onlyMarkets returns(bool) {
         require(deposits[_newOwner] >= _requiredPayment, "Insufficient deposit");
         deposits[_newOwner] = deposits[_newOwner].sub(_requiredPayment);
         deposits[_currentOwner] = deposits[_currentOwner].add(_requiredPayment);
-        emit LogAdjustMainDeposit(_newOwner, _requiredPayment, false);
-        emit LogAdjustMainDeposit(_currentOwner, _requiredPayment, true);
+        emit LogAdjustDeposit(_newOwner, _requiredPayment, false);
+        emit LogAdjustDeposit(_currentOwner, _requiredPayment, true);
         emit LogHotPotatoPayment(_newOwner, _currentOwner, _requiredPayment);
         return true;
     }
 
-    /// @dev tracks the total rental payments across all Cards, to enforce minimum rental duration
-    function updateLastRentalTime(address _user) external onlyMarkets() returns(bool) {
+    /// @dev tracks when the user last rented- so they cannot rent and immediately withdraw, thus bypassing minimum rental duration
+    function updateLastRentalTime(address _user) external onlyMarkets returns(bool) {
         lastRentalTime[_user] = now;
         return true;
     }
 
     /// @dev tracks the total rental payments across all Cards, to enforce minimum rental duration
-    function updateTotalRental(address _user, uint256 _newPrice, bool _add) external onlyMarkets() returns(bool) {
+    function updateTotalRental(address _user, uint256 _newPrice, bool _add) external onlyMarkets returns(bool) {
         if (_add) {
             userTotalRentals[_user] = userTotalRentals[_user].add(_newPrice);
         } else {
@@ -253,7 +253,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     //////////    FALLBACK     /////////
     ////////////////////////////////////
  
-    /// @dev sending ether direct is equal to a deposit
+    /// @dev sending ether/xdai direct is equal to a deposit
     function() external payable {
         assert(deposit(msgSender()));
     }
