@@ -15,4 +15,6 @@ interface ITreasury
     function hotPotatoDivisor() external payable returns (uint256);
     function updateTotalRental(address,uint256,bool) external returns (bool);
     function userTotalRentals(address) external returns (uint256);
+    function updateLastRentalTime(address) external returns (bool);
+    function minRentalDivisor() external returns (uint256);
 } 

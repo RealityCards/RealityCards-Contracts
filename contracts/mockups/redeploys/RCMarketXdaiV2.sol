@@ -183,7 +183,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
         cardAffiliateAddresses = _cardAffiliateAddresses;
         uint256[5] memory _potDistribution = factory.getPotDistribution();
         minimumPriceIncrease = factory.minimumPriceIncrease();
-        minRentalDivisor = factory.minRentalDivisor();
+        minRentalDivisor = treasury.minRentalDivisor();
         artistCut = _potDistribution[0];
         winnerCut = _potDistribution[1];
         creatorCut = _potDistribution[2];

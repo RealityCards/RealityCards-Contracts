@@ -174,7 +174,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         // get adjustable parameters from the factory
         uint256[5] memory _potDistribution = factory.getPotDistribution();
         minimumPriceIncrease = factory.minimumPriceIncrease();
-        minRentalDivisor = factory.minRentalDivisor();
+        minRentalDivisor = treasury.minRentalDivisor();
         
         // initialiiize!
         winningOutcome = MAX_UINT256; // default invalid
@@ -495,6 +495,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
          // process deposit, if sent
         if (msg.value > 0) {
+            require(false,"STFU");
             assert(treasury.deposit.value(msg.value)(msgSender()));
         }
 
@@ -803,28 +804,25 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         _processNewOwner(_tempNext, orderbook[_tokenId][_tempNext].price, _tokenId);
     }
 
-    /// @dev just combines: updating price, transferring Card, updating totalRental
     /// @dev we don't emit LogAddToOrderbook because this is not correct if called via _revertToUnderbidder
     function _processNewOwner(address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
-        // _updateTotalRental must be before transferCard because uses ownerOf to get previous owner's address
-        _updateTotalRental(_newOwner, _newPrice, _tokenId);
+        // _transferCard & updating price MUST come after treasury calls
+        // ... because they assume price and owner not yet updated
+        assert(treasury.updateLastRentalTime(_newOwner));
+        assert(treasury.updateTotalRental(_newOwner, _newPrice, true));
+        assert(treasury.updateTotalRental(ownerOf(_tokenId), price[_tokenId], false));
         _transferCard(ownerOf(_tokenId), _newOwner, _tokenId);
         price[_tokenId] = _newPrice;
     }
 
-    /// @dev same as above except does not transfer the Card
+    /// @dev same as above except does not transfer the Card or update last rental time
     function _processUpdateOwner(uint256 _newPrice, uint256 _tokenId) internal {
-        _updateTotalRental(ownerOf(_tokenId), _newPrice, _tokenId);
+        assert(treasury.updateTotalRental(ownerOf(_tokenId), _newPrice, true));
+        assert(treasury.updateTotalRental(ownerOf(_tokenId), price[_tokenId], false));
         price[_tokenId] = _newPrice;
     }
 
-    /// @dev tracks total rental payments across all Cards, to enforce minimum deposit duration
-    function _updateTotalRental(address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
-        assert(treasury.updateTotalRental(_newOwner, _newPrice, true));
-        assert(treasury.updateTotalRental(ownerOf(_tokenId), price[_tokenId], false));
-    }
-
-     /// @dev should only be called thrice
+    /// @dev should only be called thrice
     function _incrementState() internal {
         assert(uint256(state) < 4);
         state = States(uint256(state) + 1);

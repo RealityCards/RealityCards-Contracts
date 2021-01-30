@@ -3157,6 +3157,7 @@ it('check that non markets cannot call market only functions on Treasury', async
     await expectRevert(treasury.updateTotalRental(user0,0,0), "Not authorised");
     await expectRevert(treasury.sponsor(), "Not authorised");
     await expectRevert(treasury.payCurrentOwner(user0,user0,0), "Not authorised");
+    await expectRevert(treasury.updateLastRentalTime(user0,user0,0), "Not authorised");
 });
 
 it('check that sending ether direct is the same as a deposit', async () => {
@@ -4564,6 +4565,19 @@ it('test updateTotalRental', async () => {
     await realitycards.exit(0,{from: user3});
     var totalRentals = await treasury.userTotalRentals(user3);
     assert.equal(totalRentals.toString(),ether('0').toString());
+});
+
+it('test cant withdraw within minimum duration', async () => {
+    await depositDai(10,user0);
+    await newRental(1,0,user0);
+    await expectRevert(treasury.withdrawDeposit(678,{from:user0}), "Too soon");
+    // pass 5 mins, no difference
+    await time.increase(time.duration.minutes(5));
+    await expectRevert(treasury.withdrawDeposit(678,{from:user0}), "Too soon");
+    // pass 10 mins should now work
+    await time.increase(time.duration.minutes(5));
+    await treasury.withdrawDeposit(678,{from:user0});
+
 });
 
 });
