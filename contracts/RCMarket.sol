@@ -495,7 +495,6 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
          // process deposit, if sent
         if (msg.value > 0) {
-            require(false,"STFU");
             assert(treasury.deposit.value(msg.value)(msgSender()));
         }
 

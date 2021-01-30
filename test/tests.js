@@ -455,6 +455,7 @@ contract('RealityCardsTests', (accounts) => {
     var owner = await realitycards.ownerOf.call(4);
     assert.equal(owner, user);
     // withdraw
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user);
    });
   
@@ -471,6 +472,7 @@ contract('RealityCardsTests', (accounts) => {
     var price = await realitycards.price.call(4);
     assert.equal(price, web3.utils.toWei('3', 'ether'));
     // withdraw
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user);
    });
   
@@ -514,6 +516,7 @@ it('test various after collectRent', async () => {
     currentTime = await time.latest();
     assert.equal(currentTime.toString(),timeLastCollected.toString());
     // withdraw
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user);
 });
 
@@ -635,6 +638,7 @@ it('test withdrawDeposit after zero mins', async () => {
     assert.equal(deposit, web3.utils.toWei('144', 'ether')); 
     // withdraw half
     var balanceBefore = await web3.eth.getBalance(user);
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(72,user);
     // check deposit balances 
     var deposit = await treasury.deposits.call(user); 
@@ -671,6 +675,7 @@ it('test withdrawDeposit- multiple markets', async () => {
     await realitycards2.newRental(web3.utils.toWei('288', 'ether'),maxuint256,zeroAddress,0,{ from: user});
     // withdraw all, should be 3 left therefore only withdraw 7
     var balanceBefore = await web3.eth.getBalance(user);
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user);
     var balanceAfter = await web3.eth.getBalance(user);
     var depositWithdrawn = await balanceAfter - balanceBefore;
@@ -707,6 +712,7 @@ it('test exit- more than ten mins', async () => {
     var difference = Math.abs(timeHeld.toString() - timeHeldShouldBe.toString()); 
     assert.isBelow(difference,4);
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
 });
@@ -714,9 +720,9 @@ it('test exit- more than ten mins', async () => {
     it('test exit- reduce rental time to one min', async () => {
         // this has been gimped due to removing card specific deposit, a lot of this likely makes no sense now
         // check function is owned to change limit
-        await expectRevert(rcfactory.setMinRental(12,{from: user1}), "caller is not the owner");
+        await expectRevert(treasury.setMinRental(12,{from: user1}), "caller is not the owner");
         // change to one min
-        await rcfactory.setMinRental(1440);
+        await treasury.setMinRental(1440);
         await depositDai(144,user0);
         await depositDai(144,user1);
         await newRental(10,0,user0);
@@ -752,8 +758,9 @@ it('test exit- more than ten mins', async () => {
         // more time has elapsed than the 90 that was set above
         assert.isBelow(difference/timeHeldShouldBe,0.15); 
         // withdraw for next test
+        await time.increase(time.duration.minutes(10));
         await withdrawDeposit(1000,user0);
-        // await withdrawDeposit(1000,user1);
+        await withdrawDeposit(1000,user1);
     });
 
     it('test exitAll', async () => {
@@ -780,6 +787,7 @@ it('test exit- more than ten mins', async () => {
         var owner = await realitycards.ownerOf.call(3);
         assert.equal(owner, user0);
         // withdraw for next test
+        await time.increase(time.duration.minutes(10));
         await withdrawDeposit(1000,user0);
         await withdrawDeposit(1000,user1);
     });
@@ -853,6 +861,7 @@ it('test exit- more than ten mins', async () => {
     var marketPot = await treasury.marketPot.call(realitycards.address);
     assert.isBelow(Math.abs(marketPot.toString()),10);
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
@@ -947,6 +956,7 @@ it('test winner/withdraw mode 0- with artist/creator cut', async () => {
     var marketPot = await treasury.marketPot.call(realitycards2.address);
     assert.isBelow(Math.abs(marketPot.toString()),10);
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
@@ -1045,6 +1055,7 @@ it('test winner/withdraw mode 0- with artist/winner/creator cut', async () => {
     var marketPot = await treasury.marketPot.call(realitycards2.address);
     assert.isBelow(Math.abs(marketPot.toString()),10);
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
@@ -1150,6 +1161,7 @@ it('test winner/withdraw mode 0- with artist/affiliate/winner/creator cut', asyn
     var marketPot = await treasury.marketPot.call(realitycards2.address);
     assert.isBelow(Math.abs(marketPot.toString()),10);
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
@@ -1209,6 +1221,7 @@ it('test winner/withdraw mode 0- with artist/affiliate/winner/creator cut', asyn
     var marketPot = await treasury.marketPot.call(realitycards2.address);
     assert.isBelow(Math.abs(marketPot.toString()),10);
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
@@ -1286,6 +1299,7 @@ it('test winner/withdraw mode 1- with artist/creator cut', async () => {
     var marketPot = await treasury.marketPot.call(realitycards2.address);
     assert.isBelow(Math.abs(marketPot.toString()),10);
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
@@ -1361,6 +1375,7 @@ it('test winner/withdraw mode 1- with artist/creator cut', async () => {
     var marketPot = await treasury.marketPot.call(realitycards2.address);
     assert.isBelow(Math.abs(marketPot.toString()),10);
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
@@ -1461,6 +1476,7 @@ it('test winner/withdraw mode 0- with card affiliate but zero artist/creator cut
     var marketPot = await treasury.marketPot.call(realitycards2.address);
     assert.isBelow(Math.abs(marketPot.toString()),10);
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
@@ -1583,6 +1599,7 @@ for (i = 0; i < 20; i++) {
     var marketPot = await treasury.marketPot.call(realitycards2.address);
     assert.isBelow(Math.abs(marketPot.toString()),10);
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
@@ -1701,6 +1718,7 @@ it('test winner/withdraw mode 0- with artist/winner/creator/card affiliate cut',
     var marketPot = await treasury.marketPot.call(realitycards2.address);
     assert.isBelow(Math.abs(marketPot.toString()),10);
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
@@ -1781,6 +1799,7 @@ it('test winner/withdraw mode 0- with artist/winner/creator/card affiliate cut',
     var marketPot = await treasury.marketPot.call(realitycards.address);
     assert.isBelow(Math.abs(marketPot.toString()),10);
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
@@ -1827,6 +1846,7 @@ it('test sponsor with card affiliate cut', async () => {
     assert.isBelow(Math.abs(marketPot.toString()),10);
     // ensure everything is withdrawn
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
 });
@@ -1874,6 +1894,7 @@ for (i = 0; i < 20; i++) {
     assert.isBelow(Math.abs(marketPot.toString()),10);
     // ensure everything is withdrawn
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
 });
@@ -1928,6 +1949,7 @@ for (i = 0; i < 20; i++) {
     // check market pot is empty
     var marketPot = await treasury.marketPot.call(realitycards.address);
     assert.isBelow(Math.abs(marketPot.toString()),10);
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
@@ -1991,6 +2013,7 @@ for (i = 0; i < 20; i++) {
     var marketPot = await treasury.marketPot.call(realitycards2.address);
     assert.isBelow(Math.abs(marketPot.toString()),10);    
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
 });
@@ -2065,6 +2088,7 @@ it('test withdraw- invalid mode 0- zero artist/creator cut', async () => {
     var marketPot = await treasury.marketPot.call(realitycards.address);
     assert.isBelow(Math.abs(marketPot.toString()),10);
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
@@ -2148,6 +2172,7 @@ it('test withdraw- invalid mode 0- with artist/creator cut', async () => {
     var marketPot = await treasury.marketPot.call(realitycards2.address);
     assert.isBelow(Math.abs(marketPot.toString()),10);
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
@@ -2237,6 +2262,7 @@ it('test withdraw- invalid mode 0- with artist/creator cut', async () => {
         var marketPot = await treasury.marketPot.call(realitycards2.address);
         assert.isBelow(Math.abs(marketPot.toString()),10);
         // withdraw for next test
+        await time.increase(time.duration.minutes(10));
         await withdrawDeposit(1000,user0);
         await withdrawDeposit(1000,user1);
         await withdrawDeposit(1000,user2);
@@ -2311,6 +2337,7 @@ it('test withdraw- invalid mode 1- zero artist/creator cut', async () => {
     var marketPot = await treasury.marketPot.call(realitycards2.address);
     assert.isBelow(Math.abs(marketPot.toString()),10);
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
@@ -2394,6 +2421,7 @@ it('test withdraw- invalid mode 1- zero artist/creator cut', async () => {
         var marketPot = await treasury.marketPot.call(realitycards2.address);
         assert.isBelow(Math.abs(marketPot.toString()),10);
         // withdraw for next test
+        await time.increase(time.duration.minutes(10));
         await withdrawDeposit(1000,user0);
         await withdrawDeposit(1000,user1);
         await withdrawDeposit(1000,user2);
@@ -2493,6 +2521,7 @@ for (i = 0; i < 20; i++) {
     var marketPot = await treasury.marketPot.call(realitycards2.address);
     assert.isBelow(Math.abs(marketPot.toString()),10);
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
@@ -2598,6 +2627,7 @@ for (i = 0; i < 20; i++) {
     var marketPot = await treasury.marketPot.call(realitycards2.address);
     assert.isBelow(Math.abs(marketPot.toString()),10);
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
@@ -2674,6 +2704,7 @@ it('test circuitBreaker', async () => {
     var marketPot = await treasury.marketPot.call(realitycards.address);
     assert.isBelow(Math.abs(marketPot.toString()),10);
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
@@ -2692,6 +2723,7 @@ it('test circuitBreaker less than 3 months', async () => {
     await time.increase(time.duration.weeks(13));
     await realitycards.circuitBreaker();
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     });
 
@@ -2725,6 +2757,7 @@ it('test NFT allocation after event- circuit breaker', async () => {
     assert.equal(owner,user1);
     var owner = await realitycards.ownerOf(2);
     assert.equal(owner,user2);
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
@@ -2741,6 +2774,7 @@ it('check expected failures with market resolution: question not resolved but ma
     await expectRevert(realitycards.determineWinner(), "Oracle not resolved");
     await expectRevert(realitycards.withdraw(), "Incorrect state");
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
 });
 
@@ -2752,6 +2786,7 @@ it('newRental check failures', async () => {
     await expectRevert(realitycards.newRental(web3.utils.toWei('0.5', 'ether'),maxuint256,zeroAddress,0,{ from: user}), "Minimum rental 1 Dai");
     await expectRevert(realitycards.newRental(web3.utils.toWei('1', 'ether'),maxuint256,zeroAddress,23,{ from: user}), "This token does not exist");
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     });
 
@@ -2770,6 +2805,7 @@ it('check lockMarket cant be called too early', async () => {
     // // call step 1 twice
     await expectRevert(realitycards.lockMarket(), "Incorrect state");
     // // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
 });
 
@@ -2833,6 +2869,7 @@ it('check that _revertToUnderbidder does not revert more than ten times ', async
     // make sure owned for at least an hour
     await time.increase(time.duration.hours(1)); 
     // everyone withdraws deposit
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
@@ -2877,10 +2914,6 @@ it('test payRent/deposits after 0 mins, 5 mins, 15 mins, 20 mins', async () => {
     var difference = Math.abs(deposit.toString()-depositShouldBe.toString());
     assert.isBelow(difference/depositShouldBe,0.01);
     marketAddress = await rcfactory.getMostRecentMarket.call(0);
-    // var depositSpecific = await treasury.cardSpecificDeposits.call(marketAddress,user,0);
-    // var depositSpecificShouldBe = web3.utils.toWei('0.5', 'ether');
-    // var difference = Math.abs(depositSpecific.toString()-depositSpecificShouldBe.toString());
-    // assert.isBelow(difference/depositSpecificShouldBe,0.01);
     // 15 mins
     await time.increase(time.duration.minutes(10));
     await realitycards.collectRentAllCards(); 
@@ -2888,8 +2921,6 @@ it('test payRent/deposits after 0 mins, 5 mins, 15 mins, 20 mins', async () => {
     var depositShouldBe = web3.utils.toWei('142.5', 'ether');
     var difference = Math.abs(deposit.toString()-depositShouldBe.toString());
     assert.isBelow(difference/depositShouldBe,0.01);
-    // var depositSpecific = await treasury.cardSpecificDeposits.call(marketAddress,user,0);
-    // assert.equal(depositSpecific, 0);
     // 20 mins
     await time.increase(time.duration.minutes(5));
     await realitycards.collectRentAllCards(); 
@@ -2897,8 +2928,7 @@ it('test payRent/deposits after 0 mins, 5 mins, 15 mins, 20 mins', async () => {
     var depositShouldBe = web3.utils.toWei('142', 'ether');
     var difference = Math.abs(deposit.toString()-depositShouldBe.toString());
     assert.isBelow(difference/depositShouldBe,0.01);
-    // var depositSpecific = await treasury.cardSpecificDeposits.call(marketAddress,user,0);
-    // assert.equal(depositSpecific, 0);
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
 });
 
@@ -3066,6 +3096,7 @@ it('test NFT allocation after event- winner', async () => {
     assert.equal(owner,user1);
     var owner = await realitycards.ownerOf(2);
     assert.equal(owner,user2);
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
@@ -3092,6 +3123,7 @@ it('test exit but then can rent again', async () => {
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner, user1);
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
 });
@@ -3119,6 +3151,7 @@ it('test _revertToPreviousOwner will revert properly if current owner has deposi
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner, user0);
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
 });
 
@@ -3148,6 +3181,7 @@ it('test marketOpeningTime stuff', async () => {
     var state = await realitycards3.state();
     assert.equal(state,1);
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
 });
 
@@ -3157,7 +3191,7 @@ it('check that non markets cannot call market only functions on Treasury', async
     await expectRevert(treasury.updateTotalRental(user0,0,0), "Not authorised");
     await expectRevert(treasury.sponsor(), "Not authorised");
     await expectRevert(treasury.payCurrentOwner(user0,user0,0), "Not authorised");
-    await expectRevert(treasury.updateLastRentalTime(user0,user0,0), "Not authorised");
+    await expectRevert(treasury.updateLastRentalTime(user0), "Not authorised");
 });
 
 it('check that sending ether direct is the same as a deposit', async () => {
@@ -3237,6 +3271,7 @@ it('test timeHeldLimit', async() => {
     var owner = await realitycards.ownerOf(1);
     assert.equal(owner,user2);
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
@@ -3248,7 +3283,7 @@ it('test timeHeldLimit failures both newRental and updateTimeHeldLimit', async()
     // first: check timeHeldLimit cant be below ten mins
     await expectRevert(realitycards.newRental(web3.utils.toWei('1', 'ether'),'500',zeroAddress,0,{ from: user0}), "Limit too low");
     // change divisor and check it still gives the same error, set to 1 min and try 50 seconds
-    await rcfactory.setMinRental(1440);
+    await treasury.setMinRental(1440);
     // new market
     var realitycards2 = await createMarketWithArtistSet();
     await expectRevert(realitycards2.newRental(web3.utils.toWei('1', 'ether'),'50',zeroAddress,0,{ from: user0}), "Limit too low");
@@ -3256,6 +3291,7 @@ it('test timeHeldLimit failures both newRental and updateTimeHeldLimit', async()
     await realitycards2.newRental(web3.utils.toWei('1', 'ether'),'70',zeroAddress,0);
     // same thing with updateeTimeHeld
     await expectRevert(realitycards2.updateTimeHeldLimit(50,0,{ from: user0}), "Limit too low");
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
 });
@@ -3323,6 +3359,7 @@ it('test winner/withdraw, recreated without exit', async () => {
     // check random user can't withdraw
     await expectRevert(realitycards.withdraw({ from: user6 }), "Not a winner");
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
@@ -3375,6 +3412,7 @@ it('test timeHeldLimit using updateTimeHeldLimit', async() => {
     var owner = await realitycards.ownerOf(1);
     assert.equal(owner,user2);
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
@@ -3465,6 +3503,7 @@ it('test winner/withdraw recreated using newRentalWithDeposit', async () => {
     // check random user can't withdraw
     await expectRevert(realitycards.withdraw({ from: user6 }), "Not a winner");
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
@@ -3552,6 +3591,7 @@ it('test winner/withdraw with invalid market and artist and creator fees', async
     // check random user can't withdraw
     await expectRevert(realitycards2.withdraw({ from: user6 }), "Paid no rent");
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user2);
@@ -3618,6 +3658,7 @@ it('test rentAllCards', async () => {
     await expectRevert(realitycards.rentAllCards(web3.utils.toWei('25', 'ether')), "Prices too high"); 
     realitycards.rentAllCards(web3.utils.toWei('30', 'ether'));
     // withdraw
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
 });
@@ -3665,6 +3706,7 @@ it('test hot potato mode fundamentals', async () => {
     await depositDai(500,user2);
     await expectRevert(newRentalCustomContract(realitycards2,700,0,user2), "Insufficient deposit");
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
   });
@@ -3688,6 +3730,7 @@ it('test auto lock', async () => {
     var state = await realitycards.state.call();
     assert.equal(2,state);
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
 });
 
@@ -3731,6 +3774,7 @@ it('test setHotPotatoPayment', async () => {
     var difference = Math.abs(paymentSentToUser.toString() - paymentSentToUserShouldBe.toString());
     assert.isBelow(difference/paymentSentToUser,0.001);
     // withdraw for next test
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user1);
 });
@@ -3744,7 +3788,7 @@ it('check onlyOwner is on relevant Treasury functions', async () => {
 
 it('check onlyOwner is on relevant Factory functions', async () => {
     await expectRevert(rcfactory.setPotDistribution(0,0,0,0,0, {from: user1}), "caller is not the owner");
-    await expectRevert(rcfactory.setMinRental(7*24, {from: user1}), "caller is not the owner");
+    await expectRevert(treasury.setMinRental(7*24, {from: user1}), "caller is not the owner");
     await expectRevert(rcfactory.addOrRemoveGovernor(user0, {from: user1}), "caller is not the owner");
     await expectRevert(rcfactory.setMarketCreationGovernorsOnly({from: user1}), "caller is not the owner");
     await expectRevert(rcfactory.setSponsorshipRequired(7*24, {from: user1}), "caller is not the owner");
@@ -3825,6 +3869,8 @@ it('test uberOwner Treasury', async () => {
     await newRental(69,4,user3);
     var price = await realitycards.price.call(4);
     assert.equal(price, web3.utils.toWei('69', 'ether'));
+    await time.increase(time.duration.minutes(10));
+    await withdrawDeposit(1000,user3); 
 });
 
 it('test uberOwner factory', async () => {
@@ -3862,6 +3908,8 @@ it('test uberOwner factory', async () => {
     await newRental(69,4,user3);
     var price = await realitycards.price.call(4);
     assert.equal(price, web3.utils.toWei('69', 'ether'));
+    await time.increase(time.duration.minutes(10));
+    await withdrawDeposit(1000,user3); 
 });
 
 it('test RCProxyXdai', async () => {
@@ -4028,6 +4076,7 @@ it('test approveOrUnapproveMarket', async () => {
     for (i = 0; i < 20; i++) {
         await realitycards2.upgradeCard(i);
     }
+    await time.increase(time.duration.minutes(10));  
 });
 
 it('check cant rent or deposit if globalpause', async () => {
@@ -4036,7 +4085,6 @@ it('check cant rent or deposit if globalpause', async () => {
     await newRental(144,0,user0);
     await treasury.setGlobalPause();
     await expectRevert(depositDai(144,user0), "Deposits are disabled");
-
     await expectRevert(newRental(144,0,user1), "Rentals are disabled");
 });
 
@@ -4047,6 +4095,8 @@ it('check cant rent if market paused', async () => {
     // can still rent once
     await newRental(1,0,user0);
     await expectRevert(newRental(144,0,user0), "Rentals are disabled");
+    await time.increase(time.duration.minutes(10));
+    await withdrawDeposit(1000,user0);
 });
 
 it('test setAmicableResolution', async () => {
@@ -4133,6 +4183,7 @@ it('test NFT upgrade', async () => {
     assert.equal(ownermainnet,user3);
     var tokenuri = await nfthubmainnet.tokenURI(25);
     assert.equal("x",tokenuri);
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user1);
     await withdrawDeposit(1000,user3);
 
@@ -4165,7 +4216,6 @@ it('test addOrRemoveArtist, addOrRemoveAffiliate, addOrRemoveCardAffiliate', asy
     var artistAddress = user2;
     var affiliateAddress = user2;
     var cardRecipients = ['0x0000000000000000000000000000000000000000',user6,user7,user8,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user2];
-    var slug = 'z';
     // locking time two weeks should fail
     await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question),"Artist not approved");
     await rcfactory.addOrRemoveArtist(user2);
@@ -4426,6 +4476,7 @@ it('test _revertToUnderbidder', async () => {
     await newRental(6,0,user8); // 8, 6
     await newRental(50,0,user9); // 0, 50
     // withdraw deposit of 9, will it switch to 0
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user9);
     await realitycards.collectRentAllCards();
     var owner = await realitycards.ownerOf.call(0);
@@ -4437,6 +4488,7 @@ it('test _revertToUnderbidder', async () => {
     var bid = await realitycards.orderbook.call(0,user9);
     assert.equal(bid[0],0);
     // withraw deposit for next 4 in line, check it cyles through
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user5);
     await withdrawDeposit(1000,user0);
     await withdrawDeposit(1000,user3);
@@ -4473,6 +4525,7 @@ it('test exit', async () => {
     await newRental(10.9,0,user4); // 3, 10
     await newRental(5,0,user5); // 5, 5
     // withdraw current owner's deposit and exit the two below it, check it goes down three steps
+    await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user2);
     await realitycards.exit(0,{from: user2});
     await realitycards.exit(0,{from: user0});
@@ -4577,7 +4630,6 @@ it('test cant withdraw within minimum duration', async () => {
     // pass 10 mins should now work
     await time.increase(time.duration.minutes(5));
     await treasury.withdrawDeposit(678,{from:user0});
-
 });
 
 });
