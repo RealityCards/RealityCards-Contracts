@@ -519,7 +519,7 @@ it('test various after collectRent', async () => {
 });
 
 // test collectRent again, but this time it should foreclose, does it?
-it('ccollectRent function with foreclose and revertPreviousOwner', async () => {
+it('collectRent function with foreclose and revertPreviousOwner', async () => {
     // setup
     await depositDai(6,user0);
     await newRental(1,1,user0);
@@ -4488,8 +4488,21 @@ it('test exit', async () => {
     assert.equal(owner,user1);
     var price = await realitycards.price.call(0);
     assert.equal(price,web3.utils.toWei('9', 'ether'));
-
 });
 
 });
+
+
+// Every possibility:
+
+// new bid: X% higher
+// new bid: not X% higher
+// updating bid: owner, over X% above
+// updating bid: owner, beween 0 and X% above
+// updating bid: owner, less than X% above, still winner
+// updating bid: owner, less than X% above, not winner
+// updating bid: not owner, but should be
+// updating bid: not owner, but should be.
+// call exit
+// run out of deposit
 

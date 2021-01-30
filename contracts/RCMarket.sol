@@ -122,7 +122,6 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
     event LogAddToOrderbook(address indexed newOwner, uint256 indexed newPrice, uint256 timeHeldLimit, address insertedBelow, uint256 indexed tokenId);
     event LogNewOwner(uint256 indexed tokenId, address indexed newOwner);
-    event LogForeclosure(address indexed prevOwner, uint256 indexed tokenId);
     event LogRentCollection(uint256 indexed rentCollected, uint256 indexed tokenId, address indexed owner);
     event LogRemoveFromOrderbook(address indexed owner, uint256 indexed tokenId);
     event LogContractLocked(bool indexed didTheEventFinish);
@@ -500,7 +499,8 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         }
 
         // check sufficient deposit
-        require(treasury.deposits(msgSender()) >= _newPrice.div(minRentalDivisor), "Insufficient deposit");
+        uint256 _updatedTotalRentals =  treasury.userTotalRentals(msgSender()).add(_newPrice);
+        require(treasury.deposits(msgSender()) >= _updatedTotalRentals.div(minRentalDivisor), "Insufficient deposit");
 
         // check _timeHeldLimit
         if (_timeHeldLimit == 0) {
@@ -675,7 +675,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             if(_newPrice >= _minPriceToOwn) {
                 orderbook[_tokenId][msgSender()].price = _newPrice;
                 orderbook[_tokenId][msgSender()].timeHeldLimit = _timeHeldLimit;
-                price[_tokenId] = _newPrice;
+                _processUpdateOwner(_newPrice, _tokenId);
                 emit LogAddToOrderbook(msgSender(), _newPrice, _timeHeldLimit, orderbook[_tokenId][msgSender()].prev, _tokenId);
             // case 1B: new price is higher than current price but by less than X%- revert the tx to prevent frontrunning
             } else if (_newPrice > price[_tokenId]) {
@@ -687,7 +687,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                 if(_newPrice >= _minPriceToOwn) {
                     orderbook[_tokenId][msgSender()].price = _newPrice;
                     orderbook[_tokenId][msgSender()].timeHeldLimit = _timeHeldLimit;
-                    price[_tokenId] = _newPrice;
+                    _processUpdateOwner(_newPrice, _tokenId);
                     emit LogAddToOrderbook(msgSender(), _newPrice, _timeHeldLimit, orderbook[_tokenId][msgSender()].prev, _tokenId);
                 // case 1Cb: user is not owner anymore-  remove from list & add back. newRental event called in _setNewOwner or _placeInList via _newBid
                 } else {
@@ -724,10 +724,9 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         // process new owner
         orderbook[_tokenId][msgSender()] = Bid(_newPrice, _timeHeldLimit, ownerOf(_tokenId), address(this));
         orderbook[_tokenId][ownerOf(_tokenId)].prev = msgSender();
-        price[_tokenId] = _newPrice;
-        // _transferCard must be after LogAddToOrderbook so LogNewOwner is not emitted before user is in the orderbook
-        emit LogAddToOrderbook(msgSender(), _newPrice, _timeHeldLimit, orderbook[_tokenId][msgSender()].prev, _tokenId);
-        _transferCard(ownerOf(_tokenId), msgSender(), _tokenId);
+        // _processNewOwner must be after LogAddToOrderbook so LogNewOwner is not emitted before user is in the orderbook
+        emit LogAddToOrderbook(msgSender(), _newPrice, _timeHeldLimit, address(this), _tokenId);
+        _processNewOwner(msgSender(), _newPrice, _tokenId);
     }
 
     /// @dev only for when user is NOT already in the list and NOT the highest bidder
@@ -792,29 +791,37 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             emit LogRemoveFromOrderbook(_tempPrev, _tokenId);
             // get required  and actual deposit of next user
             _tempNextDeposit = treasury.deposits(_tempNext);
-            _requiredDeposit = orderbook[_tokenId][_tempNext].price.div(minRentalDivisor);
+            uint256 _nextUserTotalRentals = treasury.userTotalRentals(msgSender()).add(orderbook[_tokenId][_tempNext].price);
+            _requiredDeposit = _nextUserTotalRentals.div(minRentalDivisor);
             _loopCount = _loopCount.add(1);
         } while (
             _tempNext != address(this) && 
             _tempNextDeposit < _requiredDeposit && 
             _loopCount < MAX_ITERATIONS );
-        if (_tempNext == address(this)) {
-            _foreclose(_tokenId);
-        } else {
-             // transfer to previous owner
-            address _currentOwner = ownerOf(_tokenId);
-            price[_tokenId] = orderbook[_tokenId][_tempNext].price;
-            ownershipLostTimestamp[ownerOf(_tokenId)] = now;
-            _transferCard(_currentOwner, _tempNext, _tokenId);
-        }
+        // transfer to previous owner
+        ownershipLostTimestamp[ownerOf(_tokenId)] = now;
+        _processNewOwner(_tempNext, orderbook[_tokenId][_tempNext].price, _tokenId);
     }
 
-    /// @notice return token to the contract and return price to zero
-    function _foreclose(uint256 _tokenId) internal {
-        address _currentOwner = ownerOf(_tokenId);
-        price[_tokenId] = 0;
-        _transferCard(_currentOwner, address(this), _tokenId);
-        emit LogForeclosure(_currentOwner, _tokenId);
+    /// @dev just combines: updating price, transferring Card, updating totalRental
+    /// @dev we don't emit LogAddToOrderbook because this is not correct if called via _revertToUnderbidder
+    function _processNewOwner(address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
+        // _updateTotalRental must be before transferCard because uses ownerOf to get previous owner's address
+        _updateTotalRental(_newOwner, _newPrice, _tokenId);
+        _transferCard(ownerOf(_tokenId), _newOwner, _tokenId);
+        price[_tokenId] = _newPrice;
+    }
+
+    /// @dev same as above except does not transfer the Card
+    function _processUpdateOwner(uint256 _newPrice, uint256 _tokenId) internal {
+        _updateTotalRental(ownerOf(_tokenId), _newPrice, _tokenId);
+        price[_tokenId] = _newPrice;
+    }
+
+    /// @dev tracks total rental payments across all Cards, to enforce minimum deposit duration
+    function _updateTotalRental(address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
+        assert(treasury.updateTotalRental(_newOwner, _newPrice, true));
+        assert(treasury.updateTotalRental(ownerOf(_tokenId), price[_tokenId], false));
     }
 
      /// @dev should only be called thrice

@@ -13,4 +13,6 @@ interface ITreasury
     function deposit(address) external payable returns (bool);
     function sponsor() external payable returns (bool);
     function hotPotatoDivisor() external payable returns (uint256);
+    function updateTotalRental(address,uint256,bool) external returns (bool);
+    function userTotalRentals(address) external returns (uint256);
 } 

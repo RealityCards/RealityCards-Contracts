@@ -25,6 +25,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev keeps track of rental payments made in each market
     mapping (address => uint256) public marketPot;
     uint256 public totalMarketPots;
+    /// @dev holds sum of prices of all Cards a user is renting
+    mapping (address => uint256) public userTotalRentals;
 
     ///// ADJUSTABLE PARAMETERS /////
     /// @dev if hot potato mode, how much rent new owner must pay current owner (1 week divisor: i.e. 7 = 1 day, 14 = 12 hours)
@@ -194,6 +196,16 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         totalMarketPots = totalMarketPots.sub(_dai);
         totalDeposits = totalDeposits.add(_dai);
         emit LogAdjustMainDeposit(_user, _dai, true);
+        return true;
+    }
+
+    /// @dev tracks the total rental payments across all Cards, to enforce minimum rental duration
+    function updateTotalRental(address _user, uint256 _newPrice, bool _add) external onlyMarkets() returns(bool) {
+        if (_add) {
+            userTotalRentals[_user] = userTotalRentals[_user].add(_newPrice);
+        } else {
+            userTotalRentals[_user] = userTotalRentals[_user].sub(_newPrice);
+        }
         return true;
     }
 
