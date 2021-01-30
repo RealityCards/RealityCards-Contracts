@@ -47,6 +47,8 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
     uint32 public advancedWarning;
     /// @dev market closing time must be no more than this many seconds in the future
     uint32 public maximumDuration;
+    /// @dev if hot potato mode, how much rent new owner must pay current owner (1 week divisor: i.e. 7 = 1 day, 14 = 12 hours)
+    uint256 public hotPotatoDivisor;
 
     ///// MARKET CREATION & HIDING /////
     /// @dev if false, anyone can create markets
@@ -99,6 +101,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
         // artist // winner // creator // affiliate // card specific affiliates
         setPotDistribution(20,0,0,20,100); // 2% artist, 2% affiliate, 10% card specific affiliate default
         setMinimumPriceIncrease(10); // 10% default
+        setHotPotatoPayment(7); // defaults one day's rent
     }
 
     ////////////////////////////////////
@@ -148,6 +151,11 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
     /// @dev in %
     function setMinimumPriceIncrease(uint256 _percentIncrease) public onlyOwner {
         minimumPriceIncrease = _percentIncrease;
+    }
+
+     /// @dev if hot potato mode, how much rent new owner must pay current owner (1 week divisor: i.e. 7 = 1 day, 14 = 12 hours)
+    function setHotPotatoPayment(uint256 _newDivisor) public onlyOwner {
+        hotPotatoDivisor = _newDivisor;
     }
 
     /// NOT CALLED WITHIN CONSTRUCTOR (external)

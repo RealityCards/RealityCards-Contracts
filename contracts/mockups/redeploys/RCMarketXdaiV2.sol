@@ -717,7 +717,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
         // if hot potato mode, pay current owner
         if (mode == 2) {
             // the required payment is calculated in the Treasury
-            assert(treasury.payCurrentOwner(msgSender(), ownerOf(_tokenId), price[_tokenId]));
+            // assert(treasury.payCurrentOwner(msgSender(), ownerOf(_tokenId), price[_tokenId]));
         }
 
         // process new owner

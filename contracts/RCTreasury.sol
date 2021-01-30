@@ -31,10 +31,10 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     mapping (address => uint256) public lastRentalTime;
 
     ///// ADJUSTABLE PARAMETERS /////
+    /// @dev only paramters that need to be are here, the rest are in the Factory
     /// @dev minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
     uint256 public minRentalDivisor;
-    /// @dev if hot potato mode, how much rent new owner must pay current owner (1 week divisor: i.e. 7 = 1 day, 14 = 12 hours)
-    uint256 public hotPotatoDivisor;
+
     /// @dev max deposit balance, to minimise funds at risk
     uint256 public maxContractBalance;
 
@@ -71,7 +71,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
         // initialise adjustable parameters
         setMinRental(24*6); // defaults ten mins
-        setHotPotatoPayment(7); // defaults one day's rent
         setMaxContractBalance(1000000 ether); // default 1m)
     }
 
@@ -111,11 +110,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @notice minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
     function setMinRental(uint256 _newDivisor) public onlyOwner {
         minRentalDivisor = _newDivisor;
-    }
-
-    /// @dev if hot potato mode, how much rent new owner must pay current owner (1 week divisor: i.e. 7 = 1 day, 14 = 12 hours)
-    function setHotPotatoPayment(uint256 _newDivisor) public onlyOwner {
-        hotPotatoDivisor = _newDivisor;
     }
 
     /// @dev max deposit balance, to minimise funds at risk
@@ -229,9 +223,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     }
 
     /// @dev new owner pays current owner for hot potato mode
-    function payCurrentOwner(address _newOwner, address _currentOwner, uint256 _oldPrice) external balancedBooks() onlyMarkets() returns(bool) {
-        uint256 _duration = uint256(1 weeks).div(hotPotatoDivisor);
-        uint256 _requiredPayment = (_oldPrice.mul(_duration)).div(uint256(1 days));
+    function processHarbergerPayment(address _newOwner, address _currentOwner, uint256 _requiredPayment) external balancedBooks() onlyMarkets() returns(bool) {
         require(deposits[_newOwner] >= _requiredPayment, "Insufficient deposit");
         deposits[_newOwner] = deposits[_newOwner].sub(_requiredPayment);
         deposits[_currentOwner] = deposits[_currentOwner].add(_requiredPayment);

@@ -51,12 +51,17 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     mapping (uint256 => uint256) public collectedPerToken;
     /// @dev an easy way to track the above across all tokens
     uint256 public totalCollected; 
+    /// @dev prevents user from cancelling and re-renting in the same block
+    mapping (address => uint256) public ownershipLostTimestamp;
+
+    ///// PARAMETERS /////
+    /// @dev read from the Factory upon market creation, can not be changed for existing market
     /// @dev the minimum required price increase in %
     uint256 public minimumPriceIncrease;
     /// @dev minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
     uint256 public minRentalDivisor;
-    /// @dev prevents user from cancelling and re-renting in the same block
-    mapping (address => uint256) public ownershipLostTimestamp;
+    /// @dev if hot potato mode, how much rent new owner must pay current owner (1 week divisor: i.e. 7 = 1 day, 14 = 12 hours)
+    uint256 public hotPotatoDivisor;
 
     ///// ORDERBOOK /////
     /// @dev stores the orderbook. Doubly linked list. 
@@ -171,9 +176,10 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         proxy = factory.proxy();
         nfthub = factory.nfthub();
 
-        // get adjustable parameters from the factory
+        // get adjustable parameters from the factory/treasury
         uint256[5] memory _potDistribution = factory.getPotDistribution();
         minimumPriceIncrease = factory.minimumPriceIncrease();
+        hotPotatoDivisor = factory.hotPotatoDivisor();
         minRentalDivisor = treasury.minRentalDivisor();
         
         // initialiiize!
@@ -717,10 +723,10 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     function _setNewOwner(uint256 _newPrice, uint256 _tokenId, uint256 _timeHeldLimit) internal {  
         // if hot potato mode, pay current owner
         if (mode == 2) {
-            // the required payment is calculated in the Treasury
-            assert(treasury.payCurrentOwner(msgSender(), ownerOf(_tokenId), price[_tokenId]));
+            uint256 _duration = uint256(1 weeks).div(hotPotatoDivisor);
+            uint256 _requiredPayment = (price[_tokenId].mul(_duration)).div(uint256(1 days));
+            assert(treasury.processHarbergerPayment(msgSender(), ownerOf(_tokenId), _requiredPayment));
         }
-
         // process new owner
         orderbook[_tokenId][msgSender()] = Bid(_newPrice, _timeHeldLimit, ownerOf(_tokenId), address(this));
         orderbook[_tokenId][ownerOf(_tokenId)].prev = msgSender();
