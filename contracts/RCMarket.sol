@@ -55,8 +55,6 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     uint256 public totalCollected; 
     /// @dev prevents user from exiting and re-renting in the same block (prevents troll attacks)
     mapping (address => uint256) public exitedTimestamp;
-    /// @dev prevents user from renting and then exiting in the same block (prevents troll attacks)
-    mapping (address => uint256) public rentedTimestamp;
 
     ///// PARAMETERS /////
     /// @dev read from the Factory upon market creation, can not be changed for existing market
