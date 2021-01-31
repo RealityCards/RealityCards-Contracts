@@ -15,40 +15,42 @@ contract RCProxyXdaiV2 is Ownable
     //////// VARIABLES /////////////////
     ////////////////////////////////////
 
-    /// @dev contract variables
+    ///// CONTRACT VARIABLES /////
     IBridgeContract public bridge;
 
-    /// @dev governance variables
+    ///// GOVERNANCE VARIABLES /////
     address public proxyMainnetAddress;
     address public factoryAddress;
     address public treasuryAddress;
     
-    /// @dev market resolution variables
-    mapping (address => bool) public marketFinalized;
-    mapping (address => uint256) public winningOutcome;
+    ///// ORACLE VARIABLES /////
     mapping (address => question) public questions;
-    struct question { string question;
-                      uint32 oracleResolutionTime;
-                      bool set; }
+    struct question { 
+        string question;              
+        uint32 oracleResolutionTime;
+        bool set; }
 
-    /// @dev so only markets can upgrade NFTs
+    ///// NFT UPGRADE VARIABLES /////
     mapping (address => bool) public isMarket;
+    mapping(uint256 => nft) public upgradedNfts;
+    struct nft { 
+        string tokenURI;
+        address owner;
+        bool set; }
 
-    /// @dev dai deposit variables
+    ///// DAI->XDAI BRIDGE VARIABLES /////
     uint256 public validatorCount;
     mapping (address => bool) public isValidator;
     mapping (uint256 => Deposit) public deposits;
     mapping (uint256 => mapping(address => bool)) public hasConfirmedDeposit;
     /// @dev so only the float can be withdrawn and no more
     uint256 public floatSize;
-
     struct Deposit {
         address user;
         uint256 amount;
         uint256 confirmations;
         bool confirmed;
-        bool executed;
-    }
+        bool executed; }
 
     ////////////////////////////////////
     //////// EVENTS ////////////////////
@@ -111,15 +113,16 @@ contract RCProxyXdaiV2 is Ownable
 
     /// @dev admin override of the Oracle, if not yet settled, for amicable resolution, or bridge fails
     function setAmicableResolution(address _marketAddress, uint256 _winningOutcome) onlyOwner public {
-        require(!marketFinalized[_marketAddress], "Event finalised");
-        marketFinalized[_marketAddress] = true;
-        winningOutcome[_marketAddress] = _winningOutcome;
+        // call the market
+        IRCMarket market = IRCMarket(_marketAddress);
+        market.setWinner(_winningOutcome);
     }
 
     ////////////////////////////////////
     ///// GOVERNANCE - DAI BRIDGE //////
     ////////////////////////////////////
 
+    /// @dev impossible to withdraw user funds, only added float 
     function withdrawFloat(uint256 _amount) onlyOwner external {
         // will throw an error if goes negative because safeMath
         floatSize = floatSize.sub(_amount);
@@ -149,7 +152,7 @@ contract RCProxyXdaiV2 is Ownable
     ///// CORE FUNCTIONS - ORACLE //////
     ////////////////////////////////////
 
-    /// @dev called by factory upon market creation, posts question to Oracle via arbitrary message bridge
+    /// @dev called by factory upon market creation (thus impossible to be called twice), posts question to Oracle via arbitrary message bridge
     function saveQuestion(address _marketAddress, string calldata _question, uint32 _oracleResolutionTime) external {
         require(msg.sender == factoryAddress, "Not factory");
         questions[_marketAddress].question = _question;
@@ -159,6 +162,7 @@ contract RCProxyXdaiV2 is Ownable
     }
 
     /// @dev question is posted in a different function so it can be called again if bridge fails
+    /// @dev postQuestionToOracle on mainnet proxy will block multiple successful posts 
     function postQuestionToBridge(address _marketAddress) public {
         require(questions[_marketAddress].set, "No question");
         bytes4 _methodSelector = IRCProxyMainnet(address(0)).postQuestionToOracle.selector;
@@ -167,33 +171,35 @@ contract RCProxyXdaiV2 is Ownable
     }
     
     /// @dev called by mainnet oracle proxy via the arbitrary message bridge, sets the winning outcome
+    /// @dev market.setWinner() will revert if done twice, because wrong state
     function setWinner(address _marketAddress, uint256 _winningOutcome) external {
-        require(!marketFinalized[_marketAddress], "Event finalised");
         require(msg.sender == address(bridge), "Not bridge");
         require(bridge.messageSender() == proxyMainnetAddress, "Not proxy");
-        marketFinalized[_marketAddress] = true;
-        winningOutcome[_marketAddress] = _winningOutcome * 2;
+        // call the market
+        IRCMarket market = IRCMarket(_marketAddress);
+        market.setWinner(_winningOutcome.mul(2));
     }
     
-    /// @dev called by market contracts to check if winner known
-    function isFinalized(address _marketAddress) external view returns(bool) {
-        return(marketFinalized[_marketAddress]);
-    }
-    
-    /// @dev called by market contracts to get the winner
-    function getWinner(address _marketAddress) external view  returns(uint256) {
-        require(marketFinalized[_marketAddress], "Not finalised");
-        return winningOutcome[_marketAddress];
-    }
-
     ////////////////////////////////////
     /// CORE FUNCTIONS - NFT UPGRADES //
     ////////////////////////////////////
 
-    function upgradeCard(uint256 _tokenId, string calldata _tokenUri, address _owner) external {
+    function saveCardToUpgrade(uint256 _tokenId, string calldata _tokenUri, address _owner) external {
         require(isMarket[msg.sender], "Not market");
+        // sassert because hould be impossible to call this twice because upgraded card returned to market
+        assert(!upgradedNfts[_tokenId].set);
+        upgradedNfts[_tokenId].tokenURI = _tokenUri;
+        upgradedNfts[_tokenId].owner = _owner;
+        upgradedNfts[_tokenId].set = true;
+        postCardToUpgrade(_tokenId);
+    }
+
+     /// @dev card is upgraded in a different function so it can be called again if bridge fails
+     /// @dev no harm if called again after successful posting because can't mint nft with same tokenId twice 
+    function postCardToUpgrade(uint256 _tokenId) public {
+        require(upgradedNfts[_tokenId].set, "Nft not set");
         bytes4 _methodSelector = IRCProxyMainnet(address(0)).upgradeCard.selector;
-        bytes memory data = abi.encodeWithSelector(_methodSelector, _tokenId, _tokenUri, _owner);
+        bytes memory data = abi.encodeWithSelector(_methodSelector, _tokenId, upgradedNfts[_tokenId].tokenURI, upgradedNfts[_tokenId].owner);
         bridge.requireToPassMessage(proxyMainnetAddress,data,200000);
     }
 
@@ -221,8 +227,6 @@ contract RCProxyXdaiV2 is Ownable
         require(deposits[_nonce].amount == _amount, "Amounts don't match");
         
         // Add 1 confirmation, if this hasn't been done already
-        // Note: allowing to execute this twice in case there was
-        // not enough money initially
         if(!hasConfirmedDeposit[_nonce][msg.sender]) {
             hasConfirmedDeposit[_nonce][msg.sender] = true;
             deposits[_nonce].confirmations = deposits[_nonce].confirmations.add(1);

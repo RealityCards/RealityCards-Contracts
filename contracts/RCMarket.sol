@@ -265,12 +265,6 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     }
 
     /// @notice what it says on the tin
-    modifier amountNotZero(uint256 _dai) {
-        require(_dai > 0, "Amount must be above zero");
-       _;
-    }
-
-    /// @notice what it says on the tin
     modifier onlyTokenOwner(uint256 _tokenId) {
         require(msgSender() == ownerOf(_tokenId), "Not owner");
        _;
@@ -290,19 +284,6 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         proxy.saveCardToUpgrade(_actualTokenId, _tokenUri, _owner);
         _transferCard(ownerOf(_tokenId), address(this), _tokenId); // contract becomes final resting place
         emit LogNftUpgraded(_tokenId, _actualTokenId);
-    }
-
-    /// @notice gets the winning outcome from realitio
-    /// @dev the returned value is equivilent to tokenId
-    /// @dev this function call will revert if it has not yet resolved
-    function _getWinner() internal view returns(uint256) {
-        uint256 _winningOutcome = proxy.getWinner(address(this));
-        return _winningOutcome;
-    }
-
-    /// @notice has the question been finalized on realitio?
-    function _isQuestionFinalized() internal view returns (bool) {
-        return proxy.isFinalized(address(this));
     }
 
     ////////////////////////////////////
@@ -335,7 +316,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
     /// @notice checks whether the competition has ended, if so moves to LOCKED state
     /// @dev can be called by anyone 
-    /// @dev public because possibly called within newRental via autoLock modifier
+    /// @dev public because called within autoLock modifier & setWinner
     function lockMarket() public checkState(States.OPEN) {
         require(marketLockingTime < now, "Market has not finished");
         // do a final rent collection before the contract is locked down
@@ -344,12 +325,13 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         emit LogContractLocked(true);
     }
 
-    /// @notice checks whether the Realitio question has resolved, and if yes, gets the winner
-    /// @dev can be called by anyone 
-    function determineWinner() external checkState(States.LOCKED) {
-        require(_isQuestionFinalized(), "Oracle not resolved");
+    /// @notice checks whether the Realitio question has resolved, and if yes, gets the winner 
+    function setWinner(uint256 _winningOutcome) external {
+        if (state == States.OPEN) { lockMarket(); }
+        require(state == States.LOCKED, "Incorrect state");
+        require(msg.sender == address(proxy), "Not proxy");
         // get the winner. This will revert if answer is not resolved.
-        winningOutcome = _getWinner();
+        winningOutcome = _winningOutcome;
         _incrementState();
         emit LogWinnerKnown(winningOutcome);
     }
@@ -495,7 +477,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @notice to rent a Card
     /// @dev no event: it is emitted in _updateBid, _setNewOwner or _placeInList as appropriate
     function newRental(uint256 _newPrice, uint256 _timeHeldLimit, address _startingPosition, uint256 _tokenId) public payable autoUnlock() autoLock() checkState(States.OPEN) returns (uint256) {
-        require(_newPrice >= 1 ether, "Minimum rental 1 Dai");
+        require(_newPrice >= 1 ether, "Minimum rental 1 xDai");
         require(_tokenId < numberOfTokens, "This token does not exist");
         require(ownershipLostTimestamp[msgSender()] != now, "Cannot lose and re-rent in same block");
 

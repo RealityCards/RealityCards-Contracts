@@ -18,24 +18,22 @@ contract RCProxyXdai is Ownable
     //////// VARIABLES /////////////////
     ////////////////////////////////////
 
-    /// @dev contract variables
+    ///// CONTRACT VARIABLES /////
     IBridgeContract public bridge;
 
-    /// @dev governance variables
+    ///// GOVERNANCE VARIABLES /////
     address public proxyMainnetAddress;
     address public factoryAddress;
     address public treasuryAddress;
     
-    /// @dev oracle variables
-    mapping (address => bool) public marketFinalized;
-    mapping (address => uint256) public winningOutcome;
+    ///// ORACLE VARIABLES /////
     mapping (address => question) public questions;
     struct question { 
         string question;              
         uint32 oracleResolutionTime;
         bool set; }
 
-    /// @dev NFT upgrade variables
+    ///// NFT UPGRADE VARIABLES /////
     mapping (address => bool) public isMarket;
     mapping(uint256 => nft) public upgradedNfts;
     struct nft { 
@@ -43,7 +41,7 @@ contract RCProxyXdai is Ownable
         address owner;
         bool set; }
 
-    /// @dev dai deposit variables
+    ///// DAI->XDAI BRIDGE VARIABLES /////
     uint256 public validatorCount;
     mapping (address => bool) public isValidator;
     mapping (uint256 => Deposit) public deposits;
@@ -118,9 +116,9 @@ contract RCProxyXdai is Ownable
 
     /// @dev admin override of the Oracle, if not yet settled, for amicable resolution, or bridge fails
     function setAmicableResolution(address _marketAddress, uint256 _winningOutcome) onlyOwner public {
-        require(!marketFinalized[_marketAddress], "Event finalised");
-        marketFinalized[_marketAddress] = true;
-        winningOutcome[_marketAddress] = _winningOutcome;
+        // call the market
+        IRCMarket market = IRCMarket(_marketAddress);
+        market.setWinner(_winningOutcome);
     }
 
     ////////////////////////////////////
@@ -167,8 +165,7 @@ contract RCProxyXdai is Ownable
     }
 
     /// @dev question is posted in a different function so it can be called again if bridge fails
-    /// @dev no harm if called again after successful posting because of 
-    /// @dev ... "require(questionIds[_marketAddress] == 0" in postQuestionToOracle() function on mainnet proxy
+    /// @dev can be called more than once, mainnet proxy will reject a second successful call
     function postQuestionToBridge(address _marketAddress) public {
         require(questions[_marketAddress].set, "No question");
         bytes4 _methodSelector = IRCProxyMainnet(address(0)).postQuestionToOracle.selector;
@@ -177,25 +174,15 @@ contract RCProxyXdai is Ownable
     }
     
     /// @dev called by mainnet oracle proxy via the arbitrary message bridge, sets the winning outcome
+    /// @dev market.setWinner() will revert if done twice, because wrong state
     function setWinner(address _marketAddress, uint256 _winningOutcome) external {
-        require(!marketFinalized[_marketAddress], "Event finalised");
         require(msg.sender == address(bridge), "Not bridge");
         require(bridge.messageSender() == proxyMainnetAddress, "Not proxy");
-        marketFinalized[_marketAddress] = true;
-        winningOutcome[_marketAddress] = _winningOutcome;
+        // call the market
+        IRCMarket market = IRCMarket(_marketAddress);
+        market.setWinner(_winningOutcome);
     }
     
-    /// @dev called by market contracts to check if winner known
-    function isFinalized(address _marketAddress) external view returns(bool) {
-        return(marketFinalized[_marketAddress]);
-    }
-    
-    /// @dev called by market contracts to get the winner
-    function getWinner(address _marketAddress) external view returns(uint256) {
-        require(marketFinalized[_marketAddress], "Not finalised");
-        return winningOutcome[_marketAddress];
-    }
-
     ////////////////////////////////////
     /// CORE FUNCTIONS - NFT UPGRADES //
     ////////////////////////////////////
@@ -243,8 +230,6 @@ contract RCProxyXdai is Ownable
         require(deposits[_nonce].amount == _amount, "Amounts don't match");
         
         // Add 1 confirmation, if this hasn't been done already
-        // Note: allowing to execute this twice in case there was
-        // not enough money initially
         if(!hasConfirmedDeposit[_nonce][msg.sender]) {
             hasConfirmedDeposit[_nonce][msg.sender] = true;
             deposits[_nonce].confirmations = deposits[_nonce].confirmations.add(1);

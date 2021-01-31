@@ -133,6 +133,24 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
     }
 
     ////////////////////////////////////
+    ///// GOVERNANCE- OWNER (SETUP) ////
+    ////////////////////////////////////
+    /// @dev all functions should have onlyOwner modifier
+
+    /// @notice address of the xDai Proxy contract
+    function setProxyXdaiAddress(IRCProxyXdai _newAddress) external onlyOwner {
+        proxy = _newAddress;
+    }
+
+    /// @notice where the NFTs live
+    /// @dev nftMintCount will probably need to be reset to zero if new nft contract, but 
+    /// @dev ... keeping flexible in case returning to previous contract
+    function setNftHubAddress(IRCNftHubXdai _newAddress, uint256 _newNftMintCount) external onlyOwner {
+        nfthub = _newAddress;
+        totalNftMintCount = _newNftMintCount;
+    }
+
+    ////////////////////////////////////
     /////// GOVERNANCE- OWNER //////////
     ////////////////////////////////////
     /// @dev all functions should have onlyOwner modifier
@@ -163,19 +181,6 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
     }
 
     /// NOT CALLED WITHIN CONSTRUCTOR (external)
-
-     /// @notice address of the xDai Proxy contract
-    function setProxyXdaiAddress(IRCProxyXdai _newAddress) external onlyOwner {
-        proxy = _newAddress;
-    }
-
-    /// @notice where the NFTs live
-    /// @dev nftMintCount will probably need to be reset to zero if new nft contract, but 
-    /// @dev ... keeping flexible in case returning to previous contract
-    function setNftHubAddress(IRCNftHubXdai _newAddress, uint256 _newNftMintCount) external onlyOwner {
-        nfthub = _newAddress;
-        totalNftMintCount = _newNftMintCount;
-    }
 
     /// @notice whether or not only governors can create the market
     function setMarketCreationGovernorsOnly() external onlyOwner {

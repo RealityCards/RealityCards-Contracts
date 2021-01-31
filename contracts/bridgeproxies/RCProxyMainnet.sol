@@ -37,7 +37,6 @@ contract RCProxyMainnet is Ownable
 
     /// @dev dai deposits
     uint256 internal depositNonce;
-    mapping (address => bool) public isFinalized;
 
     ////////////////////////////////////
     ////////// CONSTRUCTOR /////////////
@@ -143,26 +142,29 @@ contract RCProxyMainnet is Ownable
         emit LogQuestionPostedToOracle(_marketAddress, _questionId);
     }
 
-    /// @dev can be called by anyone, reads winner from Oracle and sends to xdai proxy via bridge
-    /// @dev can be called more than once in case bridge fails, xdai proxy will reject a second successful call
-    function getWinnerFromOracle(address _marketAddress) external returns(bool) {
+    /// @notice has the oracle finalised 
+    function isFinalized(address _marketAddress) public view returns(bool) {
         bytes32 _questionId = questionIds[_marketAddress];
         bool _isFinalized = realitio.isFinalized(_questionId);
-        // if finalised, send result over to xDai proxy
-        if (_isFinalized) {
-            isFinalized[_marketAddress] = true;
-            bytes32 _winningOutcome = realitio.resultFor(_questionId);
-            bytes4 _methodSelector = IRCProxyXdai(address(0)).setWinner.selector;
-            bytes memory data = abi.encodeWithSelector(_methodSelector, _marketAddress, _winningOutcome);
-            bridge.requireToPassMessage(proxyXdaiAddress,data,200000);
-        }
         return _isFinalized;
+    }
+
+    /// @dev can be called by anyone, reads winner from Oracle and sends to xdai proxy via bridge
+    /// @dev can be called more than once in case bridge fails, xdai proxy will reject a second successful call
+    function getWinnerFromOracle(address _marketAddress) external {
+        require(isFinalized(_marketAddress), "Oracle not finalised");
+        bytes32 _questionId = questionIds[_marketAddress];
+        bytes32 _winningOutcome = realitio.resultFor(_questionId);
+        bytes4 _methodSelector = IRCProxyXdai(address(0)).setWinner.selector;
+        bytes memory data = abi.encodeWithSelector(_methodSelector, _marketAddress, _winningOutcome);
+        bridge.requireToPassMessage(proxyXdaiAddress,data,400000);
     }
 
     ////////////////////////////////////
     /// CORE FUNCTIONS - NFT UPGRADES //
     ////////////////////////////////////
 
+    /// @notice mints NFT with metadata as sent by proxy
     function upgradeCard(uint256 _newTokenId, string calldata _tokenUri, address _owner) external {
         require(msg.sender == address(bridge), "Not bridge");
         require(bridge.messageSender() == proxyXdaiAddress, "Not proxy");
