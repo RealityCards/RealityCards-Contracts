@@ -354,10 +354,10 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @notice the longest owner of each NFT gets to keep it
     /// @dev LOCKED or WITHDRAW states are fine- does not need to wait for winner to be known
     function claimCard(uint256 _tokenId) external  {
+        _checkNotState(States.CLOSED);
+        _checkNotState(States.OPEN);
         require(!userAlreadyClaimed[_tokenId][msgSender()], "Already claimed");
         userAlreadyClaimed[_tokenId][msgSender()] = true;
-        require(state != States.CLOSED, "Incorrect state");
-        require(state != States.OPEN, "Incorrect state");
         require(longestOwner[_tokenId] == msgSender(), "Not longest owner");
         _transferCard(ownerOf(_tokenId), longestOwner[_tokenId], _tokenId);
     }
@@ -563,9 +563,9 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
     /// @notice ability to add liqudity to the pot without being able to win. 
     function sponsor() external payable {
+        _checkNotState(States.LOCKED);
+        _checkNotState(States.WITHDRAW);
         require(msg.value > 0, "Must send something");
-        require(state != States.LOCKED, "Incorrect state");
-        require(state != States.WITHDRAW, "Incorrect state");
         // send funds to the Treasury
         assert(treasury.sponsor.value(msg.value)());
         totalCollected = totalCollected.add(msg.value);
@@ -818,6 +818,10 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         assert(treasury.updateTotalRental(ownerOf(_tokenId), _newPrice, true));
         assert(treasury.updateTotalRental(ownerOf(_tokenId), price[_tokenId], false));
         price[_tokenId] = _newPrice;
+    }
+
+    function _checkNotState(States currentState) internal {
+        require(state != currentState, "Incorrect state");
     }
 
     /// @dev should only be called thrice
