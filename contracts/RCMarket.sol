@@ -599,7 +599,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             // get the maximum rent they can pay based on timeHeldLimit
             uint256 _rentOwedLimit;
             uint256 _timeHeldLimit = orderbook[_tokenId][_collectRentFrom].timeHeldLimit;
-            if (_timeHeldLimit == MAX_UINT256) {
+            if (_timeHeldLimit == MAX_UINT128) {
                 _rentOwedLimit = MAX_UINT256;
             } else {
                 _rentOwedLimit = price[_tokenId].mul(_timeHeldLimit.sub(timeHeld[_tokenId][_collectRentFrom])).div(1 days);
