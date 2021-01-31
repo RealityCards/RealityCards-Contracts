@@ -508,7 +508,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             _updateBid(_newPrice, _tokenId, _timeHeldLimit, _startingPosition);
         }
 
-        rentedTimestamp[msgSender()] = now;
+        assert(treasury.updateLastRentalTime(msgSender()));
         return price[_tokenId];
     }
 
@@ -773,7 +773,6 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @notice if a users deposit runs out, either return to previous owner or foreclose
     /// @dev can be called by anyone via collectRent, therefore should never use msg.sender
     function _revertToUnderbidder(uint256 _tokenId) internal {
-        require(rentedTimestamp[ownerOf(_tokenId)] != now, "Cannot rent and lose in same block");
         address _tempNext = ownerOf(_tokenId);
         address _tempPrev;
         uint256 _tempNextDeposit;
@@ -807,7 +806,6 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     function _processNewOwner(address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
         // _transferCard & updating price MUST come after treasury calls
         // ... because they assume price and owner not yet updated
-        assert(treasury.updateLastRentalTime(_newOwner));
         assert(treasury.updateTotalRental(_newOwner, _newPrice, true));
         assert(treasury.updateTotalRental(ownerOf(_tokenId), price[_tokenId], false));
         _transferCard(ownerOf(_tokenId), _newOwner, _tokenId);
