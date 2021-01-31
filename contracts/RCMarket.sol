@@ -51,8 +51,10 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     mapping (uint256 => uint256) public collectedPerToken;
     /// @dev an easy way to track the above across all tokens
     uint256 public totalCollected; 
-    /// @dev prevents user from cancelling and re-renting in the same block
-    mapping (address => uint256) public ownershipLostTimestamp;
+    /// @dev prevents user from exiting and re-renting in the same block (prevents troll attacks)
+    mapping (address => uint256) public exitedTimestamp;
+    /// @dev prevents user from renting and then exiting in the same block (prevents troll attacks)
+    mapping (address => uint256) public rentedTimestamp;
 
     ///// PARAMETERS /////
     /// @dev read from the Factory upon market creation, can not be changed for existing market
@@ -479,7 +481,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     function newRental(uint256 _newPrice, uint256 _timeHeldLimit, address _startingPosition, uint256 _tokenId) public payable autoUnlock() autoLock() checkState(States.OPEN) returns (uint256) {
         require(_newPrice >= 1 ether, "Minimum rental 1 xDai");
         require(_tokenId < numberOfTokens, "This token does not exist");
-        require(ownershipLostTimestamp[msgSender()] != now, "Cannot lose and re-rent in same block");
+        require(exitedTimestamp[msgSender()] != now, "Cannot lose and re-rent in same block");
 
         _collectRent(_tokenId);
 
@@ -505,6 +507,8 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         } else {
             _updateBid(_newPrice, _tokenId, _timeHeldLimit, _startingPosition);
         }
+
+        rentedTimestamp[msgSender()] = now;
         return price[_tokenId];
     }
 
@@ -525,6 +529,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @notice stop renting a token and/or remove from orderbook
     /// @dev public because called by exitAll()
     /// @dev doesn't need to be current owner so user can prevent ownership returning to them
+    /// @dev does not apply minimum rental duration, because it returns ownership to the next user
     function exit(uint256 _tokenId) public checkState(States.OPEN) {
         // if current owner, collect rent, revert if necessary
         if (ownerOf(_tokenId) == msgSender()) {
@@ -768,6 +773,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @notice if a users deposit runs out, either return to previous owner or foreclose
     /// @dev can be called by anyone via collectRent, therefore should never use msg.sender
     function _revertToUnderbidder(uint256 _tokenId) internal {
+        require(rentedTimestamp[ownerOf(_tokenId)] != now, "Cannot rent and lose in same block");
         address _tempNext = ownerOf(_tokenId);
         address _tempPrev;
         uint256 _tempNextDeposit;
@@ -793,7 +799,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             _tempNextDeposit < _requiredDeposit && 
             _loopCount < MAX_ITERATIONS );
         // transfer to previous owner
-        ownershipLostTimestamp[ownerOf(_tokenId)] = now;
+        exitedTimestamp[ownerOf(_tokenId)] = now;
         _processNewOwner(_tempNext, orderbook[_tokenId][_tempNext].price, _tokenId);
     }
 
