@@ -4282,6 +4282,7 @@ it('test orderbook various', async () => {
     user11 = accounts[11];
     user12 = accounts[12];
     user13 = accounts[13];
+    user14 = accounts[14];
     await depositDai(10,user0);
     await depositDai(10,user1);
     await depositDai(10,user2);
@@ -4296,6 +4297,7 @@ it('test orderbook various', async () => {
     await depositDai(10,user11);
     await depositDai(10,user12);
     await depositDai(10,user13);
+    await depositDai(10,user14);
     // rentals: position/price
     await newRentalCustomTimeLimit(10, 1, 0,user0); // 2, 10
     await newRental(9,0,user1); // 5, 9
@@ -4311,6 +4313,7 @@ it('test orderbook various', async () => {
     await newRental(50,0,user9); // 0, 50
     await newRentalWithStartingPosition(4.8,0,user5,user12); // 11, 4.8
     await newRentalWithStartingPosition(5,0,user5,user13); // 10, 5 // <- this one checks that it matches one above, it is not reduced
+    await newRentalWithStartingPosition(4.8,0,user7,user14); // 12, 4.8
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner,user9);
     var price = await realitycards.price.call(0);
@@ -4375,8 +4378,13 @@ it('test orderbook various', async () => {
     // position 11
     var bid = await realitycards.orderbook.call(0,user12);
     assert.equal(bid[0],web3.utils.toWei('4.8', 'ether'));
-    assert.equal(bid[2],realitycards.address);
+    assert.equal(bid[2],user14);
     assert.equal(bid[3],user13);
+    // position 12
+    var bid = await realitycards.orderbook.call(0,user14);
+    assert.equal(bid[0],web3.utils.toWei('4.8', 'ether'));
+    assert.equal(bid[2],realitycards.address);
+    assert.equal(bid[3],user12);
     // check starting position
     // starting position too high
     await expectRevert(newRental(1,0,user10), "Location too high"); 
