@@ -55,8 +55,6 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     uint256 public totalCollected; 
     /// @dev prevents user from exiting and re-renting in the same block (prevents troll attacks)
     mapping (address => uint256) public exitedTimestamp;
-    /// @dev prevents user from renting and then exiting in the same block (prevents troll attacks)
-    mapping (address => uint256) public rentedTimestamp;
 
     ///// PARAMETERS /////
     /// @dev read from the Factory upon market creation, can not be changed for existing market
@@ -599,7 +597,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             // get the maximum rent they can pay based on timeHeldLimit
             uint256 _rentOwedLimit;
             uint256 _timeHeldLimit = orderbook[_tokenId][_collectRentFrom].timeHeldLimit;
-            if (_timeHeldLimit == MAX_UINT256) {
+            if (_timeHeldLimit == MAX_UINT128) {
                 _rentOwedLimit = MAX_UINT256;
             } else {
                 _rentOwedLimit = price[_tokenId].mul(_timeHeldLimit.sub(timeHeld[_tokenId][_collectRentFrom])).div(1 days);
