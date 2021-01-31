@@ -1,6 +1,7 @@
 pragma solidity 0.5.13;
 
 import "@openzeppelin/upgrades/contracts/Initializable.sol";
+import "@openzeppelin/contracts/utils/SafeCast.sol";
 import "hardhat/console.sol";
 import "./interfaces/IRealitio.sol";
 import "./interfaces/IFactory.sol";
@@ -26,6 +27,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @dev only for _revertToUnderbidder to prevent gas limits
     uint256 public constant MAX_ITERATIONS = 10;
     uint256 public constant MAX_UINT256 = 2**256 - 1;
+    uint256 public constant MAX_UINT128 = 2**128 - 1;
     enum States {CLOSED, OPEN, LOCKED, WITHDRAW}
     States public state; 
     /// @dev type of event. 0 = classic, 1 = winner takes all, 2 = hot potato 
@@ -68,9 +70,10 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     ///// ORDERBOOK /////
     /// @dev stores the orderbook. Doubly linked list. 
     mapping (uint256 => mapping(address => Bid)) public orderbook; // tokenID // user address // Bid
+    /// @dev orderbook uses uint128 to save gas, because Struct. Using uint256 everywhere else because best for maths. 
     struct Bid{
-  		uint256 price;
-        uint256 timeHeldLimit; // users can optionally set a maximum time to hold it for
+  		uint128 price;
+        uint128 timeHeldLimit; // users can optionally set a maximum time to hold it for
         address next; // who it will return to when current owner exits (i.e, next = going down the list)
         address prev; // who it returned from (i.e., prev = going up the list)
     }
@@ -496,7 +499,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
         // check _timeHeldLimit
         if (_timeHeldLimit == 0) {
-            _timeHeldLimit = MAX_UINT256; // so 0 defaults to no limit
+            _timeHeldLimit = MAX_UINT128; // so 0 defaults to no limit
         }
         uint256 _minRentalTime = uint256(1 days).div(minRentalDivisor);
         require(_timeHeldLimit >= timeHeld[_tokenId][msgSender()].add(_minRentalTime), "Limit too low"); // must be after collectRent so timeHeld is up to date
@@ -517,12 +520,12 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         _collectRent(_tokenId);
         
         if (_timeHeldLimit == 0) {
-            _timeHeldLimit = MAX_UINT256; // so 0 defaults to no limit
+            _timeHeldLimit = MAX_UINT128; // so 0 defaults to no limit
         }
         uint256 _minRentalTime = uint256(1 days).div(minRentalDivisor);
         require(_timeHeldLimit >= timeHeld[_tokenId][msgSender()].add(_minRentalTime), "Limit too low"); // must be after collectRent so timeHeld is up to date
 
-        orderbook[_tokenId][msgSender()].timeHeldLimit = _timeHeldLimit;
+        orderbook[_tokenId][msgSender()].timeHeldLimit = SafeCast.toUint128(_timeHeldLimit);
         emit LogUpdateTimeHeldLimit(msgSender(), _timeHeldLimit, _tokenId); 
     }
 
@@ -668,8 +671,8 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             _minPriceToOwn = (price[_tokenId].mul(minimumPriceIncrease.add(100))).div(100);
             // case 1A: new price is at least X% above current price- adjust price & timeHeldLimit. newRental event required. 
             if(_newPrice >= _minPriceToOwn) {
-                orderbook[_tokenId][msgSender()].price = _newPrice;
-                orderbook[_tokenId][msgSender()].timeHeldLimit = _timeHeldLimit;
+                orderbook[_tokenId][msgSender()].price = SafeCast.toUint128(_newPrice);
+                orderbook[_tokenId][msgSender()].timeHeldLimit = SafeCast.toUint128(_timeHeldLimit);
                 _processUpdateOwner(_newPrice, _tokenId);
                 emit LogAddToOrderbook(msgSender(), _newPrice, _timeHeldLimit, orderbook[_tokenId][msgSender()].prev, _tokenId);
             // case 1B: new price is higher than current price but by less than X%- revert the tx to prevent frontrunning
@@ -677,11 +680,11 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                 require(false, "Not 10% higher");
             // case 1C: new price is equal or below old price
             } else {
-                _minPriceToOwn = (orderbook[_tokenId][orderbook[_tokenId][msgSender()].next].price.mul(minimumPriceIncrease.add(100))).div(100);
+                _minPriceToOwn = (uint256(orderbook[_tokenId][orderbook[_tokenId][msgSender()].next].price).mul(minimumPriceIncrease.add(100))).div(100);
                 // case 1Ca: still the highest owner- adjust price & timeHeldLimit. newRental event required.
                 if(_newPrice >= _minPriceToOwn) {
-                    orderbook[_tokenId][msgSender()].price = _newPrice;
-                    orderbook[_tokenId][msgSender()].timeHeldLimit = _timeHeldLimit;
+                    orderbook[_tokenId][msgSender()].price = SafeCast.toUint128(_newPrice);
+                    orderbook[_tokenId][msgSender()].timeHeldLimit = SafeCast.toUint128(_timeHeldLimit);
                     _processUpdateOwner(_newPrice, _tokenId);
                     emit LogAddToOrderbook(msgSender(), _newPrice, _timeHeldLimit, orderbook[_tokenId][msgSender()].prev, _tokenId);
                 // case 1Cb: user is not owner anymore-  remove from list & add back. newRental event called in _setNewOwner or _placeInList via _newBid
@@ -717,7 +720,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             assert(treasury.processHarbergerPayment(msgSender(), ownerOf(_tokenId), _requiredPayment));
         }
         // process new owner
-        orderbook[_tokenId][msgSender()] = Bid(_newPrice, _timeHeldLimit, ownerOf(_tokenId), address(this));
+        orderbook[_tokenId][msgSender()] = Bid(SafeCast.toUint128(_newPrice), SafeCast.toUint128(_timeHeldLimit), ownerOf(_tokenId), address(this));
         orderbook[_tokenId][ownerOf(_tokenId)].prev = msgSender();
         // _processNewOwner must be after LogAddToOrderbook so LogNewOwner is not emitted before user is in the orderbook
         emit LogAddToOrderbook(msgSender(), _newPrice, _timeHeldLimit, address(this), _tokenId);
@@ -747,7 +750,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         do {
             _tempPrev = _tempNext;
             _tempNext = orderbook[_tokenId][_tempPrev].next;
-            _requiredPrice = (orderbook[_tokenId][_tempNext].price.mul(minimumPriceIncrease.add(100))).div(100);
+            _requiredPrice = (uint256(orderbook[_tokenId][_tempNext].price).mul(minimumPriceIncrease.add(100))).div(100);
             _loopCount = _loopCount.add(1);
         } while (
             // break loop if match price above AND above price below (so if either is false, continue, hence OR )
@@ -764,7 +767,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         }
 
         // add to the list
-        orderbook[_tokenId][msgSender()] = Bid(_newPrice, _timeHeldLimit, _tempNext, _tempPrev);
+        orderbook[_tokenId][msgSender()] = Bid(SafeCast.toUint128(_newPrice), SafeCast.toUint128(_timeHeldLimit), _tempNext, _tempPrev);
         orderbook[_tokenId][_tempPrev].next = msgSender();
         orderbook[_tokenId][_tempNext].prev = msgSender();
         emit LogAddToOrderbook(msgSender(), _newPrice, _timeHeldLimit, orderbook[_tokenId][msgSender()].prev, _tokenId);

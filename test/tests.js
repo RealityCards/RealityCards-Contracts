@@ -3415,7 +3415,7 @@ it('test timeHeldLimit using updateTimeHeldLimit', async() => {
     assert.equal(limit[1],86400);
     await realitycards.updateTimeHeldLimit(0,1,{from: user0});
     var limit = await realitycards.orderbook.call(1,user0);
-    assert.equal(limit[1],(2**256)-1);
+    assert.equal(limit[1],(2**128)-1);
     // withdraw for next test
     await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
