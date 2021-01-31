@@ -745,7 +745,11 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             _requiredPrice = (orderbook[_tokenId][_tempNext].price.mul(minimumPriceIncrease.add(100))).div(100);
             _loopCount = _loopCount.add(1);
         } while (
-            _newPrice < _requiredPrice && // equal to or above is ok
+            // break loop if match price above AND above price below (so if either is false, continue, hence OR )
+            (_newPrice != orderbook[_tokenId][_tempPrev].price || _newPrice <= orderbook[_tokenId][_tempNext].price ) &&
+            // break loop if price x% above below 
+            _newPrice < _requiredPrice && 
+            // break loop if hits max iterations
             _loopCount < MAX_ITERATIONS );
         require(_loopCount < MAX_ITERATIONS, "Location too high");
 
