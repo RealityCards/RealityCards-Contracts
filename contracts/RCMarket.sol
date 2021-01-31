@@ -27,6 +27,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @dev only for _revertToUnderbidder to prevent gas limits
     uint256 public constant MAX_ITERATIONS = 10;
     uint256 public constant MAX_UINT256 = 2**256 - 1;
+    uint256 public constant MAX_UINT128 = 2**128 - 1;
     enum States {CLOSED, OPEN, LOCKED, WITHDRAW}
     States public state; 
     /// @dev type of event. 0 = classic, 1 = winner takes all, 2 = hot potato 
@@ -67,6 +68,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     ///// ORDERBOOK /////
     /// @dev stores the orderbook. Doubly linked list. 
     mapping (uint256 => mapping(address => Bid)) public orderbook; // tokenID // user address // Bid
+    /// @dev orderbook uses uint128 to save gas, because Struct. Using uint256 everywhere else because best for maths. 
     struct Bid{
   		uint128 price;
         uint128 timeHeldLimit; // users can optionally set a maximum time to hold it for
@@ -495,7 +497,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
         // check _timeHeldLimit
         if (_timeHeldLimit == 0) {
-            _timeHeldLimit = MAX_UINT256; // so 0 defaults to no limit
+            _timeHeldLimit = MAX_UINT128; // so 0 defaults to no limit
         }
         uint256 _minRentalTime = uint256(1 days).div(minRentalDivisor);
         require(_timeHeldLimit >= timeHeld[_tokenId][msgSender()].add(_minRentalTime), "Limit too low"); // must be after collectRent so timeHeld is up to date
@@ -514,7 +516,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         _collectRent(_tokenId);
         
         if (_timeHeldLimit == 0) {
-            _timeHeldLimit = MAX_UINT256; // so 0 defaults to no limit
+            _timeHeldLimit = MAX_UINT128; // so 0 defaults to no limit
         }
         uint256 _minRentalTime = uint256(1 days).div(minRentalDivisor);
         require(_timeHeldLimit >= timeHeld[_tokenId][msgSender()].add(_minRentalTime), "Limit too low"); // must be after collectRent so timeHeld is up to date
