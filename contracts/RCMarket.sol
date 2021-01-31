@@ -246,11 +246,6 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /////////// MODIFIERS //////////////
     ////////////////////////////////////
 
-    modifier checkState(States currentState) {
-        require(state == currentState, "Incorrect state");
-        _;
-    }
-
     /// @dev automatically opens market if appropriate
     modifier autoUnlock() {
         if (marketOpeningTime <= now && state == States.CLOSED) {
@@ -279,7 +274,8 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
     /// @notice send NFT to mainnet
     /// @dev upgrades not possible if market not approved
-    function upgradeCard(uint256 _tokenId) external checkState(States.WITHDRAW) onlyTokenOwner(_tokenId) {
+    function upgradeCard(uint256 _tokenId) external onlyTokenOwner(_tokenId) {
+        _checkState(States.WITHDRAW);
         require(!factory.trapIfUnapproved() || factory.isMarketApproved(address(this)), "Upgrade blocked");
         string memory _tokenUri = tokenURI(_tokenId);
         address _owner = ownerOf(_tokenId);
@@ -320,7 +316,8 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @notice checks whether the competition has ended, if so moves to LOCKED state
     /// @dev can be called by anyone 
     /// @dev public because called within autoLock modifier & setWinner
-    function lockMarket() public checkState(States.OPEN) {
+    function lockMarket() public {
+        _checkState(States.OPEN);
         require(marketLockingTime < now, "Market has not finished");
         // do a final rent collection before the contract is locked down
         collectRentAllCards();
@@ -328,10 +325,10 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         emit LogContractLocked(true);
     }
 
-    /// @notice checks whether the Realitio question has resolved, and if yes, gets the winner 
+    /// @notice called by proxy, sets the winner
     function setWinner(uint256 _winningOutcome) external {
         if (state == States.OPEN) { lockMarket(); }
-        require(state == States.LOCKED, "Incorrect state");
+        _checkState(States.LOCKED);
         require(msg.sender == address(proxy), "Not proxy");
         // get the winner. This will revert if answer is not resolved.
         winningOutcome = _winningOutcome;
@@ -341,7 +338,8 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
     /// @notice pays out winnings, or returns funds
     /// @dev public because called by withdrawWinningsAndDeposit
-    function withdraw() external checkState(States.WITHDRAW) {
+    function withdraw() external {
+        _checkState(States.WITHDRAW);
         require(!userAlreadyWithdrawn[msgSender()], "Already withdrawn");
         userAlreadyWithdrawn[msgSender()] = true;
         if (totalTimeHeld[winningOutcome] > 0) {
@@ -401,14 +399,16 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @dev ....  address being a contract which refuses payment, then nobody could get winnings
 
     /// @notice pay artist
-    function payArtist() external checkState(States.WITHDRAW) {
+    function payArtist() external {
+        _checkState(States.WITHDRAW);
         require(!artistPaid, "Artist already paid");
         artistPaid = true;
         _processStakeholderPayment(artistCut, artistAddress);
     }
 
     /// @notice pay market creator
-    function payMarketCreator() external checkState(States.WITHDRAW) {
+    function payMarketCreator() external {
+        _checkState(States.WITHDRAW);
         require(totalTimeHeld[winningOutcome] > 0, "No winner");
         require(!creatorPaid, "Creator already paid");
         creatorPaid = true;
@@ -416,7 +416,8 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     }
 
     /// @notice pay affiliate
-    function payAffiliate() external checkState(States.WITHDRAW) {
+    function payAffiliate() external {
+        _checkState(States.WITHDRAW);
         require(!affiliatePaid, "Affiliate already paid");
         affiliatePaid = true;
         _processStakeholderPayment(affiliateCut, affiliateAddress);
@@ -424,7 +425,8 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
     /// @notice pay card affiliate
     /// @dev does not call _processStakeholderPayment because it works differently
-    function payCardAffiliate(uint256 _tokenId) external checkState(States.WITHDRAW) {
+    function payCardAffiliate(uint256 _tokenId) external {
+        _checkState(States.WITHDRAW);
         require(!cardAffiliatePaid[_tokenId], "Card affiliate already paid");
         cardAffiliatePaid[_tokenId] = true;
         uint256 _cardAffiliatePayment = (collectedPerToken[_tokenId].mul(cardAffiliateCut)).div(1000);
@@ -445,11 +447,12 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     ////////////////////////////////////
     ///// CORE FUNCTIONS- EXTERNAL /////
     ////////////////////////////////////
-    /// @dev basically functions that have checkState(States.OPEN) modifier
+    /// @dev basically functions that have _checkState(States.OPEN) on first line
 
     /// @notice collects rent for all tokens
     /// @dev cannot be external because it is called within the lockMarket function, therefore public
-    function collectRentAllCards() public checkState(States.OPEN) {
+    function collectRentAllCards() public {
+        _checkState(States.OPEN);
        for (uint i = 0; i < numberOfTokens; i++) {
             _collectRent(i);
         }
@@ -479,7 +482,8 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
     /// @notice to rent a Card
     /// @dev no event: it is emitted in _updateBid, _setNewOwner or _placeInList as appropriate
-    function newRental(uint256 _newPrice, uint256 _timeHeldLimit, address _startingPosition, uint256 _tokenId) public payable autoUnlock() autoLock() checkState(States.OPEN) returns (uint256) {
+    function newRental(uint256 _newPrice, uint256 _timeHeldLimit, address _startingPosition, uint256 _tokenId) public payable autoUnlock() autoLock() returns (uint256) {
+        _checkState(States.OPEN);
         require(_newPrice >= 1 ether, "Minimum rental 1 xDai");
         require(_tokenId < numberOfTokens, "This token does not exist");
         require(exitedTimestamp[msgSender()] != now, "Cannot lose and re-rent in same block");
@@ -514,7 +518,8 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     }
 
     /// @notice to change your timeHeldLimit without having to re-rent
-    function updateTimeHeldLimit(uint256 _timeHeldLimit, uint256 _tokenId) external checkState(States.OPEN) {
+    function updateTimeHeldLimit(uint256 _timeHeldLimit, uint256 _tokenId) external {
+        _checkState(States.OPEN);
         _collectRent(_tokenId);
         
         if (_timeHeldLimit == 0) {
@@ -531,7 +536,8 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @dev public because called by exitAll()
     /// @dev doesn't need to be current owner so user can prevent ownership returning to them
     /// @dev does not apply minimum rental duration, because it returns ownership to the next user
-    function exit(uint256 _tokenId) public checkState(States.OPEN) {
+    function exit(uint256 _tokenId) public {
+        _checkState(States.OPEN);
         // if current owner, collect rent, revert if necessary
         if (ownerOf(_tokenId) == msgSender()) {
             // collectRent first
@@ -820,7 +826,11 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         price[_tokenId] = _newPrice;
     }
 
-    function _checkNotState(States currentState) internal {
+    function _checkState(States currentState) internal view {
+        require(state == currentState, "Incorrect state");
+    }
+
+    function _checkNotState(States currentState) internal view {
         require(state != currentState, "Incorrect state");
     }
 
