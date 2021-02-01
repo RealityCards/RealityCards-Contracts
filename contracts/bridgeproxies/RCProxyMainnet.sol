@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import '../interfaces/IRealitio.sol';
 import '../interfaces/IRCProxyXdai.sol';
-import '../interfaces/IBridgeContract.sol';
+import '../interfaces/IBridge.sol';
 import '../interfaces/IAlternateReceiverBridge.sol';
 import '../interfaces/IERC20Dai.sol';
 import '../interfaces/IERC721.sol';
@@ -21,7 +21,7 @@ contract RCProxyMainnet is Ownable
 
     /// @dev contract variables
     IRealitio public realitio;
-    IBridgeContract public bridge;
+    IBridge public bridge;
     IAlternateReceiverBridge public alternateReceiverBridge;
     IERC20Dai public dai;
     IERC721 public nfthub;
@@ -71,7 +71,7 @@ contract RCProxyMainnet is Ownable
 
     /// @dev address of arbitrary message bridge, mainnet side
     function setBridgeMainnetAddress(address _newAddress) onlyOwner public {
-        bridge = IBridgeContract(_newAddress);
+        bridge = IBridge(_newAddress);
     }
 
     /// @dev address of alternate receiver bridge, mainnet side

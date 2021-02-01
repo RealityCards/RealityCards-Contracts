@@ -1,7 +1,7 @@
 pragma solidity 0.5.13;
 
 import '../../interfaces/IRCProxyMainnet.sol';
-import '../../interfaces/IBridgeContract.sol';
+import '../../interfaces/IBridge.sol';
 import '../../interfaces/ITreasury.sol';
 import '../../interfaces/IRCMarket.sol';
 import "@openzeppelin/contracts/ownership/Ownable.sol";
@@ -16,7 +16,7 @@ contract RCProxyXdaiV2 is Ownable
     ////////////////////////////////////
 
     ///// CONTRACT VARIABLES /////
-    IBridgeContract public bridge;
+    IBridge public bridge;
 
     ///// GOVERNANCE VARIABLES /////
     address public proxyMainnetAddress;
@@ -94,7 +94,7 @@ contract RCProxyXdaiV2 is Ownable
 
     /// @dev address of arbitrary message bridge, xdai side
     function setBridgeXdaiAddress(address _newAddress) onlyOwner public {
-        bridge = IBridgeContract(_newAddress);
+        bridge = IBridge(_newAddress);
     }
 
     /// @dev address of RC factory contract, so only factory can post questions

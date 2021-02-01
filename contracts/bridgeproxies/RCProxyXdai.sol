@@ -4,7 +4,7 @@ import "hardhat/console.sol";
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import '../interfaces/IRCProxyMainnet.sol';
-import '../interfaces/IBridgeContract.sol';
+import '../interfaces/IBridge.sol';
 import '../interfaces/IRCMarket.sol';
 import '../interfaces/ITreasury.sol';
 
@@ -19,7 +19,7 @@ contract RCProxyXdai is Ownable
     ////////////////////////////////////
 
     ///// CONTRACT VARIABLES /////
-    IBridgeContract public bridge;
+    IBridge public bridge;
 
     ///// GOVERNANCE VARIABLES /////
     address public proxyMainnetAddress;
@@ -97,7 +97,7 @@ contract RCProxyXdai is Ownable
 
     /// @dev address of arbitrary message bridge, xdai side
     function setBridgeXdaiAddress(address _newAddress) onlyOwner public {
-        bridge = IBridgeContract(_newAddress);
+        bridge = IBridge(_newAddress);
     }
 
     /// @dev address of RC factory contract, so only factory can post questions

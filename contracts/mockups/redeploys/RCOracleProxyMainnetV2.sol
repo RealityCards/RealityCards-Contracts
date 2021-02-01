@@ -2,14 +2,14 @@ pragma solidity 0.5.13;
 
 import '../../interfaces/IRealitio.sol';
 import '../../interfaces/IRCProxyXdai.sol';
-import '../../interfaces/IBridgeContract.sol';
+import '../../interfaces/IBridge.sol';
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 
 // a mockup to test changing the proxy, this is as per the original but always returns winner of 69
 contract RCProxyMainnetV2 is Ownable
 {
     IRealitio public realitio;
-    IBridgeContract public bridge; 
+    IBridge public bridge; 
 
     address public oracleProxyXdaiAddress;
     address public arbitrator;
@@ -34,7 +34,7 @@ contract RCProxyMainnetV2 is Ownable
     }
 
     function setBridgeXdaiAddress(address _newAddress) onlyOwner public {
-        bridge = IBridgeContract(_newAddress);
+        bridge = IBridge(_newAddress);
     }
 
     function setRealitioAddress(address _newAddress) onlyOwner public {
