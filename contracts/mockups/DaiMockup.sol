@@ -10,5 +10,9 @@ contract DaiMockup
         _amount;
         return true;
     }
+
+    function transferFrom(address,address,uint256) public returns(bool) {
+        return true;
+    }
 }
 

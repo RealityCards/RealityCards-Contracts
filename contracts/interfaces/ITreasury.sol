@@ -17,4 +17,5 @@ interface ITreasury
     function userTotalRentals(address) external returns (uint256);
     function updateLastRentalTime(address) external returns (bool);
     function minRentalDivisor() external returns (uint256);
+    function maxContractBalance() external returns (uint256);
 } 

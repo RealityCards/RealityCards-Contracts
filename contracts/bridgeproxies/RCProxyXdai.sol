@@ -216,6 +216,7 @@ contract RCProxyXdai is Ownable
         emit LogFloatIncreased(msg.sender, msg.value);
     }
 
+    /// @dev called by off chain validator, in response to deposit on mainnet
     function confirmDaiDeposit(address _user, uint256 _amount, uint256 _nonce) external {
         require(isValidator[msg.sender], "Not a validator");
 
@@ -243,6 +244,7 @@ contract RCProxyXdai is Ownable
         }
     }
 
+    /// @dev deposits xDai into the Treasury (if allowed) otherwise send to user
     function executeDaiDeposit(uint256 _nonce) public {
         require(deposits[_nonce].confirmed, "Not confirmed");
         require(!deposits[_nonce].executed, "Already executed");
@@ -250,9 +252,19 @@ contract RCProxyXdai is Ownable
         address _user = deposits[_nonce].user;
         if (address(this).balance >= _amount) {
             ITreasury treasury = ITreasury(treasuryAddress);
-            assert(treasury.deposit.value(_amount)(_user));
+            // if Treasury will allow the deposit, send it there
+            if (address(treasury).balance.add(_amount) <= treasury.maxContractBalance()) {
+                assert(treasury.deposit.value(_amount)(_user));
+            // otherwise, just send to the user
+            } else {
+                address payable _recipient = address(uint160(_user));
+                (bool _success, ) = _recipient.call.value(_amount)("");
+                require(_success, "Transfer failed");
+            }
             deposits[_nonce].executed = true;
             emit LogDepositExecuted(_nonce);
         }
     }
+
+
 }

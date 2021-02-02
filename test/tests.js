@@ -19,6 +19,7 @@ var MainnetProxy = artifacts.require('./bridgeproxies/RCProxyMainnet.sol');
 // mockups
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 var BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
+var AlternateReceiverBridgeMockup = artifacts.require("./mockups/AlternateReceiverBridgeMockup.sol");
 var SelfDestructMockup = artifacts.require("./mockups/SelfDestructMockup.sol");
 var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
 // redeploys
@@ -76,12 +77,11 @@ contract('RealityCardsTests', (accounts) => {
     // mockups 
     realitio = await RealitioMockup.new();
     bridge = await BridgeMockup.new();
+    alternateReceiverBridge = await AlternateReceiverBridgeMockup.new();
     dai = await DaiMockup.new();
     // bridge contracts
     xdaiproxy = await XdaiProxy.new(bridge.address, rcfactory.address, treasury.address);
-    mainnetproxy = await MainnetProxy.new(bridge.address, realitio.address, nfthubmainnet.address, realitio.address, dai.address); // the second realitio.address is ARB, its fine, we're not testing ARB yet
-    // console.log("xdaiproxy address per tests is",xdaiproxy.address);
-    // console.log("mainnetproxy address per tests is",mainnetproxy.address);
+    mainnetproxy = await MainnetProxy.new(bridge.address, realitio.address, nfthubmainnet.address, alternateReceiverBridge.address, dai.address);
     // tell the factory, mainnet proxy and bridge the xdai proxy address
     await rcfactory.setProxyXdaiAddress(xdaiproxy.address);
     await mainnetproxy.setProxyXdaiAddress(xdaiproxy.address);
@@ -3916,11 +3916,6 @@ it('test uberOwner factory', async () => {
 });
 
 it('test RCProxyXdai', async () => {
-    // check reverts on owned functions
-    await expectRevert(xdaiproxy.setProxyMainnetAddress(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(xdaiproxy.setBridgeXdaiAddress(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(xdaiproxy.setFactoryAddress(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(xdaiproxy.setAmicableResolution(user0, 3, {from: user1}), "caller is not the owner");
     // check reverts on other functions 
     await expectRevert(xdaiproxy.saveQuestion(user0, "x", 0), "Not factory");
     await expectRevert(xdaiproxy.setWinner(user0, 0), "Not bridge");
@@ -3945,15 +3940,18 @@ it('test RCProxyXdai', async () => {
     // setFactoryAddress is already tested in test uberOwner Treasury
 });
 
+it('check onlyOwner is on relevant xdai proxy functions', async () => {
+    await expectRevert(xdaiproxy.setAmicableResolution(user0,3, {from: user1}), "caller is not the owner");
+    await expectRevert(xdaiproxy.withdrawFloat(3, {from: user1}), "caller is not the owner");
+    await expectRevert(xdaiproxy.setValidator(user0, true, {from: user1}), "caller is not the owner");
+    await expectRevert(xdaiproxy.setProxyMainnetAddress(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(xdaiproxy.setBridgeXdaiAddress(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(xdaiproxy.setFactoryAddress(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(xdaiproxy.setTreasuryAddress(user0, {from: user1}), "caller is not the owner");
+});
+
 it('test RCProxyMainnet various', async () => {
-    // check reverts on owned functions
-    await expectRevert(mainnetproxy.setProxyXdaiAddress(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(mainnetproxy.setBridgeMainnetAddress(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(mainnetproxy.setRealitioAddress(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(mainnetproxy.setArbitrator(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(mainnetproxy.setTimeout(1234, {from: user1}), "caller is not the owner");
-    await expectRevert(mainnetproxy.postQuestionToOracleAdmin(user0,"x",0, {from: user1}), "caller is not the owner");
-    // check reverts on other functions 
+    // check reverts on non owned functions 
     // await expectRevert(mainnetproxy.postQuestionToOracle(user0, "x", 0), "Not bridge");
     // test changing xdai proxy
     var xdaiproxy2 = await XdaiProxy2.new(bridge.address, rcfactory.address, treasury.address);
@@ -3977,6 +3975,20 @@ it('test RCProxyMainnet various', async () => {
     var newproxy = await mainnetproxy.bridge.call();
     assert.equal(newproxy,user0);
  });
+
+it('check onlyOwner is on relevant mainnet proxy functions', async () => {
+    await expectRevert(mainnetproxy.setProxyXdaiAddress(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(mainnetproxy.setBridgeMainnetAddress(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(mainnetproxy.setNftHubAddress(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(mainnetproxy.setAlternateReceiverAddress(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(mainnetproxy.setDaiAddress(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(mainnetproxy.setRealitioAddress(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(mainnetproxy.setArbitrator(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(mainnetproxy.setTimeout(1234, {from: user1}), "caller is not the owner");
+    await expectRevert(mainnetproxy.postQuestionToOracleAdmin(user0,"x",0, {from: user1}), "caller is not the owner");
+    await expectRevert(mainnetproxy.upgradeCardAdmin(3,"x",user4, {from: user1}), "caller is not the owner");
+    await expectRevert(mainnetproxy.enableOrDisableDeposits({from: user1}), "caller is not the owner");
+});
 
 it('test RCProxyMainnet, various 2', async () => {
     // change relaitio, winner should return 69
@@ -4710,6 +4722,52 @@ it('test dai->xdai bridge', async () => {
     var depositWithdrawn = await balanceAfter - balanceBefore;
     var difference = Math.abs(depositWithdrawn.toString()-ether('5').toString());
     assert.isBelow(difference/deposit,0.00001);
+});
+
+it('test dai->xdai bridge if exceeds contract balance limit', async () => {
+    // set Treasury max balance
+    await treasury.setMaxContractBalance(web3.utils.toWei('100', 'ether'));
+    // add 1000 eth to the float
+    await xdaiproxy.send(web3.utils.toWei('1000', 'ether'));
+    // add user9 as validator
+    await xdaiproxy.setValidator(user9, true);
+    // backend just saw user1 send 10 eth
+    await xdaiproxy.confirmDaiDeposit(user1, ether('75'), 0, {from: user9});
+    // check user1 received 10 eth
+    var deposit = await treasury.deposits.call(user1);
+    assert.equal(deposit.toString(), ether('75').toString());
+    // repeat the above, this time it should be diverted to user's balance
+    var balanceBefore = await web3.eth.getBalance(user1);
+    await xdaiproxy.confirmDaiDeposit(user1, ether('75'), 1, {from: user9});
+    var balanceAfter = await web3.eth.getBalance(user1);
+    var depositWithdrawn = await balanceAfter - balanceBefore;
+    var difference = Math.abs(depositWithdrawn.toString()-ether('75').toString());
+    assert.isBelow(difference/deposit,0.00001);
+});
+
+it('test deposit dai mainnet proxy', async () => {
+    // make sure ARB has enough funds
+    await alternateReceiverBridge.send(web3.utils.toWei('100', 'ether'));
+    // send 10 dai via mainnet
+    await mainnetproxy.depositDai(web3.utils.toWei('10', 'ether'));
+    // check xdai proxy now has 10 xDai
+    var balance = await web3.eth.getBalance(xdaiproxy.address);
+    assert.equal(balance,ether('10'));
+    // add user9 as validator
+    await xdaiproxy.setValidator(user9, true);
+    // backend just saw user1 send 10 eth
+    await xdaiproxy.confirmDaiDeposit(user1, ether('10'), 0, {from: user9});
+    // check user1 received 10 eth
+    var deposit = await treasury.deposits.call(user1);
+    assert.equal(deposit.toString(), ether('10').toString());
+    // disable deposits, should revert
+    await mainnetproxy.enableOrDisableDeposits();
+    await expectRevert(mainnetproxy.depositDai(web3.utils.toWei('10', 'ether')),"Deposits disabled");
+    // enable deposits, should not revert
+    await mainnetproxy.enableOrDisableDeposits();
+    await mainnetproxy.depositDai(web3.utils.toWei('15', 'ether'));
+    var balance = await web3.eth.getBalance(xdaiproxy.address);
+    assert.equal(balance,ether('15'));
 });
 
 });

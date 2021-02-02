@@ -37,6 +37,7 @@ contract RCProxyMainnet is Ownable
 
     /// @dev dai deposits
     uint256 internal depositNonce;
+    bool depositsEnabled = true;
 
     ////////////////////////////////////
     ////////// CONSTRUCTOR /////////////
@@ -127,6 +128,14 @@ contract RCProxyMainnet is Ownable
     function upgradeCardAdmin(uint256 _newTokenId, string calldata _tokenUri, address _owner) onlyOwner external {
         nfthub.mintNft(_newTokenId, _tokenUri, _owner);
     }  
+
+    ////////////////////////////////////
+    ///// GOVERNANCE - DAI BRIDGE //////
+    ////////////////////////////////////
+
+    function enableOrDisableDeposits() onlyOwner external {
+        depositsEnabled = depositsEnabled ? false : true;
+    }
     
     ////////////////////////////////////
     ///// CORE FUNCTIONS - ORACLE //////
@@ -175,17 +184,21 @@ contract RCProxyMainnet is Ownable
     //// CORE FUNCTIONS - DAI BRIDGE ///
     ////////////////////////////////////
 
+    /// @dev user deposit assuming prior approval
     function depositDai(uint256 _amount) external {
         _depositDai(msg.sender, _amount); 
     }
 
+    /// @dev user deposit without prior approval
     function permitAndDepositDai(address holder, address spender, uint256 nonce, uint256 expiry, bool allowed, uint8 v, bytes32 r, bytes32 s, uint256 _amount) external {
         require(allowed, "only possible if allowance is set");
         dai.permit(holder, spender, nonce, expiry, allowed, v, r, s);
         _depositDai(holder, _amount);
     }
 
+    /// @dev send Dai to xDai proxy and emit event for offchain validator 
     function _depositDai(address _sender, uint256 _amount) internal {
+        require(depositsEnabled, "Deposits disabled");
         require(dai.transferFrom(_sender, address(this), _amount), "Token transfer failed");
         alternateReceiverBridge.relayTokens(address(this), proxyXdaiAddress, _amount);
         emit DaiDeposited(_sender, _amount, depositNonce++);
