@@ -1,4 +1,4 @@
-pragma solidity 0.5.13;
+pragma solidity ^0.5.13;
 
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 import "hardhat/console.sol";
