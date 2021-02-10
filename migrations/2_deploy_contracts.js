@@ -73,6 +73,15 @@ module.exports = async (deployer, network, accounts) => {
   } else if (network === 'graphTesting') {
     console.log('Local Graph Testing, whoot whoot')
 
+    let block = await web3.eth.getBlock('latest')
+
+    const preTimeSkippingBlockTimestamp = block.timestamp
+
+    console.log(
+      'Block timestamp before time jumps: ',
+      preTimeSkippingBlockTimestamp
+    )
+
     user0 = accounts[0]
     user1 = accounts[1]
     user2 = accounts[2]
@@ -229,8 +238,9 @@ module.exports = async (deployer, network, accounts) => {
       let amount = web3.utils.toWei(i.toString(), 'ether')
       await realitycards.newRental(amount, 0, 0, { from: user, value: amount })
 
-      await time.increase(time.duration.hours(Math.floor(Math.random() * 9))) // hold for a few hours
-    }
+      await time.increase(
+        time.duration.hours(randomHoldTimeForLessThanXHours(9))
+      ) // hold for a few hours
 
     // 4 users each renting a card of market#2
     for (var i = 1; i < 5; i++) {
@@ -280,50 +290,62 @@ module.exports = async (deployer, network, accounts) => {
 
     // user8 renting a bunch of cards to test the active positions table
     await rent(user8, realitycards2, '1')
-    await time.increase(time.duration.hours(Math.floor(Math.random() * 12) + 1))
+    await time.increase(
+      time.duration.hours(randomHoldTimeForLessThanXHours(12) + 1)
+    )
     await rent(user7, realitycards2, '1')
 
     await rent(user8, realitycards2, '0')
     await rent(user8, realitycards2, '2')
-    await time.increase(time.duration.hours(Math.floor(Math.random() * 12) + 1))
+
+    await time.increase(
+      time.duration.hours(randomHoldTimeForLessThanXHours(12) + 1)
+    )
     await rent(user7, realitycards2, '2')
 
     await rent(user8, realitycards, '3')
-    await time.increase(time.duration.hours(Math.floor(Math.random() * 12) + 1))
+    await time.increase(
+      time.duration.hours(randomHoldTimeForLessThanXHours(12) + 1)
+    )
     await rent(user7, realitycards, '3')
 
     await rent(user8, realitycards, '2')
 
-    await time.increase(time.duration.hours(Math.floor(Math.random() * 12) + 1))
+    await time.increase(
+      time.duration.hours(randomHoldTimeForLessThanXHours(12) + 1)
+    )
 
     // lock and determine winner for market 2
     await time.increase(time.duration.weeks(3))
     await realitycards2.lockMarket()
     await time.increase(time.duration.hours(24))
+
     await realitio.setResult(0)
+
     await mainnetproxy.getWinnerFromOracle(realitycards2.address)
     await realitycards2.determineWinner()
 
     // market 3
-    let threeDays = new BN('259200')
-    let threeDaysInTheFuture = threeDays.add(latestTime)
-    timestamps = [latestTime, threeDaysInTheFuture, threeDaysInTheFuture]
+    // let threeDays = new BN('259200')
+    // let threeDaysInTheFuture = threeDays.add(latestTime)
+    // timestamps = [latestTime, threeDaysInTheFuture, threeDaysInTheFuture]
 
-    await factory.createMarket(
-      0,
-      ipfsHashes[2],
-      timestamps,
-      tokenURIs,
-      artistAddress,
-      affiliateAddress,
-      cardAffiliateAddress,
-      question
-    )
+    // await factory.createMarket(
+    //     0,
+    //     ipfsHashes[2],
+    //     timestamps,
+    //     tokenURIs,
+    //     artistAddress,
+    //     affiliateAddress,
+    //     cardAffiliateAddress,
+    //     question
+    // )
 
-    var marketAddress3 = await factory.getMostRecentMarket.call(0)
-    console.log('marketAddress #3: ', marketAddress3)
+    // var marketAddress3 = await factory.getMostRecentMarket.call(0)
+    // console.log('marketAddress #3: ', marketAddress3)
 
-    realitycards3 = await RCMarket.at(marketAddress3)
+    // realitycards3 = await RCMarket.at(marketAddress3)
+
 
     // Collect rent for all cards
     await realitycards.collectRentAllCards()
@@ -365,6 +387,33 @@ module.exports = async (deployer, network, accounts) => {
     // await time.increase(time.duration.days(4))
     // await realitycards4.collectRentAllTokens()
 
+    block = await web3.eth.getBlock('latest')
+    const postTimeSkippingBlockTimestamp = block.timestamp
+    console.log(
+      'Final block timestamp according to ganache: ',
+      postTimeSkippingBlockTimestamp
+    )
+    console.log(
+      new Date(postTimeSkippingBlockTimestamp * 1000).toLocaleDateString(
+        'en-US'
+      )
+    )
+
+    const ganacheStartTimeDifference =
+      postTimeSkippingBlockTimestamp - preTimeSkippingBlockTimestamp
+
+    console.log(
+      'This is the time that should be set in the docker-compose.yml for the ganache start time:'
+    )
+
+    const ganacheStartTime = Date.now() - ganacheStartTimeDifference
+
+    console.log(new Date(ganacheStartTime * 1000).toISOString())
+    console.log(
+      'P.S make sure the randomHoldTimeForLessThanXHours in the deploy script is set to not random'
+    )
+
+
     console.log('factory.address: ', factory.address)
     console.log('treasury.address: ', treasury.address)
   } else {
@@ -383,10 +432,10 @@ const rent = (user, market, tokenId) => {
       tokenPrice = await market.price(tokenId)
       newPrice = parseInt(tokenPrice) + 0.11 * parseInt(tokenPrice)
       if (newPrice == 0) {
-        newPrice = 1 + Math.floor(Math.random() * 6) + 1
+        newPrice = 1 + randomHoldTimeForLessThanXHours(6) + 1
         newPrice = await web3.utils.toWei(newPrice.toString(), 'ether')
       }
-      ran = Math.floor(Math.random() * 23) + 1
+      ran = randomHoldTimeForLessThanXHours(23) + 1
       dep = newPrice / ran
       await market.newRental(newPrice.toString(), 0, tokenId, {
         from: user,
@@ -398,6 +447,11 @@ const rent = (user, market, tokenId) => {
       reject(err)
     }
   })
+}
+
+const randomHoldTimeForLessThanXHours = hours => {
+  return hours / 2 // To test deterministically, useful for setting the block start time for ganache in docker compose
+  // return Math.floor(Math.random() * hours)
 }
 
 // Most recent deployments:
