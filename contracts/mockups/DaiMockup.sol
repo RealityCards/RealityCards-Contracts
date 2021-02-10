@@ -1,4 +1,4 @@
-pragma solidity 0.5.13;
+pragma solidity ^0.5.13;
 
 import "hardhat/console.sol";
 
@@ -11,7 +11,7 @@ contract DaiMockup
         return true;
     }
 
-    function transferFrom(address,address,uint256) public returns(bool) {
+    function transferFrom(address,address,uint256) public pure returns(bool) {
         return true;
     }
 }
