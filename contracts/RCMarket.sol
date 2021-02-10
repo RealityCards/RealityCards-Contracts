@@ -593,6 +593,9 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @dev is not a problem if called externally, but making internal over public to save gas
     function _collectRent(uint256 _tokenId) internal {
         uint256 _timeOfThisCollection = now;
+        if (marketLockingTime <= now){
+            _timeOfThisCollection = marketLockingTime;
+        }
         //only collect rent if the token is owned (ie, if owned by the contract this implies unowned)
         if (ownerOf(_tokenId) != address(this)) {
             
