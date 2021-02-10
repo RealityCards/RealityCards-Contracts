@@ -201,7 +201,7 @@ module.exports = async (deployer, network, accounts) => {
 
     await factory.createMarket(
       0,
-      ipfsHashes[2],
+      ipfsHashes[1],
       timestamps,
       tokenURIs,
       artistAddress,
@@ -212,6 +212,9 @@ module.exports = async (deployer, network, accounts) => {
 
     var marketAddress2 = await factory.getMostRecentMarket.call(0)
     console.log('marketAddress #2: ', marketAddress2)
+
+    // approve market
+    await factory.approveOrUnapproveMarket(marketAddress2)
 
     realitycards2 = await RCMarket.at(marketAddress2)
 
@@ -238,7 +241,6 @@ module.exports = async (deployer, network, accounts) => {
       await time.increase(
         time.duration.hours(randomHoldTimeForLessThanXHours(9))
       ) // hold for a few hours
-    }
 
     // 4 users each renting a card of market#2
     for (var i = 1; i < 5; i++) {
@@ -295,6 +297,7 @@ module.exports = async (deployer, network, accounts) => {
 
     await rent(user8, realitycards2, '0')
     await rent(user8, realitycards2, '2')
+
     await time.increase(
       time.duration.hours(randomHoldTimeForLessThanXHours(12) + 1)
     )
@@ -316,7 +319,9 @@ module.exports = async (deployer, network, accounts) => {
     await time.increase(time.duration.weeks(3))
     await realitycards2.lockMarket()
     await time.increase(time.duration.hours(24))
-    await realitio.setResult(1)
+
+    await realitio.setResult(0)
+
     await mainnetproxy.getWinnerFromOracle(realitycards2.address)
     await realitycards2.determineWinner()
 
@@ -340,6 +345,7 @@ module.exports = async (deployer, network, accounts) => {
     // console.log('marketAddress #3: ', marketAddress3)
 
     // realitycards3 = await RCMarket.at(marketAddress3)
+
 
     // Collect rent for all cards
     await realitycards.collectRentAllCards()
@@ -406,6 +412,7 @@ module.exports = async (deployer, network, accounts) => {
     console.log(
       'P.S make sure the randomHoldTimeForLessThanXHours in the deploy script is set to not random'
     )
+
 
     console.log('factory.address: ', factory.address)
     console.log('treasury.address: ', treasury.address)
