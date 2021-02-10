@@ -321,6 +321,10 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         require(marketLockingTime < now, "Market has not finished");
         // do a final rent collection before the contract is locked down
         collectRentAllCards();
+        // update userTotalRental, no need to reserve any user deposit for this market now
+        for (uint i = 0; i < numberOfTokens; i++) {
+            assert(treasury.updateTotalRental(ownerOf(i), price[i], false));
+        }
         _incrementState();
         emit LogContractLocked(true);
     }
