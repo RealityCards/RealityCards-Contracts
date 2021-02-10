@@ -1,5 +1,6 @@
 # Manually added stuff here
 cache/
+bin/
 
 # buidler
 artifactsBuidler/
