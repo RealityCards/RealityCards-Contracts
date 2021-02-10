@@ -599,7 +599,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         //only collect rent if the token is owned (ie, if owned by the contract this implies unowned)
         if (ownerOf(_tokenId) != address(this)) {
             
-            uint256 _rentOwed = price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(1 days);
+            uint256 _rentOwed = price[_tokenId].mul(_timeOfThisCollection.sub(timeLastCollected[_tokenId])).div(1 days);
             address _collectRentFrom = ownerOf(_tokenId);
             uint256 _deposit = treasury.deposits(_collectRentFrom);
             
@@ -617,11 +617,11 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                 // case 1: rentOwed is reduced to _deposit
                 if (_deposit <= _rentOwedLimit)
                 {
-                    _timeOfThisCollection = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(_deposit).div(_rentOwed)));
+                    _timeOfThisCollection = timeLastCollected[_tokenId].add(((_timeOfThisCollection.sub(timeLastCollected[_tokenId])).mul(_deposit).div(_rentOwed)));
                     _rentOwed = _deposit; // take what's left     
                 // case 2: rentOwed is reduced to _rentOwedLimit
                 } else {
-                    _timeOfThisCollection = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(_rentOwedLimit).div(_rentOwed)));
+                    _timeOfThisCollection = timeLastCollected[_tokenId].add(((_timeOfThisCollection.sub(timeLastCollected[_tokenId])).mul(_rentOwedLimit).div(_rentOwed)));
                     _rentOwed = _rentOwedLimit; // take up to the max   
                 }
                 _revertToUnderbidder(_tokenId);
