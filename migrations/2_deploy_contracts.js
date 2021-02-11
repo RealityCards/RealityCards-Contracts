@@ -1,3 +1,7 @@
+// read in extra arguments, this is to help deploy across multiple networks
+// myArgs[0] = first extra argument.. etc
+var myArgs = process.argv.slice(6,9)
+
 const { BN, time } = require('@openzeppelin/test-helpers')
 const argv = require('minimist')(process.argv.slice(2), {
   string: ['ipfs_hash']
@@ -15,21 +19,29 @@ var RealitioMockup = artifacts.require('./mockups/RealitioMockup.sol')
 var BridgeMockup = artifacts.require('./mockups/BridgeMockup.sol')
 var DaiMockup = artifacts.require('./mockups/DaiMockup.sol')
 
-// variables
+// Mainnet addresses
 var ambAddressXdai = '0x75Df5AF045d91108662D8080fD1FEFAd6aA0bb59'
 var ambAddressMainnet = '0x4C36d2919e407f0Cc2Ee3c993ccF8ac26d9CE64e'
 var realitioAddress = '0x325a2e0F3CCA2ddbaeBB4DfC38Df8D19ca165b47'
 var arbAddressMainnet = '0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016'
-var daiAddressMainnet = '0x6b175474e89094c44da98b954eedeac495271d0f';
+var daiAddressMainnet = '0x6b175474e89094c44da98b954eedeac495271d0f'
 
-// UPDATE THIS AFTER STAGE 1
-var xdaiProxyAddress = '0x9e15161380f76311Ed7C33AdFF52f928Fb27D84D'
+// Testnet addresses
+var ambAddressSokol = '0xFe446bEF1DbF7AFE24E81e05BC8B271C1BA9a560'
+var ambAddressKovan = '0xFe446bEF1DbF7AFE24E81e05BC8B271C1BA9a560'
+var realitioAddressKovan = '0x325a2e0F3CCA2ddbaeBB4DfC38Df8D19ca165b47'
+var arbAddressKovan = '0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016'
+// this is the Aave Dai contract, fill up here: https://testnet.aave.com/faucet
+var daiAddressKovan = '0xFf795577d9AC8bD7D90Ee22b6C1703490b6512FD'
 
-// UPDATE THIS AFTER STAGE 2
-var mainnetProxyAddress = '0x5a38d0f63f72a882fd78a1dfdaa18bb5a041f9cf'
+// sets xDaiProxy as the first argument passed in
+var xdaiProxyAddress = myArgs[0]
+
+// sets mainnetProxyAddress as the second argument passed in
+var mainnetProxyAddress = myArgs[1]
 
 module.exports = async (deployer, network, accounts) => {
-  if (network === 'stage1') {
+  if (network === 'teststage1' || network === 'stage1') {
     // xdai
     // deploy treasury, factory, reference market and nft hub
     await deployer.deploy(RCTreasury)
@@ -45,40 +57,77 @@ module.exports = async (deployer, network, accounts) => {
     await factory.setReferenceContractAddress(reference.address)
     await factory.setNftHubAddress(nfthubxdai.address, 0)
     // deploy xdai proxy
-    await deployer.deploy(
-      XdaiProxy,
-      ambAddressXdai,
-      factory.address,
-      treasury.address
-    )
+    if(network === 'stage1'){
+      await deployer.deploy(
+        XdaiProxy,
+        ambAddressXdai,
+        factory.address,
+        treasury.address
+      )
+    } else {
+      await deployer.deploy(
+        XdaiProxy,
+        ambAddressSokol,
+        factory.address,
+        treasury.address
+      )
+    }
     xdaiproxy = await XdaiProxy.deployed()
     // tell factory about the proxy
     await factory.setProxyXdaiAddress(xdaiproxy.address)
 
-  } else if (network === 'stage2') {
+    // print out some stuff to be picked up by the deploy script ready for the next stage
+    console.log('Completed stage 1')
+    console.log('xDaiProxyAddress')
+    console.log(xdaiproxy.address)
+    console.log('RCTreasuryAddress')
+    console.log(RCTreasury.address)
+    console.log('RCFactoryAddress')
+    console.log(RCFactory.address)
+
+  } else if (network === 'teststage2' || network ==='stage2' || network === 'develop') {
+    console.log('Begin Stage 2')
     // mainnet
     // deploy mainnet nft hub
     await deployer.deploy(NftHubMainnet)
-    nfthubmainnet = await NftHubMainnet.deployed() 
-    // deploy mainnet proxy
-    await deployer.deploy(
-      MainnetProxy,
-      ambAddressMainnet,
-      realitioAddress,
-      nfthubmainnet.address,
-      arbAddressMainnet,
-      daiAddressMainnet
-    )
+    nfthubmainnet = await NftHubMainnet.deployed()
+    if(network === 'stage2'){
+      // deploy mainnet proxy on mainnet
+      await deployer.deploy(
+        MainnetProxy,
+        ambAddressMainnet,
+        realitioAddress,
+        nfthubmainnet.address,
+        arbAddressMainnet,
+        daiAddressMainnet
+      )
+    } else {
+      // deploy mainnet proxy on Kovan
+      await deployer.deploy(
+        MainnetProxy,
+        ambAddressKovan,
+        realitioAddressKovan,
+        nfthubmainnet.address,
+        arbAddressKovan,
+        daiAddressKovan
+      )
+    }
     mainnetproxy = await MainnetProxy.deployed()
     // set xdai proxy address
     await mainnetproxy.setProxyXdaiAddress(xdaiProxyAddress)
+    console.log("Completed stage 2")
 
-  } else if (network === 'stage3') {
+    // this text is used in the deploy script to locate the correct address
+    console.log('MainnetProxyAddress')
+    console.log(MainnetProxy.address)
+
+  } else if (network === 'teststage3' || network === 'stage3') {
+    console.log('Begin Stage 3')
     // xdai
     // set mainnet proxy address
     xdaiproxy = await XdaiProxy.deployed()
     await xdaiproxy.setProxyMainnetAddress(mainnetProxyAddress)
-
+    console.log('Completed Stage 3')
   } else if (network === 'graphTesting') {
     console.log('Local Graph Testing, whoot whoot')
 

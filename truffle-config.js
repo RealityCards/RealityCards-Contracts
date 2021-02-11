@@ -114,9 +114,9 @@ module.exports = {
     },
     teststage1: {
       provider: function() {
-        return new HDWalletProvider(MNEMONIC, "http://rpc.xdaichain.com");
+        return new HDWalletProvider(MNEMONIC, "https://sokol.poa.network/");
       },
-      network_id: 100,
+      network_id: 77,
       gas: 12000000,
       gasPrice: 1000000000,
     },
@@ -124,19 +124,19 @@ module.exports = {
         provider: () => {
           return new HDWalletProvider(
             MNEMONIC,
-            `https://mainnet.infura.io/v3/${INFURA_KEY}`
+            `https://kovan.infura.io/v3/${INFURA_KEY}`
           );
         },
-        network_id: 1,
+        network_id: 42,
         gas: 3000000,
         gasPrice: 140000000000,
         networkCheckTimeout: 12000,
       },
       teststage3: {
       provider: function() {
-          return new HDWalletProvider(MNEMONIC, "http://rpc.xdaichain.com");
+          return new HDWalletProvider(MNEMONIC, "https://sokol.poa.network/");
       },
-      network_id: 100,
+      network_id: 77,
       gas: 12000000,
       gasPrice: 1000000000,
       },
