@@ -241,7 +241,7 @@ module.exports = async (deployer, network, accounts) => {
       await time.increase(
         time.duration.hours(randomHoldTimeForLessThanXHours(9))
       ) // hold for a few hours
-
+    }
     // 4 users each renting a card of market#2
     for (var i = 1; i < 5; i++) {
       user = accounts[(i - 1) % 4]
