@@ -46,6 +46,7 @@ contract EIP712Base is Initializable {
         return domainSeperator;
     }
 
+    //updating to ^0.8 will allow block.chainid to be used
     function getChainId() public pure returns (uint256) {
         uint256 id;
         assembly {
