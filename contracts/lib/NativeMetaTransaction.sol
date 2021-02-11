@@ -1,4 +1,5 @@
-pragma solidity ^0.5.13;
+// SPDX-License-Identifier: UNDEFINED
+pragma solidity ^0.7.5;
 
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {EIP712Base} from "./EIP712Base.sol";
