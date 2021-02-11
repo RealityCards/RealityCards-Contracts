@@ -1,4 +1,4 @@
-pragma solidity 0.5.13;
+pragma solidity ^0.5.13;
 
 interface IRCProxyXdai {
     function setWinner(address _marketAddress, uint256 _winningOutcome) external;

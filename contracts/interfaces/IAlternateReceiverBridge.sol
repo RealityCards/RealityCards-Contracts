@@ -1,4 +1,4 @@
-pragma solidity 0.5.13;
+pragma solidity ^0.5.13;
 
 interface IAlternateReceiverBridge {
     function relayTokens(address _sender, address _receiver, uint256 _amount) external;
