@@ -112,6 +112,35 @@ module.exports = {
     gas: 12000000,
     gasPrice: 1000000000,
     },
+    teststage1: {
+      provider: function() {
+        return new HDWalletProvider(MNEMONIC, "http://rpc.xdaichain.com");
+      },
+      network_id: 100,
+      gas: 12000000,
+      gasPrice: 1000000000,
+    },
+    teststage2: {
+        provider: () => {
+          return new HDWalletProvider(
+            MNEMONIC,
+            `https://mainnet.infura.io/v3/${INFURA_KEY}`
+          );
+        },
+        network_id: 1,
+        gas: 3000000,
+        gasPrice: 140000000000,
+        networkCheckTimeout: 12000,
+      },
+      teststage3: {
+      provider: function() {
+          return new HDWalletProvider(MNEMONIC, "http://rpc.xdaichain.com");
+      },
+      network_id: 100,
+      gas: 12000000,
+      gasPrice: 1000000000,
+      },
+
   },
   compilers: {
     solc: {
