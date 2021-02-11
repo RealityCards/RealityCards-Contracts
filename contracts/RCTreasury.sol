@@ -1,6 +1,8 @@
-pragma solidity ^0.5.13;
+// SPDX-License-Identifier: UNDEFINED
+pragma solidity ^0.7.5;
 
-import "@openzeppelin/contracts/ownership/Ownable.sol";
+
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "hardhat/console.sol";
 import './lib/NativeMetaTransaction.sol';
 
@@ -62,7 +64,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     //////// CONSTRUCTOR ///////////////
     ////////////////////////////////////
 
-    constructor() public {
+    constructor() {
         // initialise MetaTransactions
         _initializeEIP712("RealityCardsTreasury","1");
 
@@ -171,7 +173,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     function withdrawDeposit(uint256 _dai) external balancedBooks  {
         require(!globalPause, "Withdrawals are disabled");
         require(deposits[msgSender()] > 0, "Nothing to withdraw");
-        require(now.sub(lastRentalTime[msgSender()]) > uint256(1 days).div(minRentalDivisor), "Too soon");
+        require(block.timestamp.sub(lastRentalTime[msgSender()]) > uint256(1 days).div(minRentalDivisor), "Too soon");
 
         if (_dai > deposits[msgSender()]) {
             _dai = deposits[msgSender()];
@@ -180,7 +182,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         totalDeposits = totalDeposits.sub(_dai);
         address _thisAddressNotPayable = msgSender();
         address payable _recipient = address(uint160(_thisAddressNotPayable));
-        (bool _success, ) = _recipient.call.value(_dai)("");
+        (bool _success, ) = _recipient.call{value: _dai}("");
         require(_success, "Transfer failed");
         emit LogDepositWithdrawal(msgSender(), _dai);
         emit LogAdjustDeposit(msgSender(), _dai, false);
@@ -235,7 +237,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
     /// @dev tracks when the user last rented- so they cannot rent and immediately withdraw, thus bypassing minimum rental duration
     function updateLastRentalTime(address _user) external onlyMarkets returns(bool) {
-        lastRentalTime[_user] = now;
+        lastRentalTime[_user] = block.timestamp;
         return true;
     }
 
@@ -254,7 +256,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     ////////////////////////////////////
  
     /// @dev sending ether/xdai direct is equal to a deposit
-    function() external payable {
+    fallback () external payable {
         assert(deposit(msgSender()));
     }
 
