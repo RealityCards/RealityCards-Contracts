@@ -20,7 +20,7 @@ var ambAddressXdai = '0x75Df5AF045d91108662D8080fD1FEFAd6aA0bb59'
 var ambAddressMainnet = '0x4C36d2919e407f0Cc2Ee3c993ccF8ac26d9CE64e'
 var realitioAddress = '0x325a2e0F3CCA2ddbaeBB4DfC38Df8D19ca165b47'
 var arbAddressMainnet = '0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016'
-var daiAddressMainnet = '0x6b175474e89094c44da98b954eedeac495271d0f';
+var daiAddressMainnet = '0x6b175474e89094c44da98b954eedeac495271d0f'
 
 // UPDATE THIS AFTER STAGE 1
 var xdaiProxyAddress = '0x9e15161380f76311Ed7C33AdFF52f928Fb27D84D'
@@ -54,12 +54,11 @@ module.exports = async (deployer, network, accounts) => {
     xdaiproxy = await XdaiProxy.deployed()
     // tell factory about the proxy
     await factory.setProxyXdaiAddress(xdaiproxy.address)
-
   } else if (network === 'stage2') {
     // mainnet
     // deploy mainnet nft hub
     await deployer.deploy(NftHubMainnet)
-    nfthubmainnet = await NftHubMainnet.deployed() 
+    nfthubmainnet = await NftHubMainnet.deployed()
     // deploy mainnet proxy
     await deployer.deploy(
       MainnetProxy,
@@ -72,13 +71,11 @@ module.exports = async (deployer, network, accounts) => {
     mainnetproxy = await MainnetProxy.deployed()
     // set xdai proxy address
     await mainnetproxy.setProxyXdaiAddress(xdaiProxyAddress)
-
   } else if (network === 'stage3') {
     // xdai
     // set mainnet proxy address
     xdaiproxy = await XdaiProxy.deployed()
     await xdaiproxy.setProxyMainnetAddress(mainnetProxyAddress)
-
   } else if (network === 'graphTesting') {
     console.log('Local Graph Testing, whoot whoot')
 
@@ -250,6 +247,7 @@ module.exports = async (deployer, network, accounts) => {
       await time.increase(
         time.duration.hours(randomHoldTimeForLessThanXHours(9))
       ) // hold for a few hours
+    }
 
     // 4 users each renting a card of market#2
     for (var i = 1; i < 5; i++) {
@@ -355,7 +353,6 @@ module.exports = async (deployer, network, accounts) => {
 
     // realitycards3 = await RCMarket.at(marketAddress3)
 
-
     // Collect rent for all cards
     await realitycards.collectRentAllCards()
     await realitycards.collectRentAllCards()
@@ -421,7 +418,6 @@ module.exports = async (deployer, network, accounts) => {
     console.log(
       'P.S make sure the randomHoldTimeForLessThanXHours in the deploy script is set to not random'
     )
-
 
     console.log('factory.address: ', factory.address)
     console.log('treasury.address: ', treasury.address)
