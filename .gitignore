@@ -1,6 +1,7 @@
 # Manually added stuff here
 cache/
 bin/
+DeployedContracts.txt
 
 # buidler
 artifactsBuidler/

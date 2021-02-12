@@ -31,8 +31,8 @@ var ambAddressSokol = '0xFe446bEF1DbF7AFE24E81e05BC8B271C1BA9a560'
 var ambAddressKovan = '0xFe446bEF1DbF7AFE24E81e05BC8B271C1BA9a560'
 var realitioAddressKovan = '0x325a2e0F3CCA2ddbaeBB4DfC38Df8D19ca165b47'
 var arbAddressKovan = '0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016'
-// this is the Aave Dai contract, fill up here: https://testnet.aave.com/faucet
-var daiAddressKovan = '0xFf795577d9AC8bD7D90Ee22b6C1703490b6512FD'
+// this is just a blank ERC20 contract
+var daiAddressKovan = '0xd133b22BCCcb3Cd3ca752D206b0632932D530Fda'
 
 // sets xDaiProxy as the first argument passed in
 var xdaiProxyAddress = myArgs[0]
@@ -84,6 +84,10 @@ module.exports = async (deployer, network, accounts) => {
     console.log(RCTreasury.address)
     console.log('RCFactoryAddress')
     console.log(RCFactory.address)
+    console.log('RCMarketAddress')
+    console.log(RCMarket.address)
+    console.log('NFTHubXDAIAddress')
+    console.log(NftHubXDai.address)
 
   } else if (network === 'teststage2' || network ==='stage2' || network === 'develop') {
     console.log('Begin Stage 2')
@@ -118,7 +122,9 @@ module.exports = async (deployer, network, accounts) => {
     console.log("Completed stage 2")
 
     // this text is used in the deploy script to locate the correct address
-    console.log('MainnetProxyAddress')
+    console.log('TheNFTHubMainnetAddress')
+    console.log(NftHubMainnet.address)
+    console.log('TheMainnetProxyAddress')
     console.log(MainnetProxy.address)
 
   } else if (network === 'teststage3' || network === 'stage3') {
