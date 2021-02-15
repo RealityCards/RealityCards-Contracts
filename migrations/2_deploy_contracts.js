@@ -400,9 +400,12 @@ module.exports = async (deployer, network, accounts) => {
       'This is the time that should be set in the docker-compose.yml for the ganache start time:'
     )
 
-    const ganacheStartTime = Date.now() - ganacheStartTimeDifference
+    const ganacheStartTime = Date.now() / 1000 - ganacheStartTimeDifference
 
-    console.log(new Date(ganacheStartTime * 1000).toISOString())
+    const isoDate = new Date(ganacheStartTime * 1000).toISOString()
+
+    console.log(isoDate.substring(0, isoDate.length - 5) + '+00:00')
+
     console.log(
       'P.S make sure the randomHoldTimeForLessThanXHours in the deploy script is set to not random'
     )
