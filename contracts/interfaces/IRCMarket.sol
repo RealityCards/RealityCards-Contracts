@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: UNDEFINED
 pragma solidity ^0.7.5;
-pragma abicoder v2;
 
 interface IRCMarket {
 
