@@ -30,7 +30,7 @@ var daiAddressMainnet = '0x6b175474e89094c44da98b954eedeac495271d0f'
 var ambAddressSokol = '0xFe446bEF1DbF7AFE24E81e05BC8B271C1BA9a560'
 var ambAddressKovan = '0xFe446bEF1DbF7AFE24E81e05BC8B271C1BA9a560'
 var realitioAddressKovan = '0x325a2e0F3CCA2ddbaeBB4DfC38Df8D19ca165b47'
-var arbAddressKovan = '0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016'
+var arbAddressKovan = '0xA960d095470f7509955d5402e36d9DB984B5C8E2'
 // this is just a blank ERC20 contract
 var daiAddressKovan = '0xd133b22BCCcb3Cd3ca752D206b0632932D530Fda'
 
