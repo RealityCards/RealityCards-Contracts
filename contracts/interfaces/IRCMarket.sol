@@ -1,5 +1,6 @@
-pragma solidity ^0.5.13;
-pragma experimental ABIEncoderV2;
+// SPDX-License-Identifier: UNDEFINED
+pragma solidity ^0.7.5;
+pragma abicoder v2;
 
 interface IRCMarket {
 

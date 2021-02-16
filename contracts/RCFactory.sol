@@ -1,7 +1,8 @@
-pragma solidity ^0.5.13;
-pragma experimental ABIEncoderV2;
+// SPDX-License-Identifier: UNDEFINED
+pragma solidity ^0.7.5;
+pragma abicoder v2;
 
-import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "hardhat/console.sol";
 import './lib/CloneFactory.sol';
 import "./interfaces/ITreasury.sol";
@@ -89,7 +90,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
     ////////////////////////////////////
 
     /// @dev Treasury must be deployed before Factory
-    constructor(ITreasury _treasuryAddress) public
+    constructor(ITreasury _treasuryAddress)
     {
         // initialise MetaTransactions
         _initializeEIP712("RealityCardsFactory","1");
@@ -309,12 +310,12 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
         // check timestamps
         // check market opening time
         if (advancedWarning != 0) {
-            require(_timestamps[0] >= now, "Market opening time not set"); 
-            require(_timestamps[0].sub(advancedWarning) > now, "Market opens too soon" );
+            require(_timestamps[0] >= block.timestamp, "Market opening time not set"); 
+            require(_timestamps[0].sub(advancedWarning) > block.timestamp, "Market opens too soon" );
         }
         // check market locking time
         if (maximumDuration != 0) {
-            require(_timestamps[1] < now.add(maximumDuration), "Market locks too late");
+            require(_timestamps[1] < block.timestamp.add(maximumDuration), "Market locks too late");
         }
         // check oracle resolution time (no more than 1 week after market locking to get result)
         require(_timestamps[1].add(1 weeks) > _timestamps[2] && _timestamps[1] <= _timestamps[2], "Oracle resolution time error" );
@@ -362,7 +363,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
 
         // pay sponsorship, if applicable
         if (msg.value > 0) {
-            IRCMarket(_newAddress).sponsor.value(msg.value)();
+            IRCMarket(_newAddress).sponsor{value: msg.value}();
         }
 
         return _newAddress;
