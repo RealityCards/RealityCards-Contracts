@@ -1,0 +1,23 @@
+{
+  "name": "Which card will earn the least rent this week?",
+  "slug": "lowrent0",
+  "category": "self",
+  "cards": {
+    "0": {
+      "image": "https://cdn.realitycards.io/images/lowrent/Scrooge.png",
+      "name": "Scrooge"
+    },
+    "1": {
+      "image": "https://cdn.realitycards.io/images/lowrent/Moneybags.jpg",
+      "name": "Rich Uncle Pennybags"
+    },
+	  "2": {
+      "image": "https://cdn.realitycards.io/images/lowrent/Smaug.jpg",
+      "name": "Smaug"
+    },
+	  "3": {
+      "image": "https://cdn.realitycards.io/images/lowrent/Zoidberg.png",
+      "name": "Why not Zoidberg?"
+    }
+  }
+}

@@ -18,10 +18,10 @@ var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000'];
 
 var timestamps = [0,marketLockingTime,oracleResolutionTime];
 var tokenURIs = [
-    'https://cdn.realitycards.io/nftmetadata/lowrent/token0.json',
-    'https://cdn.realitycards.io/nftmetadata/lowrent/token1.json',
-    'https://cdn.realitycards.io/nftmetadata/lowrent/token2.json',
-    'https://cdn.realitycards.io/nftmetadata/lowrent/token3.json',
+  'https://cdn.realitycards.io/nftmetadata/lowrent/token0.json',
+  'https://cdn.realitycards.io/nftmetadata/lowrent/token1.json',
+  'https://cdn.realitycards.io/nftmetadata/lowrent/token2.json',
+  'https://cdn.realitycards.io/nftmetadata/lowrent/token3.json',
 ]; 
 
 module.exports = function() {
@@ -31,7 +31,7 @@ module.exports = function() {
     console.log("CREATING MARKET");
     var transaction = await factory.createMarket(
         0,
-        '0x0',
+        'QmUmrtLk9W47ybMDs1Pxs8CDauXdXckaV912MXmQ4orXgH',
         timestamps,
         tokenURIs,
         artistAddress,
