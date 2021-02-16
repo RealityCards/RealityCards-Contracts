@@ -1,25 +1,27 @@
 //require("dotenv").config();
 
 var realityCardsFactory = artifacts.require("RCFactory");
-var factoryAddress = '0x3b557a58E5c6c4Df3e3307F9c7f5ce46472d80F7';
+var factoryAddress = '0x76d22B0065Ada142207E2cDce12322FB3F8c0bAA';
 
 
 // variables market specific
-var marketLockingTime = 1612353600; 
-var oracleResolutionTime = 1612353600; 
-var question = 'Test11␟"X","Y","Z"␟news-politics␟en_US';
+var marketLockingTime = 1613952000; 
+var oracleResolutionTime = 1613952000; 
+var question = 'Which card will earn the least rent this week?';
 var artistAddress = "0x0000000000000000000000000000000000000000";
 var affiliateAddress = "0x0000000000000000000000000000000000000000";
 var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000'];
 
 // kovan overrides (*COMMENT OUT IF MAINNET*)
-// var marketLockingTime = 100; 
-// var oracleResolutionTime = 100; 
+//var marketLockingTime = 100; 
+//var oracleResolutionTime = 100; 
 
 var timestamps = [0,marketLockingTime,oracleResolutionTime];
 var tokenURIs = [
-    'https://cdn.realitycards.io/nftmetadata/uni/token0.json',
-    'https://cdn.realitycards.io/nftmetadata/uni/token1.json',
+    'https://cdn.realitycards.io/nftmetadata/lowrent/token0.json',
+    'https://cdn.realitycards.io/nftmetadata/lowrent/token1.json',
+    'https://cdn.realitycards.io/nftmetadata/lowrent/token2.json',
+    'https://cdn.realitycards.io/nftmetadata/lowrent/token3.json',
 ]; 
 
 module.exports = function() {
