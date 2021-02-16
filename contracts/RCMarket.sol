@@ -1,6 +1,8 @@
-pragma solidity ^0.5.13;
+// SPDX-License-Identifier: UNDEFINED
+pragma solidity ^0.7.5;
 
 import "@openzeppelin/upgrades/contracts/Initializable.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/SafeCast.sol";
 import "hardhat/console.sol";
 import "./interfaces/IRealitio.sol";
@@ -234,7 +236,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         } 
 
         // move to OPEN immediately if market opening time in the past
-        if (marketOpeningTime <= now) {
+        if (marketOpeningTime <= block.timestamp) {
             _incrementState();
         }
 
@@ -248,7 +250,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
     /// @dev automatically opens market if appropriate
     modifier autoUnlock() {
-        if (marketOpeningTime <= now && state == States.CLOSED) {
+        if (marketOpeningTime <= block.timestamp && state == States.CLOSED) {
             _incrementState();
         }
         _;
@@ -257,7 +259,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @dev automatically locks market if appropriate
     modifier autoLock() {
         _;
-        if (marketLockingTime <= now) {
+        if (marketLockingTime <= block.timestamp) {
             lockMarket();
         }
     }
@@ -318,7 +320,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @dev public because called within autoLock modifier & setWinner
     function lockMarket() public {
         _checkState(States.OPEN);
-        require(marketLockingTime < now, "Market has not finished");
+        require(marketLockingTime < block.timestamp, "Market has not finished");
         // do a final rent collection before the contract is locked down
         collectRentAllCards();
         // update userTotalRental, no need to reserve any user deposit for this market now
@@ -490,13 +492,13 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         _checkState(States.OPEN);
         require(_newPrice >= 1 ether, "Minimum rental 1 xDai");
         require(_tokenId < numberOfTokens, "This token does not exist");
-        require(exitedTimestamp[msgSender()] != now, "Cannot lose and re-rent in same block");
+        require(exitedTimestamp[msgSender()] != block.timestamp, "Cannot lose and re-rent in same block");
 
         _collectRent(_tokenId);
 
          // process deposit, if sent
         if (msg.value > 0) {
-            assert(treasury.deposit.value(msg.value)(msgSender()));
+            assert(treasury.deposit{value: msg.value}(msgSender()));
         }
 
         // check sufficient deposit
@@ -577,7 +579,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         _checkNotState(States.WITHDRAW);
         require(msg.value > 0, "Must send something");
         // send funds to the Treasury
-        assert(treasury.sponsor.value(msg.value)());
+        assert(treasury.sponsor{value: msg.value}());
         totalCollected = totalCollected.add(msg.value);
         // just so user can get it back if invalid outcome
         collectedPerUser[msgSender()] = collectedPerUser[msgSender()].add(msg.value); 
@@ -596,8 +598,8 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @dev also calculates and updates how long the current user has held the token for
     /// @dev is not a problem if called externally, but making internal over public to save gas
     function _collectRent(uint256 _tokenId) internal {
-        uint256 _timeOfThisCollection = now;
-        if (marketLockingTime <= now){
+        uint256 _timeOfThisCollection = block.timestamp;
+        if (marketLockingTime <= block.timestamp){
             _timeOfThisCollection = marketLockingTime;
         }
         //only collect rent if the token is owned (ie, if owned by the contract this implies unowned)
@@ -812,7 +814,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             _tempNextDeposit < _requiredDeposit && 
             _loopCount < MAX_ITERATIONS );
         // transfer to previous owner
-        exitedTimestamp[ownerOf(_tokenId)] = now;
+        exitedTimestamp[ownerOf(_tokenId)] = block.timestamp;
         _processNewOwner(_tempNext, orderbook[_tokenId][_tempNext].price, _tokenId);
     }
 
@@ -856,7 +858,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @dev does not set a winner so same as invalid outcome
     /// @dev market does not need to be locked, just in case lockMarket bugs out
     function circuitBreaker() external {
-        require(now > (oracleResolutionTime + 12 weeks), "Too early");
+        require(block.timestamp > (oracleResolutionTime + 12 weeks), "Too early");
         _incrementState();
         state = States.WITHDRAW;
     }

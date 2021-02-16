@@ -1,6 +1,7 @@
-pragma solidity ^0.5.13;
+// SPDX-License-Identifier: UNDEFINED
+pragma solidity ^0.7.5;
 
-import "@openzeppelin/upgrades/contracts/Initializable.sol";
+import "@openzeppelin/contracts/proxy/Initializable.sol";
 
 contract EIP712Base is Initializable {
     struct EIP712Domain {
@@ -45,6 +46,7 @@ contract EIP712Base is Initializable {
         return domainSeperator;
     }
 
+    //updating to ^0.8 will allow block.chainid to be used
     function getChainId() public pure returns (uint256) {
         uint256 id;
         assembly {
