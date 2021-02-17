@@ -5,6 +5,7 @@ var factoryAddress = '0x060e1BF56e238F3263fC9870c472936EEc09CeEb';
 
 
 // variables market specific
+var marketOpeningTime = 0;
 var marketLockingTime = 1609405525; 
 var oracleResolutionTime = 1609405525; 
 var question = 'Test10␟"X","Y","Z"␟news-politics␟en_US';
@@ -17,7 +18,7 @@ var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000','0x00
 // var marketLockingTime = 100; 
 // var oracleResolutionTime = 100; 
 
-var timestamps = [0,marketLockingTime,oracleResolutionTime];
+var timestamps = [marketOpeningTime,marketLockingTime,oracleResolutionTime];
 var tokenURIs = [
     'https://cdn.realitycards.io/nftmetadata/uni/token0.json',
     'https://cdn.realitycards.io/nftmetadata/uni/token1.json',
