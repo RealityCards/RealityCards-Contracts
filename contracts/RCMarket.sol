@@ -547,6 +547,8 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         }
 
         return _validPrice;
+
+        
     }
 
     /// @notice to change your timeHeldLimit without having to re-rent

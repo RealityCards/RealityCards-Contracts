@@ -29,7 +29,7 @@ var xdaiProxyAddress = '0x9e15161380f76311Ed7C33AdFF52f928Fb27D84D'
 var mainnetProxyAddress = '0x5a38d0f63f72a882fd78a1dfdaa18bb5a041f9cf'
 
 module.exports = async (deployer, network, accounts) => {
-  if (network === 'stage1') {
+  if (network === 'sokol') {
     // xdai
     // deploy treasury, factory, reference market and nft hub
     await deployer.deploy(RCTreasury)
@@ -464,6 +464,6 @@ const randomHoldTimeForLessThanXHours = hours => {
 
 // Most recent deployments:
 
-// Treasury: 0xa02a47b0dcdB907964411af1052c38747395E08D
-// Factory: 0x3b557a58E5c6c4Df3e3307F9c7f5ce46472d80F7
-// Proxy mainnet: [none]
+// sokol
+// Treasury: 0x7f9216484230BcC922DE6714730a2F738154B2Bd
+// Factory: 0x6f8d1Fd9EF676ccD19046723A0eb1C20Fe217463

@@ -325,7 +325,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
 
         // post question to Oracle
         require(address(proxy) != address(0), "xDai proxy not set");
-        proxy.saveQuestion(_newAddress, _realitioQuestion, _timestamps[2]);
+        // proxy.saveQuestion(_newAddress, _realitioQuestion, _timestamps[2]);
 
         // tell Treasury and Bridge Proxy about new market
         assert(treasury.addMarket(_newAddress));

@@ -84,6 +84,14 @@ module.exports = {
       gas: 12000000,
       gasPrice: 1000000000,
     },
+    sokol: {
+      provider: function() {
+        return new HDWalletProvider(MNEMONIC, "https://sokol.poa.network");
+      },
+      network_id: 77,
+      gas: 12000000,
+      gasPrice: 1000000000,
+    },
     stage1: {
         provider: function() {
           return new HDWalletProvider(MNEMONIC, "http://rpc.xdaichain.com");
