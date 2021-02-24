@@ -1,7 +1,8 @@
-pragma solidity ^0.5.13;
-pragma experimental ABIEncoderV2;
+// SPDX-License-Identifier: UNDEFINED
+pragma solidity ^0.7.5;
+pragma abicoder v2;
 
-import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "hardhat/console.sol";
 import '../../lib/CloneFactory.sol';

@@ -33,6 +33,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     mapping (address => uint256) public userTotalRentals;
     /// @dev when a user most recently rented (to prevent users withdrawing within minRentalTime)
     mapping (address => uint256) public lastRentalTime;
+    /// @dev Users active positions so a rent collection can be called before a withdraw
+    // mapping (address => address => uint256) public openPositions;
 
      ///// GOVERNANCE VARIABLES /////
     /// @dev only parameters that need to be are here, the rest are in the Factory

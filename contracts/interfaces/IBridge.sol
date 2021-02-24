@@ -1,4 +1,5 @@
-pragma solidity ^0.5.13;
+// SPDX-License-Identifier: UNDEFINED
+pragma solidity ^0.7.5;
 
 interface IBridge {
     function requireToPassMessage(address,bytes calldata,uint256) external;

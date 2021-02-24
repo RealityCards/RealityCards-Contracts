@@ -1,4 +1,5 @@
-pragma solidity ^0.5.13;
+// SPDX-License-Identifier: UNDEFINED
+pragma solidity ^0.7.5;
 
 import '../../interfaces/IRealitio.sol';
 import '../../interfaces/IRCProxyXdai.sol';
