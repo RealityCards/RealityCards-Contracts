@@ -1,7 +1,8 @@
-pragma solidity 0.5.13;
+// SPDX-License-Identifier: UNDEFINED
+pragma solidity ^0.7.5;
 
 import "hardhat/console.sol";
-import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import '../interfaces/IRCProxyMainnet.sol';
 import '../interfaces/IBridge.sol';
@@ -68,7 +69,7 @@ contract RCProxyXdai is Ownable
     ////////// CONSTRUCTOR /////////////
     ////////////////////////////////////
 
-    constructor(address _bridgeXdaiAddress, address _factoryAddress, address _treasuryAddress) public {
+    constructor(address _bridgeXdaiAddress, address _factoryAddress, address _treasuryAddress) {
         setBridgeXdaiAddress(_bridgeXdaiAddress);
         setFactoryAddress(_factoryAddress);
         setTreasuryAddress(_treasuryAddress);
@@ -131,7 +132,7 @@ contract RCProxyXdai is Ownable
         floatSize = floatSize.sub(_amount);
         address _thisAddressNotPayable = owner();
         address payable _recipient = address(uint160(_thisAddressNotPayable));
-        (bool _success, ) = _recipient.call.value(_amount)("");
+        (bool _success, ) = _recipient.call{value:_amount}("");
         require(_success, "Transfer failed");
         emit LogFloatWithdrawn(msg.sender, _amount);
     }
@@ -211,7 +212,7 @@ contract RCProxyXdai is Ownable
     ////////////////////////////////////
 
     /// @dev add a float, so no need to wait for arrival of xdai from ARB
-    function() external payable {
+    receive() external payable {
         floatSize = floatSize.add(msg.value);
         emit LogFloatIncreased(msg.sender, msg.value);
     }
@@ -254,11 +255,11 @@ contract RCProxyXdai is Ownable
             ITreasury treasury = ITreasury(treasuryAddress);
             // if Treasury will allow the deposit, send it there
             if (address(treasury).balance.add(_amount) <= treasury.maxContractBalance()) {
-                assert(treasury.deposit.value(_amount)(_user));
+                assert(treasury.deposit{value:_amount}(_user));
             // otherwise, just send to the user
             } else {
                 address payable _recipient = address(uint160(_user));
-                (bool _success, ) = _recipient.call.value(_amount)("");
+                (bool _success, ) = _recipient.call{value:_amount}("");
                 require(_success, "Transfer failed");
             }
             deposits[_nonce].executed = true;

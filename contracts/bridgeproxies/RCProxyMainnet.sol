@@ -44,7 +44,7 @@ contract RCProxyMainnet is Ownable
     ////////// CONSTRUCTOR /////////////
     ////////////////////////////////////
 
-    constructor(address _bridgeMainnetAddress, address _realitioAddress, address _nftHubAddress, address _alternateReceiverAddress, address _daiAddress) public {
+    constructor(address _bridgeMainnetAddress, address _realitioAddress, address _nftHubAddress, address _alternateReceiverAddress, address _daiAddress) {
         setBridgeMainnetAddress(_bridgeMainnetAddress);
         setRealitioAddress(_realitioAddress);
         setNftHubAddress(_nftHubAddress);

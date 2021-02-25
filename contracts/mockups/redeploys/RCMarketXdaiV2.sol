@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNDEFINED
 pragma solidity ^0.7.5;
 
-import "@openzeppelin/upgrades/contracts/Initializable.sol";
+import "@openzeppelin/contracts/proxy/Initializable.sol";
 import "hardhat/console.sol";
 import "../../interfaces/IRealitio.sol";
 import "../../interfaces/IFactory.sol";
@@ -219,7 +219,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
         } 
 
         // move to OPEN immediately if market opening time in the past
-        if (marketOpeningTime <= now) {
+        if (marketOpeningTime <= block.timestamp) {
             _incrementState();
         }
         
@@ -237,7 +237,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
 
     /// @dev automatically opens market if appropriate
     modifier autoUnlock() {
-        if (marketOpeningTime <= now && state == States.CLOSED) {
+        if (marketOpeningTime <= block.timestamp && state == States.CLOSED) {
             _incrementState();
         }
         _;
@@ -246,7 +246,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
     /// @dev automatically locks market if appropriate
     modifier autoLock() {
         _;
-        if (marketLockingTime <= now) {
+        if (marketLockingTime <= block.timestamp) {
             lockMarket();
         }
     }
@@ -323,7 +323,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
     /// @dev can be called by anyone 
     /// @dev public because possibly called within newRental
     function lockMarket() public checkState(States.OPEN) {
-        require(marketLockingTime < now, "Market has not finished");
+        require(marketLockingTime < block.timestamp, "Market has not finished");
         // do a final rent collection before the contract is locked down
         collectRentAllCards();
         _incrementState();
@@ -488,7 +488,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
     function newRental(uint256 _newPrice, uint256 _timeHeldLimit, address _startingPosition, uint256 _tokenId) public payable autoUnlock() autoLock() checkState(States.OPEN) {
         require(_newPrice >= 1 ether, "Minimum rental 1 Dai");
         require(_tokenId < numberOfTokens, "This token does not exist");
-        require(ownershipLostTimestamp[msgSender()] != now, "Cannot lose and re-rent in same block");
+        require(ownershipLostTimestamp[msgSender()] != block.timestamp, "Cannot lose and re-rent in same block");
 
         _newPrice = _newPrice.mul(2);
 
@@ -496,7 +496,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
 
          // process deposit, if sent
         if (msg.value > 0) {
-            assert(treasury.deposit.value(msg.value)(msgSender()));
+            assert(treasury.deposit{value:msg.value}(msgSender()));
         }
 
         // check sufficient deposit
@@ -571,7 +571,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
         require(state != States.LOCKED, "Incorrect state");
         require(state != States.WITHDRAW, "Incorrect state");
         // send funds to the Treasury
-        assert(treasury.sponsor.value(msg.value)());
+        assert(treasury.sponsor{value:msg.value}());
         totalCollected = totalCollected.add(msg.value);
         // just so user can get it back if invalid outcome
         collectedPerUser[msgSender()] = collectedPerUser[msgSender()].add(msg.value); 
@@ -590,11 +590,11 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
     /// @dev also calculates and updates how long the current user has held the token for
     /// @dev is not a problem if called externally, but making internal over public to save gas
     function _collectRent(uint256 _tokenId) internal {
-        uint256 _timeOfThisCollection = now;
+        uint256 _timeOfThisCollection = block.timestamp;
 
         //only collect rent if the token is owned (ie, if owned by the contract this implies unowned)
         if (ownerOf(_tokenId) != address(this)) {
-            uint256 _rentOwed = price[_tokenId].mul(now.sub(timeLastCollected[_tokenId])).div(1 days);
+            uint256 _rentOwed = price[_tokenId].mul(block.timestamp.sub(timeLastCollected[_tokenId])).div(1 days);
             address _collectRentFrom = ownerOf(_tokenId);
             uint256 _deposit = treasury.deposits(_collectRentFrom);
             
@@ -612,11 +612,11 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
                 // case 1: rentOwed is reduced to _deposit
                 if (_deposit <= _rentOwedLimit)
                 {
-                    _timeOfThisCollection = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(_deposit).div(_rentOwed)));
+                    _timeOfThisCollection = timeLastCollected[_tokenId].add(((block.timestamp.sub(timeLastCollected[_tokenId])).mul(_deposit).div(_rentOwed)));
                     _rentOwed = _deposit; // take what's left     
                 // case 2: rentOwed is reduced to _rentOwedLimit
                 } else {
-                    _timeOfThisCollection = timeLastCollected[_tokenId].add(((now.sub(timeLastCollected[_tokenId])).mul(_rentOwedLimit).div(_rentOwed)));
+                    _timeOfThisCollection = timeLastCollected[_tokenId].add(((block.timestamp.sub(timeLastCollected[_tokenId])).mul(_rentOwedLimit).div(_rentOwed)));
                     _rentOwed = _rentOwedLimit; // take up to the max   
                 }
                 _revertToUnderbidder(_tokenId);
@@ -800,7 +800,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
              // transfer to previous owner
             address _currentOwner = ownerOf(_tokenId);
             price[_tokenId] = orderbook[_tokenId][_tempNext].price;
-            ownershipLostTimestamp[ownerOf(_tokenId)] = now;
+            ownershipLostTimestamp[ownerOf(_tokenId)] = block.timestamp;
             _transferCard(_currentOwner, _tempNext, _tokenId);
             emit LogCardTransferredToUnderbidder(_tokenId, _tempNext);
         }
@@ -829,7 +829,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
     /// @dev does not set a winner so same as invalid outcome
     /// @dev market does not need to be locked, just in case lockMarket bugs out
     function circuitBreaker() external {
-        require(now > (oracleResolutionTime + 12 weeks), "Too early");
+        require(block.timestamp > (oracleResolutionTime + 12 weeks), "Too early");
         _incrementState();
         _processCardsAfterEvent(); 
         state = States.WITHDRAW;

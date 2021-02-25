@@ -5,7 +5,7 @@ import '../../interfaces/IRCProxyMainnet.sol';
 import '../../interfaces/IBridge.sol';
 import '../../interfaces/ITreasury.sol';
 import '../../interfaces/IRCMarket.sol';
-import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 // a mockup to test changing the proxy, this is as per the original but always doubles the returned winner
@@ -66,7 +66,7 @@ contract RCProxyXdaiV2 is Ownable
     ////////// CONSTRUCTOR /////////////
     ////////////////////////////////////
 
-    constructor(address _bridgeXdaiAddress, address _factoryAddress, address _treasuryAddress) public {
+    constructor(address _bridgeXdaiAddress, address _factoryAddress, address _treasuryAddress) {
         setBridgeXdaiAddress(_bridgeXdaiAddress);
         setFactoryAddress(_factoryAddress);
         setTreasuryAddress(_treasuryAddress);
@@ -129,7 +129,7 @@ contract RCProxyXdaiV2 is Ownable
         floatSize = floatSize.sub(_amount);
         address _thisAddressNotPayable = owner();
         address payable _recipient = address(uint160(_thisAddressNotPayable));
-        (bool _success, ) = _recipient.call.value(_amount)("");
+        (bool _success, ) = _recipient.call{value:_amount}("");
         require(_success, "Transfer failed");
         emit LogFloatWithdrawn(msg.sender, _amount);
     }
@@ -209,7 +209,7 @@ contract RCProxyXdaiV2 is Ownable
     ////////////////////////////////////
 
     /// @dev add a float, so no need to wait for arrival of xdai from ARB
-    function() external payable {
+    receive() external payable {
         floatSize = floatSize.add(msg.value);
         emit LogFloatIncreased(msg.sender, msg.value);
     }
@@ -248,7 +248,7 @@ contract RCProxyXdaiV2 is Ownable
         address _user = deposits[_nonce].user;
         if (address(this).balance >= _amount) {
             ITreasury treasury = ITreasury(treasuryAddress);
-            assert(treasury.deposit.value(_amount)(_user));
+            assert(treasury.deposit{value:_amount}(_user));
             deposits[_nonce].executed = true;
             emit LogDepositExecuted(_nonce);
         }

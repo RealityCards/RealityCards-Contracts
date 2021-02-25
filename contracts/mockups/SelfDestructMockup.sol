@@ -11,6 +11,6 @@ contract SelfDestructMockup
         selfdestruct(_address);
     }
 
-    function() external payable {}
+    receive() external payable {}
 }
 
