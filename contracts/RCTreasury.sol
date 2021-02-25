@@ -258,7 +258,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     ////////////////////////////////////
  
     /// @dev sending ether/xdai direct is equal to a deposit
-    fallback () external payable {
+    receive() external payable {
         assert(deposit(msgSender()));
     }
 
