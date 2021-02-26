@@ -182,10 +182,10 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
         uint256 _userTotalBids = 0;
         for(uint256 i; i < activeMarkets.length - 1; i++){
-            if(userBids[activeMarkets[i]][msgSender()] != 0){
+            if( userBids[msgSender()][activeMarkets[i]] != 0 ){
                 IRCMarket _market = IRCMarket(activeMarkets[i]);
                 _market.collectRentAllCards();
-                _userTotalBids = _userTotalBids.add(userBids[activeMarkets[i]][msgSender()]);
+                _userTotalBids = _userTotalBids.add(userBids[msgSender()][activeMarkets[i]]);
             }
         }
         if (_dai > deposits[msgSender()]) {
@@ -266,10 +266,10 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     function updateTotalRental(address _user, uint256 _newPrice, bool _add) external onlyMarkets returns(bool) {
         if (_add) {
             userTotalRentals[_user] = userTotalRentals[_user].add(_newPrice);
-            userBids[msg.sender][_user] = userBids[msg.sender][_user].add(_newPrice);
+            userBids[_user][msg.sender] = userBids[_user][msg.sender].add(_newPrice);
         } else {
             userTotalRentals[_user] = userTotalRentals[_user].sub(_newPrice);
-            userBids[msg.sender][_user] = userBids[msg.sender][_user].sub(_newPrice);
+            userBids[_user][msg.sender] = userBids[_user][msg.sender].sub(_newPrice);
         }
         return true;
     }

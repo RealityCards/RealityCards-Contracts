@@ -30,6 +30,7 @@
     "truffle-security": "^1.7.3"
   },
   "devDependencies": {
+    "@nomiclabs/hardhat-ganache": "^2.0.0",
     "@nomiclabs/hardhat-truffle5": "^2.0.0",
     "@nomiclabs/hardhat-web3": "^2.0.0",
     "@openzeppelin/contracts": "^3.4.0",
