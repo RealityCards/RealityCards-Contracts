@@ -181,7 +181,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         require(block.timestamp.sub(lastRentalTime[msgSender()]) > uint256(1 days).div(minRentalDivisor), "Too soon");
 
         uint256 _userTotalBids = 0;
-        for(uint256 i; i < activeMarkets.length - 1; i++){
+        console.log(activeMarkets.length);
+        for(uint256 i; i < activeMarkets.length.sub(1); i++){
             if( userBids[msgSender()][activeMarkets[i]] != 0 ){
                 IRCMarket _market = IRCMarket(activeMarkets[i]);
                 _market.collectRentAllCards();
