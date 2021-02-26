@@ -21,5 +21,7 @@ interface IRCMarket {
     function ownerOf(uint256 tokenId) external view returns  (address);
     function state() external view returns (uint256);
     function setWinner(uint256) external;
+    function collectRentAllCards() external;
+    function exitAll() external;
 
 }

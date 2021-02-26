@@ -5,6 +5,7 @@ pragma solidity ^0.7.5;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "hardhat/console.sol";
 import './lib/NativeMetaTransaction.sol';
+import "./interfaces/IRCMarket.sol";
 
 /// @title Reality Cards Treasury
 /// @author Andrew Stanger
@@ -33,8 +34,10 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     mapping (address => uint256) public userTotalRentals;
     /// @dev when a user most recently rented (to prevent users withdrawing within minRentalTime)
     mapping (address => uint256) public lastRentalTime;
-    /// @dev Users active positions so a rent collection can be called before a withdraw
-    // mapping (address => address => uint256) public openPositions;
+    /// @dev keeps track of the sum of the bids a user has on each market
+    mapping (address => mapping (address => uint256)) public userBids; // user // market // sum of bids
+    /// @dev list of active markets
+    address[] public activeMarkets;
 
      ///// GOVERNANCE VARIABLES /////
     /// @dev only parameters that need to be are here, the rest are in the Factory
@@ -177,6 +180,14 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         require(deposits[msgSender()] > 0, "Nothing to withdraw");
         require(block.timestamp.sub(lastRentalTime[msgSender()]) > uint256(1 days).div(minRentalDivisor), "Too soon");
 
+        uint256 _userTotalBids = 0;
+        for(uint256 i; i < activeMarkets.length - 1; i++){
+            if(userBids[activeMarkets[i]][msgSender()] != 0){
+                IRCMarket _market = IRCMarket(activeMarkets[i]);
+                _market.collectRentAllCards();
+                _userTotalBids = _userTotalBids.add(userBids[activeMarkets[i]][msgSender()]);
+            }
+        }
         if (_dai > deposits[msgSender()]) {
             _dai = deposits[msgSender()];
         }
@@ -186,6 +197,14 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         address payable _recipient = address(uint160(_thisAddressNotPayable));
         (bool _success, ) = _recipient.call{value: _dai}("");
         require(_success, "Transfer failed");
+        if(_userTotalBids.div(minRentalDivisor) > deposits[msgSender()]){
+            for(uint256 i; i < activeMarkets.length - 1; i++){
+                if(userBids[activeMarkets[i]][msgSender()] != 0){
+                    IRCMarket _market = IRCMarket(activeMarkets[i]);
+                    _market.exitAll();
+                }
+            }
+        }
         emit LogDepositWithdrawal(msgSender(), _dai);
         emit LogAdjustDeposit(msgSender(), _dai, false);
     }
@@ -247,10 +266,26 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     function updateTotalRental(address _user, uint256 _newPrice, bool _add) external onlyMarkets returns(bool) {
         if (_add) {
             userTotalRentals[_user] = userTotalRentals[_user].add(_newPrice);
+            userBids[msg.sender][_user] = userBids[msg.sender][_user].add(_newPrice);
         } else {
             userTotalRentals[_user] = userTotalRentals[_user].sub(_newPrice);
+            userBids[msg.sender][_user] = userBids[msg.sender][_user].sub(_newPrice);
         }
         return true;
+    }
+
+    /// @dev adds or removes a market to the active markets array
+    function updateMarketStatus(bool _open) external onlyMarkets {
+        if(_open){
+            activeMarkets.push(msg.sender);
+        } else{
+            for(uint256 i; i < activeMarkets.length; i++){
+                if(activeMarkets[i] == msg.sender){
+                    activeMarkets[i] = activeMarkets[activeMarkets.length - 1];
+                    activeMarkets.pop();
+                }
+            }
+        }
     }
 
     ////////////////////////////////////
