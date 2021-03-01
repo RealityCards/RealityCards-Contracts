@@ -293,6 +293,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         if(!_done){
             userBids[_user][msg.sender].tokenId.push(_tokenId);
             userBids[_user][msg.sender].bidPrice.push(_price);
+            _done = true;
         }
         return _done;
     }
