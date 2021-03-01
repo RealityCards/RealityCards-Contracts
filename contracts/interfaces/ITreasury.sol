@@ -14,7 +14,8 @@ interface ITreasury
     function deposit(address) external payable returns (bool);
     function sponsor() external payable returns (bool);
     function hotPotatoDivisor() external payable returns (uint256);
-    function updateTotalRental(address,uint256,bool) external returns (bool);
+    function updateUserBid(address _user, uint256 _tokenId, uint256 _price) external returns (bool);
+    function updateMarketStatus(bool _open) external;
     function userTotalRentals(address) external returns (uint256);
     function updateLastRentalTime(address) external returns (bool);
     function minRentalDivisor() external returns (uint256);

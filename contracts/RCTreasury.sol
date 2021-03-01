@@ -34,10 +34,17 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     mapping (address => uint256) public userTotalRentals;
     /// @dev when a user most recently rented (to prevent users withdrawing within minRentalTime)
     mapping (address => uint256) public lastRentalTime;
-    /// @dev keeps track of the sum of the bids a user has on each market
-    mapping (address => mapping (address => uint256)) public userBids; // user // market // sum of bids
-    /// @dev list of active markets
-    address[] public activeMarkets;
+    /// @dev keeps track of the tokens and bid prices the user has in each market
+    struct Market{
+        uint256[] tokenId; 
+        uint256[] bidPrice;
+    }
+    /// @dev user addres to a record of markets they have bids in
+    mapping (address => mapping (address => Market)) userBids; // user => market => tokenID & Bidprice
+    /// @dev an array of all the active markets
+    address[] activeMarkets;
+    /// @dev an array of the locked markets, not currently used, could be used for housekeeping
+    address[] lockedMarkets;
 
      ///// GOVERNANCE VARIABLES /////
     /// @dev only parameters that need to be are here, the rest are in the Factory
@@ -180,15 +187,15 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         require(deposits[msgSender()] > 0, "Nothing to withdraw");
         require(block.timestamp.sub(lastRentalTime[msgSender()]) > uint256(1 days).div(minRentalDivisor), "Too soon");
 
-        uint256 _userTotalBids = 0;
-        console.log(activeMarkets.length);
-        for(uint256 i; i < activeMarkets.length.sub(1); i++){
-            if( userBids[msgSender()][activeMarkets[i]] != 0 ){
-                IRCMarket _market = IRCMarket(activeMarkets[i]);
-                _market.collectRentAllCards();
-                _userTotalBids = _userTotalBids.add(userBids[msgSender()][activeMarkets[i]]);
-            }
-        }
+        // uint256 _userTotalBids = 0;
+        // console.log(activeMarkets.length);
+        // for(uint256 i; i < activeMarkets.length.sub(1); i++){
+        //     if( userBids[msgSender()][activeMarkets[i]] != 0 ){
+        //         IRCMarket _market = IRCMarket(activeMarkets[i]);
+        //         _market.collectRentAllCards();
+        //         _userTotalBids = _userTotalBids.add(userBids[msgSender()][activeMarkets[i]]);
+        //     }
+        // }    
         if (_dai > deposits[msgSender()]) {
             _dai = deposits[msgSender()];
         }
@@ -198,14 +205,15 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         address payable _recipient = address(uint160(_thisAddressNotPayable));
         (bool _success, ) = _recipient.call{value: _dai}("");
         require(_success, "Transfer failed");
-        if(_userTotalBids.div(minRentalDivisor) > deposits[msgSender()]){
-            for(uint256 i; i < activeMarkets.length - 1; i++){
-                if(userBids[activeMarkets[i]][msgSender()] != 0){
-                    IRCMarket _market = IRCMarket(activeMarkets[i]);
-                    _market.exitAll();
-                }
-            }
-        }
+        
+        // if(_userTotalBids.div(minRentalDivisor) > deposits[msgSender()]){
+        //     for(uint256 i; i < activeMarkets.length - 1; i++){
+        //         if(userBids[activeMarkets[i]][msgSender()] != 0){
+        //             IRCMarket _market = IRCMarket(activeMarkets[i]);
+        //             _market.exitAll();
+        //         }
+        //     }
+        // }
         emit LogDepositWithdrawal(msgSender(), _dai);
         emit LogAdjustDeposit(msgSender(), _dai, false);
     }
@@ -264,15 +272,28 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     }
 
     /// @dev tracks the total rental payments across all Cards, to enforce minimum rental duration
-    function updateTotalRental(address _user, uint256 _newPrice, bool _add) external onlyMarkets returns(bool) {
-        if (_add) {
-            userTotalRentals[_user] = userTotalRentals[_user].add(_newPrice);
-            userBids[_user][msg.sender] = userBids[_user][msg.sender].add(_newPrice);
-        } else {
-            userTotalRentals[_user] = userTotalRentals[_user].sub(_newPrice);
-            userBids[_user][msg.sender] = userBids[_user][msg.sender].sub(_newPrice);
+    function updateUserBid(address _user, uint256 _tokenId, uint256 _price) external onlyMarkets returns(bool) {
+        bool _done = false;
+        for(uint256 i; i < userBids[_user][msg.sender].tokenId.length; i++){
+            if (userBids[_user][msg.sender].tokenId[i] == _tokenId){
+                if(_price == 0){
+                    uint256 _lastRecord = userBids[_user][msg.sender].tokenId.length.sub(1);
+                    userBids[_user][msg.sender].tokenId[i] = userBids[_user][msg.sender].tokenId[_lastRecord];
+                    userBids[_user][msg.sender].tokenId.pop();
+                    userBids[_user][msg.sender].bidPrice[i] = userBids[_user][msg.sender].bidPrice[_lastRecord];
+                    userBids[_user][msg.sender].bidPrice.pop();
+                } else {
+                    userBids[_user][msg.sender].bidPrice[i] = _price;
+                }
+                _done = true;
+                break;
+            }
         }
-        return true;
+        if(!_done){
+            userBids[_user][msg.sender].tokenId.push(_tokenId);
+            userBids[_user][msg.sender].bidPrice.push(_price);
+        }
+        return _done;
     }
 
     /// @dev adds or removes a market to the active markets array
@@ -284,6 +305,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
                 if(activeMarkets[i] == msg.sender){
                     activeMarkets[i] = activeMarkets[activeMarkets.length - 1];
                     activeMarkets.pop();
+                    lockedMarkets.push(msg.sender);
                 }
             }
         }

@@ -323,10 +323,8 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         require(marketLockingTime < block.timestamp, "Market has not finished");
         // do a final rent collection before the contract is locked down
         collectRentAllCards();
-        // update userTotalRental, no need to reserve any user deposit for this market now
-        for (uint i = 0; i < numberOfTokens; i++) {
-            assert(treasury.updateTotalRental(ownerOf(i), price[i], false));
-        }
+        // let the treasury know the market is closed
+        treasury.updateMarketStatus(false);
         _incrementState();
         emit LogContractLocked(true);
     }
@@ -519,6 +517,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             _updateBid(_newPrice, _tokenId, _timeHeldLimit, _startingPosition);
         }
 
+        require(treasury.updateUserBid(msgSender(), _tokenId, _newPrice));
         assert(treasury.updateLastRentalTime(msgSender()));
         return price[_tokenId];
     }
@@ -563,6 +562,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             delete orderbook[_tokenId][msgSender()];
             emit LogRemoveFromOrderbook(msgSender(), _tokenId);
         }
+        require(treasury.updateUserBid(msgSender(), _tokenId, 0));
         emit LogExit(msgSender(), _tokenId); 
     }
 
@@ -822,16 +822,17 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     function _processNewOwner(address _newOwner, uint256 _newPrice, uint256 _tokenId) internal {
         // _transferCard & updating price MUST come after treasury calls
         // ... because they assume price and owner not yet updated
-        assert(treasury.updateTotalRental(_newOwner, _newPrice, true));
-        assert(treasury.updateTotalRental(ownerOf(_tokenId), price[_tokenId], false));
+        
+        // assert(treasury.updateTotalRental(_newOwner, _newPrice, true));
+        // assert(treasury.updateTotalRental(ownerOf(_tokenId), price[_tokenId], false));
         _transferCard(ownerOf(_tokenId), _newOwner, _tokenId);
         price[_tokenId] = _newPrice;
     }
 
     /// @dev same as above except does not transfer the Card or update last rental time
     function _processUpdateOwner(uint256 _newPrice, uint256 _tokenId) internal {
-        assert(treasury.updateTotalRental(ownerOf(_tokenId), _newPrice, true));
-        assert(treasury.updateTotalRental(ownerOf(_tokenId), price[_tokenId], false));
+        // assert(treasury.updateTotalRental(ownerOf(_tokenId), _newPrice, true));
+        // assert(treasury.updateTotalRental(ownerOf(_tokenId), price[_tokenId], false));
         price[_tokenId] = _newPrice;
     }
 
@@ -847,6 +848,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     function _incrementState() internal {
         assert(uint256(state) < 4);
         state = States(uint256(state) + 1);
+        if(uint256(state) == 2){treasury.updateMarketStatus(true);}
         emit LogStateChange(uint256(state));
     }
 
