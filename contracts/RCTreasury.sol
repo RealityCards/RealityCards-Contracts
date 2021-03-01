@@ -187,15 +187,16 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         require(deposits[msgSender()] > 0, "Nothing to withdraw");
         require(block.timestamp.sub(lastRentalTime[msgSender()]) > uint256(1 days).div(minRentalDivisor), "Too soon");
 
-        // uint256 _userTotalBids = 0;
-        // console.log(activeMarkets.length);
-        // for(uint256 i; i < activeMarkets.length.sub(1); i++){
-        //     if( userBids[msgSender()][activeMarkets[i]] != 0 ){
-        //         IRCMarket _market = IRCMarket(activeMarkets[i]);
-        //         _market.collectRentAllCards();
-        //         _userTotalBids = _userTotalBids.add(userBids[msgSender()][activeMarkets[i]]);
-        //     }
-        // }    
+        uint256 _userTotalBids = 0;
+        for(uint256 i; i < activeMarkets.length; i++){
+            if (userBids[msgSender()][activeMarkets[i]].tokenId.length != 0){
+                IRCMarket _market = IRCMarket(activeMarkets[i]);
+                _market.collectRentSpecificCards(userBids[msgSender()][activeMarkets[i]].tokenId);
+                for(uint256 j; j < userBids[msgSender()][activeMarkets[i]].tokenId.length; j++ ){
+                    _userTotalBids = _userTotalBids.add(userBids[msgSender()][activeMarkets[i]].bidPrice[j]);
+                }
+            }
+        }    
         if (_dai > deposits[msgSender()]) {
             _dai = deposits[msgSender()];
         }
@@ -206,14 +207,14 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         (bool _success, ) = _recipient.call{value: _dai}("");
         require(_success, "Transfer failed");
         
-        // if(_userTotalBids.div(minRentalDivisor) > deposits[msgSender()]){
-        //     for(uint256 i; i < activeMarkets.length - 1; i++){
-        //         if(userBids[activeMarkets[i]][msgSender()] != 0){
-        //             IRCMarket _market = IRCMarket(activeMarkets[i]);
-        //             _market.exitAll();
-        //         }
-        //     }
-        // }
+        if(_userTotalBids.div(minRentalDivisor) > deposits[msgSender()]){
+            for(uint256 i; i < activeMarkets.length - 1; i++){
+                if(userBids[msgSender()][activeMarkets[i]].tokenId.length != 0){
+                    IRCMarket _market = IRCMarket(activeMarkets[i]);
+                    _market.exitSpecificCards(userBids[msgSender()][activeMarkets[i]].tokenId);
+                }
+            }
+        }
         emit LogDepositWithdrawal(msgSender(), _dai);
         emit LogAdjustDeposit(msgSender(), _dai, false);
     }

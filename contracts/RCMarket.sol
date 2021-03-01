@@ -462,6 +462,13 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         }
     }
 
+    function collectRentSpecificCards(uint[] memory _cards) external {
+        //_checkState(States.OPEN);
+        for (uint256 i; i < _cards.length; i++){
+            _collectRent(_cards[i]);
+        }
+    }
+
     /// @notice rent every Card at the minimum price
     function rentAllCards(uint256 _maxSumOfPrices) external {
         // check that not being front run
@@ -570,6 +577,12 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     function exitAll() external {
         for (uint i = 0; i < numberOfTokens; i++) {
             exit(i);
+        }
+    }
+
+    function exitSpecificCards(uint[] memory _cards) external {
+        for (uint256 i; i < _cards.length; i++){
+            exit(_cards[i]);
         }
     }
 
