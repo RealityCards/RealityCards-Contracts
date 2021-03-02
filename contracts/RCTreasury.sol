@@ -261,6 +261,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
     /// @dev new owner pays current owner for hot potato mode
     function processHarbergerPayment(address _newOwner, address _currentOwner, uint256 _requiredPayment) external balancedBooks onlyMarkets returns(bool) {
+        require(!globalPause, "Global Pause is Enabled");
+        require(!marketPaused[msg.sender], "Market is Paused");
         require(deposits[_newOwner] >= _requiredPayment, "Insufficient deposit");
         deposits[_newOwner] = deposits[_newOwner].sub(_requiredPayment);
         deposits[_currentOwner] = deposits[_currentOwner].add(_requiredPayment);
