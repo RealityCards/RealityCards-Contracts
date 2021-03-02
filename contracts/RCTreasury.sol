@@ -240,6 +240,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev a payout is equivalent to moving from market pot to user's deposit (the opposite of payRent)
     function payout(address _user, uint256 _dai) external balancedBooks onlyMarkets returns(bool) {
         require(!globalPause, "Payouts are disabled");
+        require(!marketPaused[msg.sender], "Market is Paused");
         assert(marketPot[msg.sender] >= _dai); 
         deposits[_user] = deposits[_user].add(_dai);
         marketPot[msg.sender] = marketPot[msg.sender].sub(_dai);
