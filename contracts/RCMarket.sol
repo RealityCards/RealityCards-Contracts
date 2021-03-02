@@ -498,6 +498,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         require(_newPrice >= 1 ether, "Minimum rental 1 xDai");
         require(_tokenId < numberOfTokens, "This token does not exist");
         require(exitedTimestamp[msgSender()] != block.timestamp, "Cannot lose and re-rent in same block");
+        require(!treasury.marketPaused(address(this)), "Rentals are disabled");
 
         _collectRent(_tokenId);
 

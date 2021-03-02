@@ -139,7 +139,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         globalPause = globalPause ? false : true;
     }
 
-    /// @dev if true, cannot rent any cards for specific market
+    /// @dev if true, cannot make a new rental for a specific market
     function setPauseMarket(address _market) external onlyOwner {
         marketPaused[_market] = marketPaused[_market] ? false : true;
     }
@@ -228,7 +228,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev a rental payment is equivalent to moving to market pot from user's deposit, called by _collectRent in the market
     function payRent(address _user, uint256 _dai) external balancedBooks onlyMarkets returns(bool) {
         require(!globalPause, "Rentals are disabled");
-        require(!marketPaused[msg.sender], "Rentals are disabled");
         assert(deposits[_user] >= _dai); // assert because should have been reduced to user's deposit already
         deposits[_user] = deposits[_user].sub(_dai);
         marketPot[msg.sender] = marketPot[msg.sender].add(_dai);
@@ -241,7 +240,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev a payout is equivalent to moving from market pot to user's deposit (the opposite of payRent)
     function payout(address _user, uint256 _dai) external balancedBooks onlyMarkets returns(bool) {
         require(!globalPause, "Payouts are disabled");
-        require(!marketPaused[msg.sender], "Market is Paused");
         assert(marketPot[msg.sender] >= _dai); 
         deposits[_user] = deposits[_user].add(_dai);
         marketPot[msg.sender] = marketPot[msg.sender].sub(_dai);
@@ -254,7 +252,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @notice ability to add liqudity to the pot without being able to win (called by market sponsor function). 
     function sponsor() external payable balancedBooks onlyMarkets returns(bool) {
         require(!globalPause, "Global Pause is Enabled");
-        require(!marketPaused[msg.sender], "Market is Paused");
         marketPot[msg.sender] = marketPot[msg.sender].add(msg.value);
         totalMarketPots = totalMarketPots.add(msg.value);
         return true;
@@ -263,7 +260,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev new owner pays current owner for hot potato mode
     function processHarbergerPayment(address _newOwner, address _currentOwner, uint256 _requiredPayment) external balancedBooks onlyMarkets returns(bool) {
         require(!globalPause, "Global Pause is Enabled");
-        require(!marketPaused[msg.sender], "Market is Paused");
         require(deposits[_newOwner] >= _requiredPayment, "Insufficient deposit");
         deposits[_newOwner] = deposits[_newOwner].sub(_requiredPayment);
         deposits[_currentOwner] = deposits[_currentOwner].add(_requiredPayment);
