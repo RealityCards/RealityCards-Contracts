@@ -38,7 +38,7 @@ contract RCProxyMainnet is Ownable
 
     /// @dev dai deposits
     uint256 internal depositNonce;
-    bool depositsEnabled = true;
+    bool internal depositsEnabled = true;
 
     ////////////////////////////////////
     ////////// CONSTRUCTOR /////////////
