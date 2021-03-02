@@ -310,7 +310,6 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
         // check timestamps
         // check market opening time
         if (advancedWarning != 0) {
-            require(_timestamps[0] >= block.timestamp, "Market opening time not set"); 
             require(_timestamps[0].sub(advancedWarning) > block.timestamp, "Market opens too soon" );
         }
         // check market locking time
