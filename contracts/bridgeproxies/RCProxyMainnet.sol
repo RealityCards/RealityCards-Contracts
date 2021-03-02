@@ -141,8 +141,8 @@ contract RCProxyMainnet is Ownable
     ///// GOVERNANCE - DAI BRIDGE //////
     ////////////////////////////////////
 
-    function enableOrDisableDeposits() onlyOwner external {
-        depositsEnabled = depositsEnabled ? false : true;
+    function changeDepositsEnabled() onlyOwner external {
+        depositsEnabled = !depositsEnabled;
     }
     
     ////////////////////////////////////

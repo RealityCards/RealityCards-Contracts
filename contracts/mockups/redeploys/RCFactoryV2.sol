@@ -179,7 +179,7 @@ contract RCFactoryV2 is Ownable, CloneFactory, NativeMetaTransaction {
     }
 
     /// @notice whether or not only governors can create the market
-    function setMarketCreationGovernorsOnly() external onlyOwner {
+    function changeMarketCreationGovernorsOnly() external onlyOwner {
         marketCreationGovernorsOnly = marketCreationGovernorsOnly ? false : true;
     }
 
@@ -189,7 +189,7 @@ contract RCFactoryV2 is Ownable, CloneFactory, NativeMetaTransaction {
     }
 
     /// @notice if true, Cards in unapproved markets can't be upgraded
-    function setTrapCardsIfUnapproved() onlyOwner external {
+    function changeTrapCardsIfUnapproved() onlyOwner external {
         trapIfUnapproved = trapIfUnapproved ? false : true;
     }
 
@@ -208,7 +208,7 @@ contract RCFactoryV2 is Ownable, CloneFactory, NativeMetaTransaction {
     // EDIT GOVERNORS
 
     /// @notice add or remove an address from market creator whitelist
-    function addOrRemoveGovernor(address _governor) external onlyOwner {
+    function changeGovernorApproval(address _governor) external onlyOwner {
         governors[_governor] = governors[_governor] ? false : true;
     }
 
@@ -218,23 +218,23 @@ contract RCFactoryV2 is Ownable, CloneFactory, NativeMetaTransaction {
     /// @dev all functions should have onlyGovernors modifier
 
     /// @notice markets are default hidden from the interface, this reveals them
-    function approveOrUnapproveMarket(address _market) external onlyGovernors {
+    function changeMarketApproval(address _market) external onlyGovernors {
         isMarketApproved[_market] = isMarketApproved[_market] ? false : true;
         emit LogMarketApproved(_market, isMarketApproved[_market]);
     }
 
     /// @notice artistAddress, passed in createMarket, must be approved
-    function addOrRemoveArtist(address _artist) external onlyGovernors {
+    function changeArtistApproval(address _artist) external onlyGovernors {
         isArtistApproved[_artist] = isArtistApproved[_artist] ? false : true;
     }
 
     /// @notice affiliateAddress, passed in createMarket, must be approved
-    function addOrRemoveAffiliate(address _affiliate) external onlyGovernors {
+    function changeAffiliateApproval(address _affiliate) external onlyGovernors {
         isAffiliateApproved[_affiliate] = isAffiliateApproved[_affiliate] ? false : true;
     }
 
     /// @notice cardAffiliateAddress, passed in createMarket, must be approved
-    function addOrRemoveCardAffiliate(address _affiliate) external onlyGovernors {
+    function changeCardAffiliateApproval(address _affiliate) external onlyGovernors {
         isCardAffiliateApproved[_affiliate] = isCardAffiliateApproved[_affiliate] ? false : true;
     }
 

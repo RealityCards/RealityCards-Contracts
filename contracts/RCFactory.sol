@@ -184,8 +184,8 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
     /// NOT CALLED WITHIN CONSTRUCTOR (external)
 
     /// @notice whether or not only governors can create the market
-    function setMarketCreationGovernorsOnly() external onlyOwner {
-        marketCreationGovernorsOnly = marketCreationGovernorsOnly ? false : true;
+    function changeMarketCreationGovernorsOnly() external onlyOwner {
+        marketCreationGovernorsOnly = !marketCreationGovernorsOnly;
     }
 
     /// @notice how much xdai must be sent in the createMarket tx which forms the initial pot
@@ -194,8 +194,8 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
     }
 
     /// @notice if true, Cards in unapproved markets can't be upgraded
-    function setTrapCardsIfUnapproved() onlyOwner external {
-        trapIfUnapproved = trapIfUnapproved ? false : true;
+    function changeTrapCardsIfUnapproved() onlyOwner external {
+        trapIfUnapproved = !trapIfUnapproved;
     }
 
     /// @notice market opening time must be at least this many seconds in the future
@@ -213,8 +213,8 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
     // EDIT GOVERNORS
 
     /// @notice add or remove an address from market creator whitelist
-    function addOrRemoveGovernor(address _governor) external onlyOwner {
-        governors[_governor] = governors[_governor] ? false : true;
+    function changeGovernorApproval(address _governor) external onlyOwner {
+        governors[_governor] = !governors[_governor];
     }
 
     ////////////////////////////////////
@@ -223,24 +223,24 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
     /// @dev all functions should have onlyGovernors modifier
 
     /// @notice markets are default hidden from the interface, this reveals them
-    function approveOrUnapproveMarket(address _market) external onlyGovernors {
-        isMarketApproved[_market] = isMarketApproved[_market] ? false : true;
+    function changeMarketApproval(address _market) external onlyGovernors {
+        isMarketApproved[_market] = !isMarketApproved[_market];
         emit LogMarketApproved(_market, isMarketApproved[_market]);
     }
 
     /// @notice artistAddress, passed in createMarket, must be approved
-    function addOrRemoveArtist(address _artist) external onlyGovernors {
-        isArtistApproved[_artist] = isArtistApproved[_artist] ? false : true;
+    function changeArtistApproval(address _artist) external onlyGovernors {
+        isArtistApproved[_artist] = !isArtistApproved[_artist];
     }
 
     /// @notice affiliateAddress, passed in createMarket, must be approved
-    function addOrRemoveAffiliate(address _affiliate) external onlyGovernors {
-        isAffiliateApproved[_affiliate] = isAffiliateApproved[_affiliate] ? false : true;
+    function changeAffiliateApproval(address _affiliate) external onlyGovernors {
+        isAffiliateApproved[_affiliate] = !isAffiliateApproved[_affiliate];
     }
 
     /// @notice cardAffiliateAddress, passed in createMarket, must be approved
-    function addOrRemoveCardAffiliate(address _affiliate) external onlyGovernors {
-        isCardAffiliateApproved[_affiliate] = isCardAffiliateApproved[_affiliate] ? false : true;
+    function changeCardAffiliateApproval(address _affiliate) external onlyGovernors {
+        isCardAffiliateApproved[_affiliate] = !isCardAffiliateApproved[_affiliate];
     }
 
     ////////////////////////////////////
@@ -308,6 +308,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
         }
 
         // check timestamps
+        require(_timestamps.length == 3, "Incorrect number of array elements");
         // check market opening time
         if (advancedWarning != 0) {
             require(_timestamps[0] >= block.timestamp, "Market opening time not set"); 

@@ -135,13 +135,13 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// NOT CALLED WITHIN CONSTRUCTOR (external)
 
     /// @dev if true, cannot deposit, withdraw or rent any cards
-    function setGlobalPause() external onlyOwner {
-        globalPause = globalPause ? false : true;
+    function changeGlobalPause() external onlyOwner {
+        globalPause = !globalPause;
     }
 
     /// @dev if true, cannot make a new rental for a specific market
-    function setPauseMarket(address _market) external onlyOwner {
-        marketPaused[_market] = marketPaused[_market] ? false : true;
+    function changePauseMarket(address _market) external onlyOwner {
+        marketPaused[_market] = !marketPaused[_market];
     }
 
     ////////////////////////////////////
