@@ -28,8 +28,8 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     uint256 public numberOfTokens;
     /// @dev only for _revertToUnderbidder to prevent gas limits
     uint256 public constant MAX_ITERATIONS = 10;
-    uint256 public constant MAX_UINT256 = 2**256 - 1;
-    uint256 public constant MAX_UINT128 = 2**128 - 1;
+    uint256 public constant MAX_UINT256 = type(uint256).max;
+    uint256 public constant MAX_UINT128 = type(uint128).max;
     enum States {CLOSED, OPEN, LOCKED, WITHDRAW}
     States public state; 
     /// @dev type of event. 0 = classic, 1 = winner takes all, 2 = hot potato 
@@ -48,7 +48,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
     ///// PRICE, DEPOSITS, RENT /////
     /// @dev in attodai (so 100xdai = 100000000000000000000)
-    mapping (uint256 => uint256) public price; 
+    mapping (uint256 => uint256) public tokenPrice; 
     /// @dev keeps track of all the rent paid by each user. So that it can be returned in case of an invalid market outcome.
     mapping (address => uint256) public collectedPerUser;
     /// @dev keeps track of all the rent paid for each token, for card specific affiliate payout
@@ -61,7 +61,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     ///// PARAMETERS /////
     /// @dev read from the Factory upon market creation, can not be changed for existing market
     /// @dev the minimum required price increase in %
-    uint256 public minimumPriceIncrease;
+    uint256 public minimumPriceIncreasePercent;
     /// @dev minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
     uint256 public minRentalDivisor;
     /// @dev if hot potato mode, how much rent new owner must pay current owner (1 week divisor: i.e. 7 = 1 day, 14 = 12 hours)
@@ -147,7 +147,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     event LogNftUpgraded(uint256 indexed currentTokenId, uint256 indexed newTokenId);
     event LogPayoutDetails(address indexed artistAddress, address marketCreatorAddress, address affiliateAddress, address[] cardAffiliateAddresses, uint256 indexed artistCut, uint256 winnerCut, uint256 creatorCut, uint256 affiliateCut, uint256 cardAffiliateCut);
     event LogTransferCardToLongestOwner(uint256 tokenId, address longestOwner);
-    event LogSettings(uint256 indexed minRentalDivisor, uint256 indexed minimumPriceIncrease, uint256 hotPotatoDivisor);
+    event LogSettings(uint256 indexed minRentalDivisor, uint256 indexed minimumPriceIncreasePercent, uint256 hotPotatoDivisor);
 
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
@@ -185,7 +185,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         // get adjustable parameters from the factory/treasury
         uint256[5] memory _potDistribution = factory.getPotDistribution();
         minRentalDivisor = treasury.minRentalDivisor();
-        minimumPriceIncrease = factory.minimumPriceIncrease();
+        minimumPriceIncreasePercent = factory.minimumPriceIncreasePercent();
         hotPotatoDivisor = factory.hotPotatoDivisor();
         
         // initialiiize!
@@ -241,7 +241,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         }
 
         emit LogPayoutDetails(_artistAddress, _marketCreatorAddress, _affiliateAddress, cardAffiliateAddresses, artistCut, winnerCut, creatorCut, affiliateCut, cardAffiliateCut);
-        emit LogSettings(minRentalDivisor, minimumPriceIncrease, hotPotatoDivisor);
+        emit LogSettings(minRentalDivisor, minimumPriceIncreasePercent, hotPotatoDivisor);
     } 
 
     ////////////////////////////////////
@@ -474,15 +474,15 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         // check that not being front run
         uint256 _actualSumOfPrices;
         for (uint i = 0; i < numberOfTokens; i++) {
-            _actualSumOfPrices = _actualSumOfPrices.add(price[i]);
+            _actualSumOfPrices = _actualSumOfPrices.add(tokenPrice[i]);
         }
         require(_actualSumOfPrices <= _maxSumOfPrices, "Prices too high");
 
         for (uint i = 0; i < numberOfTokens; i++) {
             if (ownerOf(i) != msgSender()) {
                 uint _newPrice;
-                if (price[i]>0) {
-                    _newPrice = (price[i].mul(minimumPriceIncrease.add(100))).div(100);
+                if (tokenPrice[i]>0) {
+                    _newPrice = (tokenPrice[i].mul(minimumPriceIncreasePercent.add(100))).div(100);
                 } else {
                     _newPrice = 1 ether;
                 }
@@ -528,7 +528,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
         require(treasury.updateUserBid(msgSender(), _tokenId, _newPrice));
         assert(treasury.updateLastRentalTime(msgSender()));
-        return price[_tokenId];
+        return tokenPrice[_tokenId];
     }
 
     /// @notice to change your timeHeldLimit without having to re-rent
@@ -619,7 +619,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         }
         //only collect rent if the token is owned (ie, if owned by the contract this implies unowned)
         if (ownerOf(_tokenId) != address(this)) {
-            uint256 _rentOwed = price[_tokenId].mul(_timeOfThisCollection.sub(timeLastCollected[_tokenId])).div(1 days);
+            uint256 _rentOwed = tokenPrice[_tokenId].mul(_timeOfThisCollection.sub(timeLastCollected[_tokenId])).div(1 days);
             address _collectRentFrom = ownerOf(_tokenId);
             uint256 _deposit = treasury.deposits(_collectRentFrom);
 
@@ -629,7 +629,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             if (_timeHeldLimit == MAX_UINT128) {
                 _rentOwedLimit = MAX_UINT256;
             } else {
-                _rentOwedLimit = price[_tokenId].mul(_timeHeldLimit.sub(timeHeld[_tokenId][_collectRentFrom])).div(1 days);
+                _rentOwedLimit = tokenPrice[_tokenId].mul(_timeHeldLimit.sub(timeHeld[_tokenId][_collectRentFrom])).div(1 days);
             }
 
             // if rent owed is too high, reduce
@@ -678,7 +678,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     function _newBid(uint256 _newPrice, uint256 _tokenId, uint256 _timeHeldLimit, address _startingPosition) internal {
         // check user not in the orderbook
         assert(orderbook[_tokenId][msgSender()].price == 0);
-        uint256 _minPriceToOwn = (price[_tokenId].mul(minimumPriceIncrease.add(100))).div(100);
+        uint256 _minPriceToOwn = (tokenPrice[_tokenId].mul(minimumPriceIncreasePercent.add(100))).div(100);
         // case 1: user is sufficiently above highest bidder (or only bidder)
         if(ownerOf(_tokenId) == address(this) || _newPrice >= _minPriceToOwn) {
             _setNewOwner(_newPrice, _tokenId, _timeHeldLimit);
@@ -695,7 +695,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         assert(orderbook[_tokenId][msgSender()].price > 0);
         // case 1: user is currently the owner
         if(msgSender() == ownerOf(_tokenId)) { 
-            _minPriceToOwn = (price[_tokenId].mul(minimumPriceIncrease.add(100))).div(100);
+            _minPriceToOwn = (tokenPrice[_tokenId].mul(minimumPriceIncreasePercent.add(100))).div(100);
             // case 1A: new price is at least X% above current price- adjust price & timeHeldLimit. newRental event required. 
             if(_newPrice >= _minPriceToOwn) {
                 orderbook[_tokenId][msgSender()].price = SafeCast.toUint128(_newPrice);
@@ -703,11 +703,11 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                 _processUpdateOwner(_newPrice, _tokenId);
                 emit LogAddToOrderbook(msgSender(), _newPrice, _timeHeldLimit, orderbook[_tokenId][msgSender()].prev, _tokenId);
             // case 1B: new price is higher than current price but by less than X%- revert the tx to prevent frontrunning
-            } else if (_newPrice > price[_tokenId]) {
+            } else if (_newPrice > tokenPrice[_tokenId]) {
                 require(false, "Not 10% higher");
             // case 1C: new price is equal or below old price
             } else {
-                _minPriceToOwn = (uint256(orderbook[_tokenId][orderbook[_tokenId][msgSender()].next].price).mul(minimumPriceIncrease.add(100))).div(100);
+                _minPriceToOwn = (uint256(orderbook[_tokenId][orderbook[_tokenId][msgSender()].next].price).mul(minimumPriceIncreasePercent.add(100))).div(100);
                 // case 1Ca: still the highest owner- adjust price & timeHeldLimit. newRental event required.
                 if(_newPrice >= _minPriceToOwn) {
                     orderbook[_tokenId][msgSender()].price = SafeCast.toUint128(_newPrice);
@@ -726,7 +726,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             orderbook[_tokenId][orderbook[_tokenId][msgSender()].prev].next = orderbook[_tokenId][msgSender()].next;
             orderbook[_tokenId][orderbook[_tokenId][msgSender()].next].prev = orderbook[_tokenId][msgSender()].prev; 
             delete orderbook[_tokenId][msgSender()]; // no LogRemoveFromOrderbook they are being added right back
-            _minPriceToOwn = (price[_tokenId].mul(minimumPriceIncrease.add(100))).div(100);
+            _minPriceToOwn = (tokenPrice[_tokenId].mul(minimumPriceIncreasePercent.add(100))).div(100);
             // case 2A: should be owner, add on top. newRental event called in _setNewOwner
             if(_newPrice >= _minPriceToOwn) 
             {  
@@ -743,7 +743,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         // if hot potato mode, pay current owner
         if (mode == 2) {
             uint256 _duration = uint256(1 weeks).div(hotPotatoDivisor);
-            uint256 _requiredPayment = (price[_tokenId].mul(_duration)).div(uint256(1 days));
+            uint256 _requiredPayment = (tokenPrice[_tokenId].mul(_duration)).div(uint256(1 days));
             assert(treasury.processHarbergerPayment(msgSender(), ownerOf(_tokenId), _requiredPayment));
         }
         // process new owner
@@ -777,7 +777,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         do {
             _tempPrev = _tempNext;
             _tempNext = orderbook[_tokenId][_tempPrev].next;
-            _requiredPrice = (uint256(orderbook[_tokenId][_tempNext].price).mul(minimumPriceIncrease.add(100))).div(100);
+            _requiredPrice = (uint256(orderbook[_tokenId][_tempNext].price).mul(minimumPriceIncreasePercent.add(100))).div(100);
             _loopCount = _loopCount.add(1);
         } while (
             // break loop if match price above AND above price below (so if either is false, continue, hence OR )
@@ -838,16 +838,16 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         // ... because they assume price and owner not yet updated
         
         // assert(treasury.updateTotalRental(_newOwner, _newPrice, true));
-        // assert(treasury.updateTotalRental(ownerOf(_tokenId), price[_tokenId], false));
+        // assert(treasury.updateTotalRental(ownerOf(_tokenId), tokenPrice[_tokenId], false));
         _transferCard(ownerOf(_tokenId), _newOwner, _tokenId);
-        price[_tokenId] = _newPrice;
+        tokenPrice[_tokenId] = _newPrice;
     }
 
     /// @dev same as above except does not transfer the Card or update last rental time
     function _processUpdateOwner(uint256 _newPrice, uint256 _tokenId) internal {
         // assert(treasury.updateTotalRental(ownerOf(_tokenId), _newPrice, true));
-        // assert(treasury.updateTotalRental(ownerOf(_tokenId), price[_tokenId], false));
-        price[_tokenId] = _newPrice;
+        // assert(treasury.updateTotalRental(ownerOf(_tokenId), tokenPrice[_tokenId], false));
+        tokenPrice[_tokenId] = _newPrice;
     }
 
     function _checkState(States currentState) internal view {

@@ -381,36 +381,36 @@ contract('RealityCardsTests', (accounts) => {
     await treasury.deposit(user,{ from: user, value: amount });
   }
 
-  async function newRental(price, outcome, user) {
-    price = web3.utils.toWei(price.toString(), 'ether');
-    await realitycards.newRental(price,0,zeroAddress,outcome,{ from: user});
+  async function newRental(tokenPrice, outcome, user) {
+    tokenPrice = web3.utils.toWei(tokenPrice.toString(), 'ether');
+    await realitycards.newRental(tokenPrice,0,zeroAddress,outcome,{ from: user});
   }
 
-  async function newRentalWithStartingPosition(price, outcome, position, user) {
-    price = web3.utils.toWei(price.toString(), 'ether');
-    await realitycards.newRental(price,0,position,outcome,{ from: user});
+  async function newRentalWithStartingPosition(tokenPrice, outcome, position, user) {
+    tokenPrice = web3.utils.toWei(tokenPrice.toString(), 'ether');
+    await realitycards.newRental(tokenPrice,0,position,outcome,{ from: user});
   }
 
-  async function newRentalWithDeposit(price, outcome, user, dai) {
-    price = web3.utils.toWei(price.toString(), 'ether');
+  async function newRentalWithDeposit(tokenPrice, outcome, user, dai) {
+    tokenPrice = web3.utils.toWei(tokenPrice.toString(), 'ether');
     dai = web3.utils.toWei(dai.toString(), 'ether');
-    await realitycards.newRental(price,0,zeroAddress,outcome,{ from: user, value: dai});
+    await realitycards.newRental(tokenPrice,0,zeroAddress,outcome,{ from: user, value: dai});
   }
 
-  async function newRentalCustomContract(contract, price, outcome, user) {
-    price = web3.utils.toWei(price.toString(), 'ether');
-    await contract.newRental(price,maxuint256.toString(),zeroAddress,outcome,{ from: user});
+  async function newRentalCustomContract(contract, tokenPrice, outcome, user) {
+    tokenPrice = web3.utils.toWei(tokenPrice.toString(), 'ether');
+    await contract.newRental(tokenPrice,maxuint256.toString(),zeroAddress,outcome,{ from: user});
   }
 
-  async function newRentalWithDepositCustomContract(contract, price, outcome, user, dai) {
-    price = web3.utils.toWei(price.toString(), 'ether');
+  async function newRentalWithDepositCustomContract(contract, tokenPrice, outcome, user, dai) {
+    tokenPrice = web3.utils.toWei(tokenPrice.toString(), 'ether');
     dai = web3.utils.toWei(dai.toString(), 'ether');
-    await contract.newRental(price,maxuint256.toString(),zeroAddress,outcome,{ from: user, value: dai});
+    await contract.newRental(tokenPrice,maxuint256.toString(),zeroAddress,outcome,{ from: user, value: dai});
   }
 
-  async function newRentalCustomTimeLimit(price, timelimit, outcome, user) {
-    price = web3.utils.toWei(price.toString(), 'ether');
-    await realitycards.newRental(price,(timelimit*3600*24).toString(),zeroAddress,outcome,{ from: user});
+  async function newRentalCustomTimeLimit(tokenPrice, timelimit, outcome, user) {
+    tokenPrice = web3.utils.toWei(tokenPrice.toString(), 'ether');
+    await realitycards.newRental(tokenPrice,(timelimit*3600*24).toString(),zeroAddress,outcome,{ from: user});
   }    
 
   async function userRemainingDeposit(outcome, userx) {
@@ -442,14 +442,14 @@ contract('RealityCardsTests', (accounts) => {
   });
 
     // check fundamentals first
-  it('user 0 rent Token first time and check: price, deposits, owner etc', async () => {
+  it('user 0 rent Token first time and check: tokenPrice, deposits, owner etc', async () => {
     user = user0;
     // setup
     await depositDai(144,user);
     await newRental(144,4,user);
     // tests
-    var price = await realitycards.price.call(4);
-    assert.equal(price, web3.utils.toWei('144', 'ether'));
+    var tokenPrice = await realitycards.tokenPrice.call(4);
+    assert.equal(tokenPrice, web3.utils.toWei('144', 'ether'));
     var deposit = await treasury.deposits.call(user);
     assert.equal(deposit, web3.utils.toWei('144', 'ether'));
     marketAddress = await rcfactory.getMostRecentMarket.call(0);
@@ -460,18 +460,18 @@ contract('RealityCardsTests', (accounts) => {
     await withdrawDeposit(1000,user);
    });
   
-  it('test change price by renting again', async () => {
+  it('test change tokenPrice by renting again', async () => {
     user = user0;
     // setup
     await depositDai(10,user);
     await newRental(1,4,user);
     // tests
-    var price = await realitycards.price.call(4);
-    assert.equal(price, web3.utils.toWei('1', 'ether'));
+    var tokenPrice = await realitycards.tokenPrice.call(4);
+    assert.equal(tokenPrice, web3.utils.toWei('1', 'ether'));
     // rent again
     await newRental(3,4,user);
-    var price = await realitycards.price.call(4);
-    assert.equal(price, web3.utils.toWei('3', 'ether'));
+    var tokenPrice = await realitycards.tokenPrice.call(4);
+    assert.equal(tokenPrice, web3.utils.toWei('3', 'ether'));
     // withdraw
     await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user);
@@ -533,14 +533,14 @@ it('collectRent function with foreclose and revertPreviousOwner', async () => {
     // check reverted
     var owner = await realitycards.ownerOf.call(1);
     assert.equal(owner, user0);
-    var price = await realitycards.price.call(1);
-    assert.equal(price, web3.utils.toWei('1', 'ether'));
+    var tokenPrice = await realitycards.tokenPrice.call(1);
+    assert.equal(tokenPrice, web3.utils.toWei('1', 'ether'));
     await time.increase(time.duration.weeks(1));
     await realitycards.collectRentAllCards();
     var owner = await realitycards.ownerOf.call(1);
     assert.equal(owner, realitycards.address);
-    var price = await realitycards.price.call(1);
-    assert.equal(price, 0);
+    var tokenPrice = await realitycards.tokenPrice.call(1);
+    assert.equal(tokenPrice, 0);
 });
   
 // these are two crucial variables that are relied on for other functions. are they what they should be?
@@ -879,7 +879,7 @@ it('test winner/withdraw mode 0- with artist/creator cut', async () => {
     var realitycards2 = await createMarketWithArtistSet();
     /////// SETUP //////
     // var amount = web3.utils.toWei('144', 'ether')
-    // var price = web3.utils.toWei('1', 'ether')
+    // var tokenPrice = web3.utils.toWei('1', 'ether')
     // rent losing
     await newRentalWithDepositCustomContract(realitycards2,1,0,user0,144); // collected 28
     await newRentalWithDepositCustomContract(realitycards2,2,1,user1,144); // collected 52
@@ -975,7 +975,7 @@ it('test winner/withdraw mode 0- with artist/winner/creator cut', async () => {
     var realitycards2 = await createMarketWithArtistSet();
     /////// SETUP //////
     // var amount = web3.utils.toWei('144', 'ether')
-    // var price = web3.utils.toWei('1', 'ether')
+    // var tokenPrice = web3.utils.toWei('1', 'ether')
     // rent losing
     await newRentalWithDepositCustomContract(realitycards2,1,0,user0,144); // collected 28
     await newRentalWithDepositCustomContract(realitycards2,2,1,user1,144); // collected 52
@@ -1074,7 +1074,7 @@ it('test winner/withdraw mode 0- with artist/affiliate/winner/creator cut', asyn
     var realitycards2 = await createMarketWithArtistSet();
     /////// SETUP //////
     // var amount = web3.utils.toWei('144', 'ether')
-    // var price = web3.utils.toWei('1', 'ether')
+    // var tokenPrice = web3.utils.toWei('1', 'ether')
     // rent losing
     await newRentalWithDepositCustomContract(realitycards2,1,0,user0,144); // collected 28
     await newRentalWithDepositCustomContract(realitycards2,2,1,user1,144); // collected 52
@@ -1497,7 +1497,7 @@ it('test winner/withdraw mode 0 with artist/creator/card affiliate cut', async (
     var realitycards2 = await createMarketWithArtistAndCardAffiliates();
     /////// SETUP //////
     // var amount = web3.utils.toWei('144', 'ether')
-    // var price = web3.utils.toWei('1', 'ether')
+    // var tokenPrice = web3.utils.toWei('1', 'ether')
     // rent losing
     await newRentalWithDepositCustomContract(realitycards2,1,0,user0,144); // collected 28
     await newRentalWithDepositCustomContract(realitycards2,2,1,user1,144); // collected 52
@@ -1620,7 +1620,7 @@ it('test winner/withdraw mode 0- with artist/winner/creator/card affiliate cut',
     var realitycards2 = await createMarketWithArtistAndCardAffiliates();
     /////// SETUP //////
     // var amount = web3.utils.toWei('144', 'ether')
-    // var price = web3.utils.toWei('1', 'ether')
+    // var tokenPrice = web3.utils.toWei('1', 'ether')
     // rent losing
     await newRentalWithDepositCustomContract(realitycards2,1,0,user0,144); // collected 28
     await newRentalWithDepositCustomContract(realitycards2,2,1,user1,144); // collected 52
@@ -2853,7 +2853,7 @@ it('check that _revertToUnderbidder does not revert more than ten times ', async
     await depositDai(1000,user12);
     await depositDai(1000,user13);
     await depositDai(1000,user14);
-    // everyone rents at the same price
+    // everyone rents at the same tokenPrice
     await newRental(10,0,user0); 
     await newRental(10,0,user1);
     await newRental(10,0,user2);
@@ -2893,8 +2893,8 @@ it('check that _revertToUnderbidder does not revert more than ten times ', async
     await realitycards.collectRentAllCards();
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner, user10);
-    var price = await realitycards.price.call(0);
-    assert.equal(price, web3.utils.toWei('7', 'ether'));
+    var tokenPrice = await realitycards.tokenPrice.call(0);
+    assert.equal(tokenPrice, web3.utils.toWei('7', 'ether'));
 });
 */
 it('check that cannot rent a card if less than 1 hours rent', async () => {
@@ -3447,7 +3447,7 @@ it('test newRentalWithDeposit', async() => {
 it('test winner/withdraw recreated using newRentalWithDeposit', async () => {
     /////// SETUP //////
     // var amount = web3.utils.toWei('144', 'ether')
-    // var price = web3.utils.toWei('1', 'ether')
+    // var tokenPrice = web3.utils.toWei('1', 'ether')
     // rent losing
     await newRentalWithDeposit(1,0,user0,144); // collected 28
     // await realitycards.newRentalWithDeposit(web3.utils.toWei('1', 'ether'),maxuint256,0,{from: user0, value: web3.utils.toWei('144', 'ether')}); // collected 28
@@ -3526,7 +3526,7 @@ it('test winner/withdraw with invalid market and artist and creator fees', async
     var realitycards2 = await createMarketWithArtistSet();
     /////// SETUP //////
     // var amount = web3.utils.toWei('144', 'ether')
-    // var price = web3.utils.toWei('1', 'ether')
+    // var tokenPrice = web3.utils.toWei('1', 'ether')
     // rent losing
     await newRentalWithDepositCustomContract(realitycards2,1,0,user0,144); // collected 28
     await newRentalWithDepositCustomContract(realitycards2,2,1,user1,144); // collected 52
@@ -3656,14 +3656,14 @@ it('test rentAllCards', async () => {
         var owner = await realitycards.ownerOf.call(i);
         assert.equal(owner, user0);
     }
-    // check price
-    var price = await realitycards.price.call(0);
-    assert.equal(price, web3.utils.toWei('11', 'ether'));
+    // check tokenPrice
+    var tokenPrice = await realitycards.tokenPrice.call(0);
+    assert.equal(tokenPrice, web3.utils.toWei('11', 'ether'));
     for (i = 1; i < 20; i++) {
-        var price = await realitycards.price.call(i);
-        assert.equal(price, web3.utils.toWei('1', 'ether'));
+        var tokenPrice = await realitycards.tokenPrice.call(i);
+        assert.equal(tokenPrice, web3.utils.toWei('1', 'ether'));
     }
-    // sum of all prices is 19 + 11 = 30
+    // sum of all tokenPrices is 19 + 11 = 30
     await expectRevert(realitycards.rentAllCards(web3.utils.toWei('25', 'ether')), "Prices too high"); 
     realitycards.rentAllCards(web3.utils.toWei('30', 'ether'));
     // withdraw
@@ -3802,13 +3802,13 @@ it('check onlyOwner is on relevant Factory functions', async () => {
     await expectRevert(rcfactory.changeMarketCreationGovernorsOnly({from: user1}), "caller is not the owner");
     await expectRevert(rcfactory.setSponsorshipRequired(7*24, {from: user1}), "caller is not the owner");
     await expectRevert(rcfactory.changeMarketApproval(user0, {from: user1}), "Not approved");
-    await expectRevert(rcfactory.setMinimumPriceIncrease(4, {from: user1}), "caller is not the owner");
+    await expectRevert(rcfactory.setminimumPriceIncreasePercent(4, {from: user1}), "caller is not the owner");
     await expectRevert(rcfactory.changeTrapCardsIfUnapproved({from: user1}), "caller is not the owner");
     await expectRevert(rcfactory.setAdvancedWarning(23,{from: user1}), "caller is not the owner");
     await expectRevert(rcfactory.setMaximumDuration(23,{from: user1}), "caller is not the owner");
 });
 
-it('test setMinimumPriceIncrease', async () => {
+it('test setminimumPriceIncreasePercent', async () => {
     var realitycards2 = await createMarketCustomMode(0);
     /////// SETUP //////
     await depositDai(1000,user0);
@@ -3819,18 +3819,18 @@ it('test setMinimumPriceIncrease', async () => {
     var owner = await realitycards2.ownerOf.call(0);
     assert.equal(user0, owner);
     // update min to 5%, try again
-    await rcfactory.setMinimumPriceIncrease(5);
+    await rcfactory.setminimumPriceIncreasePercent(5);
     var realitycards3 = await createMarketCustomMode2(0);
     await newRentalCustomContract(realitycards3,1,0,user0); 
     await realitycards3.newRental(web3.utils.toWei('1.05', 'ether'),maxuint256,zeroAddress,0,{ from: user1});
     var owner = await realitycards3.ownerOf.call(0);
     assert.equal(user1, owner);
     // check rent all cards works
-    var price = await realitycards3.price(0);
+    var tokenPrice = await realitycards3.tokenPrice(0);
     await realitycards3.rentAllCards(web3.utils.toWei('100', 'ether'),{from:user0});
-    var price = await realitycards3.price(0);
-    var priceShouldBe = ether('1.1025');
-    assert.equal(price.toString(),priceShouldBe.toString());
+    var tokenPrice = await realitycards3.tokenPrice(0);
+    var tokenPriceShouldBe = ether('1.1025');
+    assert.equal(tokenPrice.toString(),tokenPriceShouldBe.toString());
 });
 
 it('test uberOwner Treasury', async () => {
@@ -3872,12 +3872,12 @@ it('test uberOwner Treasury', async () => {
     realitycards2 = await RCMarket.at(marketAddress);
     await depositDai(144,user3);
     await newRentalCustomContract(realitycards2,144,4,user3);
-    var price = await realitycards2.price.call(4);
-    assert.equal(price, web3.utils.toWei('144', 'ether'));
+    var tokenPrice = await realitycards2.tokenPrice.call(4);
+    assert.equal(tokenPrice, web3.utils.toWei('144', 'ether'));
     // check that the original market still works
     await newRental(69,4,user3);
-    var price = await realitycards.price.call(4);
-    assert.equal(price, web3.utils.toWei('69', 'ether'));
+    var tokenPrice = await realitycards.tokenPrice.call(4);
+    assert.equal(tokenPrice, web3.utils.toWei('69', 'ether'));
     await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user3); 
 });
@@ -3904,19 +3904,19 @@ it('test uberOwner factory', async () => {
     // check version has increased 
     var version = await rcfactory.referenceContractVersion.call();
     assert.equal(version,2);
-    // deploy new market from new reference contract, check that price is doubling
+    // deploy new market from new reference contract, check that tokenPrice is doubling
     var slug = 'xq';
     await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question);
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
     await depositDai(144,user3);
     await newRentalCustomContract(realitycards2,144,4,user3);
-    var price = await realitycards2.price.call(4);
-    assert.equal(price, web3.utils.toWei('288', 'ether'));
+    var tokenPrice = await realitycards2.tokenPrice.call(4);
+    assert.equal(tokenPrice, web3.utils.toWei('288', 'ether'));
     // check that the original market still works
     await newRental(69,4,user3);
-    var price = await realitycards.price.call(4);
-    assert.equal(price, web3.utils.toWei('69', 'ether'));
+    var tokenPrice = await realitycards.tokenPrice.call(4);
+    assert.equal(tokenPrice, web3.utils.toWei('69', 'ether'));
     await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user3); 
 });
@@ -4295,7 +4295,7 @@ it('test force sending Ether to Treasury via self destruct', async () => {
 it('test orderbook various', async () => {
     // Tests the following:
     // add to orderbook in correct order
-    // reduces the price to match that above it in the list
+    // reduces the tokenPrice to match that above it in the list
     // expected revert because incorrect starting location: too high and too low
     // update bid: test all cases
     user10 = accounts[10];
@@ -4318,7 +4318,7 @@ it('test orderbook various', async () => {
     await depositDai(10,user12);
     await depositDai(10,user13);
     await depositDai(10,user14);
-    // rentals: position/price
+    // rentals: position/tokenPrice
     await newRentalCustomTimeLimit(10, 1, 0,user0); // 2, 10
     await newRental(9,0,user1); // 5, 9
     await newRental(8,0,user2); // 6, 8
@@ -4336,9 +4336,9 @@ it('test orderbook various', async () => {
     await newRentalWithStartingPosition(4.8,0,user7,user14); // 12, 4.8
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner,user9);
-    var price = await realitycards.price.call(0);
-    assert.equal(price,web3.utils.toWei('50', 'ether'));
-    // check position and price
+    var tokenPrice = await realitycards.tokenPrice.call(0);
+    assert.equal(tokenPrice,web3.utils.toWei('50', 'ether'));
+    // check position and tokenPrice
     // position 0
     var bid = await realitycards.orderbook.call(0,user9);
     assert.equal(bid[0],web3.utils.toWei('50', 'ether'));
@@ -4412,12 +4412,12 @@ it('test orderbook various', async () => {
     await newRentalWithStartingPosition(1,0,user6,user10);
     // starting position too low
     await expectRevert(newRentalWithStartingPosition(10,0,user1,user11), "Location too low");
-    // update bid case 1A: was winner, > 10% higher, should just update price + limit
+    // update bid case 1A: was winner, > 10% higher, should just update tokenPrice + limit
     await newRentalCustomTimeLimit(60, 1, 0,user9); 
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner,user9);
-    var price = await realitycards.price.call(0);
-    assert.equal(price,web3.utils.toWei('60', 'ether'));
+    var tokenPrice = await realitycards.tokenPrice.call(0);
+    assert.equal(tokenPrice,web3.utils.toWei('60', 'ether'));
     var bid = await realitycards.orderbook.call(0,user9);
     assert.equal(bid[0],web3.utils.toWei('60', 'ether'));
     assert.equal(bid[1],(3600*24));
@@ -4430,8 +4430,8 @@ it('test orderbook various', async () => {
     await newRentalCustomTimeLimit(15, 2, 0,user5);
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner,user5);
-    var price = await realitycards.price.call(0);
-    assert.equal(price,web3.utils.toWei('15', 'ether'));
+    var tokenPrice = await realitycards.tokenPrice.call(0);
+    assert.equal(tokenPrice,web3.utils.toWei('15', 'ether'));
     var bid = await realitycards.orderbook.call(0,user5);
     assert.equal(bid[0],web3.utils.toWei('15', 'ether'));
     assert.equal(bid[1],(3600*48));
@@ -4441,8 +4441,8 @@ it('test orderbook various', async () => {
     await newRentalCustomTimeLimit(10.5, 0.5, 0,user5);
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner,user0);
-    var price = await realitycards.price.call(0);
-    assert.equal(price,web3.utils.toWei('10', 'ether'));
+    var tokenPrice = await realitycards.tokenPrice.call(0);
+    assert.equal(tokenPrice,web3.utils.toWei('10', 'ether'));
     var bid = await realitycards.orderbook.call(0,user5);
     assert.equal(bid[0],web3.utils.toWei('10', 'ether'));
     assert.equal(bid[1],(3600*12));
@@ -4452,8 +4452,8 @@ it('test orderbook various', async () => {
     await newRentalCustomTimeLimit(100, 0.5, 0,user7);
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner,user7);
-    var price = await realitycards.price.call(0);
-    assert.equal(price,web3.utils.toWei('100', 'ether'));
+    var tokenPrice = await realitycards.tokenPrice.call(0);
+    assert.equal(tokenPrice,web3.utils.toWei('100', 'ether'));
     var bid = await realitycards.orderbook.call(0,user7);
     assert.equal(bid[0],web3.utils.toWei('100', 'ether'));
     assert.equal(bid[1],(3600*12));
@@ -4467,8 +4467,8 @@ it('test orderbook various', async () => {
     await newRentalCustomTimeLimit(20, 2, 0,user8);
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner,user7);
-    var price = await realitycards.price.call(0);
-    assert.equal(price,web3.utils.toWei('100', 'ether'));
+    var tokenPrice = await realitycards.tokenPrice.call(0);
+    assert.equal(tokenPrice,web3.utils.toWei('100', 'ether'));
     var bid = await realitycards.orderbook.call(0,user8);
     assert.equal(bid[0],web3.utils.toWei('20', 'ether'));
     assert.equal(bid[1],(3600*48));
@@ -4507,7 +4507,7 @@ it('test _revertToUnderbidder', async () => {
     await depositDai(10,user7);
     await depositDai(10,user8);
     await depositDai(10,user9);
-    // rentals: position/price
+    // rentals: position/tokenPrice
     await newRentalCustomTimeLimit(10, 1, 0,user0); // 2, 10
     await newRental(9,0,user1); // 5, 9
     await newRental(8,0,user2); // 6, 8
@@ -4524,8 +4524,8 @@ it('test _revertToUnderbidder', async () => {
     await realitycards.collectRentAllCards();
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner,user5);
-    var price = await realitycards.price.call(0);
-    assert.equal(price,web3.utils.toWei('20', 'ether'));
+    var tokenPrice = await realitycards.tokenPrice.call(0);
+    assert.equal(tokenPrice,web3.utils.toWei('20', 'ether'));
     var bid = await realitycards.orderbook.call(0,user5);
     assert.equal(bid[3],realitycards.address);
     var bid = await realitycards.orderbook.call(0,user9);
@@ -4539,8 +4539,8 @@ it('test _revertToUnderbidder', async () => {
     await realitycards.collectRentAllCards();
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner,user1);
-    var price = await realitycards.price.call(0);
-    assert.equal(price,web3.utils.toWei('9', 'ether'));
+    var tokenPrice = await realitycards.tokenPrice.call(0);
+    assert.equal(tokenPrice,web3.utils.toWei('9', 'ether'));
     var bid = await realitycards.orderbook.call(0,user1);
     assert.equal(bid[3],realitycards.address);
     var bid = await realitycards.orderbook.call(0,user5);
@@ -4560,7 +4560,7 @@ it('test exit', async () => {
     await depositDai(10,user3);
     await depositDai(10,user4);
     await depositDai(10,user5);
-    // rentals: position/price
+    // rentals: position/tokenPrice
     await newRentalCustomTimeLimit(10, 1, 0,user0); // 1, 10
     await newRental(9,0,user1); // 4, 9
     await newRental(15,0,user2); // 0, 15
@@ -4576,16 +4576,16 @@ it('test exit', async () => {
     await realitycards.collectRentAllCards();
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner,user4);
-    var price = await realitycards.price.call(0);
-    assert.equal(price,web3.utils.toWei('10', 'ether'));
+    var tokenPrice = await realitycards.tokenPrice.call(0);
+    assert.equal(tokenPrice,web3.utils.toWei('10', 'ether'));
     var bid = await realitycards.orderbook.call(0,user4);
     assert.equal(bid[3],realitycards.address);
     // this time, current owner calls exit
     await realitycards.exit(0,{from: user4});
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner,user1);
-    var price = await realitycards.price.call(0);
-    assert.equal(price,web3.utils.toWei('9', 'ether'));
+    var tokenPrice = await realitycards.tokenPrice.call(0);
+    assert.equal(tokenPrice,web3.utils.toWei('9', 'ether'));
 });
 /*
 it('test updateTotalRental', async () => {
@@ -4611,7 +4611,7 @@ it('test updateTotalRental', async () => {
     await newRental(7,0,user1);
     var totalRentals = await treasury.userTotalRentals(user0);
     assert.equal(totalRentals.toString(),ether('4').toString());
-    // change price, should not change cos not owner
+    // change tokenPrice, should not change cos not owner
     await newRental(7.5,0,user0);
     var totalRentals = await treasury.userTotalRentals(user0);
     assert.equal(totalRentals.toString(),ether('4').toString());

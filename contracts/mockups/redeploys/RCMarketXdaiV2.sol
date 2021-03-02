@@ -43,7 +43,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
 
     ///// PRICE, DEPOSITS, RENT /////
     /// @dev in attodai (so 100xdai = 100000000000000000000)
-    mapping (uint256 => uint256) public price; 
+    mapping (uint256 => uint256) public tokenPrice; 
     /// @dev keeps track of all the rent paid by each user. So that it can be returned in case of an invalid market outcome.
     mapping (address => uint256) public collectedPerUser;
     /// @dev keeps track of all the rent paid for each token, for card specific affiliate payout
@@ -51,7 +51,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
     /// @dev an easy way to track the above across all tokens
     uint256 public totalCollected; 
     /// @dev the minimum required price increase
-    uint256 public minimumPriceIncrease;
+    uint256 public minimumPriceIncreasePercent;
     /// @dev minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
     uint256 public minRentalDivisor;
     /// @dev prevents user from cancelling and re-renting in the same block
@@ -183,7 +183,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
         affiliateAddress = _affiliateAddress;
         cardAffiliateAddresses = _cardAffiliateAddresses;
         uint256[5] memory _potDistribution = factory.getPotDistribution();
-        minimumPriceIncrease = factory.minimumPriceIncrease();
+        minimumPriceIncreasePercent = factory.minimumPriceIncreasePercent();
         minRentalDivisor = treasury.minRentalDivisor();
         artistCut = _potDistribution[0];
         winnerCut = _potDistribution[1];
@@ -467,15 +467,15 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
         // check that not being front run
         uint256 _actualSumOfPrices;
         for (uint i = 0; i < numberOfTokens; i++) {
-            _actualSumOfPrices = _actualSumOfPrices.add(price[i]);
+            _actualSumOfPrices = _actualSumOfPrices.add(tokenPrice[i]);
         }
         require(_actualSumOfPrices <= _maxSumOfPrices, "Prices too high");
 
         for (uint i = 0; i < numberOfTokens; i++) {
             if (ownerOf(i) != msgSender()) {
                 uint _newPrice;
-                if (price[i]>0) {
-                    _newPrice = (price[i].mul(minimumPriceIncrease.add(100))).div(100);
+                if (tokenPrice[i]>0) {
+                    _newPrice = (tokenPrice[i].mul(minimumPriceIncreasePercent.add(100))).div(100);
                 } else {
                     _newPrice = 1 ether;
                 }
@@ -594,7 +594,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
 
         //only collect rent if the token is owned (ie, if owned by the contract this implies unowned)
         if (ownerOf(_tokenId) != address(this)) {
-            uint256 _rentOwed = price[_tokenId].mul(block.timestamp.sub(timeLastCollected[_tokenId])).div(1 days);
+            uint256 _rentOwed = tokenPrice[_tokenId].mul(block.timestamp.sub(timeLastCollected[_tokenId])).div(1 days);
             address _collectRentFrom = ownerOf(_tokenId);
             uint256 _deposit = treasury.deposits(_collectRentFrom);
             
@@ -604,7 +604,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
             if (_timeHeldLimit == MAX_UINT256) {
                 _rentOwedLimit = MAX_UINT256;
             } else {
-                _rentOwedLimit = price[_tokenId].mul(_timeHeldLimit.sub(timeHeld[_tokenId][_collectRentFrom])).div(1 days);
+                _rentOwedLimit = tokenPrice[_tokenId].mul(_timeHeldLimit.sub(timeHeld[_tokenId][_collectRentFrom])).div(1 days);
             }
 
             // if rent owed is too high, reduce
@@ -654,7 +654,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
     {
         // check user not in the orderbook
         assert(orderbook[_tokenId][msgSender()].price == 0);
-        uint256 _minPriceToOwn = (price[_tokenId].mul(minimumPriceIncrease.add(100))).div(100);
+        uint256 _minPriceToOwn = (tokenPrice[_tokenId].mul(minimumPriceIncreasePercent.add(100))).div(100);
         // case 1: user is sufficiently above highest bidder (or only bidder)
         if(ownerOf(_tokenId) == address(this) || _newPrice >= _minPriceToOwn) {
             _setNewOwner(_newPrice, _tokenId, _timeHeldLimit);
@@ -672,23 +672,23 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
         assert(orderbook[_tokenId][msgSender()].price > 0);
         // case 1: user is currently the owner
         if(msgSender() == ownerOf(_tokenId)) { 
-            _minPriceToOwn = (price[_tokenId].mul(minimumPriceIncrease.add(100))).div(100);
+            _minPriceToOwn = (tokenPrice[_tokenId].mul(minimumPriceIncreasePercent.add(100))).div(100);
             // case 1A: new price is at least X% above current price- adjust price & timeHeldLimit
             if(_newPrice >= _minPriceToOwn) {
                 orderbook[_tokenId][msgSender()].price = _newPrice;
                 orderbook[_tokenId][msgSender()].timeHeldLimit = _timeHeldLimit;
-                price[_tokenId] = _newPrice;
+                tokenPrice[_tokenId] = _newPrice;
             // case 1B: new price is higher than current price but by less than X%- remove from list and do not add back
-            } else if (_newPrice > price[_tokenId]) {
+            } else if (_newPrice > tokenPrice[_tokenId]) {
                 _revertToUnderbidder(_tokenId);
             // case 1C: new price is equal or below old price
             } else {
-                _minPriceToOwn = (orderbook[_tokenId][orderbook[_tokenId][msgSender()].next].price.mul(minimumPriceIncrease.add(100))).div(100);
+                _minPriceToOwn = (orderbook[_tokenId][orderbook[_tokenId][msgSender()].next].price.mul(minimumPriceIncreasePercent.add(100))).div(100);
                 // case 1Ca: still the highest owner- adjust price & timeHeldLimit
                 if(_newPrice >= _minPriceToOwn) {
                     orderbook[_tokenId][msgSender()].price = _newPrice;
                     orderbook[_tokenId][msgSender()].timeHeldLimit = _timeHeldLimit;
-                    price[_tokenId] = _newPrice;
+                    tokenPrice[_tokenId] = _newPrice;
                 // case 1Cb: user is not owner anymore-  remove from list & add back
                 } else {
                     _revertToUnderbidder(_tokenId);
@@ -702,7 +702,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
             orderbook[_tokenId][orderbook[_tokenId][msgSender()].next].prev = orderbook[_tokenId][msgSender()].prev; 
             delete orderbook[_tokenId][msgSender()];
             // check if should be owner, add on top if so, otherwise _placeInList
-            _minPriceToOwn = (price[_tokenId].mul(minimumPriceIncrease.add(100))).div(100);
+            _minPriceToOwn = (tokenPrice[_tokenId].mul(minimumPriceIncreasePercent.add(100))).div(100);
             if(_newPrice >= _minPriceToOwn) 
             {  
                 _setNewOwner(_newPrice, _tokenId, _timeHeldLimit);
@@ -718,13 +718,13 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
         // if hot potato mode, pay current owner
         if (mode == 2) {
             // the required payment is calculated in the Treasury
-            // assert(treasury.payCurrentOwner(msgSender(), ownerOf(_tokenId), price[_tokenId]));
+            // assert(treasury.payCurrentOwner(msgSender(), ownerOf(_tokenId), tokenPrice[_tokenId]));
         }
 
         // process new owner
         orderbook[_tokenId][msgSender()] = Bid(_newPrice, _timeHeldLimit, ownerOf(_tokenId), address(this));
         orderbook[_tokenId][ownerOf(_tokenId)].prev = msgSender();
-        price[_tokenId] = _newPrice;
+        tokenPrice[_tokenId] = _newPrice;
         _transferCard(ownerOf(_tokenId), msgSender(), _tokenId);
     }
 
@@ -752,7 +752,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
         do {
             _tempPrev = _tempNext;
             _tempNext = orderbook[_tokenId][_tempPrev].next;
-            _requiredPrice = (orderbook[_tokenId][_tempNext].price.mul(minimumPriceIncrease.add(100))).div(100);
+            _requiredPrice = (orderbook[_tokenId][_tempNext].price.mul(minimumPriceIncreasePercent.add(100))).div(100);
             _loopCount = _loopCount.add(1);
         } while (
             _newPrice < _requiredPrice && // equal to or above is ok
@@ -799,7 +799,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
         } else {
              // transfer to previous owner
             address _currentOwner = ownerOf(_tokenId);
-            price[_tokenId] = orderbook[_tokenId][_tempNext].price;
+            tokenPrice[_tokenId] = orderbook[_tokenId][_tempNext].price;
             ownershipLostTimestamp[ownerOf(_tokenId)] = block.timestamp;
             _transferCard(_currentOwner, _tempNext, _tokenId);
             emit LogCardTransferredToUnderbidder(_tokenId, _tempNext);
@@ -809,7 +809,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
     /// @notice return token to the contract and return price to zero
     function _foreclose(uint256 _tokenId) internal {
         address _currentOwner = ownerOf(_tokenId);
-        price[_tokenId] = 0;
+        tokenPrice[_tokenId] = 0;
         _transferCard(_currentOwner, address(this), _tokenId);
         emit LogForeclosure(_currentOwner, _tokenId);
     }

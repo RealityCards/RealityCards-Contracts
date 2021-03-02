@@ -16,7 +16,7 @@ interface IFactory
     function arbitrator() external returns (address);
     function deposit() external payable returns(bool);
     function getPotDistribution() external returns(uint256[5] memory);
-    function minimumPriceIncrease() external returns (uint256);
+    function minimumPriceIncreasePercent() external returns (uint256);
     function trapIfUnapproved() external returns(bool);
     function isMarketApproved(address) external returns(bool);
     function hotPotatoDivisor() external returns (uint256);

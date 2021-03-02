@@ -44,7 +44,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
     /// @dev minimum xDai that must be sent when creating market which forms iniital pot
     uint256 public sponsorshipRequired;
     /// @dev adjust required price increase (in %)
-    uint256 public minimumPriceIncrease;
+    uint256 public minimumPriceIncreasePercent;
     /// @dev market opening time must be at least this many seconds in the future
     uint32 public advancedWarning;
     /// @dev market closing time must be no more than this many seconds in the future
@@ -104,7 +104,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
         // initialise adjustable parameters
         // artist // winner // creator // affiliate // card affiliates
         setPotDistribution(20,0,0,20,100); // 2% artist, 2% affiliate, 10% card affiliate
-        setMinimumPriceIncrease(10); // 10% 
+        setminimumPriceIncreasePercent(10); // 10% 
         setHotPotatoPayment(7); // one day's rent
     }
 
@@ -172,8 +172,8 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
     }
 
     /// @notice how much above the current price a user must bid, in %
-    function setMinimumPriceIncrease(uint256 _percentIncrease) public onlyOwner {
-        minimumPriceIncrease = _percentIncrease;
+    function setminimumPriceIncreasePercent(uint256 _percentIncrease) public onlyOwner {
+        minimumPriceIncreasePercent = _percentIncrease;
     }
 
      /// @dev if hot potato mode, how much rent new owner must pay current owner (1 week divisor: i.e. 7 = 1 day, 14 = 12 hours)
