@@ -27,6 +27,7 @@ contract RCNftHubMainnet is Ownable, ERC721
     
     /// @dev address of Mainnet Proxy contract, so only this contract can mint nfts
     function setProxyMainnetAddress(address _newAddress) onlyOwner public {
+        require(_newAddress != address(0), "Must set an address");
         mainnetProxyAddress = _newAddress;
     }
 

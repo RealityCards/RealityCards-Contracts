@@ -173,6 +173,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         require(!globalPause, "Deposits are disabled");
         require(msg.value > 0, "Must deposit something");
         require(address(this).balance <= maxContractBalance, "Limit hit");
+        require(_user != address(0), "Must set an address");
 
         deposits[_user] = deposits[_user].add(msg.value);
         totalDeposits = totalDeposits.add(msg.value);

@@ -93,21 +93,25 @@ contract RCProxyXdai is Ownable
     /// @dev address of mainnet oracle proxy, called by the mainnet side of the arbitrary message bridge
     /// @dev not set in constructor, address not known at deployment
     function setProxyMainnetAddress(address _newAddress) onlyOwner external {
+        require(_newAddress != address(0), "Must set an address");
         proxyMainnetAddress = _newAddress;
     }
 
     /// @dev address of arbitrary message bridge, xdai side
     function setBridgeXdaiAddress(address _newAddress) onlyOwner public {
+        require(_newAddress != address(0), "Must set an address");
         bridge = IBridge(_newAddress);
     }
 
     /// @dev address of RC factory contract, so only factory can post questions
     function setFactoryAddress(address _newAddress) onlyOwner public {
+        require(_newAddress != address(0), "Must set an address");
         factoryAddress = _newAddress;
     }
 
     /// @dev address of RC treasury contract
     function setTreasuryAddress(address _newAddress) onlyOwner public {
+        require(_newAddress != address(0), "Must set an address");
         treasuryAddress = _newAddress;
     }
 
@@ -117,6 +121,7 @@ contract RCProxyXdai is Ownable
 
     /// @dev admin override of the Oracle, if not yet settled, for amicable resolution, or bridge fails
     function setAmicableResolution(address _marketAddress, uint256 _winningOutcome) onlyOwner public {
+        require(_marketAddress != address(0), "Must set an address");
         // call the market
         IRCMarket market = IRCMarket(_marketAddress);
         market.setWinner(_winningOutcome);
@@ -139,6 +144,7 @@ contract RCProxyXdai is Ownable
 
     /// @dev modify validators for dai deposits
     function setValidator(address _validatorAddress, bool _add) onlyOwner external {
+        require(_validatorAddress != address(0), "Must set an address");
         if(_add) {
             if(!isValidator[_validatorAddress]) {
                 isValidator[_validatorAddress] = true;
@@ -179,6 +185,7 @@ contract RCProxyXdai is Ownable
     function setWinner(address _marketAddress, uint256 _winningOutcome) external {
         require(msg.sender == address(bridge), "Not bridge");
         require(bridge.messageSender() == proxyMainnetAddress, "Not proxy");
+        require(_marketAddress != address(0), "Must set an address");
         // call the market
         IRCMarket market = IRCMarket(_marketAddress);
         market.setWinner(_winningOutcome);

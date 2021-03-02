@@ -68,26 +68,31 @@ contract RCProxyMainnet is Ownable
     /// @dev address of xdai oracle proxy, called by the xdai side of the arbitrary message bridge
     /// @dev not set in constructor, address not known at deployment
     function setProxyXdaiAddress(address _newAddress) onlyOwner external {
+        require(_newAddress != address(0), "Must set an address");
         proxyXdaiAddress = _newAddress;
     }
 
     /// @dev address of arbitrary message bridge, mainnet side
     function setBridgeMainnetAddress(address _newAddress) onlyOwner public {
+        require(_newAddress != address(0), "Must set an address");
         bridge = IBridge(_newAddress);
     }
 
     /// @dev address of alternate receiver bridge, mainnet side
     function setNftHubAddress(address _newAddress) onlyOwner public {
+        require(_newAddress != address(0), "Must set an address");
         nfthub = IERC721(_newAddress);
     }
 
     /// @dev address of alternate receiver bridge, mainnet side
     function setAlternateReceiverAddress(address _newAddress) onlyOwner public {
+        require(_newAddress != address(0), "Must set an address");
         alternateReceiverBridge = IAlternateReceiverBridge(_newAddress);
     }
 
     /// @dev address of dai contract, must also approve the ARB
     function setDaiAddress(address _newAddress) onlyOwner public {
+        require(_newAddress != address(0), "Must set an address");
         dai = IERC20Dai(_newAddress);
         dai.approve(address(alternateReceiverBridge), 2**256 - 1);
     }
@@ -98,11 +103,13 @@ contract RCProxyMainnet is Ownable
 
     /// @dev address reality.eth contracts
     function setRealitioAddress(address _newAddress) onlyOwner public {
+        require(_newAddress != address(0), "Must set an address");
         realitio = IRealitio(_newAddress);
     }
 
     /// @dev address of arbitrator, in case of continued disputes on reality.eth
     function setArbitrator(address _newAddress) onlyOwner public {
+        require(_newAddress != address(0), "Must set an address");
         arbitrator = _newAddress;
     }
 
