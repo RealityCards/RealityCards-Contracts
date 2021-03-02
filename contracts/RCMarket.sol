@@ -513,10 +513,11 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         // check _timeHeldLimit
         if (_timeHeldLimit == 0) {
             _timeHeldLimit = MAX_UINT128; // so 0 defaults to no limit
-        }
+        } else {
         uint256 _minRentalTime = uint256(1 days).div(minRentalDivisor);
         require(_timeHeldLimit >= timeHeld[_tokenId][msgSender()].add(_minRentalTime), "Limit too low"); // must be after collectRent so timeHeld is up to date
-
+        }
+        
         // if not in the orderbook, _newBid else _updateBid
         if (orderbook[_tokenId][msgSender()].price == 0) {
             _newBid(_newPrice, _tokenId, _timeHeldLimit, _startingPosition);
