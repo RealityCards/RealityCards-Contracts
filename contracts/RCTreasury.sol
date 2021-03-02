@@ -251,6 +251,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
     /// @notice ability to add liqudity to the pot without being able to win (called by market sponsor function). 
     function sponsor() external payable balancedBooks onlyMarkets returns(bool) {
+        require(!globalPause, "Global Pause is Enabled");
+        require(!marketPaused[msg.sender], "Market is Paused");
         marketPot[msg.sender] = marketPot[msg.sender].add(msg.value);
         totalMarketPots = totalMarketPots.add(msg.value);
         return true;
