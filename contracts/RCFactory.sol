@@ -327,6 +327,13 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
         address _newAddress = createClone(referenceContractAddress);
         emit LogMarketCreated1(_newAddress, address(treasury), address(nfthub), referenceContractVersion);
         emit LogMarketCreated2(_newAddress, _mode, _tokenURIs, _ipfsHash, _timestamps, totalNftMintCount);
+
+        // tell Treasury, Proxy, and NFT hub about new market
+        // before initialize as during initialize the market may call the treasury
+        assert(treasury.addMarket(_newAddress));
+        assert(proxy.addMarket(_newAddress));
+        assert(nfthub.addMarket(_newAddress));
+
         IRCMarket(_newAddress).initialize({
             _mode: _mode,
             _timestamps: _timestamps,
@@ -352,10 +359,6 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
         require(address(proxy) != address(0), "xDai proxy not set");
         proxy.saveQuestion(_newAddress, _realitioQuestion, _timestamps[2]);
 
-        // tell Treasury, Proxy, and NFT hub about new market
-        assert(treasury.addMarket(_newAddress));
-        assert(proxy.addMarket(_newAddress));
-        assert(nfthub.addMarket(_newAddress));
 
         // update internals
         marketAddresses[_mode].push(_newAddress);
