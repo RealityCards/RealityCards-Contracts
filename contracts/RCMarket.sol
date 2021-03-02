@@ -617,11 +617,10 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         }
         //only collect rent if the token is owned (ie, if owned by the contract this implies unowned)
         if (ownerOf(_tokenId) != address(this)) {
-            
             uint256 _rentOwed = price[_tokenId].mul(_timeOfThisCollection.sub(timeLastCollected[_tokenId])).div(1 days);
             address _collectRentFrom = ownerOf(_tokenId);
             uint256 _deposit = treasury.deposits(_collectRentFrom);
-            
+
             // get the maximum rent they can pay based on timeHeldLimit
             uint256 _rentOwedLimit;
             uint256 _timeHeldLimit = orderbook[_tokenId][_collectRentFrom].timeHeldLimit;
@@ -861,7 +860,9 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     function _incrementState() internal {
         assert(uint256(state) < 4);
         state = States(uint256(state) + 1);
-        if(uint256(state) == 2){treasury.updateMarketStatus(true);}
+        if(uint256(state) == 1){
+            treasury.updateMarketStatus(true);
+        }
         emit LogStateChange(uint256(state));
     }
 
