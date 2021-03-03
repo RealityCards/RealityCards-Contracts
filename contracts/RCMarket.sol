@@ -697,15 +697,14 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         // case 1: user is currently the owner
         if(msgSender() == ownerOf(_tokenId)) { 
             _minPriceToOwn = (tokenPrice[_tokenId].mul(minimumPriceIncreasePercent.add(100))).div(100);
-            // case 1A: new price is at least X% above current price- adjust price & timeHeldLimit. newRental event required. 
+            // case 1A: new price must be X% higher than previous or lower otherwise revert the tx to prevent frontrunning
+            require(_newPrice >= _minPriceToOwn || _newPrice < tokenPrice[_tokenId], "Not 10% higher");
+            // case 1B: new price is at least X% above current price- adjust price & timeHeldLimit. newRental event required. 
             if(_newPrice >= _minPriceToOwn) {
                 orderbook[_tokenId][msgSender()].price = SafeCast.toUint128(_newPrice);
                 orderbook[_tokenId][msgSender()].timeHeldLimit = SafeCast.toUint128(_timeHeldLimit);
                 _processUpdateOwner(_newPrice, _tokenId);
                 emit LogAddToOrderbook(msgSender(), _newPrice, _timeHeldLimit, orderbook[_tokenId][msgSender()].prev, _tokenId);
-            // case 1B: new price is higher than current price but by less than X%- revert the tx to prevent frontrunning
-            } else if (_newPrice > tokenPrice[_tokenId]) {
-                require(_newPrice >= _minPriceToOwn || _newPrice > tokenPrice[_tokenId], "Not 10% higher");
             // case 1C: new price is equal or below old price
             } else {
                 _minPriceToOwn = (uint256(orderbook[_tokenId][orderbook[_tokenId][msgSender()].next].price).mul(minimumPriceIncreasePercent.add(100))).div(100);
