@@ -19,5 +19,5 @@ interface IFactory
     function minimumPriceIncreasePercent() external returns (uint256);
     function trapIfUnapproved() external returns(bool);
     function isMarketApproved(address) external returns(bool);
-    function hotPotatoDivisor() external returns (uint256);
+    function hotPotatoDayDivisor() external returns (uint256);
 }

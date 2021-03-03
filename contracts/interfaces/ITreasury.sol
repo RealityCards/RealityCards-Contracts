@@ -13,12 +13,12 @@ interface ITreasury
     function cardSpecificDeposits(address,address,uint256) external returns(uint256);
     function deposit(address) external payable returns (bool);
     function sponsor() external payable returns (bool);
-    function hotPotatoDivisor() external payable returns (uint256);
+    function hotPotatoDayDivisor() external payable returns (uint256);
     function updateUserBid(address _user, uint256 _tokenId, uint256 _price) external returns (bool);
     function updateMarketStatus(bool _open) external;
     function userTotalRentals(address) external returns (uint256);
     function updateLastRentalTime(address) external returns (bool);
-    function minRentalDivisor() external returns (uint256);
+    function minRentalDayDivisor() external returns (uint256);
     function maxContractBalance() external returns (uint256);
     function marketPaused(address _market) external returns(bool);
 } 

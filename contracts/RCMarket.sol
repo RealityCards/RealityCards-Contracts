@@ -50,11 +50,11 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @dev in attodai (so 100xdai = 100000000000000000000)
     mapping (uint256 => uint256) public tokenPrice; 
     /// @dev keeps track of all the rent paid by each user. So that it can be returned in case of an invalid market outcome.
-    mapping (address => uint256) public collectedPerUser;
+    mapping (address => uint256) public rentCollectedPerUser;
     /// @dev keeps track of all the rent paid for each token, for card specific affiliate payout
-    mapping (uint256 => uint256) public collectedPerToken;
+    mapping (uint256 => uint256) public rentCollectedPerToken;
     /// @dev an easy way to track the above across all tokens
-    uint256 public totalCollected; 
+    uint256 public totalRentCollected; 
     /// @dev prevents user from exiting and re-renting in the same block (prevents troll attacks)
     mapping (address => uint256) public exitedTimestamp;
 
@@ -63,9 +63,9 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @dev the minimum required price increase in %
     uint256 public minimumPriceIncreasePercent;
     /// @dev minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
-    uint256 public minRentalDivisor;
+    uint256 public minRentalDayDivisor;
     /// @dev if hot potato mode, how much rent new owner must pay current owner (1 week divisor: i.e. 7 = 1 day, 14 = 12 hours)
-    uint256 public hotPotatoDivisor;
+    uint256 public hotPotatoDayDivisor;
 
     ///// ORDERBOOK /////
     /// @dev stores the orderbook. Doubly linked list. 
@@ -147,7 +147,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     event LogNftUpgraded(uint256 indexed currentTokenId, uint256 indexed newTokenId);
     event LogPayoutDetails(address indexed artistAddress, address marketCreatorAddress, address affiliateAddress, address[] cardAffiliateAddresses, uint256 indexed artistCut, uint256 winnerCut, uint256 creatorCut, uint256 affiliateCut, uint256 cardAffiliateCut);
     event LogTransferCardToLongestOwner(uint256 tokenId, address longestOwner);
-    event LogSettings(uint256 indexed minRentalDivisor, uint256 indexed minimumPriceIncreasePercent, uint256 hotPotatoDivisor);
+    event LogSettings(uint256 indexed minRentalDayDivisor, uint256 indexed minimumPriceIncreasePercent, uint256 hotPotatoDayDivisor);
 
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
@@ -184,9 +184,9 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
         // get adjustable parameters from the factory/treasury
         uint256[5] memory _potDistribution = factory.getPotDistribution();
-        minRentalDivisor = treasury.minRentalDivisor();
+        minRentalDayDivisor = treasury.minRentalDayDivisor();
         minimumPriceIncreasePercent = factory.minimumPriceIncreasePercent();
-        hotPotatoDivisor = factory.hotPotatoDivisor();
+        hotPotatoDayDivisor = factory.hotPotatoDayDivisor();
         
         // initialiiize!
         winningOutcome = MAX_UINT256; // default invalid
@@ -241,7 +241,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         }
 
         emit LogPayoutDetails(_artistAddress, _marketCreatorAddress, _affiliateAddress, cardAffiliateAddresses, artistCut, winnerCut, creatorCut, affiliateCut, cardAffiliateCut);
-        emit LogSettings(minRentalDivisor, minimumPriceIncreasePercent, hotPotatoDivisor);
+        emit LogSettings(minRentalDayDivisor, minimumPriceIncreasePercent, hotPotatoDayDivisor);
     } 
 
     ////////////////////////////////////
@@ -370,10 +370,10 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         uint256 _remainingCut = ((((uint256(1000).sub(artistCut)).sub(affiliateCut))).sub(cardAffiliateCut).sub(winnerCut)).sub(creatorCut); 
         // calculate longest owner's extra winnings, if relevant
         if (longestOwner[winningOutcome] == msgSender() && winnerCut > 0){
-            _winningsToTransfer = (totalCollected.mul(winnerCut)).div(1000);
+            _winningsToTransfer = (totalRentCollected.mul(winnerCut)).div(1000);
         }
         // calculate normal winnings, if any
-        uint256 _remainingPot = (totalCollected.mul(_remainingCut)).div(1000);
+        uint256 _remainingPot = (totalRentCollected.mul(_remainingCut)).div(1000);
         uint256 _winnersTimeHeld = timeHeld[winningOutcome][msgSender()];
         uint256 _numerator = _remainingPot.mul(_winnersTimeHeld);
         _winningsToTransfer = _winningsToTransfer.add(_numerator.div(totalTimeHeld[winningOutcome]));
@@ -386,7 +386,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     function _returnRent() internal {
         // deduct artist share and card specific share if relevant but NOT market creator share or winner's share (no winner, market creator does not deserve)
         uint256 _remainingCut = ((uint256(1000).sub(artistCut)).sub(affiliateCut)).sub(cardAffiliateCut);      
-        uint256 _rentCollected = collectedPerUser[msgSender()];
+        uint256 _rentCollected = rentCollectedPerUser[msgSender()];
         require(_rentCollected > 0, "Paid no rent");
         uint256 _rentCollectedAdjusted = (_rentCollected.mul(_remainingCut)).div(1000);
         _payout(msgSender(), _rentCollectedAdjusted);
@@ -433,7 +433,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         _checkState(States.WITHDRAW);
         require(!cardAffiliatePaid[_tokenId], "Card affiliate already paid");
         cardAffiliatePaid[_tokenId] = true;
-        uint256 _cardAffiliatePayment = (collectedPerToken[_tokenId].mul(cardAffiliateCut)).div(1000);
+        uint256 _cardAffiliatePayment = (rentCollectedPerToken[_tokenId].mul(cardAffiliateCut)).div(1000);
         if (_cardAffiliatePayment > 0) {
             _payout(cardAffiliateAddresses[_tokenId], _cardAffiliatePayment);
             emit LogStakeholderPaid(cardAffiliateAddresses[_tokenId], _cardAffiliatePayment);
@@ -442,7 +442,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
     function _processStakeholderPayment(uint256 _cut, address _recipient) internal {
         if (_cut > 0) {
-            uint256 _payment = (totalCollected.mul(_cut)).div(1000);
+            uint256 _payment = (totalRentCollected.mul(_cut)).div(1000);
             _payout(_recipient, _payment);
             emit LogStakeholderPaid(_recipient, _payment);
         }
@@ -509,13 +509,13 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
         // check sufficient deposit
         uint256 _updatedTotalRentals =  treasury.userTotalRentals(msgSender()).add(_newPrice);
-        require(treasury.deposits(msgSender()) >= _updatedTotalRentals.div(minRentalDivisor), "Insufficient deposit");
+        require(treasury.deposits(msgSender()) >= _updatedTotalRentals.div(minRentalDayDivisor), "Insufficient deposit");
 
         // check _timeHeldLimit
         if (_timeHeldLimit == 0) {
             _timeHeldLimit = MAX_UINT128; // so 0 defaults to no limit
         } else {
-        uint256 _minRentalTime = uint256(1 days).div(minRentalDivisor);
+        uint256 _minRentalTime = uint256(1 days).div(minRentalDayDivisor);
         require(_timeHeldLimit >= timeHeld[_tokenId][msgSender()].add(_minRentalTime), "Limit too low"); // must be after collectRent so timeHeld is up to date
         }
 
@@ -539,7 +539,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         if (_timeHeldLimit == 0) {
             _timeHeldLimit = MAX_UINT128; // so 0 defaults to no limit
         }
-        uint256 _minRentalTime = uint256(1 days).div(minRentalDivisor);
+        uint256 _minRentalTime = uint256(1 days).div(minRentalDayDivisor);
         require(_timeHeldLimit >= timeHeld[_tokenId][msgSender()].add(_minRentalTime), "Limit too low"); // must be after collectRent so timeHeld is up to date
 
         orderbook[_tokenId][msgSender()].timeHeldLimit = SafeCast.toUint128(_timeHeldLimit);
@@ -595,12 +595,12 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         require(msg.value > 0, "Must send something");
         // send funds to the Treasury
         assert(treasury.sponsor{value: msg.value}());
-        totalCollected = totalCollected.add(msg.value);
+        totalRentCollected = totalRentCollected.add(msg.value);
         // just so user can get it back if invalid outcome
-        collectedPerUser[msgSender()] = collectedPerUser[msgSender()].add(msg.value); 
+        rentCollectedPerUser[msgSender()] = rentCollectedPerUser[msgSender()].add(msg.value); 
         // allocate equally to each token, in case card specific affiliates
         for (uint i = 0; i < numberOfTokens; i++) {
-            collectedPerToken[i] =  collectedPerToken[i].add(msg.value.div(numberOfTokens));
+            rentCollectedPerToken[i] =  rentCollectedPerToken[i].add(msg.value.div(numberOfTokens));
         }
         emit LogSponsor(msgSender(), msg.value); 
     }
@@ -654,9 +654,9 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                 uint256 _timeHeldToIncrement = (_timeOfThisCollection.sub(timeLastCollected[_tokenId]));
                 timeHeld[_tokenId][_collectRentFrom] = timeHeld[_tokenId][_collectRentFrom].add(_timeHeldToIncrement);
                 totalTimeHeld[_tokenId] = totalTimeHeld[_tokenId].add(_timeHeldToIncrement);
-                collectedPerUser[_collectRentFrom] = collectedPerUser[_collectRentFrom].add(_rentOwed);
-                collectedPerToken[_tokenId] = collectedPerToken[_tokenId].add(_rentOwed);
-                totalCollected = totalCollected.add(_rentOwed);
+                rentCollectedPerUser[_collectRentFrom] = rentCollectedPerUser[_collectRentFrom].add(_rentOwed);
+                rentCollectedPerToken[_tokenId] = rentCollectedPerToken[_tokenId].add(_rentOwed);
+                totalRentCollected = totalRentCollected.add(_rentOwed);
 
                 // longest owner tracking
                 if (timeHeld[_tokenId][_collectRentFrom] > longestTimeHeld[_tokenId]) {
@@ -742,7 +742,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     function _setNewOwner(uint256 _newPrice, uint256 _tokenId, uint256 _timeHeldLimit) internal {  
         // if hot potato mode, pay current owner
         if (mode == 2) {
-            uint256 _duration = uint256(1 weeks).div(hotPotatoDivisor);
+            uint256 _duration = uint256(1 weeks).div(hotPotatoDayDivisor);
             uint256 _requiredPayment = (tokenPrice[_tokenId].mul(_duration)).div(uint256(1 days));
             assert(treasury.processHarbergerPayment(msgSender(), ownerOf(_tokenId), _requiredPayment));
         }
@@ -821,7 +821,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             // get required  and actual deposit of next user
             _tempNextDeposit = treasury.deposits(_tempNext);
             uint256 _nextUserTotalRentals = treasury.userTotalRentals(msgSender()).add(orderbook[_tokenId][_tempNext].price);
-            _requiredDeposit = _nextUserTotalRentals.div(minRentalDivisor);
+            _requiredDeposit = _nextUserTotalRentals.div(minRentalDayDivisor);
             _loopCount = _loopCount.add(1);
         } while (
             _tempNext != address(this) && 

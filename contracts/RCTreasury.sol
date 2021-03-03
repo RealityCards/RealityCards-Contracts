@@ -49,7 +49,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
      ///// GOVERNANCE VARIABLES /////
     /// @dev only parameters that need to be are here, the rest are in the Factory
     /// @dev minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
-    uint256 public minRentalDivisor;
+    uint256 public minRentalDayDivisor;
     /// @dev max deposit balance, to minimise funds at risk
     uint256 public maxContractBalance;
 
@@ -124,7 +124,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
     /// @notice minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
     function setMinRental(uint256 _newDivisor) public onlyOwner {
-        minRentalDivisor = _newDivisor;
+        minRentalDayDivisor = _newDivisor;
     }
 
     /// @dev max deposit balance, to minimise funds at risk
@@ -186,7 +186,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     function withdrawDeposit(uint256 _dai) external balancedBooks  {
         require(!globalPause, "Withdrawals are disabled");
         require(deposits[msgSender()] > 0, "Nothing to withdraw");
-        require(block.timestamp.sub(lastRentalTime[msgSender()]) > uint256(1 days).div(minRentalDivisor), "Too soon");
+        require(block.timestamp.sub(lastRentalTime[msgSender()]) > uint256(1 days).div(minRentalDayDivisor), "Too soon");
 
         uint256 _userTotalBids = 0;
         for(uint256 i; i < activeMarkets.length; i++){
@@ -208,7 +208,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         (bool _success, ) = _recipient.call{value: _dai}("");
         require(_success, "Transfer failed");
         
-        if(_userTotalBids.div(minRentalDivisor) > deposits[msgSender()]){
+        if(_userTotalBids.div(minRentalDayDivisor) > deposits[msgSender()]){
             for(uint256 i; i < activeMarkets.length - 1; i++){
                 if(userBids[msgSender()][activeMarkets[i]].tokenId.length != 0){
                     IRCMarket _market = IRCMarket(activeMarkets[i]);
