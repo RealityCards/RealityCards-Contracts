@@ -705,7 +705,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                 emit LogAddToOrderbook(msgSender(), _newPrice, _timeHeldLimit, orderbook[_tokenId][msgSender()].prev, _tokenId);
             // case 1B: new price is higher than current price but by less than X%- revert the tx to prevent frontrunning
             } else if (_newPrice > tokenPrice[_tokenId]) {
-                require(false, "Not 10% higher");
+                require(_newPrice >= _minPriceToOwn || _newPrice > tokenPrice[_tokenId], "Not 10% higher");
             // case 1C: new price is equal or below old price
             } else {
                 _minPriceToOwn = (uint256(orderbook[_tokenId][orderbook[_tokenId][msgSender()].next].price).mul(minimumPriceIncreasePercent.add(100))).div(100);

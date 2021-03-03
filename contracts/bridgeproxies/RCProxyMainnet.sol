@@ -35,8 +35,9 @@ contract RCProxyMainnet is Ownable
     
     /// @dev market resolution variables
     mapping (address => bytes32) public questionIds;
-    uint256 constant public REALITIO_TEMPLATE = 2;
+    uint256 constant public REALITIO_TEMPLATE_ID = 2;
     uint256 constant public REALITIO_NONCE = 0;
+    uint256 constant public XDAI_BRIDGE_GAS_COST = 400000;
 
     /// @dev dai deposits
     uint256 internal depositNonce;
@@ -124,7 +125,7 @@ contract RCProxyMainnet is Ownable
     /// @dev for situations where bridge failed
     function postQuestionToOracleAdmin(address _marketAddress, string calldata _question, uint32 _oracleResolutionTime) onlyOwner external {
         require(questionIds[_marketAddress] == 0, "Already posted");
-        bytes32 _questionId = realitio.askQuestion(REALITIO_TEMPLATE, _question, arbitrator, timeout, _oracleResolutionTime, REALITIO_NONCE);
+        bytes32 _questionId = realitio.askQuestion(REALITIO_TEMPLATE_ID, _question, arbitrator, timeout, _oracleResolutionTime, REALITIO_NONCE);
         questionIds[_marketAddress] = _questionId;
         emit LogQuestionPostedToOracle(_marketAddress, _questionId);
     }
@@ -156,7 +157,7 @@ contract RCProxyMainnet is Ownable
         require(msg.sender == address(bridge), "Not bridge");
         require(bridge.messageSender() == proxyXdaiAddress, "Not proxy");
         require(questionIds[_marketAddress] == 0, "Already posted");
-        bytes32 _questionId = realitio.askQuestion(REALITIO_TEMPLATE, _question, arbitrator, timeout, _oracleResolutionTime, REALITIO_NONCE);
+        bytes32 _questionId = realitio.askQuestion(REALITIO_TEMPLATE_ID, _question, arbitrator, timeout, _oracleResolutionTime, REALITIO_NONCE);
         questionIds[_marketAddress] = _questionId;
         emit LogQuestionPostedToOracle(_marketAddress, _questionId);
     }
@@ -176,7 +177,7 @@ contract RCProxyMainnet is Ownable
         bytes32 _winningOutcome = realitio.resultFor(_questionId);
         bytes4 _methodSelector = IRCProxyXdai(address(0)).setWinner.selector;
         bytes memory data = abi.encodeWithSelector(_methodSelector, _marketAddress, _winningOutcome);
-        bridge.requireToPassMessage(proxyXdaiAddress,data,400000);
+        bridge.requireToPassMessage(proxyXdaiAddress,data,XDAI_BRIDGE_GAS_COST);
     }
 
     ////////////////////////////////////

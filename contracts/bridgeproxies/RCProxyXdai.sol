@@ -43,6 +43,7 @@ contract RCProxyXdai is Ownable
         bool set; }
 
     ///// DAI->XDAI BRIDGE VARIABLES /////
+    uint256 constant public MAINNET_BRIDGE_GAS_COST = 200000;
     uint256 public validatorCount;
     mapping (address => bool) public isValidator;
     mapping (uint256 => Deposit) public deposits;
@@ -177,7 +178,7 @@ contract RCProxyXdai is Ownable
         require(questions[_marketAddress].set, "No question");
         bytes4 _methodSelector = IRCProxyMainnet(address(0)).postQuestionToOracle.selector;
         bytes memory data = abi.encodeWithSelector(_methodSelector, _marketAddress, questions[_marketAddress].question, questions[_marketAddress].oracleResolutionTime);
-        bridge.requireToPassMessage(proxyMainnetAddress,data,200000);
+        bridge.requireToPassMessage(proxyMainnetAddress,data,MAINNET_BRIDGE_GAS_COST);
     }
     
     /// @dev called by mainnet oracle proxy via the arbitrary message bridge, sets the winning outcome
@@ -211,7 +212,7 @@ contract RCProxyXdai is Ownable
         require(upgradedNftId[_tokenId].set, "Nft not set");
         bytes4 _methodSelector = IRCProxyMainnet(address(0)).upgradeCard.selector;
         bytes memory data = abi.encodeWithSelector(_methodSelector, _tokenId, upgradedNftId[_tokenId].tokenURI, upgradedNftId[_tokenId].owner);
-        bridge.requireToPassMessage(proxyMainnetAddress,data,200000);
+        bridge.requireToPassMessage(proxyMainnetAddress,data,MAINNET_BRIDGE_GAS_COST);
     }
 
     ////////////////////////////////////
