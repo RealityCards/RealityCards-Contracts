@@ -78,14 +78,14 @@ contract RCNftHubXdai is Ownable, ERC721
 
     function transferFrom(address from, address to, uint256 tokenId) public override {
         IRCMarket market = IRCMarket(marketTracker[tokenId]);
-        require(market.state() == 3, "Incorrect state");
+        require(market.state() == IRCMarket.States.WITHDRAW, "Incorrect state");
         require(ownerOf(tokenId) == msg.sender, "Not owner");
         _transfer(from, to, tokenId);
     }
 
     function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) public override {
         IRCMarket market = IRCMarket(marketTracker[tokenId]);
-        require(market.state() == 3, "Incorrect state");
+        require(market.state() == IRCMarket.States.WITHDRAW, "Incorrect state");
         require(ownerOf(tokenId) == msg.sender, "Not owner");
         _transfer(from, to, tokenId);
         _data;

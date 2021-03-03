@@ -501,7 +501,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
 
         // check sufficient deposit
         uint256 _minRentalTime = uint256(1 days).div(minRentalDayDivisor);
-        require(treasury.deposits(msgSender()) >= _newPrice.div(_minRentalTime), "Insufficient deposit");
+        require(treasury.userDeposit(msgSender()) >= _newPrice.div(_minRentalTime), "Insufficient deposit");
 
         // check _timeHeldLimit
         if (_timeHeldLimit == 0) {
@@ -596,7 +596,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
         if (ownerOf(_tokenId) != address(this)) {
             uint256 _rentOwed = tokenPrice[_tokenId].mul(block.timestamp.sub(timeLastCollected[_tokenId])).div(1 days);
             address _collectRentFrom = ownerOf(_tokenId);
-            uint256 _deposit = treasury.deposits(_collectRentFrom);
+            uint256 _deposit = treasury.userDeposit(_collectRentFrom);
             
             // get the maximum rent they can pay based on timeHeldLimit
             uint256 _rentOwedLimit;
@@ -787,7 +787,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
             orderbook[_tokenId][_tempNext].prev = address(this);
             delete orderbook[_tokenId][_tempPrev];
             // get required  and actual deposit of next user
-            _tempNextDeposit = treasury.deposits(_tempNext);
+            _tempNextDeposit = treasury.userDeposit(_tempNext);
             _requiredDeposit = orderbook[_tokenId][_tempNext].price.div(minRentalDayDivisor);
             _loopCount = _loopCount.add(1);
         } while (

@@ -33,7 +33,7 @@ contract RCProxyXdaiV2 is Ownable
 
     ///// NFT UPGRADE VARIABLES /////
     mapping (address => bool) public isMarket;
-    mapping(uint256 => nft) public upgradedNfts;
+    mapping(uint256 => nft) public upgradedNftId;
     struct nft { 
         string tokenURI;
         address owner;
@@ -188,19 +188,19 @@ contract RCProxyXdaiV2 is Ownable
     function saveCardToUpgrade(uint256 _tokenId, string calldata _tokenUri, address _owner) external {
         require(isMarket[msg.sender], "Not market");
         // sassert because hould be impossible to call this twice because upgraded card returned to market
-        assert(!upgradedNfts[_tokenId].set);
-        upgradedNfts[_tokenId].tokenURI = _tokenUri;
-        upgradedNfts[_tokenId].owner = _owner;
-        upgradedNfts[_tokenId].set = true;
+        assert(!upgradedNftId[_tokenId].set);
+        upgradedNftId[_tokenId].tokenURI = _tokenUri;
+        upgradedNftId[_tokenId].owner = _owner;
+        upgradedNftId[_tokenId].set = true;
         postCardToUpgrade(_tokenId);
     }
 
      /// @dev card is upgraded in a different function so it can be called again if bridge fails
      /// @dev no harm if called again after successful posting because can't mint nft with same tokenId twice 
     function postCardToUpgrade(uint256 _tokenId) public {
-        require(upgradedNfts[_tokenId].set, "Nft not set");
+        require(upgradedNftId[_tokenId].set, "Nft not set");
         bytes4 _methodSelector = IRCProxyMainnet(address(0)).upgradeCard.selector;
-        bytes memory data = abi.encodeWithSelector(_methodSelector, _tokenId, upgradedNfts[_tokenId].tokenURI, upgradedNfts[_tokenId].owner);
+        bytes memory data = abi.encodeWithSelector(_methodSelector, _tokenId, upgradedNftId[_tokenId].tokenURI, upgradedNftId[_tokenId].owner);
         bridge.requireToPassMessage(proxyMainnetAddress,data,200000);
     }
 

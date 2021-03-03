@@ -30,6 +30,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     uint256 public constant MAX_ITERATIONS = 10;
     uint256 public constant MAX_UINT256 = type(uint256).max;
     uint256 public constant MAX_UINT128 = type(uint128).max;
+    uint256 public constant MIN_RENTAL_VALUE = 1 ether;
     enum States {CLOSED, OPEN, LOCKED, WITHDRAW}
     States public state; 
     /// @dev type of event. 0 = classic, 1 = winner takes all, 2 = hot potato 
@@ -65,7 +66,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @dev minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
     uint256 public minRentalDayDivisor;
     /// @dev if hot potato mode, how much rent new owner must pay current owner (1 week divisor: i.e. 7 = 1 day, 14 = 12 hours)
-    uint256 public hotPotatoDayDivisor;
+    uint256 public hotPotatoWeekDivisor;
 
     ///// ORDERBOOK /////
     /// @dev stores the orderbook. Doubly linked list. 
@@ -147,7 +148,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     event LogNftUpgraded(uint256 indexed currentTokenId, uint256 indexed newTokenId);
     event LogPayoutDetails(address indexed artistAddress, address marketCreatorAddress, address affiliateAddress, address[] cardAffiliateAddresses, uint256 indexed artistCut, uint256 winnerCut, uint256 creatorCut, uint256 affiliateCut, uint256 cardAffiliateCut);
     event LogTransferCardToLongestOwner(uint256 tokenId, address longestOwner);
-    event LogSettings(uint256 indexed minRentalDayDivisor, uint256 indexed minimumPriceIncreasePercent, uint256 hotPotatoDayDivisor);
+    event LogSettings(uint256 indexed minRentalDayDivisor, uint256 indexed minimumPriceIncreasePercent, uint256 hotPotatoWeekDivisor);
 
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
@@ -186,7 +187,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         uint256[5] memory _potDistribution = factory.getPotDistribution();
         minRentalDayDivisor = treasury.minRentalDayDivisor();
         minimumPriceIncreasePercent = factory.minimumPriceIncreasePercent();
-        hotPotatoDayDivisor = factory.hotPotatoDayDivisor();
+        hotPotatoWeekDivisor = factory.hotPotatoWeekDivisor();
         
         // initialiiize!
         winningOutcome = MAX_UINT256; // default invalid
@@ -241,7 +242,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         }
 
         emit LogPayoutDetails(_artistAddress, _marketCreatorAddress, _affiliateAddress, cardAffiliateAddresses, artistCut, winnerCut, creatorCut, affiliateCut, cardAffiliateCut);
-        emit LogSettings(minRentalDayDivisor, minimumPriceIncreasePercent, hotPotatoDayDivisor);
+        emit LogSettings(minRentalDayDivisor, minimumPriceIncreasePercent, hotPotatoWeekDivisor);
     } 
 
     ////////////////////////////////////
@@ -484,7 +485,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                 if (tokenPrice[i]>0) {
                     _newPrice = (tokenPrice[i].mul(minimumPriceIncreasePercent.add(100))).div(100);
                 } else {
-                    _newPrice = 1 ether;
+                    _newPrice = MIN_RENTAL_VALUE;
                 }
                 newRental(_newPrice, 0, address(0), i);
             }
@@ -495,7 +496,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @dev no event: it is emitted in _updateBid, _setNewOwner or _placeInList as appropriate
     function newRental(uint256 _newPrice, uint256 _timeHeldLimit, address _startingPosition, uint256 _tokenId) public payable autoUnlock() autoLock() returns (uint256) {
         _checkState(States.OPEN);
-        require(_newPrice >= 1 ether, "Minimum rental 1 xDai");
+        require(_newPrice >= MIN_RENTAL_VALUE, "Minimum rental 1 xDai");
         require(_tokenId < numberOfTokens, "This token does not exist");
         require(exitedTimestamp[msgSender()] != block.timestamp, "Cannot lose and re-rent in same block");
         require(!treasury.marketPaused(address(this)), "Rentals are disabled");
@@ -508,8 +509,8 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         }
 
         // check sufficient deposit
-        uint256 _updatedTotalRentals =  treasury.userTotalRentals(msgSender()).add(_newPrice);
-        require(treasury.deposits(msgSender()) >= _updatedTotalRentals.div(minRentalDayDivisor), "Insufficient deposit");
+        uint256 _updatedTotalBids =  treasury.userTotalBids(msgSender()).add(_newPrice);
+        require(treasury.userDeposit(msgSender()) >= _updatedTotalBids.div(minRentalDayDivisor), "Insufficient deposit");
 
         // check _timeHeldLimit
         if (_timeHeldLimit == 0) {
@@ -621,7 +622,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         if (ownerOf(_tokenId) != address(this)) {
             uint256 _rentOwed = tokenPrice[_tokenId].mul(_timeOfThisCollection.sub(timeLastCollected[_tokenId])).div(1 days);
             address _collectRentFrom = ownerOf(_tokenId);
-            uint256 _deposit = treasury.deposits(_collectRentFrom);
+            uint256 _deposit = treasury.userDeposit(_collectRentFrom);
 
             // get the maximum rent they can pay based on timeHeldLimit
             uint256 _rentOwedLimit;
@@ -742,7 +743,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     function _setNewOwner(uint256 _newPrice, uint256 _tokenId, uint256 _timeHeldLimit) internal {  
         // if hot potato mode, pay current owner
         if (mode == 2) {
-            uint256 _duration = uint256(1 weeks).div(hotPotatoDayDivisor);
+            uint256 _duration = uint256(1 weeks).div(hotPotatoWeekDivisor);
             uint256 _requiredPayment = (tokenPrice[_tokenId].mul(_duration)).div(uint256(1 days));
             assert(treasury.processHarbergerPayment(msgSender(), ownerOf(_tokenId), _requiredPayment));
         }
@@ -819,9 +820,9 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             delete orderbook[_tokenId][_tempPrev];
             emit LogRemoveFromOrderbook(_tempPrev, _tokenId);
             // get required  and actual deposit of next user
-            _tempNextDeposit = treasury.deposits(_tempNext);
-            uint256 _nextUserTotalRentals = treasury.userTotalRentals(msgSender()).add(orderbook[_tokenId][_tempNext].price);
-            _requiredDeposit = _nextUserTotalRentals.div(minRentalDayDivisor);
+            _tempNextDeposit = treasury.userDeposit(_tempNext);
+            uint256 _nextUserTotalBids = treasury.userTotalBids(msgSender()).add(orderbook[_tokenId][_tempNext].price);
+            _requiredDeposit = _nextUserTotalBids.div(minRentalDayDivisor);
             _loopCount = _loopCount.add(1);
         } while (
             _tempNext != address(this) && 

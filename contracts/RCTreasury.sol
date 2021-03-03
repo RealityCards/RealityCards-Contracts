@@ -23,7 +23,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev so only markets can use certain functions
     mapping (address => bool) public isMarket;
     /// @dev the deposit balance of each user
-    mapping (address => uint256) public deposits;
+    mapping (address => uint256) public userDeposit;
     /// @dev sum of all deposits 
     uint256 public totalDeposits;
     /// @dev the rental payments made in each market
@@ -31,7 +31,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev sum of all market pots 
     uint256 public totalMarketPots;
     /// @dev sum of prices of all Cards a user is renting
-    mapping (address => uint256) public userTotalRentals;
+    // mapping (address => uint256) public userTotalRentals;
     /// @dev when a user most recently rented (to prevent users withdrawing within minRentalTime)
     mapping (address => uint256) public lastRentalTime;
     /// @dev keeps track of the tokens and bid prices the user has in each market
@@ -175,7 +175,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         require(address(this).balance <= maxContractBalance, "Limit hit");
         require(_user != address(0), "Must set an address");
 
-        deposits[_user] = deposits[_user].add(msg.value);
+        userDeposit[_user] = userDeposit[_user].add(msg.value);
         totalDeposits = totalDeposits.add(msg.value);
         emit LogDepositIncreased(_user, msg.value);
         emit LogAdjustDeposit(_user, msg.value, true);
@@ -185,7 +185,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev this is the only function where funds leave the contract
     function withdrawDeposit(uint256 _dai) external balancedBooks  {
         require(!globalPause, "Withdrawals are disabled");
-        require(deposits[msgSender()] > 0, "Nothing to withdraw");
+        require(userDeposit[msgSender()] > 0, "Nothing to withdraw");
         require(block.timestamp.sub(lastRentalTime[msgSender()]) > uint256(1 days).div(minRentalDayDivisor), "Too soon");
 
         uint256 _userTotalBids = 0;
@@ -198,17 +198,17 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
                 }
             }
         }    
-        if (_dai > deposits[msgSender()]) {
-            _dai = deposits[msgSender()];
+        if (_dai > userDeposit[msgSender()]) {
+            _dai = userDeposit[msgSender()];
         }
-        deposits[msgSender()] = deposits[msgSender()].sub(_dai);
+        userDeposit[msgSender()] = userDeposit[msgSender()].sub(_dai);
         totalDeposits = totalDeposits.sub(_dai);
         address _thisAddressNotPayable = msgSender();
         address payable _recipient = address(uint160(_thisAddressNotPayable));
         (bool _success, ) = _recipient.call{value: _dai}("");
         require(_success, "Transfer failed");
         
-        if(_userTotalBids.div(minRentalDayDivisor) > deposits[msgSender()]){
+        if(_userTotalBids.div(minRentalDayDivisor) > userDeposit[msgSender()]){
             for(uint256 i; i < activeMarkets.length - 1; i++){
                 if(userBids[msgSender()][activeMarkets[i]].tokenId.length != 0){
                     IRCMarket _market = IRCMarket(activeMarkets[i]);
@@ -228,8 +228,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev a rental payment is equivalent to moving to market pot from user's deposit, called by _collectRent in the market
     function payRent(address _user, uint256 _dai) external balancedBooks onlyMarkets returns(bool) {
         require(!globalPause, "Rentals are disabled");
-        assert(deposits[_user] >= _dai); // assert because should have been reduced to user's deposit already
-        deposits[_user] = deposits[_user].sub(_dai);
+        assert(userDeposit[_user] >= _dai); // assert because should have been reduced to user's deposit already
+        userDeposit[_user] = userDeposit[_user].sub(_dai);
         marketPot[msg.sender] = marketPot[msg.sender].add(_dai);
         totalMarketPots = totalMarketPots.add(_dai);
         totalDeposits = totalDeposits.sub(_dai);
@@ -241,7 +241,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     function payout(address _user, uint256 _dai) external balancedBooks onlyMarkets returns(bool) {
         require(!globalPause, "Payouts are disabled");
         assert(marketPot[msg.sender] >= _dai); 
-        deposits[_user] = deposits[_user].add(_dai);
+        userDeposit[_user] = userDeposit[_user].add(_dai);
         marketPot[msg.sender] = marketPot[msg.sender].sub(_dai);
         totalMarketPots = totalMarketPots.sub(_dai);
         totalDeposits = totalDeposits.add(_dai);
@@ -260,9 +260,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev new owner pays current owner for hot potato mode
     function processHarbergerPayment(address _newOwner, address _currentOwner, uint256 _requiredPayment) external balancedBooks onlyMarkets returns(bool) {
         require(!globalPause, "Global Pause is Enabled");
-        require(deposits[_newOwner] >= _requiredPayment, "Insufficient deposit");
-        deposits[_newOwner] = deposits[_newOwner].sub(_requiredPayment);
-        deposits[_currentOwner] = deposits[_currentOwner].add(_requiredPayment);
+        require(userDeposit[_newOwner] >= _requiredPayment, "Insufficient deposit");
+        userDeposit[_newOwner] = userDeposit[_newOwner].sub(_requiredPayment);
+        userDeposit[_currentOwner] = userDeposit[_currentOwner].add(_requiredPayment);
         emit LogAdjustDeposit(_newOwner, _requiredPayment, false);
         emit LogAdjustDeposit(_currentOwner, _requiredPayment, true);
         emit LogHotPotatoPayment(_newOwner, _currentOwner, _requiredPayment);
@@ -273,6 +273,19 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     function updateLastRentalTime(address _user) external onlyMarkets returns(bool) {
         lastRentalTime[_user] = block.timestamp;
         return true;
+    }
+
+    /// @dev provides the sum total of a users bids accross all markets
+    function userTotalBids(address _user) external view returns(uint256) {
+        uint256 _userTotalBids = 0;
+        for(uint256 i; i < activeMarkets.length; i++){
+            if (userBids[_user][activeMarkets[i]].tokenId.length != 0){
+                for(uint256 j; j < userBids[_user][activeMarkets[i]].tokenId.length; j++ ){
+                    _userTotalBids = _userTotalBids.add(userBids[_user][activeMarkets[i]].bidPrice[j]);
+                }
+            }
+        } 
+        return _userTotalBids;
     }
 
     /// @dev tracks the total rental payments across all Cards, to enforce minimum rental duration

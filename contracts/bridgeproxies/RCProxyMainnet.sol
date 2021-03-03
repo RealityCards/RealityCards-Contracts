@@ -35,6 +35,8 @@ contract RCProxyMainnet is Ownable
     
     /// @dev market resolution variables
     mapping (address => bytes32) public questionIds;
+    uint256 constant public REALITIO_TEMPLATE = 2;
+    uint256 constant public REALITIO_NONCE = 0;
 
     /// @dev dai deposits
     uint256 internal depositNonce;
@@ -94,7 +96,7 @@ contract RCProxyMainnet is Ownable
     function setDaiAddress(address _newAddress) onlyOwner public {
         require(_newAddress != address(0), "Must set an address");
         dai = IERC20Dai(_newAddress);
-        dai.approve(address(alternateReceiverBridge), 2**256 - 1);
+        dai.approve(address(alternateReceiverBridge), type(uint256).max);
     }
 
     ////////////////////////////////////
@@ -122,7 +124,7 @@ contract RCProxyMainnet is Ownable
     /// @dev for situations where bridge failed
     function postQuestionToOracleAdmin(address _marketAddress, string calldata _question, uint32 _oracleResolutionTime) onlyOwner external {
         require(questionIds[_marketAddress] == 0, "Already posted");
-        bytes32 _questionId = realitio.askQuestion(2, _question, arbitrator, timeout, _oracleResolutionTime, 0);
+        bytes32 _questionId = realitio.askQuestion(REALITIO_TEMPLATE, _question, arbitrator, timeout, _oracleResolutionTime, REALITIO_NONCE);
         questionIds[_marketAddress] = _questionId;
         emit LogQuestionPostedToOracle(_marketAddress, _questionId);
     }
@@ -154,7 +156,7 @@ contract RCProxyMainnet is Ownable
         require(msg.sender == address(bridge), "Not bridge");
         require(bridge.messageSender() == proxyXdaiAddress, "Not proxy");
         require(questionIds[_marketAddress] == 0, "Already posted");
-        bytes32 _questionId = realitio.askQuestion(2, _question, arbitrator, timeout, _oracleResolutionTime, 0);
+        bytes32 _questionId = realitio.askQuestion(REALITIO_TEMPLATE, _question, arbitrator, timeout, _oracleResolutionTime, REALITIO_NONCE);
         questionIds[_marketAddress] = _questionId;
         emit LogQuestionPostedToOracle(_marketAddress, _questionId);
     }

@@ -247,7 +247,7 @@ module.exports = async (deployer, network, accounts) =>
         await realitycards2.exit(0, {
           from: user0
         })
-        let depositOfUser0 = await treasury.deposits.call(user0)
+        let depositOfUser0 = await treasury.userDeposit.call(user0)
         await treasury.withdrawDeposit(depositOfUser0, {
           from: user0
         })

@@ -50,7 +50,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
     /// @dev market closing time must be no more than this many seconds in the future
     uint32 public maximumDuration;
     /// @dev if hot potato mode, how much rent new owner must pay current owner (1 week divisor: i.e. 7 = 1 day's rent, 14 = 12 hours's rent)
-    uint256 public hotPotatoDayDivisor;
+    uint256 public hotPotatoWeekDivisor;
     /// @dev list of governors
     mapping(address => bool) public governors;
     /// @dev if false, anyone can create markets
@@ -178,7 +178,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
 
      /// @dev if hot potato mode, how much rent new owner must pay current owner (1 week divisor: i.e. 7 = 1 day, 14 = 12 hours)
     function setHotPotatoPayment(uint256 _newDivisor) public onlyOwner {
-        hotPotatoDayDivisor = _newDivisor;
+        hotPotatoWeekDivisor = _newDivisor;
     }
 
     /// NOT CALLED WITHIN CONSTRUCTOR (external)
