@@ -697,7 +697,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         // case 1: user is currently the owner
         if(msgSender() == ownerOf(_tokenId)) { 
             _minPriceToOwn = (tokenPrice[_tokenId].mul(minimumPriceIncreasePercent.add(100))).div(100);
-            // case 1A: new price must be X% higher than previous or lower otherwise revert the tx to prevent frontrunning
+            // case 1A: new price must be X% higher than previous OR lower, otherwise revert the tx to prevent frontrunning
             require(_newPrice >= _minPriceToOwn || _newPrice < tokenPrice[_tokenId], "Not 10% higher");
             // case 1B: new price is at least X% above current price- adjust price & timeHeldLimit. newRental event required. 
             if(_newPrice >= _minPriceToOwn) {
