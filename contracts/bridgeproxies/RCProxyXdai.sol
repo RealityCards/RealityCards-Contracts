@@ -256,10 +256,10 @@ contract RCProxyXdai is Ownable
     function executeDaiDeposit(uint256 _nonce) public {
         require(deposits[_nonce].confirmed, "Not confirmed");
         require(!deposits[_nonce].executed, "Already executed");
-        deposits[_nonce].executed = true;
         uint256 _amount = deposits[_nonce].amount;
         address _user = deposits[_nonce].user;
         if (address(this).balance >= _amount) {
+            deposits[_nonce].executed = true;
             ITreasury treasury = ITreasury(treasuryAddress);
             // if Treasury will allow the deposit, send it there
             if (address(treasury).balance.add(_amount) <= treasury.maxContractBalance()) {
