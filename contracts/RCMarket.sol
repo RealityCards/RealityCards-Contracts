@@ -826,7 +826,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             emit LogRemoveFromOrderbook(_tempPrev, _tokenId);
             // get required  and actual deposit of next user
             _tempNextDeposit = treasury.userDeposit(_tempNext);
-            uint256 _nextUserTotalBids = treasury.userTotalBids(msgSender()).add(orderbook[_tokenId][_tempNext].price);
+            uint256 _nextUserTotalBids = treasury.userTotalBids(_tempNext).add(orderbook[_tokenId][_tempNext].price);
             _requiredDeposit = _nextUserTotalBids.div(minRentalDayDivisor);
             _loopCount = _loopCount.add(1);
         } while (

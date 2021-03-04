@@ -256,6 +256,7 @@ contract RCProxyXdai is Ownable
     function executeDaiDeposit(uint256 _nonce) public {
         require(deposits[_nonce].confirmed, "Not confirmed");
         require(!deposits[_nonce].executed, "Already executed");
+        deposits[_nonce].executed = true;
         uint256 _amount = deposits[_nonce].amount;
         address _user = deposits[_nonce].user;
         if (address(this).balance >= _amount) {
@@ -269,7 +270,6 @@ contract RCProxyXdai is Ownable
                 (bool _success, ) = _recipient.call{value:_amount}("");
                 require(_success, "Transfer failed");
             }
-            deposits[_nonce].executed = true;
             emit LogDepositExecuted(_nonce);
         }
     }
