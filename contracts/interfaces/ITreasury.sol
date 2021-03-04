@@ -5,7 +5,7 @@ interface ITreasury
 {
     function payout(address,uint256) external returns (bool);
     function payRent(address,uint256) external returns (bool);
-    function addMarket(address) external returns (bool);
+    function addMarket(address) external;
     function userDeposit(address) external returns (uint256);
     function setFactoryAddress() external returns(bool);
     function allocateCardSpecificDeposit(address,address,uint256,uint256) external returns (bool);

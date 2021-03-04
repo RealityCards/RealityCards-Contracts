@@ -322,9 +322,10 @@ contract RCFactoryV2 is Ownable, CloneFactory, NativeMetaTransaction {
         address _newAddress = createClone(referenceContractAddress);
 
         // tell Treasury, Proxy, and NFT hub about new market
-        assert(treasury.addMarket(_newAddress));
-        assert(proxy.addMarket(_newAddress));
-        assert(nfthub.addMarket(_newAddress));
+        treasury.addMarket(_newAddress);
+        proxy.addMarket(_newAddress);
+        nfthub.addMarket(_newAddress);
+
         emit LogMarketCreated1(_newAddress, address(treasury), address(nfthub), referenceContractVersion);
         emit LogMarketCreated2(_newAddress, _mode, _tokenURIs, _ipfsHash, _timestamps, totalNftMintCount);
         IRCMarket(_newAddress).initialize({

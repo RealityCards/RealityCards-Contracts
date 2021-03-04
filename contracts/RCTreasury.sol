@@ -84,7 +84,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         uberOwner = msg.sender;
 
         // initialise adjustable parameters
-        setMinRental(24*6); // ten mins
+        setMinRental(24*6); // MinRental is a divisor of 1 day(86400 seconds), 24*6 will set to 10 minutes
         setMaxContractBalance(1000000 ether); // 1m
     }
 
@@ -108,10 +108,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     ////////////////////////////////////
 
     /// @dev so only markets can move funds from deposits to marketPots and vice versa
-    function addMarket(address _newMarket) external returns(bool) {
+    function addMarket(address _newMarket) external {
         require(msg.sender == factoryAddress, "Not factory");
         isMarket[_newMarket] = true;
-        return true;
     }
 
     ////////////////////////////////////

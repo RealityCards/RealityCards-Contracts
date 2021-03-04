@@ -36,10 +36,9 @@ contract RCNftHubXdai is Ownable, ERC721
     ////////////////////////////////////
 
     /// @dev so only markets can change ownership
-    function addMarket(address _newMarket) external returns(bool) {
+    function addMarket(address _newMarket) external{
         require(msg.sender == factoryAddress, "Not factory");
         isMarket[_newMarket] = true;
-        return true;
     }
 
     ////////////////////////////////////

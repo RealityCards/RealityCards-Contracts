@@ -331,9 +331,9 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
 
         // tell Treasury, Proxy, and NFT hub about new market
         // before initialize as during initialize the market may call the treasury
-        assert(treasury.addMarket(_newAddress));
-        assert(proxy.addMarket(_newAddress));
-        assert(nfthub.addMarket(_newAddress));
+        treasury.addMarket(_newAddress);
+        proxy.addMarket(_newAddress);
+        nfthub.addMarket(_newAddress);
 
         IRCMarket(_newAddress).initialize({
             _mode: _mode,

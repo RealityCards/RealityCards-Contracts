@@ -77,10 +77,9 @@ contract RCProxyXdaiV2 is Ownable
     ////////////////////////////////////
 
     /// @dev so only RC NFTs can be upgraded
-    function addMarket(address _newMarket) external returns(bool) {
+    function addMarket(address _newMarket) external {
         require(msg.sender == factoryAddress, "Not factory");
         isMarket[_newMarket] = true;
-        return true;
     }
     
     ////////////////////////////////////
