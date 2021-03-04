@@ -553,8 +553,12 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @dev doesn't need to be current owner so user can prevent ownership returning to them
     /// @dev does not apply minimum rental duration, because it returns ownership to the next user
     function exit(uint256 _tokenId) public {
+        exit(_tokenId, address(0));
+    }
+    function exit(uint256 _tokenId, address _user) internal {
         _checkState(States.OPEN);
         address _msgSender = msgSender();
+        if (_msgSender == address(treasury)){_msgSender = _user;}
         // if current owner, collect rent, revert if necessary
         if (ownerOf(_tokenId) == _msgSender) {
             // collectRent first
@@ -585,9 +589,9 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         }
     }
 
-    function exitSpecificCards(uint[] memory _cards) external {
+    function exitSpecificCards(uint[] memory _cards, address _user) external {
         for (uint256 i; i < _cards.length; i++){
-            exit(_cards[i]);
+            exit(_cards[i], _user);
         }
     }
 

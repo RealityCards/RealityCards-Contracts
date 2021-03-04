@@ -190,11 +190,11 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
         uint256 _userTotalBids = 0;
         for(uint256 i; i < activeMarkets.length; i++){
-            if (userBids[_msgSender][activeMarkets[i]].tokenId.length != 0){
+            if (userBids[activeMarkets[i]][_msgSender].tokenId.length != 0){
                 IRCMarket _market = IRCMarket(activeMarkets[i]);
-                _market.collectRentSpecificCards(userBids[_msgSender][activeMarkets[i]].tokenId);
-                for(uint256 j; j < userBids[_msgSender][activeMarkets[i]].tokenId.length; j++ ){
-                    _userTotalBids = _userTotalBids.add(userBids[_msgSender][activeMarkets[i]].bidPrice[j]);
+                _market.collectRentSpecificCards(userBids[activeMarkets[i]][_msgSender].tokenId);
+                for(uint256 j; j < userBids[activeMarkets[i]][_msgSender].tokenId.length; j++ ){
+                    _userTotalBids = _userTotalBids.add(userBids[activeMarkets[i]][_msgSender].bidPrice[j]);
                 }
             }
         }    
@@ -207,12 +207,12 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         address payable _recipient = address(uint160(_thisAddressNotPayable));
         (bool _success, ) = _recipient.call{value: _dai}("");
         require(_success, "Transfer failed");
-        
+
         if(_userTotalBids.div(minRentalDayDivisor) > userDeposit[_msgSender]){
-            for(uint256 i; i < activeMarkets.length.sub(1); i++){
-                if(userBids[_msgSender][activeMarkets[i]].tokenId.length != 0){
+            for(uint256 i; i < activeMarkets.length; i++){
+                if(userBids[activeMarkets[i]][_msgSender].tokenId.length != 0){
                     IRCMarket _market = IRCMarket(activeMarkets[i]);
-                    _market.exitSpecificCards(userBids[_msgSender][activeMarkets[i]].tokenId);
+                    _market.exitSpecificCards(userBids[activeMarkets[i]][_msgSender].tokenId, _msgSender);
                 }
             }
         }
@@ -279,9 +279,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     function userTotalBids(address _user) external view returns(uint256) {
         uint256 _userTotalBids = 0;
         for(uint256 i; i < activeMarkets.length; i++){
-            if (userBids[_user][activeMarkets[i]].tokenId.length != 0){
-                for(uint256 j; j < userBids[_user][activeMarkets[i]].tokenId.length; j++ ){
-                    _userTotalBids = _userTotalBids.add(userBids[_user][activeMarkets[i]].bidPrice[j]);
+            if (userBids[activeMarkets[i]][_user].tokenId.length != 0){
+                for(uint256 j; j < userBids[activeMarkets[i]][_user].tokenId.length; j++ ){
+                    _userTotalBids = _userTotalBids.add(userBids[activeMarkets[i]][_user].bidPrice[j]);
                 }
             }
         } 
@@ -291,24 +291,25 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev tracks the total rental payments across all Cards, to enforce minimum rental duration
     function updateUserBid(address _user, uint256 _tokenId, uint256 _price) external onlyMarkets returns(bool) {
         bool _done = false;
-        for(uint256 i; i < userBids[_user][msg.sender].tokenId.length; i++){
-            if (userBids[_user][msg.sender].tokenId[i] == _tokenId){
+        address _msgSender = msgSender();
+        for(uint256 i = 0; i < userBids[_msgSender][_user].tokenId.length; i++){
+            if (userBids[_msgSender][_user].tokenId[i] == _tokenId){
                 if(_price == 0){
-                    uint256 _lastRecord = userBids[_user][msg.sender].tokenId.length.sub(1);
-                    userBids[_user][msg.sender].tokenId[i] = userBids[_user][msg.sender].tokenId[_lastRecord];
-                    userBids[_user][msg.sender].tokenId.pop();
-                    userBids[_user][msg.sender].bidPrice[i] = userBids[_user][msg.sender].bidPrice[_lastRecord];
-                    userBids[_user][msg.sender].bidPrice.pop();
+                    uint256 _lastRecord = userBids[_msgSender][_user].tokenId.length.sub(1);
+                    userBids[_msgSender][_user].tokenId[i] = userBids[_msgSender][_user].tokenId[_lastRecord];
+                    userBids[_msgSender][_user].tokenId.pop();
+                    userBids[_msgSender][_user].bidPrice[i] = userBids[_msgSender][_user].bidPrice[_lastRecord];
+                    userBids[_msgSender][_user].bidPrice.pop();
                 } else {
-                    userBids[_user][msg.sender].bidPrice[i] = _price;
+                    userBids[_msgSender][_user].bidPrice[i] = _price;
                 }
                 _done = true;
                 break;
             }
         }
         if(!_done){
-            userBids[_user][msg.sender].tokenId.push(_tokenId);
-            userBids[_user][msg.sender].bidPrice.push(_price);
+            userBids[_msgSender][_user].tokenId.push(_tokenId);
+            userBids[_msgSender][_user].bidPrice.push(_price);
             _done = true;
         }
         return _done;

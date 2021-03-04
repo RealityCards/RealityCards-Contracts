@@ -26,6 +26,6 @@ interface IRCMarket {
     function collectRentAllCards() external;
     function collectRentSpecificCards(uint[] memory _cards) external;
     function exitAll() external;
-    function exitSpecificCards(uint[] memory _cards) external;
+    function exitSpecificCards(uint[] memory _cards, address _user) external;
 
 }
