@@ -425,7 +425,7 @@ contract('RealityCardsTests', (accounts) => {
     amount = web3.utils.toWei(amount.toString(), 'ether');
     await treasury.withdrawDeposit(amount,{ from: userx});
   }
-
+/*
     // check that the contract initially owns the token
     it('getOwner', async () => {
     var i;
@@ -2812,91 +2812,91 @@ it('check lockMarket cant be called too early', async () => {
     await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000,user0);
 });
-/*
-it('check that _revertToUnderbidder does not revert more than ten times ', async () => {
-    user9 = accounts[9];
-    user10 = accounts[10];
-    user11 = accounts[11];
-    user12 = accounts[12];
-    user13 = accounts[13];
-    user14 = accounts[14];
-    //
-    // console.log(user0); 
-    // console.log(user1);
-    // console.log(user2);
-    // console.log(user3); 
-    // console.log(user4);
-    // console.log(user5);
-    // console.log(user6); 
-    // console.log(user7);
-    // console.log(user8);
-    // console.log(user9); 
-    // console.log(user10);
-    // console.log(user11);
-    // console.log(user12); 
-    // console.log(user13);
-    // console.log(user14);
-    /////// SETUP //////
-    // console.log(realitycards.address);
-    await depositDai(1000,user0);
-    await depositDai(1000,user1);
-    await depositDai(1000,user2);
-    await depositDai(1000,user3);
-    await depositDai(1000,user4);
-    await depositDai(1000,user5);
-    await depositDai(1000,user6);
-    await depositDai(1000,user7);
-    await depositDai(1000,user8);
-    await depositDai(1000,user9);
-    await depositDai(1000,user10);
-    await depositDai(1000,user11);
-    await depositDai(1000,user12);
-    await depositDai(1000,user13);
-    await depositDai(1000,user14);
-    // everyone rents at the same tokenPrice
-    await newRental(10,0,user0); 
-    await newRental(10,0,user1);
-    await newRental(10,0,user2);
-    await newRental(10,0,user3);
-    await newRental(10,0,user4);
-    await newRental(10,0,user5);
-    await newRental(10,0,user6);
-    await newRental(10,0,user7);
-    await newRental(10,0,user8);
-    await newRental(9,0,user9);
-    await expectRevert(newRental(8,0,user10), "Location too high");
-    await newRentalWithStartingPosition(7,0,user7,user10);
-    await newRentalWithStartingPosition(6,0,user7,user11);
-    await newRentalWithStartingPosition(5,0,user7,user12);
-    await newRentalWithStartingPosition(4,0,user7,user13);
-    await newRentalWithStartingPosition(3,0,user7,user14);
-    // make sure owned for at least an hour
-    await time.increase(time.duration.hours(1)); 
-    // everyone withdraws deposit
-    await time.increase(time.duration.minutes(10));
-    await withdrawDeposit(1000,user0);
-    await withdrawDeposit(1000,user1);
-    await withdrawDeposit(1000,user2);
-    await withdrawDeposit(1000,user3);
-    await withdrawDeposit(1000,user4);
-    await withdrawDeposit(1000,user5);
-    await withdrawDeposit(1000,user6);
-    await withdrawDeposit(1000,user7);
-    await withdrawDeposit(1000,user8);
-    await withdrawDeposit(1000,user9);
-    await withdrawDeposit(1000,user10);
-    await withdrawDeposit(1000,user11);
-    await withdrawDeposit(1000,user12);
-    await withdrawDeposit(1000,user13);
-    await withdrawDeposit(1000,user14);
-    // collect rent, it should revert back 10 places
-    await realitycards.collectRentAllCards();
-    var owner = await realitycards.ownerOf.call(0);
-    assert.equal(owner, user10);
-    var tokenPrice = await realitycards.tokenPrice.call(0);
-    assert.equal(tokenPrice, web3.utils.toWei('7', 'ether'));
-});
-*/
+
+// it('check that _revertToUnderbidder does not revert more than ten times ', async () => {
+//     user9 = accounts[9];
+//     user10 = accounts[10];
+//     user11 = accounts[11];
+//     user12 = accounts[12];
+//     user13 = accounts[13];
+//     user14 = accounts[14];
+//     //
+//     // console.log(user0); 
+//     // console.log(user1);
+//     // console.log(user2);
+//     // console.log(user3); 
+//     // console.log(user4);
+//     // console.log(user5);
+//     // console.log(user6); 
+//     // console.log(user7);
+//     // console.log(user8);
+//     // console.log(user9); 
+//     // console.log(user10);
+//     // console.log(user11);
+//     // console.log(user12); 
+//     // console.log(user13);
+//     // console.log(user14);
+//     /////// SETUP //////
+//     // console.log(realitycards.address);
+//     await depositDai(1000,user0);
+//     await depositDai(1000,user1);
+//     await depositDai(1000,user2);
+//     await depositDai(1000,user3);
+//     await depositDai(1000,user4);
+//     await depositDai(1000,user5);
+//     await depositDai(1000,user6);
+//     await depositDai(1000,user7);
+//     await depositDai(1000,user8);
+//     await depositDai(1000,user9);
+//     await depositDai(1000,user10);
+//     await depositDai(1000,user11);
+//     await depositDai(1000,user12);
+//     await depositDai(1000,user13);
+//     await depositDai(1000,user14);
+//     // everyone rents at the same tokenPrice
+//     await newRental(10,0,user0); 
+//     await newRental(10,0,user1);
+//     await newRental(10,0,user2);
+//     await newRental(10,0,user3);
+//     await newRental(10,0,user4);
+//     await newRental(10,0,user5);
+//     await newRental(10,0,user6);
+//     await newRental(10,0,user7);
+//     await newRental(10,0,user8);
+//     await newRental(9,0,user9);
+//     await expectRevert(newRental(8,0,user10), "Location too high");
+//     await newRentalWithStartingPosition(7,0,user7,user10);
+//     await newRentalWithStartingPosition(6,0,user7,user11);
+//     await newRentalWithStartingPosition(5,0,user7,user12);
+//     await newRentalWithStartingPosition(4,0,user7,user13);
+//     await newRentalWithStartingPosition(3,0,user7,user14);
+//     // make sure owned for at least an hour
+//     await time.increase(time.duration.hours(1)); 
+//     // everyone withdraws deposit
+//     await time.increase(time.duration.minutes(10));
+//     await withdrawDeposit(1000,user0);
+//     await withdrawDeposit(1000,user1);
+//     await withdrawDeposit(1000,user2);
+//     await withdrawDeposit(1000,user3);
+//     await withdrawDeposit(1000,user4);
+//     await withdrawDeposit(1000,user5);
+//     await withdrawDeposit(1000,user6);
+//     await withdrawDeposit(1000,user7);
+//     await withdrawDeposit(1000,user8);
+//     await withdrawDeposit(1000,user9);
+//     await withdrawDeposit(1000,user10);
+//     await withdrawDeposit(1000,user11);
+//     await withdrawDeposit(1000,user12);
+//     await withdrawDeposit(1000,user13);
+//     await withdrawDeposit(1000,user14);
+//     // collect rent, it should revert back 10 places
+//     await realitycards.collectRentAllCards();
+//     var owner = await realitycards.ownerOf.call(0);
+//     assert.equal(owner, user10);
+//     var tokenPrice = await realitycards.tokenPrice.call(0);
+//     assert.equal(tokenPrice, web3.utils.toWei('7', 'ether'));
+// });
+
 it('check that cannot rent a card if less than 1 hours rent', async () => {
     await depositDai(1,user0);
     await expectRevert(realitycards.newRental(web3.utils.toWei('150', 'ether'),maxuint256,zeroAddress,2,{ from: user0}), "Insufficient deposit");
@@ -4480,78 +4480,78 @@ it('test orderbook various', async () => {
     assert.equal(bid[3],user2);
 });
 
-/* // test not relevant now rent calculation is performed on withdraw
-it('test _revertToUnderbidder', async () => {
-    // console.log(user0); 
-    // console.log(user1);
-    // console.log(user2);
-    // console.log(user3); 
-    // console.log(user4);
-    // console.log(user5);
-    // console.log(user6); 
-    // console.log(user7);
-    // console.log(user8);
-    // console.log(user9); 
-    // console.log(user10); 
-    // console.log(use11); 
-    // console.log(user12); 
-    // console.log(user3); 
-    // console.log(realitycards.address); 
-    await depositDai(10,user0);
-    await depositDai(10,user1);
-    await depositDai(10,user2);
-    await depositDai(10,user3);
-    await depositDai(10,user4);
-    await depositDai(10,user5);
-    await depositDai(10,user6);
-    await depositDai(10,user7);
-    await depositDai(10,user8);
-    await depositDai(10,user9);
-    // rentals: position/tokenPrice
-    await newRentalCustomTimeLimit(10, 1, 0,user0); // 2, 10
-    await newRental(9,0,user1); // 5, 9
-    await newRental(8,0,user2); // 6, 8
-    await newRental(10,0,user3); // 3,1 10
-    await newRental(10.9,0,user4); // 4, 10
-    await newRental(20,0,user5); // 1, 20
-    await newRental(5,0,user6); // 9, 5
-    await newRental(8.5,0,user7); // 7, 8
-    await newRental(6,0,user8); // 8, 6
-    await newRental(50,0,user9); // 0, 50
-    // withdraw deposit of 9, will it switch to 0
-    await time.increase(time.duration.minutes(10));
-    await withdrawDeposit(1000,user9);
-    await realitycards.collectRentAllCards();
-    var owner = await realitycards.ownerOf.call(0);
-    assert.equal(owner,user5);
-    var tokenPrice = await realitycards.tokenPrice.call(0);
-    assert.equal(tokenPrice,web3.utils.toWei('20', 'ether'));
-    var bid = await realitycards.orderbook.call(0,user5);
-    assert.equal(bid[3],realitycards.address);
-    var bid = await realitycards.orderbook.call(0,user9);
-    assert.equal(bid[0],0);
-    // withraw deposit for next 4 in line, check it cyles through
-    await time.increase(time.duration.minutes(10));
-    await withdrawDeposit(1000,user5);
-    await withdrawDeposit(1000,user0);
-    await withdrawDeposit(1000,user3);
-    await withdrawDeposit(1000,user4);
-    await realitycards.collectRentAllCards();
-    var owner = await realitycards.ownerOf.call(0);
-    assert.equal(owner,user1);
-    var tokenPrice = await realitycards.tokenPrice.call(0);
-    assert.equal(tokenPrice,web3.utils.toWei('9', 'ether'));
-    var bid = await realitycards.orderbook.call(0,user1);
-    assert.equal(bid[3],realitycards.address);
-    var bid = await realitycards.orderbook.call(0,user5);
-    assert.equal(bid[0],0);
-    var bid = await realitycards.orderbook.call(0,user0);
-    assert.equal(bid[0],0);
-    var bid = await realitycards.orderbook.call(0,user3);
-    assert.equal(bid[0],0);
-    var bid = await realitycards.orderbook.call(0,user4);
-    assert.equal(bid[0],0);
-}); */
+//  // test not relevant now rent calculation is performed on withdraw
+// it('test _revertToUnderbidder', async () => {
+//     // console.log(user0); 
+//     // console.log(user1);
+//     // console.log(user2);
+//     // console.log(user3); 
+//     // console.log(user4);
+//     // console.log(user5);
+//     // console.log(user6); 
+//     // console.log(user7);
+//     // console.log(user8);
+//     // console.log(user9); 
+//     // console.log(user10); 
+//     // console.log(use11); 
+//     // console.log(user12); 
+//     // console.log(user3); 
+//     // console.log(realitycards.address); 
+//     await depositDai(10,user0);
+//     await depositDai(10,user1);
+//     await depositDai(10,user2);
+//     await depositDai(10,user3);
+//     await depositDai(10,user4);
+//     await depositDai(10,user5);
+//     await depositDai(10,user6);
+//     await depositDai(10,user7);
+//     await depositDai(10,user8);
+//     await depositDai(10,user9);
+//     // rentals: position/tokenPrice
+//     await newRentalCustomTimeLimit(10, 1, 0,user0); // 2, 10
+//     await newRental(9,0,user1); // 5, 9
+//     await newRental(8,0,user2); // 6, 8
+//     await newRental(10,0,user3); // 3,1 10
+//     await newRental(10.9,0,user4); // 4, 10
+//     await newRental(20,0,user5); // 1, 20
+//     await newRental(5,0,user6); // 9, 5
+//     await newRental(8.5,0,user7); // 7, 8
+//     await newRental(6,0,user8); // 8, 6
+//     await newRental(50,0,user9); // 0, 50
+//     // withdraw deposit of 9, will it switch to 0
+//     await time.increase(time.duration.minutes(10));
+//     await withdrawDeposit(1000,user9);
+//     await realitycards.collectRentAllCards();
+//     var owner = await realitycards.ownerOf.call(0);
+//     assert.equal(owner,user5);
+//     var tokenPrice = await realitycards.tokenPrice.call(0);
+//     assert.equal(tokenPrice,web3.utils.toWei('20', 'ether'));
+//     var bid = await realitycards.orderbook.call(0,user5);
+//     assert.equal(bid[3],realitycards.address);
+//     var bid = await realitycards.orderbook.call(0,user9);
+//     assert.equal(bid[0],0);
+//     // withraw deposit for next 4 in line, check it cyles through
+//     await time.increase(time.duration.minutes(10));
+//     await withdrawDeposit(1000,user5);
+//     await withdrawDeposit(1000,user0);
+//     await withdrawDeposit(1000,user3);
+//     await withdrawDeposit(1000,user4);
+//     await realitycards.collectRentAllCards();
+//     var owner = await realitycards.ownerOf.call(0);
+//     assert.equal(owner,user1);
+//     var tokenPrice = await realitycards.tokenPrice.call(0);
+//     assert.equal(tokenPrice,web3.utils.toWei('9', 'ether'));
+//     var bid = await realitycards.orderbook.call(0,user1);
+//     assert.equal(bid[3],realitycards.address);
+//     var bid = await realitycards.orderbook.call(0,user5);
+//     assert.equal(bid[0],0);
+//     var bid = await realitycards.orderbook.call(0,user0);
+//     assert.equal(bid[0],0);
+//     var bid = await realitycards.orderbook.call(0,user3);
+//     assert.equal(bid[0],0);
+//     var bid = await realitycards.orderbook.call(0,user4);
+//     assert.equal(bid[0],0);
+// }); 
 
 it('test exit', async () => {
     await depositDai(10,user0);
@@ -4784,6 +4784,80 @@ it('test deposit dai mainnet proxy', async () => {
     var balance = await web3.eth.getBalance(xdaiproxy.address);
     assert.equal(balance,ether('15'));
 });
+*/
+
+
+it('test maximum number of bids/user', async () => {
+  var bidsPerMarket = 3;
+
+  user = user0;
+  var i = 0;
+  var j = 0;
+  var k = 0;
+  var markets = [];
+  var originalMarket = await rcfactory.getMostRecentMarket.call(0);
+  markets.push(originalMarket);
+  console.log('original market: ', markets[markets.length-1]);
+  tokenPrice = web3.utils.toWei('1', 'ether');
+  withdrawAmount = tokenPrice * 20;
+  console.log('starting loop');
+  while (true) {
+    // we're stuck here now, hold on tight!
+    k++
+    console.log('iteration k ', k);
+    for (j = 0; j < k; j++) {
+      // start slowly, 1 market at a time
+      console.log('Market index ', j);
+      tempMarket = await RCMarket.at(markets[j]);
+      await depositDai(100,user);
+
+      for (i = 0; i < bidsPerMarket; i++) {
+        //await newRental(1,i,user);
+        await tempMarket.newRental(tokenPrice,0,zeroAddress,i,{ from: user});
+      }
+    }
+    console.log('About to withdraw from ', k*i);
+    console.log('bids');
+    //var market = await treasury.totalDeposits();
+    //console.log(market.toString());
+    await time.increase(time.duration.seconds(600));
+
+    //await withdrawDeposit(web3.utils.toWei('100', 'ether'),user);
+    await treasury.withdrawDeposit(web3.utils.toWei('10000', 'ether'),{ from: user});
+
+    await time.increase(time.duration.seconds(600));
+
+    var userBids = await treasury.userTotalBids(user);
+    console.log(userBids.toString());
+    //console.log(user);
+
+    // create another market for the next loop and add it to the array
+    var latestTime = await time.latest();
+    var oneYear = new BN('31104000');
+    var oneYearInTheFuture = oneYear.add(latestTime);
+    var marketLockingTime = oneYearInTheFuture; 
+    var oracleResolutionTime = oneYearInTheFuture; 
+    var timestamps = [0,marketLockingTime,oracleResolutionTime];
+    var artistAddress = '0x0000000000000000000000000000000000000000';
+    var affiliateAddress = '0x0000000000000000000000000000000000000000';
+    var tokenURIs = ['x','x','x','uri','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x']; // 20 tokens
+    var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
+    var cardRecipients = ['0x0000000000000000000000000000000000000000']
+    await rcfactory.createMarket(
+      0,
+      '0x0',
+      timestamps,
+      tokenURIs,
+      artistAddress,
+      affiliateAddress,
+      cardRecipients,
+      question,
+    );
+    markets.push(await rcfactory.getMostRecentMarket.call(0));
+    console.log('new market: ', markets[markets.length-1]);
+  }
+
+}).timeout(1000000);
 
 });
 
