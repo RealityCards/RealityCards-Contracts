@@ -113,7 +113,7 @@ contract RCFactoryV2 is Ownable, CloneFactory, NativeMetaTransaction {
     ////////////////////////////////////
 
     function getMostRecentMarket(uint256 _mode) public view returns (address) {
-        return marketAddresses[_mode][marketAddresses[_mode].length-1];
+        return marketAddresses[_mode][marketAddresses[_mode].length.sub(1)];
     }
 
     function getAllMarkets(uint256 _mode) public view returns (address[] memory) {

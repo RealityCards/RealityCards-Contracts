@@ -867,7 +867,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @dev should only be called thrice
     function _incrementState() internal {
         assert(uint256(state) < 4);
-        state = States(uint256(state) + 1);
+        state = States(uint256(state).add(1));
         if(uint256(state) == 1){
             treasury.updateMarketStatus(true);
         }
@@ -882,7 +882,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @dev does not set a winner so same as invalid outcome
     /// @dev market does not need to be locked, just in case lockMarket bugs out
     function circuitBreaker() external {
-        require(block.timestamp > (oracleResolutionTime + 12 weeks), "Too early");
+        require(block.timestamp > (uint256(oracleResolutionTime).add(12 weeks)), "Too early");
         _incrementState();
         state = States.WITHDRAW;
     }

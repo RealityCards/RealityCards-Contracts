@@ -24,7 +24,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
     uint256 public numberOfTokens;
     /// @dev only for _revertToUnderbidder to prevent gas limits
     uint256 public constant MAX_ITERATIONS = 10;
-    uint256 public constant MAX_UINT256 = 2**256 - 1;
+    uint256 public constant MAX_UINT256 = type(uint256).max;
     enum States {CLOSED, OPEN, LOCKED, WITHDRAW}
     States public state; 
     /// @dev type of event. 0 = classic, 1 = winner takes all, 2 = hot potato 
@@ -817,7 +817,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
      /// @dev should only be called thrice
     function _incrementState() internal {
         assert(uint256(state) < 4);
-        state = States(uint256(state) + 1);
+        state = States(uint256(state).add(1));
         emit LogStateChange(uint256(state));
     }
 
@@ -829,7 +829,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
     /// @dev does not set a winner so same as invalid outcome
     /// @dev market does not need to be locked, just in case lockMarket bugs out
     function circuitBreaker() external {
-        require(block.timestamp > (oracleResolutionTime + 12 weeks), "Too early");
+        require(block.timestamp > (uint256(oracleResolutionTime).add(12 weeks)), "Too early");
         _incrementState();
         _processCardsAfterEvent(); 
         state = States.WITHDRAW;

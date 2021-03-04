@@ -95,7 +95,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     modifier balancedBooks {
         _;
         // using >= not == because forced Ether send via selfdestruct will not trigger a deposit via the fallback
-        assert(address(this).balance >= totalDeposits + totalMarketPots);
+        assert(address(this).balance >= totalDeposits.add(totalMarketPots));
     }
 
     modifier onlyMarkets {
@@ -209,7 +209,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         require(_success, "Transfer failed");
         
         if(_userTotalBids.div(minRentalDayDivisor) > userDeposit[_msgSender]){
-            for(uint256 i; i < activeMarkets.length - 1; i++){
+            for(uint256 i; i < activeMarkets.length.sub(1); i++){
                 if(userBids[_msgSender][activeMarkets[i]].tokenId.length != 0){
                     IRCMarket _market = IRCMarket(activeMarkets[i]);
                     _market.exitSpecificCards(userBids[_msgSender][activeMarkets[i]].tokenId);
@@ -321,7 +321,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         } else{
             for(uint256 i; i < activeMarkets.length; i++){
                 if(activeMarkets[i] == msg.sender){
-                    activeMarkets[i] = activeMarkets[activeMarkets.length - 1];
+                    activeMarkets[i] = activeMarkets[activeMarkets.length.sub(1)];
                     activeMarkets.pop();
                     lockedMarkets.push(msg.sender);
                 }
