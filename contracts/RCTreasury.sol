@@ -185,39 +185,40 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev this is the only function where funds leave the contract
     function withdrawDeposit(uint256 _dai) external balancedBooks  {
         require(!globalPause, "Withdrawals are disabled");
-        require(userDeposit[msgSender()] > 0, "Nothing to withdraw");
-        require(block.timestamp.sub(lastRentalTime[msgSender()]) > uint256(1 days).div(minRentalDayDivisor), "Too soon");
+        address _msgSender = msgSender();
+        require(userDeposit[_msgSender] > 0, "Nothing to withdraw");
+        require(block.timestamp.sub(lastRentalTime[_msgSender]) > uint256(1 days).div(minRentalDayDivisor), "Too soon");
 
         uint256 _userTotalBids = 0;
         for(uint256 i; i < activeMarkets.length; i++){
-            if (userBids[msgSender()][activeMarkets[i]].tokenId.length != 0){
+            if (userBids[_msgSender][activeMarkets[i]].tokenId.length != 0){
                 IRCMarket _market = IRCMarket(activeMarkets[i]);
-                _market.collectRentSpecificCards(userBids[msgSender()][activeMarkets[i]].tokenId);
-                for(uint256 j; j < userBids[msgSender()][activeMarkets[i]].tokenId.length; j++ ){
-                    _userTotalBids = _userTotalBids.add(userBids[msgSender()][activeMarkets[i]].bidPrice[j]);
+                _market.collectRentSpecificCards(userBids[_msgSender][activeMarkets[i]].tokenId);
+                for(uint256 j; j < userBids[_msgSender][activeMarkets[i]].tokenId.length; j++ ){
+                    _userTotalBids = _userTotalBids.add(userBids[_msgSender][activeMarkets[i]].bidPrice[j]);
                 }
             }
         }    
-        if (_dai > userDeposit[msgSender()]) {
-            _dai = userDeposit[msgSender()];
+        if (_dai > userDeposit[_msgSender]) {
+            _dai = userDeposit[_msgSender];
         }
-        userDeposit[msgSender()] = userDeposit[msgSender()].sub(_dai);
+        userDeposit[_msgSender] = userDeposit[_msgSender].sub(_dai);
         totalDeposits = totalDeposits.sub(_dai);
-        address _thisAddressNotPayable = msgSender();
+        address _thisAddressNotPayable = _msgSender;
         address payable _recipient = address(uint160(_thisAddressNotPayable));
         (bool _success, ) = _recipient.call{value: _dai}("");
         require(_success, "Transfer failed");
         
-        if(_userTotalBids.div(minRentalDayDivisor) > userDeposit[msgSender()]){
+        if(_userTotalBids.div(minRentalDayDivisor) > userDeposit[_msgSender]){
             for(uint256 i; i < activeMarkets.length - 1; i++){
-                if(userBids[msgSender()][activeMarkets[i]].tokenId.length != 0){
+                if(userBids[_msgSender][activeMarkets[i]].tokenId.length != 0){
                     IRCMarket _market = IRCMarket(activeMarkets[i]);
-                    _market.exitSpecificCards(userBids[msgSender()][activeMarkets[i]].tokenId);
+                    _market.exitSpecificCards(userBids[_msgSender][activeMarkets[i]].tokenId);
                 }
             }
         }
-        emit LogDepositWithdrawal(msgSender(), _dai);
-        emit LogAdjustDeposit(msgSender(), _dai, false);
+        emit LogDepositWithdrawal(_msgSender, _dai);
+        emit LogAdjustDeposit(_msgSender, _dai, false);
     }
 
     ////////////////////////////////////
