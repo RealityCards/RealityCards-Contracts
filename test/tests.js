@@ -4788,7 +4788,8 @@ it('test deposit dai mainnet proxy', async () => {
 
 
 it('test maximum number of bids/user', async () => {
-  var bidsPerMarket = 3;
+  var bidsPerMarket = 1; //max is 20
+  var dummyMarkets = 20;
 
   user = user0;
   var i = 0;
@@ -4805,19 +4806,21 @@ it('test maximum number of bids/user', async () => {
     // we're stuck here now, hold on tight!
     k++
     console.log('iteration k ', k);
-    for (j = 0; j < k; j++) {
+    await depositDai(100,user);
+    for (j = dummyMarkets; j < k; j++) {
       // start slowly, 1 market at a time
-      console.log('Market index ', j);
+      //console.log('Market index ', j);
       tempMarket = await RCMarket.at(markets[j]);
-      await depositDai(100,user);
+      
 
       for (i = 0; i < bidsPerMarket; i++) {
         //await newRental(1,i,user);
         await tempMarket.newRental(tokenPrice,0,zeroAddress,i,{ from: user});
       }
     }
-    console.log('About to withdraw from ', k*i);
-    console.log('bids');
+    console.log('Dummy Markets ', dummyMarkets);
+    console.log('About to withdraw from ', (k*i)-dummyMarkets);
+
     //var market = await treasury.totalDeposits();
     //console.log(market.toString());
     await time.increase(time.duration.seconds(600));
