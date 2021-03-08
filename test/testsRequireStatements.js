@@ -132,7 +132,7 @@ contract('TestRequireStatements', (accounts) => {
 
   async function createMarketCustomeTimestamps(marketOpeningTime,marketLockingTime,oracleResolutionTime) {
     var artistAddress = user8;
-    await rcfactory.addOrRemoveArtist(user8);
+    await rcfactory.changeArtistApproval(user8);
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     var timestamps = [marketOpeningTime,marketLockingTime,oracleResolutionTime];
     var slug = 'y';
@@ -153,7 +153,7 @@ contract('TestRequireStatements', (accounts) => {
 
   async function createMarketCustomeTimestamps2(marketOpeningTime,marketLockingTime,oracleResolutionTime) {
     var artistAddress = user8;
-    // await rcfactory.addOrRemoveArtist(user8);
+    // await rcfactory.changeArtistApproval(user8);
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     var timestamps = [marketOpeningTime,marketLockingTime,oracleResolutionTime];
     var slug = 'z';
@@ -276,7 +276,7 @@ it('check that cannot rent a card if less than 1 hours rent', async () => {
 
 
 it('check that users cannot transfer their NFTs until withdraw state', async() => {
-    await rcfactory.approveOrUnapproveMarket(realitycards.address);
+    await rcfactory.changeMarketApproval(realitycards.address);
     user = user0;
     await depositDai(144,user);
     await newRental(1,2,user);

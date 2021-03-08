@@ -113,9 +113,9 @@ contract('TestProxies', (accounts) => {
     var oracleResolutionTime = oneYearInTheFuture;
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
     var artistAddress = user8;
-    await rcfactory.addOrRemoveArtist(user8);
+    await rcfactory.changeArtistApproval(user8);
     var affiliateAddress = user7;
-    await rcfactory.addOrRemoveAffiliate(user7);
+    await rcfactory.changeAffiliateApproval(user7);
     var slug = 'y';
     await rcfactory.createMarket(
         0,
@@ -351,7 +351,7 @@ it('test setAmicableResolution', async () => {
 
 
 it('test NFT upgrade', async () => {
-    await rcfactory.approveOrUnapproveMarket(realitycards.address);
+    await rcfactory.changeMarketApproval(realitycards.address);
     await depositDai(1000,user1);
     await depositDai(1000,user2);
     await depositDai(1000,user3);
@@ -380,7 +380,7 @@ it('test NFT upgrade', async () => {
     var nftMintCount = await rcfactory.totalNftMintCount.call();
     assert.equal(nftMintCount,20);
     var realitycards2 = await createMarketWithArtistSet();
-    await rcfactory.approveOrUnapproveMarket(realitycards2.address);
+    await rcfactory.changeMarketApproval(realitycards2.address);
     await newRentalCustomContract(realitycards2,1,5,user3); 
     await time.increase(time.duration.years(1));
     await realitio.setResult(5);
@@ -408,18 +408,18 @@ it('test dai->xdai bridge', async () => {
     // backend just saw user1 send 10 eth
     await xdaiproxy.confirmDaiDeposit(user1, ether('10'), 0, {from: user9});
     // check user1 received 10 eth
-    var deposit = await treasury.deposits.call(user1);
+    var deposit = await treasury.userDeposit.call(user1);
     assert.equal(deposit.toString(), ether('10').toString());
     // confirm again check funds not sent again
     await xdaiproxy.confirmDaiDeposit(user1, ether('10'), 0, {from: user9});
-    var deposit = await treasury.deposits.call(user1);
+    var deposit = await treasury.userDeposit.call(user1);
     assert.equal(deposit.toString(), ether('10').toString());
     // check cant call execute when already executed
     await expectRevert(xdaiproxy.executeDaiDeposit(0), "Already executed");
     // add a second validator, new deposit, should not have executed yet
     await xdaiproxy.setValidator(user8, true);
     await xdaiproxy.confirmDaiDeposit(user2, ether('20'), 1, {from: user9});
-    var deposit = await treasury.deposits.call(user2);
+    var deposit = await treasury.userDeposit.call(user2);
     assert.equal(deposit.toString(), ether('0').toString());
     // catch errors if different details
     await expectRevert(xdaiproxy.confirmDaiDeposit(user5, ether('20'), 1, {from: user8}), "Addresses don't match");
@@ -428,24 +428,24 @@ it('test dai->xdai bridge', async () => {
     await expectRevert(xdaiproxy.executeDaiDeposit(1), "Not confirmed");
     // second confirmation, should now execute
     await xdaiproxy.confirmDaiDeposit(user2, ether('20'), 1, {from: user8});
-    var deposit = await treasury.deposits.call(user2);
+    var deposit = await treasury.userDeposit.call(user2);
     assert.equal(deposit.toString(), ether('20').toString());
     // Transfer more than the contract has
     await xdaiproxy.confirmDaiDeposit(user3, ether('150'), 2, {from: user8});
     await xdaiproxy.confirmDaiDeposit(user3, ether('150'), 2, {from: user9});
     // check user has received nothing
-    var deposit = await treasury.deposits.call(user3);
+    var deposit = await treasury.userDeposit.call(user3);
     assert.equal(deposit.toString(), ether('0').toString());
     // transfer the extra, and try again
     await xdaiproxy.send(web3.utils.toWei('100', 'ether'));
     await xdaiproxy.executeDaiDeposit(2);
-    var deposit = await treasury.deposits.call(user3);
+    var deposit = await treasury.userDeposit.call(user3);
     assert.equal(deposit.toString(), ether('150').toString());
     // test remove validator
     await xdaiproxy.setValidator(user8, false);
     // third transfer, should execute immediately
     await xdaiproxy.confirmDaiDeposit(user4, ether('3'), 3, {from: user9});
-    var deposit = await treasury.deposits.call(user4);
+    var deposit = await treasury.userDeposit.call(user4);
     assert.equal(deposit.toString(), ether('3').toString());
     // test withdraw float
     var balanceBefore = await web3.eth.getBalance(user0);
@@ -466,7 +466,7 @@ it('test dai->xdai bridge if exceeds contract balance limit', async () => {
     // backend just saw user1 send 10 eth
     await xdaiproxy.confirmDaiDeposit(user1, ether('75'), 0, {from: user9});
     // check user1 received 10 eth
-    var deposit = await treasury.deposits.call(user1);
+    var deposit = await treasury.userDeposit.call(user1);
     assert.equal(deposit.toString(), ether('75').toString());
     // repeat the above, this time it should be diverted to user's balance
     var balanceBefore = await web3.eth.getBalance(user1);
@@ -490,13 +490,13 @@ it('test deposit dai mainnet proxy', async () => {
     // backend just saw user1 send 10 eth
     await xdaiproxy.confirmDaiDeposit(user1, ether('10'), 0, {from: user9});
     // check user1 received 10 eth
-    var deposit = await treasury.deposits.call(user1);
+    var deposit = await treasury.userDeposit.call(user1);
     assert.equal(deposit.toString(), ether('10').toString());
     // disable deposits, should revert
-    await mainnetproxy.enableOrDisableDeposits();
+    await mainnetproxy.changeDepositsEnabled();
     await expectRevert(mainnetproxy.depositDai(web3.utils.toWei('10', 'ether')),"Deposits disabled");
     // enable deposits, should not revert
-    await mainnetproxy.enableOrDisableDeposits();
+    await mainnetproxy.changeDepositsEnabled();
     await mainnetproxy.depositDai(web3.utils.toWei('15', 'ether'));
     var balance = await web3.eth.getBalance(xdaiproxy.address);
     assert.equal(balance,ether('15'));

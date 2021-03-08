@@ -359,7 +359,7 @@ const rent = (user, market, tokenId) => {
         let dep = 0
         let ran = 1
   
-        tokenPrice = await market.price(tokenId)
+        tokenPrice = await market.tokenPrice(tokenId)
         newPrice = parseInt(tokenPrice) + 0.11 * parseInt(tokenPrice)
         if (newPrice == 0) {
           newPrice = 1 + Math.floor(Math.random() * 6) + 1

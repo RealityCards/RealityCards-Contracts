@@ -113,9 +113,9 @@ contract('TestFullFlowInvalid', (accounts) => {
     var oracleResolutionTime = oneYearInTheFuture;
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
     var artistAddress = user8;
-    await rcfactory.addOrRemoveArtist(user8);
+    await rcfactory.changeArtistApproval(user8);
     var affiliateAddress = user7;
-    await rcfactory.addOrRemoveAffiliate(user7);
+    await rcfactory.changeAffiliateApproval(user7);
     var slug = 'y';
     await rcfactory.createMarket(
         0,
@@ -165,11 +165,11 @@ contract('TestFullFlowInvalid', (accounts) => {
     var oracleResolutionTime = oneYearInTheFuture;
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
     var cardRecipients = [user5,user6,user7,user8,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0];
-    await rcfactory.addOrRemoveCardAffiliate(user5);
-    await rcfactory.addOrRemoveCardAffiliate(user6);
-    await rcfactory.addOrRemoveCardAffiliate(user7);
-    await rcfactory.addOrRemoveCardAffiliate(user8);
-    await rcfactory.addOrRemoveCardAffiliate(user0);
+    await rcfactory.changeCardAffiliateApproval(user5);
+    await rcfactory.changeCardAffiliateApproval(user6);
+    await rcfactory.changeCardAffiliateApproval(user7);
+    await rcfactory.changeCardAffiliateApproval(user8);
+    await rcfactory.changeCardAffiliateApproval(user0);
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     var slug = 'y';
@@ -197,8 +197,8 @@ contract('TestFullFlowInvalid', (accounts) => {
     var timestamps = [0,marketLockingTime,oracleResolutionTime];
     var artistAddress = user8;
     var affiliateAddress = user7;
-    await rcfactory.addOrRemoveAffiliate(user7);
-    await rcfactory.addOrRemoveArtist(user8);
+    await rcfactory.changeAffiliateApproval(user7);
+    await rcfactory.changeArtistApproval(user8);
     var slug = 'y';
     await rcfactory.createMarket(
         mode,
@@ -225,13 +225,13 @@ contract('TestFullFlowInvalid', (accounts) => {
     var artistAddress = user8;
     var affiliateAddress = user7;
     var cardRecipients = [user5,user6,user7,user8,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0];
-    await rcfactory.addOrRemoveCardAffiliate(user5);
-    await rcfactory.addOrRemoveCardAffiliate(user6);
-    await rcfactory.addOrRemoveCardAffiliate(user7);
-    await rcfactory.addOrRemoveCardAffiliate(user8);
-    await rcfactory.addOrRemoveCardAffiliate(user0);
-    await rcfactory.addOrRemoveAffiliate(user7);
-    await rcfactory.addOrRemoveArtist(user8);
+    await rcfactory.changeCardAffiliateApproval(user5);
+    await rcfactory.changeCardAffiliateApproval(user6);
+    await rcfactory.changeCardAffiliateApproval(user7);
+    await rcfactory.changeCardAffiliateApproval(user8);
+    await rcfactory.changeCardAffiliateApproval(user0);
+    await rcfactory.changeAffiliateApproval(user7);
+    await rcfactory.changeArtistApproval(user8);
     var slug = 'y';
     await rcfactory.createMarket(
         0,
@@ -321,7 +321,7 @@ contract('TestFullFlowInvalid', (accounts) => {
     await realitycards.exitAll({from: user2});
     await time.increase(time.duration.years(1)); 
     // winner 1: 
-    // totalcollected = 147, // now 300 
+    // totalRentCollected = 147, // now 300 
     // total days = 28 
     // user 0 owned for 7 days
     // user 1 owned for 7 days
@@ -334,9 +334,9 @@ contract('TestFullFlowInvalid', (accounts) => {
     // await realitycards.determineWinner();
     ////////////////////////
     //check sponsor winnings
-    var depositBefore = await treasury.deposits.call(user3); 
+    var depositBefore = await treasury.userDeposit.call(user3); 
     await withdraw(user3);
-    var depositAfter = await treasury.deposits.call(user3); 
+    var depositAfter = await treasury.userDeposit.call(user3); 
     var winningsSentToUser = depositAfter - depositBefore;
     var winningsShouldBe = ether('153');
     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
@@ -375,35 +375,35 @@ it('test sponsor- invalid with card affiliate cut', async () => {
 for (i = 0; i < 20; i++) {
     await realitycards2.payCardAffiliate(i);
     }
-    var deposit = await treasury.deposits.call(user5);
+    var deposit = await treasury.userDeposit.call(user5);
     var depositShouldBe = ether('60').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
     assert.isBelow(difference/deposit,0.00001);
     // token 1
-    var deposit = await treasury.deposits.call(user6);
+    var deposit = await treasury.userDeposit.call(user6);
     var depositShouldBe = ether('160').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
     assert.isBelow(difference/deposit,0.00001);
     // user 0
-    var depositBefore = await treasury.deposits.call(user0);
+    var depositBefore = await treasury.userDeposit.call(user0);
     await realitycards2.withdraw({from: user0} );
-    var depositAfter = await treasury.deposits.call(user0); 
+    var depositAfter = await treasury.userDeposit.call(user0); 
     var winningsSentToUser = depositAfter - depositBefore;
     var winningsShouldBe = web3.utils.toWei('45', 'ether');
     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     // user 1
-    var depositBefore = await treasury.deposits.call(user1);
+    var depositBefore = await treasury.userDeposit.call(user1);
     await realitycards2.withdraw({from: user1} );
-    var depositAfter = await treasury.deposits.call(user1); 
+    var depositAfter = await treasury.userDeposit.call(user1); 
     var winningsSentToUser = depositAfter - depositBefore;
     var winningsShouldBe = web3.utils.toWei('135', 'ether');
     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     // user 3 (sponsor)
-    var depositBefore = await treasury.deposits.call(user3);
+    var depositBefore = await treasury.userDeposit.call(user3);
     await realitycards2.withdraw({from: user3} );
-    var depositAfter = await treasury.deposits.call(user3); 
+    var depositAfter = await treasury.userDeposit.call(user3); 
     var winningsSentToUser = depositAfter - depositBefore;
     var winningsShouldBe = web3.utils.toWei('180', 'ether');
     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
@@ -438,7 +438,7 @@ it('test withdraw- invalid mode 0- zero artist/creator cut', async () => {
     await realitycards.exitAll({from: user2});
     await time.increase(time.duration.years(1)); 
     // winner 1: 
-    // totalcollected = 147, 
+    // totalRentCollected = 147, 
     // total days = 28 
     // user 0 owned for 7 days
     // user 1 owned for 7 days
@@ -451,14 +451,14 @@ it('test withdraw- invalid mode 0- zero artist/creator cut', async () => {
     // await realitycards.determineWinner();
     ////////////////////////
     // total deposits = 139, check:
-    var totalCollected = await realitycards.totalCollected.call();
-    var totalCollectedShouldBe = web3.utils.toWei('147', 'ether');
-    var difference = Math.abs(totalCollected.toString()-totalCollectedShouldBe.toString());
-    assert.isBelow(difference/totalCollected,0.00001);
+    var totalRentCollected = await realitycards.totalRentCollected.call();
+    var totalRentCollectedShouldBe = web3.utils.toWei('147', 'ether');
+    var difference = Math.abs(totalRentCollected.toString()-totalRentCollectedShouldBe.toString());
+    assert.isBelow(difference/totalRentCollected,0.00001);
     //check user0 winnings
-    var depositBefore = await treasury.deposits.call(user0); 
+    var depositBefore = await treasury.userDeposit.call(user0); 
     await withdraw(user0);
-    var depositAfter = await treasury.deposits.call(user0); 
+    var depositAfter = await treasury.userDeposit.call(user0); 
     var winningsSentToUser = depositAfter - depositBefore;
     var winningsShouldBe = ether('35');
     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
@@ -466,17 +466,17 @@ it('test withdraw- invalid mode 0- zero artist/creator cut', async () => {
     //check user0 cant withdraw again
     await expectRevert(withdraw(user0), "Already withdrawn");
     //check user1 winnings
-    var depositBefore = await treasury.deposits.call(user1); 
+    var depositBefore = await treasury.userDeposit.call(user1); 
     await withdraw(user1);
-    var depositAfter = await treasury.deposits.call(user1); 
+    var depositAfter = await treasury.userDeposit.call(user1); 
     var winningsSentToUser = depositAfter - depositBefore;
     var winningsShouldBe = ether('70');
     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user2 winnings
-    var depositBefore = await treasury.deposits.call(user2); 
+    var depositBefore = await treasury.userDeposit.call(user2); 
     await withdraw(user2);
-    var depositAfter = await treasury.deposits.call(user2); 
+    var depositAfter = await treasury.userDeposit.call(user2); 
     var winningsSentToUser = depositAfter - depositBefore;
     var winningsShouldBe = ether('42');
     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
@@ -517,7 +517,7 @@ it('test withdraw- invalid mode 0- with artist/creator cut', async () => {
     await realitycards2.exitAll({from: user2});
     await time.increase(time.duration.years(1)); 
     // winner 1: 
-    // totalcollected = 147, 
+    // totalRentCollected = 147, 
     // total days = 28 
     // user 0 owned for 7 days
     // user 1 owned for 7 days
@@ -530,32 +530,32 @@ it('test withdraw- invalid mode 0- with artist/creator cut', async () => {
     // await realitycards2.determineWinner();
     ////////////////////////
     // total deposits = 139, check:
-    var totalCollected = await realitycards2.totalCollected.call();
-    var totalCollectedShouldBe = web3.utils.toWei('147', 'ether');
-    var difference = Math.abs(totalCollected.toString()-totalCollectedShouldBe.toString());
-    assert.isBelow(difference/totalCollected,0.00001);
+    var totalRentCollected = await realitycards2.totalRentCollected.call();
+    var totalRentCollectedShouldBe = web3.utils.toWei('147', 'ether');
+    var difference = Math.abs(totalRentCollected.toString()-totalRentCollectedShouldBe.toString());
+    assert.isBelow(difference/totalRentCollected,0.00001);
     //check user0 winnings
-    var depositBefore = await treasury.deposits.call(user0); 
+    var depositBefore = await treasury.userDeposit.call(user0); 
     await realitycards2.withdraw({from:user0});
-    var depositAfter = await treasury.deposits.call(user0); 
+    var depositAfter = await treasury.userDeposit.call(user0); 
     var winningsSentToUser = depositAfter - depositBefore;
     var winningsShouldBe = ether('35');
     winningsShouldBe = (winningsShouldBe.mul(new BN('19'))).div(new BN('20'));
     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user1 winnings
-    var depositBefore = await treasury.deposits.call(user1); 
+    var depositBefore = await treasury.userDeposit.call(user1); 
     await realitycards2.withdraw({from:user1});
-    var depositAfter = await treasury.deposits.call(user1); 
+    var depositAfter = await treasury.userDeposit.call(user1); 
     var winningsSentToUser = depositAfter - depositBefore;
     var winningsShouldBe = ether('70');
     winningsShouldBe = (winningsShouldBe.mul(new BN('19'))).div(new BN('20'));
     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user2 winnings
-    var depositBefore = await treasury.deposits.call(user2); 
+    var depositBefore = await treasury.userDeposit.call(user2); 
     await realitycards2.withdraw({from:user2});
-    var depositAfter = await treasury.deposits.call(user2); 
+    var depositAfter = await treasury.userDeposit.call(user2); 
     var winningsSentToUser = depositAfter - depositBefore;
     var winningsShouldBe = ether('42');
     winningsShouldBe = (winningsShouldBe.mul(new BN('19'))).div(new BN('20'));
@@ -563,7 +563,7 @@ it('test withdraw- invalid mode 0- with artist/creator cut', async () => {
     assert.isBelow(difference/winningsSentToUser,0.00001);
     await realitycards2.payArtist();
     // check that artist fees are correct shold be 147 * .05 = 8.82 
-    var depositArtist = await treasury.deposits.call(user8); 
+    var depositArtist = await treasury.userDeposit.call(user8); 
     var depositArtistShouldBe = web3.utils.toWei('7.35', 'ether');
     var difference = Math.abs(depositArtist.toString() - depositArtistShouldBe.toString());
     assert.isBelow(difference/depositArtist,0.00001);
@@ -601,7 +601,7 @@ it('test withdraw- invalid mode 0- with artist/creator cut', async () => {
         await realitycards2.exitAll({from: user2});
         await time.increase(time.duration.years(1)); 
         // winner 1: 
-        // totalcollected = 147, 
+        // totalRentCollected = 147, 
         // total days = 28 
         // user 0 owned for 7 days
         // user 1 owned for 7 days
@@ -614,32 +614,32 @@ it('test withdraw- invalid mode 0- with artist/creator cut', async () => {
         // await realitycards2.determineWinner();
         ////////////////////////
         // total deposits = 139, check:
-        var totalCollected = await realitycards2.totalCollected.call();
-        var totalCollectedShouldBe = web3.utils.toWei('147', 'ether');
-        var difference = Math.abs(totalCollected.toString()-totalCollectedShouldBe.toString());
-        assert.isBelow(difference/totalCollected,0.00001);
+        var totalRentCollected = await realitycards2.totalRentCollected.call();
+        var totalRentCollectedShouldBe = web3.utils.toWei('147', 'ether');
+        var difference = Math.abs(totalRentCollected.toString()-totalRentCollectedShouldBe.toString());
+        assert.isBelow(difference/totalRentCollected,0.00001);
         //check user0 winnings
-        var depositBefore = await treasury.deposits.call(user0); 
+        var depositBefore = await treasury.userDeposit.call(user0); 
         await realitycards2.withdraw({from:user0});
-        var depositAfter = await treasury.deposits.call(user0); 
+        var depositAfter = await treasury.userDeposit.call(user0); 
         var winningsSentToUser = depositAfter - depositBefore;
         var winningsShouldBe = ether('35');
         winningsShouldBe = (winningsShouldBe.mul(new BN('17'))).div(new BN('20'));
         var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
         assert.isBelow(difference/winningsSentToUser,0.00001);
         //check user1 winnings
-        var depositBefore = await treasury.deposits.call(user1); 
+        var depositBefore = await treasury.userDeposit.call(user1); 
         await realitycards2.withdraw({from:user1});
-        var depositAfter = await treasury.deposits.call(user1); 
+        var depositAfter = await treasury.userDeposit.call(user1); 
         var winningsSentToUser = depositAfter - depositBefore;
         var winningsShouldBe = ether('70');
         winningsShouldBe = (winningsShouldBe.mul(new BN('17'))).div(new BN('20'));
         var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
         assert.isBelow(difference/winningsSentToUser,0.00001);
         //check user2 winnings
-        var depositBefore = await treasury.deposits.call(user2); 
+        var depositBefore = await treasury.userDeposit.call(user2); 
         await realitycards2.withdraw({from:user2});
-        var depositAfter = await treasury.deposits.call(user2); 
+        var depositAfter = await treasury.userDeposit.call(user2); 
         var winningsSentToUser = depositAfter - depositBefore;
         var winningsShouldBe = ether('42');
         winningsShouldBe = (winningsShouldBe.mul(new BN('17'))).div(new BN('20'));
@@ -648,12 +648,12 @@ it('test withdraw- invalid mode 0- with artist/creator cut', async () => {
         await realitycards2.payArtist();
         await realitycards2.payAffiliate();
         // check that artist fees are correct shold be 147 * .05 = 8.82 
-        var depositArtist = await treasury.deposits.call(user8); 
+        var depositArtist = await treasury.userDeposit.call(user8); 
         var depositArtistShouldBe = web3.utils.toWei('7.35', 'ether');
         var difference = Math.abs(depositArtist.toString() - depositArtistShouldBe.toString());
         assert.isBelow(difference/depositArtist,0.00001);
         // check that affiliate fees are correct shold be 147 * .05 = 8.82 
-        var depositAffiliate = await treasury.deposits.call(user7); 
+        var depositAffiliate = await treasury.userDeposit.call(user7); 
         var depositAffiliateShouldBe = web3.utils.toWei('14.7', 'ether');
         var difference = Math.abs(depositAffiliate.toString() - depositAffiliateShouldBe.toString());
         assert.isBelow(difference/depositAffiliate,0.00001);
@@ -691,7 +691,7 @@ it('test withdraw- invalid mode 1- zero artist/creator cut', async () => {
     await realitycards2.exitAll({from: user2});
     await time.increase(time.duration.years(1)); 
     // winner 1: 
-    // totalcollected = 147, 
+    // totalRentCollected = 147, 
     // total days = 28 
     // user 0 owned for 7 days
     // user 1 owned for 7 days
@@ -704,30 +704,30 @@ it('test withdraw- invalid mode 1- zero artist/creator cut', async () => {
     // await realitycards2.determineWinner();
     ////////////////////////
     // total deposits = 147, check:
-    var totalCollected = await realitycards2.totalCollected.call();
-    var totalCollectedShouldBe = web3.utils.toWei('147', 'ether');
-    var difference = Math.abs(totalCollected.toString()-totalCollectedShouldBe.toString());
-    assert.isBelow(difference/totalCollected,0.00001);
+    var totalRentCollected = await realitycards2.totalRentCollected.call();
+    var totalRentCollectedShouldBe = web3.utils.toWei('147', 'ether');
+    var difference = Math.abs(totalRentCollected.toString()-totalRentCollectedShouldBe.toString());
+    assert.isBelow(difference/totalRentCollected,0.00001);
     //check user0 winnings
-    var depositBefore = await treasury.deposits.call(user0); 
+    var depositBefore = await treasury.userDeposit.call(user0); 
     await realitycards2.withdraw({from:user0});
-    var depositAfter = await treasury.deposits.call(user0); 
+    var depositAfter = await treasury.userDeposit.call(user0); 
     var winningsSentToUser = depositAfter - depositBefore;
     var winningsShouldBe = ether('35');
     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user1 winnings
-    var depositBefore = await treasury.deposits.call(user1); 
+    var depositBefore = await treasury.userDeposit.call(user1); 
     await realitycards2.withdraw({from:user1});
-    var depositAfter = await treasury.deposits.call(user1); 
+    var depositAfter = await treasury.userDeposit.call(user1); 
     var winningsSentToUser = depositAfter - depositBefore;
     var winningsShouldBe = ether('70');
     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user2 winnings
-    var depositBefore = await treasury.deposits.call(user2); 
+    var depositBefore = await treasury.userDeposit.call(user2); 
     await realitycards2.withdraw({from:user2});
-    var depositAfter = await treasury.deposits.call(user2); 
+    var depositAfter = await treasury.userDeposit.call(user2); 
     var winningsSentToUser = depositAfter - depositBefore;
     var winningsShouldBe = ether('42');
     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
@@ -766,7 +766,7 @@ it('test withdraw- invalid mode 1- zero artist/creator cut', async () => {
         await realitycards2.exitAll({from: user2});
         await time.increase(time.duration.years(1)); 
         // winner 1: 
-        // totalcollected = 147, 
+        // totalRentCollected = 147, 
         // total days = 28 
         // user 0 owned for 7 days
         // user 1 owned for 7 days
@@ -779,32 +779,32 @@ it('test withdraw- invalid mode 1- zero artist/creator cut', async () => {
         // await realitycards2.determineWinner();
         ////////////////////////
         // total deposits = 139, check:
-        var totalCollected = await realitycards2.totalCollected.call();
-        var totalCollectedShouldBe = web3.utils.toWei('147', 'ether');
-        var difference = Math.abs(totalCollected.toString()-totalCollectedShouldBe.toString());
-        assert.isBelow(difference/totalCollected,0.00001);
+        var totalRentCollected = await realitycards2.totalRentCollected.call();
+        var totalRentCollectedShouldBe = web3.utils.toWei('147', 'ether');
+        var difference = Math.abs(totalRentCollected.toString()-totalRentCollectedShouldBe.toString());
+        assert.isBelow(difference/totalRentCollected,0.00001);
         //check user0 winnings
-        var depositBefore = await treasury.deposits.call(user0); 
+        var depositBefore = await treasury.userDeposit.call(user0); 
         await realitycards2.withdraw({from:user0});
-        var depositAfter = await treasury.deposits.call(user0); 
+        var depositAfter = await treasury.userDeposit.call(user0); 
         var winningsSentToUser = depositAfter - depositBefore;
         var winningsShouldBe = ether('35');
         winningsShouldBe = (winningsShouldBe.mul(new BN('19'))).div(new BN('20'));
         var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
         assert.isBelow(difference/winningsSentToUser,0.00001);
         //check user1 winnings
-        var depositBefore = await treasury.deposits.call(user1); 
+        var depositBefore = await treasury.userDeposit.call(user1); 
         await realitycards2.withdraw({from:user1});
-        var depositAfter = await treasury.deposits.call(user1); 
+        var depositAfter = await treasury.userDeposit.call(user1); 
         var winningsSentToUser = depositAfter - depositBefore;
         var winningsShouldBe = ether('70');
         winningsShouldBe = (winningsShouldBe.mul(new BN('19'))).div(new BN('20'));
         var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
         assert.isBelow(difference/winningsSentToUser,0.00001);
         //check user2 winnings
-        var depositBefore = await treasury.deposits.call(user2); 
+        var depositBefore = await treasury.userDeposit.call(user2); 
         await realitycards2.withdraw({from:user2});
-        var depositAfter = await treasury.deposits.call(user2); 
+        var depositAfter = await treasury.userDeposit.call(user2); 
         var winningsSentToUser = depositAfter - depositBefore;
         var winningsShouldBe = ether('42');
         winningsShouldBe = (winningsShouldBe.mul(new BN('19'))).div(new BN('20'));
@@ -812,7 +812,7 @@ it('test withdraw- invalid mode 1- zero artist/creator cut', async () => {
         assert.isBelow(difference/winningsSentToUser,0.00001);
         await realitycards2.payArtist();
         // check that artist fees are correct shold be 147 * .05 = 8.82 
-        var depositArtist = await treasury.deposits.call(user8); 
+        var depositArtist = await treasury.userDeposit.call(user8); 
         var depositArtistShouldBe = web3.utils.toWei('7.35', 'ether');
         var difference = Math.abs(depositArtist.toString() - depositArtistShouldBe.toString());
         assert.isBelow(difference/depositArtist,0.00001);
@@ -849,7 +849,7 @@ it('test withdraw- invalid mode 0- zero artist/creator cut', async () => {
     await realitycards2.exitAll({from: user2});
     await time.increase(time.duration.years(1)); 
     // winner 1: 
-    // totalcollected = 147, 
+    // totalRentCollected = 147, 
     // total days = 28 
     // user 0 owned for 7 days
     // user 1 owned for 7 days
@@ -862,14 +862,14 @@ it('test withdraw- invalid mode 0- zero artist/creator cut', async () => {
     // await realitycards2.determineWinner();
     ////////////////////////
     // total deposits = 147, check:
-    var totalCollected = await realitycards2.totalCollected.call();
-    var totalCollectedShouldBe = web3.utils.toWei('147', 'ether');
-    var difference = Math.abs(totalCollected.toString()-totalCollectedShouldBe.toString());
-    assert.isBelow(difference/totalCollected,0.00001);
+    var totalRentCollected = await realitycards2.totalRentCollected.call();
+    var totalRentCollectedShouldBe = web3.utils.toWei('147', 'ether');
+    var difference = Math.abs(totalRentCollected.toString()-totalRentCollectedShouldBe.toString());
+    assert.isBelow(difference/totalRentCollected,0.00001);
     //check user0 winnings
-    var depositBefore = await treasury.deposits.call(user0); 
+    var depositBefore = await treasury.userDeposit.call(user0); 
     await realitycards2.withdraw({from:user0});
-    var depositAfter = await treasury.deposits.call(user0); 
+    var depositAfter = await treasury.userDeposit.call(user0); 
     var winningsSentToUser = depositAfter - depositBefore;
     var winningsShouldBe = ether('35');
     // 10% to card specific so * 0.9
@@ -877,9 +877,9 @@ it('test withdraw- invalid mode 0- zero artist/creator cut', async () => {
     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user1 winnings
-    var depositBefore = await treasury.deposits.call(user1); 
+    var depositBefore = await treasury.userDeposit.call(user1); 
     await realitycards2.withdraw({from:user1});
-    var depositAfter = await treasury.deposits.call(user1); 
+    var depositAfter = await treasury.userDeposit.call(user1); 
     var winningsSentToUser = depositAfter - depositBefore;
     var winningsShouldBe = ether('70');
     // 10% to card specific so * 0.9
@@ -887,9 +887,9 @@ it('test withdraw- invalid mode 0- zero artist/creator cut', async () => {
     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user2 winnings
-    var depositBefore = await treasury.deposits.call(user2); 
+    var depositBefore = await treasury.userDeposit.call(user2); 
     await realitycards2.withdraw({from:user2});
-    var depositAfter = await treasury.deposits.call(user2); 
+    var depositAfter = await treasury.userDeposit.call(user2); 
     var winningsSentToUser = depositAfter - depositBefore;
     var winningsShouldBe = ether('42');
     // 10% to card specific so * 0.9
@@ -901,18 +901,18 @@ it('test withdraw- invalid mode 0- zero artist/creator cut', async () => {
 for (i = 0; i < 20; i++) {
     await realitycards2.payCardAffiliate(i);
     }
-    var deposit = await treasury.deposits.call(user5);
+    var deposit = await treasury.userDeposit.call(user5);
     var depositShouldBe = ether('28').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
     assert.isBelow(difference/deposit,0.00001);
     // token 1, collected = 56
-    var deposit = await treasury.deposits.call(user6);
+    var deposit = await treasury.userDeposit.call(user6);
     var depositShouldBe = ether('56').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
     assert.isBelow(difference/deposit,0.00001);
     // token 2, collected = 63
-    var collected = await realitycards2.collectedPerToken.call(1);
-    var deposit = await treasury.deposits.call(user7);
+    var collected = await realitycards2.rentCollectedPerToken.call(1);
+    var deposit = await treasury.userDeposit.call(user7);
     var depositShouldBe = ether('63').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
     assert.isBelow(difference/deposit,0.00001);
@@ -953,7 +953,7 @@ it('test withdraw- invalid mode 0- with artist/creator/card affiliate cut', asyn
     await realitycards2.exitAll({from: user2});
     await time.increase(time.duration.years(1)); 
     // winner 1: 
-    // totalcollected = 147, 
+    // totalRentCollected = 147, 
     // total days = 28 
     // user 0 owned for 7 days
     // user 1 owned for 7 days
@@ -966,32 +966,32 @@ it('test withdraw- invalid mode 0- with artist/creator/card affiliate cut', asyn
     // await realitycards2.determineWinner();
     ////////////////////////
     // total deposits = 139, check:
-    var totalCollected = await realitycards2.totalCollected.call();
-    var totalCollectedShouldBe = web3.utils.toWei('147', 'ether');
-    var difference = Math.abs(totalCollected.toString()-totalCollectedShouldBe.toString());
-    assert.isBelow(difference/totalCollected,0.00001);
+    var totalRentCollected = await realitycards2.totalRentCollected.call();
+    var totalRentCollectedShouldBe = web3.utils.toWei('147', 'ether');
+    var difference = Math.abs(totalRentCollected.toString()-totalRentCollectedShouldBe.toString());
+    assert.isBelow(difference/totalRentCollected,0.00001);
     //check user0 winnings
-    var depositBefore = await treasury.deposits.call(user0); 
+    var depositBefore = await treasury.userDeposit.call(user0); 
     await realitycards2.withdraw({from:user0});
-    var depositAfter = await treasury.deposits.call(user0); 
+    var depositAfter = await treasury.userDeposit.call(user0); 
     var winningsSentToUser = depositAfter - depositBefore;
     var winningsShouldBe = ether('35');
     winningsShouldBe = (winningsShouldBe.mul(new BN('17'))).div(new BN('20'));
     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user1 winnings
-    var depositBefore = await treasury.deposits.call(user1); 
+    var depositBefore = await treasury.userDeposit.call(user1); 
     await realitycards2.withdraw({from:user1});
-    var depositAfter = await treasury.deposits.call(user1); 
+    var depositAfter = await treasury.userDeposit.call(user1); 
     var winningsSentToUser = depositAfter - depositBefore;
     var winningsShouldBe = ether('70');
     winningsShouldBe = (winningsShouldBe.mul(new BN('17'))).div(new BN('20'));
     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     //check user2 winnings
-    var depositBefore = await treasury.deposits.call(user2); 
+    var depositBefore = await treasury.userDeposit.call(user2); 
     await realitycards2.withdraw({from:user2});
-    var depositAfter = await treasury.deposits.call(user2); 
+    var depositAfter = await treasury.userDeposit.call(user2); 
     var winningsSentToUser = depositAfter - depositBefore;
     var winningsShouldBe = ether('42');
     winningsShouldBe = (winningsShouldBe.mul(new BN('17'))).div(new BN('20'));
@@ -999,7 +999,7 @@ it('test withdraw- invalid mode 0- with artist/creator/card affiliate cut', asyn
     assert.isBelow(difference/winningsSentToUser,0.00001);
     await realitycards2.payArtist();
     // check that artist fees are correct shold be 147 * .05 = 8.82 
-    var depositArtist = await treasury.deposits.call(user8); 
+    var depositArtist = await treasury.userDeposit.call(user8); 
     var depositArtistShouldBe = web3.utils.toWei('7.35', 'ether');
     var difference = Math.abs(depositArtist.toString() - depositArtistShouldBe.toString());
     assert.isBelow(difference/depositArtist,0.00001);
@@ -1008,17 +1008,17 @@ it('test withdraw- invalid mode 0- with artist/creator/card affiliate cut', asyn
 for (i = 0; i < 20; i++) {
     await realitycards2.payCardAffiliate(i);
     }
-    var deposit = await treasury.deposits.call(user5);
+    var deposit = await treasury.userDeposit.call(user5);
     var depositShouldBe = ether('28').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
     assert.isBelow(difference/deposit,0.00001);
     // token 1, collected = 56
-    var deposit = await treasury.deposits.call(user6);
+    var deposit = await treasury.userDeposit.call(user6);
     var depositShouldBe = ether('56').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
     assert.isBelow(difference/deposit,0.00001);
     // token 2, collected = 63
-    var deposit = await treasury.deposits.call(user7);
+    var deposit = await treasury.userDeposit.call(user7);
     var depositShouldBe = ether('63').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
     assert.isBelow(difference/deposit,0.00001);
@@ -1059,7 +1059,7 @@ it('test winner/withdraw with invalid market and artist and creator fees', async
     await realitycards2.exitAll({from: user2});
     await time.increase(time.duration.years(1)); 
     // winner 1: 
-    // totalcollected = 147, 
+    // totalRentCollected = 147, 
     // total days = 28 
     // user 0 owned for 7 days
     // user 1 owned for 7 days
@@ -1068,14 +1068,14 @@ it('test winner/withdraw with invalid market and artist and creator fees', async
     await realitycards2.lockMarket(); 
     // // set winner 1
     await realitio.setResult(69);
-    var depositCreatorBefore = await treasury.deposits.call(user0);
+    var depositCreatorBefore = await treasury.userDeposit.call(user0);
     await mainnetproxy.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     await realitycards2.payArtist();
     await expectRevert(realitycards2.payMarketCreator(), "No winner");
-    var depositCreatorAfter = await treasury.deposits.call(user0);
+    var depositCreatorAfter = await treasury.userDeposit.call(user0);
     // check that artist fees are correct shold be 147 * .06 = 8.82 
-    var depositArtist = await treasury.deposits.call(user8); 
+    var depositArtist = await treasury.userDeposit.call(user8); 
     var depositArtistShouldBe = web3.utils.toWei('8.82', 'ether');
     var difference = Math.abs(depositArtist.toString() - depositArtistShouldBe.toString());
     assert.isBelow(difference/depositArtist,0.00001);
@@ -1083,15 +1083,15 @@ it('test winner/withdraw with invalid market and artist and creator fees', async
     var depositCreator = depositCreatorAfter - depositCreatorBefore; 
     assert.equal(depositCreator,0);
     ////////////////////////
-    var totalCollected = await realitycards2.totalCollected.call();
-    var totalCollectedShouldBe = web3.utils.toWei('147', 'ether');
-    var difference = Math.abs(totalCollected.toString()-totalCollectedShouldBe.toString());
-    assert.isBelow(difference/totalCollected,0.00001);
+    var totalRentCollected = await realitycards2.totalRentCollected.call();
+    var totalRentCollectedShouldBe = web3.utils.toWei('147', 'ether');
+    var difference = Math.abs(totalRentCollected.toString()-totalRentCollectedShouldBe.toString());
+    assert.isBelow(difference/totalRentCollected,0.00001);
     // eremaining pot is 132.3 which is 10% less as this is what is given to artists and creators
     // //check user0 winnings
-    var depositBefore = await treasury.deposits.call(user0); 
+    var depositBefore = await treasury.userDeposit.call(user0); 
     await realitycards2.withdraw({from: user0} );
-    var depositAfter = await treasury.deposits.call(user0); 
+    var depositAfter = await treasury.userDeposit.call(user0); 
     var winningsSentToUser = depositAfter - depositBefore;
     // usually 35 so should be 35 * .94 = 32.9
     var winningsShouldBe = ether('32.9');
@@ -1100,17 +1100,17 @@ it('test winner/withdraw with invalid market and artist and creator fees', async
     //check user0 cant withdraw again
     await expectRevert(realitycards2.withdraw({from: user0} ), "Already withdrawn");
     // usually 70 so should be 70 * .94 = 65.8
-    var depositBefore = await treasury.deposits.call(user1); 
+    var depositBefore = await treasury.userDeposit.call(user1); 
     await realitycards2.withdraw({from: user1} );
-    var depositAfter = await treasury.deposits.call(user1); 
+    var depositAfter = await treasury.userDeposit.call(user1); 
     var winningsSentToUser = depositAfter - depositBefore;
     var winningsShouldBe = ether('65.8');
     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
     assert.isBelow(difference/winningsSentToUser,0.00001);
     // usually 42 so should be 70 * .94 = 39.48
-    var depositBefore = await treasury.deposits.call(user2); 
+    var depositBefore = await treasury.userDeposit.call(user2); 
     await realitycards2.withdraw({from: user2} );
-    var depositAfter = await treasury.deposits.call(user2); 
+    var depositAfter = await treasury.userDeposit.call(user2); 
     var winningsSentToUser = depositAfter - depositBefore;
     var winningsShouldBe = ether('39.48');
     var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
