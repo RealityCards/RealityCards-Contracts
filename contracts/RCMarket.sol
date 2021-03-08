@@ -171,7 +171,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         address _affiliateAddress,
         address[] memory _cardAffiliateAddresses,
         address _marketCreatorAddress
-    ) public initializer {
+    ) external initializer {
         assert(_mode <= 2);
 
         // initialise MetaTransactions
@@ -367,7 +367,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
     /// @notice pays winnings
     function _payoutWinnings() internal {
-        uint256 _winningsToTransfer;
+        uint256 _winningsToTransfer = 0;
         uint256 _remainingCut = ((((uint256(1000).sub(artistCut)).sub(affiliateCut))).sub(cardAffiliateCut).sub(winnerCut)).sub(creatorCut); 
         // calculate longest owner's extra winnings, if relevant
         if (longestOwner[winningOutcome] == msgSender() && winnerCut > 0){
@@ -779,7 +779,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
         address _tempNext = _startingPosition;
         address _tempPrev;
-        uint256 _loopCount;
+        uint256 _loopCount = 0;
         uint256 _requiredPrice;
 
         // loop through orderbook until bid is at least _requiredPrice above that user
@@ -817,7 +817,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         address _tempPrev;
         uint256 _tempNextDeposit;
         uint256 _requiredDeposit;
-        uint256 _loopCount;
+        uint256 _loopCount = 0;
 
         // loop through orderbook list for user with sufficient deposit, deleting users who fail the test
         do {

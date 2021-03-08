@@ -4,6 +4,7 @@ pragma solidity ^0.7.5;
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import '../interfaces/IRealitio.sol';
 import '../interfaces/IRCProxyXdai.sol';
 import '../interfaces/IBridge.sol';
@@ -16,6 +17,8 @@ import '../interfaces/IERC721.sol';
 /// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!!
 contract RCProxyMainnet is Ownable
 {
+    using SafeMath for uint256;
+
     ////////////////////////////////////
     //////// VARIABLES /////////////////
     ////////////////////////////////////
@@ -29,7 +32,6 @@ contract RCProxyMainnet is Ownable
 
     /// @dev governance variables
     address public proxyXdaiAddress;
-    address public nftHubAddress;
     address public arbitrator;
     uint32 public timeout;
     
@@ -137,6 +139,7 @@ contract RCProxyMainnet is Ownable
     /// @dev admin can create NFTs
     /// @dev for situations where bridge failed
     function upgradeCardAdmin(uint256 _newTokenId, string calldata _tokenUri, address _owner) onlyOwner external {
+        require(_owner != address(0), "Must set an address");
         nfthub.mintNft(_newTokenId, _tokenUri, _owner);
     }  
 
@@ -188,6 +191,7 @@ contract RCProxyMainnet is Ownable
     function upgradeCard(uint256 _newTokenId, string calldata _tokenUri, address _owner) external {
         require(msg.sender == address(bridge), "Not bridge");
         require(bridge.messageSender() == proxyXdaiAddress, "Not proxy");
+        require(_owner != address(0), "Must set an address");
         nfthub.mintNft(_newTokenId, _tokenUri, _owner);
     }  
 
@@ -210,8 +214,8 @@ contract RCProxyMainnet is Ownable
     /// @dev send Dai to xDai proxy and emit event for offchain validator 
     function _depositDai(address _sender, uint256 _amount) internal {
         require(depositsEnabled, "Deposits disabled");
+        emit DaiDeposited(_sender, _amount, depositNonce.add(1));
         require(dai.transferFrom(_sender, address(this), _amount), "Token transfer failed");
         alternateReceiverBridge.relayTokens(address(this), proxyXdaiAddress, _amount);
-        emit DaiDeposited(_sender, _amount, depositNonce++);
     }
 }

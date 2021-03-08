@@ -120,8 +120,7 @@ contract RCProxyXdai is Ownable
     ////////////////////////////////////
 
     /// @dev admin override of the Oracle, if not yet settled, for amicable resolution, or bridge fails
-    function setAmicableResolution(address _marketAddress, uint256 _winningOutcome) onlyOwner public {
-        require(_marketAddress != address(0), "Must set an address");
+    function setAmicableResolution(address _marketAddress, uint256 _winningOutcome) external onlyOwner {
         // call the market
         IRCMarket market = IRCMarket(_marketAddress);
         market.setWinner(_winningOutcome);
@@ -260,6 +259,7 @@ contract RCProxyXdai is Ownable
         address _user = deposits[_nonce].user;
         if (address(this).balance >= _amount) {
             deposits[_nonce].executed = true;
+            emit LogDepositExecuted(_nonce);
             ITreasury treasury = ITreasury(treasuryAddress);
             // if Treasury will allow the deposit, send it there
             if (address(treasury).balance.add(_amount) <= treasury.maxContractBalance()) {
@@ -270,7 +270,6 @@ contract RCProxyXdai is Ownable
                 (bool _success, ) = _recipient.call{value:_amount}("");
                 require(_success, "Transfer failed");
             }
-            emit LogDepositExecuted(_nonce);
         }
     }
 

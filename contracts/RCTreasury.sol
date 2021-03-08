@@ -154,11 +154,13 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
     function setFactoryAddress(address _newFactory) external {
         require(msgSender() == uberOwner, "Extremely Verboten");
+        require(_newFactory != address(0));
         factoryAddress = _newFactory;
     }
 
     function changeUberOwner(address _newUberOwner) external {
         require(msgSender() == uberOwner, "Extremely Verboten");
+        require(_newUberOwner != address(0));
         uberOwner = _newUberOwner;
     }
 
@@ -201,6 +203,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         if (_dai > userDeposit[_msgSender]) {
             _dai = userDeposit[_msgSender];
         }
+        emit LogDepositWithdrawal(_msgSender, _dai);
+        emit LogAdjustDeposit(_msgSender, _dai, false);
         userDeposit[_msgSender] = userDeposit[_msgSender].sub(_dai);
         totalDeposits = totalDeposits.sub(_dai);
         address _thisAddressNotPayable = _msgSender;
@@ -216,8 +220,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
                 }
             }
         }
-        emit LogDepositWithdrawal(_msgSender, _dai);
-        emit LogAdjustDeposit(_msgSender, _dai, false);
     }
 
     ////////////////////////////////////
@@ -336,7 +338,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
  
     /// @dev sending ether/xdai direct is equal to a deposit
     receive() external payable {
-        assert(deposit(msgSender()));
+        require(deposit(msgSender()));
     }
 
 }

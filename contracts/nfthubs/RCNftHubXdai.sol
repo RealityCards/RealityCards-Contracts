@@ -47,6 +47,7 @@ contract RCNftHubXdai is Ownable, ERC721
     
     /// @dev address of RC factory contract, so only factory can mint
     function setFactoryAddress(address _newAddress) onlyOwner public {
+        require(_newAddress != address(0), "Must set an address");
         factoryAddress = _newAddress;
     }
 
