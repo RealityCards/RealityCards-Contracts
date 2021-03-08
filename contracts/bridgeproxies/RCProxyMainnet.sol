@@ -4,6 +4,7 @@ pragma solidity ^0.7.5;
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import '../interfaces/IRealitio.sol';
 import '../interfaces/IRCProxyXdai.sol';
 import '../interfaces/IBridge.sol';
@@ -16,6 +17,8 @@ import '../interfaces/IERC721.sol';
 /// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!!
 contract RCProxyMainnet is Ownable
 {
+    using SafeMath for uint256;
+
     ////////////////////////////////////
     //////// VARIABLES /////////////////
     ////////////////////////////////////
@@ -29,16 +32,18 @@ contract RCProxyMainnet is Ownable
 
     /// @dev governance variables
     address public proxyXdaiAddress;
-    address public nftHubAddress;
     address public arbitrator;
     uint32 public timeout;
     
     /// @dev market resolution variables
     mapping (address => bytes32) public questionIds;
+    uint256 constant public REALITIO_TEMPLATE_ID = 2;
+    uint256 constant public REALITIO_NONCE = 0;
+    uint256 constant public XDAI_BRIDGE_GAS_COST = 400000;
 
     /// @dev dai deposits
     uint256 internal depositNonce;
-    bool depositsEnabled = true;
+    bool internal depositsEnabled = true;
 
     ////////////////////////////////////
     ////////// CONSTRUCTOR /////////////
@@ -68,28 +73,33 @@ contract RCProxyMainnet is Ownable
     /// @dev address of xdai oracle proxy, called by the xdai side of the arbitrary message bridge
     /// @dev not set in constructor, address not known at deployment
     function setProxyXdaiAddress(address _newAddress) onlyOwner external {
+        require(_newAddress != address(0), "Must set an address");
         proxyXdaiAddress = _newAddress;
     }
 
     /// @dev address of arbitrary message bridge, mainnet side
     function setBridgeMainnetAddress(address _newAddress) onlyOwner public {
+        require(_newAddress != address(0), "Must set an address");
         bridge = IBridge(_newAddress);
     }
 
     /// @dev address of alternate receiver bridge, mainnet side
     function setNftHubAddress(address _newAddress) onlyOwner public {
+        require(_newAddress != address(0), "Must set an address");
         nfthub = IERC721(_newAddress);
     }
 
     /// @dev address of alternate receiver bridge, mainnet side
     function setAlternateReceiverAddress(address _newAddress) onlyOwner public {
+        require(_newAddress != address(0), "Must set an address");
         alternateReceiverBridge = IAlternateReceiverBridge(_newAddress);
     }
 
     /// @dev address of dai contract, must also approve the ARB
     function setDaiAddress(address _newAddress) onlyOwner public {
+        require(_newAddress != address(0), "Must set an address");
         dai = IERC20Dai(_newAddress);
-        dai.approve(address(alternateReceiverBridge), 2**256 - 1);
+        dai.approve(address(alternateReceiverBridge), type(uint256).max);
     }
 
     ////////////////////////////////////
@@ -98,11 +108,13 @@ contract RCProxyMainnet is Ownable
 
     /// @dev address reality.eth contracts
     function setRealitioAddress(address _newAddress) onlyOwner public {
+        require(_newAddress != address(0), "Must set an address");
         realitio = IRealitio(_newAddress);
     }
 
     /// @dev address of arbitrator, in case of continued disputes on reality.eth
     function setArbitrator(address _newAddress) onlyOwner public {
+        require(_newAddress != address(0), "Must set an address");
         arbitrator = _newAddress;
     }
 
@@ -115,7 +127,7 @@ contract RCProxyMainnet is Ownable
     /// @dev for situations where bridge failed
     function postQuestionToOracleAdmin(address _marketAddress, string calldata _question, uint32 _oracleResolutionTime) onlyOwner external {
         require(questionIds[_marketAddress] == 0, "Already posted");
-        bytes32 _questionId = realitio.askQuestion(2, _question, arbitrator, timeout, _oracleResolutionTime, 0);
+        bytes32 _questionId = realitio.askQuestion(REALITIO_TEMPLATE_ID, _question, arbitrator, timeout, _oracleResolutionTime, REALITIO_NONCE);
         questionIds[_marketAddress] = _questionId;
         emit LogQuestionPostedToOracle(_marketAddress, _questionId);
     }
@@ -127,6 +139,7 @@ contract RCProxyMainnet is Ownable
     /// @dev admin can create NFTs
     /// @dev for situations where bridge failed
     function upgradeCardAdmin(uint256 _newTokenId, string calldata _tokenUri, address _owner) onlyOwner external {
+        require(_owner != address(0), "Must set an address");
         nfthub.mintNft(_newTokenId, _tokenUri, _owner);
     }  
 
@@ -134,8 +147,8 @@ contract RCProxyMainnet is Ownable
     ///// GOVERNANCE - DAI BRIDGE //////
     ////////////////////////////////////
 
-    function enableOrDisableDeposits() onlyOwner external {
-        depositsEnabled = depositsEnabled ? false : true;
+    function changeDepositsEnabled() onlyOwner external {
+        depositsEnabled = !depositsEnabled;
     }
     
     ////////////////////////////////////
@@ -147,7 +160,7 @@ contract RCProxyMainnet is Ownable
         require(msg.sender == address(bridge), "Not bridge");
         require(bridge.messageSender() == proxyXdaiAddress, "Not proxy");
         require(questionIds[_marketAddress] == 0, "Already posted");
-        bytes32 _questionId = realitio.askQuestion(2, _question, arbitrator, timeout, _oracleResolutionTime, 0);
+        bytes32 _questionId = realitio.askQuestion(REALITIO_TEMPLATE_ID, _question, arbitrator, timeout, _oracleResolutionTime, REALITIO_NONCE);
         questionIds[_marketAddress] = _questionId;
         emit LogQuestionPostedToOracle(_marketAddress, _questionId);
     }
@@ -167,7 +180,7 @@ contract RCProxyMainnet is Ownable
         bytes32 _winningOutcome = realitio.resultFor(_questionId);
         bytes4 _methodSelector = IRCProxyXdai(address(0)).setWinner.selector;
         bytes memory data = abi.encodeWithSelector(_methodSelector, _marketAddress, _winningOutcome);
-        bridge.requireToPassMessage(proxyXdaiAddress,data,400000);
+        bridge.requireToPassMessage(proxyXdaiAddress,data,XDAI_BRIDGE_GAS_COST);
     }
 
     ////////////////////////////////////
@@ -178,6 +191,7 @@ contract RCProxyMainnet is Ownable
     function upgradeCard(uint256 _newTokenId, string calldata _tokenUri, address _owner) external {
         require(msg.sender == address(bridge), "Not bridge");
         require(bridge.messageSender() == proxyXdaiAddress, "Not proxy");
+        require(_owner != address(0), "Must set an address");
         nfthub.mintNft(_newTokenId, _tokenUri, _owner);
     }  
 
@@ -200,8 +214,8 @@ contract RCProxyMainnet is Ownable
     /// @dev send Dai to xDai proxy and emit event for offchain validator 
     function _depositDai(address _sender, uint256 _amount) internal {
         require(depositsEnabled, "Deposits disabled");
+        emit DaiDeposited(_sender, _amount, depositNonce.add(1));
         require(dai.transferFrom(_sender, address(this), _amount), "Token transfer failed");
         alternateReceiverBridge.relayTokens(address(this), proxyXdaiAddress, _amount);
-        emit DaiDeposited(_sender, _amount, depositNonce++);
     }
 }

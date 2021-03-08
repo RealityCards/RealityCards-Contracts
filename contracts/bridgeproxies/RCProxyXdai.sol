@@ -36,13 +36,14 @@ contract RCProxyXdai is Ownable
 
     ///// NFT UPGRADE VARIABLES /////
     mapping (address => bool) public isMarket;
-    mapping(uint256 => nft) public upgradedNfts;
-    struct nft { 
+    mapping(uint256 => NFT) public upgradedNftId;
+    struct NFT { 
         string tokenURI;
         address owner;
         bool set; }
 
     ///// DAI->XDAI BRIDGE VARIABLES /////
+    uint256 constant public MAINNET_BRIDGE_GAS_COST = 200000;
     uint256 public validatorCount;
     mapping (address => bool) public isValidator;
     mapping (uint256 => Deposit) public deposits;
@@ -80,10 +81,9 @@ contract RCProxyXdai is Ownable
     ////////////////////////////////////
 
     /// @dev so only RC NFTs can be upgraded
-    function addMarket(address _newMarket) external returns(bool) {
+    function addMarket(address _newMarket) external {
         require(msg.sender == factoryAddress, "Not factory");
         isMarket[_newMarket] = true;
-        return true;
     }
     
     ////////////////////////////////////
@@ -93,21 +93,25 @@ contract RCProxyXdai is Ownable
     /// @dev address of mainnet oracle proxy, called by the mainnet side of the arbitrary message bridge
     /// @dev not set in constructor, address not known at deployment
     function setProxyMainnetAddress(address _newAddress) onlyOwner external {
+        require(_newAddress != address(0), "Must set an address");
         proxyMainnetAddress = _newAddress;
     }
 
     /// @dev address of arbitrary message bridge, xdai side
     function setBridgeXdaiAddress(address _newAddress) onlyOwner public {
+        require(_newAddress != address(0), "Must set an address");
         bridge = IBridge(_newAddress);
     }
 
     /// @dev address of RC factory contract, so only factory can post questions
     function setFactoryAddress(address _newAddress) onlyOwner public {
+        require(_newAddress != address(0), "Must set an address");
         factoryAddress = _newAddress;
     }
 
     /// @dev address of RC treasury contract
     function setTreasuryAddress(address _newAddress) onlyOwner public {
+        require(_newAddress != address(0), "Must set an address");
         treasuryAddress = _newAddress;
     }
 
@@ -116,7 +120,7 @@ contract RCProxyXdai is Ownable
     ////////////////////////////////////
 
     /// @dev admin override of the Oracle, if not yet settled, for amicable resolution, or bridge fails
-    function setAmicableResolution(address _marketAddress, uint256 _winningOutcome) onlyOwner public {
+    function setAmicableResolution(address _marketAddress, uint256 _winningOutcome) external onlyOwner {
         // call the market
         IRCMarket market = IRCMarket(_marketAddress);
         market.setWinner(_winningOutcome);
@@ -139,6 +143,7 @@ contract RCProxyXdai is Ownable
 
     /// @dev modify validators for dai deposits
     function setValidator(address _validatorAddress, bool _add) onlyOwner external {
+        require(_validatorAddress != address(0), "Must set an address");
         if(_add) {
             if(!isValidator[_validatorAddress]) {
                 isValidator[_validatorAddress] = true;
@@ -171,7 +176,7 @@ contract RCProxyXdai is Ownable
         require(questions[_marketAddress].set, "No question");
         bytes4 _methodSelector = IRCProxyMainnet(address(0)).postQuestionToOracle.selector;
         bytes memory data = abi.encodeWithSelector(_methodSelector, _marketAddress, questions[_marketAddress].question, questions[_marketAddress].oracleResolutionTime);
-        bridge.requireToPassMessage(proxyMainnetAddress,data,200000);
+        bridge.requireToPassMessage(proxyMainnetAddress,data,MAINNET_BRIDGE_GAS_COST);
     }
     
     /// @dev called by mainnet oracle proxy via the arbitrary message bridge, sets the winning outcome
@@ -179,6 +184,7 @@ contract RCProxyXdai is Ownable
     function setWinner(address _marketAddress, uint256 _winningOutcome) external {
         require(msg.sender == address(bridge), "Not bridge");
         require(bridge.messageSender() == proxyMainnetAddress, "Not proxy");
+        require(_marketAddress != address(0), "Must set an address");
         // call the market
         IRCMarket market = IRCMarket(_marketAddress);
         market.setWinner(_winningOutcome);
@@ -190,21 +196,21 @@ contract RCProxyXdai is Ownable
 
     function saveCardToUpgrade(uint256 _tokenId, string calldata _tokenUri, address _owner) external {
         require(isMarket[msg.sender], "Not market");
-        // sassert because hould be impossible to call this twice because upgraded card returned to market
-        assert(!upgradedNfts[_tokenId].set);
-        upgradedNfts[_tokenId].tokenURI = _tokenUri;
-        upgradedNfts[_tokenId].owner = _owner;
-        upgradedNfts[_tokenId].set = true;
+        // assert because should be impossible to call this twice because upgraded card returned to market
+        assert(!upgradedNftId[_tokenId].set);
+        upgradedNftId[_tokenId].tokenURI = _tokenUri;
+        upgradedNftId[_tokenId].owner = _owner;
+        upgradedNftId[_tokenId].set = true;
         postCardToUpgrade(_tokenId);
     }
 
      /// @dev card is upgraded in a different function so it can be called again if bridge fails
      /// @dev no harm if called again after successful posting because can't mint nft with same tokenId twice 
     function postCardToUpgrade(uint256 _tokenId) public {
-        require(upgradedNfts[_tokenId].set, "Nft not set");
+        require(upgradedNftId[_tokenId].set, "Nft not set");
         bytes4 _methodSelector = IRCProxyMainnet(address(0)).upgradeCard.selector;
-        bytes memory data = abi.encodeWithSelector(_methodSelector, _tokenId, upgradedNfts[_tokenId].tokenURI, upgradedNfts[_tokenId].owner);
-        bridge.requireToPassMessage(proxyMainnetAddress,data,200000);
+        bytes memory data = abi.encodeWithSelector(_methodSelector, _tokenId, upgradedNftId[_tokenId].tokenURI, upgradedNftId[_tokenId].owner);
+        bridge.requireToPassMessage(proxyMainnetAddress,data,MAINNET_BRIDGE_GAS_COST);
     }
 
     ////////////////////////////////////
@@ -252,6 +258,8 @@ contract RCProxyXdai is Ownable
         uint256 _amount = deposits[_nonce].amount;
         address _user = deposits[_nonce].user;
         if (address(this).balance >= _amount) {
+            deposits[_nonce].executed = true;
+            emit LogDepositExecuted(_nonce);
             ITreasury treasury = ITreasury(treasuryAddress);
             // if Treasury will allow the deposit, send it there
             if (address(treasury).balance.add(_amount) <= treasury.maxContractBalance()) {
@@ -262,8 +270,6 @@ contract RCProxyXdai is Ownable
                 (bool _success, ) = _recipient.call{value:_amount}("");
                 require(_success, "Transfer failed");
             }
-            deposits[_nonce].executed = true;
-            emit LogDepositExecuted(_nonce);
         }
     }
 

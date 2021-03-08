@@ -36,10 +36,9 @@ contract RCNftHubXdai is Ownable, ERC721
     ////////////////////////////////////
 
     /// @dev so only markets can change ownership
-    function addMarket(address _newMarket) external returns(bool) {
+    function addMarket(address _newMarket) external{
         require(msg.sender == factoryAddress, "Not factory");
         isMarket[_newMarket] = true;
-        return true;
     }
 
     ////////////////////////////////////
@@ -48,6 +47,7 @@ contract RCNftHubXdai is Ownable, ERC721
     
     /// @dev address of RC factory contract, so only factory can mint
     function setFactoryAddress(address _newAddress) onlyOwner public {
+        require(_newAddress != address(0), "Must set an address");
         factoryAddress = _newAddress;
     }
 
@@ -78,14 +78,14 @@ contract RCNftHubXdai is Ownable, ERC721
 
     function transferFrom(address from, address to, uint256 tokenId) public override {
         IRCMarket market = IRCMarket(marketTracker[tokenId]);
-        require(market.state() == 3, "Incorrect state");
+        require(market.state() == IRCMarket.States.WITHDRAW, "Incorrect state");
         require(ownerOf(tokenId) == msg.sender, "Not owner");
         _transfer(from, to, tokenId);
     }
 
     function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) public override {
         IRCMarket market = IRCMarket(marketTracker[tokenId]);
-        require(market.state() == 3, "Incorrect state");
+        require(market.state() == IRCMarket.States.WITHDRAW, "Incorrect state");
         require(ownerOf(tokenId) == msg.sender, "Not owner");
         _transfer(from, to, tokenId);
         _data;
