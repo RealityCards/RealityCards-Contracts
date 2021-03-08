@@ -35,12 +35,13 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev when a user most recently rented (to prevent users withdrawing within minRentalTime)
     mapping (address => uint256) public lastRentalTime;
     /// @dev keeps track of the tokens and bid prices the user has in each market
-    struct Market{
+    struct Bid{
+        address market;
         uint256[] tokenId; 
         uint256[] bidPrice;
     }
-    /// @dev user addres to a record of markets they have bids in
-    mapping (address => mapping (address => Market)) userBids; // user => market => tokenID & Bidprice
+    /// @dev maps a user address to an array of their bids
+    mapping (address => Bid[]) userBids;
     /// @dev an array of all the active markets
     address[] activeMarkets;
     /// @dev an array of the locked markets, not currently used, could be used for housekeeping
@@ -191,13 +192,13 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         require(block.timestamp.sub(lastRentalTime[_msgSender]) > uint256(1 days).div(minRentalDayDivisor), "Too soon");
 
         uint256 _userTotalBids = 0;
-        for(uint256 i; i < activeMarkets.length; i++){
-            if (userBids[activeMarkets[i]][_msgSender].tokenId.length != 0){
-                IRCMarket _market = IRCMarket(activeMarkets[i]);
-                _market.collectRentSpecificCards(userBids[activeMarkets[i]][_msgSender].tokenId);
-                for(uint256 j; j < userBids[activeMarkets[i]][_msgSender].tokenId.length; j++ ){
-                    _userTotalBids = _userTotalBids.add(userBids[activeMarkets[i]][_msgSender].bidPrice[j]);
-                }
+        uint256[] memory _indicies = new uint256[](0);
+        cleanUserBidArray(_msgSender, _indicies);
+        for(uint256 i; i < userBids[_msgSender].length; i++){
+            IRCMarket _market = IRCMarket(userBids[_msgSender][i].market);
+            _market.collectRentSpecificCards(userBids[_msgSender][i].tokenId);
+            for(uint256 j; j < userBids[_msgSender][i].tokenId.length; j++ ){
+                _userTotalBids = _userTotalBids.add(userBids[_msgSender][i].bidPrice[j]);
             }
         }    
         if (_dai > userDeposit[_msgSender]) {
@@ -213,11 +214,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         require(_success, "Transfer failed");
 
         if(_userTotalBids.div(minRentalDayDivisor) > userDeposit[_msgSender]){
-            for(uint256 i; i < activeMarkets.length; i++){
-                if(userBids[activeMarkets[i]][_msgSender].tokenId.length != 0){
-                    IRCMarket _market = IRCMarket(activeMarkets[i]);
-                    _market.exitSpecificCards(userBids[activeMarkets[i]][_msgSender].tokenId, _msgSender);
-                }
+            for(uint256 i; i < userBids[_msgSender].length; i++){
+                IRCMarket _market = IRCMarket(userBids[_msgSender][i].market);
+                _market.exitSpecificCards(userBids[_msgSender][i].tokenId, _msgSender);
             }
         }
     }
@@ -279,39 +278,103 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
     /// @dev provides the sum total of a users bids accross all markets
     function userTotalBids(address _user) external view returns(uint256) {
+        //uint256[] memory _indicies = new uint256[](0);
+        //cleanUserBidArray(_user,_indicies);
         uint256 _userTotalBids = 0;
-        for(uint256 i; i < activeMarkets.length; i++){
-            if (userBids[activeMarkets[i]][_user].tokenId.length != 0){
-                for(uint256 j; j < userBids[activeMarkets[i]][_user].tokenId.length; j++ ){
-                    _userTotalBids = _userTotalBids.add(userBids[activeMarkets[i]][_user].bidPrice[j]);
-                }
+        for(uint256 i; i < userBids[_user].length; i++){
+            for(uint256 j; j < userBids[_user][i].tokenId.length; j++ ){
+                _userTotalBids = _userTotalBids.add(userBids[_user][i].bidPrice[j]);
             }
         } 
         return _userTotalBids;
     }
 
+    function cleanUserBidArray(address _user, uint256[] memory _indicies) public {
+        bool _active = false;
+        if(_indicies.length == 0){
+            // no specific indicies given, check the whole array for non active markets
+            for(uint256 i = 0; i < userBids[_user].length; i++){
+                _active = false;
+                //compare this market to the array of activeMarkets
+                for(uint j = 0; j < activeMarkets.length; j++){
+                    if (userBids[_user][i].market == activeMarkets[j]){
+                        //This market is active still, don't remove it
+                        _active = true;
+                    }
+                }
+                if (_active == false){
+                    // This market isn't active, lets remove it
+                    userBids[_user][i] = userBids[_user][userBids[_user].length.sub(1)];
+                    userBids[_user].pop();
+                }
+            }
+        } else {
+            console.log('Indicies list was found');
+            // check and remove the given indicies only
+            uint256 _lastIndex = _indicies[_indicies.length.sub(1)].add(1);
+            for(uint256 i = _indicies.length; i > 0; i--){
+                require(_lastIndex > _indicies[i], "Indicies not ordered");
+                //confirm market isn't active
+                for(uint j = 0; j < activeMarkets.length; j++){
+                    if (userBids[_user][i].market == activeMarkets[j]){
+                        //This market is active still, don't remove it
+                        _active = true;
+                    }
+                }
+                require(_active = false);
+                userBids[_user][i] = userBids[_user][userBids[_user].length.sub(1)];
+                userBids[_user].pop();
+            }
+        }
+    }
+
     /// @dev tracks the total rental payments across all Cards, to enforce minimum rental duration
     function updateUserBid(address _user, uint256 _tokenId, uint256 _price) external onlyMarkets returns(bool) {
         bool _done = false;
+        // in this case msgSender is the market
         address _msgSender = msgSender();
-        for(uint256 i = 0; i < userBids[_msgSender][_user].tokenId.length; i++){
-            if (userBids[_msgSender][_user].tokenId[i] == _tokenId){
-                if(_price == 0){
-                    uint256 _lastRecord = userBids[_msgSender][_user].tokenId.length.sub(1);
-                    userBids[_msgSender][_user].tokenId[i] = userBids[_msgSender][_user].tokenId[_lastRecord];
-                    userBids[_msgSender][_user].tokenId.pop();
-                    userBids[_msgSender][_user].bidPrice[i] = userBids[_msgSender][_user].bidPrice[_lastRecord];
-                    userBids[_msgSender][_user].bidPrice.pop();
-                } else {
-                    userBids[_msgSender][_user].bidPrice[i] = _price;
+        // find the market
+        for(uint256 i = 0; i < userBids[_user].length; i++){
+            if (userBids[_user][i].market == _msgSender){
+                // find the tokenId
+                for(uint256 j = 0; j < userBids[_user][i].tokenId.length; j++){
+                    if (userBids[_user][i].tokenId[j] == _tokenId){
+                        if(_price == 0){
+                            //price is 0, delete record
+                            if(userBids[_user][i].tokenId.length == 1){
+                                // There's only 1 bid in this market, just delete the whole market record
+                                userBids[_user][i] = userBids[_user][userBids[_user].length.sub(1)];
+                                userBids[_user].pop();
+                            } else {
+                                // There's more than 1 bid in this market, delete the correct one
+                                uint256 _lastRecord = userBids[_user][i].tokenId.length.sub(1);
+                                userBids[_user][i].tokenId[j] = userBids[_user][i].tokenId[_lastRecord];
+                                userBids[_user][i].tokenId.pop();
+                                userBids[_user][i].bidPrice[j] = userBids[_user][i].bidPrice[_lastRecord];
+                                userBids[_user][i].bidPrice.pop();
+                            }
+                        } else {
+                            //price is non-zero, update record
+                            userBids[_user][i].bidPrice[j] = _price;
+                        }
+                        _done = true;
+                        break;
+                    }
                 }
-                _done = true;
+                if(_done = false){
+                    //we didn't find the tokenId, add it
+                    userBids[_user][i].tokenId.push(_tokenId);
+                    userBids[_user][i].bidPrice.push(_price);
+                }
                 break;
             }
         }
         if(!_done){
-            userBids[_msgSender][_user].tokenId.push(_tokenId);
-            userBids[_msgSender][_user].bidPrice.push(_price);
+            //we didn't find the market, add it and update the bid info
+            userBids[_user].push();
+            userBids[_user][userBids[_user].length.sub(1)].market = _msgSender;
+            userBids[_user][userBids[_user].length.sub(1)].tokenId.push(_tokenId);
+            userBids[_user][userBids[_user].length.sub(1)].bidPrice.push(_price);
             _done = true;
         }
         return _done;
