@@ -334,7 +334,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     function setWinner(uint256 _winningOutcome) external {
         if (state == States.OPEN) { lockMarket(); }
         _checkState(States.LOCKED);
-        require(msg.sender == address(proxy), "Not proxy");
+        require(msgSender() == address(proxy), "Not proxy");
         // get the winner. This will revert if answer is not resolved.
         winningOutcome = _winningOutcome;
         _incrementState();

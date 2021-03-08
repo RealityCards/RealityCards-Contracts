@@ -99,7 +99,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     }
 
     modifier onlyMarkets {
-        require(isMarket[msg.sender], "Not authorised");
+        require(isMarket[msgSender()], "Not authorised");
         _;
     }
 
@@ -109,7 +109,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
     /// @dev so only markets can move funds from deposits to marketPots and vice versa
     function addMarket(address _newMarket) external {
-        require(msg.sender == factoryAddress, "Not factory");
+        require(msgSender() == factoryAddress, "Not factory");
         isMarket[_newMarket] = true;
     }
 
@@ -153,12 +153,12 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev ... while maintaining governance over other governanace functions
 
     function setFactoryAddress(address _newFactory) external {
-        require(msg.sender == uberOwner, "Extremely Verboten");
+        require(msgSender() == uberOwner, "Extremely Verboten");
         factoryAddress = _newFactory;
     }
 
     function changeUberOwner(address _newUberOwner) external {
-        require(msg.sender == uberOwner, "Extremely Verboten");
+        require(msgSender() == uberOwner, "Extremely Verboten");
         uberOwner = _newUberOwner;
     }
 
@@ -230,7 +230,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         require(!globalPause, "Rentals are disabled");
         assert(userDeposit[_user] >= _dai); // assert because should have been reduced to user's deposit already
         userDeposit[_user] = userDeposit[_user].sub(_dai);
-        marketPot[msg.sender] = marketPot[msg.sender].add(_dai);
+        marketPot[msgSender()] = marketPot[msgSender()].add(_dai);
         totalMarketPots = totalMarketPots.add(_dai);
         totalDeposits = totalDeposits.sub(_dai);
         emit LogAdjustDeposit(_user, _dai, false);
@@ -240,9 +240,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev a payout is equivalent to moving from market pot to user's deposit (the opposite of payRent)
     function payout(address _user, uint256 _dai) external balancedBooks onlyMarkets returns(bool) {
         require(!globalPause, "Payouts are disabled");
-        assert(marketPot[msg.sender] >= _dai); 
+        assert(marketPot[msgSender()] >= _dai); 
         userDeposit[_user] = userDeposit[_user].add(_dai);
-        marketPot[msg.sender] = marketPot[msg.sender].sub(_dai);
+        marketPot[msgSender()] = marketPot[msgSender()].sub(_dai);
         totalMarketPots = totalMarketPots.sub(_dai);
         totalDeposits = totalDeposits.add(_dai);
         emit LogAdjustDeposit(_user, _dai, true);
@@ -252,7 +252,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @notice ability to add liqudity to the pot without being able to win (called by market sponsor function). 
     function sponsor() external payable balancedBooks onlyMarkets returns(bool) {
         require(!globalPause, "Global Pause is Enabled");
-        marketPot[msg.sender] = marketPot[msg.sender].add(msg.value);
+        marketPot[msgSender()] = marketPot[msgSender()].add(msg.value);
         totalMarketPots = totalMarketPots.add(msg.value);
         return true;
     }
@@ -318,13 +318,13 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev adds or removes a market to the active markets array
     function updateMarketStatus(bool _open) external onlyMarkets {
         if(_open){
-            activeMarkets.push(msg.sender);
+            activeMarkets.push(msgSender());
         } else{
             for(uint256 i; i < activeMarkets.length; i++){
-                if(activeMarkets[i] == msg.sender){
+                if(activeMarkets[i] == msgSender()){
                     activeMarkets[i] = activeMarkets[activeMarkets.length.sub(1)];
                     activeMarkets.pop();
-                    lockedMarkets.push(msg.sender);
+                    lockedMarkets.push(msgSender());
                 }
             }
         }
