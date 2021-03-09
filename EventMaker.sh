@@ -50,11 +50,7 @@ cardJSON='{\n  "name": "'${!card}'",'
 cardJSON=$cardJSON'\n  "description": "This token represents a stake in the outcome '"'"$EVENT_NAME"'"
 cardJSON=$cardJSON' at Reality Cards, the planet'"'"'s first NFT-based prediction market",'
 cardJSON=$cardJSON'\n  "image": "'$CDN$IMAGES${!card}'.png",'
-cardJSON=$cardJSON'\n  "imageApp": "'$CDN$IMAGES${!card}'.png",'
-cardJSON=$cardJSON'\n  "imageSize": "180",'
-cardJSON=$cardJSON'\n  "addiliation": "Reality Cards",'
-cardJSON=$cardJSON'\n  "eventName": "'$EVENT_NAME'",'
-cardJSON=$cardJSON'\n  "outcomeName": "'${!card}'"'
+cardJSON=$cardJSON'\n  "affiliation": "Reality Cards"'
 cardJSON=$cardJSON'\n}'
 
 echo -e "$cardJSON" > events/$SRC_NAME/token$i.json
