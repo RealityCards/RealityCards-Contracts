@@ -16,6 +16,7 @@ var BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
 var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
 
 // variables
+// TODO: update chilvers' script with the relevant addresses here https://github.com/realitio/realitio-contracts/blob/master/config/arbitrators.json
 var ambAddressXdai = '0x75Df5AF045d91108662D8080fD1FEFAd6aA0bb59';
 var ambAddressMainnet = '0x4C36d2919e407f0Cc2Ee3c993ccF8ac26d9CE64e';
 var realitioAddress = '0x325a2e0F3CCA2ddbaeBB4DfC38Df8D19ca165b47';

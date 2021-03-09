@@ -80,8 +80,8 @@ contract('TestOwnership', (accounts) => {
     alternateReceiverBridge = await AlternateReceiverBridgeMockup.new();
     dai = await DaiMockup.new();
     // bridge contracts
-    xdaiproxy = await XdaiProxy.new(bridge.address, rcfactory.address, treasury.address);
-    mainnetproxy = await MainnetProxy.new(bridge.address, realitio.address, nfthubmainnet.address, alternateReceiverBridge.address, dai.address);
+    xdaiproxy = await XdaiProxy.new(bridge.address, rcfactory.address, treasury.address, realitio.address, realitio.address);
+    mainnetproxy = await MainnetProxy.new(bridge.address, nfthubmainnet.address, alternateReceiverBridge.address, dai.address);
     // tell the factory, mainnet proxy and bridge the xdai proxy address
     await rcfactory.setProxyXdaiAddress(xdaiproxy.address);
     await mainnetproxy.setProxyXdaiAddress(xdaiproxy.address);

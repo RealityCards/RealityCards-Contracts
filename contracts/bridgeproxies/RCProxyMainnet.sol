@@ -4,7 +4,6 @@ pragma solidity ^0.7.5;
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import '../interfaces/IRealitio.sol';
 import '../interfaces/IRCProxyXdai.sol';
 import '../interfaces/IBridge.sol';
 import '../interfaces/IAlternateReceiverBridge.sol';
@@ -21,7 +20,6 @@ contract RCProxyMainnet is Ownable
     ////////////////////////////////////
 
     /// @dev contract variables
-    IRealitio public realitio;
     IBridge public bridge;
     IAlternateReceiverBridge public alternateReceiverBridge;
     IERC20Dai public dai;
@@ -30,12 +28,7 @@ contract RCProxyMainnet is Ownable
     /// @dev governance variables
     address public proxyXdaiAddress;
     address public nftHubAddress;
-    address public arbitrator;
-    uint32 public timeout;
     
-    /// @dev market resolution variables
-    mapping (address => bytes32) public questionIds;
-
     /// @dev dai deposits
     uint256 internal depositNonce;
     bool depositsEnabled = true;
@@ -44,21 +37,17 @@ contract RCProxyMainnet is Ownable
     ////////// CONSTRUCTOR /////////////
     ////////////////////////////////////
 
-    constructor(address _bridgeMainnetAddress, address _realitioAddress, address _nftHubAddress, address _alternateReceiverAddress, address _daiAddress) {
+    constructor(address _bridgeMainnetAddress, address _nftHubAddress, address _alternateReceiverAddress, address _daiAddress) {
         setBridgeMainnetAddress(_bridgeMainnetAddress);
-        setRealitioAddress(_realitioAddress);
         setNftHubAddress(_nftHubAddress);
         setAlternateReceiverAddress(_alternateReceiverAddress);
         setDaiAddress(_daiAddress); 
-        setArbitrator(0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D); // kleros
-        setTimeout(86400); // 24 hours
     }
 
     ////////////////////////////////////
     //////////// EVENTS ////////////////
     ////////////////////////////////////
 
-    event LogQuestionPostedToOracle(address indexed marketAddress, bytes32 indexed questionId);
     event DaiDeposited(address indexed user, uint256 amount, uint256 nonce);
 
     ////////////////////////////////////
@@ -93,34 +82,6 @@ contract RCProxyMainnet is Ownable
     }
 
     ////////////////////////////////////
-    /////// GOVERNANCE - ORACLE ////////
-    ////////////////////////////////////
-
-    /// @dev address reality.eth contracts
-    function setRealitioAddress(address _newAddress) onlyOwner public {
-        realitio = IRealitio(_newAddress);
-    }
-
-    /// @dev address of arbitrator, in case of continued disputes on reality.eth
-    function setArbitrator(address _newAddress) onlyOwner public {
-        arbitrator = _newAddress;
-    }
-
-    /// @dev how long reality.eth waits for disputes before finalising
-    function setTimeout(uint32 _newTimeout) onlyOwner public {
-        timeout = _newTimeout;
-    }
-
-    /// @dev admin can post question if not already posted
-    /// @dev for situations where bridge failed
-    function postQuestionToOracleAdmin(address _marketAddress, string calldata _question, uint32 _oracleResolutionTime) onlyOwner external {
-        require(questionIds[_marketAddress] == 0, "Already posted");
-        bytes32 _questionId = realitio.askQuestion(2, _question, arbitrator, timeout, _oracleResolutionTime, 0);
-        questionIds[_marketAddress] = _questionId;
-        emit LogQuestionPostedToOracle(_marketAddress, _questionId);
-    }
-
-    ////////////////////////////////////
     //// GOVERNANCE - NFT UPGRADES /////
     ////////////////////////////////////
 
@@ -136,38 +97,6 @@ contract RCProxyMainnet is Ownable
 
     function enableOrDisableDeposits() onlyOwner external {
         depositsEnabled = depositsEnabled ? false : true;
-    }
-    
-    ////////////////////////////////////
-    ///// CORE FUNCTIONS - ORACLE //////
-    ////////////////////////////////////
-    
-    ///@notice called by xdai proxy via bridge, posts question to Oracle
-    function postQuestionToOracle(address _marketAddress, string calldata _question, uint32 _oracleResolutionTime) external {
-        require(msg.sender == address(bridge), "Not bridge");
-        require(bridge.messageSender() == proxyXdaiAddress, "Not proxy");
-        require(questionIds[_marketAddress] == 0, "Already posted");
-        bytes32 _questionId = realitio.askQuestion(2, _question, arbitrator, timeout, _oracleResolutionTime, 0);
-        questionIds[_marketAddress] = _questionId;
-        emit LogQuestionPostedToOracle(_marketAddress, _questionId);
-    }
-
-    /// @notice has the oracle finalised 
-    function isFinalized(address _marketAddress) public view returns(bool) {
-        bytes32 _questionId = questionIds[_marketAddress];
-        bool _isFinalized = realitio.isFinalized(_questionId);
-        return _isFinalized;
-    }
-
-    /// @dev can be called by anyone, reads winner from Oracle and sends to xdai proxy via bridge
-    /// @dev can be called more than once in case bridge fails, xdai proxy will reject a second successful call
-    function getWinnerFromOracle(address _marketAddress) external {
-        require(isFinalized(_marketAddress), "Oracle not finalised");
-        bytes32 _questionId = questionIds[_marketAddress];
-        bytes32 _winningOutcome = realitio.resultFor(_questionId);
-        bytes4 _methodSelector = IRCProxyXdai(address(0)).setWinner.selector;
-        bytes memory data = abi.encodeWithSelector(_methodSelector, _marketAddress, _winningOutcome);
-        bridge.requireToPassMessage(proxyXdaiAddress,data,400000);
     }
 
     ////////////////////////////////////
