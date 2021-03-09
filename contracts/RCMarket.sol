@@ -687,8 +687,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         // check user not in the orderbook
         assert(orderbook[_tokenId][msgSender()].price == 0);
         uint256 _minPriceToOwn = (tokenPrice[_tokenId].mul(minimumPriceIncreasePercent.add(100))).div(100);
-        uint256[] memory _indicies = new uint256[](0);
-        treasury.cleanUserBidArray(msgSender(), _indicies);
+        treasury.cleanUserBidArray(msgSender());
         // case 1: user is sufficiently above highest bidder (or only bidder)
         if(ownerOf(_tokenId) == address(this) || _newPrice >= _minPriceToOwn) {
             _setNewOwner(_newPrice, _tokenId, _timeHeldLimit);

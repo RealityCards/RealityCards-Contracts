@@ -338,10 +338,14 @@ contract('TestTreasury', (accounts) => {
     // assert.equal(totalRentals.toString(),ether('0').toString());
   });
 */
+it('test withdraw deposit after market close', async () => {
+
+});
+
 
   it('test maximum number of bids/user', async () => {
-    var bidsPerMarket = 1; //max is 20
-    var dummyMarkets = 500;
+    var bidsPerMarket = 5; //max is 20
+    var dummyMarkets = 0;
 
     user = user0;
     var i = 0;

@@ -43,7 +43,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev maps a user address to an array of their bids
     mapping (address => Bid[]) userBids;
     /// @dev an array of all the active markets
-    address[] activeMarkets;
+    //address[] activeMarkets;
+    mapping (address => bool) isMarketActive;
     /// @dev an array of the locked markets, not currently used, could be used for housekeeping
     address[] lockedMarkets;
 
@@ -295,39 +296,11 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
     /// @dev removes all non-active markets from the users bid array
     /// @dev can also be passed an array of indicies to remove
-    function cleanUserBidArray(address _user, uint256[] memory _indicies) public {
-        bool _active = false;
-        if(_indicies.length == 0){
-            // no specific indicies given, check the whole array for non active markets
-            for(uint256 i = 0; i < userBids[_user].length; i++){
-                _active = false;
-                //compare this market to the array of activeMarkets
-                for(uint j = 0; j < activeMarkets.length; j++){
-                    if (userBids[_user][i].market == activeMarkets[j]){
-                        //This market is active still, don't remove it
-                        _active = true;
-                    }
-                }
-                if (_active == false){
-                    // This market isn't active, lets remove it
-                    userBids[_user][i] = userBids[_user][userBids[_user].length.sub(1)];
-                    userBids[_user].pop();
-                }
-            }
-        } else {
-            // check and remove the given indicies only
-            uint256 _lastIndex = _indicies[_indicies.length.sub(1)].add(1);
-            for(uint256 i = _indicies.length; i > 0; i--){
-                require(_lastIndex > _indicies[i], "Indicies not ordered");
-                //confirm market isn't active
-                for(uint j = 0; j < activeMarkets.length; j++){
-                    if (userBids[_user][i].market == activeMarkets[j]){
-                        //This market is active still, don't remove it
-                        _active = true;
-                    }
-                }
-                require(_active == false);
-                userBids[_user][i] = userBids[_user][userBids[_user].length.sub(1)];
+    function cleanUserBidArray(address _user) public {
+        for(uint256 i = userBids[_user].length; i > 0; i--){
+            if (!isMarketActive[userBids[_user][i.sub(1)].market]){
+                // This market isn't active, lets remove it
+                userBids[_user][i.sub(1)] = userBids[_user][userBids[_user].length.sub(1)];
                 userBids[_user].pop();
             }
         }
@@ -396,15 +369,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev adds or removes a market to the active markets array
     function updateMarketStatus(bool _open) external onlyMarkets {
         if(_open){
-            activeMarkets.push(msgSender());
+            isMarketActive[msgSender()] = true;
         } else{
-            for(uint256 i; i < activeMarkets.length; i++){
-                if(activeMarkets[i] == msgSender()){
-                    activeMarkets[i] = activeMarkets[activeMarkets.length.sub(1)];
-                    activeMarkets.pop();
-                    lockedMarkets.push(msgSender());
-                }
-            }
+            isMarketActive[msgSender()] = false;
         }
     }
 
