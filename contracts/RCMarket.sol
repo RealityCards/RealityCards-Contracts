@@ -68,6 +68,8 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     uint256 public hotPotatoDivisor;
 
     ///// ORDERBOOK /////
+    /// @dev incrementing nonce for each rental, for frontend sorting
+    uint256 nonce;
     /// @dev stores the orderbook. Doubly linked list. 
     mapping (uint256 => mapping(address => Bid)) public orderbook; // tokenID // user address // Bid
     /// @dev orderbook uses uint128 to save gas, because Struct. Using uint256 everywhere else because best for maths. 
@@ -130,7 +132,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     //////// EVENTS ////////////////////
     ////////////////////////////////////
 
-    event LogAddToOrderbook(address indexed newOwner, uint256 indexed newPrice, uint256 timeHeldLimit, address insertedBelow, uint256 indexed tokenId);
+    event LogAddToOrderbook(address indexed newOwner, uint256 indexed newPrice, uint256 timeHeldLimit, uint256 nonce, uint256 indexed tokenId);
     event LogNewOwner(uint256 indexed tokenId, address indexed newOwner);
     event LogRentCollection(uint256 indexed rentCollected, uint256 indexed tokenId, address indexed owner);
     event LogRemoveFromOrderbook(address indexed owner, uint256 indexed tokenId);
@@ -520,6 +522,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         }
 
         assert(treasury.updateLastRentalTime(msgSender()));
+        nonce++;
         return price[_tokenId];
     }
 
@@ -687,7 +690,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                 orderbook[_tokenId][msgSender()].price = SafeCast.toUint128(_newPrice);
                 orderbook[_tokenId][msgSender()].timeHeldLimit = SafeCast.toUint128(_timeHeldLimit);
                 _processUpdateOwner(_newPrice, _tokenId);
-                emit LogAddToOrderbook(msgSender(), _newPrice, _timeHeldLimit, orderbook[_tokenId][msgSender()].prev, _tokenId);
+                emit LogAddToOrderbook(msgSender(), _newPrice, _timeHeldLimit, nonce, _tokenId);
             // case 1B: new price is higher than current price but by less than X%- revert the tx to prevent frontrunning
             } else if (_newPrice > price[_tokenId]) {
                 require(false, "Not 10% higher");
@@ -699,7 +702,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                     orderbook[_tokenId][msgSender()].price = SafeCast.toUint128(_newPrice);
                     orderbook[_tokenId][msgSender()].timeHeldLimit = SafeCast.toUint128(_timeHeldLimit);
                     _processUpdateOwner(_newPrice, _tokenId);
-                    emit LogAddToOrderbook(msgSender(), _newPrice, _timeHeldLimit, orderbook[_tokenId][msgSender()].prev, _tokenId);
+                    emit LogAddToOrderbook(msgSender(), _newPrice, _timeHeldLimit, nonce, _tokenId);
                 // case 1Cb: user is not owner anymore-  remove from list & add back. newRental event called in _setNewOwner or _placeInList via _newBid
                 } else {
                     _revertToUnderbidder(_tokenId);
@@ -736,7 +739,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         orderbook[_tokenId][msgSender()] = Bid(SafeCast.toUint128(_newPrice), SafeCast.toUint128(_timeHeldLimit), ownerOf(_tokenId), address(this));
         orderbook[_tokenId][ownerOf(_tokenId)].prev = msgSender();
         // _processNewOwner must be after LogAddToOrderbook so LogNewOwner is not emitted before user is in the orderbook
-        emit LogAddToOrderbook(msgSender(), _newPrice, _timeHeldLimit, address(this), _tokenId);
+        emit LogAddToOrderbook(msgSender(), _newPrice, _timeHeldLimit, nonce, _tokenId);
         _processNewOwner(msgSender(), _newPrice, _tokenId);
     }
 
@@ -783,7 +786,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         orderbook[_tokenId][msgSender()] = Bid(SafeCast.toUint128(_newPrice), SafeCast.toUint128(_timeHeldLimit), _tempNext, _tempPrev);
         orderbook[_tokenId][_tempPrev].next = msgSender();
         orderbook[_tokenId][_tempNext].prev = msgSender();
-        emit LogAddToOrderbook(msgSender(), _newPrice, _timeHeldLimit, orderbook[_tokenId][msgSender()].prev, _tokenId);
+        emit LogAddToOrderbook(msgSender(), _newPrice, _timeHeldLimit, nonce, _tokenId);
     }
 
     /// @notice if a users deposit runs out, either return to previous owner or foreclose
