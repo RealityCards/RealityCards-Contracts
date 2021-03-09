@@ -236,11 +236,16 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
         // step 3: remove bids if insufficient deposit
         if(_userTotalBids.div(minRentalDayDivisor) > userDeposit[_msgSender]){
+            uint256 i = 0;
             do{
-                IRCMarket _market = IRCMarket(userBids[_msgSender][0].market);
-                _market.exitSpecificCards(userBids[_msgSender][0].tokenId, _msgSender);
+                if (isMarketActive[userBids[_msgSender][i].market]){
+                    IRCMarket _market = IRCMarket(userBids[_msgSender][i].market);
+                    _market.exitSpecificCards(userBids[_msgSender][i].tokenId, _msgSender);
+                } else {
+                    i++;
+                }
             } while (
-                userBids[_msgSender].length > 0
+                userBids[_msgSender].length > i
             );
         }
     }
