@@ -195,7 +195,7 @@ contract RCProxyXdai is Ownable
 
     /// @dev sets the winning outcome
     /// @dev market.setWinner() will revert if done twice, because wrong state
-    function getWinnerFromOracle(address _marketAddress, uint256 _winningOutcome) external {
+    function getWinnerFromOracle(address _marketAddress) external {
         require(isFinalized(_marketAddress), "Oracle not finalised");
         questionFinalised[_marketAddress] = true;
         bytes32 _questionId = questionIds[_marketAddress];

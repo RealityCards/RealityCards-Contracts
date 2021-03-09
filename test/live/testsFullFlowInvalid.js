@@ -330,7 +330,7 @@ contract('TestFullFlowInvalid', (accounts) => {
     await realitycards.lockMarket(); 
     // set winner 
     await realitio.setResult(20);
-    await mainnetproxy.getWinnerFromOracle(realitycards.address);
+    await xdaiproxy.getWinnerFromOracle(realitycards.address);
     // await realitycards.determineWinner();
     ////////////////////////
     //check sponsor winnings
@@ -369,7 +369,7 @@ it('test sponsor- invalid with card affiliate cut', async () => {
     await time.increase(time.duration.years(1)); 
     await realitycards2.lockMarket(); 
     await realitio.setResult(69);
-    await mainnetproxy.getWinnerFromOracle(realitycards2.address);
+    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     // token 0
 for (i = 0; i < 20; i++) {
@@ -447,7 +447,7 @@ it('test withdraw- invalid mode 0- zero artist/creator cut', async () => {
     await realitycards.lockMarket(); 
     // set invalid winner
     await realitio.setResult(69);
-    await mainnetproxy.getWinnerFromOracle(realitycards.address);
+    await xdaiproxy.getWinnerFromOracle(realitycards.address);
     // await realitycards.determineWinner();
     ////////////////////////
     // total deposits = 139, check:
@@ -526,7 +526,7 @@ it('test withdraw- invalid mode 0- with artist/creator cut', async () => {
     await realitycards2.lockMarket(); 
     // set invalid winner
     await realitio.setResult(69);
-    await mainnetproxy.getWinnerFromOracle(realitycards2.address);
+    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     ////////////////////////
     // total deposits = 139, check:
@@ -610,7 +610,7 @@ it('test withdraw- invalid mode 0- with artist/creator cut', async () => {
         await realitycards2.lockMarket(); 
         // set invalid winner
         await realitio.setResult(69);
-        await mainnetproxy.getWinnerFromOracle(realitycards2.address);
+        await xdaiproxy.getWinnerFromOracle(realitycards2.address);
         // await realitycards2.determineWinner();
         ////////////////////////
         // total deposits = 139, check:
@@ -700,7 +700,7 @@ it('test withdraw- invalid mode 1- zero artist/creator cut', async () => {
     await realitycards2.lockMarket(); 
     // set invalid winner
     await realitio.setResult(69);
-    await mainnetproxy.getWinnerFromOracle(realitycards2.address);
+    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     ////////////////////////
     // total deposits = 147, check:
@@ -775,7 +775,7 @@ it('test withdraw- invalid mode 1- zero artist/creator cut', async () => {
         await realitycards2.lockMarket(); 
         // set invalid winner
         await realitio.setResult(69);
-        await mainnetproxy.getWinnerFromOracle(realitycards2.address);
+        await xdaiproxy.getWinnerFromOracle(realitycards2.address);
         // await realitycards2.determineWinner();
         ////////////////////////
         // total deposits = 139, check:
@@ -858,7 +858,7 @@ it('test withdraw- invalid mode 0- zero artist/creator cut', async () => {
     await realitycards2.lockMarket(); 
     // set invalid winner
     await realitio.setResult(69);
-    await mainnetproxy.getWinnerFromOracle(realitycards2.address);
+    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     ////////////////////////
     // total deposits = 147, check:
@@ -962,7 +962,7 @@ it('test withdraw- invalid mode 0- with artist/creator/card affiliate cut', asyn
     await realitycards2.lockMarket(); 
     // set invalid winner
     await realitio.setResult(69);
-    await mainnetproxy.getWinnerFromOracle(realitycards2.address);
+    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     ////////////////////////
     // total deposits = 139, check:
@@ -1069,7 +1069,7 @@ it('test winner/withdraw with invalid market and artist and creator fees', async
     // // set winner 1
     await realitio.setResult(69);
     var depositCreatorBefore = await treasury.deposits.call(user0);
-    await mainnetproxy.getWinnerFromOracle(realitycards2.address);
+    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     await realitycards2.payArtist();
     await expectRevert(realitycards2.payMarketCreator(), "No winner");

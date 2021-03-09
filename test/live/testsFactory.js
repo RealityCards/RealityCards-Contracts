@@ -427,7 +427,7 @@ it('test approveOrUnapproveMarket', async () => {
     await realitio.setResult(2);
     await time.increase(time.duration.years(1));
     await realitycards.lockMarket();
-    await mainnetproxy.getWinnerFromOracle(realitycards.address);
+    await xdaiproxy.getWinnerFromOracle(realitycards.address);
     // await realitycards.determineWinner();
     for (i = 0; i < 20; i++) {
         await realitycards.claimCard(i,{from:user0});
@@ -450,7 +450,7 @@ it('test approveOrUnapproveMarket', async () => {
     assert.equal(trapIfUnapproved,false);
     await time.increase(time.duration.years(1));
     await realitycards2.lockMarket();
-    await mainnetproxy.getWinnerFromOracle(realitycards2.address);
+    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     for (i = 0; i < 20; i++) {
         await realitycards2.claimCard(i,{from:user0});

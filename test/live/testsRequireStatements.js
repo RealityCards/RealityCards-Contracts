@@ -293,7 +293,7 @@ it('check that users cannot transfer their NFTs until withdraw state', async() =
     await expectRevert(nfthubxdai.safeTransferFrom(user,user1,2), "Incorrect state");
     await expectRevert(nfthubxdai.safeTransferFrom(user,user1,2,web3.utils.asciiToHex("123456789")), "Incorrect state");
     await realitio.setResult(2);
-    await mainnetproxy.getWinnerFromOracle(realitycards.address);
+    await xdaiproxy.getWinnerFromOracle(realitycards.address);
     // await realitycards.determineWinner();
     await realitycards.claimCard(2,{from:user});
     // these shoudl all fail cos wrong owner:
@@ -332,7 +332,7 @@ it('check that users cannot transfer their NFTs until withdraw state', async() =
     await expectRevert(realitycards2.payCardAffiliate(8), "Incorrect state");
     // increment state
     await realitio.setResult(1);
-    await mainnetproxy.getWinnerFromOracle(realitycards2.address);
+    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     var state = await realitycards2.state.call();
     assert.equal(3,state);

@@ -281,7 +281,7 @@ module.exports = async (deployer, network, accounts) =>
         await realitycards2.lockMarket()
         await time.increase(time.duration.hours(24))
         await realitio.setResult(1);
-        await mainnetproxy.getWinnerFromOracle(realitycards2.address);
+        await xdaiproxy.getWinnerFromOracle(realitycards2.address);
         await realitycards2.determineWinner();
 
         // market 3

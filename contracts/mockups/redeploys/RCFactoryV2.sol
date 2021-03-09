@@ -345,7 +345,7 @@ contract RCFactoryV2 is Ownable, CloneFactory, NativeMetaTransaction {
 
         // post question to Oracle
         require(address(proxy) != address(0), "xDai proxy not set");
-        proxy.saveQuestion(_newAddress, _realitioQuestion, _timestamps[2]);
+        proxy.postQuestionToOracle(_newAddress, _realitioQuestion, _timestamps[2]);
 
         // tell Treasury, Proxy, and NFT hub about new market
         assert(treasury.addMarket(_newAddress));

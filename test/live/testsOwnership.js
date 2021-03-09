@@ -276,7 +276,7 @@ it('check onlyOwner is on relevant mainnet proxy functions', async () => {
     await expectRevert(mainnetproxy.setNftHubAddress(user0, {from: user1}), "caller is not the owner");
     await expectRevert(mainnetproxy.setAlternateReceiverAddress(user0, {from: user1}), "caller is not the owner");
     await expectRevert(mainnetproxy.setDaiAddress(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(mainnetproxy.setRealitioAddress(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(xdaiproxy.setRealitioAddress(user0, {from: user1}), "caller is not the owner");
     await expectRevert(mainnetproxy.setArbitrator(user0, {from: user1}), "caller is not the owner");
     await expectRevert(mainnetproxy.setTimeout(1234, {from: user1}), "caller is not the owner");
     await expectRevert(mainnetproxy.postQuestionToOracleAdmin(user0,"x",0, {from: user1}), "caller is not the owner");
