@@ -192,12 +192,14 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         require(block.timestamp.sub(lastRentalTime[_msgSender]) > uint256(1 days).div(minRentalDayDivisor), "Too soon");
 
         uint256 _userTotalBids = 0;
-        uint256[] memory _indicies = new uint256[](0);
-        cleanUserBidArray(_msgSender, _indicies);
-        for(uint256 i; i < userBids[_msgSender].length; i++){
+        //uint256[] memory _indicies = new uint256[](0);
+        //cleanUserBidArray(_msgSender, _indicies);
+        for(uint256 i = 0; i < userBids[_msgSender].length; i++){
+            //console.log('next market in array is ', userBids[_msgSender][i].market);
             IRCMarket _market = IRCMarket(userBids[_msgSender][i].market);
             _market.collectRentSpecificCards(userBids[_msgSender][i].tokenId);
             for(uint256 j; j < userBids[_msgSender][i].tokenId.length; j++ ){
+                //console.log('with a bid price of ',userBids[_msgSender][i].bidPrice[j]);
                 _userTotalBids = _userTotalBids.add(userBids[_msgSender][i].bidPrice[j]);
             }
         }    
@@ -214,10 +216,12 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         require(_success, "Transfer failed");
 
         if(_userTotalBids.div(minRentalDayDivisor) > userDeposit[_msgSender]){
-            for(uint256 i; i < userBids[_msgSender].length; i++){
-                IRCMarket _market = IRCMarket(userBids[_msgSender][i].market);
-                _market.exitSpecificCards(userBids[_msgSender][i].tokenId, _msgSender);
-            }
+            do{
+                IRCMarket _market = IRCMarket(userBids[_msgSender][0].market);
+                _market.exitSpecificCards(userBids[_msgSender][0].tokenId, _msgSender);
+            } while (
+                userBids[_msgSender].length > 0
+            );
         }
     }
 
@@ -285,10 +289,12 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
             for(uint256 j; j < userBids[_user][i].tokenId.length; j++ ){
                 _userTotalBids = _userTotalBids.add(userBids[_user][i].bidPrice[j]);
             }
-        } 
+        }
         return _userTotalBids;
     }
 
+    /// @dev removes all non-active markets from the users bid array
+    /// @dev can also be passed an array of indicies to remove
     function cleanUserBidArray(address _user, uint256[] memory _indicies) public {
         bool _active = false;
         if(_indicies.length == 0){
@@ -309,7 +315,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
                 }
             }
         } else {
-            console.log('Indicies list was found');
             // check and remove the given indicies only
             uint256 _lastIndex = _indicies[_indicies.length.sub(1)].add(1);
             for(uint256 i = _indicies.length; i > 0; i--){
@@ -321,7 +326,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
                         _active = true;
                     }
                 }
-                require(_active = false);
+                require(_active == false);
                 userBids[_user][i] = userBids[_user][userBids[_user].length.sub(1)];
                 userBids[_user].pop();
             }
@@ -334,12 +339,16 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         // in this case msgSender is the market
         address _msgSender = msgSender();
         // find the market
+        //console.log('updating user bid for user ',_user);
         for(uint256 i = 0; i < userBids[_user].length; i++){
             if (userBids[_user][i].market == _msgSender){
+                //console.log('they already have a bid in this market ', _msgSender);
                 // find the tokenId
                 for(uint256 j = 0; j < userBids[_user][i].tokenId.length; j++){
                     if (userBids[_user][i].tokenId[j] == _tokenId){
+                        //console.log('they already have a bid on this card ', _tokenId);
                         if(_price == 0){
+                            //console.log('price is 0, deleting record');
                             //price is 0, delete record
                             if(userBids[_user][i].tokenId.length == 1){
                                 // There's only 1 bid in this market, just delete the whole market record
@@ -354,6 +363,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
                                 userBids[_user][i].bidPrice.pop();
                             }
                         } else {
+                            //console.log(' price is non-zero ', _price);
                             //price is non-zero, update record
                             userBids[_user][i].bidPrice[j] = _price;
                         }
@@ -361,15 +371,18 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
                         break;
                     }
                 }
-                if(_done = false){
+                if(!_done){
+                    //console.log('adding new token');
                     //we didn't find the tokenId, add it
                     userBids[_user][i].tokenId.push(_tokenId);
                     userBids[_user][i].bidPrice.push(_price);
                 }
+                _done = true;
                 break;
             }
         }
         if(!_done){
+            //console.log('adding new market');
             //we didn't find the market, add it and update the bid info
             userBids[_user].push();
             userBids[_user][userBids[_user].length.sub(1)].market = _msgSender;
