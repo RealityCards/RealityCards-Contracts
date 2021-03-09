@@ -3,6 +3,7 @@ cache/
 bin/
 DeployedContracts.txt
 build/
+events/
 
 # buidler
 artifactsBuidler/
