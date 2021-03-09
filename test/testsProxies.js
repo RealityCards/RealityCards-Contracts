@@ -90,8 +90,10 @@ contract('TestProxies', (accounts) => {
     await xdaiproxy.setProxyMainnetAddress(mainnetproxy.address);
     await bridge.setProxyMainnetAddress(mainnetproxy.address);
     await nfthubmainnet.setProxyMainnetAddress(mainnetproxy.address);
-    // market creation
-    await rcfactory.createMarket(
+    // tell the treasury about the ARB
+	await treasury.setAlternateReceiverAddress(alternateReceiverBridge.address);
+	// market creation
+	await rcfactory.createMarket(
         0,
         '0x0',
         timestamps,
@@ -230,7 +232,7 @@ contract('TestProxies', (accounts) => {
 
   async function withdrawDeposit(amount,userx) {
     amount = web3.utils.toWei(amount.toString(), 'ether');
-    await treasury.withdrawDeposit(amount,{ from: userx});
+    await treasury.withdrawDeposit(amount,true,{ from: userx});
   }
 
 
