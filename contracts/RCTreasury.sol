@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "hardhat/console.sol";
 import './lib/NativeMetaTransaction.sol';
 import "./interfaces/IRCMarket.sol";
+import './interfaces/IAlternateReceiverBridge.sol';
 
 /// @title Reality Cards Treasury
 /// @author Andrew Stanger
@@ -18,6 +19,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     //////// VARIABLES /////////////////
     ////////////////////////////////////
 
+    /// @dev address of the alternate Receiver Bridge for withdrawals to mainnet
+    address public alternateReceiverBridgeAddress;
     /// @dev address of the Factory so only the Factory can add new markets
     address public factoryAddress;
     /// @dev so only markets can use certain functions
@@ -112,6 +115,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev so only markets can move funds from deposits to marketPots and vice versa
     function addMarket(address _newMarket) external {
         require(msgSender() == factoryAddress, "Not factory");
+        require(alternateReceiverBridgeAddress != address(0), "Alternate Receiver not set");
         isMarket[_newMarket] = true;
     }
 
@@ -134,6 +138,12 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     }
 
     /// NOT CALLED WITHIN CONSTRUCTOR (external)
+
+    /// @dev address of alternate receiver bridge, xdai side
+    function setAlternateReceiverAddress(address _newAddress) onlyOwner public {
+        require(_newAddress != address(0), "Must set an address");
+        alternateReceiverBridgeAddress = _newAddress;
+    }
 
     /// @dev if true, cannot deposit, withdraw or rent any cards
     function changeGlobalPause() external onlyOwner {
@@ -186,12 +196,13 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     }
 
     /// @dev this is the only function where funds leave the contract
-    function withdrawDeposit(uint256 _dai) external balancedBooks  {
+    function withdrawDeposit(uint256 _dai, bool _localWithdrawal) external balancedBooks  {
         require(!globalPause, "Withdrawals are disabled");
         address _msgSender = msgSender();
         require(userDeposit[_msgSender] > 0, "Nothing to withdraw");
         require(block.timestamp.sub(lastRentalTime[_msgSender]) > uint256(1 days).div(minRentalDayDivisor), "Too soon");
 
+        // step 1: collect rent on all user's Cards
         uint256 _userTotalBids = 0;
         //uint256[] memory _indicies = new uint256[](0);
         //cleanUserBidArray(_msgSender, _indicies);
@@ -204,6 +215,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
                 _userTotalBids = _userTotalBids.add(userBids[_msgSender][i].bidPrice[j]);
             }
         }    
+
+        // step 2: process withdrawal
         if (_dai > userDeposit[_msgSender]) {
             _dai = userDeposit[_msgSender];
         }
@@ -211,11 +224,17 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         emit LogAdjustDeposit(_msgSender, _dai, false);
         userDeposit[_msgSender] = userDeposit[_msgSender].sub(_dai);
         totalDeposits = totalDeposits.sub(_dai);
-        address _thisAddressNotPayable = _msgSender;
-        address payable _recipient = address(uint160(_thisAddressNotPayable));
-        (bool _success, ) = _recipient.call{value: _dai}("");
-        require(_success, "Transfer failed");
+        if (_localWithdrawal) {
+            address _thisAddressNotPayable = _msgSender;
+            address payable _recipient = address(uint160(_thisAddressNotPayable));
+            (bool _success, ) = _recipient.call{value: _dai}("");
+            require(_success, "Transfer failed");
+        } else {
+            IAlternateReceiverBridge _alternateReceiverBridge = IAlternateReceiverBridge(alternateReceiverBridgeAddress);
+            _alternateReceiverBridge.relayTokens(address(this), _msgSender, _dai);
+        }
 
+        // step 3: remove bids if insufficient deposit
         if(_userTotalBids.div(minRentalDayDivisor) > userDeposit[_msgSender]){
             do{
                 IRCMarket _market = IRCMarket(userBids[_msgSender][0].market);
