@@ -30,6 +30,8 @@ var RCMarket2 = artifacts.require('./mockups/redeploys/RCMarketXdaiV2.sol');
 var BridgeMockup2 = artifacts.require('./mockups/redeploys/BridgeMockupV2.sol');
 var RealitioMockup2 = artifacts.require("./mockups/redeploys/RealitioMockupV2.sol");
 
+var kleros = '0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D';
+
 const delay = duration => new Promise(resolve => setTimeout(resolve, duration));
 
 contract('TestTreasury', (accounts) => {
@@ -81,7 +83,7 @@ contract('TestTreasury', (accounts) => {
     dai = await DaiMockup.new();
     // bridge contracts
     xdaiproxy = await XdaiProxy.new(bridge.address, rcfactory.address, treasury.address);
-    mainnetproxy = await MainnetProxy.new(bridge.address, realitio.address, nfthubmainnet.address, alternateReceiverBridge.address, dai.address);
+    mainnetproxy = await MainnetProxy.new(bridge.address, realitio.address, nfthubmainnet.address, alternateReceiverBridge.address, dai.address, kleros);
     // tell the factory, mainnet proxy and bridge the xdai proxy address
     await rcfactory.setProxyXdaiAddress(xdaiproxy.address);
     await mainnetproxy.setProxyXdaiAddress(xdaiproxy.address);
@@ -264,24 +266,31 @@ contract('TestTreasury', (accounts) => {
     await depositDai(100, user1);
     await depositDai(10, user2);
     await depositDai(10, user3);
-    // 2 rentals same market, check correct user0=8
+    // make a rental, check it updates the userBids
     await newRental(5, 0, user0);
+    var totalRentals = await treasury.userTotalBids(user0);
+    assert.equal(totalRentals.toString(), ether('5').toString());
+    // make another rental and check again
     await newRental(3, 1, user0);
     var totalRentals = await treasury.userTotalBids(user0);
     assert.equal(totalRentals.toString(), ether('8').toString());
-    // different market, still correct? user0=9
+    // different market this time
     var realitycards2 = await createMarketWithArtistSet();
     await newRentalCustomContract(realitycards2, 1, 7, user0);
     var totalRentals = await treasury.userTotalBids(user0);
     assert.equal(totalRentals.toString(), ether('9').toString());
-    // change bid, still correct? user0=10
+    // increase bid, still correct? user0=10
     await newRental(6, 0, user0);
     var totalRentals = await treasury.userTotalBids(user0);
     assert.equal(totalRentals.toString(), ether('10').toString());
-    // someone else takes it off them, are both correct? user0=10 user1=7
+    // decrease bid, still correct? user0=8
+    await newRental(4, 0, user0);
+    var totalRentals = await treasury.userTotalBids(user0);
+    assert.equal(totalRentals.toString(), ether('8').toString());
+    // someone else takes it off them, are both correct? user0=8 user1=7
     await newRental(7, 0, user1);
     var totalRentals = await treasury.userTotalBids(user0);
-    assert.equal(totalRentals.toString(), ether('10').toString());
+    assert.equal(totalRentals.toString(), ether('8').toString());
     var totalRentals = await treasury.userTotalBids(user1);
     assert.equal(totalRentals.toString(), ether('7').toString());
     // change tokenPrice, check both are correct user0=11.5 user1=7
@@ -310,34 +319,6 @@ contract('TestTreasury', (accounts) => {
     // check owned by contract
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner, realitycards.address);
-    // should only hold my 2nd market one
-    // var totalRentals = await treasury.userTotalBids(user0);
-    // assert.equal(totalRentals.toString(),ether('1').toString());
-    // // going through the full list now
-    // // check updating bid: owner, for less, but still winner
-    // await newRental(10,0,user2);
-    // await newRental(15,0,user3);
-    // var totalRentals = await treasury.userTotalBids(user3);
-    // assert.equal(totalRentals.toString(),ether('15').toString());
-    // await newRental(14,0,user3);
-    // var totalRentals = await treasury.userTotalBids(user3);
-    // assert.equal(totalRentals.toString(),ether('14').toString());
-    // // check updating bid: owner, for less, not winner 
-    // await newRental(10,0,user3);
-    // var totalRentals = await treasury.userTotalBids(user3);
-    // assert.equal(totalRentals.toString(),ether('0').toString());
-    // // check updating bid: not owner, should not be
-    // await newRental(10.5,0,user3);
-    // var totalRentals = await treasury.userTotalBids(user3);
-    // assert.equal(totalRentals.toString(),ether('0').toString());
-    // // check updating bid: not owner, should b be
-    // await newRental(11,0,user3);
-    // var totalRentals = await treasury.userTotalBids(user3);
-    // assert.equal(totalRentals.toString(),ether('11').toString());
-    // // check exit 
-    // await realitycards.exit(0,{from: user3});
-    // var totalRentals = await treasury.userTotalBids(user3);
-    // assert.equal(totalRentals.toString(),ether('0').toString());
   });
 
 it('test withdraw deposit after market close', async () => {
@@ -373,6 +354,18 @@ it('test withdraw deposit after market close', async () => {
   await treasury.withdrawDeposit(web3.utils.toWei('100000', 'ether'),{ from: user});
 });
 
+it('check bids are exited when user withdraws everything', async () => {
+  await depositDai(100, user0);
+  await newRental(5, 0, user0);
+  await time.increase(time.duration.days(1));
+  await treasury.withdrawDeposit(web3.utils.toWei('5', 'ether'),{ from: user0});
+  var totalRentals = await treasury.userTotalBids(user0);
+  assert.equal(totalRentals.toString(), ether('5').toString());
+
+  await treasury.withdrawDeposit(web3.utils.toWei('1000', 'ether'),{ from: user0});
+  var owner = await realitycards.ownerOf.call(0);
+  assert.notEqual(owner, user0);
+});
   // it('test maximum number of bids/user', async () => {
   //   var bidsPerMarket = 1; //max is 20
   //   var dummyMarkets = 0;

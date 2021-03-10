@@ -31,10 +31,10 @@ module.exports = function() {
   async function createMarket() {
     // create market
     let factory = await realityCardsFactory.at(factoryAddress);
-    console.log("CREATING XDAI MARKET");
+    console.log("CREATING MARKET");
     var transaction = await factory.createMarket(
         0,
-        '0x0',
+        ipfsHash,
         timestamps,
         tokenURIs,
         artistAddress,

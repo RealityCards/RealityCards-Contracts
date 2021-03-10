@@ -20,6 +20,7 @@ var ambAddressXdai = '0x75Df5AF045d91108662D8080fD1FEFAd6aA0bb59';
 var ambAddressMainnet = '0x4C36d2919e407f0Cc2Ee3c993ccF8ac26d9CE64e';
 var realitioAddress = '0x325a2e0F3CCA2ddbaeBB4DfC38Df8D19ca165b47';
 var arbAddressMainnet = '0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016';
+var kleros = '0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D';
 
 // UPDATE THIS AFTER STAGE 1
 var xdaiProxyAddress = '0x9e15161380f76311Ed7C33AdFF52f928Fb27D84D';
@@ -107,7 +108,7 @@ module.exports = async (deployer, network, accounts) =>
         // deploy bridge contracts
         await deployer.deploy(XdaiProxy, bridge.address, factory.address, treasury.address);
         xdaiproxy = await XdaiProxy.deployed();
-        await deployer.deploy(MainnetProxy, bridge.address, realitio.address, nfthubmainnet.address, realitio.address, dai.address);
+        await deployer.deploy(MainnetProxy, bridge.address, realitio.address, nfthubmainnet.address, realitio.address, dai.address, kleros.address);
         // ^^ the second realitio.address is ARB, its fine, we're not testing ARB yet
         mainnetproxy = await MainnetProxy.deployed();
         // tell the factory, mainnet proxy and bridge the xdai proxy address

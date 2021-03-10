@@ -49,13 +49,13 @@ contract RCProxyMainnet is Ownable
     ////////// CONSTRUCTOR /////////////
     ////////////////////////////////////
 
-    constructor(address _bridgeMainnetAddress, address _realitioAddress, address _nftHubAddress, address _alternateReceiverAddress, address _daiAddress) {
+    constructor(address _bridgeMainnetAddress, address _realitioAddress, address _nftHubAddress, address _alternateReceiverAddress, address _daiAddress, address _arbitratorAddress) {
         setBridgeMainnetAddress(_bridgeMainnetAddress);
         setRealitioAddress(_realitioAddress);
         setNftHubAddress(_nftHubAddress);
         setAlternateReceiverAddress(_alternateReceiverAddress);
         setDaiAddress(_daiAddress); 
-        setArbitrator(0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D); // kleros
+        setArbitrator(_arbitratorAddress);
         setTimeout(86400); // 24 hours
     }
 
