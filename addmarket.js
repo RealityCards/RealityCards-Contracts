@@ -1,15 +1,15 @@
 //require("dotenv").config();
 
 var realityCardsFactory = artifacts.require("RCFactory");
-var factoryAddress = '0x060e1BF56e238F3263fC9870c472936EEc09CeEb';
-
+//var factoryAddress = '0xe1Ab9305DA70b865d610116163A82E1fDF6cCcFD'; //testnet on Sokol
+var factoryAddress = '0x3b557a58E5c6c4Df3e3307F9c7f5ce46472d80F7'; //beta on xDai
 
 // variables market specific
 var marketOpeningTime = 0;
-var marketLockingTime = 1609405525; 
-var oracleResolutionTime = 1609405525; 
-var question = 'Test10␟"X","Y","Z"␟news-politics␟en_US';
-var slug = '10'; 
+var marketLockingTime = 1615680000; 
+var oracleResolutionTime = 1615680000; 
+var ipfsHash = 'QmdokjFZoaHWYymqZFFftStQ9eheTnx4j2MKoHpVH3PGyE';
+var question = 'What will Team Thunderforces win ratio be this Saturday 13th March?';
 var artistAddress = "0x0000000000000000000000000000000000000000";
 var affiliateAddress = "0x0000000000000000000000000000000000000000";
 var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000','0x0000000000000000000000000000000000000000'];
@@ -20,8 +20,11 @@ var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000','0x00
 
 var timestamps = [marketOpeningTime,marketLockingTime,oracleResolutionTime];
 var tokenURIs = [
-    'https://cdn.realitycards.io/nftmetadata/uni/token0.json',
-    'https://cdn.realitycards.io/nftmetadata/uni/token1.json',
+    'https://cdn.realitycards.io/nftmetadata/thunderforce/token0.json',
+    'https://cdn.realitycards.io/nftmetadata/thunderforce/token1.json',
+    'https://cdn.realitycards.io/nftmetadata/thunderforce/token2.json',
+    'https://cdn.realitycards.io/nftmetadata/thunderforce/token3.json',
+    'https://cdn.realitycards.io/nftmetadata/thunderforce/token4.json',
 ]; 
 
 module.exports = function() {

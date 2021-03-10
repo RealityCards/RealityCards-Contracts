@@ -3,8 +3,8 @@ pragma solidity ^0.7.5;
 pragma abicoder v2;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/proxy/Clones.sol";
 import "hardhat/console.sol";
-import './lib/CloneFactory.sol';
 import "./interfaces/ITreasury.sol";
 import './interfaces/IRCMarket.sol';
 import './interfaces/IRCProxyXdai.sol';
@@ -14,7 +14,7 @@ import './lib/NativeMetaTransaction.sol';
 /// @title Reality Cards Factory
 /// @author Andrew Stanger
 /// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!!
-contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
+contract RCFactory is Ownable, NativeMetaTransaction {
 
     using SafeMath for uint256;
     using SafeMath for uint32;
@@ -345,7 +345,7 @@ contract RCFactory is Ownable, CloneFactory, NativeMetaTransaction {
 
         // create the market and emit the appropriate events
         // two events to avoid stack too deep error
-        address _newAddress = createClone(referenceContractAddress);
+        address _newAddress = Clones.clone(referenceContractAddress);
         emit LogMarketCreated1(_newAddress, address(treasury), address(nfthub), referenceContractVersion);
         emit LogMarketCreated2(_newAddress, _mode, _tokenURIs, _ipfsHash, _timestamps, totalNftMintCount);
 

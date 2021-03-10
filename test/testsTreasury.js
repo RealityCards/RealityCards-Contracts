@@ -90,8 +90,10 @@ contract('TestTreasury', (accounts) => {
     await xdaiproxy.setProxyMainnetAddress(mainnetproxy.address);
     await bridge.setProxyMainnetAddress(mainnetproxy.address);
     await nfthubmainnet.setProxyMainnetAddress(mainnetproxy.address);
-    // market creation
-    await rcfactory.createMarket(
+    // tell the treasury about the ARB
+	await treasury.setAlternateReceiverAddress(alternateReceiverBridge.address);
+	// market creation
+	await rcfactory.createMarket(
       0,
       '0x0',
       timestamps,
@@ -338,6 +340,39 @@ contract('TestTreasury', (accounts) => {
     // assert.equal(totalRentals.toString(),ether('0').toString());
   });
 
+it('test withdraw deposit after market close', async () => {
+  user = user0
+  // create a market that'll expire soon
+  var latestTime = await time.latest();
+  var oneDay = new BN('86400');
+  var oneDayInTheFuture = oneDay.add(latestTime);
+  var marketLockingTime = oneDayInTheFuture; 
+  var oracleResolutionTime = oneDayInTheFuture; 
+  var timestamps = [0,marketLockingTime,oracleResolutionTime];
+  var artistAddress = '0x0000000000000000000000000000000000000000';
+  var affiliateAddress = '0x0000000000000000000000000000000000000000';
+  var tokenURIs = ['x','x','x','uri','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x']; // 20 tokens
+  var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
+  var cardRecipients = ['0x0000000000000000000000000000000000000000']
+  await rcfactory.createMarket(
+    0,
+    '0x0',
+    timestamps,
+    tokenURIs,
+    artistAddress,
+    affiliateAddress,
+    cardRecipients,
+    question,
+  );
+  var shortMarket = await RCMarket.at(await rcfactory.getMostRecentMarket.call(0));
+  await depositDai(100,user);
+  await shortMarket.newRental(web3.utils.toWei('1', 'ether'),0,zeroAddress,0,{ from: user});
+  await time.increase(time.duration.seconds(86400));
+  await shortMarket.collectRentAllCards();
+  await shortMarket.lockMarket();
+  await treasury.withdrawDeposit(web3.utils.toWei('100000', 'ether'),{ from: user});
+});
+
   // it('test maximum number of bids/user', async () => {
   //   var bidsPerMarket = 1; //max is 20
   //   var dummyMarkets = 0;
@@ -377,7 +412,7 @@ contract('TestTreasury', (accounts) => {
   //     await time.increase(time.duration.seconds(600));
 
   //     //await withdrawDeposit(web3.utils.toWei('100', 'ether'),user);
-  //     await treasury.withdrawDeposit(web3.utils.toWei('10000', 'ether'),{ from: user});
+  //     await treasury.withdrawDeposit(web3.utils.toWei('100000', 'ether'),{ from: user});
 
   //     await time.increase(time.duration.seconds(600));
 
