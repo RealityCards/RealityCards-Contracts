@@ -33,8 +33,9 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     uint256 public constant MIN_RENTAL_VALUE = 1 ether;
     enum States {CLOSED, OPEN, LOCKED, WITHDRAW}
     States public state; 
-    /// @dev type of event. 0 = classic, 1 = winner takes all, 2 = hot potato 
-    uint256 public mode;
+    /// @dev type of event.
+    enum Mode {CLASSIC, WINNER_TAKES_ALL, HOT_POTATO}
+    Mode public mode;
     /// @dev so the Factory can check its a market
     bool public constant isMarket = true;
     /// @dev counts the total NFTs minted across all events at the time market created
@@ -193,7 +194,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         winningOutcome = MAX_UINT256; // default invalid
 
         // assign arguments to public variables
-        mode = _mode;
+        mode = Mode(_mode);
         numberOfTokens = _numberOfTokens;
         totalNftMintCount = _totalNftMintCount;
         marketOpeningTime = _timestamps[0];
@@ -751,7 +752,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     function _setNewOwner(uint256 _newPrice, uint256 _tokenId, uint256 _timeHeldLimit) internal {  
         // if hot potato mode, pay current owner
         address _msgSender = msgSender();
-        if (mode == 2) {
+        if (mode == Mode.HOT_POTATO) {
             uint256 _duration = uint256(1 weeks).div(hotPotatoWeekDivisor);
             uint256 _requiredPayment = (tokenPrice[_tokenId].mul(_duration)).div(uint256(1 days));
             assert(treasury.processHarbergerPayment(_msgSender, ownerOf(_tokenId), _requiredPayment));
