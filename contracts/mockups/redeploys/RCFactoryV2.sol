@@ -4,8 +4,8 @@ pragma abicoder v2;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/proxy/Clones.sol";
 import "hardhat/console.sol";
-import '../../lib/CloneFactory.sol';
 import "../../interfaces/ITreasury.sol";
 import '../../interfaces/IRCMarket.sol';
 import '../../interfaces/IRCProxyXdai.sol';
@@ -14,7 +14,7 @@ import '../../lib/NativeMetaTransaction.sol';
 
 // mockup for testing, same except that nftmintcount is set at 20
 
-contract RCFactoryV2 is Ownable, CloneFactory, NativeMetaTransaction {
+contract RCFactoryV2 is Ownable, NativeMetaTransaction {
 
     using SafeMath for uint256;
     using SafeMath for uint32;
@@ -319,7 +319,7 @@ contract RCFactoryV2 is Ownable, CloneFactory, NativeMetaTransaction {
 
         // create the market and emit the appropriate events
         // two events to avoid stack too deep error
-        address _newAddress = createClone(referenceContractAddress);
+        address _newAddress = Clones.clone(referenceContractAddress);
 
         // tell Treasury, Proxy, and NFT hub about new market
         treasury.addMarket(_newAddress);
