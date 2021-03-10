@@ -3,13 +3,14 @@ pragma solidity ^0.7.5;
 
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/SafeCast.sol";
 import "hardhat/console.sol";
 import './lib/NativeMetaTransaction.sol';
 import "./interfaces/IRCMarket.sol";
 import './interfaces/IAlternateReceiverBridge.sol';
 
 /// @title Reality Cards Treasury
-/// @author Andrew Stanger
+/// @author Andrew Stanger & Daniel Chilvers
 /// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!!
 contract RCTreasury is Ownable, NativeMetaTransaction {
 
@@ -33,23 +34,19 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     mapping (address => uint256) public marketPot;
     /// @dev sum of all market pots 
     uint256 public totalMarketPots;
-    /// @dev sum of prices of all Cards a user is renting
-    // mapping (address => uint256) public userTotalRentals;
     /// @dev when a user most recently rented (to prevent users withdrawing within minRentalTime)
     mapping (address => uint256) public lastRentalTime;
     /// @dev keeps track of the tokens and bid prices the user has in each market
     struct Bid{
         address market;
-        uint256[] tokenId; 
-        uint256[] bidPrice;
+        uint128[] tokenId; 
+        uint128[] bidPrice;
     }
     /// @dev maps a user address to an array of their bids
     mapping (address => Bid[]) userBids;
     /// @dev an array of all the active markets
     //address[] activeMarkets;
     mapping (address => bool) isMarketActive;
-    /// @dev an array of the locked markets, not currently used, could be used for housekeeping
-    address[] lockedMarkets;
 
      ///// GOVERNANCE VARIABLES /////
     /// @dev only parameters that need to be are here, the rest are in the Factory
@@ -204,14 +201,10 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
         // step 1: collect rent on all user's Cards
         uint256 _userTotalBids = 0;
-        //uint256[] memory _indicies = new uint256[](0);
-        //cleanUserBidArray(_msgSender, _indicies);
         for(uint256 i = 0; i < userBids[_msgSender].length; i++){
-            //console.log('next market in array is ', userBids[_msgSender][i].market);
             IRCMarket _market = IRCMarket(userBids[_msgSender][i].market);
             _market.collectRentSpecificCards(userBids[_msgSender][i].tokenId);
             for(uint256 j; j < userBids[_msgSender][i].tokenId.length; j++ ){
-                //console.log('with a bid price of ',userBids[_msgSender][i].bidPrice[j]);
                 _userTotalBids = _userTotalBids.add(userBids[_msgSender][i].bidPrice[j]);
             }
         }    
@@ -336,16 +329,12 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         // in this case msgSender is the market
         address _msgSender = msgSender();
         // find the market
-        //console.log('updating user bid for user ',_user);
         for(uint256 i = 0; i < userBids[_user].length; i++){
             if (userBids[_user][i].market == _msgSender){
-                //console.log('they already have a bid in this market ', _msgSender);
                 // find the tokenId
                 for(uint256 j = 0; j < userBids[_user][i].tokenId.length; j++){
                     if (userBids[_user][i].tokenId[j] == _tokenId){
-                        //console.log('they already have a bid on this card ', _tokenId);
                         if(_price == 0){
-                            //console.log('price is 0, deleting record');
                             //price is 0, delete record
                             if(userBids[_user][i].tokenId.length == 1){
                                 // There's only 1 bid in this market, just delete the whole market record
@@ -360,31 +349,28 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
                                 userBids[_user][i].bidPrice.pop();
                             }
                         } else {
-                            //console.log(' price is non-zero ', _price);
                             //price is non-zero, update record
-                            userBids[_user][i].bidPrice[j] = _price;
+                            userBids[_user][i].bidPrice[j] = SafeCast.toUint128(_price);
                         }
                         _done = true;
                         break;
                     }
                 }
                 if(!_done){
-                    //console.log('adding new token');
                     //we didn't find the tokenId, add it
-                    userBids[_user][i].tokenId.push(_tokenId);
-                    userBids[_user][i].bidPrice.push(_price);
+                    userBids[_user][i].tokenId.push(SafeCast.toUint128(_tokenId));
+                    userBids[_user][i].bidPrice.push(SafeCast.toUint128(_price));
                 }
                 _done = true;
                 break;
             }
         }
         if(!_done){
-            //console.log('adding new market');
             //we didn't find the market, add it and update the bid info
             userBids[_user].push();
             userBids[_user][userBids[_user].length.sub(1)].market = _msgSender;
-            userBids[_user][userBids[_user].length.sub(1)].tokenId.push(_tokenId);
-            userBids[_user][userBids[_user].length.sub(1)].bidPrice.push(_price);
+            userBids[_user][userBids[_user].length.sub(1)].tokenId.push(SafeCast.toUint128(_tokenId));
+            userBids[_user][userBids[_user].length.sub(1)].bidPrice.push(SafeCast.toUint128(_price));
             _done = true;
         }
         return _done;
