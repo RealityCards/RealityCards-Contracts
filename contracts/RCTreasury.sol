@@ -1,19 +1,17 @@
 // SPDX-License-Identifier: UNDEFINED
 pragma solidity ^0.7.5;
 
-
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/SafeCast.sol";
 import "hardhat/console.sol";
-import './lib/NativeMetaTransaction.sol';
+import "./lib/NativeMetaTransaction.sol";
 import "./interfaces/IRCMarket.sol";
-import './interfaces/IAlternateReceiverBridge.sol';
+import "./interfaces/IAlternateReceiverBridge.sol";
 
 /// @title Reality Cards Treasury
 /// @author Andrew Stanger & Daniel Chilvers
 /// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!!
 contract RCTreasury is Ownable, NativeMetaTransaction {
-
     using SafeMath for uint256;
 
     ////////////////////////////////////
@@ -25,30 +23,30 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev address of the Factory so only the Factory can add new markets
     address public factoryAddress;
     /// @dev so only markets can use certain functions
-    mapping (address => bool) public isMarket;
+    mapping(address => bool) public isMarket;
     /// @dev the deposit balance of each user
-    mapping (address => uint256) public userDeposit;
-    /// @dev sum of all deposits 
+    mapping(address => uint256) public userDeposit;
+    /// @dev sum of all deposits
     uint256 public totalDeposits;
     /// @dev the rental payments made in each market
-    mapping (address => uint256) public marketPot;
-    /// @dev sum of all market pots 
+    mapping(address => uint256) public marketPot;
+    /// @dev sum of all market pots
     uint256 public totalMarketPots;
     /// @dev when a user most recently rented (to prevent users withdrawing within minRentalTime)
-    mapping (address => uint256) public lastRentalTime;
+    mapping(address => uint256) public lastRentalTime;
     /// @dev keeps track of the tokens and bid prices the user has in each market
-    struct Bid{
+    struct Bid {
         address market;
-        uint128[] tokenId; 
+        uint128[] tokenId;
         uint128[] bidPrice;
     }
     /// @dev maps a user address to an array of their bids
-    mapping (address => Bid[]) userBids;
+    mapping(address => Bid[]) userBids;
     /// @dev an array of all the active markets
     //address[] activeMarkets;
-    mapping (address => bool) isMarketActive;
+    mapping(address => bool) isMarketActive;
 
-     ///// GOVERNANCE VARIABLES /////
+    ///// GOVERNANCE VARIABLES /////
     /// @dev only parameters that need to be are here, the rest are in the Factory
     /// @dev minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
     uint256 public minRentalDayDivisor;
@@ -59,7 +57,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev if true, cannot deposit, withdraw or rent any cards across all events
     bool public globalPause;
     /// @dev if true, cannot rent any cards for specific market
-    mapping (address => bool) public marketPaused;
+    mapping(address => bool) public marketPaused;
 
     ///// UBER OWNER /////
     /// @dev high level owner who can change the factory address
@@ -69,9 +67,19 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     //////// EVENTS ////////////////////
     ////////////////////////////////////
 
-    event LogDepositIncreased(address indexed sentBy, uint256 indexed daiDeposited);
-    event LogDepositWithdrawal(address indexed returnedTo, uint256 indexed daiWithdrawn);
-    event LogAdjustDeposit(address indexed user, uint256 indexed amount, bool increase);
+    event LogDepositIncreased(
+        address indexed sentBy,
+        uint256 indexed daiDeposited
+    );
+    event LogDepositWithdrawal(
+        address indexed returnedTo,
+        uint256 indexed daiWithdrawn
+    );
+    event LogAdjustDeposit(
+        address indexed user,
+        uint256 indexed amount,
+        bool increase
+    );
     event LogHotPotatoPayment(address from, address to, uint256 amount);
 
     ////////////////////////////////////
@@ -80,13 +88,13 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
     constructor() {
         // initialise MetaTransactions
-        _initializeEIP712("RealityCardsTreasury","1");
+        _initializeEIP712("RealityCardsTreasury", "1");
 
         // at initiation, uberOwner and owner will be the same
         uberOwner = msg.sender;
 
         // initialise adjustable parameters
-        setMinRental(24*6); // MinRental is a divisor of 1 day(86400 seconds), 24*6 will set to 10 minutes
+        setMinRental(24 * 6); // MinRental is a divisor of 1 day(86400 seconds), 24*6 will set to 10 minutes
         setMaxContractBalance(1000000 ether); // 1m
     }
 
@@ -112,7 +120,10 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev so only markets can move funds from deposits to marketPots and vice versa
     function addMarket(address _newMarket) external {
         require(msgSender() == factoryAddress, "Not factory");
-        require(alternateReceiverBridgeAddress != address(0), "Alternate Receiver not set");
+        require(
+            alternateReceiverBridgeAddress != address(0),
+            "Alternate Receiver not set"
+        );
         isMarket[_newMarket] = true;
     }
 
@@ -137,7 +148,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// NOT CALLED WITHIN CONSTRUCTOR (external)
 
     /// @dev address of alternate receiver bridge, xdai side
-    function setAlternateReceiverAddress(address _newAddress) onlyOwner public {
+    function setAlternateReceiverAddress(address _newAddress) external onlyOwner {
         require(_newAddress != address(0), "Must set an address");
         alternateReceiverBridgeAddress = _newAddress;
     }
@@ -177,9 +188,16 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// DEPOSIT & WITHDRAW FUNCTIONS ///
     ////////////////////////////////////
 
+    /// @notice deposit xDai into the treasury
     /// @dev it is passed the user instead of using msg.sender because might be called
     /// @dev ... via contract (fallback, newRental) or dai->xdai bot
-    function deposit(address _user) public payable balancedBooks returns(bool) {
+    /// @param _user the user to credit the deposit to
+    function deposit(address _user)
+        public
+        payable
+        balancedBooks
+        returns (bool)
+    {
         require(!globalPause, "Deposits are disabled");
         require(msg.value > 0, "Must deposit something");
         require(address(this).balance <= maxContractBalance, "Limit hit");
@@ -192,22 +210,34 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         return true;
     }
 
+    /// @notice withdraw a users deposit either directly or over the bridge to the mainnet
     /// @dev this is the only function where funds leave the contract
-    function withdrawDeposit(uint256 _dai, bool _localWithdrawal) external balancedBooks  {
+    /// @param _dai the amount to withdraw
+    /// @param _localWithdrawal if true then withdraw to the users xDai address, otherwise to the mainnet
+    function withdrawDeposit(uint256 _dai, bool _localWithdrawal)
+        external
+        balancedBooks
+    {
         require(!globalPause, "Withdrawals are disabled");
         address _msgSender = msgSender();
         require(userDeposit[_msgSender] > 0, "Nothing to withdraw");
-        require(block.timestamp.sub(lastRentalTime[_msgSender]) > uint256(1 days).div(minRentalDayDivisor), "Too soon");
+        require(
+            block.timestamp.sub(lastRentalTime[_msgSender]) >
+                uint256(1 days).div(minRentalDayDivisor),
+            "Too soon"
+        );
 
         // step 1: collect rent on all user's Cards
         uint256 _userTotalBids = 0;
-        for(uint256 i = 0; i < userBids[_msgSender].length; i++){
+        for (uint256 i = 0; i < userBids[_msgSender].length; i++) {
             IRCMarket _market = IRCMarket(userBids[_msgSender][i].market);
             _market.collectRentSpecificCards(userBids[_msgSender][i].tokenId);
-            for(uint256 j; j < userBids[_msgSender][i].tokenId.length; j++ ){
-                _userTotalBids = _userTotalBids.add(userBids[_msgSender][i].bidPrice[j]);
+            for (uint256 j; j < userBids[_msgSender][i].tokenId.length; j++) {
+                _userTotalBids = _userTotalBids.add(
+                    userBids[_msgSender][i].bidPrice[j]
+                );
             }
-        }    
+        }
 
         // step 2: process withdrawal
         if (_dai > userDeposit[_msgSender]) {
@@ -219,27 +249,35 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         totalDeposits = totalDeposits.sub(_dai);
         if (_localWithdrawal) {
             address _thisAddressNotPayable = _msgSender;
-            address payable _recipient = address(uint160(_thisAddressNotPayable));
+            address payable _recipient =
+                address(uint160(_thisAddressNotPayable));
             (bool _success, ) = _recipient.call{value: _dai}("");
             require(_success, "Transfer failed");
         } else {
-            IAlternateReceiverBridge _alternateReceiverBridge = IAlternateReceiverBridge(alternateReceiverBridgeAddress);
-            _alternateReceiverBridge.relayTokens(address(this), _msgSender, _dai);
+            IAlternateReceiverBridge _alternateReceiverBridge =
+                IAlternateReceiverBridge(alternateReceiverBridgeAddress);
+            _alternateReceiverBridge.relayTokens(
+                address(this),
+                _msgSender,
+                _dai
+            );
         }
 
         // step 3: remove bids if insufficient deposit
-        if(_userTotalBids.div(minRentalDayDivisor) > userDeposit[_msgSender]){
+        if (_userTotalBids.div(minRentalDayDivisor) > userDeposit[_msgSender]) {
             uint256 i = 0;
-            do{
-                if (isMarketActive[userBids[_msgSender][i].market]){
-                    IRCMarket _market = IRCMarket(userBids[_msgSender][i].market);
-                    _market.exitSpecificCards(userBids[_msgSender][i].tokenId, _msgSender);
+            do {
+                if (isMarketActive[userBids[_msgSender][i].market]) {
+                    IRCMarket _market =
+                        IRCMarket(userBids[_msgSender][i].market);
+                    _market.exitSpecificCards(
+                        userBids[_msgSender][i].tokenId,
+                        _msgSender
+                    );
                 } else {
                     i++;
                 }
-            } while (
-                userBids[_msgSender].length > i
-            );
+            } while (userBids[_msgSender].length > i);
         }
     }
 
@@ -249,7 +287,12 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// only markets can call these functions
 
     /// @dev a rental payment is equivalent to moving to market pot from user's deposit, called by _collectRent in the market
-    function payRent(address _user, uint256 _dai) external balancedBooks onlyMarkets returns(bool) {
+    function payRent(address _user, uint256 _dai)
+        external
+        balancedBooks
+        onlyMarkets
+        returns (bool)
+    {
         require(!globalPause, "Rentals are disabled");
         assert(userDeposit[_user] >= _dai); // assert because should have been reduced to user's deposit already
         userDeposit[_user] = userDeposit[_user].sub(_dai);
@@ -261,9 +304,14 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     }
 
     /// @dev a payout is equivalent to moving from market pot to user's deposit (the opposite of payRent)
-    function payout(address _user, uint256 _dai) external balancedBooks onlyMarkets returns(bool) {
+    function payout(address _user, uint256 _dai)
+        external
+        balancedBooks
+        onlyMarkets
+        returns (bool)
+    {
         require(!globalPause, "Payouts are disabled");
-        assert(marketPot[msgSender()] >= _dai); 
+        assert(marketPot[msgSender()] >= _dai);
         userDeposit[_user] = userDeposit[_user].add(_dai);
         marketPot[msgSender()] = marketPot[msgSender()].sub(_dai);
         totalMarketPots = totalMarketPots.sub(_dai);
@@ -272,8 +320,14 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         return true;
     }
 
-    /// @notice ability to add liqudity to the pot without being able to win (called by market sponsor function). 
-    function sponsor() external payable balancedBooks onlyMarkets returns(bool) {
+    /// @notice ability to add liqudity to the pot without being able to win (called by market sponsor function).
+    function sponsor()
+        external
+        payable
+        balancedBooks
+        onlyMarkets
+        returns (bool)
+    {
         require(!globalPause, "Global Pause is Enabled");
         marketPot[msgSender()] = marketPot[msgSender()].add(msg.value);
         totalMarketPots = totalMarketPots.add(msg.value);
@@ -281,11 +335,20 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     }
 
     /// @dev new owner pays current owner for hot potato mode
-    function processHarbergerPayment(address _newOwner, address _currentOwner, uint256 _requiredPayment) external balancedBooks onlyMarkets returns(bool) {
+    function processHarbergerPayment(
+        address _newOwner,
+        address _currentOwner,
+        uint256 _requiredPayment
+    ) external balancedBooks onlyMarkets returns (bool) {
         require(!globalPause, "Global Pause is Enabled");
-        require(userDeposit[_newOwner] >= _requiredPayment, "Insufficient deposit");
+        require(
+            userDeposit[_newOwner] >= _requiredPayment,
+            "Insufficient deposit"
+        );
         userDeposit[_newOwner] = userDeposit[_newOwner].sub(_requiredPayment);
-        userDeposit[_currentOwner] = userDeposit[_currentOwner].add(_requiredPayment);
+        userDeposit[_currentOwner] = userDeposit[_currentOwner].add(
+            _requiredPayment
+        );
         emit LogAdjustDeposit(_newOwner, _requiredPayment, false);
         emit LogAdjustDeposit(_currentOwner, _requiredPayment, true);
         emit LogHotPotatoPayment(_newOwner, _currentOwner, _requiredPayment);
@@ -293,19 +356,25 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     }
 
     /// @dev tracks when the user last rented- so they cannot rent and immediately withdraw, thus bypassing minimum rental duration
-    function updateLastRentalTime(address _user) external onlyMarkets returns(bool) {
+    function updateLastRentalTime(address _user)
+        external
+        onlyMarkets
+        returns (bool)
+    {
         lastRentalTime[_user] = block.timestamp;
         return true;
     }
 
     /// @dev provides the sum total of a users bids accross all markets
-    function userTotalBids(address _user) external view returns(uint256) {
+    function userTotalBids(address _user) external view returns (uint256) {
         //uint256[] memory _indicies = new uint256[](0);
         //cleanUserBidArray(_user,_indicies);
         uint256 _userTotalBids = 0;
-        for(uint256 i; i < userBids[_user].length; i++){
-            for(uint256 j; j < userBids[_user][i].tokenId.length; j++ ){
-                _userTotalBids = _userTotalBids.add(userBids[_user][i].bidPrice[j]);
+        for (uint256 i; i < userBids[_user].length; i++) {
+            for (uint256 j; j < userBids[_user][i].tokenId.length; j++) {
+                _userTotalBids = _userTotalBids.add(
+                    userBids[_user][i].bidPrice[j]
+                );
             }
         }
         return _userTotalBids;
@@ -314,63 +383,92 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev removes all non-active markets from the users bid array
     /// @dev can also be passed an array of indicies to remove
     function cleanUserBidArray(address _user) public {
-        for(uint256 i = userBids[_user].length; i > 0; i--){
-            if (!isMarketActive[userBids[_user][i.sub(1)].market]){
+        for (uint256 i = userBids[_user].length; i > 0; i--) {
+            if (!isMarketActive[userBids[_user][i.sub(1)].market]) {
                 // This market isn't active, lets remove it
-                userBids[_user][i.sub(1)] = userBids[_user][userBids[_user].length.sub(1)];
+                userBids[_user][i.sub(1)] = userBids[_user][
+                    userBids[_user].length.sub(1)
+                ];
                 userBids[_user].pop();
             }
         }
     }
 
     /// @dev tracks the total rental payments across all Cards, to enforce minimum rental duration
-    function updateUserBid(address _user, uint256 _tokenId, uint256 _price) external onlyMarkets returns(bool) {
+    function updateUserBid(
+        address _user,
+        uint256 _tokenId,
+        uint256 _price
+    ) external onlyMarkets returns (bool) {
         bool _done = false;
         // in this case msgSender is the market
         address _msgSender = msgSender();
         // find the market
-        for(uint256 i = 0; i < userBids[_user].length; i++){
-            if (userBids[_user][i].market == _msgSender){
+        for (uint256 i = 0; i < userBids[_user].length; i++) {
+            if (userBids[_user][i].market == _msgSender) {
                 // find the tokenId
-                for(uint256 j = 0; j < userBids[_user][i].tokenId.length; j++){
-                    if (userBids[_user][i].tokenId[j] == _tokenId){
-                        if(_price == 0){
+                for (
+                    uint256 j = 0;
+                    j < userBids[_user][i].tokenId.length;
+                    j++
+                ) {
+                    if (userBids[_user][i].tokenId[j] == _tokenId) {
+                        if (_price == 0) {
                             //price is 0, delete record
-                            if(userBids[_user][i].tokenId.length == 1){
+                            if (userBids[_user][i].tokenId.length == 1) {
                                 // There's only 1 bid in this market, just delete the whole market record
-                                userBids[_user][i] = userBids[_user][userBids[_user].length.sub(1)];
+                                userBids[_user][i] = userBids[_user][
+                                    userBids[_user].length.sub(1)
+                                ];
                                 userBids[_user].pop();
                             } else {
                                 // There's more than 1 bid in this market, delete the correct one
-                                uint256 _lastRecord = userBids[_user][i].tokenId.length.sub(1);
-                                userBids[_user][i].tokenId[j] = userBids[_user][i].tokenId[_lastRecord];
+                                uint256 _lastRecord =
+                                    userBids[_user][i].tokenId.length.sub(1);
+                                userBids[_user][i].tokenId[j] = userBids[_user][
+                                    i
+                                ]
+                                    .tokenId[_lastRecord];
                                 userBids[_user][i].tokenId.pop();
-                                userBids[_user][i].bidPrice[j] = userBids[_user][i].bidPrice[_lastRecord];
+                                userBids[_user][i].bidPrice[j] = userBids[
+                                    _user
+                                ][i]
+                                    .bidPrice[_lastRecord];
                                 userBids[_user][i].bidPrice.pop();
                             }
                         } else {
                             //price is non-zero, update record
-                            userBids[_user][i].bidPrice[j] = SafeCast.toUint128(_price);
+                            userBids[_user][i].bidPrice[j] = SafeCast.toUint128(
+                                _price
+                            );
                         }
                         _done = true;
                         break;
                     }
                 }
-                if(!_done){
+                if (!_done) {
                     //we didn't find the tokenId, add it
-                    userBids[_user][i].tokenId.push(SafeCast.toUint128(_tokenId));
-                    userBids[_user][i].bidPrice.push(SafeCast.toUint128(_price));
+                    userBids[_user][i].tokenId.push(
+                        SafeCast.toUint128(_tokenId)
+                    );
+                    userBids[_user][i].bidPrice.push(
+                        SafeCast.toUint128(_price)
+                    );
                 }
                 _done = true;
                 break;
             }
         }
-        if(!_done){
+        if (!_done) {
             //we didn't find the market, add it and update the bid info
             userBids[_user].push();
             userBids[_user][userBids[_user].length.sub(1)].market = _msgSender;
-            userBids[_user][userBids[_user].length.sub(1)].tokenId.push(SafeCast.toUint128(_tokenId));
-            userBids[_user][userBids[_user].length.sub(1)].bidPrice.push(SafeCast.toUint128(_price));
+            userBids[_user][userBids[_user].length.sub(1)].tokenId.push(
+                SafeCast.toUint128(_tokenId)
+            );
+            userBids[_user][userBids[_user].length.sub(1)].bidPrice.push(
+                SafeCast.toUint128(_price)
+            );
             _done = true;
         }
         return _done;
@@ -378,9 +476,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
     /// @dev adds or removes a market to the active markets array
     function updateMarketStatus(bool _open) external onlyMarkets {
-        if(_open){
+        if (_open) {
             isMarketActive[msgSender()] = true;
-        } else{
+        } else {
             isMarketActive[msgSender()] = false;
         }
     }
@@ -388,10 +486,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     ////////////////////////////////////
     //////////    FALLBACK     /////////
     ////////////////////////////////////
- 
+
     /// @dev sending ether/xdai direct is equal to a deposit
     receive() external payable {
         require(deposit(msgSender()));
     }
-
 }
