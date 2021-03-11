@@ -9,7 +9,7 @@ const {
 } = require('@openzeppelin/test-helpers');
 
 // chose the test to run by setting this to the number, or 0 to ignore these tests.
-var testChoice = 4;
+var testChoice = 0;
 // 1 = test maximum number of bids/user
 // 2 = test maximum number of bids/user - with underbidders
 // 3 = test maximum number of cards/market

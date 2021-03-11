@@ -443,7 +443,7 @@ it('test winner/withdraw mode 0- with artist/creator cut', async () => {
     await realitycards2.lockMarket(); 
     // // set winner 1
     await realitio.setResult(2);
-    var depositCreatorBefore = await treasury.deposits.call(user0);
+    var depositCreatorBefore = await treasury.userDeposit.call(user0);
     await xdaiproxy.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     await realitycards2.payArtist();
@@ -539,7 +539,7 @@ it('test winner/withdraw mode 0- with artist/winner/creator cut', async () => {
     await realitycards2.lockMarket(); 
     // // set winner 1
     await realitio.setResult(2);
-    var depositCreatorBefore = await treasury.deposits.call(user0);
+    var depositCreatorBefore = await treasury.userDeposit.call(user0);
     await xdaiproxy.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     await realitycards2.payArtist();
@@ -638,7 +638,7 @@ it('test winner/withdraw mode 0- with artist/affiliate/winner/creator cut', asyn
     await realitycards2.lockMarket(); 
     // // set winner 1
     await realitio.setResult(2);
-    var depositCreatorBefore = await treasury.deposits.call(user0);
+    var depositCreatorBefore = await treasury.userDeposit.call(user0);
     await xdaiproxy.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     await realitycards2.payArtist();
@@ -804,7 +804,7 @@ it('test winner/withdraw mode 1- with artist/creator cut', async () => {
     await realitycards2.lockMarket(); 
     // // set winner 1
     await realitio.setResult(2);
-    var depositCreatorBefore = await treasury.deposits.call(user0);
+    var depositCreatorBefore = await treasury.userDeposit.call(user0);
     await xdaiproxy.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     await realitycards2.payArtist();
@@ -1061,7 +1061,7 @@ it('test winner/withdraw mode 0 with artist/creator/card affiliate cut', async (
     await realitycards2.lockMarket(); 
     // // set winner 1
     await realitio.setResult(2);
-    var depositCreatorBefore = await treasury.deposits.call(user0);
+    var depositCreatorBefore = await treasury.userDeposit.call(user0);
     await xdaiproxy.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     await realitycards2.payArtist();
@@ -1184,7 +1184,7 @@ it('test winner/withdraw mode 0- with artist/winner/creator/card affiliate cut',
     await realitycards2.lockMarket(); 
     // // set winner 1
     await realitio.setResult(2);
-    var depositCreatorBefore = await treasury.deposits.call(user0);
+    var depositCreatorBefore = await treasury.userDeposit.call(user0);
     await xdaiproxy.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     await realitycards2.payArtist();

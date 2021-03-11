@@ -42,8 +42,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     }
     /// @dev maps a user address to an array of their bids
     mapping(address => Bid[]) userBids;
-    /// @dev an array of all the active markets
-    //address[] activeMarkets;
+    /// @dev a quick check if the market is active or not
     mapping(address => bool) isMarketActive;
 
     ///// GOVERNANCE VARIABLES /////
@@ -98,6 +97,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         // initialise adjustable parameters
         setMinRental(24 * 6); // MinRental is a divisor of 1 day(86400 seconds), 24*6 will set to 10 minutes
         setMaxContractBalance(1000000 ether); // 1m
+        setMaxBidLimit(30); // 30 is safe with current gas limit (12.5m)
     }
 
     ////////////////////////////////////
@@ -391,20 +391,14 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         for (uint256 i = userBids[_user].length; i > 0; i--) {
             if (!isMarketActive[userBids[_user][i.sub(1)].market]) {
                 // This market isn't active, lets remove it
-                userBids[_user][i.sub(1)] = userBids[_user][
-                    userBids[_user].length.sub(1)
-                ];
+                userBids[_user][i.sub(1)] = userBids[_user][userBids[_user].length.sub(1)];
                 userBids[_user].pop();
             }
         }
     }
 
     /// @dev tracks the total rental payments across all Cards, to enforce minimum rental duration
-    function updateUserBid(
-        address _user,
-        uint256 _tokenId,
-        uint256 _price
-    ) external onlyMarkets returns (bool) {
+    function updateUserBid( address _user, uint256 _tokenId, uint256 _price) external onlyMarkets returns (bool) {
         if(_price != 0){
             require(userBids[_user].length < maxBidCountLimit, "Max Bid Limit Reached");
         }
@@ -415,40 +409,25 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         for (uint256 i = 0; i < userBids[_user].length; i++) {
             if (userBids[_user][i].market == _msgSender) {
                 // find the tokenId
-                for (
-                    uint256 j = 0;
-                    j < userBids[_user][i].tokenId.length;
-                    j++
-                ) {
+                for (uint256 j = 0; j < userBids[_user][i].tokenId.length; j++) {
                     if (userBids[_user][i].tokenId[j] == _tokenId) {
                         if (_price == 0) {
                             //price is 0, delete record
                             if (userBids[_user][i].tokenId.length == 1) {
                                 // There's only 1 bid in this market, just delete the whole market record
-                                userBids[_user][i] = userBids[_user][
-                                    userBids[_user].length.sub(1)
-                                ];
+                                userBids[_user][i] = userBids[_user][userBids[_user].length.sub(1)];
                                 userBids[_user].pop();
                             } else {
                                 // There's more than 1 bid in this market, delete the correct one
-                                uint256 _lastRecord =
-                                    userBids[_user][i].tokenId.length.sub(1);
-                                userBids[_user][i].tokenId[j] = userBids[_user][
-                                    i
-                                ]
-                                    .tokenId[_lastRecord];
+                                uint256 _lastRecord =userBids[_user][i].tokenId.length.sub(1);
+                                userBids[_user][i].tokenId[j] = userBids[_user][i].tokenId[_lastRecord];
                                 userBids[_user][i].tokenId.pop();
-                                userBids[_user][i].bidPrice[j] = userBids[
-                                    _user
-                                ][i]
-                                    .bidPrice[_lastRecord];
+                                userBids[_user][i].bidPrice[j] = userBids[_user][i].bidPrice[_lastRecord];
                                 userBids[_user][i].bidPrice.pop();
                             }
                         } else {
                             //price is non-zero, update record
-                            userBids[_user][i].bidPrice[j] = SafeCast.toUint128(
-                                _price
-                            );
+                            userBids[_user][i].bidPrice[j] = SafeCast.toUint128(_price);
                         }
                         _done = true;
                         break;
@@ -456,12 +435,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
                 }
                 if (!_done) {
                     //we didn't find the tokenId, add it
-                    userBids[_user][i].tokenId.push(
-                        SafeCast.toUint128(_tokenId)
-                    );
-                    userBids[_user][i].bidPrice.push(
-                        SafeCast.toUint128(_price)
-                    );
+                    userBids[_user][i].tokenId.push(SafeCast.toUint128(_tokenId));
+                    userBids[_user][i].bidPrice.push(SafeCast.toUint128(_price));
                 }
                 _done = true;
                 break;

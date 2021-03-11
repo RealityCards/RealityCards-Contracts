@@ -1072,7 +1072,7 @@ it('test winner/withdraw with invalid market and artist and creator fees', async
     await realitycards2.lockMarket(); 
     // // set winner 1
     await realitio.setResult(69);
-    var depositCreatorBefore = await treasury.deposits.call(user0);
+    var depositCreatorBefore = await treasury.userDeposit.call(user0);
     await xdaiproxy.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     await realitycards2.payArtist();

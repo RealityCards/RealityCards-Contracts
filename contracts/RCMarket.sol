@@ -647,7 +647,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         }
 
         require(treasury.updateUserBid(_msgSender, _tokenId, _newPrice));
-        assert(treasury.updateLastRentalTime(_msgSender);
+        assert(treasury.updateLastRentalTime(_msgSender));
         nonce++;
         return tokenPrice[_tokenId];
     }
