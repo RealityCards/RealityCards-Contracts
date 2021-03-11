@@ -271,6 +271,10 @@ it('check onlyOwner is on relevant xdai proxy functions', async () => {
     await expectRevert(xdaiproxy.setBridgeXdaiAddress(user0, {from: user1}), "caller is not the owner");
     await expectRevert(xdaiproxy.setFactoryAddress(user0, {from: user1}), "caller is not the owner");
     await expectRevert(xdaiproxy.setTreasuryAddress(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(xdaiproxy.setRealitioAddress(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(xdaiproxy.setArbitrator(user0, {from: user1}), "caller is not the owner");
+    await expectRevert(xdaiproxy.setTimeout(1234, {from: user1}), "caller is not the owner");
+    await expectRevert(xdaiproxy.postQuestionToOracle(user0,"x",0, {from: user1}), "Not factory");
 });
 
 
@@ -280,10 +284,6 @@ it('check onlyOwner is on relevant mainnet proxy functions', async () => {
     await expectRevert(mainnetproxy.setNftHubAddress(user0, {from: user1}), "caller is not the owner");
     await expectRevert(mainnetproxy.setAlternateReceiverAddress(user0, {from: user1}), "caller is not the owner");
     await expectRevert(mainnetproxy.setDaiAddress(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(xdaiproxy.setRealitioAddress(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(xdaiproxy.setArbitrator(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(mainnetproxy.setTimeout(1234, {from: user1}), "caller is not the owner");
-    await expectRevert(mainnetproxy.postQuestionToOracleAdmin(user0,"x",0, {from: user1}), "caller is not the owner");
     await expectRevert(mainnetproxy.upgradeCardAdmin(3,"x",user4, {from: user1}), "caller is not the owner");
     await expectRevert(mainnetproxy.changeDepositsEnabled({from: user1}), "caller is not the owner");
 });

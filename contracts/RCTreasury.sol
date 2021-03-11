@@ -68,19 +68,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     //////// EVENTS ////////////////////
     ////////////////////////////////////
 
-    event LogDepositIncreased(
-        address indexed sentBy,
-        uint256 indexed daiDeposited
-    );
-    event LogDepositWithdrawal(
-        address indexed returnedTo,
-        uint256 indexed daiWithdrawn
-    );
-    event LogAdjustDeposit(
-        address indexed user,
-        uint256 indexed amount,
-        bool increase
-    );
+    event LogDepositIncreased(address indexed sentBy, uint256 indexed daiDeposited);
+    event LogDepositWithdrawal(address indexed returnedTo, uint256 indexed daiWithdrawn);
+    event LogAdjustDeposit(address indexed user, uint256 indexed amount, bool increase);
     event LogHotPotatoPayment(address from, address to, uint256 amount);
 
     ////////////////////////////////////
@@ -122,10 +112,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev so only markets can move funds from deposits to marketPots and vice versa
     function addMarket(address _newMarket) external {
         require(msgSender() == factoryAddress, "Not factory");
-        require(
-            alternateReceiverBridgeAddress != address(0),
-            "Alternate Receiver not set"
-        );
+        require(alternateReceiverBridgeAddress != address(0), "Alternate Receiver not set");
         isMarket[_newMarket] = true;
     }
 
@@ -198,12 +185,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev it is passed the user instead of using msg.sender because might be called
     /// @dev ... via contract (fallback, newRental) or dai->xdai bot
     /// @param _user the user to credit the deposit to
-    function deposit(address _user)
-        public
-        payable
-        balancedBooks
-        returns (bool)
-    {
+    function deposit(address _user) public payable balancedBooks returns(bool) {
         require(!globalPause, "Deposits are disabled");
         require(msg.value > 0, "Must deposit something");
         require(address(this).balance <= maxContractBalance, "Limit hit");
@@ -220,18 +202,11 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev this is the only function where funds leave the contractthe 
     /// @param _dai the amount to withdraw
     /// @param _localWithdrawal if true then withdraw to the users xDai address, otherwise to the mainnet
-    function withdrawDeposit(uint256 _dai, bool _localWithdrawal)
-        external
-        balancedBooks
-    {
+    function withdrawDeposit(uint256 _dai, bool _localWithdrawal) external balancedBooks {
         require(!globalPause, "Withdrawals are disabled");
         address _msgSender = msgSender();
         require(userDeposit[_msgSender] > 0, "Nothing to withdraw");
-        require(
-            block.timestamp.sub(lastRentalTime[_msgSender]) >
-                uint256(1 days).div(minRentalDayDivisor),
-            "Too soon"
-        );
+        require(block.timestamp.sub(lastRentalTime[_msgSender]) > uint256(1 days).div(minRentalDayDivisor), "Too soon");
 
         // step 1: collect rent on all user's Cards
         uint256 _userTotalBids = 0;
@@ -255,13 +230,11 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         totalDeposits = totalDeposits.sub(_dai);
         if (_localWithdrawal) {
             address _thisAddressNotPayable = _msgSender;
-            address payable _recipient =
-                address(uint160(_thisAddressNotPayable));
+            address payable _recipient = address(uint160(_thisAddressNotPayable));
             (bool _success, ) = _recipient.call{value: _dai}("");
             require(_success, "Transfer failed");
         } else {
-            IAlternateReceiverBridge _alternateReceiverBridge =
-                IAlternateReceiverBridge(alternateReceiverBridgeAddress);
+            IAlternateReceiverBridge _alternateReceiverBridge = IAlternateReceiverBridge(alternateReceiverBridgeAddress);
             _alternateReceiverBridge.relayTokens(
                 address(this),
                 _msgSender,
@@ -274,12 +247,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
             uint256 i = 0;
             do {
                 if (isMarketActive[userBids[_msgSender][i].market]) {
-                    IRCMarket _market =
-                        IRCMarket(userBids[_msgSender][i].market);
-                    _market.exitSpecificCards(
-                        userBids[_msgSender][i].tokenId,
-                        _msgSender
-                    );
+                    IRCMarket _market = IRCMarket(userBids[_msgSender][i].market);
+                    _market.exitSpecificCards(userBids[_msgSender][i].tokenId, _msgSender);
                 } else {
                     i++;
                 }
@@ -293,12 +262,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// only markets can call these functions
 
     /// @dev a rental payment is equivalent to moving to market pot from user's deposit, called by _collectRent in the market
-    function payRent(address _user, uint256 _dai)
-        external
-        balancedBooks
-        onlyMarkets
-        returns (bool)
-    {
+    function payRent(address _user, uint256 _dai) external balancedBooks onlyMarkets returns(bool) {
         require(!globalPause, "Rentals are disabled");
         assert(userDeposit[_user] >= _dai); // assert because should have been reduced to user's deposit already
         userDeposit[_user] = userDeposit[_user].sub(_dai);
@@ -310,12 +274,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     }
 
     /// @dev a payout is equivalent to moving from market pot to user's deposit (the opposite of payRent)
-    function payout(address _user, uint256 _dai)
-        external
-        balancedBooks
-        onlyMarkets
-        returns (bool)
-    {
+    function payout(address _user, uint256 _dai) external balancedBooks onlyMarkets returns(bool) {
         require(!globalPause, "Payouts are disabled");
         assert(marketPot[msgSender()] >= _dai);
         userDeposit[_user] = userDeposit[_user].add(_dai);
@@ -327,13 +286,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     }
 
     /// @notice ability to add liqudity to the pot without being able to win (called by market sponsor function).
-    function sponsor()
-        external
-        payable
-        balancedBooks
-        onlyMarkets
-        returns (bool)
-    {
+    function sponsor() external payable balancedBooks onlyMarkets returns (bool) {
         require(!globalPause, "Global Pause is Enabled");
         marketPot[msgSender()] = marketPot[msgSender()].add(msg.value);
         totalMarketPots = totalMarketPots.add(msg.value);
