@@ -82,8 +82,8 @@ contract('TestRequireStatements', (accounts) => {
     alternateReceiverBridge = await AlternateReceiverBridgeMockup.new();
     dai = await DaiMockup.new();
     // bridge contracts
-    xdaiproxy = await XdaiProxy.new(bridge.address, rcfactory.address, treasury.address);
-    mainnetproxy = await MainnetProxy.new(bridge.address, realitio.address, nfthubmainnet.address, alternateReceiverBridge.address, dai.address, kleros);
+    xdaiproxy = await XdaiProxy.new(bridge.address, rcfactory.address, treasury.address, realitio.address, realitio.address);
+    mainnetproxy = await MainnetProxy.new(bridge.address, nfthubmainnet.address, alternateReceiverBridge.address, dai.address);
     // tell the factory, mainnet proxy and bridge the xdai proxy address
     await rcfactory.setProxyXdaiAddress(xdaiproxy.address);
     await mainnetproxy.setProxyXdaiAddress(xdaiproxy.address);
@@ -297,7 +297,7 @@ it('check that users cannot transfer their NFTs until withdraw state', async() =
     await expectRevert(nfthubxdai.safeTransferFrom(user,user1,2), "Incorrect state");
     await expectRevert(nfthubxdai.safeTransferFrom(user,user1,2,web3.utils.asciiToHex("123456789")), "Incorrect state");
     await realitio.setResult(2);
-    await mainnetproxy.getWinnerFromOracle(realitycards.address);
+    await xdaiproxy.getWinnerFromOracle(realitycards.address);
     // await realitycards.determineWinner();
     await realitycards.claimCard(2,{from:user});
     // these shoudl all fail cos wrong owner:
@@ -336,7 +336,7 @@ it('check that users cannot transfer their NFTs until withdraw state', async() =
     await expectRevert(realitycards2.payCardAffiliate(8), "Incorrect state");
     // increment state
     await realitio.setResult(1);
-    await mainnetproxy.getWinnerFromOracle(realitycards2.address);
+    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     var state = await realitycards2.state.call();
     assert.equal(3,state);

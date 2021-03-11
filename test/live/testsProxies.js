@@ -82,8 +82,8 @@ contract('TestProxies', (accounts) => {
     alternateReceiverBridge = await AlternateReceiverBridgeMockup.new();
     dai = await DaiMockup.new();
     // bridge contracts
-    xdaiproxy = await XdaiProxy.new(bridge.address, rcfactory.address, treasury.address);
-    mainnetproxy = await MainnetProxy.new(bridge.address, realitio.address, nfthubmainnet.address, alternateReceiverBridge.address, dai.address, kleros);
+    xdaiproxy = await XdaiProxy.new(bridge.address, rcfactory.address, treasury.address, realitio.address, realitio.address);
+    mainnetproxy = await MainnetProxy.new(bridge.address, nfthubmainnet.address, alternateReceiverBridge.address, dai.address);
     // tell the factory, mainnet proxy and bridge the xdai proxy address
     await rcfactory.setProxyXdaiAddress(xdaiproxy.address);
     await mainnetproxy.setProxyXdaiAddress(xdaiproxy.address);
@@ -237,37 +237,9 @@ contract('TestProxies', (accounts) => {
     await treasury.withdrawDeposit(amount,true,{ from: userx});
   }
 
-
-it('test RCProxyXdai', async () => {
-    // check reverts on other functions 
-    await expectRevert(xdaiproxy.saveQuestion(user0, "x", 0), "Not factory");
-    await expectRevert(xdaiproxy.setWinner(user0, 0), "Not bridge");
-    // test changing mainnet proxy
-    mainnetproxy2 = await MainnetProxy2.new(bridge.address, realitio.address);
-    await xdaiproxy.setProxyMainnetAddress(mainnetproxy2.address);
-    await mainnetproxy2.setProxyXdaiAddress(xdaiproxy.address);
-    await bridge.setProxyMainnetAddress(mainnetproxy2.address);
-    realitycards2 = await createMarketWithArtistSet();
-    await realitio.setResult(2);
-    // should be 69 even though 2 was set
-    await time.increase(time.duration.years(1)); 
-    await mainnetproxy2.getWinnerFromOracle(realitycards2.address);
-    var winner = await realitycards2.winningOutcome();
-    assert.equal(winner,69);
-    // test changing bridge, bridge should now have number = 69
-    bridge2 = await BridgeMockup2.new();
-    await xdaiproxy.setBridgeXdaiAddress(bridge2.address);
-    await createMarketWithArtistSet2();
-    var number = await bridge2.number();
-    assert.equal(number,69);
-    // setFactoryAddress is already tested in test uberOwner Treasury
-});
-
 it('test RCProxyMainnet various', async () => {
-    // check reverts on non owned functions 
-    // await expectRevert(mainnetproxy.postQuestionToOracle(user0, "x", 0), "Not bridge");
     // test changing xdai proxy
-    var xdaiproxy2 = await XdaiProxy2.new(bridge.address, rcfactory.address, treasury.address);
+    var xdaiproxy2 = await XdaiProxy2.new(bridge.address, rcfactory.address, treasury.address, realitio.address, treasury.address);
     await xdaiproxy2.setProxyMainnetAddress(mainnetproxy.address);
     await xdaiproxy2.setBridgeXdaiAddress(bridge.address);
     await xdaiproxy2.setFactoryAddress(rcfactory.address);
@@ -279,7 +251,7 @@ it('test RCProxyMainnet various', async () => {
     await time.increase(time.duration.years(1)); 
     await realitycards2.lockMarket(); 
     // should be 4 even though 2 was set
-    await mainnetproxy.getWinnerFromOracle(realitycards2.address);
+    await xdaiproxy2.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     var winner = await realitycards2.winningOutcome();
     assert.equal(winner,4);
@@ -293,44 +265,23 @@ it('test RCProxyMainnet various', async () => {
 it('test RCProxyMainnet, various 2', async () => {
     // change relaitio, winner should return 69
     realitio2 = await RealitioMockup2.new();
-    await mainnetproxy.setRealitioAddress(realitio2.address);
+    await xdaiproxy.setRealitioAddress(realitio2.address);
     realitycards2 = await createMarketWithArtistSet();
     await realitio2.setResult(2);
     await time.increase(time.duration.years(1));
-    await mainnetproxy.getWinnerFromOracle(realitycards2.address); 
+    await xdaiproxy.getWinnerFromOracle(realitycards2.address); 
     // await realitycards2.determineWinner();
     var winner = await realitycards2.winningOutcome();
     assert.equal(winner,69);
     // change arbitrator
-    await mainnetproxy.setArbitrator(user0);
-    var newarb = await mainnetproxy.arbitrator.call();
+    await xdaiproxy.setArbitrator(user0);
+    var newarb = await xdaiproxy.arbitrator.call();
     assert.equal(newarb,user0)
     // change timeout
-    await mainnetproxy.setTimeout(69);
-    var newtime = await mainnetproxy.timeout.call();
+    await xdaiproxy.setTimeout(69);
+    var newtime = await xdaiproxy.timeout.call();
     assert.equal(newtime,69)
 });
-
-it('test postQuestionToOracleAdmin', async () => {
-    // first, check it cant be called cos already posted
-    await expectRevert(mainnetproxy.postQuestionToOracleAdmin(realitycards.address,"x",0),"Already posted");
-    // fuck up the bridge and post a new market
-    await bridge.setProxyMainnetAddress(user0);
-    realitycards2 = await createMarketWithArtistSet();
-    await mainnetproxy.postQuestionToOracleAdmin(realitycards2.address,"x",0)
-    await realitio.setResult(2);
-    await time.increase(time.duration.years(1)); 
-    await realitycards2.lockMarket();
-    await mainnetproxy.getWinnerFromOracle(realitycards2.address);
-    // fix bridge, should work
-    await bridge.setProxyMainnetAddress(mainnetproxy.address);
-    await mainnetproxy.getWinnerFromOracle(realitycards2.address);
-    // await realitycards2.determineWinner();
-    var winner = await realitycards2.winningOutcome.call();
-    assert.equal(winner,2)
-});
-
-
 
 it('test setAmicableResolution', async () => {
     // normal setup, dont call the bridge, see if payout works
@@ -349,7 +300,7 @@ it('test setAmicableResolution', async () => {
     await time.increase(time.duration.years(1)); 
     await realitycards2.lockMarket();
     await realitio.setResult(2);
-    await mainnetproxy.getWinnerFromOracle(realitycards2.address);
+    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
     await expectRevert(xdaiproxy.setAmicableResolution(realitycards.address,2),"Incorrect state");
 });
 
@@ -366,7 +317,7 @@ it('test NFT upgrade', async () => {
     await realitio.setResult(3);
     await realitycards.lockMarket();
     await expectRevert(realitycards.upgradeCard(3, {from: user1}),"Incorrect state");
-    await mainnetproxy.getWinnerFromOracle(realitycards.address);
+    await xdaiproxy.getWinnerFromOracle(realitycards.address);
     await realitycards.withdraw({from: user1});
     await expectRevert(realitycards.upgradeCard(3, {from: user2}), "Not owner");
     await realitycards.upgradeCard(3, {from: user1});
@@ -389,7 +340,7 @@ it('test NFT upgrade', async () => {
     await time.increase(time.duration.years(1));
     await realitio.setResult(5);
     await realitycards2.lockMarket();
-    await mainnetproxy.getWinnerFromOracle(realitycards2.address);
+    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     await realitycards2.upgradeCard(5, {from: user3});
     var ownermainnet = await nfthubmainnet.ownerOf(25);

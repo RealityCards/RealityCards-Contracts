@@ -8,6 +8,7 @@ import '../interfaces/IRCProxyMainnet.sol';
 import '../interfaces/IBridge.sol';
 import '../interfaces/IRCMarket.sol';
 import '../interfaces/ITreasury.sol';
+import '../interfaces/IRealitio.sol';
 
 /// @title Reality Cards Proxy- xDai side
 /// @author Andrew Stanger & Marvin Kruse
@@ -21,6 +22,7 @@ contract RCProxyXdai is Ownable
 
     ///// CONTRACT VARIABLES /////
     IBridge public bridge;
+    IRealitio public realitio;
 
     ///// GOVERNANCE VARIABLES /////
     address public proxyMainnetAddress;
@@ -28,11 +30,10 @@ contract RCProxyXdai is Ownable
     address public treasuryAddress;
     
     ///// ORACLE VARIABLES /////
-    mapping (address => question) public questions;
-    struct question { 
-        string question;              
-        uint32 oracleResolutionTime;
-        bool set; }
+    mapping (address => bytes32) public questionIds;
+    mapping (address => bool) public questionFinalised;
+    address public arbitrator;
+    uint32 public timeout;
 
     ///// NFT UPGRADE VARIABLES /////
     mapping (address => bool) public isMarket;
@@ -65,15 +66,21 @@ contract RCProxyXdai is Ownable
     event LogFloatWithdrawn(address indexed recipient, uint256 amount);
     event LogDepositConfirmed(uint256 indexed nonce);
     event LogDepositExecuted(uint256 indexed nonce);
+    event LogQuestionPostedToOracle(address indexed marketAddress, bytes32 indexed questionId);
 
     ////////////////////////////////////
     ////////// CONSTRUCTOR /////////////
     ////////////////////////////////////
 
-    constructor(address _bridgeXdaiAddress, address _factoryAddress, address _treasuryAddress) {
+    constructor(address _bridgeXdaiAddress, address _factoryAddress, address _treasuryAddress,  address _realitioAddress, address _arbitratorAddress) {
+        // general
         setBridgeXdaiAddress(_bridgeXdaiAddress);
         setFactoryAddress(_factoryAddress);
         setTreasuryAddress(_treasuryAddress);
+        // oracle
+        setArbitrator(_arbitratorAddress);
+        setRealitioAddress(_realitioAddress);
+        setTimeout(86400); // 24 hours
     }
 
     ////////////////////////////////////
@@ -119,11 +126,28 @@ contract RCProxyXdai is Ownable
     /////// GOVERNANCE - ORACLE ////////
     ////////////////////////////////////
 
-    /// @dev admin override of the Oracle, if not yet settled, for amicable resolution, or bridge fails
+    /// @dev admin override of the Oracle, if not yet settled
     function setAmicableResolution(address _marketAddress, uint256 _winningOutcome) external onlyOwner {
-        // call the market
+        questionFinalised[_marketAddress] = true;
         IRCMarket market = IRCMarket(_marketAddress);
         market.setWinner(_winningOutcome);
+    }
+
+    /// @dev address reality.eth contracts
+    function setRealitioAddress(address _newAddress) onlyOwner public {
+        require(_newAddress != address(0), "Must set an address");
+        realitio = IRealitio(_newAddress);
+    }
+
+    /// @dev address of arbitrator, in case of continued disputes on reality.eth
+    function setArbitrator(address _newAddress) onlyOwner public {
+        require(_newAddress != address(0), "Must set an address");
+        arbitrator = _newAddress;
+    }
+
+    /// @dev how long reality.eth waits for disputes before finalising
+    function setTimeout(uint32 _newTimeout) onlyOwner public {
+        timeout = _newTimeout;
     }
 
     ////////////////////////////////////
@@ -161,33 +185,31 @@ contract RCProxyXdai is Ownable
     ///// CORE FUNCTIONS - ORACLE //////
     ////////////////////////////////////
 
-    /// @dev called by factory upon market creation (thus impossible to be called twice), posts question to Oracle via arbitrary message bridge
-    function saveQuestion(address _marketAddress, string calldata _question, uint32 _oracleResolutionTime) external {
+    /// @dev called by factory upon market creation (thus impossible to be called twice), posts question to reality.eth
+    function postQuestionToOracle(address _marketAddress, string calldata _question, uint32 _oracleResolutionTime) external {
         require(msg.sender == factoryAddress, "Not factory");
-        questions[_marketAddress].question = _question;
-        questions[_marketAddress].oracleResolutionTime = _oracleResolutionTime;
-        questions[_marketAddress].set = true;
-        postQuestionToBridge(_marketAddress);
+        bytes32 _questionId = realitio.askQuestion(2, _question, arbitrator, timeout, _oracleResolutionTime, 0);
+        questionIds[_marketAddress] = _questionId;
+        emit LogQuestionPostedToOracle(_marketAddress, _questionId);
     }
 
-    /// @dev question is posted in a different function so it can be called again if bridge fails
-    /// @dev can be called more than once, mainnet proxy will reject a second successful call
-    function postQuestionToBridge(address _marketAddress) public {
-        require(questions[_marketAddress].set, "No question");
-        bytes4 _methodSelector = IRCProxyMainnet(address(0)).postQuestionToOracle.selector;
-        bytes memory data = abi.encodeWithSelector(_methodSelector, _marketAddress, questions[_marketAddress].question, questions[_marketAddress].oracleResolutionTime);
-        bridge.requireToPassMessage(proxyMainnetAddress,data,MAINNET_BRIDGE_GAS_COST);
+    /// @notice has the oracle finalised 
+    function isFinalized(address _marketAddress) public view returns(bool) {
+        bytes32 _questionId = questionIds[_marketAddress];
+        bool _isFinalized = realitio.isFinalized(_questionId);
+        return _isFinalized;
     }
-    
-    /// @dev called by mainnet oracle proxy via the arbitrary message bridge, sets the winning outcome
+
+    /// @dev sets the winning outcome
     /// @dev market.setWinner() will revert if done twice, because wrong state
-    function setWinner(address _marketAddress, uint256 _winningOutcome) external {
-        require(msg.sender == address(bridge), "Not bridge");
-        require(bridge.messageSender() == proxyMainnetAddress, "Not proxy");
-        require(_marketAddress != address(0), "Must set an address");
+    function getWinnerFromOracle(address _marketAddress) external {
+        require(isFinalized(_marketAddress), "Oracle not finalised");
+        questionFinalised[_marketAddress] = true;
+        bytes32 _questionId = questionIds[_marketAddress];
+        bytes32 _winningOutcome = realitio.resultFor(_questionId);
         // call the market
         IRCMarket market = IRCMarket(_marketAddress);
-        market.setWinner(_winningOutcome);
+        market.setWinner(uint256(_winningOutcome));
     }
     
     ////////////////////////////////////

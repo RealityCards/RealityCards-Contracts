@@ -82,8 +82,8 @@ contract('TestFactory', (accounts) => {
     alternateReceiverBridge = await AlternateReceiverBridgeMockup.new();
     dai = await DaiMockup.new();
     // bridge contracts
-    xdaiproxy = await XdaiProxy.new(bridge.address, rcfactory.address, treasury.address);
-    mainnetproxy = await MainnetProxy.new(bridge.address, realitio.address, nfthubmainnet.address, alternateReceiverBridge.address, dai.address, kleros);
+    xdaiproxy = await XdaiProxy.new(bridge.address, rcfactory.address, treasury.address, realitio.address, realitio.address);
+    mainnetproxy = await MainnetProxy.new(bridge.address, nfthubmainnet.address, alternateReceiverBridge.address, dai.address);
     // tell the factory, mainnet proxy and bridge the xdai proxy address
     await rcfactory.setProxyXdaiAddress(xdaiproxy.address);
     await mainnetproxy.setProxyXdaiAddress(xdaiproxy.address);
@@ -431,7 +431,7 @@ it('test changeMarketApproval', async () => {
     await realitio.setResult(2);
     await time.increase(time.duration.years(1));
     await realitycards.lockMarket();
-    await mainnetproxy.getWinnerFromOracle(realitycards.address);
+    await xdaiproxy.getWinnerFromOracle(realitycards.address);
     // await realitycards.determineWinner();
     for (i = 0; i < 20; i++) {
         await realitycards.claimCard(i,{from:user0});
@@ -454,7 +454,7 @@ it('test changeMarketApproval', async () => {
     assert.equal(trapIfUnapproved,false);
     await time.increase(time.duration.years(1));
     await realitycards2.lockMarket();
-    await mainnetproxy.getWinnerFromOracle(realitycards2.address);
+    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     for (i = 0; i < 20; i++) {
         await realitycards2.claimCard(i,{from:user0});
