@@ -9,9 +9,13 @@ const {
 } = require('@openzeppelin/test-helpers');
 
 // chose the test to run by setting this to the number, or 0 to ignore these tests.
-var testChoice = 0;
+var testChoice = 4;
 // 1 = test maximum number of bids/user
 // 2 = test maximum number of bids/user - with underbidders
+// 3 = test maximum number of cards/market
+
+// maximum time to run tests for, remember Ctrl+C can cancel early
+var timeoutSeconds = 100000;
 
 // main contracts
 var RCFactory = artifacts.require('./RCFactory.sol');
@@ -290,7 +294,7 @@ contract('TestTreasury', (accounts) => {
         console.log('new market: ', markets[markets.length - 1]);
       }
 
-    }).timeout(1000000);
+    }).timeout(timeoutSeconds);
   }
   if (testChoice == 2) {
     it('test maximum number of bids/user - with underbidders', async () => {
@@ -413,6 +417,91 @@ contract('TestTreasury', (accounts) => {
       //console.log(user);
 
 
-    }).timeout(1000000);
+    }).timeout(timeoutSeconds);
+  }
+  if (testChoice == 3) {
+    it('test maximum number of cards/market', async () => {
+      var markets = [];
+      var tokenURIs = ['x']; // Start with 1 token
+      
+      //create markets
+      while (true) {
+        // create another market for the next loop and add it to the array
+        var latestTime = await time.latest();
+        var oneYear = new BN('31104000');
+        var oneYearInTheFuture = oneYear.add(latestTime);
+        var marketLockingTime = oneYearInTheFuture;
+        var oracleResolutionTime = oneYearInTheFuture;
+        var timestamps = [0, marketLockingTime, oracleResolutionTime];
+        var artistAddress = '0x0000000000000000000000000000000000000000';
+        var affiliateAddress = '0x0000000000000000000000000000000000000000';
+        var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
+        var cardRecipients = ['0x0000000000000000000000000000000000000000']
+        console.log('number of cards', tokenURIs.length);
+        await rcfactory.createMarket(
+          0,
+          '0x0',
+          timestamps,
+          tokenURIs,
+          artistAddress,
+          affiliateAddress,
+          cardRecipients,
+          question,
+        );
+        markets.push(await rcfactory.getMostRecentMarket.call(0));
+        console.log('new market: ', markets[markets.length - 1]);
+        tokenURIs.push('X');
+      }
+    }).timeout(timeoutSeconds);
+  }
+
+  if (testChoice == 4) {
+    it('test maximum number of cards/market', async () => {
+      var markets = [];
+      var tokenURIs = ['x']; // Start with 1 token
+      var tokenPrice = web3.utils.toWei('1', 'ether')
+      //create markets
+      while (true) {
+        // create another market for the next loop and add it to the array
+        var latestTime = await time.latest();
+        var oneYear = new BN('31104000');
+        var oneYearInTheFuture = oneYear.add(latestTime);
+        var marketLockingTime = oneYearInTheFuture;
+        var oracleResolutionTime = oneYearInTheFuture;
+        var timestamps = [0, marketLockingTime, oracleResolutionTime];
+        var artistAddress = '0x0000000000000000000000000000000000000000';
+        var affiliateAddress = '0x0000000000000000000000000000000000000000';
+        var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
+        var cardRecipients = ['0x0000000000000000000000000000000000000000']
+        console.log('number of cards', tokenURIs.length);
+        await rcfactory.createMarket(
+          0,
+          '0x0',
+          timestamps,
+          tokenURIs,
+          artistAddress,
+          affiliateAddress,
+          cardRecipients,
+          question,
+        );
+        markets.push(await rcfactory.getMostRecentMarket.call(0));
+        console.log('new market: ', markets[markets.length - 1]);
+        tempMarket = await RCMarket.at(markets[markets.length - 1]);
+        await depositDai(100, user0);
+        for (i = 0; i < tokenURIs.length; i++) {
+          //await newRental(1,i,user);
+          await tempMarket.newRental(tokenPrice, 0, zeroAddress, i, { from: user0 });
+        }
+
+        await time.increase(time.duration.seconds(600));
+        console.log('collecing rent on all cards ')
+        await tempMarket.collectRentAllCards();
+        await time.increase(time.duration.seconds(600));
+        //await withdrawDeposit(web3.utils.toWei('100', 'ether'),user);
+        await treasury.withdrawDeposit(web3.utils.toWei('10000', 'ether'), { from: user0 });
+
+        tokenURIs.push('X');
+      }
+    }).timeout(timeoutSeconds);
   }
 });

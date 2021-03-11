@@ -413,7 +413,7 @@ contract RCFactory is Ownable, NativeMetaTransaction {
         );
 
         // check the number of NFTs to mint is within limits
-        require(_tokenURIs.length < nftMintingLimit);
+        require(_tokenURIs.length <= nftMintingLimit, "Too many tokens to mint");
         uint256 _numberOfTokens = _tokenURIs.length;
 
         // create the market and emit the appropriate events
