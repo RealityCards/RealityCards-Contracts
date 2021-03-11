@@ -8,6 +8,11 @@ const {
   time
 } = require('@openzeppelin/test-helpers');
 
+// chose the test to run by setting this to the number, or 0 to ignore these tests.
+var testChoice = 0;
+// 1 = test maximum number of bids/user
+// 2 = test maximum number of bids/user - with underbidders
+
 // main contracts
 var RCFactory = artifacts.require('./RCFactory.sol');
 var RCTreasury = artifacts.require('./RCTreasury.sol');
@@ -211,160 +216,203 @@ contract('TestTreasury', (accounts) => {
     await treasury.withdrawDeposit(amount, { from: userx });
   }
 
+  if (testChoice == 1) {
+    it('test maximum number of bids/user', async () => {
+      var bidsPerMarket = 1; //max is 20
+      var dummyMarkets = 0;
 
-  it('check that non markets cannot call market only functions on Treasury', async () => {
-    await expectRevert(treasury.payRent(user0, user0), "Not authorised");
-    await expectRevert(treasury.payout(user0, 0), "Not authorised");
-    await expectRevert(treasury.updateUserBid(user0, 0, 0), "Not authorised");
-    await expectRevert(treasury.sponsor(), "Not authorised");
-    await expectRevert(treasury.processHarbergerPayment(user0, user0, 0), "Not authorised");
-    await expectRevert(treasury.updateLastRentalTime(user0), "Not authorised");
-  });
-
-
-  it('test setMaxContractBalance function and deposit limit hit', async () => {
-    // change deposit balance limit to 500 ether
-    await treasury.setMaxContractBalance(web3.utils.toWei('500', 'ether'));
-    // 400 should work
-    await depositDai(400, user0);
-    // another 400 should not
-    await expectRevert(treasury.deposit(user0, { value: web3.utils.toWei('500', 'ether') }), "Limit hit");
-  });
-
-  it('check cant rent or deposit if globalpause', async () => {
-    // setup
-    await depositDai(144, user0);
-    await newRental(144, 0, user0);
-    await treasury.changeGlobalPause();
-    await expectRevert(depositDai(144, user0), "Deposits are disabled");
-    await expectRevert(newRental(144, 0, user1), "Rentals are disabled");
-  });
-
-  it('check cant rent if market paused', async () => {
-    // setup
-    await treasury.changePauseMarket(realitycards.address);
-    depositDai(144, user0);
-    await expectRevert(newRental(144, 0, user0), "Rentals are disabled");
-    await time.increase(time.duration.minutes(10));
-    await withdrawDeposit(1000, user0);
-  });
+      user = user0;
+      var i = 0;
+      var j = 0;
+      var k = 0;
+      var markets = [];
+      var originalMarket = await rcfactory.getMostRecentMarket.call(0);
+      markets.push(originalMarket);
+      console.log('original market: ', markets[markets.length - 1]);
+      tokenPrice = web3.utils.toWei('1', 'ether');
+      withdrawAmount = tokenPrice * 20;
+      console.log('starting loop');
+      while (true) {
+        // we're stuck here now, hold on tight!
+        k++
+        console.log('iteration k ', k);
+        await depositDai(100, user);
+        for (j = dummyMarkets; j < k; j++) {
+          // start slowly, 1 market at a time
+          //console.log('Market index ', j);
+          tempMarket = await RCMarket.at(markets[j]);
 
 
-  it('test force sending Ether to Treasury via self destruct', async () => {
-    selfdestruct = await SelfDestructMockup.new();
-    // send ether direct to self destruct contract
-    await selfdestruct.send(web3.utils.toWei('1000', 'ether'));
-    await selfdestruct.killme(treasury.address);
-    // do a regs deposit
-    await depositDai(100, user6);
-  });
+          for (i = 0; i < bidsPerMarket; i++) {
+            //await newRental(1,i,user);
+            await tempMarket.newRental(tokenPrice, 0, zeroAddress, i, { from: user });
+          }
+        }
+        console.log('Dummy Markets ', dummyMarkets);
+        console.log('About to withdraw from ', (k * i) - dummyMarkets);
+
+        //var market = await treasury.totalDeposits();
+        //console.log(market.toString());
+        await time.increase(time.duration.seconds(600));
+
+        //await withdrawDeposit(web3.utils.toWei('100', 'ether'),user);
+        await treasury.withdrawDeposit(web3.utils.toWei('100000', 'ether'), { from: user });
+
+        await time.increase(time.duration.seconds(600));
+
+        var userBids = await treasury.userTotalBids(user);
+        console.log(userBids.toString());
+        //console.log(user);
+
+        // create another market for the next loop and add it to the array
+        var latestTime = await time.latest();
+        var oneYear = new BN('31104000');
+        var oneYearInTheFuture = oneYear.add(latestTime);
+        var marketLockingTime = oneYearInTheFuture;
+        var oracleResolutionTime = oneYearInTheFuture;
+        var timestamps = [0, marketLockingTime, oracleResolutionTime];
+        var artistAddress = '0x0000000000000000000000000000000000000000';
+        var affiliateAddress = '0x0000000000000000000000000000000000000000';
+        var tokenURIs = ['x', 'x', 'x', 'uri', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x']; // 20 tokens
+        var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
+        var cardRecipients = ['0x0000000000000000000000000000000000000000']
+        await rcfactory.createMarket(
+          0,
+          '0x0',
+          timestamps,
+          tokenURIs,
+          artistAddress,
+          affiliateAddress,
+          cardRecipients,
+          question,
+        );
+        markets.push(await rcfactory.getMostRecentMarket.call(0));
+        console.log('new market: ', markets[markets.length - 1]);
+      }
+
+    }).timeout(1000000);
+  }
+  if (testChoice == 2) {
+    it('test maximum number of bids/user - with underbidders', async () => {
+      var bidsPerMarket = 1; //max is 20
+      var dummyMarkets = 0;
+      var dummyUsers = 9;
+      var totalMarkets = 45;
+
+      user = user0;
+      var i = 0;
+      var j = 0;
+      var k = 0;
+      var markets = [];
+      var originalMarket = await rcfactory.getMostRecentMarket.call(0);
+      markets.push(originalMarket);
+      console.log('original market: ', markets[markets.length - 1]);
+      tokenPrice = web3.utils.toWei('1', 'ether');
+      priceInt = 1;
+      withdrawAmount = tokenPrice * 20;
+      console.log('starting loop');
+
+      //create markets
+      for (i = 0; i < totalMarkets; i++) {
+        // create another market for the next loop and add it to the array
+        var latestTime = await time.latest();
+        var oneYear = new BN('31104000');
+        var oneYearInTheFuture = oneYear.add(latestTime);
+        var marketLockingTime = oneYearInTheFuture;
+        var oracleResolutionTime = oneYearInTheFuture;
+        var timestamps = [0, marketLockingTime, oracleResolutionTime];
+        var artistAddress = '0x0000000000000000000000000000000000000000';
+        var affiliateAddress = '0x0000000000000000000000000000000000000000';
+        var tokenURIs = ['x', 'x', 'x', 'uri', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x']; // 20 tokens
+        var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
+        var cardRecipients = ['0x0000000000000000000000000000000000000000']
+        await rcfactory.createMarket(
+          0,
+          '0x0',
+          timestamps,
+          tokenURIs,
+          artistAddress,
+          affiliateAddress,
+          cardRecipients,
+          question,
+        );
+        markets.push(await rcfactory.getMostRecentMarket.call(0));
+        console.log('new market: ', markets[markets.length - 1]);
+      }
+
+      //dummy users placing high bids to burn their deposit fast
+      for (m = 1; m < dummyUsers + 1; m++) {
+        user = eval("user" + m);
+        await depositDai(10, user);
+        tokenPrice = web3.utils.toWei('10', 'ether');
+        console.log('Placing high bid for user ', user);
+        console.log('Market index ', m);
+        tempMarket = await RCMarket.at(markets[m]);
+        await tempMarket.newRental(tokenPrice, 0, zeroAddress, 0, { from: user });
+      }
+
+      startPrice = 1;
+      // dummy users placing incremental bids on the same cards
+      for (m = 1; m < dummyUsers + 1; m++) {
+        user = eval("user" + m);
+        //increase the price for each user
+        startPrice = startPrice * 1.1;
+        tokenPrice = web3.utils.toWei(startPrice.toString(), 'ether');
+        console.log('Placing bids for user ', user);
+        //place bids
+        for (j = 10; j < totalMarkets - 10; j++) {
+          console.log('Market index ', j);
+          tempMarket = await RCMarket.at(markets[j]);
+          await tempMarket.newRental(tokenPrice, 0, zeroAddress, 0, { from: user });
+        }
+      }
 
 
+      await time.increase(time.duration.weeks(5));
 
-  it('test updateUserBids', async () => {
-    await depositDai(10, user0);
-    await depositDai(100, user1);
-    await depositDai(10, user2);
-    await depositDai(10, user3);
-    // make a rental, check it updates the userBids
-    await newRental(5, 0, user0);
-    var totalRentals = await treasury.userTotalBids(user0);
-    assert.equal(totalRentals.toString(), ether('5').toString());
-    // make another rental and check again
-    await newRental(3, 1, user0);
-    var totalRentals = await treasury.userTotalBids(user0);
-    assert.equal(totalRentals.toString(), ether('8').toString());
-    // different market this time
-    var realitycards2 = await createMarketWithArtistSet();
-    await newRentalCustomContract(realitycards2, 1, 7, user0);
-    var totalRentals = await treasury.userTotalBids(user0);
-    assert.equal(totalRentals.toString(), ether('9').toString());
-    // increase bid, still correct? user0=10
-    await newRental(6, 0, user0);
-    var totalRentals = await treasury.userTotalBids(user0);
-    assert.equal(totalRentals.toString(), ether('10').toString());
-    // decrease bid, still correct? user0=8
-    await newRental(4, 0, user0);
-    var totalRentals = await treasury.userTotalBids(user0);
-    assert.equal(totalRentals.toString(), ether('8').toString());
-    // someone else takes it off them, are both correct? user0=8 user1=7
-    await newRental(7, 0, user1);
-    var totalRentals = await treasury.userTotalBids(user0);
-    assert.equal(totalRentals.toString(), ether('8').toString());
-    var totalRentals = await treasury.userTotalBids(user1);
-    assert.equal(totalRentals.toString(), ether('7').toString());
-    // change tokenPrice, check both are correct user0=11.5 user1=7
-    await newRental(7.5, 0, user0);
-    var totalRentals = await treasury.userTotalBids(user0);
-    assert.equal(totalRentals.toString(), ether('11.5').toString());
-    var totalRentals = await treasury.userTotalBids(user1);
-    assert.equal(totalRentals.toString(), ether('7').toString());
-    // new user exits, still correct? user0=11.5 user1=0
-    await realitycards.exit(0, { from: user1 });
-    var totalRentals = await treasury.userTotalBids(user0);
-    assert.equal(totalRentals.toString(), ether('11.5').toString());
-    var totalRentals = await treasury.userTotalBids(user1);
-    assert.equal(totalRentals.toString(), ether('0').toString());
-    // this user exits, still correct?
-    await realitycards.exit(0, { from: user0 });
-    var totalRentals = await treasury.userTotalBids(user0);
-    assert.equal(totalRentals.toString(), ether('4').toString());
-    // increase rent to 1439 (max 1440) then rent again, check it fails
-    await newRental(1435, 0, user0);
-    await expectRevert(newRental(5, 3, user0), " Insufficient deposit");
-    // someone bids even higher, I increase my bid above what I can afford, we all run out of deposit, should not return to me
-    await newRental(2000, 0, user1);
-    await time.increase(time.duration.weeks(1));
-    await realitycards.collectRentAllCards();
-    // check owned by contract
-    var owner = await realitycards.ownerOf.call(0);
-    assert.equal(owner, realitycards.address);
-  });
+      // go through the dummy markets and rent collect to burn user deposits
+      for (j = 0; j < 10; j++) {
+        tempMarket = await RCMarket.at(markets[j]);
+        await tempMarket.collectRentAllCards();
+        console.log('colleced rent on ', markets[j]);
+        user = eval("user" + j);
+        var deposit = await treasury.userDeposit.call(user);
+        console.log('user deposit left ', deposit.toString());
+      }
 
-  it('test withdraw deposit after market close', async () => {
-    user = user0
-    // create a market that'll expire soon
-    var latestTime = await time.latest();
-    var oneDay = new BN('86400');
-    var oneDayInTheFuture = oneDay.add(latestTime);
-    var marketLockingTime = oneDayInTheFuture;
-    var oracleResolutionTime = oneDayInTheFuture;
-    var timestamps = [0, marketLockingTime, oracleResolutionTime];
-    var artistAddress = '0x0000000000000000000000000000000000000000';
-    var affiliateAddress = '0x0000000000000000000000000000000000000000';
-    var tokenURIs = ['x', 'x', 'x', 'uri', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x']; // 20 tokens
-    var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
-    var cardRecipients = ['0x0000000000000000000000000000000000000000']
-    await rcfactory.createMarket(
-      0,
-      '0x0',
-      timestamps,
-      tokenURIs,
-      artistAddress,
-      affiliateAddress,
-      cardRecipients,
-      question,
-    );
-    var shortMarket = await RCMarket.at(await rcfactory.getMostRecentMarket.call(0));
-    await depositDai(100, user);
-    await shortMarket.newRental(web3.utils.toWei('1', 'ether'), 0, zeroAddress, 0, { from: user });
-    await time.increase(time.duration.seconds(86400));
-    await shortMarket.collectRentAllCards();
-    await shortMarket.lockMarket();
-    await treasury.withdrawDeposit(web3.utils.toWei('100000', 'ether'), { from: user });
-  });
+      console.log('Dummy bids placed, time accelerated ');
 
-  it('check bids are exited when user withdraws everything', async () => {
-    await depositDai(100, user0);
-    await newRental(5, 0, user0);
-    await time.increase(time.duration.days(1));
-    await treasury.withdrawDeposit(web3.utils.toWei('5', 'ether'), { from: user0 });
-    var totalRentals = await treasury.userTotalBids(user0);
-    assert.equal(totalRentals.toString(), ether('5').toString());
+      // this is the main user we care about
+      startPrice = startPrice * 1.1;
+      tokenPrice = web3.utils.toWei(startPrice.toString(), 'ether')
+      user = user0
+      await depositDai(100, user);
+      for (j = 10; j < totalMarkets - 10; j++) {
+        tempMarket = await RCMarket.at(markets[j]);
+        await tempMarket.newRental(tokenPrice, 0, zeroAddress, 0, { from: user });
+      }
+      //console.log('Dummy Markets ', dummyMarkets);
+      console.log('About to withdraw main user ',);
+      var userBids = await treasury.userTotalBids(user);
+      console.log(userBids.toString());
+      console.log('main user is: ', user);
+      var owner = await tempMarket.ownerOf(0)
+      console.log('card owner is ', owner)
 
-    await treasury.withdrawDeposit(web3.utils.toWei('1000', 'ether'), { from: user0 });
-    var owner = await realitycards.ownerOf.call(0);
-    assert.notEqual(owner, user0);
-  });
+      //var market = await treasury.totalDeposits();
+      //console.log(market.toString());
+      await time.increase(time.duration.seconds(600));
 
+      //await withdrawDeposit(web3.utils.toWei('100', 'ether'),user);
+      await treasury.withdrawDeposit(web3.utils.toWei('10000', 'ether'), { from: user });
+
+      await time.increase(time.duration.seconds(600));
+
+      var userBids = await treasury.userTotalBids(user);
+      console.log(userBids.toString());
+      //console.log(user);
+
+
+    }).timeout(1000000);
+  }
 });
