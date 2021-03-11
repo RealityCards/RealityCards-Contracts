@@ -52,6 +52,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     uint256 public minRentalDayDivisor;
     /// @dev max deposit balance, to minimise funds at risk
     uint256 public maxContractBalance;
+    /// @dev the maximum number of bids a user is allowed
+    uint256 public maxBidCountLimit;
 
     ///// SAFETY /////
     /// @dev if true, cannot deposit, withdraw or rent any cards across all events
@@ -144,6 +146,10 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     function setMaxContractBalance(uint256 _newBalanceLimit) public onlyOwner {
         maxContractBalance = _newBalanceLimit;
     }
+    /// @dev max bid limit, to fit within gas limits
+    function setMaxBidLimit(uint256 _newBidLimit) public onlyOwner {
+        maxBidCountLimit = _newBidLimit;
+    }
 
     /// NOT CALLED WITHIN CONSTRUCTOR (external)
 
@@ -211,7 +217,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     }
 
     /// @notice withdraw a users deposit either directly or over the bridge to the mainnet
-    /// @dev this is the only function where funds leave the contract
+    /// @dev this is the only function where funds leave the contractthe 
     /// @param _dai the amount to withdraw
     /// @param _localWithdrawal if true then withdraw to the users xDai address, otherwise to the mainnet
     function withdrawDeposit(uint256 _dai, bool _localWithdrawal)
@@ -381,7 +387,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     }
 
     /// @dev removes all non-active markets from the users bid array
-    /// @dev can also be passed an array of indicies to remove
     function cleanUserBidArray(address _user) public {
         for (uint256 i = userBids[_user].length; i > 0; i--) {
             if (!isMarketActive[userBids[_user][i.sub(1)].market]) {
@@ -400,6 +405,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         uint256 _tokenId,
         uint256 _price
     ) external onlyMarkets returns (bool) {
+        if(_price != 0){
+            require(userBids[_user].length < maxBidCountLimit, "Max Bid Limit Reached");
+        }
         bool _done = false;
         // in this case msgSender is the market
         address _msgSender = msgSender();
