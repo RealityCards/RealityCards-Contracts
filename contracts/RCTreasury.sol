@@ -142,7 +142,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// NOT CALLED WITHIN CONSTRUCTOR (external)
 
     /// @dev address of alternate receiver bridge, xdai side
-    function setAlternateReceiverAddress(address _newAddress) public onlyOwner {
+    function setAlternateReceiverAddress(address _newAddress) external onlyOwner {
         require(_newAddress != address(0), "Must set an address");
         alternateReceiverBridgeAddress = _newAddress;
     }
