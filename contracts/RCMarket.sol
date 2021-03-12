@@ -26,7 +26,9 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @dev = how many outcomes/teams/NFTs etc
     uint256 public numberOfTokens;
     /// @dev only for _revertToUnderbidder to prevent gas limits
-    uint256 public constant MAX_ITERATIONS = 10;
+    uint256 public constant UNDERBID_MAX_ITERATIONS = 10;
+    /// @dev to prevent hitting gas limits during _placeInList
+    uint256 public constant LIST_MAX_ITERATIONS = 100;
     uint256 public constant MAX_UINT256 = type(uint256).max;
     uint256 public constant MAX_UINT128 = type(uint128).max;
     uint256 public constant MIN_RENTAL_VALUE = 1 ether;
@@ -891,9 +893,9 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                 // break loop if price x% above below
                 _newPrice < _requiredPrice &&
                 // break loop if hits max iterations
-                _loopCount < MAX_ITERATIONS
+                _loopCount < LIST_MAX_ITERATIONS
         );
-        require(_loopCount < MAX_ITERATIONS, "Location too high");
+        require(_loopCount < LIST_MAX_ITERATIONS, "Location too high");
 
         // reduce user's price to the user above them in the list if necessary, so prices are in order
         if (orderbook[_tokenId][_tempPrev].price < _newPrice) {
@@ -930,7 +932,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             uint256 _nextUserTotalBids = treasury.userTotalBids(_tempNext).add(orderbook[_tokenId][_tempNext].price);
             _requiredDeposit = _nextUserTotalBids.div(minRentalDayDivisor);
             _loopCount = _loopCount.add(1);
-        } while (_tempNext != address(this) && _tempNextDeposit < _requiredDeposit && _loopCount < MAX_ITERATIONS);
+        } while (_tempNext != address(this) && _tempNextDeposit < _requiredDeposit && _loopCount < UNDERBID_MAX_ITERATIONS);
         // transfer to previous owner
         exitedTimestamp[ownerOf(_tokenId)] = block.timestamp;
         _processNewOwner(_tempNext, orderbook[_tokenId][_tempNext].price, _tokenId);
