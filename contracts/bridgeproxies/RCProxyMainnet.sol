@@ -12,7 +12,7 @@ import "../interfaces/IERC20Dai.sol";
 import "../interfaces/IERC721.sol";
 
 /// @title Reality Cards Proxy- Mainnet side
-/// @author Andrew Stanger & Marvin Kruse
+/// @author Andrew Stanger, Marvin Kruse & Daniel Chilvers
 /// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!!
 contract RCProxyMainnet is Ownable {
     using SafeMath for uint256;
@@ -61,32 +61,38 @@ contract RCProxyMainnet is Ownable {
     /////// GOVERNANCE - SETUP /////////
     ////////////////////////////////////
 
-    /// @dev address of xdai oracle proxy, called by the xdai side of the arbitrary message bridge
+    /// @notice address of xdai oracle proxy, called by the xdai side of the arbitrary message bridge
     /// @dev not set in constructor, address not known at deployment
+    /// @param _newAddress the new address to set
     function setProxyXdaiAddress(address _newAddress) external onlyOwner {
         require(_newAddress != address(0), "Must set an address");
         proxyXdaiAddress = _newAddress;
     }
 
-    /// @dev address of arbitrary message bridge, mainnet side
+    /// @notice to set the address of arbitrary message bridge, mainnet side
+    /// @param _newAddress the new address to set
     function setBridgeMainnetAddress(address _newAddress) public onlyOwner {
         require(_newAddress != address(0), "Must set an address");
         bridge = IBridge(_newAddress);
     }
 
-    /// @dev address of alternate receiver bridge, mainnet side
+    /// @notice to set the address of the NftHub 
+    /// @param _newAddress the new address to set
     function setNftHubAddress(address _newAddress) public onlyOwner {
         require(_newAddress != address(0), "Must set an address");
         nfthub = IERC721(_newAddress);
     }
 
-    /// @dev address of alternate receiver bridge, mainnet side
+    /// @notice the address of alternate receiver bridge, mainnet side
+    /// @param _newAddress the new address to set
     function setAlternateReceiverAddress(address _newAddress) public onlyOwner {
         require(_newAddress != address(0), "Must set an address");
         alternateReceiverBridge = IAlternateReceiverBridge(_newAddress);
     }
 
-    /// @dev address of dai contract, must also approve the ARB
+    /// @notice to set the address of dai contract 
+    /// @dev must also approve the ARB
+    /// @param _newAddress the new address to set
     function setDaiAddress(address _newAddress) public onlyOwner {
         require(_newAddress != address(0), "Must set an address");
         dai = IERC20Dai(_newAddress);
@@ -112,6 +118,7 @@ contract RCProxyMainnet is Ownable {
     ///// GOVERNANCE - DAI BRIDGE //////
     ////////////////////////////////////
 
+    /// @notice toggles depsoits allowed or not
     function changeDepositsEnabled() external onlyOwner {
         depositsEnabled = !depositsEnabled;
     }
@@ -136,12 +143,14 @@ contract RCProxyMainnet is Ownable {
     //// CORE FUNCTIONS - DAI BRIDGE ///
     ////////////////////////////////////
 
+    /// @notice Deposit Dai to the Treasury
     /// @dev user deposit assuming prior approval
+    /// @param _amount the value to send in wei
     function depositDai(uint256 _amount) external {
         _depositDai(msg.sender, _amount);
     }
 
-    /// @dev user deposit without prior approval
+    /// @notice Deposit Dai without prior approval
     function permitAndDepositDai(
         address holder,
         address spender,

@@ -41,9 +41,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         uint128[] bidPrice;
     }
     /// @dev maps a user address to an array of their bids
-    mapping(address => Bid[]) userBids;
+    mapping(address => Bid[]) public userBids;
     /// @dev a quick check if the market is active or not
-    mapping(address => bool) isMarketActive;
+    mapping(address => bool) public isMarketActive;
 
     ///// GOVERNANCE VARIABLES /////
     /// @dev only parameters that need to be are here, the rest are in the Factory
