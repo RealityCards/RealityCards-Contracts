@@ -255,7 +255,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     ////////////////////////////////////
     /// only markets can call these functions
 
-    /// @dev a rental payment is equivalent to moving to market pot from user's deposit, called by _collectRent in the market
+    /// @dev a rental payment is equivalent to moving from user's deposit to market pot, called by _collectRent in the market
     function payRent(address _user, uint256 _dai) external balancedBooks onlyMarkets returns (bool) {
         require(!globalPause, "Rentals are disabled");
         assert(userDeposit[_user] >= _dai); // assert because should have been reduced to user's deposit already

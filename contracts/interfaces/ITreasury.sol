@@ -21,5 +21,6 @@ interface ITreasury
     function minRentalDayDivisor() external returns (uint256);
     function maxContractBalance() external returns (uint256);
     function marketPaused(address _market) external returns(bool);
+    function globalPause() external returns(bool);
     function cleanUserBidArray(address _user) external;
 } 

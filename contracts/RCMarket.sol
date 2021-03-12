@@ -35,7 +35,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @dev type of event.
     enum Mode { CLASSIC, WINNER_TAKES_ALL, HOT_POTATO }
     Mode public mode;
-    /// @dev so the Factory can check its a market
+    /// @dev so the Factory can check it's a market
     bool public constant isMarket = true;
     /// @dev counts the total NFTs minted across all events at the time market created
     /// @dev nft tokenId = card Id + totalNftMintCount
@@ -546,7 +546,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         require(_tokenId < numberOfTokens, "This token does not exist");
         address _msgSender = msgSender();
         require(exitedTimestamp[_msgSender] != block.timestamp, "Cannot lose and re-rent in same block");
-        require(!treasury.marketPaused(address(this)), "Rentals are disabled");
+        require(!treasury.marketPaused(address(this)) && !treasury.globalPause(), "Rentals are disabled");
 
         _collectRent(_tokenId);
 
