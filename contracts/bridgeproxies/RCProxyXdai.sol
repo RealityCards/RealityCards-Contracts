@@ -215,11 +215,12 @@ contract RCProxyXdai is Ownable {
     /// @dev market.setWinner() will revert if done twice, because wrong state
     function getWinnerFromOracle(address _marketAddress) external {
         require(isFinalized(_marketAddress), "Oracle not finalised");
+        IRCMarket market = IRCMarket(_marketAddress);
+        require(market.state() == IRCMarket.States.LOCKED, "Market not finished");
         questionFinalised[_marketAddress] = true;
         bytes32 _questionId = questionIds[_marketAddress];
         bytes32 _winningOutcome = realitio.resultFor(_questionId);
         // call the market
-        IRCMarket market = IRCMarket(_marketAddress);
         market.setWinner(uint256(_winningOutcome));
     }
 

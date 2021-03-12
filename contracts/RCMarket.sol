@@ -364,6 +364,8 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @param _winningOutcome the index of the winning card
     function setWinner(uint256 _winningOutcome) external {
         if (state == States.OPEN) {
+            // change the locking time to allow lockMarket to lock
+            marketLockingTime = SafeCast.toUint32(block.timestamp);
             lockMarket();
         }
         _checkState(States.LOCKED);
