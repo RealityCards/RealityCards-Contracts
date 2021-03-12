@@ -311,8 +311,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
     /// @dev provides the sum total of a users bids accross all markets
     function userTotalBids(address _user) external view returns (uint256) {
-        //uint256[] memory _indicies = new uint256[](0);
-        //cleanUserBidArray(_user,_indicies);
         uint256 _userTotalBids = 0;
         for (uint256 i; i < userBids[_user].length; i++) {
             for (uint256 j; j < userBids[_user][i].tokenId.length; j++) {
@@ -323,7 +321,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     }
 
     /// @dev removes all non-active markets from the users bid array
-    function cleanUserBidArray(address _user) public {
+    function cleanUserBidArray(address _user) external {
         for (uint256 i = userBids[_user].length; i > 0; i--) {
             if (!isMarketActive[userBids[_user][i.sub(1)].market]) {
                 // This market isn't active, lets remove it
