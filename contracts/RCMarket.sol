@@ -361,6 +361,8 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     }
 
     /// @notice called by proxy, sets the winner
+    /// @dev the proxy checks if the market has locked already so
+    /// @dev .. that the market can't be closed early by the oracle.
     /// @param _winningOutcome the index of the winning card
     function setWinner(uint256 _winningOutcome) external {
         if (state == States.OPEN) {
