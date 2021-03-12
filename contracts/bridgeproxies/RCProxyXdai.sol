@@ -47,6 +47,7 @@ contract RCProxyXdai is Ownable {
     uint256 public constant MAINNET_BRIDGE_GAS_COST = 200000;
     uint256 public validatorCount;
     mapping(address => bool) public isValidator;
+    // each deposit is given a nonce and stored here
     mapping(uint256 => Deposit) public deposits;
     mapping(uint256 => mapping(address => bool)) public hasConfirmedDeposit;
     /// @dev so only the float can be withdrawn and no more
