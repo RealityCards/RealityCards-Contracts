@@ -283,8 +283,8 @@ contract RCProxyXdai is Ownable
             deposits[_nonce].executed = true;
             emit LogDepositExecuted(_nonce);
             ITreasury treasury = ITreasury(treasuryAddress);
-            // if Treasury will allow the deposit, send it there
-            if (address(treasury).balance.add(_amount) <= treasury.maxContractBalance()) {
+            // if Treasury will allow the deposit and globalPause is off, send it there
+            if (address(treasury).balance.add(_amount) <= treasury.maxContractBalance() && !treasury.globalPause()) {
                 assert(treasury.deposit{value:_amount}(_user));
             // otherwise, just send to the user
             } else {
