@@ -5,17 +5,16 @@ import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import '../interfaces/IRCProxyXdai.sol';
-import '../interfaces/IBridge.sol';
-import '../interfaces/IAlternateReceiverBridge.sol';
-import '../interfaces/IERC20Dai.sol';
-import '../interfaces/IERC721.sol';
+import "../interfaces/IRCProxyXdai.sol";
+import "../interfaces/IBridge.sol";
+import "../interfaces/IAlternateReceiverBridge.sol";
+import "../interfaces/IERC20Dai.sol";
+import "../interfaces/IERC721.sol";
 
 /// @title Reality Cards Proxy- Mainnet side
 /// @author Andrew Stanger & Marvin Kruse
 /// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!!
-contract RCProxyMainnet is Ownable
-{
+contract RCProxyMainnet is Ownable {
     using SafeMath for uint256;
 
     ////////////////////////////////////
@@ -31,7 +30,7 @@ contract RCProxyMainnet is Ownable
     /// @dev governance variables
     address public proxyXdaiAddress;
     address public nftHubAddress;
-    
+
     /// @dev dai deposits
     uint256 internal depositNonce;
     bool internal depositsEnabled = true;
@@ -40,11 +39,16 @@ contract RCProxyMainnet is Ownable
     ////////// CONSTRUCTOR /////////////
     ////////////////////////////////////
 
-    constructor(address _bridgeMainnetAddress, address _nftHubAddress, address _alternateReceiverAddress, address _daiAddress) {
+    constructor(
+        address _bridgeMainnetAddress,
+        address _nftHubAddress,
+        address _alternateReceiverAddress,
+        address _daiAddress
+    ) {
         setBridgeMainnetAddress(_bridgeMainnetAddress);
         setNftHubAddress(_nftHubAddress);
         setAlternateReceiverAddress(_alternateReceiverAddress);
-        setDaiAddress(_daiAddress); 
+        setDaiAddress(_daiAddress);
     }
 
     ////////////////////////////////////
@@ -56,34 +60,34 @@ contract RCProxyMainnet is Ownable
     ////////////////////////////////////
     /////// GOVERNANCE - SETUP /////////
     ////////////////////////////////////
-    
+
     /// @dev address of xdai oracle proxy, called by the xdai side of the arbitrary message bridge
     /// @dev not set in constructor, address not known at deployment
-    function setProxyXdaiAddress(address _newAddress) onlyOwner external {
+    function setProxyXdaiAddress(address _newAddress) external onlyOwner {
         require(_newAddress != address(0), "Must set an address");
         proxyXdaiAddress = _newAddress;
     }
 
     /// @dev address of arbitrary message bridge, mainnet side
-    function setBridgeMainnetAddress(address _newAddress) onlyOwner public {
+    function setBridgeMainnetAddress(address _newAddress) public onlyOwner {
         require(_newAddress != address(0), "Must set an address");
         bridge = IBridge(_newAddress);
     }
 
     /// @dev address of alternate receiver bridge, mainnet side
-    function setNftHubAddress(address _newAddress) onlyOwner public {
+    function setNftHubAddress(address _newAddress) public onlyOwner {
         require(_newAddress != address(0), "Must set an address");
         nfthub = IERC721(_newAddress);
     }
 
     /// @dev address of alternate receiver bridge, mainnet side
-    function setAlternateReceiverAddress(address _newAddress) onlyOwner public {
+    function setAlternateReceiverAddress(address _newAddress) public onlyOwner {
         require(_newAddress != address(0), "Must set an address");
         alternateReceiverBridge = IAlternateReceiverBridge(_newAddress);
     }
 
     /// @dev address of dai contract, must also approve the ARB
-    function setDaiAddress(address _newAddress) onlyOwner public {
+    function setDaiAddress(address _newAddress) public onlyOwner {
         require(_newAddress != address(0), "Must set an address");
         dai = IERC20Dai(_newAddress);
         dai.approve(address(alternateReceiverBridge), type(uint256).max);
@@ -95,16 +99,20 @@ contract RCProxyMainnet is Ownable
 
     /// @dev admin can create NFTs
     /// @dev for situations where bridge failed
-    function upgradeCardAdmin(uint256 _newTokenId, string calldata _tokenUri, address _owner) onlyOwner external {
+    function upgradeCardAdmin(
+        uint256 _newTokenId,
+        string calldata _tokenUri,
+        address _owner
+    ) external onlyOwner {
         require(_owner != address(0), "Must set an address");
         nfthub.mintNft(_newTokenId, _tokenUri, _owner);
-    }  
+    }
 
     ////////////////////////////////////
     ///// GOVERNANCE - DAI BRIDGE //////
     ////////////////////////////////////
 
-    function changeDepositsEnabled() onlyOwner external {
+    function changeDepositsEnabled() external onlyOwner {
         depositsEnabled = !depositsEnabled;
     }
 
@@ -113,12 +121,16 @@ contract RCProxyMainnet is Ownable
     ////////////////////////////////////
 
     /// @notice mints NFT with metadata as sent by proxy
-    function upgradeCard(uint256 _newTokenId, string calldata _tokenUri, address _owner) external {
+    function upgradeCard(
+        uint256 _newTokenId,
+        string calldata _tokenUri,
+        address _owner
+    ) external {
         require(msg.sender == address(bridge), "Not bridge");
         require(bridge.messageSender() == proxyXdaiAddress, "Not proxy");
         require(_owner != address(0), "Must set an address");
         nfthub.mintNft(_newTokenId, _tokenUri, _owner);
-    }  
+    }
 
     ////////////////////////////////////
     //// CORE FUNCTIONS - DAI BRIDGE ///
@@ -126,17 +138,27 @@ contract RCProxyMainnet is Ownable
 
     /// @dev user deposit assuming prior approval
     function depositDai(uint256 _amount) external {
-        _depositDai(msg.sender, _amount); 
+        _depositDai(msg.sender, _amount);
     }
 
     /// @dev user deposit without prior approval
-    function permitAndDepositDai(address holder, address spender, uint256 nonce, uint256 expiry, bool allowed, uint8 v, bytes32 r, bytes32 s, uint256 _amount) external {
+    function permitAndDepositDai(
+        address holder,
+        address spender,
+        uint256 nonce,
+        uint256 expiry,
+        bool allowed,
+        uint8 v,
+        bytes32 r,
+        bytes32 s,
+        uint256 _amount
+    ) external {
         require(allowed, "only possible if allowance is set");
         dai.permit(holder, spender, nonce, expiry, allowed, v, r, s);
         _depositDai(holder, _amount);
     }
 
-    /// @dev send Dai to xDai proxy and emit event for offchain validator 
+    /// @dev send Dai to xDai proxy and emit event for offchain validator
     function _depositDai(address _sender, uint256 _amount) internal {
         require(depositsEnabled, "Deposits disabled");
         emit DaiDeposited(_sender, _amount, depositNonce.add(1));

@@ -4,5 +4,6 @@
     "prettier.printWidth": 140,
     "prettier.proseWrap": "never",
     "prettier.useTabs": false,
-    "prettier.tabWidth": 4
+    "prettier.tabWidth": 4,
+    "editor.formatOnSave": true
 }
