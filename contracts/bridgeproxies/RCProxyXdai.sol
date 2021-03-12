@@ -134,6 +134,7 @@ contract RCProxyXdai is Ownable {
     ////////////////////////////////////
 
     /// @dev admin override of the Oracle, if not yet settled
+    /// @dev doesn't check market state, so can close market early
     function setAmicableResolution(address _marketAddress, uint256 _winningOutcome) external onlyOwner {
         questionFinalised[_marketAddress] = true;
         IRCMarket market = IRCMarket(_marketAddress);
@@ -216,6 +217,7 @@ contract RCProxyXdai is Ownable {
     function getWinnerFromOracle(address _marketAddress) external {
         require(isFinalized(_marketAddress), "Oracle not finalised");
         IRCMarket market = IRCMarket(_marketAddress);
+        // check market state to prevent market closing early
         require(market.state() == IRCMarket.States.LOCKED, "Market not finished");
         questionFinalised[_marketAddress] = true;
         bytes32 _questionId = questionIds[_marketAddress];
