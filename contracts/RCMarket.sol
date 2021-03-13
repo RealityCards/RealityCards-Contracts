@@ -608,7 +608,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @dev doesn't need to be current owner so user can prevent ownership returning to them
     /// @dev does not apply minimum rental duration, because it returns ownership to the next user
     /// @param _tokenId The token index to exit
-    function exit(uint256 _tokenId) public {
+    function exit(uint256 _tokenId) external {
         _exit(_tokenId, address(0));
     }
 
@@ -635,7 +635,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         _checkNotState(States.WITHDRAW);
         require(msg.value > 0, "Must send something");
         // send funds to the Treasury
-        assert(treasury.sponsor{ value: msg.value }());
+        require(treasury.sponsor{ value: msg.value }());
         totalRentCollected = totalRentCollected.add(msg.value);
         // just so user can get it back if invalid outcome
         rentCollectedPerUser[msgSender()] = rentCollectedPerUser[msgSender()].add(msg.value);
