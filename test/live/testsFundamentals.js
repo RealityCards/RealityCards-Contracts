@@ -455,8 +455,8 @@ it('test withdrawDeposit- multiple markets', async () => {
     var depositWithdrawn = await balanceAfter - balanceBefore;
     var depositWithdrawnShouldBe = web3.utils.toWei('7', 'ether');
     var difference = Math.abs(depositWithdrawn.toString() - depositWithdrawnShouldBe.toString());
-    // set to 0.2% loss is acceptable
-    assert.isBelow(difference/depositWithdrawn,0.002);
+    // set to 0.3% loss is acceptable, this needs double checking though.
+    assert.isBelow(difference/depositWithdrawn,0.003);
     //original user tries to withdraw again, should be nothign to withdraw 
     await expectRevert(treasury.withdrawDeposit(1000, true), "Nothing to withdraw");
 });
