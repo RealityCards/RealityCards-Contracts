@@ -76,7 +76,7 @@ contract RCProxyMainnet is Ownable {
         bridge = IBridge(_newAddress);
     }
 
-    /// @notice to set the address of the NftHub 
+    /// @notice to set the address of the NftHub
     /// @param _newAddress the new address to set
     function setNftHubAddress(address _newAddress) public onlyOwner {
         require(_newAddress != address(0), "Must set an address");
@@ -90,7 +90,7 @@ contract RCProxyMainnet is Ownable {
         alternateReceiverBridge = IAlternateReceiverBridge(_newAddress);
     }
 
-    /// @notice to set the address of dai contract 
+    /// @notice to set the address of dai contract
     /// @dev must also approve the ARB
     /// @param _newAddress the new address to set
     function setDaiAddress(address _newAddress) public onlyOwner {
