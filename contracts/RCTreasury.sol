@@ -38,10 +38,12 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     struct Bid {
         address market;
         uint128[] tokenIds;
-        uint128[] bidPrice;
+        uint128[] bidPrices;
     }
     /// @dev maps a user address to an array of their bids
     mapping(address => Bid[]) public userBids;
+    /// @dev total number of user bids, uses less gas than counting the array every time
+    mapping(address => uint256) public userBidCount;
     /// @dev a quick check if the market is active or not
     mapping(address => bool) public isMarketActive;
 
@@ -214,7 +216,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
             IRCMarket _market = IRCMarket(userBids[_msgSender][i].market);
             _market.collectRentSpecificCards(userBids[_msgSender][i].tokenIds);
             for (uint256 j; j < userBids[_msgSender][i].tokenIds.length; j++) {
-                _userTotalBids = _userTotalBids.add(userBids[_msgSender][i].bidPrice[j]);
+                _userTotalBids = _userTotalBids.add(userBids[_msgSender][i].bidPrices[j]);
             }
         }
 
@@ -315,7 +317,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         uint256 _userTotalBids = 0;
         for (uint256 i; i < userBids[_user].length; i++) {
             for (uint256 j; j < userBids[_user][i].tokenIds.length; j++) {
-                _userTotalBids = _userTotalBids.add(userBids[_user][i].bidPrice[j]);
+                _userTotalBids = _userTotalBids.add(userBids[_user][i].bidPrices[j]);
             }
         }
         return _userTotalBids;
@@ -339,7 +341,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         uint256 _price
     ) external onlyMarkets returns (bool) {
         if (_price != 0) {
-            require(userBids[_user].length < maxBidCountLimit, "Max Bid Limit Reached");
+            require(userBidCount[_user] < maxBidCountLimit, "Max Bid Limit Reached");
         }
         bool _done = false;
         // in this case msgSender is the market
@@ -361,12 +363,13 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
                                 uint256 _lastRecord = userBids[_user][i].tokenIds.length.sub(1);
                                 userBids[_user][i].tokenIds[j] = userBids[_user][i].tokenIds[_lastRecord];
                                 userBids[_user][i].tokenIds.pop();
-                                userBids[_user][i].bidPrice[j] = userBids[_user][i].bidPrice[_lastRecord];
-                                userBids[_user][i].bidPrice.pop();
+                                userBids[_user][i].bidPrices[j] = userBids[_user][i].bidPrices[_lastRecord];
+                                userBids[_user][i].bidPrices.pop();
                             }
+                            userBidCount[_user] = userBidCount[_user].sub(1);
                         } else {
                             //price is non-zero, update record
-                            userBids[_user][i].bidPrice[j] = SafeCast.toUint128(_price);
+                            userBids[_user][i].bidPrices[j] = SafeCast.toUint128(_price);
                         }
                         _done = true;
                         break;
@@ -375,7 +378,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
                 if (!_done) {
                     //we didn't find the tokenId, add it
                     userBids[_user][i].tokenIds.push(SafeCast.toUint128(_tokenId));
-                    userBids[_user][i].bidPrice.push(SafeCast.toUint128(_price));
+                    userBids[_user][i].bidPrices.push(SafeCast.toUint128(_price));
+                    userBidCount[_user] = userBidCount[_user].add(1);
                 }
                 _done = true;
                 break;
@@ -386,7 +390,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
             userBids[_user].push();
             userBids[_user][userBids[_user].length.sub(1)].market = _msgSender;
             userBids[_user][userBids[_user].length.sub(1)].tokenIds.push(SafeCast.toUint128(_tokenId));
-            userBids[_user][userBids[_user].length.sub(1)].bidPrice.push(SafeCast.toUint128(_price));
+            userBids[_user][userBids[_user].length.sub(1)].bidPrices.push(SafeCast.toUint128(_price));
+            userBidCount[_user] = userBidCount[_user].add(1);
             _done = true;
         }
         return _done;
