@@ -241,6 +241,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
             uint256 i = 0;
             do {
                 if (isMarketActive[userBids[_msgSender][i].market]) {
+                    // not incrementing i because exit cards shortens the length of the array
                     IRCMarket _market = IRCMarket(userBids[_msgSender][i].market);
                     _market.exitSpecificCards(userBids[_msgSender][i].tokenIds, _msgSender);
                 } else {
