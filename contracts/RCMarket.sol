@@ -353,7 +353,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @dev public because called within autoLock modifier & setWinner
     function lockMarket() public {
         _checkState(States.OPEN);
-        require(marketLockingTime < block.timestamp, "Market has not finished");
+        require(marketLockingTime <= block.timestamp, "Market has not finished");
         // do a final rent collection before the contract is locked down
         collectRentAllCards();
         // let the treasury know the market is closed

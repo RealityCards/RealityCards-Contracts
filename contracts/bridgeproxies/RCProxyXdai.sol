@@ -219,7 +219,7 @@ contract RCProxyXdai is Ownable {
         require(isFinalized(_marketAddress), "Oracle not finalised");
         IRCMarket market = IRCMarket(_marketAddress);
         // check market state to prevent market closing early
-        require(market.state() == IRCMarket.States.LOCKED, "Market not finished");
+        require(uint256(market.marketLockingTime()) <= block.timestamp, "Market not finished");
         questionFinalised[_marketAddress] = true;
         bytes32 _questionId = questionIds[_marketAddress];
         bytes32 _winningOutcome = realitio.resultFor(_questionId);
