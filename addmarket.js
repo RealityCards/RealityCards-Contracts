@@ -6,10 +6,10 @@ var factoryAddress = '0xe1Ab9305DA70b865d610116163A82E1fDF6cCcFD'; //testnet on 
 
 // variables market specific
 var marketOpeningTime = 0;
-var marketLockingTime = 1614978000; 
-var oracleResolutionTime = 1614978000; 
-var ipfsHash = 'QmWVz1ZohpnHWmq3qTyKqLavHfHva82Foy7MMJ9sbW6JT7';
-var question = 'What will the price of Gamestop stock be at the closing bell on Friday 5th March?';
+var marketLockingTime = 1619823600; 
+var oracleResolutionTime = 1619823600; 
+var ipfsHash = 'QmeN8AF7CiqB3xknqNnB7hTvSWJTopnCY3jY7ChUZMRmFF';
+var question = 'Will CZ/Binance be fined by CFTC for more than $10m by May 1st?';
 var artistAddress = "0x0000000000000000000000000000000000000000";
 var affiliateAddress = "0x0000000000000000000000000000000000000000";
 var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000'];
@@ -20,11 +20,8 @@ var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000'];
 
 var timestamps = [marketOpeningTime,marketLockingTime,oracleResolutionTime];
 var tokenURIs = [
-    'https://cdn.realitycards.io/nftmetadata/gme/token0.json',
-    'https://cdn.realitycards.io/nftmetadata/gme/token1.json',
-    'https://cdn.realitycards.io/nftmetadata/gme/token2.json',
-    'https://cdn.realitycards.io/nftmetadata/gme/token3.json',
-    'https://cdn.realitycards.io/nftmetadata/gme/token4.json',
+    'https://cdn.realitycards.io/nftmetadata/binance/token0.json',
+    'https://cdn.realitycards.io/nftmetadata/binance/token1.json',
 ]; 
 
 module.exports = function() {
