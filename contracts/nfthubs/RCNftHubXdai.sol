@@ -1,14 +1,15 @@
-pragma solidity 0.5.13;
+// SPDX-License-Identifier: UNDEFINED
+pragma solidity ^0.7.5;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721Full.sol";
-import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "hardhat/console.sol";
 import '../interfaces/IRCProxyXdai.sol';
 import '../interfaces/IRCMarket.sol';
 
 /// @title Reality Cards NFT Hub- xDai side
 /// @author Andrew Stanger
-contract RCNftHubXdai is Ownable, ERC721Full 
+contract RCNftHubXdai is Ownable, ERC721 
 {
     ////////////////////////////////////
     //////// VARIABLES /////////////////
@@ -26,7 +27,7 @@ contract RCNftHubXdai is Ownable, ERC721Full
     /////////// CONSTRUCTOR ////////////
     ////////////////////////////////////
 
-    constructor(address _factoryAddress) ERC721Full("RealityCards", "RC") public {
+    constructor(address _factoryAddress) ERC721("RealityCards", "RC") {
         setFactoryAddress(_factoryAddress);
     } 
 
@@ -35,10 +36,9 @@ contract RCNftHubXdai is Ownable, ERC721Full
     ////////////////////////////////////
 
     /// @dev so only markets can change ownership
-    function addMarket(address _newMarket) external returns(bool) {
+    function addMarket(address _newMarket) external{
         require(msg.sender == factoryAddress, "Not factory");
         isMarket[_newMarket] = true;
-        return true;
     }
 
     ////////////////////////////////////
@@ -47,6 +47,7 @@ contract RCNftHubXdai is Ownable, ERC721Full
     
     /// @dev address of RC factory contract, so only factory can mint
     function setFactoryAddress(address _newAddress) onlyOwner public {
+        require(_newAddress != address(0), "Must set an address");
         factoryAddress = _newAddress;
     }
 
@@ -66,7 +67,7 @@ contract RCNftHubXdai is Ownable, ERC721Full
     // MARKET ONLY
     function transferNft(address _currentOwner, address _newOwner, uint256 _tokenId) external returns(bool) {
         require(isMarket[msg.sender], "Not market");
-        _transferFrom(_currentOwner, _newOwner, _tokenId);
+        _transfer(_currentOwner, _newOwner, _tokenId);
         return true;
     }
 
@@ -75,18 +76,18 @@ contract RCNftHubXdai is Ownable, ERC721Full
     ////////////////////////////////////
     /// @dev ensures NFTs can only be moved when market is resolved
 
-    function transferFrom(address from, address to, uint256 tokenId) public {
+    function transferFrom(address from, address to, uint256 tokenId) public override {
         IRCMarket market = IRCMarket(marketTracker[tokenId]);
-        require(market.state() == 3, "Incorrect state");
+        require(market.state() == IRCMarket.States.WITHDRAW, "Incorrect state");
         require(ownerOf(tokenId) == msg.sender, "Not owner");
-        _transferFrom(from, to, tokenId);
+        _transfer(from, to, tokenId);
     }
 
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) public {
+    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) public override {
         IRCMarket market = IRCMarket(marketTracker[tokenId]);
-        require(market.state() == 3, "Incorrect state");
+        require(market.state() == IRCMarket.States.WITHDRAW, "Incorrect state");
         require(ownerOf(tokenId) == msg.sender, "Not owner");
-        _transferFrom(from, to, tokenId);
+        _transfer(from, to, tokenId);
         _data;
     }
 

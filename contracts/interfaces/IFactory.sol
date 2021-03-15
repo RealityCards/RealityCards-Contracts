@@ -1,4 +1,5 @@
-pragma solidity 0.5.13;
+// SPDX-License-Identifier: UNDEFINED
+pragma solidity ^0.7.5;
 
 import "./IRealitio.sol";
 import "./ITreasury.sol";
@@ -15,8 +16,8 @@ interface IFactory
     function arbitrator() external returns (address);
     function deposit() external payable returns(bool);
     function getPotDistribution() external returns(uint256[5] memory);
-    function minimumPriceIncrease() external returns (uint256);
+    function minimumPriceIncreasePercent() external returns (uint256);
     function trapIfUnapproved() external returns(bool);
     function isMarketApproved(address) external returns(bool);
-    function hotPotatoDivisor() external returns (uint256);
+    function hotPotatoWeekDivisor() external returns (uint256);
 }

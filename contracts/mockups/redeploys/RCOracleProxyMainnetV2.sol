@@ -1,9 +1,10 @@
-pragma solidity 0.5.13;
+// SPDX-License-Identifier: UNDEFINED
+pragma solidity ^0.7.5;
 
 import '../../interfaces/IRealitio.sol';
 import '../../interfaces/IRCProxyXdai.sol';
 import '../../interfaces/IBridge.sol';
-import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 // a mockup to test changing the proxy, this is as per the original but always returns winner of 69
 contract RCProxyMainnetV2 is Ownable
@@ -19,7 +20,7 @@ contract RCProxyMainnetV2 is Ownable
 
     // CONSTRUCTOR
 
-    constructor(address _bridgeMainnetAddress, address _realitioAddress) public {
+    constructor(address _bridgeMainnetAddress, address _realitioAddress) {
         setBridgeXdaiAddress(_bridgeMainnetAddress);
         setRealitioAddress(_realitioAddress);
         setArbitrator(0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D); //kleros

@@ -1,4 +1,5 @@
-pragma solidity 0.5.13;
+// SPDX-License-Identifier: UNDEFINED
+pragma solidity ^0.7.5;
 
 import "hardhat/console.sol";
 
@@ -14,7 +15,7 @@ contract BridgeMockup
 
     function requireToPassMessage(address _RCProxyAddress, bytes calldata _data, uint256 _gasLimit) external {
         _gasLimit;
-        (bool _success, ) = _RCProxyAddress.call.value(0)(_data);
+        (bool _success, ) = _RCProxyAddress.call{value:(0)}(_data);
         // this is for a sepcific test where the oracleProxyMainnetAddress is
         // scrambled intentionally
         if (0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 != oracleProxyMainnetAddress)

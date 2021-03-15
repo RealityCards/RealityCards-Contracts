@@ -115,7 +115,7 @@ module.exports = {
   },
   compilers: {
     solc: {
-      version: "0.5.13",
+      version: "0.7.5",
       settings: {
         evmVersion: "istanbul",
         optimizer: {

@@ -16,10 +16,12 @@ var BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
 var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
 
 // variables
+// TODO: update chilvers' script with the relevant addresses here https://github.com/realitio/realitio-contracts/blob/master/config/arbitrators.json
 var ambAddressXdai = '0x75Df5AF045d91108662D8080fD1FEFAd6aA0bb59';
 var ambAddressMainnet = '0x4C36d2919e407f0Cc2Ee3c993ccF8ac26d9CE64e';
 var realitioAddress = '0x325a2e0F3CCA2ddbaeBB4DfC38Df8D19ca165b47';
 var arbAddressMainnet = '0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016';
+var kleros = '0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D';
 
 // UPDATE THIS AFTER STAGE 1
 var xdaiProxyAddress = '0x9e15161380f76311Ed7C33AdFF52f928Fb27D84D';
@@ -107,7 +109,7 @@ module.exports = async (deployer, network, accounts) =>
         // deploy bridge contracts
         await deployer.deploy(XdaiProxy, bridge.address, factory.address, treasury.address);
         xdaiproxy = await XdaiProxy.deployed();
-        await deployer.deploy(MainnetProxy, bridge.address, realitio.address, nfthubmainnet.address, realitio.address, dai.address);
+        await deployer.deploy(MainnetProxy, bridge.address, realitio.address, nfthubmainnet.address, realitio.address, dai.address, kleros.address);
         // ^^ the second realitio.address is ARB, its fine, we're not testing ARB yet
         mainnetproxy = await MainnetProxy.deployed();
         // tell the factory, mainnet proxy and bridge the xdai proxy address
@@ -247,7 +249,7 @@ module.exports = async (deployer, network, accounts) =>
         await realitycards2.exit(0, {
           from: user0
         })
-        let depositOfUser0 = await treasury.deposits.call(user0)
+        let depositOfUser0 = await treasury.userDeposit.call(user0)
         await treasury.withdrawDeposit(depositOfUser0, {
           from: user0
         })
@@ -280,7 +282,7 @@ module.exports = async (deployer, network, accounts) =>
         await realitycards2.lockMarket()
         await time.increase(time.duration.hours(24))
         await realitio.setResult(1);
-        await mainnetproxy.getWinnerFromOracle(realitycards2.address);
+        await xdaiproxy.getWinnerFromOracle(realitycards2.address);
         await realitycards2.determineWinner();
 
         // market 3
@@ -359,7 +361,7 @@ const rent = (user, market, tokenId) => {
         let dep = 0
         let ran = 1
   
-        tokenPrice = await market.price(tokenId)
+        tokenPrice = await market.tokenPrice(tokenId)
         newPrice = parseInt(tokenPrice) + 0.11 * parseInt(tokenPrice)
         if (newPrice == 0) {
           newPrice = 1 + Math.floor(Math.random() * 6) + 1

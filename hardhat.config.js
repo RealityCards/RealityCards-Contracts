@@ -8,12 +8,11 @@ module.exports = {
   solidity: {
     compilers: [
       {
-        version: "0.5.13",
+        version: "0.7.5",
         settings: {
-          evmVersion: "istanbul",
           optimizer: {
             enabled: true,
-            runs: 10,
+            runs: 200,
           },
         },
       },
@@ -21,11 +20,13 @@ module.exports = {
   },
   paths: {
     artifacts: "./artifactsBuidler",
+    tests: "./test/live",
   },
   networks: {
     hardhat: {
-      gas: 10000000,
-      blockGasLimit: 10000000,
+      gas: 12500000,
+      gasPrice: 12500000,
+      blockGasLimit: 12500000,
       gasPrice: 1,
     },
   },
