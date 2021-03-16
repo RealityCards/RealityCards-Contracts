@@ -1,6 +1,7 @@
 const { assert } = require("hardhat");
 const { BN, expectRevert, ether, expectEvent, balance, time } = require("@openzeppelin/test-helpers");
 const _ = require("underscore");
+const { current } = require("@openzeppelin/test-helpers/src/balance");
 
 // main contracts
 var RCFactory = artifacts.require("./RCFactory.sol");
@@ -95,7 +96,7 @@ contract("TestTreasury", (accounts) => {
     async function createMarket(options) {
         // default values if no parameter passed
         // mode, 0 = classic, 1 = winner takes all, 2 = hot potato
-        // timestamps are in seconds from now 
+        // timestamps are in seconds from now
         var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
         var defaults = {
             mode: 0,
@@ -128,7 +129,7 @@ contract("TestTreasury", (accounts) => {
             question
         );
         marketAddress.push(await rcfactory.getMostRecentMarket.call(0));
-        market.push(await RCMarket.at(await rcfactory.getMostRecentMarket.call(0)))
+        market.push(await RCMarket.at(await rcfactory.getMostRecentMarket.call(0)));
     }
 
     async function depositDai(amount, user) {
@@ -145,13 +146,13 @@ contract("TestTreasury", (accounts) => {
             market: market[0],
             outcome: 0,
             price: 1,
-            user: user0,
+            from: user0,
             timeLimit: 0,
             startingPosition: zeroAddress,
         };
         options = setDefaults(options, defaults);
         options.price = web3.utils.toWei(options.price.toString(), "ether");
-        await options.market.newRental(options.price, options.timeLimit, options.startingPosition, options.outcome, { from: options.user });
+        await options.market.newRental(options.price, options.timeLimit, options.startingPosition, options.outcome, { from: options.from });
     }
 
     async function withdrawDeposit(amount, userx) {
@@ -190,6 +191,12 @@ contract("TestTreasury", (accounts) => {
         await expectRevert(treasury.setAlternateReceiverAddress(zeroAddress, { from: user1 }), "Ownable: caller is not the owner");
         await expectRevert(treasury.changeGlobalPause({ from: user1 }), "Ownable: caller is not the owner");
         await expectRevert(treasury.changePauseMarket(zeroAddress, { from: user1 }), "Ownable: caller is not the owner");
+    });
+
+    it("check that inferior owners cannot call uberOwner functions on Treasury", async () => {
+        // only testing invalid responses, valid responses checked in each functions own test
+        await expectRevert(treasury.setFactoryAddress(marketAddress[0], { from: user1 }), "Extremely Verboten");
+        await expectRevert(treasury.changeUberOwner(user2, { from: user1 }), "Extremely Verboten");
     });
 
     it("test setMinRental", async () => {
@@ -261,20 +268,88 @@ contract("TestTreasury", (accounts) => {
         assert.equal(await treasury.marketPaused(zeroAddress), pauseMarketState);
     });
 
+    it("test setFactoryAddress", async () => {
+        // check for zero address
+        await expectRevert.unspecified(treasury.setFactoryAddress(zeroAddress));
+        // set value
+        await treasury.setFactoryAddress(user9);
+        // check value
+        assert.equal(await treasury.factoryAddress(), user9);
+        // change the value
+        await treasury.setFactoryAddress(user8);
+        // check again
+        assert.equal(await treasury.factoryAddress(), user8);
+    });
+
+    it("test changeUberOwner", async () => {
+        // check for zero address
+        await expectRevert.unspecified(treasury.changeUberOwner(zeroAddress));
+        // set value
+        await treasury.changeUberOwner(user9);
+        // check value
+        assert.equal(await treasury.uberOwner(), user9);
+        // change the value
+        await expectRevert(treasury.changeUberOwner(user2, { from: user1 }), "Extremely Verboten");
+        await treasury.changeUberOwner(user8, { from: user9 });
+        // check again
+        assert.equal(await treasury.uberOwner(), user8);
+    });
+
+    it("test deposit", async () => {
+        // check for zero address
+        await expectRevert(treasury.deposit(user1), "Must deposit something");
+        await expectRevert(treasury.deposit(zeroAddress,{value:1}), "Must set an address");
+        // make some deposits
+        await depositDai(10, user1);
+        await depositDai(20, user2);
+        // check the individual and total deposit amounts
+        assert.equal((await treasury.userDeposit(user1)).toString(), ether("10").toString());
+        assert.equal((await treasury.userDeposit(user2)).toString(), ether("20").toString());
+        assert.equal((await treasury.totalDeposits()).toString(), ether("30").toString());
+    });
+
+    it("test withdrawDeposit", async () => {
+        // can't withdraw if theres nothing to withdraw
+        await expectRevert(treasury.withdrawDeposit(1,true), "Nothing to withdraw");
+        // record the users balance
+        var tracker = await balance.tracker(user1);
+        const startBalance = await tracker.get()
+        // make a deposit and get a receipt to find the gas cost
+        var txReceipt = await treasury.deposit(user1,{value: ether("10"), from: user1});
+        var gasUsed = txReceipt.receipt.gasUsed;
+        // let some time pass
+        await time.increase(time.duration.minutes(10));
+        // withdraw the deposit (getting a receipt again)
+        var txReceipt = await treasury.withdrawDeposit(ether("100"),true,{from: user1});
+        gasUsed += txReceipt.receipt.gasUsed;
+        // check the balance is correct (minus gas cost)
+        const currentBalance = await tracker.get()
+        console.log(currentBalance.toString());
+        console.log(gasUsed);
+        console.log(startBalance.toString());
+        assert.equal(startBalance.toString(), (currentBalance.add(web3.utils.toBN(gasUsed))).toString());
+
+        // can't withdraw too quickly after a rental
+        //await newRental({from: user1})
+        //await expectRevert(treasury.withdrawDeposit(1,true,{from: user1}), "Too soon");
+
+    });
+
+
     it("check cant rent or deposit if globalpause", async () => {
         // check it works normally
         await depositDai(100, user2);
-        await newRental({ user: user2 });
+        await newRental({ from: user2 });
         // turn on global pause
         await treasury.changeGlobalPause();
         // now it should revert
         await expectRevert(depositDai(100, user2), "Deposits are disabled");
-        await expectRevert(newRental({ user: user2 }), "Rentals are disabled");
+        await expectRevert(newRental({ from: user2 }), "Rentals are disabled");
         // change it back
         await treasury.changeGlobalPause();
         // and it works again
         await depositDai(100, user2);
-        await newRental({ user: user2 });
+        await newRental({ from: user2 });
     });
 
     it("check cant rent if market paused", async () => {
@@ -312,11 +387,11 @@ contract("TestTreasury", (accounts) => {
         await depositDai(10, user2);
         await depositDai(10, user3);
         // make a rental, check it updates the userBids
-        await newRental({ price: 5});
+        await newRental({ price: 5 });
         var totalRentals = await treasury.userTotalBids(user0);
         assert.equal(totalRentals.toString(), ether("5").toString());
         // make another rental and check again
-        await newRental({ price: 3, outcome: 1});
+        await newRental({ price: 3, outcome: 1 });
         var totalRentals = await treasury.userTotalBids(user0);
         assert.equal(totalRentals.toString(), ether("8").toString());
         // different market this time
@@ -324,21 +399,21 @@ contract("TestTreasury", (accounts) => {
         var totalRentals = await treasury.userTotalBids(user0);
         assert.equal(totalRentals.toString(), ether("9").toString());
         // increase bid, still correct?
-        await newRental({price: 6});
+        await newRental({ price: 6 });
         var totalRentals = await treasury.userTotalBids(user0);
         assert.equal(totalRentals.toString(), ether("10").toString());
         // decrease bid, still correct? user0=8
-        await newRental({price: 4});
+        await newRental({ price: 4 });
         var totalRentals = await treasury.userTotalBids(user0);
         assert.equal(totalRentals.toString(), ether("8").toString());
         // someone else takes it off them, are both correct? user0=8 user1=7
-        await newRental({user: user1, price: 7});
+        await newRental({ from: user1, price: 7 });
         var totalRentals = await treasury.userTotalBids(user0);
         assert.equal(totalRentals.toString(), ether("8").toString());
         var totalRentals = await treasury.userTotalBids(user1);
         assert.equal(totalRentals.toString(), ether("7").toString());
         // change tokenPrice, check both are correct user0=11.5 user1=7
-        await newRental({price: 7.5});
+        await newRental({ price: 7.5 });
         var totalRentals = await treasury.userTotalBids(user0);
         assert.equal(totalRentals.toString(), ether("11.5").toString());
         var totalRentals = await treasury.userTotalBids(user1);
@@ -354,10 +429,10 @@ contract("TestTreasury", (accounts) => {
         var totalRentals = await treasury.userTotalBids(user0);
         assert.equal(totalRentals.toString(), ether("4").toString());
         // increase rent to 1439 (max 1440) then rent again, check it fails
-        await newRental({price: 1435});
+        await newRental({ price: 1435 });
         await expectRevert(newRental(5, 3, user0), " Insufficient deposit");
         // someone bids even higher, I increase my bid above what I can afford, we all run out of deposit, should not return to me
-        await newRental({price: 2000, user: user1});
+        await newRental({ price: 2000, from: user1 });
         await time.increase(time.duration.weeks(1));
         await market[0].collectRentAllCards();
         // check owned by contract
@@ -367,18 +442,18 @@ contract("TestTreasury", (accounts) => {
 
     it("test withdraw deposit after market close", async () => {
         // create a market that'll expire soon
-        await createMarket({closeTime: time.duration.weeks(1), resolveTime: time.duration.weeks(1)});
+        await createMarket({ closeTime: time.duration.weeks(1), resolveTime: time.duration.weeks(1) });
         await depositDai(100, user0);
-        await newRental({market: market[1]});
+        await newRental({ market: market[1] });
         await time.increase(time.duration.weeks(1));
         await market[1].collectRentAllCards();
         await market[1].lockMarket();
         await withdrawDeposit(1000, user0);
     });
-60*60
+    60 * 60;
     it("check bids are exited when user withdraws everything", async () => {
         await depositDai(100, user0);
-        await newRental({price: 5});
+        await newRental({ price: 5 });
         await time.increase(time.duration.days(1));
         await treasury.withdrawDeposit(web3.utils.toWei("5", "ether"), { from: user0 });
         var totalRentals = await treasury.userTotalBids(user0);
