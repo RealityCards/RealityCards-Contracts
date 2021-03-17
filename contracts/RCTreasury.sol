@@ -313,6 +313,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     }
 
     /// @dev provides the sum total of a users bids accross all markets
+    /// @dev doesn't clean the bid array first as the market does that already
     function userTotalBids(address _user) external view returns (uint256) {
         uint256 _userTotalBids = 0;
         for (uint256 i; i < userBids[_user].length; i++) {

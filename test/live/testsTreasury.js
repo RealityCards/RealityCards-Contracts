@@ -2,6 +2,7 @@ const { assert } = require("hardhat");
 const { BN, expectRevert, ether, expectEvent, balance, time } = require("@openzeppelin/test-helpers");
 const _ = require("underscore");
 const { current } = require("@openzeppelin/test-helpers/src/balance");
+const { web3 } = require("@openzeppelin/test-helpers/src/setup");
 
 // main contracts
 var RCFactory = artifacts.require("./RCFactory.sol");
@@ -114,7 +115,7 @@ contract("TestTreasury", (accounts) => {
         var resolveTime = new BN(options.resolveTime).add(await time.latest());
         var timestamps = [options.openTime, closeTime, resolveTime];
         var tokenURIs = [];
-        for (i = 1; i < options.numberOfCards; i++) {
+        for (i = 0; i < options.numberOfCards; i++) {
             tokenURIs.push("x");
         }
 
@@ -322,8 +323,11 @@ contract("TestTreasury", (accounts) => {
         var gasUsed = txReceipt.receipt.gasUsed;
         // let some time pass
         await time.increase(time.duration.minutes(10));
-        // withdraw the deposit (getting a receipt again)
-        var txReceipt = await treasury.withdrawDeposit(ether("100"),true,{from: user1});
+        // withdraw some deposit locally (getting a receipt again)
+        txReceipt = await treasury.withdrawDeposit(ether("5"),true,{from: user1});
+        gasUsed += txReceipt.receipt.gasUsed;
+        // withdraw the rest via the bridge (getting a receipt again)
+        txReceipt = await treasury.withdrawDeposit(ether("5"),false,{from: user1});
         gasUsed += txReceipt.receipt.gasUsed;
         // check the balance is correct (minus gas cost)
         const currentBalance = await tracker.get()
@@ -344,6 +348,9 @@ contract("TestTreasury", (accounts) => {
         await time.increase(time.duration.days(1));
         // withdraw everything, but lets go via the bridge this time
         await treasury.withdrawDeposit(ether("100"),false,{from: user2});
+        // check we don't own the card or have any bids
+        assert.equal((await market[0].ownerOf(0)),marketAddress[0]);
+        assert.equal((await treasury.userTotalBids(user2)),0)
 
     });
 
@@ -457,11 +464,11 @@ contract("TestTreasury", (accounts) => {
         await depositDai(100, user0);
         await newRental({ market: market[1] });
         await time.increase(time.duration.weeks(1));
-        await market[1].collectRentAllCards();
-        await market[1].lockMarket();
+        //await market[1].collectRentAllCards();
+        //await market[1].lockMarket();
         await withdrawDeposit(1000, user0);
     });
-    60 * 60;
+
     it("check bids are exited when user withdraws everything", async () => {
         await depositDai(100, user0);
         await newRental({ price: 5 });
@@ -473,5 +480,98 @@ contract("TestTreasury", (accounts) => {
         await treasury.withdrawDeposit(web3.utils.toWei("1000", "ether"), { from: user0 });
         var owner = await market[0].ownerOf.call(0);
         assert.notEqual(owner, user0);
+    });
+
+    it("check payRent", async () => {
+        // global pause tested in it's own test
+        // setup alternative market and bid on it
+        await createMarket();
+        await depositDai(100, user1);
+        await newRental({from: user1, market: market[1] });
+
+        // depsoit some dai and confirm all values
+        await depositDai(100, user0);
+        assert.equal((await treasury.userDeposit(user0)).toString(),ether('100').toString());
+        assert.equal((await treasury.marketPot(marketAddress[0])).toString(),'0');
+        assert.equal((await treasury.totalMarketPots()).toString(),'0');
+        assert.equal((await treasury.totalDeposits()).toString(),ether('200').toString());
+        
+        //pay some rent
+        var txReceipt = await market[0].newRental(ether('50'),0,zeroAddress,0,{from:user0});
+        var startTime = (await web3.eth.getBlock(txReceipt.receipt.blockNumber)).timestamp;
+        await time.increase(time.duration.days(1));
+        txReceipt = await market[0].collectRentAllCards();
+        var endTime = (await web3.eth.getBlock(txReceipt.receipt.blockNumber)).timestamp;
+        // must perform calcualtion in this order to avoid rounding
+        var rentDue = ether('50').muln(endTime-startTime).divn(86400);
+
+        // check the values have all been correcly adjusted
+        assert.equal((await treasury.userDeposit(user0)).toString(),(ether('100').sub(rentDue)).toString());
+        assert.equal((await treasury.marketPot(marketAddress[0])).toString(),rentDue.toString());
+        assert.equal((await treasury.totalMarketPots()).toString(),rentDue.toString());
+        assert.equal((await treasury.totalDeposits()).toString(),(ether('200').sub(rentDue)).toString());
+
+    });
+
+    it("check payout", async () => {
+        // global pause tested in it's own test
+        // depsoit some dai and confirm all values
+        await createMarket({closeTime: time.duration.days(3), resolveTime: time.duration.days(3)});
+        await depositDai(100, user0);
+        await depositDai(100, user1);
+        assert.equal((await treasury.userDeposit(user0)).toString(),ether('100').toString());
+        assert.equal((await treasury.userDeposit(user1)).toString(),ether('100').toString());
+        assert.equal((await treasury.marketPot(marketAddress[1])).toString(),'0');
+        assert.equal((await treasury.totalMarketPots()).toString(),'0');
+        assert.equal((await treasury.totalDeposits()).toString(),ether('200').toString());
+        
+        // rent seperate cards
+        await newRental({from: user0, price: 50, market: market[1], outcome: 0})
+        await newRental({from: user1, price: 50, market: market[1], outcome: 1})
+        // make the market expire
+        await time.increase(time.duration.days(3));
+        await market[1].lockMarket();
+        // card 0 won, user0 should get the payout
+        await xdaiproxy.setAmicableResolution(marketAddress[1],0)
+        await market[1].withdraw({from: user0});
+
+        // check the values have all been correcly adjusted
+        assert.equal((await treasury.userDeposit(user0)).toString(),(ether('200').toString()));
+        assert.equal((await treasury.userDeposit(user1)).toString(),(ether('0').toString()));
+        assert.equal((await treasury.marketPot(marketAddress[0])).toString(),'0');
+        assert.equal((await treasury.totalMarketPots()).toString(),'0');
+        assert.equal((await treasury.totalDeposits()).toString(),ether('200').toString());
+
+    });
+
+    it("check cleanUserBidArray", async () => {
+        // lets use a quick market with many cards
+        await createMarket({closeTime: time.duration.days(1), resolveTime: time.duration.days(1)});
+        await depositDai(100, user0);
+        await depositDai(100, user1);
+
+        // make some bids
+        for (i = 0; i < 4; i++) {
+            await newRental({from: user0, price: 1, market: market[0], outcome: i})
+            await newRental({from: user1, price: 2, market: market[0], outcome: i})
+        }
+        // make some more in another market
+        for (i = 0; i < 4; i++) {
+            await newRental({from: user0, price: 1, market: market[1], outcome: i})
+            await newRental({from: user1, price: 2, market: market[1], outcome: i})
+        }
+        await time.increase(time.duration.days(2));
+        await market[1].lockMarket();
+        // check the bids were made before we clean them
+        assert.equal((await treasury.userTotalBids(user0)).toString(),ether('8').toString());
+        assert.equal((await treasury.userTotalBids(user1)).toString(),ether('16').toString());
+        // clean one user and check both
+        await treasury.cleanUserBidArray(user0);
+        assert.equal((await treasury.userTotalBids(user0)).toString(),ether('4').toString());
+        assert.equal((await treasury.userTotalBids(user1)).toString(),ether('16').toString());
+        // clean the other user, only 1 markets bids should be left
+        await treasury.cleanUserBidArray(user1);
+        assert.equal((await treasury.userTotalBids(user0)).toString(),ether('4').toString());
+        assert.equal((await treasury.userTotalBids(user1)).toString(),ether('8').toString());
     });
 });
