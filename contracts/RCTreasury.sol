@@ -235,7 +235,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
             require(_success, "Transfer failed");
         } else {
             IAlternateReceiverBridge _alternateReceiverBridge = IAlternateReceiverBridge(alternateReceiverBridgeAddress);
-            _alternateReceiverBridge.relayTokens(address(this), _msgSender, _dai);
+            _alternateReceiverBridge.relayTokens{value: _dai}(address(this), _msgSender, _dai);
         }
 
         // step 3: remove bids if insufficient deposit

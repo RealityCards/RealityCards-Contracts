@@ -157,7 +157,7 @@ contract("TestTreasury", (accounts) => {
 
     async function withdrawDeposit(amount, userx) {
         amount = web3.utils.toWei(amount.toString(), "ether");
-        await treasury.withdrawDeposit(amount, { from: userx });
+        await treasury.withdrawDeposit(amount, true ,{ from: userx });
     }
 
     it("Ensure only factory can add markets", async () => {
@@ -309,8 +309,11 @@ contract("TestTreasury", (accounts) => {
     });
 
     it("test withdrawDeposit", async () => {
+        // global pause checked in it's own test
         // can't withdraw if theres nothing to withdraw
         await expectRevert(treasury.withdrawDeposit(1,true), "Nothing to withdraw");
+        // lets check we get all our funds back
+        await depositDai(100,user2); // just so the contract has spare funds
         // record the users balance
         var tracker = await balance.tracker(user1);
         const startBalance = await tracker.get()
@@ -324,17 +327,25 @@ contract("TestTreasury", (accounts) => {
         gasUsed += txReceipt.receipt.gasUsed;
         // check the balance is correct (minus gas cost)
         const currentBalance = await tracker.get()
-        console.log(currentBalance.toString());
-        console.log(gasUsed);
-        console.log(startBalance.toString());
         assert.equal(startBalance.toString(), (currentBalance.add(web3.utils.toBN(gasUsed))).toString());
 
-        // can't withdraw too quickly after a rental
-        //await newRental({from: user1})
-        //await expectRevert(treasury.withdrawDeposit(1,true,{from: user1}), "Too soon");
+        // check no rent collected yet
+        assert.equal((await treasury.totalMarketPots()).toString(),0);
+        await newRental({from: user2})
+        // can't withdraw too quickly ( ͡° ͜ʖ ͡°)	
+        await expectRevert(treasury.withdrawDeposit(1,true,{from: user2}), "Too soon");
+        await time.increase(time.duration.days(1));
+        // now we can partial withdraw 
+        await treasury.withdrawDeposit(ether("10"),true,{from: user2});
+        // check we collected some rent
+        assert(await treasury.totalMarketPots() != 0, "Rent wasn't collected");
+        // check we still own the card
+        assert.equal((await market[0].ownerOf(0)),user2)
+        await time.increase(time.duration.days(1));
+        // withdraw everything, but lets go via the bridge this time
+        await treasury.withdrawDeposit(ether("100"),false,{from: user2});
 
     });
-
 
     it("check cant rent or deposit if globalpause", async () => {
         // check it works normally
