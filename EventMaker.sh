@@ -3,7 +3,7 @@
 ###################
 #### Setup ########
 ###################
-EVENT_NAME="When will Reality Cards publicly launch?"
+EVENT_NAME="When will Reality Cards launch?"
 SRC_NAME="release"
 CATEGORY="other"
 SLUG="rel1"

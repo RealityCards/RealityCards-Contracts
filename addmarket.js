@@ -1,16 +1,16 @@
 //require("dotenv").config();
 
 var realityCardsFactory = artifacts.require("RCFactory");
-//var factoryAddress = '0xe1Ab9305DA70b865d610116163A82E1fDF6cCcFD'; //testnet on Sokol
+var factoryAddress = '0xe1Ab9305DA70b865d610116163A82E1fDF6cCcFD'; //testnet on Sokol
 //var factoryAddress = '0x3b557a58E5c6c4Df3e3307F9c7f5ce46472d80F7'; //beta on xDai
-var factoryAddress = '0x76d22B0065Ada142207E2cDce12322FB3F8c0bAA'; //dev on Sokol
+//var factoryAddress = '0x76d22B0065Ada142207E2cDce12322FB3F8c0bAA'; //dev on Sokol
 
 // variables market specific
 var marketOpeningTime = 0;
 var marketLockingTime = 1625094000; 
 var oracleResolutionTime = 1625094000; 
-var ipfsHash = 'QmYE5pzb3macaih1L5AuGg2KDzbW5N9SZGFNV18MvDAWBJ';
-var question = 'When will Reality Cards publicly launch?';
+var ipfsHash = 'QmPBotNvjCBJTdw9Taze2ZnmGUvUeUBkC4jBMajRaHe3Jv';
+var question = 'When will Reality Cards launch?';
 var artistAddress = "0x0000000000000000000000000000000000000000";
 var affiliateAddress = "0x0000000000000000000000000000000000000000";
 var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000','0x0000000000000000000000000000000000000000'];
