@@ -1,4 +1,4 @@
-const { assert } = require("hardhat");
+const { assert, artifacts } = require("hardhat");
 const { BN, expectRevert, ether, expectEvent, balance, time } = require("@openzeppelin/test-helpers");
 const _ = require("underscore");
 const { current } = require("@openzeppelin/test-helpers/src/balance");
@@ -18,6 +18,7 @@ var BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
 var AlternateReceiverBridgeMockup = artifacts.require("./mockups/AlternateReceiverBridgeMockup.sol");
 var SelfDestructMockup = artifacts.require("./mockups/SelfDestructMockup.sol");
 var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
+var NoFallback = artifacts.require("./mockups/noFallback.sol");
 var kleros = "0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D";
 // an array of market instances
 var market = [];
@@ -250,6 +251,7 @@ contract("TestTreasury", (accounts) => {
         await treasury.changeGlobalPause();
         // check value
         assert.equal(await treasury.globalPause(), !globalPauseState);
+        await expectRevert(treasury.withdrawDeposit(1,true), "Withdrawals are disabled");
         // change it back
         await treasury.changeGlobalPause();
         // check again
@@ -350,8 +352,12 @@ contract("TestTreasury", (accounts) => {
         await treasury.withdrawDeposit(ether("100"),false,{from: user2});
         // check we don't own the card or have any bids
         assert.equal((await market[0].ownerOf(0)),marketAddress[0]);
-        assert.equal((await treasury.userTotalBids(user2)),0)
+        assert.equal((await treasury.userTotalBids(user2)),0);
 
+        // test the value transfer sucess
+        noFallback = await NoFallback.new();
+        await noFallback.deposit(treasury.address,{value:ether('10')});
+        await expectRevert(noFallback.withdrawDeposit(treasury.address,ether('10')),"Transfer failed");
     });
 
     it("check cant rent or deposit if globalpause", async () => {
@@ -531,6 +537,7 @@ contract("TestTreasury", (accounts) => {
         // make the market expire
         await time.increase(time.duration.days(3));
         await market[1].lockMarket();
+
         // card 0 won, user0 should get the payout
         await xdaiproxy.setAmicableResolution(marketAddress[1],0)
         await market[1].withdraw({from: user0});
