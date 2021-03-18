@@ -799,7 +799,6 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                     uint256(orderbook[_tokenId][orderbook[_tokenId][_msgSender].next].price).mul(minimumPriceIncreasePercent.add(100))
                 )
                     .div(100);
-                    console.log('min price to own ',_minPriceToOwn);
                 // case 1Ca: still the highest owner- adjust price & timeHeldLimit. newRental event required.
                 if (_newPrice >= _minPriceToOwn) {
                     orderbook[_tokenId][_msgSender].price = SafeCast.toUint128(_newPrice);
