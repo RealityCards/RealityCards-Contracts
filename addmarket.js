@@ -1,16 +1,16 @@
 //require("dotenv").config();
 
 var realityCardsFactory = artifacts.require("RCFactory");
-var factoryAddress = '0xe1Ab9305DA70b865d610116163A82E1fDF6cCcFD'; //testnet on Sokol
-//var factoryAddress = '0x3b557a58E5c6c4Df3e3307F9c7f5ce46472d80F7'; //beta on xDai
+//var factoryAddress = '0xe1Ab9305DA70b865d610116163A82E1fDF6cCcFD'; //testnet on Sokol
+var factoryAddress = '0x3b557a58E5c6c4Df3e3307F9c7f5ce46472d80F7'; //beta on xDai
 //var factoryAddress = '0x76d22B0065Ada142207E2cDce12322FB3F8c0bAA'; //dev on Sokol
 
 // variables market specific
-var marketOpeningTime = 0;
-var marketLockingTime = 1625094000; 
-var oracleResolutionTime = 1625094000; 
-var ipfsHash = 'QmPBotNvjCBJTdw9Taze2ZnmGUvUeUBkC4jBMajRaHe3Jv';
-var question = 'When will Reality Cards launch?';
+var marketOpeningTime = 1616079600;
+var marketLockingTime = 1616275800; 
+var oracleResolutionTime = 1616275800; 
+var ipfsHash = 'QmYZwa7WyyFYGiiPTearprj3bWNVeDYYszebt6VogjdwaB';
+var question = 'Will Wales get a Grand Slam in the Six Nations?';
 var artistAddress = "0x0000000000000000000000000000000000000000";
 var affiliateAddress = "0x0000000000000000000000000000000000000000";
 var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000','0x0000000000000000000000000000000000000000'];
@@ -23,8 +23,6 @@ var timestamps = [marketOpeningTime,marketLockingTime,oracleResolutionTime];
 var tokenURIs = [
     'https://cdn.realitycards.io/nftmetadata/release/token0.json',
     'https://cdn.realitycards.io/nftmetadata/release/token1.json',
-    'https://cdn.realitycards.io/nftmetadata/release/token2.json',
-    'https://cdn.realitycards.io/nftmetadata/release/token3.json',
 ]; 
 
 module.exports = function() {
