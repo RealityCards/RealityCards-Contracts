@@ -32,12 +32,12 @@ contract RealitioMockup
     // 69 = invalid
     function resultFor(bytes32 question_id) external view returns (bytes32) {
         require(result != 420);
-        require(question_id == actualQuestionId);
+        // require(question_id == actualQuestionId);
         return bytes32(result);
     }
 
     function isFinalized(bytes32 question_id) external view returns (bool) {
-        require(question_id == actualQuestionId, "questionId incorrect");
+        // require(question_id == actualQuestionId, "questionId incorrect");
         if (result == 420) {
             return false;
         } else {
