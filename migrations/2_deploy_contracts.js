@@ -79,32 +79,18 @@ module.exports = async (deployer, network, accounts) => {
   } else if (network === 'graphTesting') {
     console.log('Local Graph Testing, whoot whoot')
 
+    // Time skipping solver
     let block = await web3.eth.getBlock('latest')
-
     const preTimeSkippingBlockTimestamp = block.timestamp
 
-    console.log(
-      'Block timestamp before time jumps: ',
-      preTimeSkippingBlockTimestamp
-    )
-
-    user0 = accounts[0]
-    user1 = accounts[1]
-    user2 = accounts[2]
-    user3 = accounts[3]
-    user4 = accounts[4]
-    user5 = accounts[5]
-    user6 = accounts[6]
-    user7 = accounts[7]
-    user8 = accounts[8]
-    andrewsAddress = accounts[9]
-
-    // print accounts
+    // Log all account addresses
     accounts.map((account, index) =>
-      console.log('Account' + index + ': ', account)
+      console.log('Account ' + index + ' : ', account)
     )
 
-    // deploy treasury, factory, reference market and nft hub
+    // -------------------------------
+    // Deploying the initial contracts
+    // -------------------------------
     await deployer.deploy(RCTreasury)
     treasury = await RCTreasury.deployed()
     await deployer.deploy(RCFactory, treasury.address)
@@ -119,7 +105,7 @@ module.exports = async (deployer, network, accounts) => {
     await treasury.setFactoryAddress(factory.address)
     await factory.setReferenceContractAddress(reference.address)
     await factory.setNftHubAddress(nfthubxdai.address, 0)
-    // mockups
+    // mockups for testing purposes
     await deployer.deploy(RealitioMockup)
     realitio = await RealitioMockup.deployed()
     await deployer.deploy(BridgeMockup)
@@ -153,274 +139,316 @@ module.exports = async (deployer, network, accounts) => {
     await bridge.setProxyMainnetAddress(mainnetproxy.address)
     await nfthubmainnet.setProxyMainnetAddress(mainnetproxy.address)
 
+    // ------------------------------------------
+    // Testing environment setup (EDIT FROM HERE)
+    // ------------------------------------------
+
+    const ipfsHashes = argv['ipfs_hash']
+    let markets = []
+
+    // Helpers
+    const latestTime = await time.latest()
+
+    // Create 4 markets
+    for (let i = 0; i < 4; i++) {
+      await createMarket(
+        factory,
+        latestTime,
+        latestTime.add(time.duration.weeks(4 - i)),
+        ipfsHashes[i],
+        4
+      )
+      marketAddress = await factory.getMostRecentMarket.call(0)
+      market = await RCMarket.at(marketAddress)
+      markets.push(market)
+    }
+
+    // Account0 renting 4 cards
+    await treasury.deposit(accounts[0], {
+      from: accounts[0],
+      value: web3.utils.toWei('500', 'ether')
+    })
+
+    await rent(accounts[0], markets[0], 0)
+    await rent(accounts[0], markets[1], 0)
+    await rent(accounts[0], markets[2], 0)
+    await rent(accounts[0], markets[3], 0)
+
+    // Close all markets
+    await time.increase(time.duration.weeks(4))
+
+    await closeMarket(market[0], 0)
+    await closeMarket(market[1], 0)
+    await closeMarket(market[2], 0)
+    await closeMarket(market[3], 0)
+
     // create market #1
-    var tokenURIs = [
-      'https://cdn.realitycards.io/nftmetadata/uni/token0.json',
-      'https://cdn.realitycards.io/nftmetadata/uni/token1.json',
-      'https://cdn.realitycards.io/nftmetadata/uni/token2.json',
-      'https://cdn.realitycards.io/nftmetadata/uni/token3.json'
-    ]
+    // var tokenURIs = [
+    //   'https://cdn.realitycards.io/nftmetadata/uni/token0.json',
+    //   'https://cdn.realitycards.io/nftmetadata/uni/token1.json',
+    //   'https://cdn.realitycards.io/nftmetadata/uni/token2.json',
+    //   'https://cdn.realitycards.io/nftmetadata/uni/token3.json'
+    // ]
 
-    var sixtySeconds = 60
-    var latestTime = await time.latest()
-    var oneYear = new BN('31104000')
-    var oneYearInTheFuture = oneYear.add(latestTime)
-    var marketLockingTime = oneYearInTheFuture
-    var oracleResolutionTime = oneYearInTheFuture
-    var timestamps = [latestTime, marketLockingTime, oracleResolutionTime]
-    var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US'
-    var ipfsHashes = argv['ipfs_hash']
+    // var sixtySeconds = 60
+    // var latestTime = await time.latest()
+    // var oneYear = new BN('31104000')
+    // var oneYearInTheFuture = oneYear.add(latestTime)
+    // var marketLockingTime = oneYearInTheFuture
+    // var oracleResolutionTime = oneYearInTheFuture
+    // var timestamps = [latestTime, marketLockingTime, oracleResolutionTime]
+    // var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US'
 
-    await time.increase(time.duration.weeks(1))
+    // await time.increase(time.duration.weeks(1))
 
-    const artistAddress = '0x0000000000000000000000000000000000000000'
-    const affiliateAddress = '0x0000000000000000000000000000000000000000'
-    const cardAffiliateAddress = ['0x0000000000000000000000000000000000000000']
+    // const artistAddress = '0x0000000000000000000000000000000000000000'
+    // const affiliateAddress = '0x0000000000000000000000000000000000000000'
+    // const cardAffiliateAddress = ['0x0000000000000000000000000000000000000000']
 
-    // market 1
-    await factory.createMarket(
-      0,
-      ipfsHashes[0],
-      timestamps,
-      tokenURIs,
-      artistAddress,
-      affiliateAddress,
-      cardAffiliateAddress,
-      question
-    )
-
-    var marketAddress = await factory.getMostRecentMarket.call(0)
-    console.log('marketAddress #1: ', marketAddress)
-
-    realitycards = await RCMarket.at(marketAddress)
-    var marketLockingTime = await realitycards.marketLockingTime.call()
-    console.log('marketLockingTime: ', marketLockingTime.toString())
-    var marketOpeningTime = await realitycards.marketOpeningTime.call()
-    console.log('marketOpeningTime: ', marketOpeningTime.toString())
-    var marketState = await realitycards.state.call()
-    console.log('marketState: ', marketState.toString())
-
-    // market 2
-    let threeWeeks = new BN('1814400')
-    let threeWeeksInTheFuture = threeWeeks.add(latestTime)
-    timestamps = [latestTime, threeWeeksInTheFuture, threeWeeksInTheFuture]
-
-    await factory.createMarket(
-      0,
-      ipfsHashes[1],
-      timestamps,
-      tokenURIs,
-      artistAddress,
-      affiliateAddress,
-      cardAffiliateAddress,
-      question
-    )
-
-    var marketAddress2 = await factory.getMostRecentMarket.call(0)
-    console.log('marketAddress #2: ', marketAddress2)
-
-    // approve market
-    await factory.approveOrUnapproveMarket(marketAddress2)
-
-    realitycards2 = await RCMarket.at(marketAddress2)
-
-    // TIME: 1 week
-    await time.increase(time.duration.weeks(1))
-
-    // 4 users renting the first card of market#1
-    for (var i = 1; i <= 10; i++) {
-      // user0 = 1 dai
-      // user1 = 2
-      // user2 = 3
-      // user3 = 4
-      // user0 = 5
-      // user1 = 6
-      // user2 = 7
-      // user3 = 8
-      // user0 = 9
-      // user1 = 10
-
-      let user = accounts[(i - 1) % 4]
-      let amount = web3.utils.toWei(i.toString(), 'ether')
-      await realitycards.newRental(amount, 0, 0, { from: user, value: amount })
-
-      await time.increase(
-        time.duration.hours(randomHoldTimeForLessThanXHours(9))
-      ) // hold for a few hours
-    }
-
-    // 4 users each renting a card of market#2
-    for (var i = 1; i < 5; i++) {
-      user = accounts[(i - 1) % 4]
-      amount = web3.utils.toWei((i * 2).toString(), 'ether')
-      await realitycards2.newRental(amount, 0, (i - 1) % 4, {
-        from: user,
-        value: amount
-      })
-    }
-
-    // TIME: 5 hours
-    await time.increase(time.duration.hours(5))
-
-    // Same 4 users = deposit 50dai, change price of the card they own, withdraw 1dai
-    for (var i = 1; i < 5; i++) {
-      user = accounts[i - 1]
-      more = i * 2 * (1 + (i * 2) / 10)
-      amount = web3.utils.toWei(more.toString(), 'ether')
-
-      await treasury.deposit(user, {
-        from: user,
-        value: web3.utils.toWei('50', 'ether')
-      })
-
-      await realitycards2.newRental(amount, 0, i - 1, {
-        from: user
-      })
-
-      await treasury.withdrawDeposit(web3.utils.toWei('1', 'ether'), {
-        from: user
-      })
-    }
-
-    // user0 exits & withdraws all deposit
-    await realitycards2.exit(0, {
-      from: user0
-    })
-    let depositOfUser0 = await treasury.deposits.call(user0)
-    await treasury.withdrawDeposit(depositOfUser0, {
-      from: user0
-    })
-
-    // Uncomment the following lines to test the values when the market is locked
-    // await time.increase(time.duration.weeks(2))
-    // await realitycards2.lockMarket()
-
-    // user8 renting a bunch of cards to test the active positions table
-    await rent(user8, realitycards2, '1')
-    await time.increase(
-      time.duration.hours(randomHoldTimeForLessThanXHours(12) + 1)
-    )
-    await rent(user7, realitycards2, '1')
-
-    await rent(user8, realitycards2, '0')
-    await rent(user8, realitycards2, '2')
-
-    await time.increase(
-      time.duration.hours(randomHoldTimeForLessThanXHours(12) + 1)
-    )
-    await rent(user7, realitycards2, '2')
-
-    await rent(user8, realitycards, '3')
-    await time.increase(
-      time.duration.hours(randomHoldTimeForLessThanXHours(12) + 1)
-    )
-    await rent(user7, realitycards, '3')
-
-    await rent(user8, realitycards, '2')
-
-    await time.increase(
-      time.duration.hours(randomHoldTimeForLessThanXHours(12) + 1)
-    )
-
-    // lock and determine winner for market 2
-    await time.increase(time.duration.weeks(3))
-    await realitycards2.lockMarket()
-    await time.increase(time.duration.hours(24))
-
-    await realitio.setResult(0)
-
-    await mainnetproxy.getWinnerFromOracle(realitycards2.address)
-    await realitycards2.determineWinner()
-
-    // market 3
-    // let threeDays = new BN('259200')
-    // let threeDaysInTheFuture = threeDays.add(latestTime)
-    // timestamps = [latestTime, threeDaysInTheFuture, threeDaysInTheFuture]
-
+    // // market 1
     // await factory.createMarket(
-    //     0,
-    //     ipfsHashes[2],
-    //     timestamps,
-    //     tokenURIs,
-    //     artistAddress,
-    //     affiliateAddress,
-    //     cardAffiliateAddress,
-    //     question
+    //   0,
+    //   ipfsHashes[0],
+    //   timestamps,
+    //   tokenURIs,
+    //   artistAddress,
+    //   affiliateAddress,
+    //   cardAffiliateAddress,
+    //   question
     // )
 
-    // var marketAddress3 = await factory.getMostRecentMarket.call(0)
-    // console.log('marketAddress #3: ', marketAddress3)
+    // var marketAddress = await factory.getMostRecentMarket.call(0)
+    // console.log('marketAddress #1: ', marketAddress)
 
-    // realitycards3 = await RCMarket.at(marketAddress3)
+    // realitycards = await RCMarket.at(marketAddress)
+    // var marketLockingTime = await realitycards.marketLockingTime.call()
+    // console.log('marketLockingTime: ', marketLockingTime.toString())
+    // var marketOpeningTime = await realitycards.marketOpeningTime.call()
+    // console.log('marketOpeningTime: ', marketOpeningTime.toString())
+    // var marketState = await realitycards.state.call()
+    // console.log('marketState: ', marketState.toString())
 
-    // Collect rent for all cards
-    await realitycards.collectRentAllCards()
-    await realitycards.collectRentAllCards()
-    await realitycards.collectRentAllCards()
-
-    // Test ownership time with exact values (NEW MARKET)
-
-    // market 4
-    // latestTime = await time.latest()
-    // threeWeeksInTheFuture = threeWeeks.add(latestTime)
+    // // market 2
+    // let threeWeeks = new BN('1814400')
+    // let threeWeeksInTheFuture = threeWeeks.add(latestTime)
     // timestamps = [latestTime, threeWeeksInTheFuture, threeWeeksInTheFuture]
 
     // await factory.createMarket(
     //   0,
-    //   ipfsHashes[3],
+    //   ipfsHashes[1],
     //   timestamps,
     //   tokenURIs,
     //   artistAddress,
-    //   question,
-    //   tokenName
+    //   affiliateAddress,
+    //   cardAffiliateAddress,
+    //   question
     // )
 
-    // var marketAddress4 = await factory.getMostRecentMarket.call(0)
-    // console.log('marketAddress #4: ', marketAddress4)
+    // var marketAddress2 = await factory.getMostRecentMarket.call(0)
+    // console.log('marketAddress #2: ', marketAddress2)
 
-    // realitycards4 = await RCMarket.at(marketAddress4)
+    // // approve market
+    // await factory.approveOrUnapproveMarket(marketAddress2)
 
-    // marketState = await realitycards4.state.call()
-    // console.log('marketState: ', marketState.toString())
+    // realitycards2 = await RCMarket.at(marketAddress2)
 
-    // price = await web3.utils.toWei('10', 'ether')
-    // deposit = await web3.utils.toWei('40', 'ether')
-    // await realitycards4.newRental(price, 0, '0', {
-    //   from: user8,
-    //   value: deposit
+    // // TIME: 1 week
+    // await time.increase(time.duration.weeks(1))
+
+    // // 4 users renting the first card of market#1
+    // for (var i = 1; i <= 10; i++) {
+    //   // user0 = 1 dai
+    //   // user1 = 2
+    //   // user2 = 3
+    //   // user3 = 4
+    //   // user0 = 5
+    //   // user1 = 6
+    //   // user2 = 7
+    //   // user3 = 8
+    //   // user0 = 9
+    //   // user1 = 10
+
+    //   let user = accounts[(i - 1) % 4]
+    //   let amount = web3.utils.toWei(i.toString(), 'ether')
+    //   await realitycards.newRental(amount, 0, 0, { from: user, value: amount })
+
+    //   await time.increase(
+    //     time.duration.hours(randomHoldTimeForLessThanXHours(9))
+    //   ) // hold for a few hours
+    // }
+
+    // // 4 users each renting a card of market#2
+    // for (var i = 1; i < 5; i++) {
+    //   user = accounts[(i - 1) % 4]
+    //   amount = web3.utils.toWei((i * 2).toString(), 'ether')
+    //   await realitycards2.newRental(amount, 0, (i - 1) % 4, {
+    //     from: user,
+    //     value: amount
+    //   })
+    // }
+
+    // // TIME: 5 hours
+    // await time.increase(time.duration.hours(5))
+
+    // // Same 4 users = deposit 50dai, change price of the card they own, withdraw 1dai
+    // for (var i = 1; i < 5; i++) {
+    //   user = accounts[i - 1]
+    //   more = i * 2 * (1 + (i * 2) / 10)
+    //   amount = web3.utils.toWei(more.toString(), 'ether')
+
+    //   await treasury.deposit(user, {
+    //     from: user,
+    //     value: web3.utils.toWei('50', 'ether')
+    //   })
+
+    //   await realitycards2.newRental(amount, 0, i - 1, {
+    //     from: user
+    //   })
+
+    //   await treasury.withdrawDeposit(web3.utils.toWei('1', 'ether'), {
+    //     from: user
+    //   })
+    // }
+
+    // // user0 exits & withdraws all deposit
+    // await realitycards2.exit(0, {
+    //   from: user0
+    // })
+    // let depositOfUser0 = await treasury.deposits.call(user0)
+    // await treasury.withdrawDeposit(depositOfUser0, {
+    //   from: user0
     // })
 
-    // await time.increase(time.duration.days(4))
-    // await realitycards4.collectRentAllTokens()
+    // // Uncomment the following lines to test the values when the market is locked
+    // // await time.increase(time.duration.weeks(2))
+    // // await realitycards2.lockMarket()
 
-    block = await web3.eth.getBlock('latest')
-    const postTimeSkippingBlockTimestamp = block.timestamp
-    console.log(
-      'Final block timestamp according to ganache: ',
-      postTimeSkippingBlockTimestamp
-    )
-    console.log(
-      new Date(postTimeSkippingBlockTimestamp * 1000).toLocaleDateString(
-        'en-US'
-      )
-    )
+    // // user8 renting a bunch of cards to test the active positions table
+    // await rent(user8, realitycards2, '1')
+    // await time.increase(
+    //   time.duration.hours(randomHoldTimeForLessThanXHours(12) + 1)
+    // )
+    // await rent(user7, realitycards2, '1')
 
-    const ganacheStartTimeDifference =
-      postTimeSkippingBlockTimestamp - preTimeSkippingBlockTimestamp
+    // await rent(user8, realitycards2, '0')
+    // await rent(user8, realitycards2, '2')
 
-    console.log(
-      'This is the time that should be set in the docker-compose.yml for the ganache start time:'
-    )
+    // await time.increase(
+    //   time.duration.hours(randomHoldTimeForLessThanXHours(12) + 1)
+    // )
+    // await rent(user7, realitycards2, '2')
 
-    const ganacheStartTime = Date.now() / 1000 - ganacheStartTimeDifference
+    // await rent(user8, realitycards, '3')
+    // await time.increase(
+    //   time.duration.hours(randomHoldTimeForLessThanXHours(12) + 1)
+    // )
+    // await rent(user7, realitycards, '3')
 
-    const isoDate = new Date(ganacheStartTime * 1000).toISOString()
+    // await rent(user8, realitycards, '2')
 
-    console.log(isoDate.substring(0, isoDate.length - 5) + '+00:00')
+    // await time.increase(
+    //   time.duration.hours(randomHoldTimeForLessThanXHours(12) + 1)
+    // )
 
-    console.log(
-      'P.S make sure the randomHoldTimeForLessThanXHours in the deploy script is set to not random'
-    )
+    // // lock and determine winner for market 2
+    // await time.increase(time.duration.weeks(3))
+    // await realitycards2.lockMarket()
+    // await time.increase(time.duration.hours(24))
+
+    // await realitio.setResult(0)
+
+    // await mainnetproxy.getWinnerFromOracle(realitycards2.address)
+    // await realitycards2.determineWinner()
+
+    // // market 3
+    // // let threeDays = new BN('259200')
+    // // let threeDaysInTheFuture = threeDays.add(latestTime)
+    // // timestamps = [latestTime, threeDaysInTheFuture, threeDaysInTheFuture]
+
+    // // await factory.createMarket(
+    // //     0,
+    // //     ipfsHashes[2],
+    // //     timestamps,
+    // //     tokenURIs,
+    // //     artistAddress,
+    // //     affiliateAddress,
+    // //     cardAffiliateAddress,
+    // //     question
+    // // )
+
+    // // var marketAddress3 = await factory.getMostRecentMarket.call(0)
+    // // console.log('marketAddress #3: ', marketAddress3)
+
+    // // realitycards3 = await RCMarket.at(marketAddress3)
+
+    // // Collect rent for all cards
+    // await realitycards.collectRentAllCards()
+    // await realitycards.collectRentAllCards()
+    // await realitycards.collectRentAllCards()
+
+    // // Test ownership time with exact values (NEW MARKET)
+
+    // // market 4
+    // // latestTime = await time.latest()
+    // // threeWeeksInTheFuture = threeWeeks.add(latestTime)
+    // // timestamps = [latestTime, threeWeeksInTheFuture, threeWeeksInTheFuture]
+
+    // // await factory.createMarket(
+    // //   0,
+    // //   ipfsHashes[3],
+    // //   timestamps,
+    // //   tokenURIs,
+    // //   artistAddress,
+    // //   question,
+    // //   tokenName
+    // // )
+
+    // // var marketAddress4 = await factory.getMostRecentMarket.call(0)
+    // // console.log('marketAddress #4: ', marketAddress4)
+
+    // // realitycards4 = await RCMarket.at(marketAddress4)
+
+    // // marketState = await realitycards4.state.call()
+    // // console.log('marketState: ', marketState.toString())
+
+    // // price = await web3.utils.toWei('10', 'ether')
+    // // deposit = await web3.utils.toWei('40', 'ether')
+    // // await realitycards4.newRental(price, 0, '0', {
+    // //   from: user8,
+    // //   value: deposit
+    // // })
+
+    // // await time.increase(time.duration.days(4))
+    // // await realitycards4.collectRentAllTokens()
+
+    // block = await web3.eth.getBlock('latest')
+    // const postTimeSkippingBlockTimestamp = block.timestamp
+    // console.log(
+    //   'Final block timestamp according to ganache: ',
+    //   postTimeSkippingBlockTimestamp
+    // )
+    // console.log(
+    //   new Date(postTimeSkippingBlockTimestamp * 1000).toLocaleDateString(
+    //     'en-US'
+    //   )
+    // )
+
+    // const ganacheStartTimeDifference =
+    //   postTimeSkippingBlockTimestamp - preTimeSkippingBlockTimestamp
+
+    // console.log(
+    //   'This is the time that should be set in the docker-compose.yml for the ganache start time:'
+    // )
+
+    // const ganacheStartTime = Date.now() / 1000 - ganacheStartTimeDifference
+
+    // const isoDate = new Date(ganacheStartTime * 1000).toISOString()
+
+    // console.log(isoDate.substring(0, isoDate.length - 5) + '+00:00')
+
+    // console.log(
+    //   'P.S make sure the randomHoldTimeForLessThanXHours in the deploy script is set to not random'
+    // )
 
     console.log('factory.address: ', factory.address)
     console.log('treasury.address: ', treasury.address)
@@ -429,37 +457,84 @@ module.exports = async (deployer, network, accounts) => {
   }
 }
 
-const rent = (user, market, tokenId) => {
+const createMarket = (
+  factory,
+  openingTime,
+  lockingTime,
+  ipfsHash,
+  numberOfCards
+) => {
   return new Promise(async (resolve, reject) => {
     try {
-      let tokenPrice = '0'
-      let newPrice = '0'
-      let dep = 0
-      let ran = 1
+      const mode = 0
+      const oracleResolutionTime = lockingTime
+      const timestamps = [openingTime, lockingTime, oracleResolutionTime]
+      const tokenURIs = [...Array(numberOfCards).keys()]
+      const artistAddress = '0x0000000000000000000000000000000000000000'
+      const affiliateAddress = '0x0000000000000000000000000000000000000000'
+      const cardAffiliateAddress = [
+        '0x0000000000000000000000000000000000000000'
+      ]
+      const question = 'x' + lockingTime.toString()
 
-      tokenPrice = await market.price(tokenId)
-      newPrice = parseInt(tokenPrice) + 0.11 * parseInt(tokenPrice)
-      if (newPrice == 0) {
-        newPrice = 1 + randomHoldTimeForLessThanXHours(6) + 1
-        newPrice = await web3.utils.toWei(newPrice.toString(), 'ether')
-      }
-      ran = randomHoldTimeForLessThanXHours(23) + 1
-      dep = newPrice / ran
-      await market.newRental(newPrice.toString(), 0, tokenId, {
-        from: user,
-        value: dep
-      })
+      await factory.createMarket(
+        mode,
+        ipfsHash,
+        timestamps,
+        tokenURIs,
+        artistAddress,
+        affiliateAddress,
+        cardAffiliateAddress,
+        question
+      )
+
       resolve('done!')
     } catch (err) {
-      console.log('RENT CARD ERROR: ', err)
+      console.log('CREATE MARKET ', err)
       reject(err)
     }
   })
 }
 
-const randomHoldTimeForLessThanXHours = hours => {
-  return hours / 2 // To test deterministically, useful for setting the block start time for ganache in docker compose
-  // return Math.floor(Math.random() * hours)
+const closeMarket = (market, winningOutcome) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      await market.lockMarket()
+      await realitio.setResult(winningOutcome)
+      await mainnetproxy.getWinnerFromOracle(market.address)
+      await market.determineWinner()
+      resolve('done!')
+    } catch (err) {
+      console.log('CLOSE MARKET ', err)
+      reject(err)
+    }
+  })
+}
+
+const rent = (user, market, tokenId) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let tokenPrice = '0'
+      let newPrice = '0'
+
+      tokenPrice = await market.price(tokenId)
+      newPrice = parseInt(tokenPrice) + 0.11 * parseInt(tokenPrice)
+      if (newPrice == 0) {
+        newPrice = await web3.utils.toWei('1', 'ether')
+      }
+      await market.newRental(newPrice.toString(), '0', tokenId, {
+        from: user
+      })
+      resolve('done!')
+    } catch (err) {
+      console.log('RENT CARD ', err)
+      reject(err)
+    }
+  })
+}
+
+const getRandomInt = max => {
+  return Math.floor(Math.random() * Math.floor(max))
 }
 
 // Most recent deployments:
