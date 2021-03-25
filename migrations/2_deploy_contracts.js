@@ -118,7 +118,7 @@ module.exports = async (deployer, network, accounts) => {
     bridge = await BridgeMockup.deployed()
     await deployer.deploy(DaiMockup)
     dai = await DaiMockup.deployed()
-    await deployter.deploy(ARBMockup)
+    await deployer.deploy(ARBMockup)
     arb = await ARBMockup.deployed()
     // deploy bridge contracts
     await deployer.deploy(
