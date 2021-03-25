@@ -120,6 +120,7 @@ module.exports = async (deployer, network, accounts) => {
     dai = await DaiMockup.deployed()
     await deployer.deploy(ARBMockup)
     arb = await ARBMockup.deployed()
+    await treasury.setAlternateReceiverAddress(arb.address)
     // deploy bridge contracts
     await deployer.deploy(
       XdaiProxy,
