@@ -113,13 +113,13 @@ module.exports = async (deployer, network, accounts) => {
     await factory.setNftHubAddress(nfthubxdai.address, 0)
     // mockups
     await deployer.deploy(RealitioMockup)
-    realitio = await RealitioMockup.deployed()
+    var realitio = await RealitioMockup.deployed()
     await deployer.deploy(BridgeMockup)
-    bridge = await BridgeMockup.deployed()
+    var bridge = await BridgeMockup.deployed()
     await deployer.deploy(DaiMockup)
-    dai = await DaiMockup.deployed()
+    var dai = await DaiMockup.deployed()
     await deployer.deploy(ARBMockup)
-    arb = await ARBMockup.deployed()
+    var arb = await ARBMockup.deployed()
     await treasury.setAlternateReceiverAddress(arb.address)
     // deploy bridge contracts
     await deployer.deploy(
@@ -127,7 +127,7 @@ module.exports = async (deployer, network, accounts) => {
       bridge.address,
       factory.address,
       treasury.address,
-      realitioAddress,
+      realitio.address,
       arbAddressMainnet
     )
     xdaiproxy = await XdaiProxy.deployed()
