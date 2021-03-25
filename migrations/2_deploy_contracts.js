@@ -14,6 +14,7 @@ var MainnetProxy = artifacts.require('./bridgeproxies/RCProxyMainnet.sol')
 var RealitioMockup = artifacts.require('./mockups/RealitioMockup.sol')
 var BridgeMockup = artifacts.require('./mockups/BridgeMockup.sol')
 var DaiMockup = artifacts.require('./mockups/DaiMockup.sol')
+var ARBMockup = artifacts.require('./mockups/AlternateReceiverBridgeMockup.sol')
 
 // variables
 // TODO: update chilvers' script with the relevant addresses here https://github.com/realitio/realitio-contracts/blob/master/config/arbitrators.json
@@ -50,7 +51,9 @@ module.exports = async (deployer, network, accounts) => {
       XdaiProxy,
       ambAddressXdai,
       rcfactory.address,
-      treasury.address
+      treasury.address,
+      realitioAddress,
+      arbAddressMainnet
     )
     xdaiproxy = await XdaiProxy.deployed()
     // tell factory about the proxy
@@ -58,11 +61,13 @@ module.exports = async (deployer, network, accounts) => {
   } else if (network === 'stage2') {
     // mainnet
     // deploy mainnet proxy
+    // realitoaddress and Daimockup need changing for live deployment
     await deployer.deploy(
       MainnetProxy,
       ambAddressMainnet,
       realitioAddress,
-      arbAddressMainnet
+      arbAddressMainnet,
+      DaiMockup
     )
     mainnetproxy = await MainnetProxy.deployed()
     // set xdai proxy address
@@ -113,24 +118,25 @@ module.exports = async (deployer, network, accounts) => {
     bridge = await BridgeMockup.deployed()
     await deployer.deploy(DaiMockup)
     dai = await DaiMockup.deployed()
+    await deployter.deploy(ARBMockup)
+    arb = await ARBMockup.deployed()
     // deploy bridge contracts
     await deployer.deploy(
       XdaiProxy,
       bridge.address,
       factory.address,
-      treasury.address
+      treasury.address,
+      realitioAddress,
+      arbAddressMainnet
     )
     xdaiproxy = await XdaiProxy.deployed()
     await deployer.deploy(
       MainnetProxy,
       bridge.address,
-      realitio.address,
       nfthubmainnet.address,
-      realitio.address,
+      arb.address,
       dai.address,
-      kleros.address
     )
-    // ^^ the second realitio.address is ARB, its fine, we're not testing ARB yet
     mainnetproxy = await MainnetProxy.deployed()
     // tell the factory, mainnet proxy and bridge the xdai proxy address
     await factory.setProxyXdaiAddress(xdaiproxy.address)
