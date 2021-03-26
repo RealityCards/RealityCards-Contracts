@@ -23,4 +23,5 @@ interface ITreasury
     function marketPaused(address _market) external returns(bool);
     function globalPause() external returns(bool);
     function cleanUserBidArray(address _user) external;
+    function withdrawDeposit(uint256 _dai, bool _localWithdrawal) external;
 } 

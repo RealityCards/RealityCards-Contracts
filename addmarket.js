@@ -1,15 +1,16 @@
 //require("dotenv").config();
 
 var realityCardsFactory = artifacts.require("RCFactory");
-var factoryAddress = '0xe1Ab9305DA70b865d610116163A82E1fDF6cCcFD'; //testnet on Sokol
+//var factoryAddress = '0xe1Ab9305DA70b865d610116163A82E1fDF6cCcFD'; //testnet on Sokol
 //var factoryAddress = '0x3b557a58E5c6c4Df3e3307F9c7f5ce46472d80F7'; //beta on xDai
+var factoryAddress = '0x76d22B0065Ada142207E2cDce12322FB3F8c0bAA'; //dev on Sokol
 
 // variables market specific
 var marketOpeningTime = 0;
-var marketLockingTime = 1625094000; 
-var oracleResolutionTime = 1625094000; 
-var ipfsHash = 'QmYE5pzb3macaih1L5AuGg2KDzbW5N9SZGFNV18MvDAWBJ';
-var question = 'When will Reality Cards publicly launch?';
+var marketLockingTime = 1616997600; 
+var oracleResolutionTime = 1616997600; 
+var ipfsHash = 'QmdWBMbrFY9LvMmEYmdntS1LNbxWu7vh7CMZyvv8PyKg8g';
+var question = 'What will the state of Starship SN11 be at the end of this week?';
 var artistAddress = "0x0000000000000000000000000000000000000000";
 var affiliateAddress = "0x0000000000000000000000000000000000000000";
 var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000','0x0000000000000000000000000000000000000000'];
@@ -20,10 +21,9 @@ var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000','0x00
 
 var timestamps = [marketOpeningTime,marketLockingTime,oracleResolutionTime];
 var tokenURIs = [
-    'https://cdn.realitycards.io/nftmetadata/thunderforce/token0.json',
-    'https://cdn.realitycards.io/nftmetadata/thunderforce/token1.json',
-    'https://cdn.realitycards.io/nftmetadata/thunderforce/token2.json',
-    'https://cdn.realitycards.io/nftmetadata/thunderforce/token3.json',
+    'https://cdn.realitycards.io/nftmetadata/release/token0.json',
+    'https://cdn.realitycards.io/nftmetadata/release/token1.json',
+    'https://cdn.realitycards.io/nftmetadata/release/token2.json',
 ]; 
 
 module.exports = function() {
@@ -40,7 +40,6 @@ module.exports = function() {
         affiliateAddress,
         cardAffiliateAddresses,
         question,
-        slug,
       );
 
     var lastAddress = await factory.getMostRecentMarket.call(0);

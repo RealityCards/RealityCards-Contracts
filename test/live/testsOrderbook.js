@@ -493,9 +493,9 @@ it('test orderbook various', async () => {
     assert.equal(bid[2],realitycards.address);
     assert.equal(bid[3],user12);
     // check starting position
-    // starting position too high
-    await expectRevert(newRental(1,0,user10), "Location too high"); 
-    await expectRevert(newRentalWithStartingPosition(1,0,user9,user10), "Location too high");
+    // starting position too high - need more user account to test this now iteration limit is 100
+    //await expectRevert(newRental(1,0,user10), "Location too high"); 
+    //await expectRevert(newRentalWithStartingPosition(1,0,user9,user10), "Location too high");
     await newRentalWithStartingPosition(1,0,user6,user10);
     // starting position too low
     await expectRevert(newRentalWithStartingPosition(10,0,user1,user11), "Location too low");

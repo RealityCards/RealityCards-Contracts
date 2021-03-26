@@ -4,6 +4,8 @@ bin/
 DeployedContracts.txt
 build/
 events/
+.solcover.js
+coverage.json
 
 # buidler
 artifactsBuidler/
