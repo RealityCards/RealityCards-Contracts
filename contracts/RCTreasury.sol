@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/SafeCast.sol";
 import "hardhat/console.sol";
 import "./lib/NativeMetaTransaction.sol";
+//import "./lib/SafeMath32.sol";
+//import "./lib/SafeMath64.sol";
 import "./interfaces/IRCMarket.sol";
 import "./interfaces/IAlternateReceiverBridge.sol";
 
@@ -13,6 +15,8 @@ import "./interfaces/IAlternateReceiverBridge.sol";
 /// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!!
 contract RCTreasury is Ownable, NativeMetaTransaction {
     using SafeMath for uint256;
+    //using SafeMath32 for uint32;
+    //using SafeMath64 for uint64;
 
     ////////////////////////////////////
     //////// VARIABLES /////////////////
@@ -46,6 +50,21 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     mapping(address => uint256) public userBidCount;
     /// @dev a quick check if the market is active or not
     mapping(address => bool) public isMarketActive;
+
+    // DC new stuff
+    /// @param rentalRate the daily cost of the cards the user current owns
+    /// @param totalBids the sum total of all placed bids
+    /// @param forclosureTime The time the user will foreclose with current ownership
+    /// @param safeForclosureTime The time a user could foreclose if they gained ownership of their bids
+    struct User { // lets pack this struct later, leaving it as uint256 for rapid development and testing
+        uint256 deposit;
+        uint256 rentalRate;
+        uint256 totalBids;
+        uint256 foreclosureTime;
+        uint256 safeForclosureTime;
+        uint256 lastRentCalc;
+    }
+    mapping(address => User) public user;
 
     ///// GOVERNANCE VARIABLES /////
     /// @dev only parameters that need to be are here, the rest are in the Factory
@@ -375,6 +394,16 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     {
         lastRentalTime[_user] = block.timestamp;
         return true;
+    }
+
+    function collectRent(address _address) external {
+        // if user has plenty of deposit to cover all bids, do a simple rent collection
+        if (user[_address].safeForclosureTime >= block.timestamp){
+            uint256 timeSincelastRent = block.timestamp.sub(user[_address].lastRentCalc);
+            user[_address].deposit = user[_address].deposit.sub((timeSincelastRent).mul(user[_address].rentalRate));
+            user[_address].foreclosureTime = block.timestamp.add(user[_address].rentalRate.div(user[_address].deposit));
+
+        } 
     }
 
     /// @dev provides the sum total of a users bids accross all markets
