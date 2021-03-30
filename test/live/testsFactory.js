@@ -423,7 +423,7 @@ it('test changeMarketApproval', async () => {
     hidden = await rcfactory.isMarketApproved.call(realitycards.address);
     assert.equal(hidden,false);
     await depositDai(100,user0);
-    for (i = 0; i < 20; i++) {
+    for (i = 0; i < 10; i++) {
         await newRental(1,i,user0);
     }
     await time.increase(time.duration.minutes(1));
@@ -433,16 +433,16 @@ it('test changeMarketApproval', async () => {
     await realitycards.lockMarket();
     await xdaiproxy.getWinnerFromOracle(realitycards.address);
     // await realitycards.determineWinner();
-    for (i = 0; i < 20; i++) {
+    for (i = 0; i < 10; i++) {
         await realitycards.claimCard(i,{from:user0});
     }
-    for (i = 0; i < 20; i++) {
+    for (i = 0; i < 10; i++) {
         await expectRevert(realitycards.upgradeCard(i), "Upgrade blocked");
     }
     // new market, dont approve it, but switch changeTrapCardsIfUnapproved to false
     realitycards2 = await createMarketWithArtistSet();
     await depositDai(100,user0);
-    for (i = 0; i < 20; i++) {
+    for (i = 0; i < 10; i++) {
         await newRentalCustomContract(realitycards2,1,i,user0);
     }
     await time.increase(time.duration.minutes(1));
@@ -456,10 +456,10 @@ it('test changeMarketApproval', async () => {
     await realitycards2.lockMarket();
     await xdaiproxy.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
-    for (i = 0; i < 20; i++) {
+    for (i = 0; i < 10; i++) {
         await realitycards2.claimCard(i,{from:user0});
     }
-    for (i = 0; i < 20; i++) {
+    for (i = 0; i < 10; i++) {
         await realitycards2.upgradeCard(i);
     }
     await time.increase(time.duration.minutes(10));  
@@ -547,6 +547,20 @@ it('test changeArtistApproval, changeAffiliateApproval, changeCardAffiliateAppro
     await expectRevert(rcfactory.changeCardAffiliateApproval(user4, {from: user2}), "Not approved");
 });
 
-
+it('test changeTrapCardsIfUnapproved', async () => {
+    // check the value
+    assert.equal(await rcfactory.trapIfUnapproved(), true);
+    // change it
+    await rcfactory.changeTrapCardsIfUnapproved();
+    //check it again
+    assert.equal(await rcfactory.trapIfUnapproved(), false);
+    // change it back
+    await rcfactory.changeTrapCardsIfUnapproved();
+});
+it('test getAllMarkets', async () => {
+  // check the value
+  var marketArray = await rcfactory.getAllMarkets(0);
+  assert.equal(marketArray[0], realitycards.address);
+});
 
 });

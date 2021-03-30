@@ -1,3 +1,8 @@
+// read in extra arguments, this is to help deploy across multiple networks
+// myArgs[0] = first extra argument.. etc
+var myArgs = process.argv.slice(6, 9)
+
+const _ = require('underscore')
 const { BN, time } = require('@openzeppelin/test-helpers')
 const argv = require('minimist')(process.argv.slice(2), {
   string: ['ipfs_hash']
@@ -23,15 +28,29 @@ var ambAddressMainnet = '0x4C36d2919e407f0Cc2Ee3c993ccF8ac26d9CE64e'
 var realitioAddress = '0x325a2e0F3CCA2ddbaeBB4DfC38Df8D19ca165b47'
 var arbAddressMainnet = '0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016'
 var kleros = '0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D'
+var daiAddressMainnet = '0x6b175474e89094c44da98b954eedeac495271d0f'
 
-// UPDATE THIS AFTER STAGE 1
-var xdaiProxyAddress = '0x9e15161380f76311Ed7C33AdFF52f928Fb27D84D'
+// Testnet addresses
+var ambAddressSokol = '0xFe446bEF1DbF7AFE24E81e05BC8B271C1BA9a560'
+var ambAddressKovan = '0xFe446bEF1DbF7AFE24E81e05BC8B271C1BA9a560'
+var realitioAddressKovan = '0x325a2e0F3CCA2ddbaeBB4DfC38Df8D19ca165b47'
+var arbAddressKovan = '0xA960d095470f7509955d5402e36d9DB984B5C8E2'
+// this is just a blank ERC20 contract
+var daiAddressKovan = '0xd133b22BCCcb3Cd3ca752D206b0632932D530Fda'
 
-// UPDATE THIS AFTER STAGE 2
-var mainnetProxyAddress = '0x5a38d0f63f72a882fd78a1dfdaa18bb5a041f9cf'
+// read input arguments
+var xdaiProxyAddress = myArgs[0]
+var mainnetProxyAddress = myArgs[1]
+var ipfsHashes = argv['ipfs_hash']
+
+// an array of market instances
+var market = []
+// an array of the addresses (just a more readable way of doing market[].address)
+var marketAddress = []
+var zeroAddress = '0x0000000000000000000000000000000000000000'
 
 module.exports = async (deployer, network, accounts) => {
-  if (network === 'stage1') {
+  if (network === 'teststage1' || network === 'stage1') {
     // xdai
     // deploy treasury, factory, reference market and nft hub
     await deployer.deploy(RCTreasury)
@@ -47,36 +66,83 @@ module.exports = async (deployer, network, accounts) => {
     await factory.setReferenceContractAddress(reference.address)
     await factory.setNftHubAddress(nfthubxdai.address)
     // deploy xdai proxy
-    await deployer.deploy(
-      XdaiProxy,
-      ambAddressXdai,
-      rcfactory.address,
-      treasury.address,
-      realitioAddress,
-      arbAddressMainnet
-    )
+    if (network === 'stage1') {
+      await deployer.deploy(
+        XdaiProxy,
+        ambAddressXdai,
+        factory.address,
+        treasury.address
+      )
+    } else {
+      await deployer.deploy(
+        XdaiProxy,
+        ambAddressSokol,
+        factory.address,
+        treasury.address
+      )
+    }
     xdaiproxy = await XdaiProxy.deployed()
     // tell factory about the proxy
     await factory.setProxyXdaiAddress(xdaiproxy.address)
-  } else if (network === 'stage2') {
+
+    // print out some stuff to be picked up by the deploy script ready for the next stage
+    console.log('Completed stage 1')
+    console.log('xDaiProxyAddress')
+    console.log(xdaiproxy.address)
+    console.log('RCTreasuryAddress')
+    console.log(RCTreasury.address)
+    console.log('RCFactoryAddress')
+    console.log(RCFactory.address)
+    console.log('RCMarketAddress')
+    console.log(RCMarket.address)
+    console.log('NFTHubXDAIAddress')
+    console.log(NftHubXDai.address)
+  } else if (
+    network === 'teststage2' ||
+    network === 'stage2' ||
+    network === 'develop'
+  ) {
+    console.log('Begin Stage 2')
     // mainnet
-    // deploy mainnet proxy
-    // realitoaddress and Daimockup need changing for live deployment
-    await deployer.deploy(
-      MainnetProxy,
-      ambAddressMainnet,
-      realitioAddress,
-      arbAddressMainnet,
-      DaiMockup
-    )
+    // deploy mainnet nft hub
+    await deployer.deploy(NftHubMainnet)
+    nfthubmainnet = await NftHubMainnet.deployed()
+    if (network === 'stage2') {
+      // deploy mainnet proxy on mainnet
+      await deployer.deploy(
+        MainnetProxy,
+        ambAddressMainnet,
+        realitioAddress,
+        arbAddressMainnet
+      )
+    } else {
+      // deploy mainnet proxy on Kovan
+      await deployer.deploy(
+        MainnetProxy,
+        ambAddressKovan,
+        realitioAddressKovan,
+        arbAddressKovan
+      )
+    }
+
     mainnetproxy = await MainnetProxy.deployed()
     // set xdai proxy address
     await mainnetproxy.setProxyXdaiAddress(xdaiProxyAddress)
-  } else if (network === 'stage3') {
+
+    console.log('Completed stage 2')
+
+    // this text is used in the deploy script to locate the correct address
+    console.log('TheNFTHubMainnetAddress')
+    console.log(NftHubMainnet.address)
+    console.log('TheMainnetProxyAddress')
+    console.log(MainnetProxy.address)
+  } else if (network === 'teststage3' || network === 'stage3') {
+    console.log('Begin Stage 3')
     // xdai
     // set mainnet proxy address
     xdaiproxy = await XdaiProxy.deployed()
     await xdaiproxy.setProxyMainnetAddress(mainnetProxyAddress)
+    console.log('Completed Stage 3')
   } else if (network === 'graphTesting') {
     console.log('Local Graph Testing, whoot whoot')
 
@@ -136,7 +202,7 @@ module.exports = async (deployer, network, accounts) => {
       bridge.address,
       nfthubmainnet.address,
       arb.address,
-      dai.address,
+      dai.address
     )
     mainnetproxy = await MainnetProxy.deployed()
     // tell the factory, mainnet proxy and bridge the xdai proxy address
@@ -147,53 +213,66 @@ module.exports = async (deployer, network, accounts) => {
     await xdaiproxy.setProxyMainnetAddress(mainnetproxy.address)
     await bridge.setProxyMainnetAddress(mainnetproxy.address)
     await nfthubmainnet.setProxyMainnetAddress(mainnetproxy.address)
+    //var tempMarket;
 
-    // create market #1
-    var tokenURIs = [
-      'https://cdn.realitycards.io/nftmetadata/uni/token0.json',
-      'https://cdn.realitycards.io/nftmetadata/uni/token1.json',
-      'https://cdn.realitycards.io/nftmetadata/uni/token2.json',
-      'https://cdn.realitycards.io/nftmetadata/uni/token3.json'
-    ]
+    /***************************************
+     *                                     *
+     *    START LOCAL TESTING SETUP HERE   *
+     *                                     *
+     **************************************/
 
-    var sixtySeconds = 60
-    var latestTime = await time.latest()
-    var oneYear = new BN('31104000')
-    var oneYearInTheFuture = oneYear.add(latestTime)
-    var marketLockingTime = oneYearInTheFuture
-    var oracleResolutionTime = oneYearInTheFuture
-    var timestamps = [latestTime, marketLockingTime, oracleResolutionTime]
-    var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US'
-    var ipfsHashes = argv['ipfs_hash']
+    // Make some deposits
+    await depositDai(100, user0)
+    await depositDai(100, user1)
+    await depositDai(100, user2)
+
+    // create a new market with all default values
+    await createMarket()
+    console.log('new market here: ', marketAddress[0])
+
+    // marketAddress is an array of the market addresses, market is an array of market objects
+    // so market[x].address == marketAddress[x]
+
+    // create a market with one of the ipfs hashes, options passed in must be in cruly braces{}
+    // TAKE CARE, Misspelling an option will silently fail
+    await createMarket({ ipfs: ipfsHashes[0] })
+    console.log('market with ipfs hash here: ', marketAddress[1])
+
+    //rent a card, by default this is user0, market[0], card 0, 1 xDai
+    await rent()
+
+    // rent in the last market we made
+    tempMarket = market[market.length - 1] //don't use a fixed index, incase we later create a market before this one
+    await rent({ market: tempMarket })
+    // same bidder, just increase the price from default 1, to 2 xDai/day
+    await rent({ market: tempMarket, price: 2 })
+    // new bidder and higher price
+    await rent({ market: tempMarket, price: 3, from: user1 })
+    // bid on a different outcome (outcome is zero index)
+    await rent({ market: tempMarket, outcome: 1 })
+    await rent({ market: tempMarket, outcome: 1, price: 3, from: user1 })
+
+    console.log('renting in market ', tempMarket.address)
 
     await time.increase(time.duration.weeks(1))
 
-    const artistAddress = '0x0000000000000000000000000000000000000000'
-    const affiliateAddress = '0x0000000000000000000000000000000000000000'
-    const cardAffiliateAddress = ['0x0000000000000000000000000000000000000000']
+    //tempMarket we copied from market[] so it's a market object which means we can call functions directly
+    await tempMarket.collectRentAllCards()
+    var countCards = await tempMarket.numberOfTokens()
+    console.log('Number of cards in this market:', countCards.toString())
 
-    // market 1
-    await factory.createMarket(
-      0,
-      ipfsHashes[0],
-      timestamps,
-      tokenURIs,
-      artistAddress,
-      affiliateAddress,
-      cardAffiliateAddress,
-      question
-    )
+    // create a market with a delayed start, 10 cards and an ipfs hash
+    await createMarket({
+      openTime: 120,
+      numberOfCards: 10,
+      ipfs: ipfsHashes[1]
+    })
 
-    var marketAddress = await factory.getMostRecentMarket.call(0)
-    console.log('marketAddress #1: ', marketAddress)
-
-    realitycards = await RCMarket.at(marketAddress)
-    var marketLockingTime = await realitycards.marketLockingTime.call()
-    console.log('marketLockingTime: ', marketLockingTime.toString())
-    var marketOpeningTime = await realitycards.marketOpeningTime.call()
-    console.log('marketOpeningTime: ', marketOpeningTime.toString())
-    var marketState = await realitycards.state.call()
-    console.log('marketState: ', marketState.toString())
+    /**************************************
+     *                                     *
+     *    END LOCAL TESTING SETUP HERE     *
+     *                                     *
+     **************************************/
 
     console.log('factory.address: ', factory.address)
     console.log('treasury.address: ', treasury.address)
@@ -202,32 +281,71 @@ module.exports = async (deployer, network, accounts) => {
   }
 }
 
-const rent = (user, market, tokenId) => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      let tokenPrice = '0'
-      let newPrice = '0'
-      let dep = 0
-      let ran = 1
+async function createMarket(options) {
+  // default values if no parameter passed
+  // timestamps are in seconds from now
+  var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US'
+  var defaults = {
+    mode: 0, // mode, 0 = classic, 1 = winner takes all, 2 = hot potato
+    ipfs: 0x0, // ipfs hash
+    openTime: 0, // seconds delay before market opens
+    closeTime: 31536000, // seconds delay from now before market closes - default 31536000 = 1 year
+    resolveTime: 0, // seconds delay from close before market resolves
+    numberOfCards: 4, // the number of cards to create
+    artistAddress: zeroAddress,
+    affiliateAddress: zeroAddress,
+    cardAffiliate: [zeroAddress] // remember this is an array
+  }
+  options = setDefaults(options, defaults)
+  // assemble arrays
+  var closeTime = new BN(options.closeTime).add(await time.latest())
+  var resolveTime = new BN(options.resolveTime).add(closeTime)
+  var timestamps = [options.openTime, closeTime, resolveTime]
+  var tokenURIs = []
+  for (i = 0; i < options.numberOfCards; i++) {
+    tokenURIs.push('x')
+  }
+  await factory.createMarket(
+    options.mode,
+    options.ipfs,
+    timestamps,
+    tokenURIs,
+    options.artistAddress,
+    options.affiliateAddress,
+    options.cardAffiliate,
+    question
+  )
+  marketAddress.push(await factory.getMostRecentMarket.call(0))
+  market.push(await RCMarket.at(await factory.getMostRecentMarket.call(0)))
+}
 
-      tokenPrice = await market.tokenPrice(tokenId)
-      newPrice = parseInt(tokenPrice) + 0.11 * parseInt(tokenPrice)
-      if (newPrice == 0) {
-        newPrice = 1 + Math.floor(Math.random() * 6) + 1
-        newPrice = await web3.utils.toWei(newPrice.toString(), 'ether')
-      }
-      ran = Math.floor(Math.random() * 23) + 1
-      dep = newPrice / ran
-      await market.newRental(newPrice.toString(), 0, tokenId, {
-        from: user,
-        value: dep
-      })
-      resolve('done!')
-    } catch (err) {
-      console.log('RENT CARD ERROR: ', err)
-      reject(err)
-    }
-  })
+async function depositDai(amount, user) {
+  amount = web3.utils.toWei(amount.toString(), 'ether')
+  await treasury.deposit(user, { from: user, value: amount })
+}
+
+function setDefaults(options, defaults) {
+  return _.defaults({}, _.clone(options), defaults)
+}
+
+async function rent(options) {
+  var defaults = {
+    market: market[0],
+    outcome: 0,
+    price: 1,
+    from: user0,
+    timeLimit: 0,
+    startingPosition: zeroAddress
+  }
+  options = setDefaults(options, defaults)
+  options.price = web3.utils.toWei(options.price.toString(), 'ether')
+  await options.market.newRental(
+    options.price,
+    options.timeLimit,
+    options.startingPosition,
+    options.outcome,
+    { from: options.from }
+  )
 }
 
 // Most recent deployments:

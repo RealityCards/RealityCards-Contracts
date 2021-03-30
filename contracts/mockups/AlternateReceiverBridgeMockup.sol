@@ -13,7 +13,7 @@ contract AlternateReceiverBridgeMockup
 
     receive() external payable {}
 
-    function relayTokens(address _notused, address _RCProxyAddress, uint256 _amount) external {
+    function relayTokens(address _notused, address _RCProxyAddress, uint256 _amount) payable external {
         _notused;
         address payable _recipient = address(uint160(_RCProxyAddress));
         (bool _success, ) = _recipient.call{value:_amount}("");
