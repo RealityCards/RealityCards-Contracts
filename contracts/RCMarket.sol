@@ -3,6 +3,7 @@ pragma solidity ^0.7.5;
 
 import "@openzeppelin/contracts/proxy/Initializable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 import "@openzeppelin/contracts/utils/SafeCast.sol";
 import "hardhat/console.sol";
 import "./interfaces/IRealitio.sol";
@@ -17,6 +18,7 @@ import "./lib/NativeMetaTransaction.sol";
 /// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!!
 contract RCMarket is Initializable, NativeMetaTransaction {
     using SafeMath for uint256;
+    using SignedSafeMath for int256;
 
     ////////////////////////////////////
     //////// VARIABLES /////////////////
@@ -664,7 +666,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             _updateBid(_newPrice, _tokenId, _timeHeldLimit, _startingPosition);
         }
 
-        require(treasury.updateUserBid(_msgSender, _tokenId, _newPrice));
+        //require(treasury.updateUserBid(_msgSender, _tokenId, _newPrice));
         assert(treasury.updateLastRentalTime(_msgSender));
         nonce++;
         return tokenPrice[_tokenId];
@@ -776,7 +778,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             delete orderbook[_tokenId][_msgSender];
             emit LogRemoveFromOrderbook(_msgSender, _tokenId);
         }
-        require(treasury.updateUserBid(_msgSender, _tokenId, 0));
+       // require(treasury.updateUserBid(_msgSender, _tokenId, 0));
         emit LogExit(_msgSender, _tokenId);
     }
 
@@ -910,7 +912,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         uint256 _minPriceToOwn =
             (tokenPrice[_tokenId].mul(minimumPriceIncreasePercent.add(100)))
                 .div(100);
-        treasury.cleanUserBidArray(msgSender());
+        treasury.updateUserBids(msgSender(), _newPrice, _tokenId, true);
         // case 1: user is sufficiently above highest bidder (or only bidder)
         if (ownerOf(_tokenId) == address(this) || _newPrice >= _minPriceToOwn) {
             _setNewOwner(_newPrice, _tokenId, _timeHeldLimit);
@@ -948,8 +950,10 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                     _newPrice <= tokenPrice[_tokenId],
                 "Not 10% higher"
             );
+            int256 _priceChange = int256(_newPrice).sub(int256(orderbook[_tokenId][_msgSender].price));
             // case 1B: new price is at least X% above current price- adjust price & timeHeldLimit. newRental event required.
             if (_newPrice >= _minPriceToOwn) {
+                treasury.updateUserRentalRate(_msgSender, _priceChange);
                 orderbook[_tokenId][_msgSender].price = SafeCast.toUint128(
                     _newPrice
                 );
@@ -977,6 +981,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                     .div(100);
                 // case 1Ca: still the highest owner- adjust price & timeHeldLimit. newRental event required.
                 if (_newPrice >= _minPriceToOwn) {
+                    treasury.updateUserRentalRate(_msgSender, _priceChange);
                     orderbook[_tokenId][_msgSender].price = SafeCast.toUint128(
                         _newPrice
                     );
@@ -1147,6 +1152,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         uint256 _tempNextDeposit;
         uint256 _requiredDeposit;
         uint256 _loopCount = 0;
+        uint256 _oldPrice =  orderbook[_tokenId][_tempNext].price;
 
         // loop through orderbook list for user with sufficient deposit, deleting users who fail the test
         do {
@@ -1171,6 +1177,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                 _loopCount < UNDERBID_MAX_ITERATIONS
         );
         // transfer to previous owner
+        treasury.updateOwnership(ownerOf(_tokenId), _tempNext, _oldPrice, orderbook[_tokenId][_tempNext].price, _tokenId);
         exitedTimestamp[ownerOf(_tokenId)] = block.timestamp;
         _processNewOwner(
             _tempNext,

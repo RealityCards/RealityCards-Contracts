@@ -395,6 +395,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
         // TO:DO remove any bids or ownership records
 
+
         // move the last market in the array to the position of the one being deleted
         address lastMarket =
             user[_user].marketBids[user[_user].marketBids.length.sub(1)];
@@ -412,7 +413,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         user[_user].marketBidsIndex[_market] = 0;
     }
 
-    // update the totalBids and the bid for an underbidder
+    // update the totalBids and the bid record for an underbidder
     function updateUserBids(
         address _user,
         uint256 _price,
@@ -463,50 +464,50 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     }
 
     // update the rentalRate and ownership for the owner
-    function updateUserOwnership(
-        address _user,
-        uint256 _price,
-        uint256 _tokenId,
-        bool _add // is this update an addition
+    function updateOwnership(
+        address _oldOwner,
+        address _newOwner,
+        uint256 _oldPrice,
+        uint256 _newPrice,
+        uint256 _tokenId
     ) external onlyMarkets {
         address _market = msgSender();
-        if (_add) {
-            user[_user].rentalRate = user[_user].rentalRate.add(_price);
+        user[_newOwner].rentalRate = user[_newOwner].rentalRate.add(_newPrice);
 
-            if (
-                user[_user].marketOwnedIndex[_market] == 0 &&
-                user[_user].marketOwned[0] != _market
-            ) {
-                //this is the users first bid in this market
-                user[_user].marketOwnedIndex[_market] = user[_user]
-                    .marketOwned
-                    .length; //index market
-                user[_user].marketOwned.push(_market); //add to array
-            }
-            user[_user].tokens[_market].tokensOwnedIndex[_tokenId] = user[_user]
-                .tokens[_market]
-                .tokensOwned
-                .length; //index token
-            user[_user].tokens[_market].tokensOwned.push(_tokenId); //add to array
-        } else {
-            user[_user].rentalRate = user[_user].rentalRate.sub(_price);
+        if (
+            user[_newOwner].marketOwnedIndex[_market] == 0 &&
+            user[_newOwner].marketOwned[0] != _market
+        ) {
+            //this is the users first bid in this market
+            user[_newOwner].marketOwnedIndex[_market] = user[_newOwner]
+                .marketOwned
+                .length; //index market
+            user[_newOwner].marketOwned.push(_market); //add to array
+        }
+        user[_newOwner].tokens[_market].tokensOwnedIndex[_tokenId] = user[_newOwner]
+            .tokens[_market]
+            .tokensOwned
+            .length; //index token
+        user[_newOwner].tokens[_market].tokensOwned.push(_tokenId); //add to array
 
-            user[_user].tokens[_market].tokensOwned[
-                user[_user].tokens[_market].tokensOwnedIndex[_tokenId]
-            ] = user[_user].tokens[_market].tokensOwned[
-                user[_user].tokens[_market].tokensOwned.length.sub(1)
+
+        user[_oldOwner].rentalRate = user[_oldOwner].rentalRate.sub(_oldPrice);
+
+        user[_oldOwner].tokens[_market].tokensOwned[
+            user[_oldOwner].tokens[_market].tokensOwnedIndex[_tokenId]
+        ] = user[_oldOwner].tokens[_market].tokensOwned[
+            user[_oldOwner].tokens[_market].tokensOwned.length.sub(1)
+        ];
+        user[_oldOwner].tokens[_market].tokensOwned.pop();
+        user[_oldOwner].tokens[_market].tokensOwnedIndex[_tokenId] = 0;
+        if (user[_oldOwner].tokens[_market].tokenBids.length == 0) {
+            user[_oldOwner].marketOwned[
+                user[_oldOwner].marketOwnedIndex[_market]
+            ] = user[_oldOwner].marketOwned[
+                user[_oldOwner].marketOwned.length.sub(1)
             ];
-            user[_user].tokens[_market].tokensOwned.pop();
-            user[_user].tokens[_market].tokensOwnedIndex[_tokenId] = 0;
-            if (user[_user].tokens[_market].tokenBids.length == 0) {
-                user[_user].marketOwned[
-                    user[_user].marketOwnedIndex[_market]
-                ] = user[_user].marketOwned[
-                    user[_user].marketOwned.length.sub(1)
-                ];
-                user[_user].marketOwned.pop();
-                user[_user].marketOwnedIndex[_market] = 0;
-            }
+            user[_oldOwner].marketOwned.pop();
+            user[_oldOwner].marketOwnedIndex[_market] = 0;
         }
     }
 
@@ -526,16 +527,10 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     // if only the price has changed for the owner
     function updateUserRentalRate(
         address _user,
-        uint256 _price,
-        bool _add // is this update an addition
+        int256 _priceChange
     ) external onlyMarkets {
-        if (_add) {
-            user[_user].totalBids = user[_user].totalBids.add(_price);
-            user[_user].rentalRate = user[_user].rentalRate.add(_price);
-        } else {
-            user[_user].totalBids = user[_user].totalBids.sub(_price);
-            user[_user].rentalRate = user[_user].rentalRate.sub(_price);
-        }
+        user[_user].totalBids = SafeCast.toUint256(int256(user[_user].totalBids).add(_priceChange));
+        user[_user].rentalRate = SafeCast.toUint256(int256(user[_user].rentalRate).add(_priceChange));
     }
 
     /// @dev adds or removes a market to the active markets array
@@ -545,6 +540,10 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         } else {
             isMarketActive[msgSender()] = false;
         }
+    }
+
+    function userDeposit(address _user) external view returns(uint256){
+        return user[_user].deposit;
     }
 
     //   FALLBACK
