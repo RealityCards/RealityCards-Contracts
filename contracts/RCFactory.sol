@@ -5,7 +5,7 @@ pragma abicoder v2;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "hardhat/console.sol";
-import "./interfaces/ITreasury.sol";
+import "./interfaces/IRCTreasury.sol";
 import "./interfaces/IRCMarket.sol";
 import "./interfaces/IRCProxyXdai.sol";
 import "./interfaces/IRCNftHubXdai.sol";
@@ -23,7 +23,7 @@ contract RCFactory is Ownable, NativeMetaTransaction {
     ////////////////////////////////////
 
     ///// CONTRACT VARIABLES /////
-    ITreasury public treasury;
+    IRCTreasury public treasury;
     IRCProxyXdai public proxy;
     IRCNftHubXdai public nfthub;
 
@@ -103,7 +103,7 @@ contract RCFactory is Ownable, NativeMetaTransaction {
     ////////////////////////////////////
 
     /// @dev Treasury must be deployed before Factory
-    constructor(ITreasury _treasuryAddress) {
+    constructor(IRCTreasury _treasuryAddress) {
         require(address(_treasuryAddress) != address(0));
         // initialise MetaTransactions
         _initializeEIP712("RealityCardsFactory", "1");

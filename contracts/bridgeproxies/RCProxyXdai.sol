@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../interfaces/IRCProxyMainnet.sol";
 import "../interfaces/IBridge.sol";
 import "../interfaces/IRCMarket.sol";
-import "../interfaces/ITreasury.sol";
+import "../interfaces/IRCTreasury.sol";
 import "../interfaces/IRealitio.sol";
 
 /// @title Reality Cards Proxy- xDai side
@@ -68,7 +68,10 @@ contract RCProxyXdai is Ownable {
     event LogFloatWithdrawn(address indexed recipient, uint256 amount);
     event LogDepositConfirmed(uint256 indexed nonce);
     event LogDepositExecuted(uint256 indexed nonce);
-    event LogQuestionPostedToOracle(address indexed marketAddress, bytes32 indexed questionId);
+    event LogQuestionPostedToOracle(
+        address indexed marketAddress,
+        bytes32 indexed questionId
+    );
 
     ////////////////////////////////////
     ////////// CONSTRUCTOR /////////////
@@ -136,7 +139,10 @@ contract RCProxyXdai is Ownable {
 
     /// @dev admin override of the Oracle, if not yet settled
     /// @dev doesn't check market state, so can close market early
-    function setAmicableResolution(address _marketAddress, uint256 _winningOutcome) external onlyOwner {
+    function setAmicableResolution(
+        address _marketAddress,
+        uint256 _winningOutcome
+    ) external onlyOwner {
         questionFinalised[_marketAddress] = true;
         IRCMarket market = IRCMarket(_marketAddress);
         market.setWinner(_winningOutcome);
@@ -169,13 +175,16 @@ contract RCProxyXdai is Ownable {
         floatSize = floatSize.sub(_amount);
         address _thisAddressNotPayable = owner();
         address payable _recipient = address(uint160(_thisAddressNotPayable));
-        (bool _success, ) = _recipient.call{ value: _amount }("");
+        (bool _success, ) = _recipient.call{value: _amount}("");
         require(_success, "Transfer failed");
         emit LogFloatWithdrawn(msg.sender, _amount);
     }
 
     /// @dev modify validators for dai deposits
-    function setValidator(address _validatorAddress, bool _add) external onlyOwner {
+    function setValidator(address _validatorAddress, bool _add)
+        external
+        onlyOwner
+    {
         require(_validatorAddress != address(0), "Must set an address");
         if (_add) {
             if (!isValidator[_validatorAddress]) {
@@ -201,7 +210,15 @@ contract RCProxyXdai is Ownable {
         uint32 _oracleResolutionTime
     ) external {
         require(msg.sender == factoryAddress, "Not factory");
-        bytes32 _questionId = realitio.askQuestion(2, _question, arbitrator, timeout, _oracleResolutionTime, 0);
+        bytes32 _questionId =
+            realitio.askQuestion(
+                2,
+                _question,
+                arbitrator,
+                timeout,
+                _oracleResolutionTime,
+                0
+            );
         questionIds[_marketAddress] = _questionId;
         emit LogQuestionPostedToOracle(_marketAddress, _questionId);
     }
@@ -219,7 +236,10 @@ contract RCProxyXdai is Ownable {
         require(isFinalized(_marketAddress), "Oracle not finalised");
         IRCMarket market = IRCMarket(_marketAddress);
         // check market state to prevent market closing early
-        require(uint256(market.marketLockingTime()) <= block.timestamp, "Market not finished");
+        require(
+            uint256(market.marketLockingTime()) <= block.timestamp,
+            "Market not finished"
+        );
         questionFinalised[_marketAddress] = true;
         bytes32 _questionId = questionIds[_marketAddress];
         bytes32 _winningOutcome = realitio.resultFor(_questionId);
@@ -249,10 +269,20 @@ contract RCProxyXdai is Ownable {
     /// @dev no harm if called again after successful posting because can't mint nft with same tokenId twice
     function postCardToUpgrade(uint256 _tokenId) public {
         require(upgradedNftId[_tokenId].set, "Nft not set");
-        bytes4 _methodSelector = IRCProxyMainnet(address(0)).upgradeCard.selector;
+        bytes4 _methodSelector =
+            IRCProxyMainnet(address(0)).upgradeCard.selector;
         bytes memory data =
-            abi.encodeWithSelector(_methodSelector, _tokenId, upgradedNftId[_tokenId].tokenURI, upgradedNftId[_tokenId].owner);
-        bridge.requireToPassMessage(proxyMainnetAddress, data, MAINNET_BRIDGE_GAS_COST);
+            abi.encodeWithSelector(
+                _methodSelector,
+                _tokenId,
+                upgradedNftId[_tokenId].tokenURI,
+                upgradedNftId[_tokenId].owner
+            );
+        bridge.requireToPassMessage(
+            proxyMainnetAddress,
+            data,
+            MAINNET_BRIDGE_GAS_COST
+        );
     }
 
     ////////////////////////////////////
@@ -275,7 +305,8 @@ contract RCProxyXdai is Ownable {
 
         // If the deposit is new, create it
         if (deposits[_nonce].user == address(0)) {
-            Deposit memory newDeposit = Deposit(_user, _amount, 0, false, false);
+            Deposit memory newDeposit =
+                Deposit(_user, _amount, 0, false, false);
             deposits[_nonce] = newDeposit;
         }
 
@@ -286,11 +317,16 @@ contract RCProxyXdai is Ownable {
         // Add 1 confirmation, if this hasn't been done already
         if (!hasConfirmedDeposit[_nonce][msg.sender]) {
             hasConfirmedDeposit[_nonce][msg.sender] = true;
-            deposits[_nonce].confirmations = deposits[_nonce].confirmations.add(1);
+            deposits[_nonce].confirmations = deposits[_nonce].confirmations.add(
+                1
+            );
         }
 
         // Confirm if enough confirms and pass over for execution
-        if (!deposits[_nonce].confirmed && deposits[_nonce].confirmations >= (validatorCount.div(2)).add(1)) {
+        if (
+            !deposits[_nonce].confirmed &&
+            deposits[_nonce].confirmations >= (validatorCount.div(2)).add(1)
+        ) {
             deposits[_nonce].confirmed = true;
             executeDaiDeposit(_nonce);
             emit LogDepositConfirmed(_nonce);
@@ -306,14 +342,18 @@ contract RCProxyXdai is Ownable {
         if (address(this).balance >= _amount) {
             deposits[_nonce].executed = true;
             emit LogDepositExecuted(_nonce);
-            ITreasury treasury = ITreasury(treasuryAddress);
+            IRCTreasury treasury = IRCTreasury(treasuryAddress);
             // if Treasury will allow the deposit and globalPause is off, send it there
-            if (address(treasury).balance.add(_amount) <= treasury.maxContractBalance() && !treasury.globalPause()) {
-                assert(treasury.deposit{ value: _amount }(_user));
+            if (
+                address(treasury).balance.add(_amount) <=
+                treasury.maxContractBalance() &&
+                !treasury.globalPause()
+            ) {
+                assert(treasury.deposit{value: _amount}(_user));
                 // otherwise, just send to the user
             } else {
                 address payable _recipient = address(uint160(_user));
-                (bool _success, ) = _recipient.call{ value: _amount }("");
+                (bool _success, ) = _recipient.call{value: _amount}("");
                 require(_success, "Transfer failed");
             }
         }

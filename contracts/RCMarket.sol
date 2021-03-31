@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/utils/SafeCast.sol";
 import "hardhat/console.sol";
 import "./interfaces/IRealitio.sol";
 import "./interfaces/IFactory.sol";
-import "./interfaces/ITreasury.sol";
+import "./interfaces/IRCTreasury.sol";
 import "./interfaces/IRCProxyXdai.sol";
 import "./interfaces/IRCNftHubXdai.sol";
 import "./lib/NativeMetaTransaction.sol";
@@ -44,7 +44,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     uint256 public totalNftMintCount;
 
     ///// CONTRACT VARIABLES /////
-    ITreasury public treasury;
+    IRCTreasury public treasury;
     IFactory public factory;
     IRCProxyXdai public proxy;
     IRCNftHubXdai public nfthub;
@@ -571,10 +571,10 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @notice collect rent on a set of cards
     /// @dev used by the treasury to collect rent on specifc cards
     /// @param _cards the tokenId of the cards to collect rent on
-    function collectRentSpecificCards(uint128[] calldata _cards) external {
+    function collectRentSpecificCards(uint256[] calldata _cards) external {
         //_checkState(States.OPEN);
         for (uint256 i; i < _cards.length; i++) {
-            _collectRent(uint256(_cards[i]));
+            _collectRent(_cards[i]);
         }
     }
 
@@ -715,11 +715,11 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @dev can be called by anyone but unless it's the treasury the address given will be ignored
     /// @param _cards the array of tokenIds that are to be exited
     /// @param _user the user bids to exit (only can be used by the treasury)
-    function exitSpecificCards(uint128[] calldata _cards, address _user)
+    function exitSpecificCards(uint256[] calldata _cards, address _user)
         external
     {
         for (uint256 i; i < _cards.length; i++) {
-            _exit(uint256(_cards[i]), _user);
+            _exit(_cards[i], _user);
         }
     }
 

@@ -24,9 +24,9 @@ interface IRCMarket {
     function state() external view returns (States);
     function setWinner(uint256) external;
     function collectRentAllCards() external;
-    function collectRentSpecificCards(uint128[] calldata _cards) external;
+    function collectRentSpecificCards(uint256[] calldata _cards) external;
     function exitAll() external;
-    function exitSpecificCards(uint128[] calldata _cards, address _user) external;
+    function exitSpecificCards(uint256[] calldata _cards, address _user) external;
     function marketLockingTime() external returns(uint32);
 
 }
