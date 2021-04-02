@@ -154,22 +154,116 @@ module.exports = async (deployer, network, accounts) => {
      *                                     *
      **************************************/
 
-    // Deposit from 101 accounts
-    for (let i = 0; i < accounts.length; i++) {
-      await depositDai((100 * i + 1) % 5, accounts[i])
-    }
-
-    // Create a market
+    // create a market with one of the ipfs hashes, options passed in must be in curly braces{}
+    // all other values are the default values (4 cards, starting right away, closing in one year)
+    // TAKE CARE, Misspelling an option will silently fail
+    // TAKE CARE, if using the same ipfs for two markets, the second market won't be displayed in the UI - the slug should be unique
     await createMarket({ ipfs: ipfsHashes[0] })
-    console.log('market with ipfs hash here: ', marketAddress[0])
+    console.log('new market here: ', market[0].address)
+    // market is an array of market objects, this is how you can access a market and call its methods (rent, exit, withdraw winnings)
 
-    // Rent the first card by all 101 accounts
-    for (let i = 0; i < accounts.length; i++) {
-      await rent({ market: market[0], from: accounts[i] })
-      await time.increase(time.duration.minutes(i + 1))
-    }
+    // create 6 markets (#1-6)
+    await createMarket({
+      ipfs: ipfsHashes[1],
+      numberOfCards: 2,
+      closeTime: time.duration.weeks(3)
+    })
+    await createMarket({
+      ipfs: ipfsHashes[2],
+      numberOfCards: 3,
+      closeTime: time.duration.weeks(4)
+    })
+    await createMarket({
+      ipfs: ipfsHashes[3],
+      numberOfCards: 4,
+      closeTime: time.duration.weeks(5)
+    })
+    await createMarket({
+      ipfs: ipfsHashes[4],
+      numberOfCards: 2,
+      closeTime: time.duration.weeks(3)
+    })
+    await createMarket({
+      ipfs: ipfsHashes[5],
+      numberOfCards: 3,
+      closeTime: time.duration.weeks(4)
+    })
+    await createMarket({
+      ipfs: ipfsHashes[6],
+      numberOfCards: 4,
+      closeTime: time.duration.weeks(5)
+    })
 
-    // Collect rent to show accurate info
+    // make some deposits
+    await depositDai(100, accounts[0])
+    await depositDai(100, accounts[1])
+    await depositDai(100, accounts[2])
+    await depositDai(100, accounts[3])
+
+    //rent a card, if the price is not specified it will rent at 10% higher than the current price (or 1 if current is 0)
+    await rent({ from: accounts[1], market: market[0], outcome: 0 })
+    // skip some time
+    await time.increase(time.duration.days(3))
+
+    // skip more time to make sure all markets are past their closing time
+    await time.increase(time.duration.weeks(5))
+
+    // lock 2 markets (#1 and #2)
+    await market[1].lockMarket()
+    await market[2].lockMarket()
+
+    // close 4 markets (#3-6)
+    await closeMarket({ market: market[3], winningOutcome: 0 })
+    await closeMarket({ market: market[4], winningOutcome: 1 })
+    await closeMarket({ market: market[5], winningOutcome: 2 })
+    await closeMarket({ market: market[6], winningOutcome: 3 })
+
+    // rent some cards from market 0
+
+    // create 2 markets (#7-8)
+    await createMarket({
+      ipfs: ipfsHashes[7],
+      numberOfCards: 2,
+      closeTime: time.duration.weeks(24)
+    })
+    await createMarket({
+      ipfs: ipfsHashes[8],
+      numberOfCards: 10,
+      closeTime: time.duration.weeks(4)
+    })
+
+    // rent some cards from markets 7 and 8
+
+    // create 2 markets (#9-10)
+    await createMarket({
+      ipfs: ipfsHashes[9],
+      numberOfCards: 5,
+      closeTime: time.duration.weeks(1)
+    })
+    await createMarket({
+      ipfs: ipfsHashes[10],
+      numberOfCards: 2,
+      closeTime: time.duration.days(1)
+    })
+
+    // rent some cards from markets 9 and 10
+
+    // create 2 markets with a delayed start (#11-12) - coming soon markets
+    await createMarket({
+      ipfs: ipfsHashes[11],
+      openTime: time.duration.weeks(3),
+      closeTime: time.duration.weeks(4)
+    })
+    await createMarket({
+      ipfs: ipfsHashes[12],
+      openTime: time.duration.days(1),
+      closeTime: time.duration.weeks(9)
+    })
+
+    // create 1 market (#13) - random texts
+    //await createMarket({ ipfs: ipfsHashes[12] })
+
+    // you can force updating the state of an open market by calling collect for all cards
     await market[0].collectRentAllCards()
 
     /**************************************
@@ -223,11 +317,17 @@ async function createMarket(options) {
   market.push(await RCMarket.at(await factory.getMostRecentMarket.call(0)))
 }
 
-async function closeMarket(market, winningOutcome) {
-  await market.lockMarket()
-  await realitio.setResult(winningOutcome)
-  await mainnetproxy.getWinnerFromOracle(market.address)
-  await market.determineWinner()
+async function closeMarket(options) {
+  var defaults = {
+    market: market[0],
+    winningOutcome: 0
+  }
+  options = setDefaults(options, defaults)
+
+  await options.market.lockMarket()
+  await realitio.setResult(options.winningOutcome)
+  await mainnetproxy.getWinnerFromOracle(options.market.address)
+  await options.market.determineWinner()
 }
 
 async function depositDai(amount, user) {
