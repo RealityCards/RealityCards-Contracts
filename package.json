@@ -15,6 +15,7 @@
   "author": "Andrew Stanger",
   "license": "ISC",
   "dependencies": {
+    "@codechecks/client": "^0.1.10",
     "@openzeppelin/test-helpers": "^0.5.10",
     "acorn": "^8.0.5",
     "dotenv": "^8.2.0",
@@ -28,6 +29,7 @@
     "truffle-hdwallet-provider": "^1.0.17",
     "truffle-plugin-verify": "^0.5.4",
     "truffle-security": "^1.7.3",
+    "typescript": "^4.2.3",
     "underscore": "^1.12.1",
     "web3": "^1.3.4",
     "web3-utils": "^1.3.4"

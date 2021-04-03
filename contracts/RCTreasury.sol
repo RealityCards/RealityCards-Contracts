@@ -395,7 +395,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
         // TO:DO remove any bids or ownership records
 
-
         // move the last market in the array to the position of the one being deleted
         address lastMarket =
             user[_user].marketBids[user[_user].marketBids.length.sub(1)];
@@ -408,7 +407,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
             _market
         ];
 
-        // remove the last market and it's index record
+        // remove the last market and its index record
         user[_user].marketBids.pop();
         user[_user].marketBidsIndex[_market] = 0;
     }
@@ -484,12 +483,13 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
                 .length; //index market
             user[_newOwner].marketOwned.push(_market); //add to array
         }
-        user[_newOwner].tokens[_market].tokensOwnedIndex[_tokenId] = user[_newOwner]
+        user[_newOwner].tokens[_market].tokensOwnedIndex[_tokenId] = user[
+            _newOwner
+        ]
             .tokens[_market]
             .tokensOwned
             .length; //index token
         user[_newOwner].tokens[_market].tokensOwned.push(_tokenId); //add to array
-
 
         user[_oldOwner].rentalRate = user[_oldOwner].rentalRate.sub(_oldPrice);
 
@@ -512,6 +512,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     }
 
     // if only the price has changed for an underbider
+    // TO:DO rename this and/or updateUserBids to clarify the difference
     function updateUserTotalBids(
         address _user,
         uint256 _price,
@@ -525,12 +526,16 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     }
 
     // if only the price has changed for the owner
-    function updateUserRentalRate(
-        address _user,
-        int256 _priceChange
-    ) external onlyMarkets {
-        user[_user].totalBids = SafeCast.toUint256(int256(user[_user].totalBids).add(_priceChange));
-        user[_user].rentalRate = SafeCast.toUint256(int256(user[_user].rentalRate).add(_priceChange));
+    function updateUserRentalRate(address _user, int256 _priceChange)
+        external
+        onlyMarkets
+    {
+        user[_user].totalBids = SafeCast.toUint256(
+            int256(user[_user].totalBids).add(_priceChange)
+        );
+        user[_user].rentalRate = SafeCast.toUint256(
+            int256(user[_user].rentalRate).add(_priceChange)
+        );
     }
 
     /// @dev adds or removes a market to the active markets array
@@ -542,7 +547,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         }
     }
 
-    function userDeposit(address _user) external view returns(uint256){
+    function userDeposit(address _user) external view returns (uint256) {
         return user[_user].deposit;
     }
 
