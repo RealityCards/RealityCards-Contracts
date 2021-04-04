@@ -280,10 +280,14 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         // step 3: remove bids if insufficient deposit
         if (
             user[_msgSender].rentalRate.div(minRentalDayDivisor) >
-            user[_msgSender].deposit
+            user[_msgSender].deposit &&
+            user[_msgSender].totalBids != 0
         ) {
             uint256 i = 0;
             do {
+                console.log("exiting cards ", i);
+                console.log("user total bids ", user[_msgSender].totalBids);
+                console.log("market bids", user[_msgSender].marketBids[i]);
                 if (isMarketActive[user[_msgSender].marketBids[i]]) {
                     IRCMarket _market =
                         IRCMarket(user[_msgSender].marketBids[i]);
@@ -492,8 +496,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
             user[_newOwner].tokens[_market].tokensOwned.push(_tokenId); //add to array
         }
         if (!isMarket[_oldOwner]) {
-            console.log("old rental rate ", user[_oldOwner].rentalRate);
-            console.log("old rental price ", _oldPrice);
             user[_oldOwner].rentalRate = user[_oldOwner].rentalRate.sub(
                 _oldPrice
             );

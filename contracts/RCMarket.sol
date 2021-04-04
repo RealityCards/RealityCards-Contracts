@@ -1161,14 +1161,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                 _tempNextDeposit < _requiredDeposit &&
                 _loopCount < UNDERBID_MAX_ITERATIONS
         );
-        // transfer to previous owner
-        // treasury.updateOwnership(
-        //     ownerOf(_tokenId),
-        //     _tempNext,
-        //     _oldPrice,
-        //     orderbook[_tokenId][_tempNext].price,
-        //     _tokenId
-        // );
+        
         exitedTimestamp[ownerOf(_tokenId)] = block.timestamp;
         _processNewOwner(
             _tempNext,
