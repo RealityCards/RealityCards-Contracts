@@ -426,7 +426,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
             if (
                 user[_user].marketBidsIndex[_market] == 0 &&
-                user[_user].marketBids[0] != _market
+                user[_user].totalBids == 0
             ) {
                 //this is the users first bid in this market
                 user[_user].marketBidsIndex[_market] = user[_user]
@@ -472,42 +472,48 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     ) external onlyMarkets {
         address _market = msgSender();
         user[_newOwner].rentalRate = user[_newOwner].rentalRate.add(_newPrice);
-
-        if (
-            user[_newOwner].marketOwnedIndex[_market] == 0 &&
-            user[_newOwner].marketOwned[0] != _market
-        ) {
-            //this is the users first bid in this market
-            user[_newOwner].marketOwnedIndex[_market] = user[_newOwner]
-                .marketOwned
-                .length; //index market
-            user[_newOwner].marketOwned.push(_market); //add to array
+        if (!isMarket[_newOwner]) {
+            if (
+                user[_newOwner].marketOwnedIndex[_market] == 0 &&
+                user[_newOwner].totalBids == 0
+            ) {
+                //this is the users first bid in this market
+                user[_newOwner].marketOwnedIndex[_market] = user[_newOwner]
+                    .marketOwned
+                    .length; //index market
+                user[_newOwner].marketOwned.push(_market); //add to array
+            }
+            user[_newOwner].tokens[_market].tokensOwnedIndex[_tokenId] = user[
+                _newOwner
+            ]
+                .tokens[_market]
+                .tokensOwned
+                .length; //index token
+            user[_newOwner].tokens[_market].tokensOwned.push(_tokenId); //add to array
         }
-        user[_newOwner].tokens[_market].tokensOwnedIndex[_tokenId] = user[
-            _newOwner
-        ]
-            .tokens[_market]
-            .tokensOwned
-            .length; //index token
-        user[_newOwner].tokens[_market].tokensOwned.push(_tokenId); //add to array
+        if (!isMarket[_oldOwner]) {
+            console.log("old rental rate ", user[_oldOwner].rentalRate);
+            console.log("old rental price ", _oldPrice);
+            user[_oldOwner].rentalRate = user[_oldOwner].rentalRate.sub(
+                _oldPrice
+            );
 
-        user[_oldOwner].rentalRate = user[_oldOwner].rentalRate.sub(_oldPrice);
-
-        user[_oldOwner].tokens[_market].tokensOwned[
-            user[_oldOwner].tokens[_market].tokensOwnedIndex[_tokenId]
-        ] = user[_oldOwner].tokens[_market].tokensOwned[
-            user[_oldOwner].tokens[_market].tokensOwned.length.sub(1)
-        ];
-        user[_oldOwner].tokens[_market].tokensOwned.pop();
-        user[_oldOwner].tokens[_market].tokensOwnedIndex[_tokenId] = 0;
-        if (user[_oldOwner].tokens[_market].tokenBids.length == 0) {
-            user[_oldOwner].marketOwned[
-                user[_oldOwner].marketOwnedIndex[_market]
-            ] = user[_oldOwner].marketOwned[
-                user[_oldOwner].marketOwned.length.sub(1)
+            user[_oldOwner].tokens[_market].tokensOwned[
+                user[_oldOwner].tokens[_market].tokensOwnedIndex[_tokenId]
+            ] = user[_oldOwner].tokens[_market].tokensOwned[
+                user[_oldOwner].tokens[_market].tokensOwned.length.sub(1)
             ];
-            user[_oldOwner].marketOwned.pop();
-            user[_oldOwner].marketOwnedIndex[_market] = 0;
+            user[_oldOwner].tokens[_market].tokensOwned.pop();
+            user[_oldOwner].tokens[_market].tokensOwnedIndex[_tokenId] = 0;
+            if (user[_oldOwner].tokens[_market].tokenBids.length == 0) {
+                user[_oldOwner].marketOwned[
+                    user[_oldOwner].marketOwnedIndex[_market]
+                ] = user[_oldOwner].marketOwned[
+                    user[_oldOwner].marketOwned.length.sub(1)
+                ];
+                user[_oldOwner].marketOwned.pop();
+                user[_oldOwner].marketOwnedIndex[_market] = 0;
+            }
         }
     }
 
