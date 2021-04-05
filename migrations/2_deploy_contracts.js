@@ -93,9 +93,9 @@ module.exports = async (deployer, network, accounts) => {
     const preTimeSkippingBlockTimestamp = block.timestamp
 
     // Log all account addresses
-    accounts.map((account, index) =>
-      console.log('Account ' + index + ' : ', account)
-    )
+    // accounts.map((account, index) =>
+    //   console.log('Account ' + index + ' : ', account)
+    // )
 
     // -------------------------------
     // Deploying the initial contracts
@@ -148,6 +148,8 @@ module.exports = async (deployer, network, accounts) => {
     await bridge.setProxyMainnetAddress(mainnetproxy.address)
     await nfthubmainnet.setProxyMainnetAddress(mainnetproxy.address)
 
+    console.log('Initial contracts deployed')
+
     /***************************************
      *                                     *
      *    START LOCAL TESTING SETUP HERE   *
@@ -159,51 +161,171 @@ module.exports = async (deployer, network, accounts) => {
     // TAKE CARE, Misspelling an option will silently fail
     // TAKE CARE, if using the same ipfs for two markets, the second market won't be displayed in the UI - the slug should be unique
     await createMarket({ ipfs: ipfsHashes[0] })
-    console.log('new market here: ', market[0].address)
+    console.log('New market here: ', market[0].address)
     // market is an array of market objects, this is how you can access a market and call its methods (rent, exit, withdraw winnings)
 
     // create 6 markets (#1-6)
     await createMarket({
       ipfs: ipfsHashes[1],
-      numberOfCards: 2,
       closeTime: time.duration.weeks(3)
     })
     await createMarket({
       ipfs: ipfsHashes[2],
-      numberOfCards: 3,
       closeTime: time.duration.weeks(4)
     })
     await createMarket({
       ipfs: ipfsHashes[3],
-      numberOfCards: 4,
       closeTime: time.duration.weeks(5)
     })
     await createMarket({
       ipfs: ipfsHashes[4],
-      numberOfCards: 2,
       closeTime: time.duration.weeks(3)
     })
     await createMarket({
       ipfs: ipfsHashes[5],
-      numberOfCards: 3,
       closeTime: time.duration.weeks(4)
     })
     await createMarket({
       ipfs: ipfsHashes[6],
-      numberOfCards: 4,
       closeTime: time.duration.weeks(5)
     })
 
+    console.log('Markets #1-6 deployed')
+
     // make some deposits
-    await depositDai(100, accounts[0])
-    await depositDai(100, accounts[1])
-    await depositDai(100, accounts[2])
-    await depositDai(100, accounts[3])
+    await depositDai(500, accounts[0])
+    await depositDai(900, accounts[1])
+    await depositDai(500, accounts[2])
+    await depositDai(500, accounts[3])
+    await depositDai(500, accounts[4])
+    await depositDai(500, accounts[5])
+    await depositDai(500, accounts[6])
+    await depositDai(500, accounts[7])
+    await depositDai(500, accounts[8])
+    await depositDai(500, accounts[9])
+    await depositDai(500, accounts[10])
+    await depositDai(500, accounts[11])
+    await depositDai(500, accounts[12])
+
+    console.log('Deposits done')
 
     //rent a card, if the price is not specified it will rent at 10% higher than the current price (or 1 if current is 0)
     await rent({ from: accounts[1], market: market[0], outcome: 0 })
     // skip some time
     await time.increase(time.duration.days(3))
+    // exit position
+    await exit({ from: accounts[1], market: market[0], outcome: 0 })
+
+    console.log('Test rent done')
+
+    // account1 setup: rent 4 winnings cards, 6 losing cards, 6 locked cards
+
+    // 3 locked cards (market#1)
+    await rent({
+      from: accounts[1],
+      market: market[1],
+      outcome: 0,
+      price: '20'
+    })
+    await time.increase(time.duration.hours(2))
+    await exit({ from: accounts[1], market: market[1], outcome: 0 })
+
+    await rent({
+      from: accounts[1],
+      market: market[1],
+      outcome: 1,
+      price: '10'
+    })
+    await time.increase(time.duration.hours(4))
+    await exit({ from: accounts[1], market: market[1], outcome: 1 })
+
+    await rent({ from: accounts[1], market: market[1], outcome: 2, price: '5' })
+    await time.increase(time.duration.hours(6))
+    await exit({ from: accounts[1], market: market[1], outcome: 2 })
+
+    // 3 locked cards (market#2)
+    await rent({ from: accounts[1], market: market[2], outcome: 2, price: '4' })
+    await time.increase(time.duration.hours(3))
+    await exit({ from: accounts[1], market: market[2], outcome: 2 })
+
+    await rent({ from: accounts[1], market: market[2], outcome: 1, price: '8' })
+    await time.increase(time.duration.hours(5))
+    await exit({ from: accounts[1], market: market[2], outcome: 1 })
+
+    await rent({
+      from: accounts[1],
+      market: market[2],
+      outcome: 0,
+      price: '66'
+    })
+    await time.increase(time.duration.hours(7))
+    await exit({ from: accounts[1], market: market[2], outcome: 0 })
+
+    console.log('Locked cards done')
+
+    // 4 winnings cards (market#3)
+    await rent({ from: accounts[1], market: market[3], outcome: 0, price: '4' })
+    await time.increase(time.duration.hours(12))
+    await exit({ from: accounts[1], market: market[3], outcome: 0 })
+
+    await rent({ from: accounts[1], market: market[4], outcome: 1, price: '8' })
+    await time.increase(time.duration.hours(5))
+    await exit({ from: accounts[1], market: market[4], outcome: 1 })
+
+    await rent({
+      from: accounts[1],
+      market: market[5],
+      outcome: 2,
+      price: '16'
+    })
+    await time.increase(time.duration.hours(7))
+    await exit({ from: accounts[1], market: market[5], outcome: 2 })
+
+    await rent({
+      from: accounts[1],
+      market: market[6],
+      outcome: 3,
+      price: '32'
+    })
+    await time.increase(time.duration.hours(9))
+    await exit({ from: accounts[1], market: market[6], outcome: 3 })
+
+    console.log('Winning cards done')
+
+    // 6 losing cards
+    await rent({ from: accounts[1], market: market[3], outcome: 1 })
+    await time.increase(time.duration.hours(1))
+    await exit({ from: accounts[1], market: market[3], outcome: 1 })
+
+    await rent({ from: accounts[1], market: market[3], outcome: 2 })
+    await time.increase(time.duration.hours(1))
+    await exit({ from: accounts[1], market: market[3], outcome: 2 })
+
+    await rent({ from: accounts[1], market: market[4], outcome: 2 })
+    await time.increase(time.duration.hours(1))
+    await exit({ from: accounts[1], market: market[4], outcome: 2 })
+
+    await rent({ from: accounts[1], market: market[4], outcome: 3 })
+    await time.increase(time.duration.hours(1))
+    await exit({ from: accounts[1], market: market[4], outcome: 3 })
+
+    await rent({
+      from: accounts[1],
+      market: market[5],
+      outcome: 3
+    })
+    await time.increase(time.duration.hours(1))
+    await exit({ from: accounts[1], market: market[5], outcome: 3 })
+
+    await rent({
+      from: accounts[1],
+      market: market[6],
+      outcome: 0
+    })
+    await time.increase(time.duration.hours(1))
+    await exit({ from: accounts[1], market: market[6], outcome: 0 })
+
+    console.log('Losing cards done')
 
     // skip more time to make sure all markets are past their closing time
     await time.increase(time.duration.weeks(5))
@@ -218,12 +340,39 @@ module.exports = async (deployer, network, accounts) => {
     await closeMarket({ market: market[5], winningOutcome: 2 })
     await closeMarket({ market: market[6], winningOutcome: 3 })
 
-    // rent some cards from market 0
+    console.log('Closed markets done')
+
+    // account#1 setup: rent some cards from market 0
+    await rent({ from: accounts[1], market: market[0], outcome: 1, price: 5 })
+    await rent({ from: accounts[1], market: market[0], outcome: 2, price: 10 })
+    // set users to market#0's leaderboard and orderbook (outcome 0)
+    await rent({ from: accounts[2], market: market[0], outcome: 0 })
+    await time.increase(time.duration.hours(11))
+    await rent({ from: accounts[3], market: market[0], outcome: 0 })
+    await time.increase(time.duration.hours(22))
+    await rent({ from: accounts[4], market: market[0], outcome: 0 })
+    await time.increase(time.duration.hours(33))
+    await rent({ from: accounts[5], market: market[0], outcome: 0 })
+    await time.increase(time.duration.hours(44))
+    await rent({ from: accounts[7], market: market[0], outcome: 0 })
+    await time.increase(time.duration.hours(55))
+    await rent({ from: accounts[8], market: market[0], outcome: 0 })
+    await time.increase(time.duration.hours(66))
+    await rent({ from: accounts[9], market: market[0], outcome: 0 })
+    await time.increase(time.duration.hours(77))
+    await rent({ from: accounts[10], market: market[0], outcome: 0 })
+    await time.increase(time.duration.hours(88))
+    await rent({ from: accounts[11], market: market[0], outcome: 0 })
+    await time.increase(time.duration.hours(99))
+    await rent({ from: accounts[12], market: market[0], outcome: 0 })
+    await time.increase(time.duration.hours(200))
+
+    console.log('Market#0 rents done')
 
     // create 2 markets (#7-8)
     await createMarket({
       ipfs: ipfsHashes[7],
-      numberOfCards: 2,
+      numberOfCards: 6,
       closeTime: time.duration.weeks(24)
     })
     await createMarket({
@@ -232,7 +381,58 @@ module.exports = async (deployer, network, accounts) => {
       closeTime: time.duration.weeks(4)
     })
 
-    // rent some cards from markets 7 and 8
+    // account#1 setup: rent some cards from markets 7 and 8
+    await rent({ from: accounts[1], market: market[7], outcome: 0 })
+    await time.increase(time.duration.hours(24))
+    await rent({ from: accounts[1], market: market[7], outcome: 2, price: 7 })
+    await rent({ from: accounts[1], market: market[7], outcome: 4, price: 9 })
+    await time.increase(time.duration.hours(15))
+    await rent({ from: accounts[1], market: market[8], outcome: 1 })
+    await rent({ from: accounts[1], market: market[8], outcome: 3, price: 2 })
+    await time.increase(time.duration.hours(18))
+    await rent({ from: accounts[1], market: market[8], outcome: 5, price: 4 })
+    await rent({ from: accounts[1], market: market[8], outcome: 7, price: 6 })
+    await time.increase(time.duration.hours(10))
+    await rent({ from: accounts[1], market: market[8], outcome: 9 })
+    // high prices for market#10's cards
+    await rent({
+      from: accounts[2],
+      market: market[7],
+      outcome: 0,
+      price: '10000'
+    })
+    await rent({
+      from: accounts[2],
+      market: market[7],
+      outcome: 1,
+      price: '33000'
+    })
+    await rent({
+      from: accounts[2],
+      market: market[7],
+      outcome: 2,
+      price: '67890'
+    })
+    await rent({
+      from: accounts[2],
+      market: market[7],
+      outcome: 3,
+      price: '100000'
+    })
+    await rent({
+      from: accounts[2],
+      market: market[7],
+      outcome: 4,
+      price: '1000000'
+    })
+    await rent({
+      from: accounts[2],
+      market: market[7],
+      outcome: 5,
+      price: '1000000000'
+    })
+
+    console.log('Markets#7-8 deployed')
 
     // create 2 markets (#9-10)
     await createMarket({
@@ -246,7 +446,12 @@ module.exports = async (deployer, network, accounts) => {
       closeTime: time.duration.days(1)
     })
 
-    // rent some cards from markets 9 and 10
+    // account#1 setup: rent some cards from markets 9 and 10
+    await rent({ from: accounts[1], market: market[9], outcome: 3, price: 5 })
+    await rent({ from: accounts[1], market: market[9], outcome: 4, price: 10 })
+    await rent({ from: accounts[1], market: market[10], outcome: 0 })
+
+    console.log('Markets#9-10 deployed')
 
     // create 2 markets with a delayed start (#11-12) - coming soon markets
     await createMarket({
@@ -256,15 +461,53 @@ module.exports = async (deployer, network, accounts) => {
     })
     await createMarket({
       ipfs: ipfsHashes[12],
-      openTime: time.duration.days(1),
+      openTime: time.duration.days(2),
       closeTime: time.duration.weeks(9)
     })
 
-    // create 1 market (#13) - random texts
-    //await createMarket({ ipfs: ipfsHashes[12] })
+    console.log('Markets#11-12 deployed')
 
-    // you can force updating the state of an open market by calling collect for all cards
+    // create 1 market (#13) - random texts
+    await createMarket({ ipfs: ipfsHashes[12], numberOfCards: 2 })
+
+    console.log('Market#13 deployed')
+
+    // you can force updating the state of an open market by calling collect for all cards (do this for all open markets)
     await market[0].collectRentAllCards()
+    await market[7].collectRentAllCards()
+    await market[8].collectRentAllCards()
+    await market[9].collectRentAllCards()
+    await market[10].collectRentAllCards()
+
+    console.log('Collect rents from open markets')
+
+    /* MARKET LEDGER
+     * -------------------
+     * Market#0  - open, 4 cards, 1 year until closed
+     * Market#1  - locked, 4 cards
+     * Market#2  - locked, 4 cards
+     * Market#3  - closed, 4 cards, winning 0
+     * Market#4  - closed, 4 cards, winning 1
+     * Market#5  - closed, 4 cards, winning 2
+     * Market#6  - closed, 4 cards, winning 3
+     * Market#7  - open,  6 cards, 6 months until closed (high prices / expired cards)
+     * Market#8  - open, 10 cards, 1 month until closed
+     * Market#9  - open,  5 cards, 1 week until closed
+     * Market#10 - open,  2 cards, 1 day until closed
+     * Market#11 - coming soon, 4 cards, 3 weeks until open (short question)
+     * Market#12 - coming soon, 4 cards, 2 days until open (long question)
+     * Market#13 - open, 2 cards (testing ipfs strings)
+     * -------------------
+     * account#1 - 6 locked cards, 
+     *             4 winning cards, 
+     *             6 losing cards, 
+     *             10 trophy cards,
+     *             10 owned cards,
+     *             14 active positions 
+     * 
+     * market#0, outcome#0 - 11 accounts leaderboard,
+     *                       11 accounts orderbook   
+     * /
 
     /**************************************
      *                                     *
@@ -272,6 +515,7 @@ module.exports = async (deployer, network, accounts) => {
      *                                     *
      **************************************/
 
+    console.log('Setup done!')
     console.log('factory.address: ', factory.address)
     console.log('treasury.address: ', treasury.address)
   } else {
@@ -296,13 +540,15 @@ async function createMarket(options) {
   }
   options = setDefaults(options, defaults)
   // assemble arrays
+  var openTime = new BN(options.openTime).add(await time.latest())
   var closeTime = new BN(options.closeTime).add(await time.latest())
   var resolveTime = new BN(options.resolveTime).add(closeTime)
-  var timestamps = [options.openTime, closeTime, resolveTime]
+  var timestamps = [openTime, closeTime, resolveTime]
   var tokenURIs = []
   for (i = 0; i < options.numberOfCards; i++) {
     tokenURIs.push('x')
   }
+
   await factory.createMarket(
     options.mode,
     options.ipfs,
@@ -369,6 +615,17 @@ async function rent(options) {
     options.outcome,
     { from: options.from }
   )
+}
+
+async function exit(options) {
+  var defaults = {
+    market: market[0],
+    outcome: 0,
+    from: 0x00
+  }
+  options = setDefaults(options, defaults)
+
+  await options.market.exit(options.outcome, { from: options.from })
 }
 
 // Most recent deployments:
