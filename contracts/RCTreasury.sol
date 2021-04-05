@@ -285,9 +285,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         ) {
             uint256 i = 0;
             do {
-                console.log("exiting cards ", i);
-                console.log("user total bids ", user[_msgSender].totalBids);
-                console.log("market bids", user[_msgSender].marketBids[i]);
                 if (isMarketActive[user[_msgSender].marketBids[i]]) {
                     IRCMarket _market =
                         IRCMarket(user[_msgSender].marketBids[i]);
@@ -426,8 +423,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         address _market = msgSender();
         if (_add) {
             // we are adding a new bid
-            user[_user].totalBids = user[_user].totalBids.add(_price);
-
             if (
                 user[_user].marketBidsIndex[_market] == 0 &&
                 user[_user].totalBids == 0
@@ -438,6 +433,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
                     .length; //index market
                 user[_user].marketBids.push(_market); //add to array
             }
+
+            user[_user].totalBids = user[_user].totalBids.add(_price);
+
             user[_user].tokens[_market].tokenBidsIndex[_tokenId] = user[_user]
                 .tokens[_market]
                 .tokenBids
@@ -475,18 +473,15 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         uint256 _tokenId
     ) external onlyMarkets {
         address _market = msgSender();
-        user[_newOwner].rentalRate = user[_newOwner].rentalRate.add(_newPrice);
         if (!isMarket[_newOwner]) {
-            if (
-                user[_newOwner].marketOwnedIndex[_market] == 0 &&
-                user[_newOwner].totalBids == 0
-            ) {
-                //this is the users first bid in this market
-                user[_newOwner].marketOwnedIndex[_market] = user[_newOwner]
-                    .marketOwned
-                    .length; //index market
-                user[_newOwner].marketOwned.push(_market); //add to array
-            }
+            user[_newOwner].rentalRate = user[_newOwner].rentalRate.add(
+                _newPrice
+            );
+            user[_newOwner].marketOwnedIndex[_market] = user[_newOwner]
+                .marketOwned
+                .length; //index market
+            user[_newOwner].marketOwned.push(_market); //add to array
+
             user[_newOwner].tokens[_market].tokensOwnedIndex[_tokenId] = user[
                 _newOwner
             ]
@@ -521,16 +516,13 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
     // if only the price has changed for an underbider
     // TO:DO rename this and/or updateUserBids to clarify the difference
-    function updateUserTotalBids(
-        address _user,
-        uint256 _price,
-        bool _add // is this update an addition
-    ) external onlyMarkets {
-        if (_add) {
-            user[_user].totalBids = user[_user].totalBids.add(_price);
-        } else {
-            user[_user].totalBids = user[_user].totalBids.sub(_price);
-        }
+    function updateUserTotalBids(address _user, int256 _priceChange)
+        external
+        onlyMarkets
+    {
+        user[_user].totalBids = SafeCast.toUint256(
+            int256(user[_user].totalBids).add(_priceChange)
+        );
     }
 
     // if only the price has changed for the owner

@@ -159,7 +159,7 @@ contract("TestTreasury", (accounts) => {
 
     async function withdrawDeposit(amount, userx) {
         amount = web3.utils.toWei(amount.toString(), "ether");
-        await treasury.withdrawDeposit(amount, true ,{ from: userx });
+        await treasury.withdrawDeposit(amount, true, { from: userx });
     }
 
     it("Ensure only factory can add markets", async () => {
@@ -181,7 +181,10 @@ contract("TestTreasury", (accounts) => {
         await expectRevert(treasury.sponsor(), "Not authorised");
         await expectRevert(treasury.processHarbergerPayment(user0, user0, 0), "Not authorised");
         await expectRevert(treasury.updateLastRentalTime(user0), "Not authorised");
-        await expectRevert(treasury.updateUserBid(user0, 0, 0), "Not authorised");
+        await expectRevert(treasury.updateUserBids(user0, 0, 0, true), "Not authorised");
+        await expectRevert(treasury.updateOwnership(user0, user1, 0, 0, 0), "Not authorised");
+        await expectRevert(treasury.updateUserTotalBids(user0, 0), "Not authorised");
+        await expectRevert(treasury.updateUserRentalRate(user0, 0), "Not authorised");
         await expectRevert(treasury.updateMarketStatus(true), "Not authorised");
     });
 
@@ -251,7 +254,7 @@ contract("TestTreasury", (accounts) => {
         await treasury.changeGlobalPause();
         // check value
         assert.equal(await treasury.globalPause(), !globalPauseState);
-        await expectRevert(treasury.withdrawDeposit(1,true), "Withdrawals are disabled");
+        await expectRevert(treasury.withdrawDeposit(1, true), "Withdrawals are disabled");
         // change it back
         await treasury.changeGlobalPause();
         // check again
@@ -301,7 +304,7 @@ contract("TestTreasury", (accounts) => {
     it("test deposit", async () => {
         // check for zero address
         await expectRevert(treasury.deposit(user1), "Must deposit something");
-        await expectRevert(treasury.deposit(zeroAddress,{value:1}), "Must set an address");
+        await expectRevert(treasury.deposit(zeroAddress, { value: 1 }), "Must set an address");
         // make some deposits
         await depositDai(10, user1);
         await depositDai(20, user2);
@@ -314,50 +317,50 @@ contract("TestTreasury", (accounts) => {
     it("test withdrawDeposit", async () => {
         // global pause checked in it's own test
         // can't withdraw if theres nothing to withdraw
-        await expectRevert(treasury.withdrawDeposit(1,true), "Nothing to withdraw");
+        await expectRevert(treasury.withdrawDeposit(1, true), "Nothing to withdraw");
         // lets check we get all our funds back
-        await depositDai(100,user2); // just so the contract has spare funds
+        await depositDai(100, user2); // just so the contract has spare funds
         // record the users balance
         var tracker = await balance.tracker(user1);
         const startBalance = await tracker.get()
         // make a deposit and get a receipt to find the gas cost
-        var txReceipt = await treasury.deposit(user1,{value: ether("10"), from: user1});
+        var txReceipt = await treasury.deposit(user1, { value: ether("10"), from: user1 });
         var gasUsed = txReceipt.receipt.gasUsed;
         // let some time pass
         await time.increase(time.duration.minutes(10));
         // withdraw some deposit locally (getting a receipt again)
-        txReceipt = await treasury.withdrawDeposit(ether("5"),true,{from: user1});
+        txReceipt = await treasury.withdrawDeposit(ether("5"), true, { from: user1 });
         gasUsed += txReceipt.receipt.gasUsed;
         // withdraw the rest via the bridge (getting a receipt again)
-        txReceipt = await treasury.withdrawDeposit(ether("5"),false,{from: user1});
+        txReceipt = await treasury.withdrawDeposit(ether("5"), false, { from: user1 });
         gasUsed += txReceipt.receipt.gasUsed;
         // check the balance is correct (minus gas cost)
         const currentBalance = await tracker.get()
         assert.equal(startBalance.toString(), (currentBalance.add(web3.utils.toBN(gasUsed))).toString());
 
         // check no rent collected yet
-        assert.equal((await treasury.totalMarketPots()).toString(),0);
-        await newRental({from: user2})
+        assert.equal((await treasury.totalMarketPots()).toString(), 0);
+        await newRental({ from: user2 })
         // can't withdraw too quickly ( ͡° ͜ʖ ͡°)	
-        await expectRevert(treasury.withdrawDeposit(1,true,{from: user2}), "Too soon");
+        await expectRevert(treasury.withdrawDeposit(1, true, { from: user2 }), "Too soon");
         await time.increase(time.duration.days(1));
         // now we can partial withdraw 
-        await treasury.withdrawDeposit(ether("10"),true,{from: user2});
+        await treasury.withdrawDeposit(ether("10"), true, { from: user2 });
         // check we collected some rent
         assert(await treasury.totalMarketPots() != 0, "Rent wasn't collected");
         // check we still own the card
-        assert.equal((await market[0].ownerOf(0)),user2)
+        assert.equal((await market[0].ownerOf(0)), user2)
         await time.increase(time.duration.days(1));
         // withdraw everything, but lets go via the bridge this time
-        await treasury.withdrawDeposit(ether("100"),false,{from: user2});
+        await treasury.withdrawDeposit(ether("100"), false, { from: user2 });
         // check we don't own the card or have any bids
-        assert.equal((await market[0].ownerOf(0)),marketAddress[0]);
-        assert.equal((await treasury.userTotalBids(user2)),0);
+        assert.equal((await market[0].ownerOf(0)), marketAddress[0]);
+        assert.equal((await treasury.userTotalBids(user2)), 0);
 
         // test the value transfer sucess
         noFallback = await NoFallback.new();
-        await noFallback.deposit(treasury.address,{value:ether('10')});
-        await expectRevert(noFallback.withdrawDeposit(treasury.address,ether('10')),"Transfer failed");
+        await noFallback.deposit(treasury.address, { value: ether('10') });
+        await expectRevert(noFallback.withdrawDeposit(treasury.address, ether('10')), "Transfer failed");
     });
 
     it("check cant rent or deposit if globalpause", async () => {
@@ -403,7 +406,7 @@ contract("TestTreasury", (accounts) => {
         await depositDai(100, user6);
     });
 
-    it("test updateUserBids", async () => {
+    it.only("test updateUserBids", async () => {
         // setup
         await createMarket();
         await depositDai(10, user0);
@@ -449,6 +452,7 @@ contract("TestTreasury", (accounts) => {
         var totalRentals = await treasury.userTotalBids(user1);
         assert.equal(totalRentals.toString(), ether("0").toString());
         // this user exits, still correct?
+        console.log("exiting user0 ");
         await market[0].exit(0, { from: user0 });
         var totalRentals = await treasury.userTotalBids(user0);
         assert.equal(totalRentals.toString(), ether("4").toString());
@@ -493,92 +497,92 @@ contract("TestTreasury", (accounts) => {
         // setup alternative market and bid on it
         await createMarket();
         await depositDai(100, user1);
-        await newRental({from: user1, market: market[1] });
+        await newRental({ from: user1, market: market[1] });
 
         // depsoit some dai and confirm all values
         await depositDai(100, user0);
-        assert.equal((await treasury.userDeposit(user0)).toString(),ether('100').toString());
-        assert.equal((await treasury.marketPot(marketAddress[0])).toString(),'0');
-        assert.equal((await treasury.totalMarketPots()).toString(),'0');
-        assert.equal((await treasury.totalDeposits()).toString(),ether('200').toString());
-        
+        assert.equal((await treasury.userDeposit(user0)).toString(), ether('100').toString());
+        assert.equal((await treasury.marketPot(marketAddress[0])).toString(), '0');
+        assert.equal((await treasury.totalMarketPots()).toString(), '0');
+        assert.equal((await treasury.totalDeposits()).toString(), ether('200').toString());
+
         //pay some rent
-        var txReceipt = await market[0].newRental(ether('50'),0,zeroAddress,0,{from:user0});
+        var txReceipt = await market[0].newRental(ether('50'), 0, zeroAddress, 0, { from: user0 });
         var startTime = (await web3.eth.getBlock(txReceipt.receipt.blockNumber)).timestamp;
         await time.increase(time.duration.days(1));
         txReceipt = await market[0].collectRentAllCards();
         var endTime = (await web3.eth.getBlock(txReceipt.receipt.blockNumber)).timestamp;
         // must perform calcualtion in this order to avoid rounding
-        var rentDue = ether('50').muln(endTime-startTime).divn(86400);
+        var rentDue = ether('50').muln(endTime - startTime).divn(86400);
 
         // check the values have all been correcly adjusted
-        assert.equal((await treasury.userDeposit(user0)).toString(),(ether('100').sub(rentDue)).toString());
-        assert.equal((await treasury.marketPot(marketAddress[0])).toString(),rentDue.toString());
-        assert.equal((await treasury.totalMarketPots()).toString(),rentDue.toString());
-        assert.equal((await treasury.totalDeposits()).toString(),(ether('200').sub(rentDue)).toString());
+        assert.equal((await treasury.userDeposit(user0)).toString(), (ether('100').sub(rentDue)).toString());
+        assert.equal((await treasury.marketPot(marketAddress[0])).toString(), rentDue.toString());
+        assert.equal((await treasury.totalMarketPots()).toString(), rentDue.toString());
+        assert.equal((await treasury.totalDeposits()).toString(), (ether('200').sub(rentDue)).toString());
 
     });
 
     it("check payout", async () => {
         // global pause tested in it's own test
         // depsoit some dai and confirm all values
-        await createMarket({closeTime: time.duration.days(3), resolveTime: time.duration.days(3)});
+        await createMarket({ closeTime: time.duration.days(3), resolveTime: time.duration.days(3) });
         await depositDai(100, user0);
         await depositDai(100, user1);
-        assert.equal((await treasury.userDeposit(user0)).toString(),ether('100').toString());
-        assert.equal((await treasury.userDeposit(user1)).toString(),ether('100').toString());
-        assert.equal((await treasury.marketPot(marketAddress[1])).toString(),'0');
-        assert.equal((await treasury.totalMarketPots()).toString(),'0');
-        assert.equal((await treasury.totalDeposits()).toString(),ether('200').toString());
-        
+        assert.equal((await treasury.userDeposit(user0)).toString(), ether('100').toString());
+        assert.equal((await treasury.userDeposit(user1)).toString(), ether('100').toString());
+        assert.equal((await treasury.marketPot(marketAddress[1])).toString(), '0');
+        assert.equal((await treasury.totalMarketPots()).toString(), '0');
+        assert.equal((await treasury.totalDeposits()).toString(), ether('200').toString());
+
         // rent seperate cards
-        await newRental({from: user0, price: 50, market: market[1], outcome: 0})
-        await newRental({from: user1, price: 50, market: market[1], outcome: 1})
+        await newRental({ from: user0, price: 50, market: market[1], outcome: 0 })
+        await newRental({ from: user1, price: 50, market: market[1], outcome: 1 })
         // make the market expire
         await time.increase(time.duration.days(3));
         await market[1].lockMarket();
 
         // card 0 won, user0 should get the payout
-        await xdaiproxy.setAmicableResolution(marketAddress[1],0)
-        await market[1].withdraw({from: user0});
+        await xdaiproxy.setAmicableResolution(marketAddress[1], 0)
+        await market[1].withdraw({ from: user0 });
 
         // check the values have all been correcly adjusted
-        assert.equal((await treasury.userDeposit(user0)).toString(),(ether('200').toString()));
-        assert.equal((await treasury.userDeposit(user1)).toString(),(ether('0').toString()));
-        assert.equal((await treasury.marketPot(marketAddress[0])).toString(),'0');
-        assert.equal((await treasury.totalMarketPots()).toString(),'0');
-        assert.equal((await treasury.totalDeposits()).toString(),ether('200').toString());
+        assert.equal((await treasury.userDeposit(user0)).toString(), (ether('200').toString()));
+        assert.equal((await treasury.userDeposit(user1)).toString(), (ether('0').toString()));
+        assert.equal((await treasury.marketPot(marketAddress[0])).toString(), '0');
+        assert.equal((await treasury.totalMarketPots()).toString(), '0');
+        assert.equal((await treasury.totalDeposits()).toString(), ether('200').toString());
 
     });
 
     it("check cleanUserBidArray", async () => {
         // lets use a quick market with many cards
-        await createMarket({closeTime: time.duration.days(1), resolveTime: time.duration.days(1)});
+        await createMarket({ closeTime: time.duration.days(1), resolveTime: time.duration.days(1) });
         await depositDai(100, user0);
         await depositDai(100, user1);
 
         // make some bids
         for (i = 0; i < 4; i++) {
-            await newRental({from: user0, price: 1, market: market[0], outcome: i})
-            await newRental({from: user1, price: 2, market: market[0], outcome: i})
+            await newRental({ from: user0, price: 1, market: market[0], outcome: i })
+            await newRental({ from: user1, price: 2, market: market[0], outcome: i })
         }
         // make some more in another market
         for (i = 0; i < 4; i++) {
-            await newRental({from: user0, price: 1, market: market[1], outcome: i})
-            await newRental({from: user1, price: 2, market: market[1], outcome: i})
+            await newRental({ from: user0, price: 1, market: market[1], outcome: i })
+            await newRental({ from: user1, price: 2, market: market[1], outcome: i })
         }
         await time.increase(time.duration.days(2));
         await market[1].lockMarket();
         // check the bids were made before we clean them
-        assert.equal((await treasury.userTotalBids(user0)).toString(),ether('8').toString());
-        assert.equal((await treasury.userTotalBids(user1)).toString(),ether('16').toString());
+        assert.equal((await treasury.userTotalBids(user0)).toString(), ether('8').toString());
+        assert.equal((await treasury.userTotalBids(user1)).toString(), ether('16').toString());
         // clean one user and check both
-        await treasury.cleanUserBidArray(user0);
-        assert.equal((await treasury.userTotalBids(user0)).toString(),ether('4').toString());
-        assert.equal((await treasury.userTotalBids(user1)).toString(),ether('16').toString());
+        await treasury.cleanUserBids(user0, market[1].address);
+        assert.equal((await treasury.userTotalBids(user0)).toString(), ether('4').toString());
+        assert.equal((await treasury.userTotalBids(user1)).toString(), ether('16').toString());
         // clean the other user, only 1 markets bids should be left
-        await treasury.cleanUserBidArray(user1);
-        assert.equal((await treasury.userTotalBids(user0)).toString(),ether('4').toString());
-        assert.equal((await treasury.userTotalBids(user1)).toString(),ether('8').toString());
+        await treasury.cleanUserBids(user1, market[1].address);
+        assert.equal((await treasury.userTotalBids(user0)).toString(), ether('4').toString());
+        assert.equal((await treasury.userTotalBids(user1)).toString(), ether('8').toString());
     });
 });

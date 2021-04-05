@@ -646,10 +646,8 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
         // if not in the orderbook, _newBid else _updateBid
         if (orderbook[_tokenId][_msgSender].price == 0) {
-            treasury.updateUserBids(_msgSender, _newPrice, _tokenId, true);
             _newBid(_newPrice, _tokenId, _timeHeldLimit, _startingPosition);
         } else {
-            treasury.updateUserTotalBids(_msgSender, _newPrice, true);
             _updateBid(_newPrice, _tokenId, _timeHeldLimit, _startingPosition);
         }
 
@@ -757,7 +755,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         } else {
             treasury.updateUserBids(
                 _msgSender,
-                tokenPrice[_tokenId],
+                orderbook[_tokenId][_msgSender].price,
                 _tokenId,
                 false
             );
@@ -903,6 +901,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                 .div(100);
         // case 1: user is sufficiently above highest bidder (or only bidder)
         if (ownerOf(_tokenId) == address(this) || _newPrice >= _minPriceToOwn) {
+            treasury.updateUserBids(msgSender(), _newPrice, _tokenId, true);
             _setNewOwner(_newPrice, _tokenId, _timeHeldLimit);
         } else {
             // case 2: user is not sufficiently above highest bidder
@@ -993,6 +992,11 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             }
             // case 2: user is not currently the owner- remove and add them back
         } else {
+            int256 _priceChange =
+                int256(_newPrice).sub(
+                    int256(orderbook[_tokenId][_msgSender].price)
+                );
+            treasury.updateUserTotalBids(_msgSender, _priceChange);
             // remove from the list
             orderbook[_tokenId][orderbook[_tokenId][_msgSender].prev]
                 .next = orderbook[_tokenId][_msgSender].next;
@@ -1110,7 +1114,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         if (orderbook[_tokenId][_tempPrev].price < _newPrice) {
             _newPrice = orderbook[_tokenId][_tempPrev].price;
         }
-
+        treasury.updateUserBids(msgSender(), _newPrice, _tokenId, true);
         // add to the list
         orderbook[_tokenId][msgSender()] = Bid(
             SafeCast.toUint128(_newPrice),
@@ -1137,7 +1141,6 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         uint256 _tempNextDeposit;
         uint256 _requiredDeposit;
         uint256 _loopCount = 0;
-        uint256 _oldPrice = orderbook[_tokenId][_tempNext].price;
 
         // loop through orderbook list for user with sufficient deposit, deleting users who fail the test
         do {
@@ -1145,6 +1148,12 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             _tempPrev = _tempNext;
             _tempNext = orderbook[_tokenId][_tempPrev].next;
             // remove the previous user
+            treasury.updateUserBids(
+                _tempPrev,
+                orderbook[_tokenId][_tempPrev].price,
+                _tokenId,
+                false
+            );
             orderbook[_tokenId][_tempNext].prev = address(this);
             delete orderbook[_tokenId][_tempPrev];
             emit LogRemoveFromOrderbook(_tempPrev, _tokenId);
@@ -1161,7 +1170,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                 _tempNextDeposit < _requiredDeposit &&
                 _loopCount < UNDERBID_MAX_ITERATIONS
         );
-        
+
         exitedTimestamp[ownerOf(_tokenId)] = block.timestamp;
         _processNewOwner(
             _tempNext,
