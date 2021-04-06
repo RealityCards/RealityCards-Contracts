@@ -641,8 +641,8 @@ async function closeMarket(options) {
   options = setDefaults(options, defaults)
 
   await options.market.lockMarket()
-  // await options.realitio.setResult(options.winningOutcome)
-  // await options.mainnetproxy.getWinnerFromOracle(options.market.address)
+  await options.realitio.setResult(options.winningOutcome)
+  await options.xdaiproxy.getWinnerFromOracle(options.market.address)
   // await options.market.determineWinner()
 }
 
