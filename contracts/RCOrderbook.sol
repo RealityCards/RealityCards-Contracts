@@ -11,25 +11,28 @@ contract RCOrderbook is Ownable {
 
     using SafeMath for uint256;
 
-    struct Bid {
+    struct Bid { //pack this later
         address market;
-        uint256 token;
         address next;
         address prev;
+        uint256 token;
         uint256 price;
         uint256 timeHeldLimit;
     }
     mapping(address => Bid[]) public user;
 
     //index of a bid record in the user array, User|Market|Token->Index
-    mapping(address => mapping (address => mapping(uint256 => uint256))) index; 
+    mapping(address => mapping (address => mapping(uint256 => uint256))) index;
 
     function addBidToOrderbook(address _user, address _market, uint256 _token, uint256 _price, uint256 _timeHeldLimit, address _prevUser) external {
         // check for empty bids we could clean
 
+        // check _prevUser is the correct position
+
         // now add the bid
         _addBidToOrderbook(_user, _market, _token, _price, _timeHeldLimit, _prevUser);
     }
+    
     function _addBidToOrderbook(address _user, address _market, uint256 _token, uint256 _price, uint256 _timeHeldLimit, address _prevUser) internal {
         if ( user[_user][index[_user][_market][_token]].price == 0 ){
             // create new record
@@ -72,19 +75,27 @@ contract RCOrderbook is Ownable {
         index[_user][_market][_token] = 0;
         index[_user][user[_user][_index].market][user[_user][_index].token] = _index;
     }
+
     function findNextBid(address _user, address _market, uint256 _token) external view returns(address _newUser, uint256 _newPrice){
         return (user[_user][index[_user][_market][_token]].next,user[_user][index[_user][_market][_token]].price);        
     }
+
     function removeUserFromOrderbook(address _user) external {
-
-        uint256 i; // uh oh, this means a loop
-        user[user[_user][i].next][index[user[_user][i].next][user[_user][i].market][user[_user][i].token]].prev = _user;
-
+        for (uint256 i = user[_user].length; i > 0; i--){ // uh oh, unbounded loop alert
+            address _tempPrev = user[_user][i].prev;
+            address _tempNext = user[_user][i].next;
+            user[_tempNext][index[_tempNext][user[_user][i].market][user[_user][i].token]].prev = _tempPrev;
+            user[_tempPrev][index[_tempPrev][user[_user][i].market][user[_user][i].token]].prev = _tempNext;
+        }
         //and get rid of them
         delete user[_user];
     }
-    function removeMarketFromUser(address _user, address _market) external {
 
+    /// @dev this isn't strictly necessary, it's just cleaning up when a market has closed.
+    function removeMarketFromUser(address _user, address _market, uint256[] calldata _tokens) external {
+        for(uint256 i = 0; i < _tokens.length; i++){
+
+        }
     }
     
 }
