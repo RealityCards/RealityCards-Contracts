@@ -343,6 +343,18 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         emit LogWinnerKnown(winningOutcome);
     }
 
+    /// @notice checks whether the Realitio question has resolved, and if yes, gets the winner
+    /// @dev can be called by anyone 
+    function determineWinnerEasy(uint _winner) external checkState(States.OPEN) {
+        winningOutcome = _winner;
+        _incrementState();
+        _incrementState();
+        // transfer NFTs to the longest owners
+        _processCardsAfterEvent(); 
+        emit LogContractLocked(true);
+        emit LogWinnerKnown(winningOutcome);
+    }
+
     /// @notice pays out winnings, or returns funds
     /// @dev public because called by withdrawWinningsAndDeposit
     function withdraw() external checkState(States.WITHDRAW) {
@@ -486,7 +498,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     }
 
     /// @notice to rent a Card
-    function newRental(uint256 _newPrice, uint256 _timeHeldLimit, uint256 _tokenId) public payable autoUnlock() autoLock() checkState(States.OPEN) returns(bool) {
+    function newRental(uint256 _newPrice, uint256 _timeHeldLimit, uint256 _tokenId) public payable autoUnlock() checkState(States.OPEN) returns(bool) {
         require(_newPrice >= 1 ether, "Minimum rental 1 Dai");
         require(_tokenId < numberOfTokens, "This token does not exist");
 
