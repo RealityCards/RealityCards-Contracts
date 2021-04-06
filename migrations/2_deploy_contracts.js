@@ -643,7 +643,6 @@ async function closeMarket(options) {
   await options.market.lockMarket()
   await options.realitio.setResult(options.winningOutcome)
   await options.xdaiproxy.getWinnerFromOracle(options.market.address)
-  // await options.market.determineWinner()
 }
 
 async function depositDai(amount, user) {
