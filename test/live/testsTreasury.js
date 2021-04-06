@@ -439,16 +439,17 @@ contract("TestTreasury", (accounts) => {
         assert.equal(totalRentals.toString(), ether("8").toString());
         var totalRentals = await treasury.userTotalBids(user1);
         assert.equal(totalRentals.toString(), ether("7").toString());
-        // change tokenPrice, check both are correct user0=11.5 user1=7
-        await newRental({ price: 7.5 });
+        // change tokenPrice, check both are correct user0=12 user1=7
+        console.log("updating price");
+        await newRental({ price: 8 });
         var totalRentals = await treasury.userTotalBids(user0);
-        assert.equal(totalRentals.toString(), ether("11.5").toString());
+        assert.equal(totalRentals.toString(), ether("12").toString());
         var totalRentals = await treasury.userTotalBids(user1);
         assert.equal(totalRentals.toString(), ether("7").toString());
-        // new user exits, still correct? user0=11.5 user1=0
+        // new user exits, still correct? user0=12 user1=0
         await market[0].exit(0, { from: user1 });
         var totalRentals = await treasury.userTotalBids(user0);
-        assert.equal(totalRentals.toString(), ether("11.5").toString());
+        assert.equal(totalRentals.toString(), ether("12").toString());
         var totalRentals = await treasury.userTotalBids(user1);
         assert.equal(totalRentals.toString(), ether("0").toString());
         // this user exits, still correct?
@@ -462,6 +463,7 @@ contract("TestTreasury", (accounts) => {
         // someone bids even higher, I increase my bid above what I can afford, we all run out of deposit, should not return to me
         await newRental({ price: 2000, from: user1 });
         await time.increase(time.duration.weeks(1));
+        console.log("about to collect rent");
         await market[0].collectRentAllCards();
         // check owned by contract
         var owner = await market[0].ownerOf.call(0);

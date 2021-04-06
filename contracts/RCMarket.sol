@@ -389,6 +389,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             marketLockingTime <= block.timestamp,
             "Market has not finished"
         );
+        console.log("locking market");
         // do a final rent collection before the contract is locked down
         collectRentAllCards();
         // let the treasury know the market is closed
@@ -646,8 +647,14 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
         // if not in the orderbook, _newBid else _updateBid
         if (orderbook[_tokenId][_msgSender].price == 0) {
+            treasury.updateUserBids(_msgSender, _newPrice, _tokenId, true);
             _newBid(_newPrice, _tokenId, _timeHeldLimit, _startingPosition);
         } else {
+            int256 _priceChange =
+                int256(_newPrice).sub(
+                    int256(orderbook[_tokenId][_msgSender].price)
+                );
+            treasury.updateUserTotalBids(_msgSender, _priceChange);
             _updateBid(_newPrice, _tokenId, _timeHeldLimit, _startingPosition);
         }
 
@@ -777,6 +784,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         if (marketLockingTime <= block.timestamp) {
             _timeOfThisCollection = marketLockingTime;
         }
+        console.log(_tokenId);
         //only collect rent if the token is owned (ie, if owned by the contract this implies unowned)
         // AND if the last collection was in the past (ie, don't do 2+ rent collections in the same block)
         if (
@@ -901,7 +909,6 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                 .div(100);
         // case 1: user is sufficiently above highest bidder (or only bidder)
         if (ownerOf(_tokenId) == address(this) || _newPrice >= _minPriceToOwn) {
-            treasury.updateUserBids(msgSender(), _newPrice, _tokenId, true);
             _setNewOwner(_newPrice, _tokenId, _timeHeldLimit);
         } else {
             // case 2: user is not sufficiently above highest bidder
@@ -992,11 +999,6 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             }
             // case 2: user is not currently the owner- remove and add them back
         } else {
-            int256 _priceChange =
-                int256(_newPrice).sub(
-                    int256(orderbook[_tokenId][_msgSender].price)
-                );
-            treasury.updateUserTotalBids(_msgSender, _priceChange);
             // remove from the list
             orderbook[_tokenId][orderbook[_tokenId][_msgSender].prev]
                 .next = orderbook[_tokenId][_msgSender].next;
@@ -1068,6 +1070,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         uint256 _timeHeldLimit,
         address _startingPosition
     ) internal {
+        uint256 _oldPrice = _newPrice;
         // if starting position is not set, start at the top
         if (_startingPosition == address(0)) {
             _startingPosition = ownerOf(_tokenId);
@@ -1076,7 +1079,6 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                 _newPrice = orderbook[_tokenId][_startingPosition].price;
             }
         }
-
         // check the starting location is not too low down the list
         require(
             orderbook[_tokenId][_startingPosition].price >= _newPrice,
@@ -1114,7 +1116,11 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         if (orderbook[_tokenId][_tempPrev].price < _newPrice) {
             _newPrice = orderbook[_tokenId][_tempPrev].price;
         }
-        treasury.updateUserBids(msgSender(), _newPrice, _tokenId, true);
+        if (_oldPrice != _newPrice) {
+            console.log("price adjust");
+            int256 _priceChange = int256(_newPrice).sub(int256(_oldPrice));
+            treasury.updateUserTotalBids(msgSender(), _priceChange);
+        }
         // add to the list
         orderbook[_tokenId][msgSender()] = Bid(
             SafeCast.toUint128(_newPrice),
@@ -1148,6 +1154,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             _tempPrev = _tempNext;
             _tempNext = orderbook[_tokenId][_tempPrev].next;
             // remove the previous user
+            console.log("revert delete");
             treasury.updateUserBids(
                 _tempPrev,
                 orderbook[_tokenId][_tempPrev].price,

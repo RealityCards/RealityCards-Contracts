@@ -520,9 +520,12 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         external
         onlyMarkets
     {
+        console.log("updating totalBids", uint256(_priceChange));
+        console.log("total before ", user[_user].totalBids);
         user[_user].totalBids = SafeCast.toUint256(
             int256(user[_user].totalBids).add(_priceChange)
         );
+        console.log("total after ", user[_user].totalBids);
     }
 
     // if only the price has changed for the owner
@@ -530,9 +533,10 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         external
         onlyMarkets
     {
-        user[_user].totalBids = SafeCast.toUint256(
-            int256(user[_user].totalBids).add(_priceChange)
-        );
+        console.log("update rental rate");
+        // user[_user].totalBids = SafeCast.toUint256(
+        //     int256(user[_user].totalBids).add(_priceChange)
+        // );
         user[_user].rentalRate = SafeCast.toUint256(
             int256(user[_user].rentalRate).add(_priceChange)
         );
