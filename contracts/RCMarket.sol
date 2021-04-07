@@ -783,7 +783,6 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         if (marketLockingTime <= block.timestamp) {
             _timeOfThisCollection = marketLockingTime;
         }
-        console.log(_tokenId);
         //only collect rent if the token is owned (ie, if owned by the contract this implies unowned)
         // AND if the last collection was in the past (ie, don't do 2+ rent collections in the same block)
         if (
@@ -1153,7 +1152,6 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             _tempPrev = _tempNext;
             _tempNext = orderbook[_tokenId][_tempPrev].next;
             // remove the previous user
-            console.log("revert delete");
             treasury.updateUserBids(
                 _tempPrev,
                 orderbook[_tokenId][_tempPrev].price,

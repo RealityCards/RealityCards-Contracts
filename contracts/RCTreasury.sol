@@ -64,6 +64,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         mapping(uint256 => uint256) tokensOwnedIndex;
     }
     mapping(address => User) public user;
+    uint256 test;
 
     // GOVERNANCE VARIABLES
     /// @dev only parameters that need to be are here, the rest are in the Factory
@@ -421,6 +422,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         bool _add // is this update an addition
     ) external onlyMarkets {
         address _market = msgSender();
+        console.log("test ", test);
+        test++;
         if (_add) {
             // we are adding a new bid
             if (
@@ -433,7 +436,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
                     .length; //index market
                 user[_user].marketBids.push(_market); //add to array
             }
-
             user[_user].totalBids = user[_user].totalBids.add(_price);
 
             user[_user].tokens[_market].tokenBidsIndex[_tokenId] = user[_user]
@@ -473,6 +475,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         uint256 _tokenId
     ) external onlyMarkets {
         address _market = msgSender();
+        console.log("test ", test);
+        test++;
         if (!isMarket[_newOwner]) {
             user[_newOwner].rentalRate = user[_newOwner].rentalRate.add(
                 _newPrice
@@ -520,12 +524,11 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         external
         onlyMarkets
     {
-        console.log("updating totalBids", uint256(_priceChange));
-        console.log("total before ", user[_user].totalBids);
+        console.log("test ", test);
+        test++;
         user[_user].totalBids = SafeCast.toUint256(
             int256(user[_user].totalBids).add(_priceChange)
         );
-        console.log("total after ", user[_user].totalBids);
     }
 
     // if only the price has changed for the owner
@@ -533,13 +536,14 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         external
         onlyMarkets
     {
-        console.log("update rental rate");
         // user[_user].totalBids = SafeCast.toUint256(
         //     int256(user[_user].totalBids).add(_priceChange)
         // );
         user[_user].rentalRate = SafeCast.toUint256(
             int256(user[_user].rentalRate).add(_priceChange)
         );
+        console.log("test ", test);
+        test++;
     }
 
     /// @dev adds or removes a market to the active markets array

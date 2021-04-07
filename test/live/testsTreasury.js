@@ -440,7 +440,6 @@ contract("TestTreasury", (accounts) => {
         var totalRentals = await treasury.userTotalBids(user1);
         assert.equal(totalRentals.toString(), ether("7").toString());
         // change tokenPrice, check both are correct user0=12 user1=7
-        console.log("updating price");
         await newRental({ price: 8 });
         var totalRentals = await treasury.userTotalBids(user0);
         assert.equal(totalRentals.toString(), ether("12").toString());
@@ -453,7 +452,6 @@ contract("TestTreasury", (accounts) => {
         var totalRentals = await treasury.userTotalBids(user1);
         assert.equal(totalRentals.toString(), ether("0").toString());
         // this user exits, still correct?
-        console.log("exiting user0 ");
         await market[0].exit(0, { from: user0 });
         var totalRentals = await treasury.userTotalBids(user0);
         assert.equal(totalRentals.toString(), ether("4").toString());
