@@ -19,6 +19,7 @@
     "@openzeppelin/test-helpers": "^0.5.10",
     "acorn": "^8.0.5",
     "dotenv": "^8.2.0",
+    "hardhat-tracer": "^1.0.0-alpha.3",
     "minimist": "^1.2.5",
     "openzeppelin-solidity": "^3.4.0",
     "openzeppelin-test-helpers": "^0.4.3",
