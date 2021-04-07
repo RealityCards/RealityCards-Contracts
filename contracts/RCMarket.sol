@@ -388,7 +388,6 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             marketLockingTime <= block.timestamp,
             "Market has not finished"
         );
-        console.log("locking market");
         // do a final rent collection before the contract is locked down
         collectRentAllCards();
         // let the treasury know the market is closed
@@ -649,11 +648,11 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             treasury.updateUserBids(_msgSender, _newPrice, _tokenId, true);
             _newBid(_newPrice, _tokenId, _timeHeldLimit, _startingPosition);
         } else {
-            int256 _priceChange =
-                int256(_newPrice).sub(
-                    int256(orderbook[_tokenId][_msgSender].price)
-                );
-            treasury.updateUserTotalBids(_msgSender, _priceChange);
+            // int256 _priceChange =
+            //     int256(_newPrice).sub(
+            //         int256(orderbook[_tokenId][_msgSender].price)
+            //     );
+            // treasury.updateUserTotalBids(_msgSender, _priceChange);
             _updateBid(_newPrice, _tokenId, _timeHeldLimit, _startingPosition);
         }
 
@@ -742,37 +741,39 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     function _exit(uint256 _tokenId, address _user) internal {
         _checkState(States.OPEN);
         address _msgSender = msgSender();
-        if (_msgSender == address(treasury)) {
-            _msgSender = _user;
-        }
-        // if current owner, collect rent, revert if necessary
-        if (ownerOf(_tokenId) == _msgSender) {
-            // collectRent first
-            _collectRent(_tokenId);
-
-            // if still the current owner after collecting rent, revert to underbidder
-            if (ownerOf(_tokenId) == _msgSender) {
-                _revertToUnderbidder(_tokenId);
-                // if not current owner no further action necessary because they will have been deleted from the orderbook
-            } else {
-                assert(orderbook[_tokenId][_msgSender].price == 0);
+        if (orderbook[_tokenId][_msgSender].price > 0) {
+            if (_msgSender == address(treasury)) {
+                _msgSender = _user;
             }
-            // if not owner, just delete from orderbook
-        } else {
-            treasury.updateUserBids(
-                _msgSender,
-                orderbook[_tokenId][_msgSender].price,
-                _tokenId,
-                false
-            );
-            orderbook[_tokenId][orderbook[_tokenId][_msgSender].next]
-                .prev = orderbook[_tokenId][_msgSender].prev;
-            orderbook[_tokenId][orderbook[_tokenId][_msgSender].prev]
-                .next = orderbook[_tokenId][_msgSender].next;
-            delete orderbook[_tokenId][_msgSender];
-            emit LogRemoveFromOrderbook(_msgSender, _tokenId);
+            // if current owner, collect rent, revert if necessary
+            if (ownerOf(_tokenId) == _msgSender) {
+                // collectRent first
+                _collectRent(_tokenId);
+
+                // if still the current owner after collecting rent, revert to underbidder
+                if (ownerOf(_tokenId) == _msgSender) {
+                    _revertToUnderbidder(_tokenId);
+                    // if not current owner no further action necessary because they will have been deleted from the orderbook
+                } else {
+                    assert(orderbook[_tokenId][_msgSender].price == 0);
+                }
+                // if not owner, just delete from orderbook
+            } else {
+                treasury.updateUserBids(
+                    _msgSender,
+                    orderbook[_tokenId][_msgSender].price,
+                    _tokenId,
+                    false
+                );
+                orderbook[_tokenId][orderbook[_tokenId][_msgSender].next]
+                    .prev = orderbook[_tokenId][_msgSender].prev;
+                orderbook[_tokenId][orderbook[_tokenId][_msgSender].prev]
+                    .next = orderbook[_tokenId][_msgSender].next;
+                delete orderbook[_tokenId][_msgSender];
+                emit LogRemoveFromOrderbook(_msgSender, _tokenId);
+            }
+            emit LogExit(_msgSender, _tokenId);
         }
-        emit LogExit(_msgSender, _tokenId);
     }
 
     /// @notice collects rent for a specific token
@@ -971,6 +972,14 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                     .div(100);
                 // case 1Ca: still the highest owner- adjust price & timeHeldLimit. newRental event required.
                 if (_newPrice >= _minPriceToOwn) {
+                    int256 _priceChange =
+                        int256(_newPrice).sub(
+                            int256(orderbook[_tokenId][_msgSender].price)
+                        );
+                    treasury.updateUserTotalBids(
+                        ownerOf(_tokenId),
+                        _priceChange
+                    );
                     orderbook[_tokenId][_msgSender].price = SafeCast.toUint128(
                         _newPrice
                     );
@@ -998,6 +1007,9 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             // case 2: user is not currently the owner- remove and add them back
         } else {
             // remove from the list
+            int256 _priceChange =
+                int256(0).sub(int256(orderbook[_tokenId][_msgSender].price));
+            treasury.updateUserTotalBids(_msgSender, _priceChange);
             orderbook[_tokenId][orderbook[_tokenId][_msgSender].prev]
                 .next = orderbook[_tokenId][_msgSender].next;
             orderbook[_tokenId][orderbook[_tokenId][_msgSender].next]
@@ -1009,6 +1021,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                 .div(100);
             // case 2A: should be owner, add on top. newRental event called in _setNewOwner
             if (_newPrice >= _minPriceToOwn) {
+                treasury.updateUserTotalBids(_msgSender, int256(_newPrice));
                 _setNewOwner(_newPrice, _tokenId, _timeHeldLimit);
                 // case 2B: should not be owner, add to list. newRental event called in _placeInList
             } else {
@@ -1115,7 +1128,6 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             _newPrice = orderbook[_tokenId][_tempPrev].price;
         }
         if (_oldPrice != _newPrice) {
-            console.log("price adjust");
             int256 _priceChange = int256(_newPrice).sub(int256(_oldPrice));
             treasury.updateUserTotalBids(msgSender(), _priceChange);
         }

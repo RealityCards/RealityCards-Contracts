@@ -294,10 +294,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
                             .tokenBids,
                         _msgSender
                     );
-                    // not incrementing i because exit cards shortens the length of the array
-                } else {
-                    i++;
                 }
+                i++;
             } while (user[_msgSender].marketBids.length > i);
         }
     }
@@ -422,8 +420,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         bool _add // is this update an addition
     ) external onlyMarkets {
         address _market = msgSender();
-        console.log("test ", test);
-        test++;
         if (_add) {
             // we are adding a new bid
             if (
@@ -446,12 +442,22 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         } else {
             // we are removing the bid
             user[_user].totalBids = user[_user].totalBids.sub(_price);
-
-            user[_user].tokens[_market].tokenBids[
-                user[_user].tokens[_market].tokenBidsIndex[_tokenId]
-            ] = user[_user].tokens[_market].tokenBids[
-                user[_user].tokens[_market].tokenBids.length.sub(1)
-            ];
+            if (user[_user].tokens[_market].tokenBids.length > 1) {
+                // store where we are moving the last record to
+                uint256 _newIndex =
+                    user[_user].tokens[_market].tokenBidsIndex[_tokenId];
+                // store the tokenId in the last position
+                uint256 _lastToken =
+                    user[_user].tokens[_market].tokenBids[
+                        user[_user].tokens[_market].tokenBids.length.sub(1)
+                    ];
+                // move the token in the last place to the new position
+                user[_user].tokens[_market].tokenBids[_newIndex] = _lastToken;
+                // update the index to find it later
+                user[_user].tokens[_market].tokenBidsIndex[
+                    _lastToken
+                ] = _newIndex;
+            }
             user[_user].tokens[_market].tokenBids.pop();
             user[_user].tokens[_market].tokenBidsIndex[_tokenId] = 0;
             if (user[_user].tokens[_market].tokenBids.length == 0) {
@@ -475,8 +481,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         uint256 _tokenId
     ) external onlyMarkets {
         address _market = msgSender();
-        console.log("test ", test);
-        test++;
         if (!isMarket[_newOwner]) {
             user[_newOwner].rentalRate = user[_newOwner].rentalRate.add(
                 _newPrice
@@ -499,11 +503,26 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
                 _oldPrice
             );
 
-            user[_oldOwner].tokens[_market].tokensOwned[
-                user[_oldOwner].tokens[_market].tokensOwnedIndex[_tokenId]
-            ] = user[_oldOwner].tokens[_market].tokensOwned[
-                user[_oldOwner].tokens[_market].tokensOwned.length.sub(1)
-            ];
+            if (user[_oldOwner].tokens[_market].tokensOwned.length > 1) {
+                // store where we are moving the last record to
+                uint256 _newIndex =
+                    user[_oldOwner].tokens[_market].tokensOwnedIndex[_tokenId];
+                // store the tokenId in the last position
+                uint256 _lastToken =
+                    user[_oldOwner].tokens[_market].tokensOwned[
+                        user[_oldOwner].tokens[_market].tokensOwned.length.sub(
+                            1
+                        )
+                    ];
+                // move the token in the last place to the new position
+                user[_oldOwner].tokens[_market].tokensOwned[
+                    _newIndex
+                ] = _lastToken;
+                // update the index to find it later
+                user[_oldOwner].tokens[_market].tokensOwnedIndex[
+                    _lastToken
+                ] = _newIndex;
+            }
             user[_oldOwner].tokens[_market].tokensOwned.pop();
             user[_oldOwner].tokens[_market].tokensOwnedIndex[_tokenId] = 0;
             if (user[_oldOwner].tokens[_market].tokenBids.length == 0) {
@@ -524,8 +543,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         external
         onlyMarkets
     {
-        console.log("test ", test);
-        test++;
         user[_user].totalBids = SafeCast.toUint256(
             int256(user[_user].totalBids).add(_priceChange)
         );
@@ -542,8 +559,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         user[_user].rentalRate = SafeCast.toUint256(
             int256(user[_user].rentalRate).add(_priceChange)
         );
-        console.log("test ", test);
-        test++;
     }
 
     /// @dev adds or removes a market to the active markets array

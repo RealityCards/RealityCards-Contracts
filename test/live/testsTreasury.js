@@ -406,7 +406,7 @@ contract("TestTreasury", (accounts) => {
         await depositDai(100, user6);
     });
 
-    it.only("test updateUserBids", async () => {
+    it("test updateUserBids", async () => {
         // setup
         await createMarket();
         await depositDai(10, user0);
@@ -461,7 +461,6 @@ contract("TestTreasury", (accounts) => {
         // someone bids even higher, I increase my bid above what I can afford, we all run out of deposit, should not return to me
         await newRental({ price: 2000, from: user1 });
         await time.increase(time.duration.weeks(1));
-        console.log("about to collect rent");
         await market[0].collectRentAllCards();
         // check owned by contract
         var owner = await market[0].ownerOf.call(0);
