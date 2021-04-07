@@ -187,7 +187,6 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         uint256 affiliateCut,
         uint256 cardAffiliateCut
     );
-    event LogTransferCardToLongestOwner(uint256 tokenId, address longestOwner);
     event LogSettings(
         uint256 indexed minRentalDayDivisor,
         uint256 indexed minimumPriceIncreasePercent,
