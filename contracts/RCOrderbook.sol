@@ -3,13 +3,16 @@ pragma solidity ^0.7.5;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 import "@openzeppelin/contracts/utils/SafeCast.sol";
 import "hardhat/console.sol";
+import "./lib/NativeMetaTransaction.sol";
 import "./interfaces/IRCTreasury.sol";
 
 /// @notice Work in Progress... ‿︵‿︵‿︵‿ヽ(°□° )ノ︵‿︵‿︵‿︵
-contract RCOrderbook is Ownable {
+contract RCOrderbook is Ownable, NativeMetaTransaction {
     using SafeMath for uint256;
+    using SignedSafeMath for int256;
 
     struct Bid {
         //pack this later
@@ -36,29 +39,33 @@ contract RCOrderbook is Ownable {
 
     function addBidToOrderbook(
         address _user,
-        address _market,
         uint256 _token,
         uint256 _price,
         uint256 _timeHeldLimit,
-        address _prevUser
+        address _prevUserAddress
     ) external {
+        address _market = msgSender();
         // check for empty bids we could clean
 
         // check _prevUser is the correct position
-        address _nextUser =
-            user[_prevUser].bids[index[_prevUser][_market][_token]].next;
-        if (
-            user[_prevUser].bids[index[_prevUser][_market][_token]].price <
-            _price ||
-            user[_nextUser].bids[index[_nextUser][_market][_token]].price >=
-            _price
-        ) {
+        Bid storage _prevUser =
+            user[_prevUserAddress].bids[
+                index[_prevUserAddress][_market][_token]
+            ];
+        Bid storage _nextUser =
+            user[_prevUser.next].bids[index[_prevUser.next][_market][_token]];
+        if (_prevUser.price < _price || _nextUser.price >= _price) {
             // incorrect _prevUser, have a look for the correct one
             _prevUser = _searchOrderbook(_prevUser, _market, _token, _price);
         }
-        if (user[_user].bids[index[_user][_market][_token]].price == 0) {
+        if (
+            user[_user].bids.length == 0 ||
+            index[_user][_market][_token] != 0 ||
+            (user[_user].bids[0].market != _market &&
+                user[_user].bids[0].token != _token)
+        ) {
             // new bid, add it
-            _price = _addBidToOrderbook(
+            _addBidToOrderbook(
                 _user,
                 _market,
                 _token,
@@ -66,9 +73,8 @@ contract RCOrderbook is Ownable {
                 _timeHeldLimit,
                 _prevUser
             );
-            user[_user].totalBidRate += _price;
         } else {
-            // update the bid
+            // old bid exists, update it
             _updateBidInOrderbook(
                 _user,
                 _market,
@@ -77,29 +83,28 @@ contract RCOrderbook is Ownable {
                 _timeHeldLimit,
                 _prevUser
             );
-            user[_user].totalBidRate = user[_user].totalBidRate;
         }
     }
 
     function _searchOrderbook(
-        address _prevUser,
+        Bid storage _prevUser,
         address _market,
         uint256 _token,
         uint256 _price
-    ) internal view returns (address) {
+    ) internal view returns (Bid storage) {
         uint256 i = 0;
-        address _nextUser;
+        Bid storage _nextUser;
         do {
-            _prevUser = user[_prevUser].bids[index[_prevUser][_market][_token]]
-                .next;
-            _nextUser = user[_prevUser].bids[index[_prevUser][_market][_token]]
-                .next;
+            _prevUser = user[_prevUser.next].bids[
+                index[_prevUser.next][_market][_token]
+            ];
+            _nextUser = user[_prevUser.next].bids[
+                index[_prevUser.next][_market][_token]
+            ];
             i++;
         } while (
-            user[_prevUser].bids[index[_prevUser][_market][_token]].price <
-                _price &&
-                user[_nextUser].bids[index[_nextUser][_market][_token]].price >=
-                _price &&
+            _prevUser.price < _price &&
+                _nextUser.price >= _price &&
                 i <= MAX_SEARCH_ITERATIONS
         );
         require(i < MAX_SEARCH_ITERATIONS, "Position in orderbook not found");
@@ -112,35 +117,26 @@ contract RCOrderbook is Ownable {
         uint256 _token,
         uint256 _price,
         uint256 _timeHeldLimit,
-        address _prevUser
-    ) internal returns (uint256 _newPrice) {
-        assert(
-            user[_prevUser].bids[index[_prevUser][_market][_token]].price >=
-                _price
-        );
-        address _nextUser =
-            user[_prevUser].bids[index[_prevUser][_market][_token]].next;
-        assert(
-            user[_nextUser].bids[index[_nextUser][_market][_token]].price <
-                _price
-        );
+        Bid storage _prevUser
+    ) internal {
+        assert(_prevUser.price >= _price);
+        Bid storage _nextUser =
+            user[_prevUser.next].bids[index[_prevUser.next][_market][_token]];
+        assert(_nextUser.price < _price);
 
         if (user[_user].bids[index[_user][_market][_token]].price == 0) {
             // create new record
             Bid memory _newBid;
             _newBid.market = _market;
-            _newBid.prev = _prevUser;
-            _newBid.next = _nextUser;
+            _newBid.token = _token;
+            _newBid.prev = _nextUser.prev;
+            _newBid.next = _prevUser.next;
             _newBid.price = _price;
             _newBid.timeHeldLimit = _timeHeldLimit;
 
             // insert in linked list
-            address _tempNext =
-                user[_prevUser].bids[index[_prevUser][_market][_token]].next;
-            user[_tempNext].bids[index[_tempNext][_market][_token]]
-                .prev = _user; // next record update prev link
-            user[_prevUser].bids[index[_prevUser][_market][_token]]
-                .next = _user; // prev record update next link
+            _nextUser.prev = _user; // next record update prev link
+            _prevUser.next = _user; // prev record update next link
             user[_user].bids.push(_newBid);
 
             // update the index to help find the record later
@@ -152,7 +148,11 @@ contract RCOrderbook is Ownable {
             user[_user].bids[index[_user][_market][_token]]
                 .timeHeldLimit = _timeHeldLimit;
         }
-        return _newPrice;
+
+        user[_user].totalBidRate = user[_user].totalBidRate.add(_price);
+        if (user[_user].bids[index[_user][_market][_token]].prev == _market) {
+            user[_user].rentalRate = user[_user].rentalRate.add(_price);
+        }
     }
 
     function _updateBidInOrderbook(
@@ -161,51 +161,46 @@ contract RCOrderbook is Ownable {
         uint256 _token,
         uint256 _price,
         uint256 _timeHeldLimit,
-        address _prevUser
+        Bid storage _prevUser
     ) internal returns (int256 _priceChange) {
-        // check _prevUser is the correct position
-        address _nextUser =
-            user[_prevUser].bids[index[_prevUser][_market][_token]].next;
-        if (
-            user[_prevUser].bids[index[_prevUser][_market][_token]].price <
-            _price ||
-            user[_nextUser].bids[index[_nextUser][_market][_token]].price >=
-            _price
-        ) {
-            // incorrect _prevUser, have a look for the correct one
-            _prevUser = _searchOrderbook(_prevUser, _market, _token, _price);
-            _nextUser = user[_prevUser].bids[index[_prevUser][_market][_token]]
-                .next;
-        }
-        assert(
-            user[_prevUser].bids[index[_prevUser][_market][_token]].price >=
-                _price
-        );
-        assert(
-            user[_nextUser].bids[index[_nextUser][_market][_token]].price <
-                _price
-        );
+        assert(_prevUser.price >= _price);
+        Bid storage _nextUser =
+            user[_prevUser.next].bids[index[_prevUser.next][_market][_token]];
+        assert(_nextUser.price < _price);
+        Bid storage _currUser = user[_user].bids[index[_user][_market][_token]];
+        bool _owner = _currUser.prev == _market;
 
         // extract bid from current position
-        address _tempNext =
-            user[_user].bids[index[_user][_market][_token]].next;
-        address _tempPrev =
-            user[_user].bids[index[_user][_market][_token]].prev;
-        user[_tempNext].bids[index[_tempNext][_market][_token]]
-            .next = _tempPrev;
-        user[_tempPrev].bids[index[_tempPrev][_market][_token]]
-            .prev = _tempNext;
+        user[_currUser.next].bids[index[_currUser.next][_market][_token]]
+            .next = _currUser.prev;
+        user[_currUser.prev].bids[index[_currUser.prev][_market][_token]]
+            .prev = _currUser.next;
 
         // update price
-        user[_user].bids[index[_user][_market][_token]].price = _price;
-        user[_user].bids[index[_user][_market][_token]]
-            .timeHeldLimit = _timeHeldLimit;
+        _currUser.price = _price;
+        _currUser.timeHeldLimit = _timeHeldLimit;
 
         // insert bid in new position
-        user[_nextUser].bids[index[_nextUser][_market][_token]].prev = _user; // next record update prev link
-        user[_prevUser].bids[index[_prevUser][_market][_token]].next = _user; // prev record update next link
+        _nextUser.prev = _user; // next record update prev link
+        _prevUser.next = _user; // prev record update next link
 
-        return _priceChange;
+        user[_user].totalBidRate = SafeCast.toUint256(
+            int256(user[_user].totalBidRate).add(_priceChange)
+        );
+        if (_owner && _currUser.prev == _market) {
+            // if owner before and after, update the price difference
+            user[_user].rentalRate = SafeCast.toUint256(
+                int256(user[_user].rentalRate).add(_priceChange)
+            );
+        } else if (_owner && _currUser.prev != _market) {
+            // if owner before and not after, remove the old price and the difference
+            _price = _price.add(SafeCast.toUint256(_priceChange.mul(-1)));
+            user[_user].rentalRate = user[_user].rentalRate.sub(_price);
+        } else if (!_owner && _currUser.prev == _market) {
+            // if not owner before but is owner after, add price and difference
+            _price = _price.add(SafeCast.toUint256(_priceChange.mul(-1)));
+            user[_user].rentalRate = user[_user].rentalRate.add(_price);
+        }
     }
 
     function removeBidFromOrderbook(
