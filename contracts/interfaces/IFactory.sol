@@ -5,6 +5,7 @@ import "./IRealitio.sol";
 import "./IRCTreasury.sol";
 import "./IRCProxyXdai.sol";
 import "./IRCNftHubXdai.sol";
+import "./IRCOrderbook.sol";
 
 interface IFactory {
     function realitio() external returns (IRealitio);
@@ -14,6 +15,8 @@ interface IFactory {
     function nfthub() external returns (IRCNftHubXdai);
 
     function treasury() external returns (IRCTreasury);
+
+    function orderbook() external returns (IRCOrderbook);
 
     function realitioTimeout() external returns (uint32);
 

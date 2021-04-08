@@ -11,6 +11,7 @@ import "./interfaces/IFactory.sol";
 import "./interfaces/IRCTreasury.sol";
 import "./interfaces/IRCProxyXdai.sol";
 import "./interfaces/IRCNftHubXdai.sol";
+import "./interfaces/IRCOrderbook.sol";
 import "./lib/NativeMetaTransaction.sol";
 
 /// @title Reality Cards Market
@@ -48,6 +49,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     IFactory public factory;
     IRCProxyXdai public proxy;
     IRCNftHubXdai public nfthub;
+    IRCOrderbook public orderbook;
 
     // PRICE, DEPOSITS, RENT
     /// @dev in attodai (so 100xdai = 100000000000000000000)
@@ -223,6 +225,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         treasury = factory.treasury();
         proxy = factory.proxy();
         nfthub = factory.nfthub();
+        orderbook = factory.orderbook();
 
         // get adjustable parameters from the factory/treasury
         uint256[5] memory _potDistribution = factory.getPotDistribution();
@@ -637,86 +640,21 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         } else {
             uint256 _minRentalTime = uint256(1 days).div(minRentalDayDivisor);
             require(
-                _timeHeldLimit >=
-                    timeHeld[_tokenId][_msgSender].add(_minRentalTime),
+                _timeHeldLimit >= timeHeld[_tokenId][_user].add(_minRentalTime),
                 "Limit too low"
             ); // must be after collectRent so timeHeld is up to date
         }
 
-        orderbook.addBidToOrderbook()
-
-        assert(treasury.updateLastRentalTime(_msgSender));
-        nonce++;
-        return tokenPrice[_tokenId];
-    }
-
-    /// @notice to rent a Card
-    /// @dev no event: it is emitted in _updateBid, _setNewOwner or _placeInList as appropriate
-    /// @param _newPrice the price to rent the card for
-    /// @param _timeHeldLimit an optional time limit to rent the card for
-    /// @param _startingPosition where to start looking to insert the bid into the orderbook
-    /// @param _tokenId the index of the card to update
-    function newRentalBak(
-        uint256 _newPrice,
-        uint256 _timeHeldLimit,
-        address _startingPosition,
-        uint256 _tokenId
-    ) public payable autoUnlock() autoLock() returns (uint256) {
-        _checkState(States.OPEN);
-        require(_newPrice >= MIN_RENTAL_VALUE, "Minimum rental 1 xDai");
-        require(_tokenId < numberOfTokens, "This token does not exist");
-        address _msgSender = msgSender();
-        require(
-            exitedTimestamp[_msgSender] != block.timestamp,
-            "Cannot lose and re-rent in same block"
-        );
-        require(
-            !treasury.marketPaused(address(this)) && !treasury.globalPause(),
-            "Rentals are disabled"
+        // replaces _newBid and _updateBid
+        orderbook.addBidToOrderbook(
+            _user,
+            _tokenId,
+            _newPrice,
+            _timeHeldLimit,
+            _startingPosition
         );
 
-        _collectRent(_tokenId);
-
-        // process deposit, if sent
-        if (msg.value > 0) {
-            assert(treasury.deposit{value: msg.value}(_msgSender));
-        }
-
-        // check sufficient deposit
-        uint256 _updatedTotalBids =
-            treasury.userTotalBids(_msgSender).add(_newPrice);
-        require(
-            treasury.userDeposit(_msgSender) >=
-                _updatedTotalBids.div(minRentalDayDivisor),
-            "Insufficient deposit"
-        );
-
-        // check _timeHeldLimit
-        if (_timeHeldLimit == 0) {
-            _timeHeldLimit = MAX_UINT128; // so 0 defaults to no limit
-        } else {
-            uint256 _minRentalTime = uint256(1 days).div(minRentalDayDivisor);
-            require(
-                _timeHeldLimit >=
-                    timeHeld[_tokenId][_msgSender].add(_minRentalTime),
-                "Limit too low"
-            ); // must be after collectRent so timeHeld is up to date
-        }
-
-        // if not in the orderbook, _newBid else _updateBid
-        if (orderbook[_tokenId][_msgSender].price == 0) {
-            treasury.updateUserBids(_msgSender, _newPrice, _tokenId, true);
-            _newBid(_newPrice, _tokenId, _timeHeldLimit, _startingPosition);
-        } else {
-            // int256 _priceChange =
-            //     int256(_newPrice).sub(
-            //         int256(orderbook[_tokenId][_msgSender].price)
-            //     );
-            // treasury.updateUserTotalBids(_msgSender, _priceChange);
-            _updateBid(_newPrice, _tokenId, _timeHeldLimit, _startingPosition);
-        }
-
-        assert(treasury.updateLastRentalTime(_msgSender));
+        assert(treasury.updateLastRentalTime(_user));
         nonce++;
         return tokenPrice[_tokenId];
     }
