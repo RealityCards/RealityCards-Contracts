@@ -252,6 +252,53 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         );
     }
 
+    function getBidValue(address _user, uint256 _token)
+        external
+        view
+        returns (uint256)
+    {
+        address _market = msgSender();
+        if (bidExists(_user, _market, _token)) {
+            return user[_user].bids[index[_user][_market][_token]].price;
+        } else {
+            return 0;
+        }
+    }
+
+    /// @notice returns the bid rate minus the given token
+    function adjustedBidRate(address _user, uint256 _token)
+        external
+        view
+        returns (uint256)
+    {
+        address _market = msgSender();
+        if (bidExists(_user, _market, _token)) {
+            return
+                user[_user].totalBidRate.sub(
+                    user[_user].bids[index[_user][_market][_token]].price
+                );
+        } else {
+            return user[_user].totalBidRate;
+        }
+    }
+
+    function bidExists(
+        address _user,
+        address _market,
+        uint256 _token
+    ) internal view returns (bool) {
+        if (
+            user[_user].bids.length == 0 ||
+            index[_user][_market][_token] != 0 ||
+            (user[_user].bids[0].market != _market &&
+                user[_user].bids[0].token != _token)
+        ) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     function removeUserFromOrderbook(address _user) external onlyMarkets {
         isForeclosed[_user] = true;
         uint256 i = user[_user].bids.length.sub(1);
