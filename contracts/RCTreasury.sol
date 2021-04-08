@@ -574,6 +574,15 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         return user[_user].deposit;
     }
 
+    function collectRent(address _user, uint256 _timeOfCollection) external {
+        uint256 _rentDuration = _timeOfCollection.sub(user[_user].lastRentCalc);
+        user[_user].deposit = user[_user].deposit.sub(
+            user[_user].rentalRate.mul(_rentDuration)
+        );
+        // orderbook.addTime(_user, _rentDuration);
+        user[_user].lastRentCalc = _timeOfCollection;
+    }
+
     //   FALLBACK
 
     /// @dev sending ether/xdai direct is equal to a deposit
