@@ -30,6 +30,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
     }
     mapping(address => User) public user;
     mapping(address => bool) public isForeclosed;
+    mapping(address => bool) public isMarket;
 
     //index of a bid record in the user array, User|Market|Token->Index
     mapping(address => mapping(address => mapping(uint256 => uint256))) index;
@@ -37,13 +38,20 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
     uint256 public MAX_SEARCH_ITERATIONS = 100; // TODO: gas test to find actual limit
     uint256 public MAX_DELETIONS = 100;
 
+    // consider renaming this, we may need onlyTreasury also
+    modifier onlyMarkets {
+        require(isMarket[msgSender()], "Not authorised");
+        _;
+    }
+
+    /// @dev adds or updates a bid in the orderbook
     function addBidToOrderbook(
         address _user,
         uint256 _token,
         uint256 _price,
         uint256 _timeHeldLimit,
         address _prevUserAddress
-    ) external {
+    ) external onlyMarkets {
         address _market = msgSender();
         // check for empty bids we could clean
 
@@ -124,30 +132,22 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
             user[_prevUser.next].bids[index[_prevUser.next][_market][_token]];
         assert(_nextUser.price < _price);
 
-        if (user[_user].bids[index[_user][_market][_token]].price == 0) {
-            // create new record
-            Bid memory _newBid;
-            _newBid.market = _market;
-            _newBid.token = _token;
-            _newBid.prev = _nextUser.prev;
-            _newBid.next = _prevUser.next;
-            _newBid.price = _price;
-            _newBid.timeHeldLimit = _timeHeldLimit;
+        // create new record
+        Bid memory _newBid;
+        _newBid.market = _market;
+        _newBid.token = _token;
+        _newBid.prev = _nextUser.prev;
+        _newBid.next = _prevUser.next;
+        _newBid.price = _price;
+        _newBid.timeHeldLimit = _timeHeldLimit;
 
-            // insert in linked list
-            _nextUser.prev = _user; // next record update prev link
-            _prevUser.next = _user; // prev record update next link
-            user[_user].bids.push(_newBid);
+        // insert in linked list
+        _nextUser.prev = _user; // next record update prev link
+        _prevUser.next = _user; // prev record update next link
+        user[_user].bids.push(_newBid);
 
-            // update the index to help find the record later
-            index[_user][_market][_token] = user[_user].bids.length.sub(1);
-        } else {
-            // price or timeHeldLimit has changed but position in orderbook hasn't
-            // .. just update whatever has changed
-            user[_user].bids[index[_user][_market][_token]].price = _price;
-            user[_user].bids[index[_user][_market][_token]]
-                .timeHeldLimit = _timeHeldLimit;
-        }
+        // update the index to help find the record later
+        index[_user][_market][_token] = user[_user].bids.length.sub(1);
 
         user[_user].totalBidRate = user[_user].totalBidRate.add(_price);
         if (user[_user].bids[index[_user][_market][_token]].prev == _market) {
@@ -203,11 +203,21 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         }
     }
 
-    function removeBidFromOrderbook(
-        address _user,
-        address _market,
-        uint256 _token
-    ) external {
+    /// @dev removes a bid from the orderbook
+    function removeBidFromOrderbook(address _user, uint256 _token)
+        external
+        onlyMarkets
+    {
+        address _market = msgSender();
+        // update rates
+        Bid storage _currUser = user[_user].bids[index[_user][_market][_token]];
+        user[_user].totalBidRate = user[_user].totalBidRate.sub(
+            _currUser.price
+        );
+        if (_currUser.prev == _market) {
+            // user is owner, deal with it
+        }
+
         // extract from linked list
         address _tempNext =
             user[_user].bids[index[_user][_market][_token]].next;
@@ -242,7 +252,8 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         );
     }
 
-    function removeUserFromOrderbook(address _user) external {
+    function removeUserFromOrderbook(address _user) external onlyMarkets {
+        isForeclosed[_user] = true;
         uint256 i = user[_user].bids.length.sub(1);
         uint256 _limit = 0;
         if (i > MAX_DELETIONS) {
@@ -266,7 +277,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         } while (user[_user].bids.length > _limit);
         if (user[_user].bids.length == 0) {
             //and get rid of them
-            delete user[_user].bids;
+            delete user[_user];
             isForeclosed[_user] = false;
         }
     }
@@ -276,7 +287,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         address _user,
         address _market,
         uint256[] calldata _tokens
-    ) external {
+    ) external onlyMarkets {
         /// @dev loop isn't unbounded, it is limited by the max number of tokens in a market
         for (uint256 i = 0; i < _tokens.length; i++) {
             // overwrite array element
