@@ -1,0 +1,15 @@
+
+08-04-2021-10:32:26
+------------------------------------------------------
+xDai Contracts
+------------------------------------------------------
+Treasury - 0x9fe478146607AA356517e8a6F11512fDADE79192
+Factory - 0xbbB5690610b33CD89Afb79595353083E1EE9205a
+Market - 0x32036507D5fEE5148842c35e7B26DCF9ef6ecb3E
+xDaiProxy - 0x0f8d0c4Db8E7BE18527dbA32AE13654386866AC1
+NFT Hub - 0x7EfD3075D1B3298F193E82e0218fA4b8dd6812bF
+------------------------------------------------------
+Mainnet/Kovan Contracts
+------------------------------------------------------
+Mainnet Proxy - 0x5B851999c2A2AC67E0bac0d018302935eF6D08C2
+NFT Hub Mainnet - 0xE168fA12F03fc56C18eC49694d593CB420b3de6E

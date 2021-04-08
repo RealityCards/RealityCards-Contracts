@@ -1,5 +1,8 @@
 # Manually added stuff here
 cache/
+events/
+bin/
+build/
 
 # buidler
 artifactsBuidler/
