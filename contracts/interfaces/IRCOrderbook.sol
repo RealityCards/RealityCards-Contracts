@@ -28,6 +28,16 @@ interface IRCOrderbook {
         view
         returns (uint256);
 
+    function getTimeHeldlimit(address _user, uint256 _token)
+        external
+        returns (uint256);
+
+    function setTimeHeldlimit(
+        address _user,
+        uint256 _token,
+        uint256 _timeHeldLimit
+    ) external;
+
     function removeUserFromOrderbook(address _user) external;
 
     function removeMarketFromUser(

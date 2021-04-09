@@ -282,6 +282,30 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         }
     }
 
+    function getTimeHeldlimit(address _user, uint256 _token)
+        external
+        view
+        onlyMarkets
+        returns (uint256)
+    {
+        address _market = msgSender();
+        if (bidExists(_user, _market, _token)) {
+            return
+                user[_user].bids[index[_user][_market][_token]].timeHeldLimit;
+        } else {
+            revert("Bid doesn't exist");
+        }
+    }
+
+    function setTimeHeldlimit(
+        address _user,
+        uint256 _token,
+        uint256 _timeHeldLimit
+    ) external onlyMarkets {
+        user[_user].bids[index[_user][msgSender()][_token]]
+            .timeHeldLimit = _timeHeldLimit;
+    }
+
     function bidExists(
         address _user,
         address _market,

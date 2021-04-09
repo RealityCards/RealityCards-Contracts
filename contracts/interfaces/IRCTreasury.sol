@@ -81,6 +81,11 @@ interface IRCTreasury {
         uint256 _tokenId
     ) external;
 
+    function timeHeld(address _user, uint256 _tokenId)
+        external
+        view
+        returns (uint256);
+
     function collectRent(address _user) external;
 
     function updateUserTotalBids(address _user, int256 _priceChange) external;

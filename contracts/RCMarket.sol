@@ -634,16 +634,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             "Insufficient deposit"
         );
 
-        // check _timeHeldLimit
-        if (_timeHeldLimit == 0) {
-            _timeHeldLimit = MAX_UINT128; // so 0 defaults to no limit
-        } else {
-            uint256 _minRentalTime = uint256(1 days).div(minRentalDayDivisor);
-            require(
-                _timeHeldLimit >= timeHeld[_tokenId][_user].add(_minRentalTime),
-                "Limit too low"
-            ); // must be after collectRent so timeHeld is up to date
-        }
+        _timeHeldLimit = _checkTimeHeldLimit(_user, _tokenId, _timeHeldLimit);
 
         // replaces _newBid and _updateBid
         orderbook.addBidToOrderbook(
@@ -659,6 +650,24 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         return tokenPrice[_tokenId];
     }
 
+    function _checkTimeHeldLimit(
+        address _user,
+        uint256 _tokenId,
+        uint256 _timeHeldLimit
+    ) internal returns (uint256) {
+        if (_timeHeldLimit == 0) {
+            return MAX_UINT128; // so 0 defaults to no limit
+        } else {
+            uint256 _minRentalTime = uint256(1 days).div(minRentalDayDivisor);
+            require(
+                _timeHeldLimit >=
+                    treasury.timeHeld(_user, _tokenId).add(_minRentalTime),
+                "Limit too low"
+            ); // must be after collectRent so timeHeld is up to date
+            return _timeHeldLimit;
+        }
+    }
+
     /// @notice to change your timeHeldLimit without having to re-rent
     /// @param _timeHeldLimit an optional time limit to rent the card for
     /// @param _tokenId the index of the card to update
@@ -666,22 +675,14 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         external
     {
         _checkState(States.OPEN);
-        _collectRent(_tokenId);
+        address _user = msgSender();
+        treasury.collectRent(_user);
 
-        if (_timeHeldLimit == 0) {
-            _timeHeldLimit = MAX_UINT128; // so 0 defaults to no limit
-        }
-        uint256 _minRentalTime = uint256(1 days).div(minRentalDayDivisor);
-        require(
-            _timeHeldLimit >=
-                timeHeld[_tokenId][msgSender()].add(_minRentalTime),
-            "Limit too low"
-        ); // must be after collectRent so timeHeld is up to date
+        _timeHeldLimit = _checkTimeHeldLimit(_user, _tokenId, _timeHeldLimit);
 
-        orderbook[_tokenId][msgSender()].timeHeldLimit = SafeCast.toUint128(
-            _timeHeldLimit
-        );
-        emit LogUpdateTimeHeldLimit(msgSender(), _timeHeldLimit, _tokenId);
+        orderbook.setTimeHeldlimit(_user, _tokenId, _timeHeldLimit);
+
+        emit LogUpdateTimeHeldLimit(_user, _timeHeldLimit, _tokenId);
     }
 
     /// @notice stop renting a token and/or remove from orderbook
