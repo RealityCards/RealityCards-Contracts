@@ -76,7 +76,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @dev incrementing nonce for each rental, for frontend sorting
     uint256 nonce;
     /// @dev stores the orderbook. Doubly linked list.
-    mapping(uint256 => mapping(address => Bid)) public orderbook; // tokenID // user address // Bid
+    //mapping(uint256 => mapping(address => Bid)) public orderbook; // tokenID // user address // Bid
     /// @dev orderbook uses uint128 to save gas, because Struct. Using uint256 everywhere else because best for maths.
     struct Bid {
         uint128 price;
@@ -647,7 +647,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
         assert(treasury.updateLastRentalTime(_user));
         nonce++;
-        return tokenPrice[_tokenId];
+        //return tokenPrice[_tokenId];
     }
 
     function _checkTimeHeldLimit(

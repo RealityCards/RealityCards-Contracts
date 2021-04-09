@@ -28,20 +28,43 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         uint256 totalBidRate;
         uint256 rentalRate;
     }
+    struct Market {
+        uint256 minimumPriceIncreasePercent;
+    }
     mapping(address => User) public user;
+    mapping(address => Market) public market;
     mapping(address => bool) public isForeclosed;
     mapping(address => bool) public isMarket;
+    mapping(address => mapping(uint256 => address)) ownerOf;
 
     //index of a bid record in the user array, User|Market|Token->Index
     mapping(address => mapping(address => mapping(uint256 => uint256))) index;
 
     uint256 public MAX_SEARCH_ITERATIONS = 100; // TODO: gas test to find actual limit
     uint256 public MAX_DELETIONS = 100;
+    address public factoryAddress;
 
     // consider renaming this, we may need onlyTreasury also
     modifier onlyMarkets {
         require(isMarket[msgSender()], "Not authorised");
         _;
+    }
+
+    function newMarket(address _market, uint256 _tokenCount) external {
+        require(msgSender() == factoryAddress);
+        isMarket[_market] = true;
+        for (uint256 i; i < _tokenCount; i++) {
+            // create new record
+            Bid memory _newBid;
+            _newBid.market = _market;
+            _newBid.token = i;
+            _newBid.prev = _market;
+            _newBid.next = _market;
+            _newBid.price = 0;
+            _newBid.timeHeldLimit = 0;
+            user[_market].bids.push(_newBid);
+            index[_market][_market][i] = user[_market].bids.length.sub(1);
+        }
     }
 
     /// @dev adds or updates a bid in the orderbook
@@ -60,11 +83,20 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
             user[_prevUserAddress].bids[
                 index[_prevUserAddress][_market][_token]
             ];
-        Bid storage _nextUser =
-            user[_prevUser.next].bids[index[_prevUser.next][_market][_token]];
-        if (_prevUser.price < _price || _nextUser.price >= _price) {
-            // incorrect _prevUser, have a look for the correct one
-            _prevUser = _searchOrderbook(_prevUser, _market, _token, _price);
+        if (ownerOf[_market][_token] != _market) {
+            Bid storage _nextUser =
+                user[_prevUser.next].bids[
+                    index[_prevUser.next][_market][_token]
+                ];
+            if (_price > _prevUser.price || _price <= _nextUser.price) {
+                // incorrect _prevUser, have a look for the correct one
+                _prevUser = _searchOrderbook(
+                    _prevUser,
+                    _market,
+                    _token,
+                    _price
+                );
+            }
         }
         if (
             user[_user].bids.length == 0 ||
@@ -101,21 +133,33 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         uint256 _price
     ) internal view returns (Bid storage) {
         uint256 i = 0;
-        Bid storage _nextUser;
-        do {
-            _prevUser = user[_prevUser.next].bids[
-                index[_prevUser.next][_market][_token]
-            ];
+        uint256 _minIncrease = market[_market].minimumPriceIncreasePercent;
+        Bid storage _nextUser = _prevUser;
+        uint256 _requiredPrice =
+            (_nextUser.price.mul(_minIncrease.add(100))).div(100);
+        while (
+            // break loop if match price above AND above price below (so if either is false, continue, hence OR )
+            // if match previous then must be greater than next to continue
+            (_price != _prevUser.price || _price <= _nextUser.price) &&
+            // break loop if price x% above below
+            _price < _requiredPrice &&
+            // break loop if hits max iterations
+            i < MAX_SEARCH_ITERATIONS
+        ) {
+            _prevUser = _nextUser;
             _nextUser = user[_prevUser.next].bids[
                 index[_prevUser.next][_market][_token]
             ];
+            _requiredPrice = (_nextUser.price.mul(_minIncrease.add(100))).div(
+                100
+            );
             i++;
-        } while (
-            _prevUser.price < _price &&
-                _nextUser.price >= _price &&
-                i <= MAX_SEARCH_ITERATIONS
-        );
+        }
         require(i < MAX_SEARCH_ITERATIONS, "Position in orderbook not found");
+
+        if (_prevUser.price < _price) {
+            _price = _prevUser.price;
+        }
         return _prevUser;
     }
 
