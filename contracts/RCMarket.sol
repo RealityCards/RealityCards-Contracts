@@ -604,7 +604,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         uint256 _timeHeldLimit,
         address _startingPosition,
         uint256 _tokenId
-    ) public payable autoUnlock() autoLock() returns (uint256) {
+    ) public payable autoUnlock() autoLock() {
         _checkState(States.OPEN);
         require(_newPrice >= MIN_RENTAL_VALUE, "Minimum rental 1 xDai");
         require(_tokenId < numberOfTokens, "This token does not exist");
@@ -654,7 +654,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         address _user,
         uint256 _tokenId,
         uint256 _timeHeldLimit
-    ) internal returns (uint256) {
+    ) internal view returns (uint256) {
         if (_timeHeldLimit == 0) {
             return MAX_UINT128; // so 0 defaults to no limit
         } else {
@@ -747,7 +747,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
             // if still the current owner after collecting rent, revert to underbidder
             if (ownerOf(_tokenId) == _msgSender) {
-                _revertToUnderbidder(_tokenId);
+                // _revertToUnderbidder(_tokenId);
                 // if not current owner no further action necessary because they will have been deleted from the orderbook
             } else {
                 //assert(orderbook[_tokenId][_msgSender].price == 0);
@@ -826,7 +826,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                     );
                     _rentOwed = _rentOwedLimit; // take up to the max
                 }
-                _revertToUnderbidder(_tokenId);
+                // _revertToUnderbidder(_tokenId);
             }
 
             if (_rentOwed > 0) {
@@ -1133,76 +1133,76 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     //     );
     // }
 
-    /// @notice if a users deposit runs out, either return to previous owner or foreclose
-    /// @dev can be called by anyone via collectRent, therefore should never use msg.sender
-    function _revertToUnderbidder(uint256 _tokenId) internal {
-        address _tempNext = ownerOf(_tokenId);
-        address _tempPrev;
-        uint256 _tempNextDeposit;
-        uint256 _requiredDeposit;
-        uint256 _loopCount = 0;
+    // /// @notice if a users deposit runs out, either return to previous owner or foreclose
+    // /// @dev can be called by anyone via collectRent, therefore should never use msg.sender
+    // function _revertToUnderbidder(uint256 _tokenId) internal {
+    //     address _tempNext = ownerOf(_tokenId);
+    //     address _tempPrev;
+    //     uint256 _tempNextDeposit;
+    //     uint256 _requiredDeposit;
+    //     uint256 _loopCount = 0;
 
-        // loop through orderbook list for user with sufficient deposit, deleting users who fail the test
-        do {
-            // get the address of next person in the list
-            _tempPrev = _tempNext;
-            _tempNext = orderbook[_tokenId][_tempPrev].next;
-            // remove the previous user
-            treasury.updateUserBids(
-                _tempPrev,
-                orderbook[_tokenId][_tempPrev].price,
-                _tokenId,
-                false
-            );
-            orderbook[_tokenId][_tempNext].prev = address(this);
-            delete orderbook[_tokenId][_tempPrev];
-            emit LogRemoveFromOrderbook(_tempPrev, _tokenId);
-            // get required  and actual deposit of next user
-            _tempNextDeposit = treasury.userDeposit(_tempNext);
-            uint256 _nextUserTotalBids =
-                treasury.userTotalBids(_tempNext).add(
-                    orderbook[_tokenId][_tempNext].price
-                );
-            _requiredDeposit = _nextUserTotalBids.div(minRentalDayDivisor);
-            _loopCount = _loopCount.add(1);
-        } while (
-            _tempNext != address(this) &&
-                _tempNextDeposit < _requiredDeposit &&
-                _loopCount < UNDERBID_MAX_ITERATIONS
-        );
+    //     // loop through orderbook list for user with sufficient deposit, deleting users who fail the test
+    //     do {
+    //         // get the address of next person in the list
+    //         _tempPrev = _tempNext;
+    //         _tempNext = orderbook[_tokenId][_tempPrev].next;
+    //         // remove the previous user
+    //         treasury.updateUserBids(
+    //             _tempPrev,
+    //             orderbook[_tokenId][_tempPrev].price,
+    //             _tokenId,
+    //             false
+    //         );
+    //         orderbook[_tokenId][_tempNext].prev = address(this);
+    //         delete orderbook[_tokenId][_tempPrev];
+    //         emit LogRemoveFromOrderbook(_tempPrev, _tokenId);
+    //         // get required  and actual deposit of next user
+    //         _tempNextDeposit = treasury.userDeposit(_tempNext);
+    //         uint256 _nextUserTotalBids =
+    //             treasury.userTotalBids(_tempNext).add(
+    //                 orderbook[_tokenId][_tempNext].price
+    //             );
+    //         _requiredDeposit = _nextUserTotalBids.div(minRentalDayDivisor);
+    //         _loopCount = _loopCount.add(1);
+    //     } while (
+    //         _tempNext != address(this) &&
+    //             _tempNextDeposit < _requiredDeposit &&
+    //             _loopCount < UNDERBID_MAX_ITERATIONS
+    //     );
 
-        exitedTimestamp[ownerOf(_tokenId)] = block.timestamp;
-        _processNewOwner(
-            _tempNext,
-            orderbook[_tokenId][_tempNext].price,
-            _tokenId
-        );
-    }
+    //     exitedTimestamp[ownerOf(_tokenId)] = block.timestamp;
+    //     _processNewOwner(
+    //         _tempNext,
+    //         orderbook[_tokenId][_tempNext].price,
+    //         _tokenId
+    //     );
+    // }
 
-    /// @dev we don't emit LogAddToOrderbook because this is not correct if called via _revertToUnderbidder
-    function _processNewOwner(
-        address _newOwner,
-        uint256 _newPrice,
-        uint256 _tokenId
-    ) internal {
-        treasury.updateOwnership(
-            ownerOf(_tokenId),
-            _newOwner,
-            tokenPrice[_tokenId],
-            _newPrice,
-            _tokenId
-        );
-        _transferCard(ownerOf(_tokenId), _newOwner, _tokenId);
-        tokenPrice[_tokenId] = _newPrice;
-    }
+    // /// @dev we don't emit LogAddToOrderbook because this is not correct if called via _revertToUnderbidder
+    // function _processNewOwner(
+    //     address _newOwner,
+    //     uint256 _newPrice,
+    //     uint256 _tokenId
+    // ) internal {
+    //     treasury.updateOwnership(
+    //         ownerOf(_tokenId),
+    //         _newOwner,
+    //         tokenPrice[_tokenId],
+    //         _newPrice,
+    //         _tokenId
+    //     );
+    //     _transferCard(ownerOf(_tokenId), _newOwner, _tokenId);
+    //     tokenPrice[_tokenId] = _newPrice;
+    // }
 
-    /// @dev same as above except does not transfer the Card or update last rental time
-    function _processUpdateOwner(uint256 _newPrice, uint256 _tokenId) internal {
-        int256 _priceChange =
-            int256(_newPrice).sub(int256(tokenPrice[_tokenId]));
-        treasury.updateUserRentalRate(ownerOf(_tokenId), _priceChange);
-        tokenPrice[_tokenId] = _newPrice;
-    }
+    // /// @dev same as above except does not transfer the Card or update last rental time
+    // function _processUpdateOwner(uint256 _newPrice, uint256 _tokenId) internal {
+    //     int256 _priceChange =
+    //         int256(_newPrice).sub(int256(tokenPrice[_tokenId]));
+    //     treasury.updateUserRentalRate(ownerOf(_tokenId), _priceChange);
+    //     tokenPrice[_tokenId] = _newPrice;
+    // }
 
     function _checkState(States currentState) internal view {
         require(state == currentState, "Incorrect state");

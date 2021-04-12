@@ -286,6 +286,32 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         }
     }
 
+    function findNewOwner(uint256 _token)
+        external
+        onlyMarkets
+        returns (address _newOwner)
+    {
+        address _market = msgSender();
+        Bid storage _currUser =
+            user[_market].bids[index[_market][_market][_token]];
+        // search ahead to make sure the next user hasn't foreclosed
+        while (isForeclosed[_currUser.next]) {
+            _currUser = user[_currUser.next].bids[
+                index[_currUser.next][_market][_token]
+            ];
+            // we could delete records as we go here
+        }
+
+        // the next user is safe to make the owner
+        user[_market].bids[index[_market][_market][_token]].next = _currUser
+            .next;
+        user[_currUser.next].bids[index[_currUser.next][_market][_token]]
+            .prev = _market;
+        // CAUTION _currUser could now be the end of a linked list we are about to lose the location of
+
+        return _currUser.next;
+    }
+
     function findNextBid(
         address _user,
         address _market,
