@@ -191,9 +191,12 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         // update the index to help find the record later
         index[_user][_market][_token] = user[_user].bids.length.sub(1);
 
+        // update memo value
         user[_user].totalBidRate = user[_user].totalBidRate.add(_price);
         if (user[_user].bids[index[_user][_market][_token]].prev == _market) {
             user[_user].rentalRate = user[_user].rentalRate.add(_price);
+
+            // TODO lower the previous owners rentalRate
         }
     }
 
@@ -226,6 +229,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         _nextUser.prev = _user; // next record update prev link
         _prevUser.next = _user; // prev record update next link
 
+        // update memo values
         user[_user].totalBidRate = SafeCast.toUint256(
             int256(user[_user].totalBidRate).add(_priceChange)
         );
@@ -238,10 +242,12 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
             // if owner before and not after, remove the old price and the difference
             _price = _price.add(SafeCast.toUint256(_priceChange.mul(-1)));
             user[_user].rentalRate = user[_user].rentalRate.sub(_price);
+            // TODO lower the previous owners rentalRate
         } else if (!_owner && _currUser.prev == _market) {
             // if not owner before but is owner after, add price and difference
             _price = _price.add(SafeCast.toUint256(_priceChange.mul(-1)));
             user[_user].rentalRate = user[_user].rentalRate.add(_price);
+            // TODO lower the previous owners rentalRate
         }
     }
 
