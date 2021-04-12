@@ -29,6 +29,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         uint256 rentalRate;
     }
     struct Market {
+        uint256 mode;
         uint256 minimumPriceIncreasePercent;
     }
     mapping(address => User) public user;
@@ -76,28 +77,17 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         address _prevUserAddress
     ) external onlyMarkets {
         address _market = msgSender();
-        // check for empty bids we could clean
-
-        // check _prevUser is the correct position
         Bid storage _prevUser =
             user[_prevUserAddress].bids[
                 index[_prevUserAddress][_market][_token]
             ];
+        // check for empty bids we could clean
+
+        // check _prevUser is the correct position
         if (ownerOf[_market][_token] != _market) {
-            Bid storage _nextUser =
-                user[_prevUser.next].bids[
-                    index[_prevUser.next][_market][_token]
-                ];
-            if (_price > _prevUser.price || _price <= _nextUser.price) {
-                // incorrect _prevUser, have a look for the correct one
-                _prevUser = _searchOrderbook(
-                    _prevUser,
-                    _market,
-                    _token,
-                    _price
-                );
-            }
+            _prevUser = _searchOrderbook(_prevUser, _market, _token, _price);
         }
+
         if (
             user[_user].bids.length == 0 ||
             index[_user][_market][_token] != 0 ||
@@ -124,6 +114,8 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
                 _prevUser
             );
         }
+
+        //TODO ownership may have just changed, deal with it
     }
 
     function _searchOrderbook(
@@ -132,12 +124,18 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         uint256 _token,
         uint256 _price
     ) internal view returns (Bid storage) {
-        uint256 i = 0;
         uint256 _minIncrease = market[_market].minimumPriceIncreasePercent;
         Bid storage _nextUser = _prevUser;
         uint256 _requiredPrice =
             (_nextUser.price.mul(_minIncrease.add(100))).div(100);
+        uint256 i = 0;
         while (
+            /// @dev TODO adapt loop logic now it's changed from do-while to while loop
+            // // stop when equal or less than prev, and greater than required price
+            // !(_price <= _prevUser.price && _price > _requiredPrice) &&
+            // i < MAX_SEARCH_ITERATIONS
+
+            /// @dev old logic below
             // break loop if match price above AND above price below (so if either is false, continue, hence OR )
             // if match previous then must be greater than next to continue
             (_price != _prevUser.price || _price <= _nextUser.price) &&
@@ -253,36 +251,39 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         onlyMarkets
     {
         address _market = msgSender();
-        // update rates
-        Bid storage _currUser = user[_user].bids[index[_user][_market][_token]];
-        user[_user].totalBidRate = user[_user].totalBidRate.sub(
-            _currUser.price
-        );
-        if (_currUser.prev == _market) {
-            // user is owner, deal with it
+        if (bidExists(_user, _market, _token)) {
+            // update rates
+            Bid storage _currUser =
+                user[_user].bids[index[_user][_market][_token]];
+            user[_user].totalBidRate = user[_user].totalBidRate.sub(
+                _currUser.price
+            );
+            if (_currUser.prev == _market) {
+                // user is owner, deal with it
+            }
+
+            // extract from linked list
+            address _tempNext =
+                user[_user].bids[index[_user][_market][_token]].next;
+            address _tempPrev =
+                user[_user].bids[index[_user][_market][_token]].prev;
+            user[_tempNext].bids[index[_tempNext][_market][_token]]
+                .next = _tempPrev;
+            user[_tempPrev].bids[index[_tempPrev][_market][_token]]
+                .prev = _tempNext;
+
+            // overwrite array element
+            uint256 _index = index[_user][_market][_token];
+            uint256 _lastRecord = user[_user].bids.length.sub(1);
+            user[_user].bids[_index] = user[_user].bids[_lastRecord];
+            user[_user].bids.pop();
+
+            // update the index to help find the record later
+            index[_user][_market][_token] = 0;
+            index[_user][user[_user].bids[_index].market][
+                user[_user].bids[_index].token
+            ] = _index;
         }
-
-        // extract from linked list
-        address _tempNext =
-            user[_user].bids[index[_user][_market][_token]].next;
-        address _tempPrev =
-            user[_user].bids[index[_user][_market][_token]].prev;
-        user[_tempNext].bids[index[_tempNext][_market][_token]]
-            .next = _tempPrev;
-        user[_tempPrev].bids[index[_tempPrev][_market][_token]]
-            .prev = _tempNext;
-
-        // overwrite array element
-        uint256 _index = index[_user][_market][_token];
-        uint256 _lastRecord = user[_user].bids.length.sub(1);
-        user[_user].bids[_index] = user[_user].bids[_lastRecord];
-        user[_user].bids.pop();
-
-        // update the index to help find the record later
-        index[_user][_market][_token] = 0;
-        index[_user][user[_user].bids[_index].market][
-            user[_user].bids[_index].token
-        ] = _index;
     }
 
     function findNextBid(
@@ -290,10 +291,12 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         address _market,
         uint256 _token
     ) external view returns (address _newUser, uint256 _newPrice) {
-        return (
-            user[_user].bids[index[_user][_market][_token]].next,
-            user[_user].bids[index[_user][_market][_token]].price
-        );
+        Bid storage _currUser = user[_user].bids[index[_user][_market][_token]];
+        Bid storage _nextUser =
+            user[_currUser.next].bids[index[_currUser.next][_market][_token]];
+        // TODO check bid is valid before returing it
+
+        return (_nextUser.next, _nextUser.price);
     }
 
     function getBidValue(address _user, uint256 _token)
