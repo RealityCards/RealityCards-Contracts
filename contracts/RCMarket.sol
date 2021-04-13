@@ -165,8 +165,8 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         uint256 affiliateCut,
         uint256 cardAffiliateCut
     );
-    event LogTransferCardToLongestOwner(uint256 tokenId, address longestOwner);
     event LogSettings(uint256 indexed minRentalDayDivisor, uint256 indexed minimumPriceIncreasePercent, uint256 hotPotatoWeekDivisor);
+    event LogLongestOwner(uint256 tokenId, address longestOwner);
 
     ////////////////////////////////////
     //////// CONSTRUCTOR ///////////////
@@ -359,6 +359,10 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         // let the treasury know the market is closed
         treasury.updateMarketStatus(false);
         _incrementState();
+        // emit longest owner event
+        for (uint256 i = 0; i < numberOfTokens; i++) {
+            emit LogLongestOwner(i,longestOwner[i]);
+        }
         emit LogContractLocked(true);
     }
 
