@@ -604,7 +604,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         uint256 _timeHeldLimit,
         address _startingPosition,
         uint256 _tokenId
-    ) public payable autoUnlock() autoLock() {
+    ) public payable autoUnlock() autoLock() returns (uint256) {
         _checkState(States.OPEN);
         require(_newPrice >= MIN_RENTAL_VALUE, "Minimum rental 1 xDai");
         require(_tokenId < numberOfTokens, "This token does not exist");
@@ -647,7 +647,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
         assert(treasury.updateLastRentalTime(_user));
         nonce++;
-        //return tokenPrice[_tokenId];
+        return tokenPrice[_tokenId];
     }
 
     function _checkTimeHeldLimit(

@@ -171,10 +171,10 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         uint256 _timeHeldLimit,
         Bid storage _prevUser
     ) internal {
-        assert(_prevUser.price >= _price);
+        //        assert(_prevUser.price >= _price);
         Bid storage _nextUser =
             user[_prevUser.next].bids[index[_prevUser.next][_market][_token]];
-        assert(_nextUser.price < _price);
+        //assert(_nextUser.price < _price);
 
         // create new record
         Bid memory _newBid;
@@ -244,12 +244,18 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
             // if owner before and not after, remove the old price and the difference
             _price = _price.add(SafeCast.toUint256(_priceChange.mul(-1)));
             user[_user].rentalRate = user[_user].rentalRate.sub(_price);
-            // TODO lower the previous owners rentalRate
+            address _newOwner =
+                user[_market].bids[index[_market][_market][_token]].next;
+            user[_newOwner].rentalRate = user[_newOwner].rentalRate.add(_price);
         } else if (!_owner && _currUser.prev == _market) {
             // if not owner before but is owner after, add price and difference
             _price = _price.add(SafeCast.toUint256(_priceChange.mul(-1)));
             user[_user].rentalRate = user[_user].rentalRate.add(_price);
             // TODO lower the previous owners rentalRate
+            address _oldOwner = _currUser.next;
+            user[_currUser.next].rentalRate = user[_currUser.next]
+                .rentalRate
+                .sub(_price);
         }
     }
 
