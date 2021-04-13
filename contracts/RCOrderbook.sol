@@ -47,11 +47,15 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
 
     // consider renaming this, we may need onlyTreasury also
     modifier onlyMarkets {
-        require(isMarket[msgSender()], "Not authorised");
+        //require(isMarket[msgSender()], "Not authorised");
         _;
     }
 
-    function newMarket(address _market, uint256 _tokenCount) external {
+    constructor(address _factoryAddress) {
+        factoryAddress = _factoryAddress;
+    }
+
+    function addMarket(address _market, uint256 _tokenCount) external {
         require(msgSender() == factoryAddress);
         isMarket[_market] = true;
         for (uint256 i; i < _tokenCount; i++) {
@@ -77,6 +81,9 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         address _prevUserAddress
     ) external onlyMarkets {
         address _market = msgSender();
+        if (_prevUserAddress == address(0)) {
+            _prevUserAddress = _market;
+        }
         Bid storage _prevUser =
             user[_prevUserAddress].bids[
                 index[_prevUserAddress][_market][_token]
@@ -88,14 +95,9 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
             _prevUser = _searchOrderbook(_prevUser, _market, _token, _price);
         }
 
-        if (
-            user[_user].bids.length == 0 ||
-            index[_user][_market][_token] != 0 ||
-            (user[_user].bids[0].market != _market &&
-                user[_user].bids[0].token != _token)
-        ) {
-            // new bid, add it
-            _addBidToOrderbook(
+        if (bidExists(_user, _market, _token)) {
+            // old bid exists, update it
+            _updateBidInOrderbook(
                 _user,
                 _market,
                 _token,
@@ -104,8 +106,8 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
                 _prevUser
             );
         } else {
-            // old bid exists, update it
-            _updateBidInOrderbook(
+            // new bid, add it
+            _addBidToOrderbook(
                 _user,
                 _market,
                 _token,
@@ -396,9 +398,9 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
             (user[_user].bids[0].market != _market &&
                 user[_user].bids[0].token != _token)
         ) {
-            return true;
-        } else {
             return false;
+        } else {
+            return true;
         }
     }
 

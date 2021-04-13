@@ -402,6 +402,14 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         return user[_user].deposit;
     }
 
+    function timeHeld(address _user, uint256 _token)
+        external
+        view
+        returns (uint256)
+    {
+        return user[_user].deposit;
+    }
+
     function collectRent(address _user, uint256 _timeOfCollection) external {
         uint256 _rentDuration = _timeOfCollection.sub(user[_user].lastRentCalc);
         user[_user].deposit = user[_user].deposit.sub(

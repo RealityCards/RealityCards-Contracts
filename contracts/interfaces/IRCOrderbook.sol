@@ -2,6 +2,8 @@
 pragma solidity ^0.7.5;
 
 interface IRCOrderbook {
+    function addMarket(address _market, uint256 _tokenCount) external;
+
     function addBidToOrderbook(
         address _user,
         uint256 _token,

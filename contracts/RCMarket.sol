@@ -618,7 +618,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             "Rentals are disabled"
         );
 
-        treasury.collectRent(_user);
+        _collectRent(_tokenId);
 
         // process deposit, if sent
         if (msg.value > 0) {
@@ -660,8 +660,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         } else {
             uint256 _minRentalTime = uint256(1 days).div(minRentalDayDivisor);
             require(
-                _timeHeldLimit >=
-                    treasury.timeHeld(_user, _tokenId).add(_minRentalTime),
+                _timeHeldLimit >= timeHeld[_tokenId][_user].add(_minRentalTime),
                 "Limit too low"
             ); // must be after collectRent so timeHeld is up to date
             return _timeHeldLimit;

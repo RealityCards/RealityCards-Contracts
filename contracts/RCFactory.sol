@@ -9,6 +9,7 @@ import "./interfaces/IRCTreasury.sol";
 import "./interfaces/IRCMarket.sol";
 import "./interfaces/IRCProxyXdai.sol";
 import "./interfaces/IRCNftHubXdai.sol";
+import "./interfaces/IRCOrderbook.sol";
 import "./lib/NativeMetaTransaction.sol";
 
 /// @title Reality Cards Factory
@@ -26,6 +27,7 @@ contract RCFactory is Ownable, NativeMetaTransaction {
     IRCTreasury public treasury;
     IRCProxyXdai public proxy;
     IRCNftHubXdai public nfthub;
+    IRCOrderbook public orderbook;
 
     ///// CONTRACT ADDRESSES /////
     /// @dev reference contract
@@ -184,6 +186,11 @@ contract RCFactory is Ownable, NativeMetaTransaction {
         require(address(_newAddress) != address(0));
         nfthub = _newAddress;
         totalNftMintCount = _newNftMintCount;
+    }
+
+    function setOrderbookAddress(IRCOrderbook _newAddress) external onlyOwner {
+        require(address(_newAddress) != address(0));
+        orderbook = _newAddress;
     }
 
     ////////////////////////////////////
@@ -448,6 +455,7 @@ contract RCFactory is Ownable, NativeMetaTransaction {
         treasury.addMarket(_newAddress);
         proxy.addMarket(_newAddress);
         nfthub.addMarket(_newAddress);
+        orderbook.addMarket(_newAddress, _numberOfTokens);
 
         // update internals
         marketAddresses[_mode].push(_newAddress);
