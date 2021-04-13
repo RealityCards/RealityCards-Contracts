@@ -4,18 +4,25 @@ var realityCardsFactory = artifacts.require("RCFactory");
 //var factoryAddress = '0xe1Ab9305DA70b865d610116163A82E1fDF6cCcFD'; //testnet on Sokol
 //var factoryAddress = '0x3b557a58E5c6c4Df3e3307F9c7f5ce46472d80F7'; //beta on xDai
 //var factoryAddress = '0x76d22B0065Ada142207E2cDce12322FB3F8c0bAA'; //dev on Sokol
-var factoryAddress = '0xbbB5690610b33CD89Afb79595353083E1EE9205a'; // usertesting on Sokol
+var factoryAddress = '0xe04C6208051Eef95eE7c89E329Ec9dA18e148421'; // usertesting on Sokol
 
-//get IPFS hash using: curl -F file=@event.json "https://api.thegraph.com/ipfs/api/v0/add"
-//run: truffle exec addmarket.js --network teststage1 
-
+/* 
+1. Use ./EventMaker.sh to generate the .json files
+2. find the pictures and check the names match the names in the .json files
+3. upload the pictures to DigitalOcean in the folder specified in the .json files
+4. inside the event folder get IPFS hash using: curl -F file=@event.json "https://api.thegraph.com/ipfs/api/v0/add"
+5. fill in the rest of this script with the IPFS hash, question, LockingTime and the correct number of token.json lines
+6. back in the root folder run: truffle exec addmarket.js --network teststage1 
+7. do event
+8. use remix to close the market, the market address is given when you create it, remember the cards are 0 index. So the first card is result 0
+*/
 
 // variables market specific
 var marketOpeningTime = 0;
-var marketLockingTime = 1616997600;
-var oracleResolutionTime = 1616997600;
+var marketLockingTime = 1618527600;
+var oracleResolutionTime = 1618527600;
 var ipfsHash = 'QmVCHu1bo1j33ik6SHfmVu8seDXZhaB1ZjQ2ZfBqj3wytF';
-var question = 'What will the state of Starship SN11 be at the end of this week?';
+var question = 'What is the weather now?';
 var artistAddress = "0x0000000000000000000000000000000000000000";
 var affiliateAddress = "0x0000000000000000000000000000000000000000";
 var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000', '0x0000000000000000000000000000000000000000'];
