@@ -3,21 +3,22 @@
 ###################
 #### Setup ########
 ###################
-EVENT_NAME="What will the state of Starship SN11 be at the end of this week?"
-SRC_NAME="spacex"
+EVENT_NAME="What is the weather now?"
+SRC_NAME="weather"
 CATEGORY="other"
-SLUG="spc2"
+SLUG="wth1"
 NUMBER_OF_CARDS="3"
-CARD0="Successful flight and landing"
-CARD1="Rapid Unplanned Dissasembly"
+CARD0="Sunny"
+CARD1="Rainy"
 CARD2="Nothing"
 CARD3=""
 CARD4=""
 CARD5=""
 CARD6=""
+CARD7=""
 CDN="https://cdn.realitycards.io/"
 IMAGES="images/"
-IMAGE_FORMAT=".gif"
+IMAGE_FORMAT=".jpg"
 NFT="nftmetadata/"
 ##################
 
