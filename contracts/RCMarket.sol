@@ -380,6 +380,15 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         emit LogNewOwner(_tokenId, _to);
     }
 
+    function transferCard(
+        address _from,
+        address _to,
+        uint256 _tokenId
+    ) external {
+        require(msgSender() == address(orderbook));
+        _transferCard(_from, _to, _tokenId);
+    }
+
     // MARKET RESOLUTION FUNCTIONS
 
     /// @notice checks whether the competition has ended, if so moves to LOCKED state
@@ -604,7 +613,12 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         uint256 _timeHeldLimit,
         address _startingPosition,
         uint256 _tokenId
-    ) public payable autoUnlock() autoLock() returns (uint256) {
+    )
+        public
+        payable
+        autoUnlock()
+        autoLock() /*returns (uint256)*/
+    {
         _checkState(States.OPEN);
         require(_newPrice >= MIN_RENTAL_VALUE, "Minimum rental 1 xDai");
         require(_tokenId < numberOfTokens, "This token does not exist");
@@ -647,7 +661,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
         assert(treasury.updateLastRentalTime(_user));
         nonce++;
-        return tokenPrice[_tokenId];
+        //return tokenPrice[_tokenId];
     }
 
     function _checkTimeHeldLimit(

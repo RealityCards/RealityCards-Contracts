@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/utils/SafeCast.sol";
 import "hardhat/console.sol";
 import "./lib/NativeMetaTransaction.sol";
 import "./interfaces/IRCTreasury.sol";
+import "./interfaces/IRCMarket.sol";
 
 /// @notice Work in Progress... ‿︵‿︵‿︵‿ヽ(°□° )ノ︵‿︵‿︵‿︵
 contract RCOrderbook is Ownable, NativeMetaTransaction {
@@ -134,10 +135,11 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         while (
             /// @dev TODO adapt loop logic now it's changed from do-while to while loop
             // // stop when equal or less than prev, and greater than required price
-            // !(_price <= _prevUser.price && _price > _requiredPrice) &&
+            // !(_price <= _prevUser.price && _price > _nextUser.price) &&
+            //
             // i < MAX_SEARCH_ITERATIONS
 
-            /// @dev old logic below
+            /// @dev old logic below, still functional, but probably not ideal
             // break loop if match price above AND above price below (so if either is false, continue, hence OR )
             // if match previous then must be greater than next to continue
             (_price != _prevUser.price || _price <= _nextUser.price) &&
@@ -196,9 +198,13 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         // update memo value
         user[_user].totalBidRate = user[_user].totalBidRate.add(_price);
         if (user[_user].bids[index[_user][_market][_token]].prev == _market) {
+            address _oldOwner =
+                user[_user].bids[index[_user][_market][_token]].next;
+            transferCard(_market, _token, _oldOwner, _user);
             user[_user].rentalRate = user[_user].rentalRate.add(_price);
-
-            // TODO lower the previous owners rentalRate
+            user[_oldOwner].rentalRate = user[_oldOwner].rentalRate.sub(
+                user[_oldOwner].bids[index[_oldOwner][_market][_token]].price
+            );
         }
     }
 
@@ -209,7 +215,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         uint256 _price,
         uint256 _timeHeldLimit,
         Bid storage _prevUser
-    ) internal returns (int256 _priceChange) {
+    ) internal {
         assert(_prevUser.price >= _price);
         Bid storage _nextUser =
             user[_prevUser.next].bids[index[_prevUser.next][_market][_token]];
@@ -223,8 +229,8 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         user[_currUser.prev].bids[index[_currUser.prev][_market][_token]]
             .prev = _currUser.next;
 
-        // update price
-        _currUser.price = _price;
+        // update price, save old price for rental rate adjustment later
+        (_currUser.price, _price) = (_price, _currUser.price);
         _currUser.timeHeldLimit = _timeHeldLimit;
 
         // insert bid in new position
@@ -232,30 +238,36 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         _prevUser.next = _user; // prev record update next link
 
         // update memo values
-        user[_user].totalBidRate = SafeCast.toUint256(
-            int256(user[_user].totalBidRate).add(_priceChange)
-        );
+        user[_user].totalBidRate = (
+            user[_user].totalBidRate.add(_currUser.price)
+        )
+            .sub(_price);
         if (_owner && _currUser.prev == _market) {
             // if owner before and after, update the price difference
-            user[_user].rentalRate = SafeCast.toUint256(
-                int256(user[_user].rentalRate).add(_priceChange)
-            );
+            user[_user].rentalRate = (
+                user[_user].rentalRate.add(_currUser.price)
+            )
+                .sub(_price);
         } else if (_owner && _currUser.prev != _market) {
-            // if owner before and not after, remove the old price and the difference
-            _price = _price.add(SafeCast.toUint256(_priceChange.mul(-1)));
-            user[_user].rentalRate = user[_user].rentalRate.sub(_price);
+            // if owner before and not after, remove the old price
             address _newOwner =
                 user[_market].bids[index[_market][_market][_token]].next;
-            user[_newOwner].rentalRate = user[_newOwner].rentalRate.add(_price);
+            transferCard(_market, _token, _user, _newOwner);
+            user[_user].rentalRate = user[_user].rentalRate.sub(_price);
+            user[_newOwner].rentalRate = user[_newOwner].rentalRate.add(
+                user[_newOwner].bids[index[_newOwner][_market][_token]].price
+            );
         } else if (!_owner && _currUser.prev == _market) {
-            // if not owner before but is owner after, add price and difference
-            _price = _price.add(SafeCast.toUint256(_priceChange.mul(-1)));
-            user[_user].rentalRate = user[_user].rentalRate.add(_price);
-            // TODO lower the previous owners rentalRate
+            // if not owner before but is owner after, add new price
             address _oldOwner = _currUser.next;
-            user[_currUser.next].rentalRate = user[_currUser.next]
-                .rentalRate
-                .sub(_price);
+            transferCard(_market, _token, _oldOwner, _user);
+            user[_user].rentalRate = user[_user].rentalRate.add(
+                _currUser.price
+            );
+            user[_oldOwner].rentalRate = user[_oldOwner].rentalRate.sub(
+                user[_currUser.next].bids[index[_oldOwner][_market][_token]]
+                    .price
+            );
         }
     }
 
@@ -460,5 +472,15 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
                 user[_user].bids[_index].token
             ] = _index;
         }
+    }
+
+    function transferCard(
+        address _market,
+        uint256 _token,
+        address _oldOwner,
+        address _newOwner
+    ) internal {
+        IRCMarket _rcmarket = IRCMarket(_market);
+        _rcmarket.transferCard(_oldOwner, _newOwner, _token);
     }
 }
