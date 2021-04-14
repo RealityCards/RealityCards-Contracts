@@ -419,7 +419,7 @@ contract('TestOrderbook', (accounts) => {
     await newRental(9, 0, user1); // 5, 9
     await newRental(8, 0, user2); // 6, 8
     await newRental(10, 0, user3); // 3,1 10
-    /*var returnedPrice = */await realitycards.newRental.call(ether('10.9'), 0, zeroAddress, 0, { from: user4 });
+    // var returnedPrice = await realitycards.newRental.call(ether('10.9'), 0, zeroAddress, 0, { from: user4 });
     //assert.equal(returnedPrice.toString(), ether('10').toString());
     await newRental(10.9, 0, user4); // 4, 10
     await newRental(20, 0, user5); // 1, 20
@@ -436,15 +436,31 @@ contract('TestOrderbook', (accounts) => {
     assert.equal(price, web3.utils.toWei('50', 'ether'));
     // check position and price
     // position 0
-    var bid = await realitycards.orderbook.call(0, user9);
-    assert.equal(bid[0], web3.utils.toWei('50', 'ether'));
-    assert.equal(bid[2], user5);
-    assert.equal(bid[3], realitycards.address);
+    await rcorderbook.printOrderbook(realitycards.address, 0);
+    console.log("0", user0);
+    console.log("1", user1);
+    console.log("2", user2);
+    console.log("3", user3);
+    console.log("4", user4);
+    console.log("5", user5);
+    console.log("6", user6);
+    console.log("7", user7);
+    console.log("8", user8);
+    console.log("9", user9);
+    console.log("10", user10);
+    console.log("11", user11);
+    console.log("12", user12);
+    console.log("13", user13);
+    console.log("14", user14);
+    var bid = await rcorderbook.getBid.call(realitycards.address, user9, 0);
+    assert.equal(bid[4], web3.utils.toWei('50', 'ether'));
+    assert.equal(bid[1], user5);
+    assert.equal(bid[2], realitycards.address);
     // position 1
-    var bid = await realitycards.orderbook.call(0, user5);
-    assert.equal(bid[0], web3.utils.toWei('20', 'ether'));
-    assert.equal(bid[2], user0);
-    assert.equal(bid[3], user9);
+    var bid = await rcorderbook.getBid.call(realitycards.address, user5, 0);
+    assert.equal(bid[4], web3.utils.toWei('20', 'ether'));
+    assert.equal(bid[1], user0);
+    assert.equal(bid[2], user9);
     // position 2
     var bid = await realitycards.orderbook.call(0, user0);
     assert.equal(bid[0], web3.utils.toWei('10', 'ether'));
