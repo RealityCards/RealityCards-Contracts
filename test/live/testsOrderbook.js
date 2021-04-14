@@ -355,7 +355,7 @@ contract('TestOrderbook', (accounts) => {
   // });
 
 
-  it('test _revertToUnderbidder will revert properly if current owner has deposit but previous owner does not', async () => {
+  it.only('test _revertToUnderbidder will revert properly if current owner has deposit but previous owner does not', async () => {
     // setup
     await depositDai(144, user0);
     await depositDai(144, user1);

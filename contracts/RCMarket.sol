@@ -376,6 +376,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             "Cannot send to/from zero address"
         );
         uint256 _actualTokenId = _tokenId.add(totalNftMintCount);
+        console.log("transfering to ", _to);
         assert(nfthub.transferNft(_from, _to, _actualTokenId));
         emit LogNewOwner(_tokenId, _to);
     }
@@ -383,10 +384,12 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     function transferCard(
         address _from,
         address _to,
-        uint256 _tokenId
+        uint256 _tokenId,
+        uint256 _price
     ) external {
         require(msgSender() == address(orderbook));
         _transferCard(_from, _to, _tokenId);
+        tokenPrice[_tokenId] = _price;
     }
 
     // MARKET RESOLUTION FUNCTIONS

@@ -204,7 +204,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         if (user[_user].bids[index[_user][_market][_token]].prev == _market) {
             address _oldOwner =
                 user[_user].bids[index[_user][_market][_token]].next;
-            transferCard(_market, _token, _oldOwner, _user);
+            transferCard(_market, _token, _oldOwner, _user, _price);
             treasury.updateRentalRate(
                 _oldOwner,
                 _user,
@@ -256,7 +256,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
             uint256 _newPrice =
                 user[_newOwner].bids[index[_newOwner][_market][_token]].price;
             treasury.updateRentalRate(_user, _newOwner, _price, _newPrice);
-            transferCard(_market, _token, _user, _newOwner);
+            transferCard(_market, _token, _user, _newOwner, _newPrice);
         } else if (!_owner && _currUser.prev == _market) {
             // if not owner before but is owner after, add new price
             address _oldOwner = _currUser.next;
@@ -268,7 +268,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
                 _oldPrice,
                 _currUser.price
             );
-            transferCard(_market, _token, _oldOwner, _user);
+            transferCard(_market, _token, _oldOwner, _user, _currUser.price);
         }
     }
 
@@ -346,6 +346,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         // the market is the head of the list, the next bid is therefore the owner
         Bid storage _head = user[_market].bids[index[_market][_market][_token]];
         address _oldOwner = _head.next;
+        console.log("old owner ", _oldOwner);
         // delete current owner
         do {
             // TODO create a lighter weight version and only deal with ownership when new owner is settled on
@@ -354,11 +355,15 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         } while (isForeclosed[_head.next]);
         // TODO make sure user has minimum rental left
 
-        address _newOwner = _head.next;
+        address _newOwner =
+            user[_market].bids[index[_market][_market][_token]].next;
+        console.log("new owner ", _newOwner);
         // user[_newOwner].rentalRate = user[_newOwner].rentalRate.add(
         //     user[_newOwner].bids[index[_newOwner][_market][_token]].price
         // );
-        transferCard(_market, _token, _oldOwner, _newOwner);
+        uint256 _price =
+            user[_newOwner].bids[index[_newOwner][_market][_token]].price;
+        transferCard(_market, _token, _oldOwner, _newOwner, _price);
         console.log("new owner found ", _newOwner);
         return _newOwner;
     }
@@ -463,27 +468,30 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         if (i > MAX_DELETIONS) {
             _limit = i.sub(MAX_DELETIONS);
         }
-        // do {
-        //     address _tempPrev = user[_user].bids[i].prev;
-        //     address _tempNext = user[_user].bids[i].next;
-        //     user[_tempNext].bids[
-        //         index[_tempNext][user[_user].bids[i].market][
-        //             user[_user].bids[i].token
-        //         ]
-        //     ]
-        //         .prev = _tempPrev;
-        //     user[_tempPrev].bids[
-        //         index[_tempPrev][user[_user].bids[i].market][
-        //             user[_user].bids[i].token
-        //         ]
-        //     ]
-        //         .next = _tempNext;
-        // } while (user[_user].bids.length >= _limit);
-        // if (user[_user].bids.length == 0) {
-        //     //and get rid of them
-        //     delete user[_user];
-        //     isForeclosed[_user] = false;
-        // }
+        do {
+            address _tempPrev = user[_user].bids[i].prev;
+            address _tempNext = user[_user].bids[i].next;
+            user[_tempNext].bids[
+                index[_tempNext][user[_user].bids[i].market][
+                    user[_user].bids[i].token
+                ]
+            ]
+                .prev = _tempPrev;
+            user[_tempPrev].bids[
+                index[_tempPrev][user[_user].bids[i].market][
+                    user[_user].bids[i].token
+                ]
+            ]
+                .next = _tempNext;
+            user[_user].bids.pop();
+            i--;
+            // TODO finish implementing max iteration limit
+        } while (user[_user].bids.length != 0);
+        if (user[_user].bids.length == 0) {
+            //and get rid of them
+            delete user[_user];
+            isForeclosed[_user] = false;
+        }
     }
 
     /// @dev this destroys the linked list, only use after market completion
@@ -512,9 +520,10 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         address _market,
         uint256 _token,
         address _oldOwner,
-        address _newOwner
+        address _newOwner,
+        uint256 _price
     ) internal {
         IRCMarket _rcmarket = IRCMarket(_market);
-        _rcmarket.transferCard(_oldOwner, _newOwner, _token);
+        _rcmarket.transferCard(_oldOwner, _newOwner, _token, _price);
     }
 }

@@ -41,6 +41,7 @@ interface IRCMarket {
     function transferCard(
         address _oldOwner,
         address _newOwner,
-        uint256 _token
+        uint256 _token,
+        uint256 _price
     ) external;
 }
