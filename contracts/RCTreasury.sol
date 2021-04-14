@@ -10,6 +10,7 @@ import "./lib/NativeMetaTransaction.sol";
 //import "./lib/SafeMath64.sol";
 import "./interfaces/IRCMarket.sol";
 import "./interfaces/IAlternateReceiverBridge.sol";
+import "./interfaces/IRCOrderbook.sol";
 
 /// @title Reality Cards Treasury
 /// @author Andrew Stanger & Daniel Chilvers
@@ -26,6 +27,10 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     address public alternateReceiverBridgeAddress;
     /// @dev address of the Factory so only the Factory can add new markets
     address public factoryAddress;
+    /// @dev address of the orderbook so only the orderbook can update bids
+    address public orderbookAddress;
+    /// @dev orderbook instance to remove users bids on foreclosure
+    IRCOrderbook orderbook;
     /// @dev so only markets can use certain functions
     mapping(address => bool) public isMarket;
     /// @dev sum of all deposits
@@ -39,16 +44,16 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
     // DC new stuff
     /// @param rentalRate the daily cost of the cards the user current owns
-    /// @param totalBids the sum total of all placed bids
+    /// @param bidRate the sum total of all placed bids
     /// @param forclosureTime The time the user will foreclose with current ownership
     /// @param safeForclosureTime The time a user could foreclose if they gained ownership of their bids
     struct User {
         // lets pack this struct later, leaving it as uint256 for rapid development and testing
         uint256 deposit;
         uint256 rentalRate;
-        uint256 totalBids;
+        uint256 bidRate;
         uint256 foreclosureTime; // we could calculate this from rentalRate
-        uint256 safeForclosureTime; // we could calculate this from totalBids
+        uint256 safeForclosureTime; // we could calculate this from bidRate
         uint256 lastRentCalc;
         uint256 lastRentalTime;
         address[] marketBids; //a list of markets this user has bids in
@@ -199,6 +204,13 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         factoryAddress = _newFactory;
     }
 
+    function setOrderbookAddress(address _newOrderbook) external {
+        require(msgSender() == uberOwner, "Extremely Verboten");
+        require(_newOrderbook != address(0));
+        orderbookAddress = _newOrderbook;
+        orderbook = IRCOrderbook(orderbookAddress);
+    }
+
     function changeUberOwner(address _newUberOwner) external {
         require(msgSender() == uberOwner, "Extremely Verboten");
         require(_newUberOwner != address(0));
@@ -278,25 +290,17 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
             );
         }
 
+        console.log("withdrawing user ", _msgSender);
+        console.log("user rental rate ", user[_msgSender].rentalRate);
+        console.log("user bid rate ", user[_msgSender].bidRate);
         // step 3: remove bids if insufficient deposit
         if (
-            user[_msgSender].rentalRate.div(minRentalDayDivisor) >
-            user[_msgSender].deposit &&
-            user[_msgSender].totalBids != 0
+            user[_msgSender].bidRate != 0 &&
+            user[_msgSender].bidRate.div(minRentalDayDivisor) >
+            user[_msgSender].deposit
         ) {
-            uint256 i = 0;
-            do {
-                if (isMarketActive[user[_msgSender].marketBids[i]]) {
-                    IRCMarket _market =
-                        IRCMarket(user[_msgSender].marketBids[i]);
-                    _market.exitSpecificCards(
-                        user[_msgSender].tokens[user[_msgSender].marketBids[i]]
-                            .tokenBids,
-                        _msgSender
-                    );
-                }
-                i++;
-            } while (user[_msgSender].marketBids.length > i);
+            console.log("exiting after withdraw on user ", _msgSender);
+            orderbook.removeUserFromOrderbook(_msgSender);
         }
     }
 
@@ -386,7 +390,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev provides the sum total of a users bids accross all markets
     /// @dev doesn't clean the bid array first as the market does that already
     function userTotalBids(address _user) external view returns (uint256) {
-        return user[_user].totalBids;
+        return user[_user].bidRate;
     }
 
     /// @dev adds or removes a market to the active markets array
@@ -402,13 +406,36 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         return user[_user].deposit;
     }
 
-    function timeHeld(address _user, uint256 _token)
-        external
-        view
-        returns (uint256)
-    {
-        return user[_user].deposit;
+    // function timeHeld(address _user, uint256 _token)
+    //     external
+    //     view
+    //     returns (uint256)
+    // {
+    //     return user[_user].deposit;
+    // }
+
+    // orderbook callable
+
+    function updateRentalRate(
+        address _oldOwner,
+        address _newOwner,
+        uint256 _oldPrice,
+        uint256 _newPrice
+    ) external {
+        // TODO only orderbook callable
+        // Must add before subtract, to avoid underflow in the case a user is only updating their price.
+        user[_newOwner].rentalRate = user[_newOwner].rentalRate.add(_newPrice);
+        user[_oldOwner].rentalRate = user[_oldOwner].rentalRate.sub(_oldPrice);
     }
+
+    function updateBidRate(address _user, int256 _priceChange) external {
+        // TODO only orderbook callable
+        user[_user].bidRate = SafeCast.toUint256(
+            int256(user[_user].bidRate).add(_priceChange)
+        );
+    }
+
+    // other stuff
 
     function collectRent(address _user, uint256 _timeOfCollection) external {
         uint256 _rentDuration = _timeOfCollection.sub(user[_user].lastRentCalc);

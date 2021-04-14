@@ -70,7 +70,7 @@ contract('TestOrderbook', (accounts) => {
     treasury = await RCTreasury.new();
     rcfactory = await RCFactory.new(treasury.address);
     rcreference = await RCMarket.new();
-    rcorderbook = await RCOrderbook.new(rcfactory.address);
+    rcorderbook = await RCOrderbook.new(rcfactory.address, treasury.address);
     // nft hubs
     nfthubxdai = await NftHubXDai.new(rcfactory.address);
     nfthubmainnet = await NftHubMainnet.new();
@@ -79,6 +79,7 @@ contract('TestOrderbook', (accounts) => {
     await rcfactory.setReferenceContractAddress(rcreference.address);
     await rcfactory.setNftHubAddress(nfthubxdai.address, 0);
     await rcfactory.setOrderbookAddress(rcorderbook.address);
+    await treasury.setOrderbookAddress(rcorderbook.address);
     // mockups 
     realitio = await RealitioMockup.new();
     bridge = await BridgeMockup.new();
@@ -375,6 +376,10 @@ contract('TestOrderbook', (accounts) => {
     await time.increase(time.duration.days(3));
     await realitycards.exit(0, { from: user2 });
     var owner = await realitycards.ownerOf.call(0);
+    console.log("actual owner ", owner);
+    console.log("expected owner ", user0);
+    console.log("user that exited ", user2);
+    console.log("market address ", realitycards.address);
     assert.equal(owner, user0);
     // withdraw for next test
     await time.increase(time.duration.minutes(10));
@@ -382,7 +387,7 @@ contract('TestOrderbook', (accounts) => {
   });
 
 
-  it.only('test orderbook various', async () => {
+  it('test orderbook various', async () => {
     // Tests the following:
     // add to orderbook in correct order
     // reduces the price to match that above it in the list

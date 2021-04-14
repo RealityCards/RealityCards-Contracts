@@ -641,7 +641,9 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
         // check sufficient deposit
         uint256 _userTotalBidRate =
-            orderbook.adjustedBidRate(_user, _tokenId).add(_newPrice);
+            treasury.userTotalBids(_user).sub(
+                orderbook.getBidValue(_user, _tokenId)
+            );
         require(
             treasury.userDeposit(_user) >=
                 _userTotalBidRate.div(minRentalDayDivisor),
@@ -670,7 +672,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         uint256 _timeHeldLimit
     ) internal view returns (uint256) {
         if (_timeHeldLimit == 0) {
-            return MAX_UINT128; // so 0 defaults to no limit
+            return MAX_UINT256; // so 0 defaults to no limit
         } else {
             uint256 _minRentalTime = uint256(1 days).div(minRentalDayDivisor);
             require(
@@ -760,7 +762,8 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
             // if still the current owner after collecting rent, revert to underbidder
             if (ownerOf(_tokenId) == _msgSender) {
-                // _revertToUnderbidder(_tokenId);
+                console.log("finding next owner ", _msgSender);
+                orderbook.findNewOwner(_tokenId);
                 // if not current owner no further action necessary because they will have been deleted from the orderbook
             } else {
                 //assert(orderbook[_tokenId][_msgSender].price == 0);
@@ -798,7 +801,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             uint256 _rentOwedLimit;
             uint256 _timeHeldLimit =
                 orderbook.getTimeHeldlimit(_collectRentFrom, _tokenId);
-            if (_timeHeldLimit == MAX_UINT128) {
+            if (_timeHeldLimit == MAX_UINT256) {
                 _rentOwedLimit = MAX_UINT256;
             } else {
                 _rentOwedLimit = tokenPrice[_tokenId]
@@ -839,6 +842,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                     );
                     _rentOwed = _rentOwedLimit; // take up to the max
                 }
+                orderbook.removeBidFromOrderbook(ownerOf(_tokenId), _tokenId);
                 // _revertToUnderbidder(_tokenId);
             }
 

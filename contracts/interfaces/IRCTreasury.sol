@@ -66,20 +66,14 @@ interface IRCTreasury {
 
     function cleanUserBids(address _user) external;
 
-    function updateUserBids(
-        address _user,
-        uint256 _price,
-        uint256 _tokenId,
-        bool _add
-    ) external;
-
-    function updateOwnership(
+    function updateRentalRate(
         address _oldOwner,
         address _newOwner,
         uint256 _oldPrice,
-        uint256 _newPrice,
-        uint256 _tokenId
+        uint256 _newPrice
     ) external;
+
+    function updateBidRate(address _user, int256 _priceChange) external;
 
     function timeHeld(address _user, uint256 _tokenId)
         external
