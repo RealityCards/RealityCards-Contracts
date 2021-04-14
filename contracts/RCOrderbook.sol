@@ -286,14 +286,17 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
             treasury.updateBidRate(_user, _priceChange);
             if (_currUser.prev == _market) {
                 // user is owner, deal with it
+                uint256 _price =
+                    user[_currUser.next].bids[
+                        index[_currUser.next][_market][_token]
+                    ]
+                        .price;
+                transferCard(_market, _token, _user, _currUser.next, _price);
                 treasury.updateRentalRate(
                     _user,
                     _currUser.next,
                     _currUser.price,
-                    user[_currUser.next].bids[
-                        index[_currUser.next][_market][_token]
-                    ]
-                        .price
+                    _price
                 );
             }
             // extract from linked list
@@ -324,16 +327,15 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
 
     /// @dev to assist troubleshooting during testing
     function printOrderbook(address _market, uint256 _token) public view {
-        Bid storage _currUser =
-            user[_market].bids[index[_market][_market][_token]];
-        console.log(" start of orderbook ");
-        do {
-            console.log(_currUser.next);
-            _currUser = user[_currUser.next].bids[
-                index[_currUser.next][_market][_token]
-            ];
-        } while (_currUser.next != _market);
-        console.log(" end of orderbook ");
+        address _currUser = _market;
+
+        while (
+            user[_currUser].bids[index[_currUser][_market][_token]].next !=
+            _market
+        ) {
+            _currUser = user[_currUser].bids[index[_currUser][_market][_token]]
+                .next;
+        }
     }
 
     function findNewOwner(uint256 _token)
@@ -345,8 +347,9 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         printOrderbook(_market, _token);
         // the market is the head of the list, the next bid is therefore the owner
         Bid storage _head = user[_market].bids[index[_market][_market][_token]];
-        address _oldOwner = _head.next;
-        console.log("old owner ", _oldOwner);
+        address _oldOwner =
+            user[_market].bids[index[_market][_market][_token]].next;
+
         // delete current owner
         do {
             // TODO create a lighter weight version and only deal with ownership when new owner is settled on
@@ -357,14 +360,13 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
 
         address _newOwner =
             user[_market].bids[index[_market][_market][_token]].next;
-        console.log("new owner ", _newOwner);
+
         // user[_newOwner].rentalRate = user[_newOwner].rentalRate.add(
         //     user[_newOwner].bids[index[_newOwner][_market][_token]].price
         // );
         uint256 _price =
             user[_newOwner].bids[index[_newOwner][_market][_token]].price;
         transferCard(_market, _token, _oldOwner, _newOwner, _price);
-        console.log("new owner found ", _newOwner);
         return _newOwner;
     }
 
@@ -394,32 +396,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         }
     }
 
-    // // TODO move these to the treasury
-    // function userRentalRate(address _user) external view returns (uint256) {
-    //     return user[_user].rentalRate;
-    // }
-
-    // function userBidRate(address _user) external view returns (uint256) {
-    //     return user[_user].totalBidRate;
-    // }
-
-    // /// @notice returns the bid rate minus the given token
-    // function adjustedBidRate(address _user, uint256 _token)
-    //     external
-    //     view
-    //     returns (uint256)
-    // {
-    //     address _market = msgSender();
-    //     if (bidExists(_user, _market, _token)) {
-    //         return
-    //             user[_user].totalBidRate.sub(
-    //                 user[_user].bids[index[_user][_market][_token]].price
-    //             );
-    //     } else {
-    //         return user[_user].totalBidRate;
-    //     }
-    // }
-
     function getTimeHeldlimit(address _user, uint256 _token)
         external
         view
@@ -431,7 +407,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
             return
                 user[_user].bids[index[_user][_market][_token]].timeHeldLimit;
         } else {
-            revert("Bid doesn't exist");
+            //revert("Bid doesn't exist");
         }
     }
 
@@ -468,9 +444,17 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         if (i > MAX_DELETIONS) {
             _limit = i.sub(MAX_DELETIONS);
         }
+        address _market = user[_user].bids[0].market;
+        uint256 _token = user[_user].bids[0].token;
+        printOrderbook(_market, _token);
+
         do {
+            index[user[_user].bids[i].market][_user][
+                user[_user].bids[i].token
+            ] = 0;
             address _tempPrev = user[_user].bids[i].prev;
             address _tempNext = user[_user].bids[i].next;
+
             user[_tempNext].bids[
                 index[_tempNext][user[_user].bids[i].market][
                     user[_user].bids[i].token
@@ -487,9 +471,13 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
             i--;
             // TODO finish implementing max iteration limit
         } while (user[_user].bids.length != 0);
+
+        //TODO reset users rental rates etc
+        printOrderbook(_market, _token);
         if (user[_user].bids.length == 0) {
             //and get rid of them
-            delete user[_user];
+
+            // delete user[_user];
             isForeclosed[_user] = false;
         }
     }

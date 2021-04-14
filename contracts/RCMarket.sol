@@ -376,7 +376,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             "Cannot send to/from zero address"
         );
         uint256 _actualTokenId = _tokenId.add(totalNftMintCount);
-        console.log("transfering to ", _to);
+
         assert(nfthub.transferNft(_from, _to, _actualTokenId));
         emit LogNewOwner(_tokenId, _to);
     }
@@ -765,7 +765,6 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
             // if still the current owner after collecting rent, revert to underbidder
             if (ownerOf(_tokenId) == _msgSender) {
-                console.log("finding next owner ", _msgSender);
                 orderbook.findNewOwner(_tokenId);
                 // if not current owner no further action necessary because they will have been deleted from the orderbook
             } else {
@@ -845,6 +844,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                     );
                     _rentOwed = _rentOwedLimit; // take up to the max
                 }
+
                 orderbook.removeBidFromOrderbook(ownerOf(_tokenId), _tokenId);
                 // _revertToUnderbidder(_tokenId);
             }

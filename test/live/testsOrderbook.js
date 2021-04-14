@@ -355,7 +355,7 @@ contract('TestOrderbook', (accounts) => {
   // });
 
 
-  it.only('test _revertToUnderbidder will revert properly if current owner has deposit but previous owner does not', async () => {
+  it('test _revertToUnderbidder will revert properly if current owner has deposit but previous owner does not', async () => {
     // setup
     await depositDai(144, user0);
     await depositDai(144, user1);
@@ -374,12 +374,13 @@ contract('TestOrderbook', (accounts) => {
     assert.equal(deposit, 0);
     // pass an hour and then exit so user 2 has insufficinet card deposit but there is still some, should return to zero
     await time.increase(time.duration.days(3));
+
     await realitycards.exit(0, { from: user2 });
     var owner = await realitycards.ownerOf.call(0);
-    console.log("actual owner ", owner);
-    console.log("expected owner ", user0);
-    console.log("user that exited ", user2);
-    console.log("market address ", realitycards.address);
+
+
+
+
     assert.equal(owner, user0);
     // withdraw for next test
     await time.increase(time.duration.minutes(10));

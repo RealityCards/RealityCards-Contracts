@@ -290,16 +290,12 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
             );
         }
 
-        console.log("withdrawing user ", _msgSender);
-        console.log("user rental rate ", user[_msgSender].rentalRate);
-        console.log("user bid rate ", user[_msgSender].bidRate);
         // step 3: remove bids if insufficient deposit
         if (
             user[_msgSender].bidRate != 0 &&
             user[_msgSender].bidRate.div(minRentalDayDivisor) >
             user[_msgSender].deposit
         ) {
-            console.log("exiting after withdraw on user ", _msgSender);
             orderbook.removeUserFromOrderbook(_msgSender);
         }
     }
