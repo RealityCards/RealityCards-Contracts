@@ -154,17 +154,22 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         uint256 _price
     ) internal view returns (Bid storage, uint256) {
         uint256 _minIncrease = market[_market].minimumPriceIncreasePercent;
-        Bid storage _nextUser = _prevUser;
+        Bid storage _nextUser =
+            user[_prevUser.next].bids[index[_prevUser.next][_market][_token]];
         uint256 _requiredPrice =
             (_nextUser.price.mul(_minIncrease.add(100))).div(100);
         console.log("required price ", _requiredPrice);
-        if (ownerOf[_market][_token] == _user) {
-            require(_price > _requiredPrice, "Not 10% higher");
-        }
+
         uint256 i = 0;
-        // console.log("user price ", _price);
-        // console.log("min increase", _minIncrease);
-        do {
+        while (
+            // break loop if match price above AND above price below (so if either is false, continue, hence OR )
+            // if match previous then must be greater than next to continue
+            (_price != _prevUser.price || _price <= _nextUser.price) &&
+            // break loop if price x% above below
+            _price < _requiredPrice &&
+            // break loop if hits max iterations
+            i < MAX_SEARCH_ITERATIONS
+        ) {
             _prevUser = _nextUser;
             _nextUser = user[_prevUser.next].bids[
                 index[_prevUser.next][_market][_token]
@@ -172,28 +177,8 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
             _requiredPrice = (_nextUser.price.mul(_minIncrease.add(100))).div(
                 100
             );
-            // console.log("iteration ", i);
-            // console.log("prevPrice ", _prevUser.price);
-            // console.log("nextPrice ", _nextUser.price);
-            // console.log("required price ", _requiredPrice);
             i++;
-        } while (
-            /// @dev TODO adapt loop logic and change to while loop
-            // // stop when equal to prev, and greater than next
-            // !(_price == _prevUser.price && _price > _nextUser.price) &&
-            //     // stop then greater than X% above next
-            //     !(_price >= _requiredPrice) &&
-            //     i < MAX_SEARCH_ITERATIONS
-
-            /// @dev old logic below, still functional, but probably not ideal
-            // break loop if match price above AND above price below (so if either is false, continue, hence OR )
-            // if match previous then must be greater than next to continue
-            (_price != _prevUser.price || _price <= _nextUser.price) &&
-                // break loop if price x% above below
-                _price < _requiredPrice &&
-                // break loop if hits max iterations
-                i < MAX_SEARCH_ITERATIONS
-        );
+        }
         require(i < MAX_SEARCH_ITERATIONS, "Position in orderbook not found");
 
         if (_prevUser.price != 0 && _prevUser.price < _price) {
@@ -260,10 +245,12 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         Bid storage _currUser = user[_user].bids[index[_user][_market][_token]];
         bool _owner = _currUser.prev == _market;
         if (_prevUser.next == _user) {
-            _currUser.price = _price;
+            console.log("new price ", _price);
+            console.log("old price ", _currUser.price);
+            (_currUser.price, _price) = (_price, _currUser.price);
             _currUser.timeHeldLimit = _timeHeldLimit;
             // TODO, save gas, instead of transfer to self, just update tokenPrice in market
-            transferCard(_market, _token, _user, _user, _price);
+            transferCard(_market, _token, _user, _user, _currUser.price);
         } else {
             Bid storage _nextUser =
                 user[_prevUser.next].bids[
@@ -389,9 +376,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         address _market = msgSender();
         // the market is the head of the list, the next bid is therefore the owner
         Bid storage _head = user[_market].bids[index[_market][_market][_token]];
-        address _oldOwner =
-            user[_market].bids[index[_market][_market][_token]].next;
-
         // delete current owner
         do {
             // TODO create a lighter weight version and only deal with ownership when new owner is settled on
@@ -399,16 +383,9 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
             // delete next bid if foreclosed
         } while (isForeclosed[_head.next]);
         // TODO make sure user has minimum rental left
-
         address _newOwner =
             user[_market].bids[index[_market][_market][_token]].next;
 
-        // user[_newOwner].rentalRate = user[_newOwner].rentalRate.add(
-        //     user[_newOwner].bids[index[_newOwner][_market][_token]].price
-        // );
-        uint256 _price =
-            user[_newOwner].bids[index[_newOwner][_market][_token]].price;
-        transferCard(_market, _token, _oldOwner, _newOwner, _price);
         return _newOwner;
     }
 

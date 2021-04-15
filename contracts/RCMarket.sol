@@ -388,8 +388,12 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         uint256 _tokenId,
         uint256 _price
     ) external {
+        console.log("transfering from ", _from);
+        console.log("transfering to ", _to);
         require(msgSender() == address(orderbook));
-        _transferCard(_from, _to, _tokenId);
+        if (_to != _from) {
+            _transferCard(_from, _to, _tokenId);
+        }
         tokenPrice[_tokenId] = _price;
     }
 
@@ -635,6 +639,16 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             !treasury.marketPaused(address(this)) && !treasury.globalPause(),
             "Rentals are disabled"
         );
+        if (ownerOf(_tokenId) == _user) {
+            // the owner may only increase by more than 10% or reduce their price
+            uint256 _requiredPrice =
+                (tokenPrice[_tokenId].mul(minimumPriceIncreasePercent.add(100)))
+                    .div(100);
+            require(
+                _newPrice >= _requiredPrice || _newPrice < tokenPrice[_tokenId],
+                "Not 10% higher"
+            );
+        }
 
         _collectRent(_tokenId);
 
