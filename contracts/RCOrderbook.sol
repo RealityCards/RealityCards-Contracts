@@ -138,6 +138,8 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         uint256 _requiredPrice =
             (_nextUser.price.mul(_minIncrease.add(100))).div(100);
         uint256 i = 0;
+        console.log("user price ", _price);
+        console.log("min increase", _minIncrease);
         do {
             _prevUser = _nextUser;
             _nextUser = user[_prevUser.next].bids[
@@ -146,22 +148,27 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
             _requiredPrice = (_nextUser.price.mul(_minIncrease.add(100))).div(
                 100
             );
+            console.log("iteration ", i);
+            console.log("prevPrice ", _prevUser.price);
+            console.log("nextPrice ", _nextUser.price);
+            console.log("required price ", _requiredPrice);
             i++;
         } while (
             /// @dev TODO adapt loop logic and change to while loop
-            // // stop when equal or less than prev, and greater than required price
-            // !(_price <= _prevUser.price && _price > _nextUser.price) &&
-            //
-            // i < MAX_SEARCH_ITERATIONS
-
-            /// @dev old logic below, still functional, but probably not ideal
-            // break loop if match price above AND above price below (so if either is false, continue, hence OR )
-            // if match previous then must be greater than next to continue
-            (_price != _prevUser.price || _price <= _nextUser.price) &&
-                // break loop if price x% above below
-                _price < _requiredPrice &&
-                // break loop if hits max iterations
+            // stop when equal to prev, and greater than next
+            !(_price == _prevUser.price && _price > _nextUser.price) &&
+                // stop then greater than X% above next
+                !(_price >= _requiredPrice) &&
                 i < MAX_SEARCH_ITERATIONS
+
+            // /// @dev old logic below, still functional, but probably not ideal
+            // // break loop if match price above AND above price below (so if either is false, continue, hence OR )
+            // // if match previous then must be greater than next to continue
+            // (_price != _prevUser.price || _price <= _nextUser.price) &&
+            //     // break loop if price x% above below
+            //     _price < _requiredPrice &&
+            //     // break loop if hits max iterations
+            //     i < MAX_SEARCH_ITERATIONS
         );
         require(i < MAX_SEARCH_ITERATIONS, "Position in orderbook not found");
 
