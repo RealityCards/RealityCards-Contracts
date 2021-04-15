@@ -112,7 +112,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
 
         if (bidExists(_user, _market, _token)) {
             // old bid exists, update it
-            console.log("updating bid for ", _user);
             _updateBidInOrderbook(
                 _user,
                 _market,
@@ -122,7 +121,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
                 _prevUser
             );
         } else {
-            console.log("new bid for ", _user);
             // new bid, add it
             _newBidInOrderbook(
                 _user,
@@ -149,7 +147,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
             user[_prevUser.next].bids[index[_prevUser.next][_market][_token]];
         uint256 _requiredPrice =
             (_nextUser.price.mul(_minIncrease.add(100))).div(100);
-        console.log("required price ", _requiredPrice);
 
         uint256 i = 0;
         while (
@@ -173,7 +170,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         require(i < MAX_SEARCH_ITERATIONS, "Position in orderbook not found");
 
         if (_prevUser.price != 0 && _prevUser.price < _price) {
-            console.log("reducing price", _prevUser.price);
             _price = _prevUser.price;
         }
         return (_prevUser, _price);
@@ -259,7 +255,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         );
         Bid storage _nextUser =
             user[_prevUser.next].bids[index[_prevUser.next][_market][_token]];
-        printOrderbook(_market, _token);
 
         // update price, save old price for rental rate adjustment later
         (_currUser.price, _price) = (_price, _currUser.price);
@@ -299,7 +294,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
             );
             transferCard(_market, _token, _oldOwner, _user, _currUser.price);
         }
-        console.log("orderbook after update");
     }
 
     /// @dev removes a bid from the orderbook

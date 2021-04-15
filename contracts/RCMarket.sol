@@ -231,7 +231,6 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         uint256[5] memory _potDistribution = factory.getPotDistribution();
         minRentalDayDivisor = treasury.minRentalDayDivisor();
         minimumPriceIncreasePercent = factory.minimumPriceIncreasePercent();
-        console.log(" MARKET MIN PRICE ", minimumPriceIncreasePercent);
         hotPotatoWeekDivisor = factory.hotPotatoWeekDivisor();
 
         // initialiiize!
@@ -388,8 +387,6 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         uint256 _tokenId,
         uint256 _price
     ) external {
-        console.log("transfering from ", _from);
-        console.log("transfering to ", _to);
         require(msgSender() == address(orderbook));
         if (_to != _from) {
             _transferCard(_from, _to, _tokenId);
