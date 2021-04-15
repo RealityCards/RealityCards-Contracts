@@ -22,6 +22,7 @@ var NftHubXDai = artifacts.require("./nfthubs/RCNftHubXdai.sol");
 var NftHubMainnet = artifacts.require("./nfthubs/RCNftHubMainnet.sol");
 var XdaiProxy = artifacts.require("./bridgeproxies/RCProxyXdai.sol");
 var MainnetProxy = artifacts.require("./bridgeproxies/RCProxyMainnet.sol");
+var RCOrderbook = artifacts.require('./RCOrderbook.sol');
 // mockups
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 var BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
@@ -64,6 +65,7 @@ contract("TestTreasury", (accounts) => {
       treasury = await RCTreasury.new();
       rcfactory = await RCFactory.new(treasury.address);
       rcreference = await RCMarket.new();
+      rcorderbook = await RCOrderbook.new(rcfactory.address, treasury.address);
       // nft hubs
       nfthubxdai = await NftHubXDai.new(rcfactory.address);
       nfthubmainnet = await NftHubMainnet.new();
@@ -71,6 +73,8 @@ contract("TestTreasury", (accounts) => {
       await treasury.setFactoryAddress(rcfactory.address);
       await rcfactory.setReferenceContractAddress(rcreference.address);
       await rcfactory.setNftHubAddress(nfthubxdai.address, 0);
+      await rcfactory.setOrderbookAddress(rcorderbook.address);
+      await treasury.setOrderbookAddress(rcorderbook.address);
       // mockups
       realitio = await RealitioMockup.new();
       bridge = await BridgeMockup.new();
