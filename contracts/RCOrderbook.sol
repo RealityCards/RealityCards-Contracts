@@ -61,9 +61,14 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         treasury = IRCTreasury(treasuryAddress);
     }
 
-    function addMarket(address _market, uint256 _tokenCount) external {
+    function addMarket(
+        address _market,
+        uint256 _tokenCount,
+        uint256 _minIncrease
+    ) external {
         require(msgSender() == factoryAddress);
         isMarket[_market] = true;
+        market[_market].minimumPriceIncreasePercent = _minIncrease;
         for (uint256 i; i < _tokenCount; i++) {
             // create new record
             Bid memory _newBid;
@@ -89,6 +94,14 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         address _market = msgSender();
         if (_prevUserAddress == address(0)) {
             _prevUserAddress = _market;
+        } else {
+            require(
+                user[_prevUserAddress].bids[
+                    index[_prevUserAddress][_market][_token]
+                ]
+                    .price >= _price,
+                "Location too low"
+            );
         }
         Bid storage _prevUser =
             user[_prevUserAddress].bids[
@@ -99,7 +112,13 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         // check _prevUser is the correct position
         if (ownerOf[_market][_token] != _market) {
             console.log("finding position ", _prevUserAddress);
-            _prevUser = _searchOrderbook(_prevUser, _market, _token, _price);
+            (_prevUser, _price) = _searchOrderbook(
+                _prevUser,
+                _user,
+                _market,
+                _token,
+                _price
+            );
         }
 
         if (bidExists(_user, _market, _token)) {
@@ -129,17 +148,22 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
 
     function _searchOrderbook(
         Bid storage _prevUser,
+        address _user,
         address _market,
         uint256 _token,
         uint256 _price
-    ) internal view returns (Bid storage) {
+    ) internal view returns (Bid storage, uint256) {
         uint256 _minIncrease = market[_market].minimumPriceIncreasePercent;
         Bid storage _nextUser = _prevUser;
         uint256 _requiredPrice =
             (_nextUser.price.mul(_minIncrease.add(100))).div(100);
+        console.log("required price ", _requiredPrice);
+        if (ownerOf[_market][_token] == _user) {
+            require(_price > _requiredPrice, "Not 10% higher");
+        }
         uint256 i = 0;
-        console.log("user price ", _price);
-        console.log("min increase", _minIncrease);
+        // console.log("user price ", _price);
+        // console.log("min increase", _minIncrease);
         do {
             _prevUser = _nextUser;
             _nextUser = user[_prevUser.next].bids[
@@ -148,35 +172,35 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
             _requiredPrice = (_nextUser.price.mul(_minIncrease.add(100))).div(
                 100
             );
-            console.log("iteration ", i);
-            console.log("prevPrice ", _prevUser.price);
-            console.log("nextPrice ", _nextUser.price);
-            console.log("required price ", _requiredPrice);
+            // console.log("iteration ", i);
+            // console.log("prevPrice ", _prevUser.price);
+            // console.log("nextPrice ", _nextUser.price);
+            // console.log("required price ", _requiredPrice);
             i++;
         } while (
             /// @dev TODO adapt loop logic and change to while loop
-            // stop when equal to prev, and greater than next
-            !(_price == _prevUser.price && _price > _nextUser.price) &&
-                // stop then greater than X% above next
-                !(_price >= _requiredPrice) &&
-                i < MAX_SEARCH_ITERATIONS
-
-            // /// @dev old logic below, still functional, but probably not ideal
-            // // break loop if match price above AND above price below (so if either is false, continue, hence OR )
-            // // if match previous then must be greater than next to continue
-            // (_price != _prevUser.price || _price <= _nextUser.price) &&
-            //     // break loop if price x% above below
-            //     _price < _requiredPrice &&
-            //     // break loop if hits max iterations
+            // // stop when equal to prev, and greater than next
+            // !(_price == _prevUser.price && _price > _nextUser.price) &&
+            //     // stop then greater than X% above next
+            //     !(_price >= _requiredPrice) &&
             //     i < MAX_SEARCH_ITERATIONS
+
+            /// @dev old logic below, still functional, but probably not ideal
+            // break loop if match price above AND above price below (so if either is false, continue, hence OR )
+            // if match previous then must be greater than next to continue
+            (_price != _prevUser.price || _price <= _nextUser.price) &&
+                // break loop if price x% above below
+                _price < _requiredPrice &&
+                // break loop if hits max iterations
+                i < MAX_SEARCH_ITERATIONS
         );
         require(i < MAX_SEARCH_ITERATIONS, "Position in orderbook not found");
 
-        if (_prevUser.price < _price) {
-            console.log("reducing price");
+        if (_prevUser.price != 0 && _prevUser.price < _price) {
+            console.log("reducing price", _prevUser.price);
             _price = _prevUser.price;
         }
-        return _prevUser;
+        return (_prevUser, _price);
     }
 
     function _addBidToOrderbook(
@@ -232,27 +256,35 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         uint256 _timeHeldLimit,
         Bid storage _prevUser
     ) internal {
-        assert(_prevUser.price >= _price);
-        Bid storage _nextUser =
-            user[_prevUser.next].bids[index[_prevUser.next][_market][_token]];
-        assert(_nextUser.price < _price);
+        //assert(_prevUser.price >= _price);
         Bid storage _currUser = user[_user].bids[index[_user][_market][_token]];
         bool _owner = _currUser.prev == _market;
+        if (_prevUser.next == _user) {
+            _currUser.price = _price;
+            _currUser.timeHeldLimit = _timeHeldLimit;
+            // TODO, save gas, instead of transfer to self, just update tokenPrice in market
+            transferCard(_market, _token, _user, _user, _price);
+        } else {
+            Bid storage _nextUser =
+                user[_prevUser.next].bids[
+                    index[_prevUser.next][_market][_token]
+                ];
+            //assert(_nextUser.price < _price);
 
-        // extract bid from current position
-        user[_currUser.next].bids[index[_currUser.next][_market][_token]]
-            .next = _currUser.prev;
-        user[_currUser.prev].bids[index[_currUser.prev][_market][_token]]
-            .prev = _currUser.next;
+            // extract bid from current position
+            user[_currUser.next].bids[index[_currUser.next][_market][_token]]
+                .next = _currUser.prev;
+            user[_currUser.prev].bids[index[_currUser.prev][_market][_token]]
+                .prev = _currUser.next;
 
-        // update price, save old price for rental rate adjustment later
-        (_currUser.price, _price) = (_price, _currUser.price);
-        _currUser.timeHeldLimit = _timeHeldLimit;
+            // update price, save old price for rental rate adjustment later
+            (_currUser.price, _price) = (_price, _currUser.price);
+            _currUser.timeHeldLimit = _timeHeldLimit;
 
-        // insert bid in new position
-        _nextUser.prev = _user; // next record update prev link
-        _prevUser.next = _user; // prev record update next link
-
+            // insert bid in new position
+            _nextUser.prev = _user; // next record update prev link
+            _prevUser.next = _user; // prev record update next link
+        }
         // update memo values
         int256 _priceChange = int256(_currUser.price).sub(int256(_price));
         treasury.updateBidRate(_user, _priceChange);

@@ -231,6 +231,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         uint256[5] memory _potDistribution = factory.getPotDistribution();
         minRentalDayDivisor = treasury.minRentalDayDivisor();
         minimumPriceIncreasePercent = factory.minimumPriceIncreasePercent();
+        console.log(" MARKET MIN PRICE ", minimumPriceIncreasePercent);
         hotPotatoWeekDivisor = factory.hotPotatoWeekDivisor();
 
         // initialiiize!

@@ -455,7 +455,11 @@ contract RCFactory is Ownable, NativeMetaTransaction {
         treasury.addMarket(_newAddress);
         proxy.addMarket(_newAddress);
         nfthub.addMarket(_newAddress);
-        orderbook.addMarket(_newAddress, _numberOfTokens);
+        orderbook.addMarket(
+            _newAddress,
+            _numberOfTokens,
+            minimumPriceIncreasePercent
+        );
 
         // update internals
         marketAddresses[_mode].push(_newAddress);

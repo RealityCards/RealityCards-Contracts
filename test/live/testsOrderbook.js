@@ -436,6 +436,84 @@ contract('TestOrderbook', (accounts) => {
     assert.equal(price, web3.utils.toWei('50', 'ether'));
     // check position and price
     // position 0
+    var bid = await rcorderbook.getBid.call(realitycards.address, user9, 0);
+    assert.equal(bid[4], web3.utils.toWei('50', 'ether'));
+    assert.equal(bid[1], user5);
+    assert.equal(bid[2], realitycards.address);
+    // position 1
+    var bid = await rcorderbook.getBid.call(realitycards.address, user5, 0);
+    assert.equal(bid[4], web3.utils.toWei('20', 'ether'));
+    assert.equal(bid[1], user0);
+    assert.equal(bid[2], user9);
+    // position 2
+    var bid = await rcorderbook.getBid.call(realitycards.address, user0, 0);
+    assert.equal(bid[4], web3.utils.toWei('10', 'ether'));
+    assert.equal(bid[5], (3600 * 24));
+    assert.equal(bid[1], user3);
+    assert.equal(bid[2], user5);
+    // position 3
+    var bid = await rcorderbook.getBid.call(realitycards.address, user3, 0);
+    assert.equal(bid[4], web3.utils.toWei('10', 'ether'));
+    assert.equal(bid[1], user4);
+    assert.equal(bid[2], user0);
+    // position 4
+    var bid = await rcorderbook.getBid.call(realitycards.address, user4, 0);
+    assert.equal(bid[4], web3.utils.toWei('10', 'ether'));
+    assert.equal(bid[1], user1);
+    assert.equal(bid[2], user3);
+    // position 5
+    var bid = await rcorderbook.getBid.call(realitycards.address, user1, 0);
+    assert.equal(bid[4], web3.utils.toWei('9', 'ether'));
+    assert.equal(bid[1], user2);
+    assert.equal(bid[2], user4);
+    // position 6
+    var bid = await rcorderbook.getBid.call(realitycards.address, user2, 0);
+    assert.equal(bid[4], web3.utils.toWei('8', 'ether'));
+    assert.equal(bid[1], user7);
+    assert.equal(bid[2], user1);
+    // position 7
+    var bid = await rcorderbook.getBid.call(realitycards.address, user7, 0);
+    assert.equal(bid[4], web3.utils.toWei('8', 'ether'));
+    assert.equal(bid[1], user8);
+    assert.equal(bid[2], user2);
+    // position 8
+    var bid = await rcorderbook.getBid.call(realitycards.address, user8, 0);
+    assert.equal(bid[4], web3.utils.toWei('6', 'ether'));
+    assert.equal(bid[1], user6);
+    assert.equal(bid[2], user7);
+    // position 9
+    var bid = await rcorderbook.getBid.call(realitycards.address, user6, 0);
+    assert.equal(bid[4], web3.utils.toWei('5', 'ether'));
+    assert.equal(bid[1], user13);
+    assert.equal(bid[2], user8);
+    // position 10
+    var bid = await rcorderbook.getBid.call(realitycards.address, user13, 0);
+    assert.equal(bid[4], web3.utils.toWei('5', 'ether'));
+    assert.equal(bid[1], user12);
+    assert.equal(bid[2], user6);
+    // position 11
+    var bid = await rcorderbook.getBid.call(realitycards.address, user12, 0);
+    assert.equal(bid[4], web3.utils.toWei('4.8', 'ether'));
+    assert.equal(bid[1], user14);
+    assert.equal(bid[2], user13);
+    // position 12
+    var bid = await rcorderbook.getBid.call(realitycards.address, user14, 0);
+    assert.equal(bid[4], web3.utils.toWei('4.8', 'ether'));
+    assert.equal(bid[1], realitycards.address);
+    assert.equal(bid[2], user12);
+    // check starting position
+    // starting position too high - need more user account to test this now iteration limit is 100
+    //await expectRevert(newRental(1,0,user10), "Location too high"); 
+    //await expectRevert(newRentalWithStartingPosition(1,0,user9,user10), "Location too high");
+    await newRentalWithStartingPosition(1, 0, user6, user10);
+    // starting position too low
+    await expectRevert(newRentalWithStartingPosition(10, 0, user1, user11), "Location too low");
+    // update bid case 1A: was winner, > 10% higher, should just update price + limit
+    await newRentalCustomTimeLimit(60, 1, 0, user9);
+    var owner = await realitycards.ownerOf.call(0);
+    assert.equal(owner, user9);
+    var price = await realitycards.tokenPrice.call(0);
+    assert.equal(price.toString(), web3.utils.toWei('60', 'ether'));
     await rcorderbook.printOrderbook(realitycards.address, 0);
     console.log("0", user0);
     console.log("1", user1);
@@ -453,89 +531,12 @@ contract('TestOrderbook', (accounts) => {
     console.log("13", user13);
     console.log("14", user14);
     var bid = await rcorderbook.getBid.call(realitycards.address, user9, 0);
-    assert.equal(bid[4], web3.utils.toWei('50', 'ether'));
+    assert.equal(bid[4], web3.utils.toWei('60', 'ether'));
+    assert.equal(bid[5], (3600 * 24));
     assert.equal(bid[1], user5);
     assert.equal(bid[2], realitycards.address);
-    // position 1
-    var bid = await rcorderbook.getBid.call(realitycards.address, user5, 0);
-    assert.equal(bid[4], web3.utils.toWei('20', 'ether'));
-    assert.equal(bid[1], user0);
-    assert.equal(bid[2], user9);
-    // position 2
-    var bid = await realitycards.orderbook.call(0, user0);
-    assert.equal(bid[0], web3.utils.toWei('10', 'ether'));
-    assert.equal(bid[1], (3600 * 24));
-    assert.equal(bid[2], user3);
-    assert.equal(bid[3], user5);
-    // position 3
-    var bid = await realitycards.orderbook.call(0, user3);
-    assert.equal(bid[0], web3.utils.toWei('10', 'ether'));
-    assert.equal(bid[2], user4);
-    assert.equal(bid[3], user0);
-    // position 4
-    var bid = await realitycards.orderbook.call(0, user4);
-    assert.equal(bid[0], web3.utils.toWei('10', 'ether'));
-    assert.equal(bid[2], user1);
-    assert.equal(bid[3], user3);
-    // position 5
-    var bid = await realitycards.orderbook.call(0, user1);
-    assert.equal(bid[0], web3.utils.toWei('9', 'ether'));
-    assert.equal(bid[2], user2);
-    assert.equal(bid[3], user4);
-    // position 6
-    var bid = await realitycards.orderbook.call(0, user2);
-    assert.equal(bid[0], web3.utils.toWei('8', 'ether'));
-    assert.equal(bid[2], user7);
-    assert.equal(bid[3], user1);
-    // position 7
-    var bid = await realitycards.orderbook.call(0, user7);
-    assert.equal(bid[0], web3.utils.toWei('8', 'ether'));
-    assert.equal(bid[2], user8);
-    assert.equal(bid[3], user2);
-    // position 8
-    var bid = await realitycards.orderbook.call(0, user8);
-    assert.equal(bid[0], web3.utils.toWei('6', 'ether'));
-    assert.equal(bid[2], user6);
-    assert.equal(bid[3], user7);
-    // position 9
-    var bid = await realitycards.orderbook.call(0, user6);
-    assert.equal(bid[0], web3.utils.toWei('5', 'ether'));
-    assert.equal(bid[2], user13);
-    assert.equal(bid[3], user8);
-    // position 10
-    var bid = await realitycards.orderbook.call(0, user13);
-    assert.equal(bid[0], web3.utils.toWei('5', 'ether'));
-    assert.equal(bid[2], user12);
-    assert.equal(bid[3], user6);
-    // position 11
-    var bid = await realitycards.orderbook.call(0, user12);
-    assert.equal(bid[0], web3.utils.toWei('4.8', 'ether'));
-    assert.equal(bid[2], user14);
-    assert.equal(bid[3], user13);
-    // position 12
-    var bid = await realitycards.orderbook.call(0, user14);
-    assert.equal(bid[0], web3.utils.toWei('4.8', 'ether'));
-    assert.equal(bid[2], realitycards.address);
-    assert.equal(bid[3], user12);
-    // check starting position
-    // starting position too high - need more user account to test this now iteration limit is 100
-    //await expectRevert(newRental(1,0,user10), "Location too high"); 
-    //await expectRevert(newRentalWithStartingPosition(1,0,user9,user10), "Location too high");
-    await newRentalWithStartingPosition(1, 0, user6, user10);
-    // starting position too low
-    await expectRevert(newRentalWithStartingPosition(10, 0, user1, user11), "Location too low");
-    // update bid case 1A: was winner, > 10% higher, should just update price + limit
-    await newRentalCustomTimeLimit(60, 1, 0, user9);
-    var owner = await realitycards.ownerOf.call(0);
-    assert.equal(owner, user9);
-    var price = await realitycards.tokenPrice.call(0);
-    assert.equal(price, web3.utils.toWei('60', 'ether'));
-    var bid = await realitycards.orderbook.call(0, user9);
-    assert.equal(bid[0], web3.utils.toWei('60', 'ether'));
-    assert.equal(bid[1], (3600 * 24));
-    assert.equal(bid[2], user5);
-    assert.equal(bid[3], realitycards.address);
     // update bid case 1B: was winner, higher but < 10%, should remove
+    console.log("expect case 1B revert");
     await expectRevert(newRental(65, 0, user9), "Not 10% higher");
     await realitycards.exit(0, { from: user9 });
     // update bid case 1Ca: was winner, lower than prevous, but still winner, just update detials
@@ -544,52 +545,52 @@ contract('TestOrderbook', (accounts) => {
     assert.equal(owner, user5);
     var price = await realitycards.tokenPrice.call(0);
     assert.equal(price, web3.utils.toWei('15', 'ether'));
-    var bid = await realitycards.orderbook.call(0, user5);
-    assert.equal(bid[0], web3.utils.toWei('15', 'ether'));
-    assert.equal(bid[1], (3600 * 48));
-    assert.equal(bid[2], user0);
-    assert.equal(bid[3], realitycards.address);
+    var bid = await rcorderbook.getBid.call(realitycards.address, user5, 0);
+    assert.equal(bid[4], web3.utils.toWei('15', 'ether'));
+    assert.equal(bid[5], (3600 * 48));
+    assert.equal(bid[1], user0);
+    assert.equal(bid[2], realitycards.address);
     // update bid case 1Cb: was winner, but no longer winner, remove and add back
     await newRentalCustomTimeLimit(10.5, 0.5, 0, user5);
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner, user0);
     var price = await realitycards.tokenPrice.call(0);
     assert.equal(price, web3.utils.toWei('10', 'ether'));
-    var bid = await realitycards.orderbook.call(0, user5);
-    assert.equal(bid[0], web3.utils.toWei('10', 'ether'));
-    assert.equal(bid[1], (3600 * 12));
-    assert.equal(bid[2], user1);
-    assert.equal(bid[3], user4);
+    var bid = await rcorderbook.getBid.call(realitycards.address, user5, 0);
+    assert.equal(bid[4], web3.utils.toWei('10', 'ether'));
+    assert.equal(bid[5], (3600 * 12));
+    assert.equal(bid[1], user1);
+    assert.equal(bid[2], user4);
     // update bid case 2A: not winner, but now is [includes check that been deleted from previous location]
     await newRentalCustomTimeLimit(100, 0.5, 0, user7);
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner, user7);
     var price = await realitycards.tokenPrice.call(0);
     assert.equal(price, web3.utils.toWei('100', 'ether'));
-    var bid = await realitycards.orderbook.call(0, user7);
-    assert.equal(bid[0], web3.utils.toWei('100', 'ether'));
-    assert.equal(bid[1], (3600 * 12));
-    assert.equal(bid[2], user0);
-    assert.equal(bid[3], realitycards.address);
-    var bid = await realitycards.orderbook.call(0, user2);
-    assert.equal(bid[2], user8);
-    var bid = await realitycards.orderbook.call(0, user8);
-    assert.equal(bid[3], user2);
+    var bid = await rcorderbook.getBid.call(realitycards.address, user7, 0);
+    assert.equal(bid[4], web3.utils.toWei('100', 'ether'));
+    assert.equal(bid[5], (3600 * 12));
+    assert.equal(bid[1], user0);
+    assert.equal(bid[2], realitycards.address);
+    var bid = await rcorderbook.getBid.call(realitycards.address, user2, 0);
+    assert.equal(bid[1], user8);
+    var bid = await rcorderbook.getBid.call(realitycards.address, user8, 0);
+    assert.equal(bid[2], user2);
     // update bid case 2B: not winner, still isn't. Let's move user 8 up a few [and check moved from previous]
     await newRentalCustomTimeLimit(20, 2, 0, user8);
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner, user7);
     var price = await realitycards.tokenPrice.call(0);
     assert.equal(price, web3.utils.toWei('100', 'ether'));
-    var bid = await realitycards.orderbook.call(0, user8);
-    assert.equal(bid[0], web3.utils.toWei('20', 'ether'));
-    assert.equal(bid[1], (3600 * 48));
-    assert.equal(bid[2], user0);
-    assert.equal(bid[3], user7);
-    var bid = await realitycards.orderbook.call(0, user2);
-    assert.equal(bid[2], user6);
-    var bid = await realitycards.orderbook.call(0, user6);
-    assert.equal(bid[3], user2);
+    var bid = await rcorderbook.getBid.call(realitycards.address, user8, 0);
+    assert.equal(bid[4], web3.utils.toWei('20', 'ether'));
+    assert.equal(bid[5], (3600 * 48));
+    assert.equal(bid[1], user0);
+    assert.equal(bid[2], user7);
+    var bid = await rcorderbook.getBid.call(realitycards.address, user2, 0);
+    assert.equal(bid[1], user6);
+    var bid = await rcorderbook.getBid.call(realitycards.address, user6, 0);
+    assert.equal(bid[2], user2);
   });
 
   it('test _revertToUnderbidder', async () => {
@@ -637,9 +638,9 @@ contract('TestOrderbook', (accounts) => {
     assert.equal(owner, user5);
     var price = await realitycards.tokenPrice.call(0);
     assert.equal(price, web3.utils.toWei('20', 'ether'));
-    var bid = await realitycards.orderbook.call(0, user5);
+    var bid = await rcorderbook.getBid.call(realitycards.address, user5, 0);
     assert.equal(bid[3], realitycards.address);
-    var bid = await realitycards.orderbook.call(0, user9);
+    var bid = await rcorderbook.getBid.call(realitycards.address, user9, 0);
     assert.equal(bid[0], 0);
     // withraw deposit for next 4 in line, check it cyles through
     await time.increase(time.duration.minutes(10));
@@ -652,15 +653,15 @@ contract('TestOrderbook', (accounts) => {
     assert.equal(owner, user1);
     var price = await realitycards.tokenPrice.call(0);
     assert.equal(price, web3.utils.toWei('9', 'ether'));
-    var bid = await realitycards.orderbook.call(0, user1);
+    var bid = await rcorderbook.getBid.call(realitycards.address, user1, 0);
     assert.equal(bid[3], realitycards.address);
-    var bid = await realitycards.orderbook.call(0, user5);
+    var bid = await rcorderbook.getBid.call(realitycards.address, user5, 0);
     assert.equal(bid[0], 0);
-    var bid = await realitycards.orderbook.call(0, user0);
+    var bid = await rcorderbook.getBid.call(realitycards.address, user0, 0);
     assert.equal(bid[0], 0);
-    var bid = await realitycards.orderbook.call(0, user3);
+    var bid = await rcorderbook.getBid.call(realitycards.address, user3, 0);
     assert.equal(bid[0], 0);
-    var bid = await realitycards.orderbook.call(0, user4);
+    var bid = await rcorderbook.getBid.call(realitycards.address, user4, 0);
     assert.equal(bid[0], 0);
   });
 
