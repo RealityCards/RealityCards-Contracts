@@ -91,6 +91,8 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         uint256 _timeHeldLimit,
         address _prevUserAddress
     ) external onlyMarkets {
+        // TODO check for empty bids we could clean
+
         address _market = msgSender();
         if (_prevUserAddress == address(0)) {
             _prevUserAddress = _market;
@@ -107,22 +109,10 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
             user[_prevUserAddress].bids[
                 index[_prevUserAddress][_market][_token]
             ];
-        // check for empty bids we could clean
-
-        // check _prevUser is the correct position
-        if (ownerOf[_market][_token] != _market) {
-            console.log("finding position ", _prevUserAddress);
-            (_prevUser, _price) = _searchOrderbook(
-                _prevUser,
-                _user,
-                _market,
-                _token,
-                _price
-            );
-        }
 
         if (bidExists(_user, _market, _token)) {
             // old bid exists, update it
+            console.log("updating bid for ", _user);
             _updateBidInOrderbook(
                 _user,
                 _market,
@@ -132,8 +122,9 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
                 _prevUser
             );
         } else {
+            console.log("new bid for ", _user);
             // new bid, add it
-            _addBidToOrderbook(
+            _newBidInOrderbook(
                 _user,
                 _market,
                 _token,
@@ -188,7 +179,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         return (_prevUser, _price);
     }
 
-    function _addBidToOrderbook(
+    function _newBidInOrderbook(
         address _user,
         address _market,
         uint256 _token,
@@ -196,10 +187,18 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         uint256 _timeHeldLimit,
         Bid storage _prevUser
     ) internal {
-        //        assert(_prevUser.price >= _price);
+        if (ownerOf[_market][_token] != _market) {
+            (_prevUser, _price) = _searchOrderbook(
+                _prevUser,
+                _user,
+                _market,
+                _token,
+                _price
+            );
+        }
+
         Bid storage _nextUser =
             user[_prevUser.next].bids[index[_prevUser.next][_market][_token]];
-        //assert(_nextUser.price < _price);
 
         // create new record
         Bid memory _newBid;
@@ -241,42 +240,43 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         uint256 _timeHeldLimit,
         Bid storage _prevUser
     ) internal {
-        //assert(_prevUser.price >= _price);
+        // TODO no need to unlink and relink if bid doesn't change position in orderbook
+        // unlink current bid
         Bid storage _currUser = user[_user].bids[index[_user][_market][_token]];
+        user[_currUser.next].bids[index[_currUser.next][_market][_token]]
+            .prev = _currUser.prev;
+        user[_currUser.prev].bids[index[_currUser.prev][_market][_token]]
+            .next = _currUser.next;
         bool _owner = _currUser.prev == _market;
-        if (_prevUser.next == _user) {
-            console.log("new price ", _price);
-            console.log("old price ", _currUser.price);
-            (_currUser.price, _price) = (_price, _currUser.price);
-            _currUser.timeHeldLimit = _timeHeldLimit;
-            // TODO, save gas, instead of transfer to self, just update tokenPrice in market
-            transferCard(_market, _token, _user, _user, _currUser.price);
-        } else {
-            Bid storage _nextUser =
-                user[_prevUser.next].bids[
-                    index[_prevUser.next][_market][_token]
-                ];
-            //assert(_nextUser.price < _price);
 
-            // extract bid from current position
-            user[_currUser.next].bids[index[_currUser.next][_market][_token]]
-                .next = _currUser.prev;
-            user[_currUser.prev].bids[index[_currUser.prev][_market][_token]]
-                .prev = _currUser.next;
+        // find new position
+        (_prevUser, _price) = _searchOrderbook(
+            _prevUser,
+            _user,
+            _market,
+            _token,
+            _price
+        );
+        Bid storage _nextUser =
+            user[_prevUser.next].bids[index[_prevUser.next][_market][_token]];
+        printOrderbook(_market, _token);
 
-            // update price, save old price for rental rate adjustment later
-            (_currUser.price, _price) = (_price, _currUser.price);
-            _currUser.timeHeldLimit = _timeHeldLimit;
+        // update price, save old price for rental rate adjustment later
+        (_currUser.price, _price) = (_price, _currUser.price);
+        _currUser.timeHeldLimit = _timeHeldLimit;
 
-            // insert bid in new position
-            _nextUser.prev = _user; // next record update prev link
-            _prevUser.next = _user; // prev record update next link
-        }
+        // relink bid
+        _currUser.next = _prevUser.next;
+        _currUser.prev = _nextUser.prev;
+        _nextUser.prev = _user; // next record update prev link
+        _prevUser.next = _user; // prev record update next link
+
         // update memo values
         int256 _priceChange = int256(_currUser.price).sub(int256(_price));
         treasury.updateBidRate(_user, _priceChange);
         if (_owner && _currUser.prev == _market) {
             // if owner before and after, update the price difference
+            transferCard(_market, _token, _user, _user, _currUser.price);
             treasury.updateRentalRate(_user, _user, _price, _currUser.price);
         } else if (_owner && _currUser.prev != _market) {
             // if owner before and not after, remove the old price
@@ -299,6 +299,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
             );
             transferCard(_market, _token, _oldOwner, _user, _currUser.price);
         }
+        console.log("orderbook after update");
     }
 
     /// @dev removes a bid from the orderbook
