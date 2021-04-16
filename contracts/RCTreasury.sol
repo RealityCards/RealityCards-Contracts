@@ -256,7 +256,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
                 uint256(1 days).div(minRentalDayDivisor),
             "Too soon"
         );
-
+        //console.log("withdrawing deposit ", _msgSender);
         // step 1: collect rent on all cards a user Owns
         for (uint256 i = 0; i < user[_msgSender].marketOwned.length; i++) {
             IRCMarket _market = IRCMarket(user[_msgSender].marketOwned[i]);

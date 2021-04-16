@@ -52,6 +52,10 @@ interface IRCOrderbook {
 
     function removeUserFromOrderbook(address _user) external;
 
+    function foreclosureTime(address _user)
+        external
+        returns (uint256 _foreclosureTime);
+
     function removeMarketFromUser(
         address _user,
         address _market,

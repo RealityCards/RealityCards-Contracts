@@ -27,8 +27,13 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
     }
     struct User {
         Bid[] bids;
+        OwnedCards[] owned;
         uint256 totalBidRate;
         uint256 rentalRate;
+    }
+    struct OwnedCards {
+        address market;
+        uint256[] token;
     }
     struct Market {
         uint256 mode;
@@ -36,7 +41,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
     }
     mapping(address => User) public user;
     mapping(address => Market) public market;
-    mapping(address => bool) public isForeclosed;
+    mapping(address => uint256) public foreclosureTime;
     mapping(address => bool) public isMarket;
     mapping(address => mapping(uint256 => address)) ownerOf;
 
@@ -112,6 +117,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
 
         if (bidExists(_user, _market, _token)) {
             // old bid exists, update it
+            // console.log("uh oh, it's an update ");
             _updateBidInOrderbook(
                 _user,
                 _market,
@@ -122,6 +128,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
             );
         } else {
             // new bid, add it
+            // console.log("yes it's new ");
             _newBidInOrderbook(
                 _user,
                 _market,
@@ -184,6 +191,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         Bid storage _prevUser
     ) internal {
         if (ownerOf[_market][_token] != _market) {
+            // console.log("new bid, market isn't owner ");
             (_prevUser, _price) = _searchOrderbook(
                 _prevUser,
                 _user,
@@ -334,12 +342,15 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
             // overwrite array element
             uint256 _index = index[_user][_market][_token];
             uint256 _lastRecord = user[_user].bids.length.sub(1);
-            user[_user].bids[_index] = user[_user].bids[_lastRecord];
+            // no point overwriting itself
+            if (_index != _lastRecord) {
+                user[_user].bids[_index] = user[_user].bids[_lastRecord];
+            }
             user[_user].bids.pop();
 
             // update the index to help find the record later
             index[_user][_market][_token] = 0;
-            if (user[_user].bids.length != 0) {
+            if (user[_user].bids.length != 0 && _index != _lastRecord) {
                 index[_user][user[_user].bids[_index].market][
                     user[_user].bids[_index].token
                 ] = _index;
@@ -363,6 +374,16 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         console.log(" end of orderbook ");
     }
 
+    function printUserBids(address _user) public view {
+        console.log("printing bids for ", _user);
+        uint256 i;
+        do {
+            console.log(" bid 0 ", user[_user].bids[i].token);
+            i++;
+        } while (i < user[_user].bids.length);
+        console.log(" done printing bids ");
+    }
+
     function findNewOwner(uint256 _token)
         external
         onlyMarkets
@@ -376,7 +397,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
             // TODO create a lighter weight version and only deal with ownership when new owner is settled on
             removeBidFromOrderbook(_head.next, _token);
             // delete next bid if foreclosed
-        } while (isForeclosed[_head.next]);
+        } while (foreclosureTime[_head.next] != 0);
         // TODO make sure user has minimum rental left
         address _newOwner =
             user[_market].bids[index[_market][_market][_token]].next;
@@ -416,8 +437,19 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         address _user,
         uint256 _token
     ) external view returns (Bid memory) {
-        Bid memory _bid = user[_user].bids[index[_user][_market][_token]];
-        return _bid;
+        if (bidExists(_user, _market, _token)) {
+            Bid memory _bid = user[_user].bids[index[_user][_market][_token]];
+            return _bid;
+        } else {
+            Bid memory _newBid;
+            _newBid.market = address(0);
+            _newBid.token = _token;
+            _newBid.prev = address(0);
+            _newBid.next = address(0);
+            _newBid.price = 0;
+            _newBid.timeHeldLimit = 0;
+            return _newBid;
+        }
     }
 
     function getTimeHeldlimit(address _user, uint256 _token)
@@ -450,20 +482,28 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         address _market,
         uint256 _token
     ) internal view returns (bool) {
-        if (
-            user[_user].bids.length == 0 ||
-            index[_user][_market][_token] != 0 ||
-            (user[_user].bids[0].market != _market &&
-                user[_user].bids[0].token != _token)
-        ) {
-            return false;
-        } else {
-            return true;
+        if (user[_user].bids.length != 0) {
+            //some bids exist
+            if (index[_user][_market][_token] != 0) {
+                // this bid exists
+                return true;
+            } else {
+                // check bid isn't index 0
+                if (
+                    user[_user].bids[0].market == _market &&
+                    user[_user].bids[0].token == _token
+                ) {
+                    return true;
+                }
+            }
         }
+        return false;
     }
 
     function removeUserFromOrderbook(address _user) external onlyMarkets {
-        isForeclosed[_user] = true;
+        //TODO what if user is owner of any cards!?
+
+        foreclosureTime[_user] = block.timestamp;
         uint256 i = user[_user].bids.length.sub(1);
         uint256 _limit = 0;
         if (i > MAX_DELETIONS) {
@@ -478,6 +518,16 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
             ] = 0;
             address _tempPrev = user[_user].bids[i].prev;
             address _tempNext = user[_user].bids[i].next;
+
+            /// @dev ideally this isn't needed once we update the rent collection and the tests to cope
+            if (_tempPrev == user[_user].bids[i].market) {
+                _market = user[_user].bids[i].market;
+                _token = user[_user].bids[i].token;
+                uint256 _price =
+                    user[_tempNext].bids[index[_tempNext][_market][_token]]
+                        .price;
+                transferCard(_market, _token, _user, _tempNext, _price);
+            }
 
             user[_tempNext].bids[
                 index[_tempNext][user[_user].bids[i].market][
@@ -501,7 +551,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
             //and get rid of them
 
             // delete user[_user];
-            isForeclosed[_user] = false;
+            foreclosureTime[_user] = 0;
         }
     }
 
@@ -534,6 +584,9 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         address _newOwner,
         uint256 _price
     ) internal {
+        // console.log("old owner ", _oldOwner);
+        // console.log(" token ", _token);
+        // console.log("new owner ", _newOwner);
         ownerOf[_market][_token] = _newOwner;
         IRCMarket _rcmarket = IRCMarket(_market);
         _rcmarket.transferCard(_oldOwner, _newOwner, _token, _price);

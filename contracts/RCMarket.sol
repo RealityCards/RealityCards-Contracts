@@ -628,6 +628,8 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         require(_newPrice >= MIN_RENTAL_VALUE, "Minimum rental 1 xDai");
         require(_tokenId < numberOfTokens, "This token does not exist");
         address _user = msgSender();
+        // console.log("new rental ", _user);
+        // console.log("on token ", _tokenId);
         require(
             exitedTimestamp[_user] != block.timestamp,
             "Cannot lose and re-rent in same block"
@@ -795,20 +797,27 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @dev is not a problem if called externally, but making internal over public to save gas
     function _collectRent(uint256 _tokenId) internal {
         uint256 _timeOfThisCollection = block.timestamp;
+        address _user = ownerOf(_tokenId);
+        uint256 _foreclosureTime = orderbook.foreclosureTime(_user);
         if (marketLockingTime <= block.timestamp) {
             _timeOfThisCollection = marketLockingTime;
+        }
+        if (_foreclosureTime != 0 && _foreclosureTime < _timeOfThisCollection) {
+            _timeOfThisCollection = _foreclosureTime;
         }
         //only collect rent if the token is owned (ie, if owned by the contract this implies unowned)
         // AND if the last collection was in the past (ie, don't do 2+ rent collections in the same block)
         if (
-            ownerOf(_tokenId) != address(this) &&
+            _user != address(this) &&
             timeLastCollected[_tokenId] < _timeOfThisCollection
         ) {
+            // console.log("collecting rent ", _user);
+            // console.log("collecting rent ", _tokenId);
             uint256 _rentOwed =
                 tokenPrice[_tokenId]
                     .mul(_timeOfThisCollection.sub(timeLastCollected[_tokenId]))
                     .div(1 days);
-            address _collectRentFrom = ownerOf(_tokenId);
+            address _collectRentFrom = _user;
             uint256 _deposit = treasury.userDeposit(_collectRentFrom);
 
             // get the maximum rent they can pay based on timeHeldLimit
@@ -827,15 +836,14 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
             // if rent owed is too high, reduce
             if (_rentOwed >= _deposit || _rentOwed >= _rentOwedLimit) {
+                // console.log("rent owed too high, being reduced");
                 // case 1: rentOwed is reduced to _deposit
+                uint256 _timeLastCollected = timeLastCollected[_tokenId];
                 if (_deposit <= _rentOwedLimit) {
-                    _timeOfThisCollection = timeLastCollected[_tokenId].add(
+                    // console.log("case 1");
+                    _timeOfThisCollection = _timeLastCollected.add(
                         (
-                            (
-                                _timeOfThisCollection.sub(
-                                    timeLastCollected[_tokenId]
-                                )
-                            )
+                            (_timeOfThisCollection.sub(_timeLastCollected))
                                 .mul(_deposit)
                                 .div(_rentOwed)
                         )
@@ -843,13 +851,10 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                     _rentOwed = _deposit; // take what's left
                     // case 2: rentOwed is reduced to _rentOwedLimit
                 } else {
-                    _timeOfThisCollection = timeLastCollected[_tokenId].add(
+                    // console.log("case 2");
+                    _timeOfThisCollection = _timeLastCollected.add(
                         (
-                            (
-                                _timeOfThisCollection.sub(
-                                    timeLastCollected[_tokenId]
-                                )
-                            )
+                            (_timeOfThisCollection.sub(_timeLastCollected))
                                 .mul(_rentOwedLimit)
                                 .div(_rentOwed)
                         )
@@ -857,10 +862,10 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                     _rentOwed = _rentOwedLimit; // take up to the max
                 }
 
-                orderbook.removeBidFromOrderbook(ownerOf(_tokenId), _tokenId);
+                orderbook.removeBidFromOrderbook(_user, _tokenId);
                 // _revertToUnderbidder(_tokenId);
             }
-
+            // console.log("rent owed ", _rentOwed);
             if (_rentOwed > 0) {
                 // decrease deposit by rent owed at the Treasury
                 assert(treasury.payRent(_collectRentFrom, _rentOwed));
@@ -893,6 +898,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
                     longestTimeHeld[_tokenId] = timeHeld[_tokenId][
                         _collectRentFrom
                     ];
+                    // console.log("new longest owner of ", _tokenId);
                     longestOwner[_tokenId] = _collectRentFrom;
                 }
 
@@ -908,6 +914,10 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         // timeLastCollected is updated regardless of whether the token is owned, so that the clock starts ticking
         // ... when the first owner buys it, because this function is run before ownership changes upon calling newRental
         timeLastCollected[_tokenId] = _timeOfThisCollection;
+        if (_timeOfThisCollection == _foreclosureTime) {
+            // console.log(" collecting rent again ");
+            _collectRent(_tokenId);
+        }
     }
 
     // /// @dev user is not in the orderbook
