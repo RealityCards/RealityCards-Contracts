@@ -786,6 +786,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             }
             // if not owner, just delete from orderbook
         } else {
+            _collectRent(_tokenId);
             orderbook.removeBidFromOrderbook(_user, _tokenId);
             emit LogRemoveFromOrderbook(_msgSender, _tokenId);
         }

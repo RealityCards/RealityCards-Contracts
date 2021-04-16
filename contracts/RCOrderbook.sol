@@ -27,13 +27,8 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
     }
     struct User {
         Bid[] bids;
-        OwnedCards[] owned;
         uint256 totalBidRate;
         uint256 rentalRate;
-    }
-    struct OwnedCards {
-        address market;
-        uint256[] token;
     }
     struct Market {
         uint256 mode;
@@ -144,7 +139,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
 
     function _searchOrderbook(
         Bid storage _prevUser,
-        address _user,
         address _market,
         uint256 _token,
         uint256 _price
@@ -194,7 +188,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
             // console.log("new bid, market isn't owner ");
             (_prevUser, _price) = _searchOrderbook(
                 _prevUser,
-                _user,
                 _market,
                 _token,
                 _price
@@ -256,7 +249,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         // find new position
         (_prevUser, _price) = _searchOrderbook(
             _prevUser,
-            _user,
             _market,
             _token,
             _price
@@ -465,6 +457,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         } else {
             // TODO look into collectRentAllCards failing here on orderbook tests
             //revert("Bid doesn't exist");
+            return 0;
         }
     }
 
@@ -475,6 +468,22 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
     ) external onlyMarkets {
         user[_user].bids[index[_user][msgSender()][_token]]
             .timeHeldLimit = _timeHeldLimit;
+    }
+
+    /// @dev temporary function to use current tests, shouldn't be required
+    /// @dev with new collect rent per user model.
+    function collectRentOwnedCards(address _user) external {
+        address _market;
+        uint256[] memory _token = new uint256[](1);
+        for (uint256 i; i < user[_user].bids.length; i++) {
+            _market = user[_user].bids[i].market;
+            _token[0] = user[_user].bids[i].token;
+            if (ownerOf[_market][_token[0]] == _user) {
+                console.log("collecting rent on ", _token[0]);
+                IRCMarket _rcmarket = IRCMarket(_market);
+                _rcmarket.collectRentSpecificCards(_token);
+            }
+        }
     }
 
     function bidExists(

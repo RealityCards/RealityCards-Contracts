@@ -258,13 +258,14 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         );
         //console.log("withdrawing deposit ", _msgSender);
         // step 1: collect rent on all cards a user Owns
-        for (uint256 i = 0; i < user[_msgSender].marketOwned.length; i++) {
-            IRCMarket _market = IRCMarket(user[_msgSender].marketOwned[i]);
-            _market.collectRentSpecificCards(
-                user[_msgSender].tokens[user[_msgSender].marketOwned[i]]
-                    .tokensOwned
-            );
-        }
+        // for (uint256 i = 0; i < user[_msgSender].marketOwned.length; i++) {
+        //     IRCMarket _market = IRCMarket(user[_msgSender].marketOwned[i]);
+        //     _market.collectRentSpecificCards(
+        //         user[_msgSender].tokens[user[_msgSender].marketOwned[i]]
+        //             .tokensOwned
+        //     );
+        // }
+        orderbook.collectRentOwnedCards(_msgSender);
 
         // step 2: process withdrawal
         if (_dai > user[_msgSender].deposit) {

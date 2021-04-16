@@ -61,4 +61,6 @@ interface IRCOrderbook {
         address _market,
         uint256[] calldata _tokens
     ) external;
+
+    function collectRentOwnedCards(address _user) external;
 }
