@@ -135,6 +135,12 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         _;
     }
 
+    modifier collectRentUser(address _user) {
+        _collectRentUser(_user);
+        _;
+    }
+
+
     // ADD MARKETS
 
     /// @dev so only markets can move funds from deposits to marketPots and vice versa
@@ -441,6 +447,47 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         );
         // orderbook.addTime(_user, _rentDuration);
         user[_user].lastRentCalc = _timeOfCollection;
+    }
+
+    //// Rent calc helpers
+
+    function rentOwedUser(address _user) public view returns (uint256 rentDue) {
+        return
+            user[_user]
+                .rentalRate
+                .mul(block.timestamp.sub(user[_user].lastRentCalc))
+                .div(1 days);
+    }
+
+    function _collectRentUser(address _user)
+        public
+    {
+        uint256 rentOwedByUser = rentOwedUser(_user);
+
+        if (rentOwedByUser > 0 && rentOwedByUser > user[_user].deposit) {
+            // The User has run out of deposit already.
+            uint256 previousCollectionTime = user[_user].lastRentCalc;
+
+            /*
+            timeTheirDepsitLasted = timeSinceLastUpdate * (usersDeposit/rentOwed)
+                                  = (now - previousCollectionTime) * (usersDeposit/rentOwed)
+            */
+            uint256 timeUsersDepositLasts =
+                (block.timestamp.sub(previousCollectionTime))
+                    .mul(user[_user].deposit)
+                    .div(rentOwedByUser);
+            /*
+            Users last collection time = previousCollectionTime + timeTheirDepsitLasted
+            */
+            user[_user].lastRentCalc = previousCollectionTime.add(
+                timeUsersDepositLasts
+            );
+            user[_user].deposit = 0;
+        } else {
+            // User has enough deposit to pay rent.
+            user[_user].lastRentCalc = block.timestamp;
+            user[_user].deposit = user[_user].deposit.sub(rentOwedByUser);
+        }
     }
 
     //   FALLBACK
