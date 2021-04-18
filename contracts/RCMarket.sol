@@ -332,6 +332,27 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         _;
     }
 
+    modifier onlyTreasury() {
+        require(address(treasury) == msgSender(), "only treasury");
+        _;
+    }
+
+    function updateCard(uint256 card, address user, uint256 rentCollected, uint256 collectedUntil) external onlyTreasury() {
+        rentCollectedPerUser[user] += rentCollected;
+        rentCollectedPerToken[card] += rentCollected;
+        totalRentCollected += rentCollected;
+
+        uint256 timeHeldSinceLastCollection = collectedUntil - timeLastCollected[card];
+        timeHeld[card][user] += timeHeldSinceLastCollection;
+        if (timeHeld[card][user] > longestTimeHeld[card]) {
+            longestTimeHeld[card] = timeHeld[card][user];
+            longestOwner[card] = user;
+        }
+        totalTimeHeld[card] += timeHeldSinceLastCollection;
+
+        timeLastCollected[card] = collectedUntil;
+    }
+
     // ORACLE PROXY CONTRACT CALLS
 
     /// @notice send NFT to mainnet
@@ -799,7 +820,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     function _collectRent(uint256 _tokenId) internal {
         uint256 _timeOfThisCollection = block.timestamp;
         address _user = ownerOf(_tokenId);
-        uint256 _foreclosureTime = orderbook.foreclosureTime(_user); // TODO: need to get foreclosure time from treasury
+        uint256 _foreclosureTime = orderbook.foreclosureTime(_user); // JS/TODO: need to get foreclosure time from treasury
         if (marketLockingTime <= block.timestamp) {
             _timeOfThisCollection = marketLockingTime;
         }
