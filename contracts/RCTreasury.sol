@@ -52,8 +52,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         uint256 deposit;
         uint256 rentalRate;
         uint256 bidRate;
-        uint256 foreclosureTime; // we could calculate this from rentalRate
-        uint256 safeForclosureTime; // we could calculate this from bidRate
         uint256 lastRentCalc;
         uint256 lastRentalTime;
         address[] marketBids; //a list of markets this user has bids in
@@ -471,6 +469,38 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
                 .rentalRate
                 .mul(block.timestamp.sub(user[_user].lastRentCalc))
                 .div(1 days);
+    }
+
+    function depositAbleToWithdraw(address _user)
+        public
+        view
+        returns (uint256)
+    {
+        uint256 collection = rentOwedUser(_user);
+        if (collection >= user[_user].deposit) {
+            return 0;
+        } else {
+            return user[_user].deposit.sub(collection);
+        }
+    }
+
+    function foreclosureTimeUser(address _user) external view returns (uint256) {
+        uint256 totalUserDailyRent = user[_user].rentalRate;
+        if (totalUserDailyRent > 0) {
+            // timeLeftOfDeposit = deposit / (totalUserDailyRent / 1 day)
+            //                   = (deposit * 1day) / totalUserDailyRent
+            uint256 timeLeftOfDeposit =
+                (
+                    (depositAbleToWithdraw(_user).mul(1 days))
+                    // Add this to make sure this is the value rounded up
+                        .add(totalUserDailyRent - 1)
+                )
+                    .div(totalUserDailyRent);
+
+            return block.timestamp.add(timeLeftOfDeposit);
+        } else {
+            return 0;
+        }
     }
 
     function _collectRentUser(address _user)
