@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 import "@openzeppelin/contracts/utils/SafeCast.sol";
 import "hardhat/console.sol";
 import "./interfaces/IRealitio.sol";
-import "./interfaces/IFactory.sol";
+import "./interfaces/IRCFactory.sol";
 import "./interfaces/IRCTreasury.sol";
 import "./interfaces/IRCProxyXdai.sol";
 import "./interfaces/IRCMarket.sol";
@@ -46,7 +46,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
     // CONTRACT VARIABLES
     IRCTreasury public treasury;
-    IFactory public factory;
+    IRCFactory public factory;
     IRCProxyXdai public proxy;
     IRCNftHubXdai public nfthub;
     IRCOrderbook public orderbook;
@@ -221,7 +221,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         _initializeEIP712("RealityCardsMarket", "1");
 
         // external contract variables:
-        factory = IFactory(msg.sender);
+        factory = IRCFactory(msg.sender);
         treasury = factory.treasury();
         proxy = factory.proxy();
         nfthub = factory.nfthub();

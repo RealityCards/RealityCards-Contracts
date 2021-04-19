@@ -4,7 +4,7 @@ pragma solidity ^0.7.5;
 import "@openzeppelin/contracts/proxy/Initializable.sol";
 import "hardhat/console.sol";
 import "../../interfaces/IRealitio.sol";
-import "../../interfaces/IFactory.sol";
+import "../../interfaces/IRCFactory.sol";
 import "../../interfaces/IRCTreasury.sol";
 import "../../interfaces/IRCProxyXdai.sol";
 import "../../interfaces/IRCNftHubXdai.sol";
@@ -36,7 +36,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
 
     ///// CONTRACT VARIABLES /////
     IRCTreasury public treasury;
-    IFactory public factory;
+    IRCFactory public factory;
     IRCProxyXdai public proxy;
     IRCNftHubXdai public nfthub;
 
@@ -201,7 +201,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
         _initializeEIP712("RealityCardsMarket", "1");
 
         // external contract variables:
-        factory = IFactory(msg.sender);
+        factory = IRCFactory(msg.sender);
         treasury = factory.treasury();
         proxy = factory.proxy();
         nfthub = factory.nfthub();
