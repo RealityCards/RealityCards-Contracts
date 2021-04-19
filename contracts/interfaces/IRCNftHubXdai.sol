@@ -2,6 +2,8 @@
 pragma solidity ^0.7.5;
 
 interface IRCNftHubXdai {
+    function marketTracker(uint256) external view returns (address);
+
     function ownerOf(uint256) external view returns (address);
     function tokenURI(uint256) external view returns (string memory);
     function addMarket(address) external;
