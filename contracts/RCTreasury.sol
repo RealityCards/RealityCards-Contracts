@@ -6,8 +6,7 @@ import "@openzeppelin/contracts/utils/SafeCast.sol";
 import "@openzeppelin/contracts/math/SignedSafeMath.sol";
 import "hardhat/console.sol";
 import "./lib/NativeMetaTransaction.sol";
-//import "./lib/SafeMath32.sol";
-//import "./lib/SafeMath64.sol";
+import "./interfaces/IRCTreasury.sol";
 import "./interfaces/IRCMarket.sol";
 import "./interfaces/IAlternateReceiverBridge.sol";
 import "./interfaces/IRCOrderbook.sol";
@@ -16,7 +15,7 @@ import "./interfaces/IRCNftHubXdai.sol";
 /// @title Reality Cards Treasury
 /// @author Andrew Stanger & Daniel Chilvers
 /// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!!
-contract RCTreasury is Ownable, NativeMetaTransaction {
+contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     using SafeMath for uint256;
     using SignedSafeMath for int256;
     //using SafeMath32 for uint32;
@@ -25,23 +24,23 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     // VARIABLES
 
     /// @dev address of the alternate Receiver Bridge for withdrawals to mainnet
-    address public alternateReceiverBridgeAddress;
+    address public override alternateReceiverBridgeAddress;
     /// @dev address of the Factory so only the Factory can add new markets
-    address public factoryAddress;
+    address public override factoryAddress;
     /// @dev address of the orderbook so only the orderbook can update bids
     address public orderbookAddress;
     /// @dev orderbook instance to remove users bids on foreclosure
     IRCOrderbook orderbook;
     /// @dev so only markets can use certain functions
-    mapping(address => bool) public isMarket;
+    mapping(address => bool) public override isMarket;
     /// @dev sum of all deposits
-    uint256 public totalDeposits;
+    uint256 public override totalDeposits;
     /// @dev the rental payments made in each market
-    mapping(address => uint256) public marketPot;
+    mapping(address => uint256) public override marketPot;
     /// @dev sum of all market pots
-    uint256 public totalMarketPots;
+    uint256 public override totalMarketPots;
     /// @dev a quick check if the market is active or not
-    mapping(address => bool) public isMarketActive;
+    mapping(address => bool) public override isMarketActive;
 
     // DC new stuff
     /// @param rentalRate the daily cost of the cards the user current owns
@@ -75,21 +74,21 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     // GOVERNANCE VARIABLES
     /// @dev only parameters that need to be are here, the rest are in the Factory
     /// @dev minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
-    uint256 public minRentalDayDivisor;
+    uint256 public override minRentalDayDivisor;
     /// @dev max deposit balance, to minimise funds at risk
-    uint256 public maxContractBalance;
+    uint256 public override maxContractBalance;
     /// @dev the maximum number of bids a user is allowed
     uint256 public maxBidCountLimit;
 
     // SAFETY
     /// @dev if true, cannot deposit, withdraw or rent any cards across all events
-    bool public globalPause;
+    bool public override globalPause;
     /// @dev if true, cannot rent any cards for specific market
-    mapping(address => bool) public marketPaused;
+    mapping(address => bool) public override marketPaused;
 
     // UBER OWNER
     /// @dev high level owner who can change the factory address
-    address public uberOwner;
+    address public override uberOwner;
 
     IRCNftHubXdai public nfthub; // JS/TODO: This variable is never initialized!
 
@@ -151,7 +150,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     // ADD MARKETS
 
     /// @dev so only markets can move funds from deposits to marketPots and vice versa
-    function addMarket(address _newMarket) external {
+    function addMarket(address _newMarket) external override {
         require(msgSender() == factoryAddress, "Not factory");
         require(
             alternateReceiverBridgeAddress != address(0),
@@ -168,17 +167,21 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// CALLED WITHIN CONSTRUCTOR (public)
 
     /// @notice minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
-    function setMinRental(uint256 _newDivisor) public onlyOwner {
+    function setMinRental(uint256 _newDivisor) public override onlyOwner {
         minRentalDayDivisor = _newDivisor;
     }
 
     /// @dev max deposit balance, to minimise funds at risk
-    function setMaxContractBalance(uint256 _newBalanceLimit) public onlyOwner {
+    function setMaxContractBalance(uint256 _newBalanceLimit)
+        public
+        override
+        onlyOwner
+    {
         maxContractBalance = _newBalanceLimit;
     }
 
     /// @dev max bid limit, to fit within gas limits
-    function setMaxBidLimit(uint256 _newBidLimit) public onlyOwner {
+    function setMaxBidLimit(uint256 _newBidLimit) public override onlyOwner {
         maxBidCountLimit = _newBidLimit;
     }
 
@@ -187,6 +190,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev address of alternate receiver bridge, xdai side
     function setAlternateReceiverAddress(address _newAddress)
         external
+        override
         onlyOwner
     {
         require(_newAddress != address(0), "Must set an address");
@@ -194,12 +198,12 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     }
 
     /// @dev if true, cannot deposit, withdraw or rent any cards
-    function changeGlobalPause() external onlyOwner {
+    function changeGlobalPause() external override onlyOwner {
         globalPause = !globalPause;
     }
 
     /// @dev if true, cannot make a new rental for a specific market
-    function changePauseMarket(address _market) external onlyOwner {
+    function changePauseMarket(address _market) external override onlyOwner {
         marketPaused[_market] = !marketPaused[_market];
     }
 
@@ -211,7 +215,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev this is seperated so owner so can be set to multisig, or burn address to relinquish upgrade ability
     /// @dev ... while maintaining governance over other governanace functions
 
-    function setFactoryAddress(address _newFactory) external {
+    function setFactoryAddress(address _newFactory) external override {
         require(msgSender() == uberOwner, "Extremely Verboten");
         require(_newFactory != address(0));
         factoryAddress = _newFactory;
@@ -224,7 +228,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         orderbook = IRCOrderbook(orderbookAddress);
     }
 
-    function changeUberOwner(address _newUberOwner) external {
+    function changeUberOwner(address _newUberOwner) external override {
         require(msgSender() == uberOwner, "Extremely Verboten");
         require(_newUberOwner != address(0));
         uberOwner = _newUberOwner;
@@ -238,6 +242,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     function deposit(address _user)
         public
         payable
+        override
         balancedBooks
         returns (bool)
     {
@@ -259,6 +264,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @param _localWithdrawal if true then withdraw to the users xDai address, otherwise to the mainnet
     function withdrawDeposit(uint256 _dai, bool _localWithdrawal)
         external
+        override
         balancedBooks
     {
         require(!globalPause, "Withdrawals are disabled");
@@ -321,6 +327,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev a rental payment is equivalent to moving from user's deposit to market pot, called by _collectRent in the market
     function payRent(address _user, uint256 _dai)
         external
+        override
         balancedBooks
         onlyMarkets
         returns (bool)
@@ -338,6 +345,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev a payout is equivalent to moving from market pot to user's deposit (the opposite of payRent)
     function payout(address _user, uint256 _dai)
         external
+        override
         balancedBooks
         onlyMarkets
         returns (bool)
@@ -356,6 +364,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     function sponsor()
         external
         payable
+        override
         balancedBooks
         onlyMarkets
         returns (bool)
@@ -371,7 +380,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         address _newOwner,
         address _currentOwner,
         uint256 _requiredPayment
-    ) external balancedBooks onlyMarkets returns (bool) {
+    ) external override balancedBooks onlyMarkets returns (bool) {
         require(!globalPause, "Global Pause is Enabled");
         require(
             user[_newOwner].deposit >= _requiredPayment,
@@ -390,6 +399,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev tracks when the user last rented- so they cannot rent and immediately withdraw, thus bypassing minimum rental duration
     function updateLastRentalTime(address _user)
         external
+        override
         onlyMarkets
         returns (bool)
     {
@@ -399,12 +409,17 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
     /// @dev provides the sum total of a users bids accross all markets
     /// @dev doesn't clean the bid array first as the market does that already
-    function userTotalBids(address _user) external view returns (uint256) {
+    function userTotalBids(address _user)
+        external
+        view
+        override
+        returns (uint256)
+    {
         return user[_user].bidRate;
     }
 
     /// @dev adds or removes a market to the active markets array
-    function updateMarketStatus(bool _open) external onlyMarkets {
+    function updateMarketStatus(bool _open) external override onlyMarkets {
         if (_open) {
             isMarketActive[msgSender()] = true;
         } else {
@@ -412,17 +427,14 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         }
     }
 
-    function userDeposit(address _user) external view returns (uint256) {
+    function userDeposit(address _user)
+        external
+        view
+        override
+        returns (uint256)
+    {
         return user[_user].deposit;
     }
-
-    // function timeHeld(address _user, uint256 _token)
-    //     external
-    //     view
-    //     returns (uint256)
-    // {
-    //     return user[_user].deposit;
-    // }
 
     // orderbook callable
 
@@ -431,30 +443,24 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         address _newOwner,
         uint256 _oldPrice,
         uint256 _newPrice
-    ) external {
+    ) external override {
         // TODO only orderbook callable
         // Must add before subtract, to avoid underflow in the case a user is only updating their price.
         user[_newOwner].rentalRate = user[_newOwner].rentalRate.add(_newPrice);
         user[_oldOwner].rentalRate = user[_oldOwner].rentalRate.sub(_oldPrice);
     }
 
-    function updateBidRate(address _user, int256 _priceChange) external {
+    function updateBidRate(address _user, int256 _priceChange)
+        external
+        override
+    {
         // TODO only orderbook callable
         user[_user].bidRate = SafeCast.toUint256(
             int256(user[_user].bidRate).add(_priceChange)
         );
     }
 
-    // other stuff
-
-    function collectRent(address _user, uint256 _timeOfCollection) external {
-        uint256 _rentDuration = _timeOfCollection.sub(user[_user].lastRentCalc);
-        user[_user].deposit = user[_user].deposit.sub(
-            user[_user].rentalRate.mul(_rentDuration)
-        );
-        // orderbook.addTime(_user, _rentDuration);
-        user[_user].lastRentCalc = _timeOfCollection;
-    }
+    function collectRent(address _user) external {}
 
     //// Rent calc helpers
 
