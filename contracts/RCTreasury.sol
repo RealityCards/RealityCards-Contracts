@@ -11,6 +11,7 @@ import "./lib/NativeMetaTransaction.sol";
 import "./interfaces/IRCMarket.sol";
 import "./interfaces/IAlternateReceiverBridge.sol";
 import "./interfaces/IRCOrderbook.sol";
+import "./interfaces/IRCNftHubXdai.sol";
 
 /// @title Reality Cards Treasury
 /// @author Andrew Stanger & Daniel Chilvers
@@ -90,6 +91,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev high level owner who can change the factory address
     address public uberOwner;
 
+    IRCNftHubXdai public nfthub; // JS/TODO: This variable is never initialized!
+
     // EVENTS
 
     event LogDepositIncreased(
@@ -140,6 +143,10 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         _;
     }
 
+    modifier collectRentUserAndSettleCard(uint256 card) {
+        _collectRentUserAndSettleCard(card);
+        _;
+    }
 
     // ADD MARKETS
 
@@ -461,6 +468,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
 
     function _collectRentUser(address _user)
         public
+        returns (uint256 newTimeLastCollectedOnForeclosure)
     {
         uint256 rentOwedByUser = rentOwedUser(_user);
 
@@ -479,14 +487,56 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
             /*
             Users last collection time = previousCollectionTime + timeTheirDepsitLasted
             */
-            user[_user].lastRentCalc = previousCollectionTime.add(
+            newTimeLastCollectedOnForeclosure = previousCollectionTime.add(
                 timeUsersDepositLasts
             );
+            user[_user].lastRentCalc = newTimeLastCollectedOnForeclosure;
             user[_user].deposit = 0;
         } else {
             // User has enough deposit to pay rent.
             user[_user].lastRentCalc = block.timestamp;
             user[_user].deposit = user[_user].deposit.sub(rentOwedByUser);
+        }
+    }
+
+    function _increaseMarketBalance(IRCMarket market, uint256 rentCollected)
+        internal
+    {
+        // JS/TODO: implement this function
+    }
+
+    // JS/TODO: Add a concept of depth (currently only 1 user deep). Only update the current user, or loop through and update many users (in the case that card forecloses)
+    function _collectRentUserAndSettleCard(uint256 card)
+        public
+        returns (bool didTokenForeclose)
+    {
+        // JS/TODO: if the card has NO current owner, return early (no need to collect rent on - non-existant user)
+        address cardOwner = nfthub.ownerOf(card);
+        uint256 newTimeLastCollectedOnForeclosure = _collectRentUser(cardOwner);
+
+        IRCMarket market = IRCMarket(nfthub.marketTracker(card));
+
+        didTokenForeclose = newTimeLastCollectedOnForeclosure > 0;
+        if (didTokenForeclose) {
+            // JS/TODO: handle case of transferring card to next eligible user in order-book
+            //  if eligible newOwner exists {
+            //    set time token last rent collect to 'newTimeLastCollectedOnForeclosure'
+            //  else {
+            //    set time token last rent collect to 'now'
+            //  }
+        } else {
+            uint256 cardRentalRate = market.tokenPrice(card);
+            uint256 cardTimeLastCollected = market.tokenPrice(card);
+            uint256 rentDueForCard =
+                cardRentalRate
+                    .mul(block.timestamp.sub(cardTimeLastCollected))
+                    .div(1 days);
+
+            if (rentDueForCard > 0) {
+                _increaseMarketBalance(market, rentDueForCard);
+            }
+
+            market.updateCard(card, cardOwner, rentDueForCard, block.timestamp);
         }
     }
 

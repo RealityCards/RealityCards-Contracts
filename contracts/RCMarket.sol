@@ -10,6 +10,7 @@ import "./interfaces/IRealitio.sol";
 import "./interfaces/IFactory.sol";
 import "./interfaces/IRCTreasury.sol";
 import "./interfaces/IRCProxyXdai.sol";
+import "./interfaces/IRCMarket.sol";
 import "./interfaces/IRCNftHubXdai.sol";
 import "./interfaces/IRCOrderbook.sol";
 import "./lib/NativeMetaTransaction.sol";
@@ -17,7 +18,7 @@ import "./lib/NativeMetaTransaction.sol";
 /// @title Reality Cards Market
 /// @author Andrew Stanger & Daniel Chilvers
 /// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!!
-contract RCMarket is Initializable, NativeMetaTransaction {
+contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     using SafeMath for uint256;
     using SignedSafeMath for int256;
 
@@ -33,13 +34,12 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     uint256 public constant MAX_UINT256 = type(uint256).max;
     uint256 public constant MAX_UINT128 = type(uint128).max;
     uint256 public constant MIN_RENTAL_VALUE = 1 ether;
-    enum States {CLOSED, OPEN, LOCKED, WITHDRAW}
-    States public state;
+    States public override state;
     /// @dev type of event.
     enum Mode {CLASSIC, WINNER_TAKES_ALL, HOT_POTATO}
     Mode public mode;
     /// @dev so the Factory can check it's a market
-    bool public constant isMarket = true;
+    bool public constant override isMarket = true;
     /// @dev counts the total NFTs minted across all events at the time market created
     /// @dev nft tokenId = card Id + totalNftMintCount
     uint256 public totalNftMintCount;
@@ -53,7 +53,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
     // PRICE, DEPOSITS, RENT
     /// @dev in attodai (so 100xdai = 100000000000000000000)
-    mapping(uint256 => uint256) public tokenPrice;
+    mapping(uint256 => uint256) public override tokenPrice;
     /// @dev keeps track of all the rent paid by each user. So that it can be returned in case of an invalid market outcome.
     mapping(address => uint256) public rentCollectedPerUser;
     /// @dev keeps track of all the rent paid for each token, for card specific affiliate payout
@@ -101,7 +101,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @dev when the market opens
     uint32 public marketOpeningTime;
     /// @dev when the market locks
-    uint32 public marketLockingTime;
+    uint32 public override marketLockingTime;
     /// @dev when the question can be answered on realitio
     /// @dev only needed for circuit breaker
     uint32 public oracleResolutionTime;
@@ -214,7 +214,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         address _affiliateAddress,
         address[] memory _cardAffiliateAddresses,
         address _marketCreatorAddress
-    ) external initializer {
+    ) external override initializer {
         assert(_mode <= 2);
 
         // initialise MetaTransactions
@@ -332,6 +332,33 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         _;
     }
 
+    modifier onlyTreasury() {
+        require(address(treasury) == msgSender(), "only treasury");
+        _;
+    }
+
+    function updateCard(
+        uint256 card,
+        address user,
+        uint256 rentCollected,
+        uint256 collectedUntil
+    ) external override onlyTreasury() {
+        rentCollectedPerUser[user] += rentCollected;
+        rentCollectedPerToken[card] += rentCollected;
+        totalRentCollected += rentCollected;
+
+        uint256 timeHeldSinceLastCollection =
+            collectedUntil - timeLastCollected[card];
+        timeHeld[card][user] += timeHeldSinceLastCollection;
+        if (timeHeld[card][user] > longestTimeHeld[card]) {
+            longestTimeHeld[card] = timeHeld[card][user];
+            longestOwner[card] = user;
+        }
+        totalTimeHeld[card] += timeHeldSinceLastCollection;
+
+        timeLastCollected[card] = collectedUntil;
+    }
+
     // ORACLE PROXY CONTRACT CALLS
 
     /// @notice send NFT to mainnet
@@ -354,13 +381,18 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     // NFT HUB CONTRACT CALLS
 
     /// @notice gets the owner of the NFT via their Card Id
-    function ownerOf(uint256 _tokenId) public view returns (address) {
+    function ownerOf(uint256 _tokenId) public view override returns (address) {
         uint256 _actualTokenId = _tokenId.add(totalNftMintCount);
         return nfthub.ownerOf(_actualTokenId);
     }
 
     /// @notice gets tokenURI via their Card Id
-    function tokenURI(uint256 _tokenId) public view returns (string memory) {
+    function tokenURI(uint256 _tokenId)
+        public
+        view
+        override
+        returns (string memory)
+    {
         uint256 _actualTokenId = _tokenId.add(totalNftMintCount);
         return nfthub.tokenURI(_actualTokenId);
     }
@@ -386,7 +418,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         address _to,
         uint256 _tokenId,
         uint256 _price
-    ) external {
+    ) external override {
         require(msgSender() == address(orderbook));
         if (_to != _from) {
             _transferCard(_from, _to, _tokenId);
@@ -417,7 +449,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @dev the proxy checks if the market has locked already so
     /// @dev .. that the market can't be closed early by the oracle.
     /// @param _winningOutcome the index of the winning card
-    function setWinner(uint256 _winningOutcome) external {
+    function setWinner(uint256 _winningOutcome) external override {
         if (state == States.OPEN) {
             // change the locking time to allow lockMarket to lock
             marketLockingTime = SafeCast.toUint32(block.timestamp);
@@ -564,7 +596,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
 
     /// @notice collects rent for all tokens
     /// @dev cannot be external because it is called within the lockMarket function, therefore public
-    function collectRentAllCards() public {
+    function collectRentAllCards() public override {
         _checkState(States.OPEN);
         for (uint256 i = 0; i < numberOfTokens; i++) {
             _collectRent(i);
@@ -574,7 +606,10 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @notice collect rent on a set of cards
     /// @dev used by the treasury to collect rent on specifc cards
     /// @param _cards the tokenId of the cards to collect rent on
-    function collectRentSpecificCards(uint256[] calldata _cards) external {
+    function collectRentSpecificCards(uint256[] calldata _cards)
+        external
+        override
+    {
         //_checkState(States.OPEN);
         for (uint256 i; i < _cards.length; i++) {
             _collectRent(_cards[i]);
@@ -727,7 +762,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     }
 
     /// @notice stop renting all tokens
-    function exitAll() external {
+    function exitAll() external override {
         for (uint256 i = 0; i < numberOfTokens; i++) {
             _exit(i, address(0));
         }
@@ -739,6 +774,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     /// @param _user the user bids to exit (only can be used by the treasury)
     function exitSpecificCards(uint256[] calldata _cards, address _user)
         external
+        override
     {
         for (uint256 i; i < _cards.length; i++) {
             _exit(_cards[i], _user);
@@ -746,7 +782,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     }
 
     /// @notice ability to add liqudity to the pot without being able to win.
-    function sponsor() external payable {
+    function sponsor() external payable override {
         _checkNotState(States.LOCKED);
         _checkNotState(States.WITHDRAW);
         require(msg.value > 0, "Must send something");
@@ -799,7 +835,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     function _collectRent(uint256 _tokenId) internal {
         uint256 _timeOfThisCollection = block.timestamp;
         address _user = ownerOf(_tokenId);
-        uint256 _foreclosureTime = orderbook.foreclosureTime(_user); // TODO: need to get foreclosure time from treasury
+        uint256 _foreclosureTime = orderbook.foreclosureTime(_user); // JS/TODO: need to get foreclosure time from treasury
         if (marketLockingTime <= block.timestamp) {
             _timeOfThisCollection = marketLockingTime;
         }

@@ -1,0 +1,28 @@
+name: Run Contract Tests
+
+on: push
+
+jobs:
+  run-contract-tests:
+    name: Run contract tests
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checks out a copy of your repository on the ubuntu-latest machine
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup node 14
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14.16.0
+
+      - name: install node packages
+        id: install_node_packages
+        run: |
+          npm install
+
+      - name: run contract tests
+        id: run_contract_tests
+        run: |
+          npm run test

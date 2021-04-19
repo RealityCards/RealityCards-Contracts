@@ -4,6 +4,8 @@ pragma solidity ^0.7.5;
 interface IRCMarket {
     enum States {CLOSED, OPEN, LOCKED, WITHDRAW}
 
+    function tokenPrice(uint256) external view returns (uint256);
+
     function isMarket() external view returns (bool);
 
     function sponsor() external payable;
@@ -37,6 +39,8 @@ interface IRCMarket {
         external;
 
     function marketLockingTime() external returns (uint32);
+
+    function updateCard(uint256 card, address user, uint256 rentCollected, uint256 collectedUntil) external;
 
     function transferCard(
         address _oldOwner,
