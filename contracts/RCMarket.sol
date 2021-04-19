@@ -214,7 +214,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         address _affiliateAddress,
         address[] memory _cardAffiliateAddresses,
         address _marketCreatorAddress
-    ) override external initializer {
+    ) external override initializer {
         assert(_mode <= 2);
 
         // initialise MetaTransactions
@@ -337,12 +337,18 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         _;
     }
 
-    function updateCard(uint256 card, address user, uint256 rentCollected, uint256 collectedUntil) override external onlyTreasury() {
+    function updateCard(
+        uint256 card,
+        address user,
+        uint256 rentCollected,
+        uint256 collectedUntil
+    ) external override onlyTreasury() {
         rentCollectedPerUser[user] += rentCollected;
         rentCollectedPerToken[card] += rentCollected;
         totalRentCollected += rentCollected;
 
-        uint256 timeHeldSinceLastCollection = collectedUntil - timeLastCollected[card];
+        uint256 timeHeldSinceLastCollection =
+            collectedUntil - timeLastCollected[card];
         timeHeld[card][user] += timeHeldSinceLastCollection;
         if (timeHeld[card][user] > longestTimeHeld[card]) {
             longestTimeHeld[card] = timeHeld[card][user];
@@ -375,13 +381,18 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     // NFT HUB CONTRACT CALLS
 
     /// @notice gets the owner of the NFT via their Card Id
-    function ownerOf(uint256 _tokenId) override public view returns (address) {
+    function ownerOf(uint256 _tokenId) public view override returns (address) {
         uint256 _actualTokenId = _tokenId.add(totalNftMintCount);
         return nfthub.ownerOf(_actualTokenId);
     }
 
     /// @notice gets tokenURI via their Card Id
-    function tokenURI(uint256 _tokenId) override public view returns (string memory) {
+    function tokenURI(uint256 _tokenId)
+        public
+        view
+        override
+        returns (string memory)
+    {
         uint256 _actualTokenId = _tokenId.add(totalNftMintCount);
         return nfthub.tokenURI(_actualTokenId);
     }
@@ -407,7 +418,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         address _to,
         uint256 _tokenId,
         uint256 _price
-    ) override external {
+    ) external override {
         require(msgSender() == address(orderbook));
         if (_to != _from) {
             _transferCard(_from, _to, _tokenId);
@@ -438,7 +449,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @dev the proxy checks if the market has locked already so
     /// @dev .. that the market can't be closed early by the oracle.
     /// @param _winningOutcome the index of the winning card
-    function setWinner(uint256 _winningOutcome) override external {
+    function setWinner(uint256 _winningOutcome) external override {
         if (state == States.OPEN) {
             // change the locking time to allow lockMarket to lock
             marketLockingTime = SafeCast.toUint32(block.timestamp);
@@ -585,7 +596,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
     /// @notice collects rent for all tokens
     /// @dev cannot be external because it is called within the lockMarket function, therefore public
-    function collectRentAllCards() override public {
+    function collectRentAllCards() public override {
         _checkState(States.OPEN);
         for (uint256 i = 0; i < numberOfTokens; i++) {
             _collectRent(i);
@@ -595,7 +606,10 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @notice collect rent on a set of cards
     /// @dev used by the treasury to collect rent on specifc cards
     /// @param _cards the tokenId of the cards to collect rent on
-    function collectRentSpecificCards(uint256[] calldata _cards) override external {
+    function collectRentSpecificCards(uint256[] calldata _cards)
+        external
+        override
+    {
         //_checkState(States.OPEN);
         for (uint256 i; i < _cards.length; i++) {
             _collectRent(_cards[i]);
@@ -748,7 +762,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     }
 
     /// @notice stop renting all tokens
-    function exitAll() override external {
+    function exitAll() external override {
         for (uint256 i = 0; i < numberOfTokens; i++) {
             _exit(i, address(0));
         }
@@ -759,8 +773,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @param _cards the array of tokenIds that are to be exited
     /// @param _user the user bids to exit (only can be used by the treasury)
     function exitSpecificCards(uint256[] calldata _cards, address _user)
-        override
         external
+        override
     {
         for (uint256 i; i < _cards.length; i++) {
             _exit(_cards[i], _user);
@@ -768,7 +782,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     }
 
     /// @notice ability to add liqudity to the pot without being able to win.
-    function sponsor() override external payable {
+    function sponsor() external payable override {
         _checkNotState(States.LOCKED);
         _checkNotState(States.WITHDRAW);
         require(msg.value > 0, "Must send something");
