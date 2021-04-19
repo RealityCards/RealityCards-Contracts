@@ -148,7 +148,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         _;
     }
 
-
     // ADD MARKETS
 
     /// @dev so only markets can move funds from deposits to marketPots and vice versa
@@ -500,16 +499,20 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         }
     }
 
-    function _increaseMarketBalance(IRCMarket market, uint256 rentCollected) internal {
+    function _increaseMarketBalance(IRCMarket market, uint256 rentCollected)
+        internal
+    {
         // JS/TODO: implement this function
     }
 
     // JS/TODO: Add a concept of depth (currently only 1 user deep). Only update the current user, or loop through and update many users (in the case that card forecloses)
-    function _collectRentUserAndSettleCard(uint256 card) public returns(bool didTokenForeclose) {
+    function _collectRentUserAndSettleCard(uint256 card)
+        public
+        returns (bool didTokenForeclose)
+    {
         // JS/TODO: if the card has NO current owner, return early (no need to collect rent on - non-existant user)
         address cardOwner = nfthub.ownerOf(card);
-        uint256 newTimeLastCollectedOnForeclosure =
-            _collectRentUser(cardOwner);
+        uint256 newTimeLastCollectedOnForeclosure = _collectRentUser(cardOwner);
 
         IRCMarket market = IRCMarket(nfthub.marketTracker(card));
 
@@ -524,9 +527,10 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         } else {
             uint256 cardRentalRate = market.tokenPrice(card);
             uint256 cardTimeLastCollected = market.tokenPrice(card);
-            uint256 rentDueForCard = cardRentalRate
-                .mul(block.timestamp.sub(cardTimeLastCollected))
-                .div(1 days);
+            uint256 rentDueForCard =
+                cardRentalRate
+                    .mul(block.timestamp.sub(cardTimeLastCollected))
+                    .div(1 days);
 
             if (rentDueForCard > 0) {
                 _increaseMarketBalance(market, rentDueForCard);
