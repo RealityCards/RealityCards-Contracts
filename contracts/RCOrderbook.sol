@@ -64,6 +64,11 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         treasury = IRCTreasury(treasuryAddress);
     }
 
+    // TODO make onlyOwner, or governance function
+    function setFactoryAddress(address _newFactory) external {
+        factoryAddress = _newFactory;
+    }
+
     function addMarket(
         address _market,
         uint256 _tokenCount,

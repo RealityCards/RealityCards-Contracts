@@ -38,7 +38,7 @@ const delay = duration => new Promise(resolve => setTimeout(resolve, duration));
 contract('TestOwnership', (accounts) => {
 
   var realitycards;
-  var tokenURIs = ['x','x','x','uri','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x']; // 20 tokens
+  var tokenURIs = ['x', 'x', 'x', 'uri', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x']; // 20 tokens
   var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
   var maxuint256 = 4294967295;
 
@@ -61,9 +61,9 @@ contract('TestOwnership', (accounts) => {
     var latestTime = await time.latest();
     var oneYear = new BN('31104000');
     var oneYearInTheFuture = oneYear.add(latestTime);
-    var marketLockingTime = oneYearInTheFuture; 
-    var oracleResolutionTime = oneYearInTheFuture; 
-    var timestamps = [0,marketLockingTime,oracleResolutionTime];
+    var marketLockingTime = oneYearInTheFuture;
+    var oracleResolutionTime = oneYearInTheFuture;
+    var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     // main contracts
@@ -97,18 +97,18 @@ contract('TestOwnership', (accounts) => {
     await bridge.setProxyMainnetAddress(mainnetproxy.address);
     await nfthubmainnet.setProxyMainnetAddress(mainnetproxy.address);
     // tell the treasury about the ARB
-	await treasury.setAlternateReceiverAddress(alternateReceiverBridge.address);
-	// market creation
-	await rcfactory.createMarket(
-        0,
-        '0x0',
-        timestamps,
-        tokenURIs,
-        artistAddress,
-        affiliateAddress,
-        cardRecipients,
-        question,
-      );
+    await treasury.setAlternateReceiverAddress(alternateReceiverBridge.address);
+    // market creation
+    await rcfactory.createMarket(
+      0,
+      '0x0',
+      timestamps,
+      tokenURIs,
+      artistAddress,
+      affiliateAddress,
+      cardRecipients,
+      question,
+    );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards = await RCMarket.at(marketAddress);
   });
@@ -117,22 +117,22 @@ contract('TestOwnership', (accounts) => {
     var latestTime = await time.latest();
     var oneYear = new BN('31104000');
     var oneYearInTheFuture = oneYear.add(latestTime);
-    var marketLockingTime = oneYearInTheFuture; 
+    var marketLockingTime = oneYearInTheFuture;
     var oracleResolutionTime = oneYearInTheFuture;
-    var timestamps = [0,marketLockingTime,oracleResolutionTime];
+    var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     var slug = 'y';
     await rcfactory.createMarket(
-        mode,
-        '0x0',
-        timestamps,
-        tokenURIs,
-        artistAddress,
-        affiliateAddress,
-        cardRecipients,
-        question,
-      );
+      mode,
+      '0x0',
+      timestamps,
+      tokenURIs,
+      artistAddress,
+      affiliateAddress,
+      cardRecipients,
+      question,
+    );
     var marketAddress = await rcfactory.getMostRecentMarket.call(mode);
     realitycards2 = await RCMarket.at(marketAddress);
     return realitycards2;
@@ -142,12 +142,12 @@ contract('TestOwnership', (accounts) => {
     var latestTime = await time.latest();
     var oneYear = new BN('31104000');
     var oneYearInTheFuture = oneYear.add(latestTime);
-    var marketLockingTime = oneYearInTheFuture; 
+    var marketLockingTime = oneYearInTheFuture;
     var oracleResolutionTime = oneYearInTheFuture;
-    var timestamps = [0,marketLockingTime,oracleResolutionTime];
+    var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = user8;
     var affiliateAddress = user7;
-    var cardRecipients = [user5,user6,user7,user8,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0,user0];
+    var cardRecipients = [user5, user6, user7, user8, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0];
     await rcfactory.changeCardAffiliateApproval(user5);
     await rcfactory.changeCardAffiliateApproval(user6);
     await rcfactory.changeCardAffiliateApproval(user7);
@@ -157,15 +157,15 @@ contract('TestOwnership', (accounts) => {
     await rcfactory.changeArtistApproval(user8);
     var slug = 'y';
     await rcfactory.createMarket(
-        0,
-        '0x0',
-        timestamps,
-        tokenURIs,
-        artistAddress,
-        affiliateAddress,
-        cardRecipients,
-        question,
-      );
+      0,
+      '0x0',
+      timestamps,
+      tokenURIs,
+      artistAddress,
+      affiliateAddress,
+      cardRecipients,
+      question,
+    );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
     return realitycards2;
@@ -173,60 +173,60 @@ contract('TestOwnership', (accounts) => {
 
   async function depositDai(amount, user) {
     amount = web3.utils.toWei(amount.toString(), 'ether');
-    await treasury.deposit(user,{ from: user, value: amount });
+    await treasury.deposit(user, { from: user, value: amount });
   }
 
   async function newRental(price, outcome, user) {
     price = web3.utils.toWei(price.toString(), 'ether');
-    await realitycards.newRental(price,0,zeroAddress,outcome,{ from: user});
+    await realitycards.newRental(price, 0, zeroAddress, outcome, { from: user });
   }
 
   async function newRentalWithStartingPosition(price, outcome, position, user) {
     price = web3.utils.toWei(price.toString(), 'ether');
-    await realitycards.newRental(price,0,position,outcome,{ from: user});
+    await realitycards.newRental(price, 0, position, outcome, { from: user });
   }
 
   async function newRentalWithDeposit(price, outcome, user, dai) {
     price = web3.utils.toWei(price.toString(), 'ether');
     dai = web3.utils.toWei(dai.toString(), 'ether');
-    await realitycards.newRental(price,0,zeroAddress,outcome,{ from: user, value: dai});
+    await realitycards.newRental(price, 0, zeroAddress, outcome, { from: user, value: dai });
   }
 
   async function newRentalCustomContract(contract, price, outcome, user) {
     price = web3.utils.toWei(price.toString(), 'ether');
-    await contract.newRental(price,maxuint256.toString(),zeroAddress,outcome,{ from: user});
+    await contract.newRental(price, maxuint256.toString(), zeroAddress, outcome, { from: user });
   }
 
   async function newRentalWithDepositCustomContract(contract, price, outcome, user, dai) {
     price = web3.utils.toWei(price.toString(), 'ether');
     dai = web3.utils.toWei(dai.toString(), 'ether');
-    await contract.newRental(price,maxuint256.toString(),zeroAddress,outcome,{ from: user, value: dai});
+    await contract.newRental(price, maxuint256.toString(), zeroAddress, outcome, { from: user, value: dai });
   }
 
   async function newRentalCustomTimeLimit(price, timelimit, outcome, user) {
     price = web3.utils.toWei(price.toString(), 'ether');
-    await realitycards.newRental(price,(timelimit*3600*24).toString(),zeroAddress,outcome,{ from: user});
-  }    
+    await realitycards.newRental(price, (timelimit * 3600 * 24).toString(), zeroAddress, outcome, { from: user });
+  }
 
   async function userRemainingDeposit(outcome, userx) {
-    await realitycards.userRemainingDeposit.call(outcome, {from: userx} );
+    await realitycards.userRemainingDeposit.call(outcome, { from: userx });
   }
 
   async function withdraw(userx) {
-    await realitycards.withdraw({from:userx} );
+    await realitycards.withdraw({ from: userx });
   }
 
-  async function withdrawDeposit(amount,userx) {
+  async function withdrawDeposit(amount, userx) {
     amount = web3.utils.toWei(amount.toString(), 'ether');
-    await treasury.withdrawDeposit(amount,true,{ from: userx});
+    await treasury.withdrawDeposit(amount, true, { from: userx });
   }
 
-  it('check that ownership can not be changed unless correct owner, treasury and factory', async() => {
-    await expectRevert(rcfactory.transferOwnership(user1,{from: user1}), "caller is not the owner");
-    await expectRevert(treasury.transferOwnership(user1,{from: user1}), "caller is not the owner");
+  it('check that ownership can not be changed unless correct owner, treasury and factory', async () => {
+    await expectRevert(rcfactory.transferOwnership(user1, { from: user1 }), "caller is not the owner");
+    await expectRevert(treasury.transferOwnership(user1, { from: user1 }), "caller is not the owner");
     // check that works fine if owner
-    await rcfactory.transferOwnership(user1,{from: user0});
-    await treasury.transferOwnership(user1,{from: user0});
+    await rcfactory.transferOwnership(user1, { from: user0 });
+    await treasury.transferOwnership(user1, { from: user0 });
     // check that ownership changed
     var newOwner = await rcfactory.owner.call();
     assert.equal(newOwner, user1);
@@ -234,12 +234,12 @@ contract('TestOwnership', (accounts) => {
     assert.equal(newOwner, user1);
   });
 
-    it('check renounce ownership works, treasury and factory', async() => {
-    await expectRevert(rcfactory.renounceOwnership({from: user1}), "caller is not the owner");
-    await expectRevert(treasury.renounceOwnership({from: user1}), "caller is not the owner");
+  it('check renounce ownership works, treasury and factory', async () => {
+    await expectRevert(rcfactory.renounceOwnership({ from: user1 }), "caller is not the owner");
+    await expectRevert(treasury.renounceOwnership({ from: user1 }), "caller is not the owner");
     // check that works fine if owner
-    await rcfactory.renounceOwnership({from: user0});
-    await treasury.renounceOwnership({from: user0});
+    await rcfactory.renounceOwnership({ from: user0 });
+    await treasury.renounceOwnership({ from: user0 });
     // check that ownership changed
     var newOwner = await rcfactory.owner.call();
     assert.equal(newOwner, 0);
@@ -248,58 +248,58 @@ contract('TestOwnership', (accounts) => {
   });
 
   it('check onlyOwner is on relevant Treasury functions', async () => {
-    await expectRevert(treasury.setMaxContractBalance(7*24, {from: user1}), "caller is not the owner");
-    await expectRevert(treasury.changeGlobalPause({from: user1}), "caller is not the owner");
-    await expectRevert(treasury.changePauseMarket(realitycards.address,{from: user1}), "caller is not the owner");
-});
+    await expectRevert(treasury.setMaxContractBalance(7 * 24, { from: user1 }), "caller is not the owner");
+    await expectRevert(treasury.changeGlobalPause({ from: user1 }), "caller is not the owner");
+    await expectRevert(treasury.changePauseMarket(realitycards.address, { from: user1 }), "caller is not the owner");
+  });
 
-it('check onlyOwner is on relevant Factory functions', async () => {
-    await expectRevert(rcfactory.setPotDistribution(0,0,0,0,0, {from: user1}), "caller is not the owner");
-    await expectRevert(rcfactory.setHotPotatoPayment(7*24, {from: user1}), "caller is not the owner");
-    await expectRevert(treasury.setMinRental(7*24, {from: user1}), "caller is not the owner");
-    await expectRevert(rcfactory.changeGovernorApproval(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(rcfactory.changeMarketCreationGovernorsOnly({from: user1}), "caller is not the owner");
-    await expectRevert(rcfactory.setSponsorshipRequired(7*24, {from: user1}), "caller is not the owner");
-    await expectRevert(rcfactory.changeMarketApproval(user0, {from: user1}), "Not approved");
-    await expectRevert(rcfactory.setminimumPriceIncreasePercent(4, {from: user1}), "caller is not the owner");
-    await expectRevert(rcfactory.changeTrapCardsIfUnapproved({from: user1}), "caller is not the owner");
-    await expectRevert(rcfactory.setAdvancedWarning(23,{from: user1}), "caller is not the owner");
-    await expectRevert(rcfactory.setMaximumDuration(23,{from: user1}), "caller is not the owner");
-});
+  it('check onlyOwner is on relevant Factory functions', async () => {
+    await expectRevert(rcfactory.setPotDistribution(0, 0, 0, 0, 0, { from: user1 }), "caller is not the owner");
+    await expectRevert(rcfactory.setHotPotatoPayment(7 * 24, { from: user1 }), "caller is not the owner");
+    await expectRevert(treasury.setMinRental(7 * 24, { from: user1 }), "caller is not the owner");
+    await expectRevert(rcfactory.changeGovernorApproval(user0, { from: user1 }), "caller is not the owner");
+    await expectRevert(rcfactory.changeMarketCreationGovernorsOnly({ from: user1 }), "caller is not the owner");
+    await expectRevert(rcfactory.setSponsorshipRequired(7 * 24, { from: user1 }), "caller is not the owner");
+    await expectRevert(rcfactory.changeMarketApproval(user0, { from: user1 }), "Not approved");
+    await expectRevert(rcfactory.setminimumPriceIncreasePercent(4, { from: user1 }), "caller is not the owner");
+    await expectRevert(rcfactory.changeTrapCardsIfUnapproved({ from: user1 }), "caller is not the owner");
+    await expectRevert(rcfactory.setAdvancedWarning(23, { from: user1 }), "caller is not the owner");
+    await expectRevert(rcfactory.setMaximumDuration(23, { from: user1 }), "caller is not the owner");
+  });
 
-it('check onlyOwner is on relevant xdai proxy functions', async () => {
-    await expectRevert(xdaiproxy.setAmicableResolution(user0,3, {from: user1}), "caller is not the owner");
-    await expectRevert(xdaiproxy.withdrawFloat(3, {from: user1}), "caller is not the owner");
-    await expectRevert(xdaiproxy.setValidator(user0, true, {from: user1}), "caller is not the owner");
-    await expectRevert(xdaiproxy.setProxyMainnetAddress(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(xdaiproxy.setBridgeXdaiAddress(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(xdaiproxy.setFactoryAddress(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(xdaiproxy.setTreasuryAddress(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(xdaiproxy.setRealitioAddress(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(xdaiproxy.setArbitrator(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(xdaiproxy.setTimeout(1234, {from: user1}), "caller is not the owner");
-    await expectRevert(xdaiproxy.postQuestionToOracle(user0,"x",0, {from: user1}), "Not factory");
-});
+  it('check onlyOwner is on relevant xdai proxy functions', async () => {
+    await expectRevert(xdaiproxy.setAmicableResolution(user0, 3, { from: user1 }), "caller is not the owner");
+    await expectRevert(xdaiproxy.withdrawFloat(3, { from: user1 }), "caller is not the owner");
+    await expectRevert(xdaiproxy.setValidator(user0, true, { from: user1 }), "caller is not the owner");
+    await expectRevert(xdaiproxy.setProxyMainnetAddress(user0, { from: user1 }), "caller is not the owner");
+    await expectRevert(xdaiproxy.setBridgeXdaiAddress(user0, { from: user1 }), "caller is not the owner");
+    await expectRevert(xdaiproxy.setFactoryAddress(user0, { from: user1 }), "caller is not the owner");
+    await expectRevert(xdaiproxy.setTreasuryAddress(user0, { from: user1 }), "caller is not the owner");
+    await expectRevert(xdaiproxy.setRealitioAddress(user0, { from: user1 }), "caller is not the owner");
+    await expectRevert(xdaiproxy.setArbitrator(user0, { from: user1 }), "caller is not the owner");
+    await expectRevert(xdaiproxy.setTimeout(1234, { from: user1 }), "caller is not the owner");
+    await expectRevert(xdaiproxy.postQuestionToOracle(user0, "x", 0, { from: user1 }), "Not factory");
+  });
 
 
-it('check onlyOwner is on relevant mainnet proxy functions', async () => {
-    await expectRevert(mainnetproxy.setProxyXdaiAddress(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(mainnetproxy.setBridgeMainnetAddress(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(mainnetproxy.setNftHubAddress(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(mainnetproxy.setAlternateReceiverAddress(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(mainnetproxy.setDaiAddress(user0, {from: user1}), "caller is not the owner");
-    await expectRevert(mainnetproxy.upgradeCardAdmin(3,"x",user4, {from: user1}), "caller is not the owner");
-    await expectRevert(mainnetproxy.changeDepositsEnabled({from: user1}), "caller is not the owner");
-});
+  it('check onlyOwner is on relevant mainnet proxy functions', async () => {
+    await expectRevert(mainnetproxy.setProxyXdaiAddress(user0, { from: user1 }), "caller is not the owner");
+    await expectRevert(mainnetproxy.setBridgeMainnetAddress(user0, { from: user1 }), "caller is not the owner");
+    await expectRevert(mainnetproxy.setNftHubAddress(user0, { from: user1 }), "caller is not the owner");
+    await expectRevert(mainnetproxy.setAlternateReceiverAddress(user0, { from: user1 }), "caller is not the owner");
+    await expectRevert(mainnetproxy.setDaiAddress(user0, { from: user1 }), "caller is not the owner");
+    await expectRevert(mainnetproxy.upgradeCardAdmin(3, "x", user4, { from: user1 }), "caller is not the owner");
+    await expectRevert(mainnetproxy.changeDepositsEnabled({ from: user1 }), "caller is not the owner");
+  });
 
-it('test uberOwner Treasury', async () => {
+  it('test uberOwner Treasury', async () => {
     // market creation shit
     var latestTime = await time.latest();
     var oneYear = new BN('31104000');
     var oneYearInTheFuture = oneYear.add(latestTime);
-    var marketLockingTime = oneYearInTheFuture; 
+    var marketLockingTime = oneYearInTheFuture;
     var oracleResolutionTime = oneYearInTheFuture;
-    var timestamps = [0,marketLockingTime,oracleResolutionTime];
+    var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     var slug = 'xr';
@@ -316,39 +316,50 @@ it('test uberOwner Treasury', async () => {
     await rcfactory2.changeCardAffiliateApproval(user7);
     await rcfactory2.changeCardAffiliateApproval(user8);
     await rcfactory2.changeCardAffiliateApproval(user0);
-    await treasury.setFactoryAddress(rcfactory2.address,{from: user5});
+    await treasury.setFactoryAddress(rcfactory2.address, { from: user5 });
     await xdaiproxy.setFactoryAddress(rcfactory2.address);
     await nfthubxdai.setFactoryAddress(rcfactory2.address);
     await rcfactory2.setReferenceContractAddress(rcreference.address);
     await rcfactory2.setProxyXdaiAddress(xdaiproxy.address);
     // create market with old factory, should fail
-    await expectRevert(rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question), "Not factory");
+    await expectRevert(rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question), "Not factory");
     // create market with new factory and do some standard stuff
     // nfthubxdai = await NftHubXDai.new(rcfactory.address);
+    await rcfactory2.setOrderbookAddress(rcorderbook.address);
+    await rcorderbook.setFactoryAddress(rcfactory2.address);
     await rcfactory2.setNftHubAddress(nfthubxdai.address, 100);
-    await rcfactory2.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question);
+    await rcfactory2.createMarket(
+      0,
+      '0x0',
+      timestamps,
+      tokenURIs,
+      artistAddress,
+      affiliateAddress,
+      cardRecipients,
+      question,
+    );
     var marketAddress = await rcfactory2.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
-    await depositDai(144,user3);
-    await newRentalCustomContract(realitycards2,144,4,user3);
+    await depositDai(144, user3);
+    await newRentalCustomContract(realitycards2, 144, 4, user3);
     var price = await realitycards2.tokenPrice.call(4);
     assert.equal(price, web3.utils.toWei('144', 'ether'));
     // check that the original market still works
-    await newRental(69,4,user3);
+    await newRental(69, 4, user3);
     var price = await realitycards.tokenPrice.call(4);
     assert.equal(price, web3.utils.toWei('69', 'ether'));
     await time.increase(time.duration.minutes(10));
-    await withdrawDeposit(1000,user3); 
-});
+    await withdrawDeposit(1000, user3);
+  });
 
-it('test uberOwner factory', async () => {
+  it('test uberOwner factory', async () => {
     // market creation shit
     var latestTime = await time.latest();
     var oneYear = new BN('31104000');
     var oneYearInTheFuture = oneYear.add(latestTime);
-    var marketLockingTime = oneYearInTheFuture; 
+    var marketLockingTime = oneYearInTheFuture;
     var oracleResolutionTime = oneYearInTheFuture;
-    var timestamps = [0,marketLockingTime,oracleResolutionTime];
+    var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     var cardRecipients = ['0x0000000000000000000000000000000000000000'];
@@ -359,26 +370,26 @@ it('test uberOwner factory', async () => {
     await expectRevert(rcfactory.setReferenceContractAddress(user0), "Verboten");
     // deploy new reference, update address
     rcreference2 = await RCMarket2.new();
-    await rcfactory.setReferenceContractAddress(rcreference2.address, {from: user5});
+    await rcfactory.setReferenceContractAddress(rcreference2.address, { from: user5 });
     // check version has increased 
     var version = await rcfactory.referenceContractVersion.call();
-    assert.equal(version,2);
+    assert.equal(version, 2);
     // deploy new market from new reference contract, check that price is doubling
     var slug = 'xq';
-    await rcfactory.createMarket(0,'0x0',timestamps,tokenURIs,artistAddress,affiliateAddress,cardRecipients,question);
+    await rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question);
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
-    await depositDai(144,user3);
-    await newRentalCustomContract(realitycards2,144,4,user3);
+    await depositDai(144, user3);
+    await newRentalCustomContract(realitycards2, 144, 4, user3);
     var price = await realitycards2.tokenPrice.call(4);
     assert.equal(price, web3.utils.toWei('288', 'ether'));
     // check that the original market still works
-    await newRental(69,4,user3);
+    await newRental(69, 4, user3);
     var price = await realitycards.tokenPrice.call(4);
     assert.equal(price, web3.utils.toWei('69', 'ether'));
     await time.increase(time.duration.minutes(10));
-    await withdrawDeposit(1000,user3); 
-});
+    await withdrawDeposit(1000, user3);
+  });
 
 
 
