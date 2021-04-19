@@ -352,7 +352,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
                 ] = _index;
             }
         }
-
         //TODO ask the market to emit LogRemoveFromOrderbook(_tempPrev, _tokenId);
     }
 
@@ -485,7 +484,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
             _market = user[_user].bids[i].market;
             _token[0] = user[_user].bids[i].token;
             if (ownerOf[_market][_token[0]] == _user) {
-                console.log("collecting rent on ", _token[0]);
+                // console.log("collecting rent on ", _token[0]);
                 IRCMarket _rcmarket = IRCMarket(_market);
                 _rcmarket.collectRentSpecificCards(_token);
             }
@@ -496,7 +495,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         address _user,
         address _market,
         uint256 _token
-    ) internal view returns (bool) {
+    ) public view override returns (bool) {
         if (user[_user].bids.length != 0) {
             //some bids exist
             if (index[_user][_market][_token] != 0) {

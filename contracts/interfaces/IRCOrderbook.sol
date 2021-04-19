@@ -35,6 +35,12 @@ interface IRCOrderbook {
         external
         returns (uint256);
 
+    function bidExists(
+        address _user,
+        address _market,
+        uint256 _token
+    ) external view returns (bool);
+
     function setTimeHeldlimit(
         address _user,
         uint256 _token,

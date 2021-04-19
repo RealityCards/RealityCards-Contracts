@@ -185,10 +185,6 @@ contract("TestTreasury", (accounts) => {
         await expectRevert(treasury.sponsor(), "Not authorised");
         await expectRevert(treasury.processHarbergerPayment(user0, user0, 0), "Not authorised");
         await expectRevert(treasury.updateLastRentalTime(user0), "Not authorised");
-        await expectRevert(treasury.updateUserBids(user0, 0, 0, true), "Not authorised");
-        await expectRevert(treasury.updateOwnership(user0, user1, 0, 0, 0), "Not authorised");
-        await expectRevert(treasury.updateUserTotalBids(user0, 0), "Not authorised");
-        await expectRevert(treasury.updateUserRentalRate(user0, 0), "Not authorised");
         await expectRevert(treasury.updateMarketStatus(true), "Not authorised");
     });
 
@@ -380,7 +376,7 @@ contract("TestTreasury", (accounts) => {
         await treasury.changeGlobalPause();
         // and it works again
         await depositDai(100, user2);
-        await newRental({ from: user2 });
+        await newRental({ outcome: 1, from: user2 });
     });
 
     it("check cant rent if market paused", async () => {
@@ -410,7 +406,10 @@ contract("TestTreasury", (accounts) => {
         await depositDai(100, user6);
     });
 
-    it("test updateUserBids", async () => {
+    it.skip("test updateUserBids", async () => {
+        // in the final assertion it is assumed many foreclosures will be processed
+        // this needs amending before the test is re-introduced
+
         // setup
         await createMarket();
         await depositDai(10, user0);
@@ -461,7 +460,7 @@ contract("TestTreasury", (accounts) => {
         assert.equal(totalRentals.toString(), ether("4").toString());
         // increase rent to 1439 (max 1440) then rent again, check it fails
         await newRental({ price: 1435 });
-        await expectRevert(newRental(5, 3, user0), " Insufficient deposit");
+        await expectRevert(newRental({ price: 5, outcome: 3 }), " Insufficient deposit");
         // someone bids even higher, I increase my bid above what I can afford, we all run out of deposit, should not return to me
         await newRental({ price: 2000, from: user1 });
         await time.increase(time.duration.weeks(1));
@@ -556,36 +555,5 @@ contract("TestTreasury", (accounts) => {
         assert.equal((await treasury.totalMarketPots()).toString(), '0');
         assert.equal((await treasury.totalDeposits()).toString(), ether('200').toString());
 
-    });
-
-    it("check cleanUserBidArray", async () => {
-        // lets use a quick market with many cards
-        await createMarket({ closeTime: time.duration.days(1), resolveTime: time.duration.days(1) });
-        await depositDai(100, user0);
-        await depositDai(100, user1);
-
-        // make some bids
-        for (i = 0; i < 4; i++) {
-            await newRental({ from: user0, price: 1, market: market[0], outcome: i })
-            await newRental({ from: user1, price: 2, market: market[0], outcome: i })
-        }
-        // make some more in another market
-        for (i = 0; i < 4; i++) {
-            await newRental({ from: user0, price: 1, market: market[1], outcome: i })
-            await newRental({ from: user1, price: 2, market: market[1], outcome: i })
-        }
-        await time.increase(time.duration.days(2));
-        await market[1].lockMarket();
-        // check the bids were made before we clean them
-        assert.equal((await treasury.userTotalBids(user0)).toString(), ether('8').toString());
-        assert.equal((await treasury.userTotalBids(user1)).toString(), ether('16').toString());
-        // clean one user and check both
-        await treasury.cleanUserBids(user0, market[1].address);
-        assert.equal((await treasury.userTotalBids(user0)).toString(), ether('4').toString());
-        assert.equal((await treasury.userTotalBids(user1)).toString(), ether('16').toString());
-        // clean the other user, only 1 markets bids should be left
-        await treasury.cleanUserBids(user1, market[1].address);
-        assert.equal((await treasury.userTotalBids(user0)).toString(), ether('4').toString());
-        assert.equal((await treasury.userTotalBids(user1)).toString(), ether('8').toString());
     });
 });

@@ -35,12 +35,16 @@ interface IRCMarket {
 
     function exitAll() external;
 
-    function exitSpecificCards(uint256[] calldata _cards, address _user)
-        external;
+    function exit(uint256) external;
 
     function marketLockingTime() external returns (uint32);
 
-    function updateCard(uint256 card, address user, uint256 rentCollected, uint256 collectedUntil) external;
+    function updateCard(
+        uint256 card,
+        address user,
+        uint256 rentCollected,
+        uint256 collectedUntil
+    ) external;
 
     function transferCard(
         address _oldOwner,

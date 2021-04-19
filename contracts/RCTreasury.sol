@@ -316,6 +316,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
             user[_msgSender].bidRate.div(minRentalDayDivisor) >
             user[_msgSender].deposit
         ) {
+            user[_msgSender].bidRate = 0; //TODO, maybe we do this in the orderbook instead as bids are removed
             orderbook.removeUserFromOrderbook(_msgSender);
         }
     }

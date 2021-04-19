@@ -693,9 +693,10 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
         // check sufficient deposit
         uint256 _userTotalBidRate =
-            treasury.userTotalBids(_user).sub(
-                orderbook.getBidValue(_user, _tokenId)
-            );
+            treasury
+                .userTotalBids(_user)
+                .sub(orderbook.getBidValue(_user, _tokenId))
+                .add(_newPrice);
         require(
             treasury.userDeposit(_user) >=
                 _userTotalBidRate.div(minRentalDayDivisor),
@@ -754,31 +755,39 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     }
 
     /// @notice stop renting a token and/or remove from orderbook
-    /// @dev public because called by exitAll() and exitSpecifcCards()
+    /// @dev public because called by exitAll()
     /// @dev doesn't need to be current owner so user can prevent ownership returning to them
     /// @dev does not apply minimum rental duration, because it returns ownership to the next user
     /// @param _tokenId The token index to exit
-    function exit(uint256 _tokenId) external {
-        _exit(_tokenId, address(0));
+    function exit(uint256 _tokenId) public override {
+        _checkState(States.OPEN);
+        address _msgSender = msgSender();
+
+        // if current owner, collect rent, revert if necessary
+        if (ownerOf(_tokenId) == _msgSender) {
+            // collectRent first
+            _collectRent(_tokenId);
+
+            // if still the current owner after collecting rent, revert to underbidder
+            if (ownerOf(_tokenId) == _msgSender) {
+                orderbook.findNewOwner(_tokenId);
+                // if not current owner no further action necessary because they will have been deleted from the orderbook
+            } else {
+                //assert(orderbook[_tokenId][_msgSender].price == 0);
+            }
+            // if not owner, just delete from orderbook
+        } else {
+            _collectRent(_tokenId);
+            orderbook.removeBidFromOrderbook(_msgSender, _tokenId);
+            emit LogRemoveFromOrderbook(_msgSender, _tokenId);
+        }
+        emit LogExit(_msgSender, _tokenId);
     }
 
     /// @notice stop renting all tokens
     function exitAll() external override {
         for (uint256 i = 0; i < numberOfTokens; i++) {
-            _exit(i, address(0));
-        }
-    }
-
-    /// @notice stop renting a set of cards
-    /// @dev can be called by anyone but unless it's the treasury the address given will be ignored
-    /// @param _cards the array of tokenIds that are to be exited
-    /// @param _user the user bids to exit (only can be used by the treasury)
-    function exitSpecificCards(uint256[] calldata _cards, address _user)
-        external
-        override
-    {
-        for (uint256 i; i < _cards.length; i++) {
-            _exit(_cards[i], _user);
+            exit(i);
         }
     }
 
@@ -803,32 +812,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     }
 
     // CORE FUNCTIONS- INTERNAL
-
-    /// @dev cancels a bid on a given _tokenId
-    /// @dev the Treasury can call this on users when they withdraw their deposits
-    function _exit(uint256 _tokenId, address _user) internal {
-        _checkState(States.OPEN);
-        address _msgSender = msgSender();
-        // if current owner, collect rent, revert if necessary
-        if (ownerOf(_tokenId) == _msgSender) {
-            // collectRent first
-            _collectRent(_tokenId);
-
-            // if still the current owner after collecting rent, revert to underbidder
-            if (ownerOf(_tokenId) == _msgSender) {
-                orderbook.findNewOwner(_tokenId);
-                // if not current owner no further action necessary because they will have been deleted from the orderbook
-            } else {
-                //assert(orderbook[_tokenId][_msgSender].price == 0);
-            }
-            // if not owner, just delete from orderbook
-        } else {
-            _collectRent(_tokenId);
-            orderbook.removeBidFromOrderbook(_user, _tokenId);
-            emit LogRemoveFromOrderbook(_msgSender, _tokenId);
-        }
-        emit LogExit(_msgSender, _tokenId);
-    }
 
     /// @notice collects rent for a specific token
     /// @dev also calculates and updates how long the current user has held the token for
@@ -899,7 +882,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                     );
                     _rentOwed = _rentOwedLimit; // take up to the max
                 }
-
                 orderbook.removeBidFromOrderbook(_user, _tokenId);
                 // _revertToUnderbidder(_tokenId);
             }
@@ -953,8 +935,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         // ... when the first owner buys it, because this function is run before ownership changes upon calling newRental
         timeLastCollected[_tokenId] = _timeOfThisCollection;
         if (_timeOfThisCollection == _foreclosureTime) {
-            // console.log(" collecting rent again ");
-            _collectRent(_tokenId);
+            _collectRent(_tokenId); // a user foreclosed, calcualte for the next user, unbounded loop alert
         }
     }
 
