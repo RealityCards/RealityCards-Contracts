@@ -7,6 +7,8 @@
     "test": "test"
   },
   "scripts": {
+    "test": "hardhat test",
+    "compile": "hardhat compile",
     "prettier": "prettier --write contracts/RealityCards.sol",
     "update-graph-abis": "npx buidler compile && cp ./artifactsTruffle/RCFactory.json ../RealityCards-Client/subgraph/abis/RealityCardsFactory.json && cp ./artifactsTruffle/RCTreasury.json ../RealityCards-Client/subgraph/abis/RealityCardsTreasury.json && cp ./artifactsTruffle/RCMarket.json ../RealityCards-Client/subgraph/abis/RealityCardsMarket.json",
     "coverage": "hardhat coverage"
