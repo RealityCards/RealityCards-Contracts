@@ -799,7 +799,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
     function _collectRent(uint256 _tokenId) internal {
         uint256 _timeOfThisCollection = block.timestamp;
         address _user = ownerOf(_tokenId);
-        uint256 _foreclosureTime = orderbook.foreclosureTime(_user);
+        uint256 _foreclosureTime = orderbook.foreclosureTime(_user); // TODO: need to get foreclosure time from treasury
         if (marketLockingTime <= block.timestamp) {
             _timeOfThisCollection = marketLockingTime;
         }
