@@ -10,9 +10,12 @@ import "hardhat/console.sol";
 import "./lib/NativeMetaTransaction.sol";
 import "./interfaces/IRCTreasury.sol";
 import "./interfaces/IRCMarket.sol";
+import "./interfaces/IRCOrderbook.sol";
 
-/// @notice Work in Progress... ‿︵‿︵‿︵‿ヽ(°□° )ノ︵‿︵‿︵‿︵
-contract RCOrderbook is Ownable, NativeMetaTransaction {
+/// @title Reality Cards Orderbook
+/// @author Daniel Chilvers
+/// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!!
+contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
     using SafeMath for uint256;
     using SignedSafeMath for int256;
 
@@ -36,7 +39,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
     }
     mapping(address => User) public user;
     mapping(address => Market) public market;
-    mapping(address => uint256) public foreclosureTime;
+    mapping(address => uint256) public override foreclosureTime;
     mapping(address => bool) public isMarket;
     mapping(address => mapping(uint256 => address)) ownerOf;
 
@@ -65,7 +68,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         address _market,
         uint256 _tokenCount,
         uint256 _minIncrease
-    ) external {
+    ) external override {
         require(msgSender() == factoryAddress);
         isMarket[_market] = true;
         market[_market].minimumPriceIncreasePercent = _minIncrease;
@@ -90,7 +93,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         uint256 _price,
         uint256 _timeHeldLimit,
         address _prevUserAddress
-    ) external onlyMarkets {
+    ) external override onlyMarkets {
         // TODO check for empty bids we could clean
 
         address _market = msgSender();
@@ -299,6 +302,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
     /// @dev removes a bid from the orderbook
     function removeBidFromOrderbook(address _user, uint256 _token)
         public
+        override
         onlyMarkets
     {
         address _market = msgSender();
@@ -378,8 +382,9 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
 
     function findNewOwner(uint256 _token)
         external
+        override
         onlyMarkets
-        returns (address)
+        returns (address _newOwner)
     {
         address _market = msgSender();
         // the market is the head of the list, the next bid is therefore the owner
@@ -391,8 +396,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
             // delete next bid if foreclosed
         } while (foreclosureTime[_head.next] != 0);
         // TODO make sure user has minimum rental left
-        address _newOwner =
-            user[_market].bids[index[_market][_market][_token]].next;
+        _newOwner = user[_market].bids[index[_market][_market][_token]].next;
 
         return _newOwner;
     }
@@ -401,7 +405,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         address _user,
         address _market,
         uint256 _token
-    ) external view returns (address _newUser, uint256 _newPrice) {
+    ) external view override returns (address _newUser, uint256 _newPrice) {
         Bid storage _currUser = user[_user].bids[index[_user][_market][_token]];
         Bid storage _nextUser =
             user[_currUser.next].bids[index[_currUser.next][_market][_token]];
@@ -413,6 +417,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
     function getBidValue(address _user, uint256 _token)
         external
         view
+        override
         returns (uint256)
     {
         address _market = msgSender();
@@ -447,6 +452,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
     function getTimeHeldlimit(address _user, uint256 _token)
         external
         view
+        override
         onlyMarkets
         returns (uint256)
     {
@@ -465,14 +471,14 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         address _user,
         uint256 _token,
         uint256 _timeHeldLimit
-    ) external onlyMarkets {
+    ) external override onlyMarkets {
         user[_user].bids[index[_user][msgSender()][_token]]
             .timeHeldLimit = _timeHeldLimit;
     }
 
     /// @dev temporary function to use current tests, shouldn't be required
     /// @dev with new collect rent per user model.
-    function collectRentOwnedCards(address _user) external {
+    function collectRentOwnedCards(address _user) external override {
         address _market;
         uint256[] memory _token = new uint256[](1);
         for (uint256 i; i < user[_user].bids.length; i++) {
@@ -509,7 +515,11 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         return false;
     }
 
-    function removeUserFromOrderbook(address _user) external onlyMarkets {
+    function removeUserFromOrderbook(address _user)
+        external
+        override
+        onlyMarkets
+    {
         //TODO what if user is owner of any cards!?
 
         foreclosureTime[_user] = block.timestamp;
@@ -569,7 +579,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction {
         address _user,
         address _market,
         uint256[] calldata _tokens
-    ) external onlyMarkets {
+    ) external override onlyMarkets {
         /// @dev loop isn't unbounded, it is limited by the max number of tokens in a market
         for (uint256 i = 0; i < _tokens.length; i++) {
             // overwrite array element
