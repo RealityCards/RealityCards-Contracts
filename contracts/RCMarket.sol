@@ -956,9 +956,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         // timeLastCollected is updated regardless of whether the token is owned, so that the clock starts ticking
         // ... when the first owner buys it, because this function is run before ownership changes upon calling newRental
         timeLastCollected[_tokenId] = _timeOfThisCollection;
-        if (_timeOfThisCollection == _foreclosureTime) {
-            _collectRent(_tokenId); // a user foreclosed, calcualte for the next user, unbounded loop alert
-        }
     }
 
     function _checkState(States currentState) internal view {
