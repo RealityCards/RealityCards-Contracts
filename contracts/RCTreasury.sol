@@ -96,7 +96,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     /// @dev high level owner who can change the factory address
     address public override uberOwner;
 
-    IRCNftHubXdai public nfthub; // JS/TODO: This variable is never initialized!
+    IRCNftHubXdai public nfthub;
 
     /*╔═════════════════════════════════╗
       ║             EVENTS              ║
@@ -248,6 +248,12 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         require(_newOrderbook != address(0));
         orderbookAddress = _newOrderbook;
         orderbook = IRCOrderbook(orderbookAddress);
+    }
+
+    function setNftHubAddress(address _NFTHubAddress) external {
+        require(msgSender() == uberOwner, "Extremely Verboten");
+        require(_NFTHubAddress != address(0));
+        nfthub = IRCNftHubXdai(_NFTHubAddress);
     }
 
     function changeUberOwner(address _newUberOwner) external override {
