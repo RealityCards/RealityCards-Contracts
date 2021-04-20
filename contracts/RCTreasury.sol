@@ -137,8 +137,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         _;
     }
 
-    modifier collectRentUser(address _user) {
-        _collectRentUser(_user);
+    modifier rentCollect(address _user) {
+        collectRentUser(_user);
         _;
     }
 
@@ -461,8 +461,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         );
     }
 
-    function collectRent(address _user) external {}
-
     //// Rent calc helpers
 
     function rentOwedUser(address _user) public view returns (uint256 rentDue) {
@@ -473,7 +471,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
                 .div(1 days);
     }
 
-    function _collectRentUser(address _user)
+    function collectRentUser(address _user)
         public
         returns (uint256 newTimeLastCollectedOnForeclosure)
     {
@@ -519,7 +517,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     {
         // JS/TODO: if the card has NO current owner, return early (no need to collect rent on - non-existant user)
         address cardOwner = nfthub.ownerOf(card);
-        uint256 newTimeLastCollectedOnForeclosure = _collectRentUser(cardOwner);
+        uint256 newTimeLastCollectedOnForeclosure = collectRentUser(cardOwner);
 
         IRCMarket market = IRCMarket(nfthub.marketTracker(card));
 
