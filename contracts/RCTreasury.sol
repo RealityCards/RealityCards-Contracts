@@ -21,8 +21,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     //using SafeMath32 for uint32;
     //using SafeMath64 for uint64;
 
-    // VARIABLES
-
+    /*╔═════════════════════════════════╗
+      ║             VARIABLES           ║
+      ╚═════════════════════════════════╝*/
     /// @dev address of the alternate Receiver Bridge for withdrawals to mainnet
     address public override alternateReceiverBridgeAddress;
     /// @dev address of the Factory so only the Factory can add new markets
@@ -42,7 +43,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     /// @dev a quick check if the market is active or not
     mapping(address => bool) public override isMarketActive;
 
-    // DC new stuff
     /// @param rentalRate the daily cost of the cards the user current owns
     /// @param bidRate the sum total of all placed bids
     /// @param forclosureTime The time the user will foreclose with current ownership
@@ -71,7 +71,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     mapping(address => User) public user;
     uint256 test;
 
-    // GOVERNANCE VARIABLES
+    /*╔═════════════════════════════════╗
+      ║      GOVERNANCE VARIABLES       ║
+      ╚═════════════════════════════════╝*/
     /// @dev only parameters that need to be are here, the rest are in the Factory
     /// @dev minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
     uint256 public override minRentalDayDivisor;
@@ -80,19 +82,25 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     /// @dev the maximum number of bids a user is allowed
     uint256 public maxBidCountLimit;
 
-    // SAFETY
+    /*╔═════════════════════════════════╗
+      ║             SAFETY              ║
+      ╚═════════════════════════════════╝*/
     /// @dev if true, cannot deposit, withdraw or rent any cards across all events
     bool public override globalPause;
     /// @dev if true, cannot rent any cards for specific market
     mapping(address => bool) public override marketPaused;
 
-    // UBER OWNER
+    /*╔═════════════════════════════════╗
+      ║            UBER OWNER           ║
+      ╚═════════════════════════════════╝*/
     /// @dev high level owner who can change the factory address
     address public override uberOwner;
 
     IRCNftHubXdai public nfthub; // JS/TODO: This variable is never initialized!
 
-    // EVENTS
+    /*╔═════════════════════════════════╗
+      ║             EVENTS              ║
+      ╚═════════════════════════════════╝*/
 
     event LogDepositIncreased(
         address indexed sentBy,
@@ -109,7 +117,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     );
     event LogHotPotatoPayment(address from, address to, uint256 amount);
 
-    // CONSTRUCTOR
+    /*╔═════════════════════════════════╗
+      ║           CONSTRUCTOR           ║
+      ╚═════════════════════════════════╝*/
 
     constructor() {
         // initialise MetaTransactions
@@ -124,7 +134,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         setMaxBidLimit(30); // 30 is safe with current gas limit (12.5m)
     }
 
-    // MODIFIERS
+    /*╔═════════════════════════════════╗
+      ║           MODIFIERS             ║
+      ╚═════════════════════════════════╝*/
 
     modifier balancedBooks {
         _;
@@ -147,7 +159,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         _;
     }
 
-    // ADD MARKETS
+    /*╔═════════════════════════════════╗
+      ║           ADD MARKETS           ║
+      ╚═════════════════════════════════╝*/
 
     /// @dev so only markets can move funds from deposits to marketPots and vice versa
     function addMarket(address _newMarket) external override {
@@ -159,12 +173,16 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         isMarket[_newMarket] = true;
     }
 
-    // GOVERNANCE- OWNER
+    /*╔═════════════════════════════════╗
+      ║       GOVERNANCE - OWNER        ║
+      ╚═════════════════════════════════╝*/
 
     /// @dev all functions should be onlyOwner
     // min rental event emitted by market. Nothing else need be emitted.
 
-    /// CALLED WITHIN CONSTRUCTOR (public)
+    /*┌────────────────────────────────────┐
+      │ CALLED WITHIN CONSTRUTOR - PUBLIC  │
+      └────────────────────────────────────┘*/
 
     /// @notice minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
     function setMinRental(uint256 _newDivisor) public override onlyOwner {
@@ -185,7 +203,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         maxBidCountLimit = _newBidLimit;
     }
 
-    /// NOT CALLED WITHIN CONSTRUCTOR (external)
+    /*┌──────────────────────────────────────────┐
+      │ NOT CALLED WITHIN CONSTRUTOR - EXTERNAL  │
+      └──────────────────────────────────────────┘*/
 
     /// @dev address of alternate receiver bridge, xdai side
     function setAlternateReceiverAddress(address _newAddress)
@@ -207,9 +227,11 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         marketPaused[_market] = !marketPaused[_market];
     }
 
-    // GOVERNANCE- UBER OWNER
-
-    // ******** DANGER ZONE ******** //
+    /*╔═════════════════════════════════╗
+      ║     GOVERNANCE - UBER OWNER     ║
+      ╠═════════════════════════════════╣
+      ║  ******** DANGER ZONE ********  ║
+      ╚═════════════════════════════════╝*/
     /// @dev uber owner required for upgrades
     /// @dev deploying and setting a new factory is effectively an upgrade
     /// @dev this is seperated so owner so can be set to multisig, or burn address to relinquish upgrade ability
@@ -234,7 +256,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         uberOwner = _newUberOwner;
     }
 
-    // DEPOSIT & WITHDRAW FUNCTIONS
+    /*╔═════════════════════════════════╗
+      ║ DEPOSIT AND WITHDRAW FUNCTIONS  ║
+      ╚═════════════════════════════════╝*/
 
     /// @dev it is passed the user instead of using msg.sender because might be called
     /// @dev ... via contract (fallback, newRental) or dai->xdai bot
@@ -275,15 +299,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
                 uint256(1 days).div(minRentalDayDivisor),
             "Too soon"
         );
-        //console.log("withdrawing deposit ", _msgSender);
-        // step 1: collect rent on all cards a user Owns
-        // for (uint256 i = 0; i < user[_msgSender].marketOwned.length; i++) {
-        //     IRCMarket _market = IRCMarket(user[_msgSender].marketOwned[i]);
-        //     _market.collectRentSpecificCards(
-        //         user[_msgSender].tokens[user[_msgSender].marketOwned[i]]
-        //             .tokensOwned
-        //     );
-        // }
+
+        // stpe 1: collect rent on owned cards
         orderbook.collectRentOwnedCards(_msgSender);
 
         // step 2: process withdrawal
@@ -320,8 +337,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         }
     }
 
-    //   MARKET CALLABLE
-
+    /*╔═════════════════════════════════╗
+      ║        MARKET CALLABLE          ║
+      ╚═════════════════════════════════╝*/
     // only markets can call these functions
 
     /// @dev a rental payment is equivalent to moving from user's deposit to market pot, called by _collectRent in the market
@@ -436,7 +454,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         return user[_user].deposit;
     }
 
-    // orderbook callable
+    /*╔═════════════════════════════════╗
+      ║      ORDERBOOK CALLABLE         ║
+      ╚═════════════════════════════════╝*/
 
     function updateRentalRate(
         address _oldOwner,
@@ -460,7 +480,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         );
     }
 
-    //// Rent calc helpers
+    /*╔═════════════════════════════════╗
+      ║      RENT CALC HELPERS          ║
+      ╚═════════════════════════════════╝*/
 
     function rentOwedUser(address _user) public view returns (uint256 rentDue) {
         return
@@ -544,7 +566,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         }
     }
 
-    //   FALLBACK
+    /*╔═════════════════════════════════╗
+      ║            FALLBACK             ║
+      ╚═════════════════════════════════╝*/
 
     /// @dev sending ether/xdai direct is equal to a deposit
     receive() external payable {
