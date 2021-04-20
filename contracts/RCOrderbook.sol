@@ -39,7 +39,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
     }
     mapping(address => User) public user;
     mapping(address => Market) public market;
-    mapping(address => uint256) public override foreclosureTime;
     mapping(address => bool) public isMarket;
     mapping(address => mapping(uint256 => address)) ownerOf;
 
@@ -398,7 +397,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
             // TODO create a lighter weight version and only deal with ownership when new owner is settled on
             removeBidFromOrderbook(_head.next, _token);
             // delete next bid if foreclosed
-        } while (foreclosureTime[_head.next] != 0);
+        } while (treasury.foreclosureTimeUser(_head.next) != 0);
         // TODO make sure user has minimum rental left
         _newOwner = user[_market].bids[index[_market][_market][_token]].next;
 
@@ -525,8 +524,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         onlyMarkets
     {
         //TODO what if user is owner of any cards!?
-
-        foreclosureTime[_user] = block.timestamp;
         uint256 i = user[_user].bids.length.sub(1);
         uint256 _limit = 0;
         if (i > MAX_DELETIONS) {
@@ -580,7 +577,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
             //and get rid of them
 
             // delete user[_user];
-            foreclosureTime[_user] = 0;
         }
     }
 

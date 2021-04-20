@@ -819,7 +819,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     function _collectRent(uint256 _tokenId) internal {
         uint256 _timeOfThisCollection = block.timestamp;
         address _user = ownerOf(_tokenId);
-        uint256 _foreclosureTime = orderbook.foreclosureTime(_user); // JS/TODO: need to get foreclosure time from treasury
+        uint256 _foreclosureTime = treasury.foreclosureTimeUser(_user); // JS/TODO: need to get foreclosure time from treasury
         if (marketLockingTime <= block.timestamp) {
             _timeOfThisCollection = marketLockingTime;
         }

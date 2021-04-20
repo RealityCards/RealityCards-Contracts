@@ -484,7 +484,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         }
     }
 
-    function foreclosureTimeUser(address _user) external view returns (uint256) {
+    function foreclosureTimeUser(address _user) external override view returns (uint256) {
         uint256 totalUserDailyRent = user[_user].rentalRate;
         if (totalUserDailyRent > 0) {
             // timeLeftOfDeposit = deposit / (totalUserDailyRent / 1 day)
