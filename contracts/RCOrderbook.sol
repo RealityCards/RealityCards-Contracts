@@ -120,7 +120,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
 
         if (bidExists(_user, _market, _token)) {
             // old bid exists, update it
-            // console.log("uh oh, it's an update ");
             _updateBidInOrderbook(
                 _user,
                 _market,
@@ -131,7 +130,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
             );
         } else {
             // new bid, add it
-            // console.log("yes it's new ");
             _newBidInOrderbook(
                 _user,
                 _market,
@@ -145,6 +143,8 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         //TODO ownership may have just changed, deal with it
     }
 
+    /// @dev finds the correct location in the orderbook for a given bid
+    /// @dev returns an adjusted (lowered) bid price if necessary.
     function _searchOrderbook(
         Bid storage _prevUser,
         address _market,
@@ -178,12 +178,16 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         }
         require(i < MAX_SEARCH_ITERATIONS, "Position in orderbook not found");
 
+        // if previous price is zero it must be the market and this is a new owner
+        // .. then don't reduce their price, we already checked they are 10% higher
+        // .. than the previous owner.
         if (_prevUser.price != 0 && _prevUser.price < _price) {
             _price = _prevUser.price;
         }
         return (_prevUser, _price);
     }
 
+    /// @dev add a new bid to the orderbook
     function _newBidInOrderbook(
         address _user,
         address _market,
@@ -237,6 +241,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         }
     }
 
+    /// @dev updates a bid that is already in the orderbook
     function _updateBidInOrderbook(
         address _user,
         address _market,
@@ -304,7 +309,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         }
     }
 
-    /// @dev removes a bid from the orderbook
+    /// @dev removes a single bid from the orderbook
     function removeBidFromOrderbook(address _user, uint256 _token)
         public
         override
@@ -374,6 +379,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         console.log(" end of orderbook ");
     }
 
+    /// @dev to assist troubleshooting during testing
     function printUserBids(address _user) public view {
         console.log("printing bids for ", _user);
         uint256 i;
@@ -384,6 +390,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         console.log(" done printing bids ");
     }
 
+    /// @dev find the next valid owner of a given card
     function findNewOwner(uint256 _token)
         external
         override
@@ -403,6 +410,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         _newOwner = user[_market].bids[index[_market][_market][_token]].next;
     }
 
+    /// @dev currently not used anywhere
     function findNextBid(
         address _user,
         address _market,
