@@ -556,6 +556,10 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
                 transferCard(_market, _token, _user, _tempNext, _price);
             }
 
+            int256 _priceChange =
+                int256(0).sub(int256(user[_user].bids[i].price));
+            treasury.updateBidRate(_user, _priceChange);
+
             user[_tempNext].bids[
                 index[_tempNext][user[_user].bids[i].market][
                     user[_user].bids[i].token
