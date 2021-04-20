@@ -30,7 +30,7 @@ interface IRCTreasury {
 
     function setMinRental(uint256 _newDivisor) external;
 
-    function setMaxContractBalance() external;
+    function setMaxContractBalance(uint256) external;
 
     function setMaxBidLimit(uint256 _newBidLimit) external;
 
@@ -64,8 +64,6 @@ interface IRCTreasury {
 
     function userTotalBids(address) external view returns (uint256);
 
-    function cleanUserBids(address _user) external;
-
     function updateRentalRate(
         address _oldOwner,
         address _newOwner,
@@ -74,17 +72,6 @@ interface IRCTreasury {
     ) external;
 
     function updateBidRate(address _user, int256 _priceChange) external;
-
-    function timeHeld(address _user, uint256 _tokenId)
-        external
-        view
-        returns (uint256);
-
-    function collectRent(address _user) external;
-
-    function updateUserTotalBids(address _user, int256 _priceChange) external;
-
-    function updateUserRentalRate(address _user, int256 _priceChange) external;
 
     function updateMarketStatus(bool _open) external;
 

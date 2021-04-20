@@ -5,6 +5,7 @@ pragma abicoder v2;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "hardhat/console.sol";
+import "./interfaces/IRCFactory.sol";
 import "./interfaces/IRCTreasury.sol";
 import "./interfaces/IRCMarket.sol";
 import "./interfaces/IRCProxyXdai.sol";
@@ -15,7 +16,7 @@ import "./lib/NativeMetaTransaction.sol";
 /// @title Reality Cards Factory
 /// @author Andrew Stanger & Daniel Chilvers
 /// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!!
-contract RCFactory is Ownable, NativeMetaTransaction {
+contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     using SafeMath for uint256;
     using SafeMath for uint32;
 
@@ -24,10 +25,10 @@ contract RCFactory is Ownable, NativeMetaTransaction {
     ////////////////////////////////////
 
     ///// CONTRACT VARIABLES /////
-    IRCTreasury public treasury;
-    IRCProxyXdai public proxy;
-    IRCNftHubXdai public nfthub;
-    IRCOrderbook public orderbook;
+    IRCTreasury public override treasury;
+    IRCProxyXdai public override proxy;
+    IRCNftHubXdai public override nfthub;
+    IRCOrderbook public override orderbook;
 
     ///// CONTRACT ADDRESSES /////
     /// @dev reference contract
@@ -45,25 +46,25 @@ contract RCFactory is Ownable, NativeMetaTransaction {
     /// @dev minimum xDai that must be sent when creating market which forms iniital pot
     uint256 public sponsorshipRequired;
     /// @dev adjust required price increase (in %)
-    uint256 public minimumPriceIncreasePercent;
+    uint256 public override minimumPriceIncreasePercent;
     /// @dev market opening time must be at least this many seconds in the future
     uint32 public advancedWarning;
     /// @dev market closing time must be no more than this many seconds in the future
     uint32 public maximumDuration;
     /// @dev if hot potato mode, how much rent new owner must pay current owner (1 week divisor: i.e. 7 = 1 day's rent, 14 = 12 hours's rent)
-    uint256 public hotPotatoWeekDivisor;
+    uint256 public override hotPotatoWeekDivisor;
     /// @dev list of governors
     mapping(address => bool) public governors;
     /// @dev if false, anyone can create markets
     bool public marketCreationGovernorsOnly = true;
     /// @dev if true, cards are burnt at the end of events for hidden markets to enforce scarcity
-    bool public trapIfUnapproved = true;
+    bool public override trapIfUnapproved = true;
     /// @dev high level owner who can change the factory address
     address public uberOwner;
 
     ///// GOVERNANCE VARIABLES- GOVERNORS /////
     /// @dev unapproved markets hidden from the interface
-    mapping(address => bool) public isMarketApproved;
+    mapping(address => bool) public override isMarketApproved;
     /// @dev allows artist to receive cut of total rent
     mapping(address => bool) public isArtistApproved;
     /// @dev allows affiliate to receive cut of total rent
@@ -149,7 +150,12 @@ contract RCFactory is Ownable, NativeMetaTransaction {
     }
 
     /// @notice Returns the currently set pot distribution
-    function getPotDistribution() external view returns (uint256[5] memory) {
+    function getPotDistribution()
+        external
+        view
+        override
+        returns (uint256[5] memory)
+    {
         return potDistribution;
     }
 

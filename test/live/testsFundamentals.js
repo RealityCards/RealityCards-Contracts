@@ -461,11 +461,6 @@ contract('TestFundamentals', (accounts) => {
     var depositWithdrawn = await balanceAfter - balanceBefore;
     var depositWithdrawnShouldBe = web3.utils.toWei('7', 'ether');
     var difference = Math.abs(depositWithdrawn.toString() - depositWithdrawnShouldBe.toString());
-    console.log("balanceBefore", balanceBefore);
-    console.log("balanceAfter", balanceAfter);
-    console.log("depositWithdrawn", depositWithdrawn);
-    console.log("depositWithdrawnShouldBe", depositWithdrawnShouldBe);
-    console.log("difference", difference);
 
     // set to 0.3% loss is acceptable, this needs double checking though.
     assert.isBelow(difference / depositWithdrawn, 0.003);
@@ -795,11 +790,11 @@ contract('TestFundamentals', (accounts) => {
     // check that 0 is turned into max
     await newRental(1, 1, user0);
     await realitycards.updateTimeHeldLimit(86400, 1, { from: user0 });
-    var limit = await realitycards.orderbook.call(1, user0);
-    assert.equal(limit[1], 86400);
+    var limit = await rcorderbook.getBid.call(realitycards.address, user0, 1);
+    assert.equal(limit[5], 86400);
     await realitycards.updateTimeHeldLimit(0, 1, { from: user0 });
-    var limit = await realitycards.orderbook.call(1, user0);
-    assert.equal(limit[1], (2 ** 128) - 1);
+    var limit = await rcorderbook.getBid.call(realitycards.address, user0, 1);
+    assert.equal(limit[5], (2 ** 256) - 1);
     // withdraw for next test
     await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000, user0);
@@ -845,7 +840,9 @@ contract('TestFundamentals', (accounts) => {
   });
 
 
-  it('test hot potato mode fundamentals', async () => {
+  it.skip('test hot potato mode fundamentals', async () => {
+    // hot potato mode being ignored for now, reinstate test if mode re-introduced
+
     var realitycards2 = await createMarketCustomMode(2);
     /////// SETUP //////
     await depositDai(1000, user0);
@@ -941,8 +938,8 @@ contract('TestFundamentals', (accounts) => {
     assert.equal(owner, user4);
     var price = await realitycards.tokenPrice.call(0);
     assert.equal(price, web3.utils.toWei('10', 'ether'));
-    var bid = await realitycards.orderbook.call(0, user4);
-    assert.equal(bid[3], realitycards.address);
+    var bid = await rcorderbook.getBid.call(realitycards.address, user4, 0);
+    assert.equal(bid[2], realitycards.address);
     // this time, current owner calls exit
     await realitycards.exit(0, { from: user4 });
     var owner = await realitycards.ownerOf.call(0);

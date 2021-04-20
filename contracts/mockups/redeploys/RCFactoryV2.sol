@@ -3,18 +3,20 @@ pragma solidity ^0.7.5;
 pragma abicoder v2;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "hardhat/console.sol";
+import "../../interfaces/IRCFactory.sol";
 import "../../interfaces/IRCTreasury.sol";
 import "../../interfaces/IRCMarket.sol";
 import "../../interfaces/IRCProxyXdai.sol";
 import "../../interfaces/IRCNftHubXdai.sol";
+import "../../interfaces/IRCOrderbook.sol";
 import "../../lib/NativeMetaTransaction.sol";
 
-// mockup for testing, same except that nftmintcount is set at 20
-
-contract RCFactoryV2 is Ownable, NativeMetaTransaction {
+/// @title Reality Cards Factory
+/// @author Andrew Stanger & Daniel Chilvers
+/// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!!
+contract RCFactoryV2 is Ownable, NativeMetaTransaction, IRCFactory {
     using SafeMath for uint256;
     using SafeMath for uint32;
 
@@ -23,9 +25,10 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction {
     ////////////////////////////////////
 
     ///// CONTRACT VARIABLES /////
-    IRCTreasury public treasury;
-    IRCProxyXdai public proxy;
-    IRCNftHubXdai public nfthub;
+    IRCTreasury public override treasury;
+    IRCProxyXdai public override proxy;
+    IRCNftHubXdai public override nfthub;
+    IRCOrderbook public override orderbook;
 
     ///// CONTRACT ADDRESSES /////
     /// @dev reference contract
@@ -43,36 +46,38 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction {
     /// @dev minimum xDai that must be sent when creating market which forms iniital pot
     uint256 public sponsorshipRequired;
     /// @dev adjust required price increase (in %)
-    uint256 public minimumPriceIncreasePercent;
+    uint256 public override minimumPriceIncreasePercent;
     /// @dev market opening time must be at least this many seconds in the future
     uint32 public advancedWarning;
     /// @dev market closing time must be no more than this many seconds in the future
     uint32 public maximumDuration;
     /// @dev if hot potato mode, how much rent new owner must pay current owner (1 week divisor: i.e. 7 = 1 day's rent, 14 = 12 hours's rent)
-    uint256 public hotPotatoWeekDivisor;
+    uint256 public override hotPotatoWeekDivisor;
     /// @dev list of governors
     mapping(address => bool) public governors;
     /// @dev if false, anyone can create markets
     bool public marketCreationGovernorsOnly = true;
     /// @dev if true, cards are burnt at the end of events for hidden markets to enforce scarcity
-    bool public trapIfUnapproved = true;
+    bool public override trapIfUnapproved = true;
     /// @dev high level owner who can change the factory address
     address public uberOwner;
 
     ///// GOVERNANCE VARIABLES- GOVERNORS /////
     /// @dev unapproved markets hidden from the interface
-    mapping(address => bool) public isMarketApproved;
+    mapping(address => bool) public override isMarketApproved;
     /// @dev allows artist to receive cut of total rent
     mapping(address => bool) public isArtistApproved;
     /// @dev allows affiliate to receive cut of total rent
     mapping(address => bool) public isAffiliateApproved;
     /// @dev allows card affiliate to receive cut of total rent
     mapping(address => bool) public isCardAffiliateApproved;
+    /// @dev a limit to the number of NFTs to mint per market
+    uint256 public nftMintingLimit;
 
     ///// OTHER /////
     /// @dev counts the total NFTs minted across all events
     /// @dev ... so the appropriate token id is used when upgrading to mainnet
-    uint256 public totalNftMintCount = 20;
+    uint256 public totalNftMintCount;
 
     ////////////////////////////////////
     //////// EVENTS ////////////////////
@@ -102,6 +107,7 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction {
 
     /// @dev Treasury must be deployed before Factory
     constructor(IRCTreasury _treasuryAddress) {
+        require(address(_treasuryAddress) != address(0));
         // initialise MetaTransactions
         _initializeEIP712("RealityCardsFactory", "1");
 
@@ -116,25 +122,40 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction {
         setPotDistribution(20, 0, 0, 20, 100); // 2% artist, 2% affiliate, 10% card affiliate
         setminimumPriceIncreasePercent(10); // 10%
         setHotPotatoPayment(7); // one day's rent
+        setNFTMintingLimit(50); // current gas limit (12.5m) allows for 50 NFTs to be minted
     }
 
     ////////////////////////////////////
     ///////// VIEW FUNCTIONS ///////////
     ////////////////////////////////////
 
-    function getMostRecentMarket(uint256 _mode) public view returns (address) {
+    /// @notice Fetch the address of the most recently created market
+    /// @param _mode Filter by market mode, 0=Classic 1=Winner Takes All 2=Hot Potato
+    function getMostRecentMarket(uint256 _mode)
+        external
+        view
+        returns (address)
+    {
         return marketAddresses[_mode][marketAddresses[_mode].length.sub(1)];
     }
 
+    /// @notice Fetch all the market addresses for a given mode
+    /// @param _mode Filter by market mode, 0=Classic 1=Winner Takes All 2=Hot Potato
     function getAllMarkets(uint256 _mode)
-        public
+        external
         view
         returns (address[] memory)
     {
         return marketAddresses[_mode];
     }
 
-    function getPotDistribution() public view returns (uint256[5] memory) {
+    /// @notice Returns the currently set pot distribution
+    function getPotDistribution()
+        external
+        view
+        override
+        returns (uint256[5] memory)
+    {
         return potDistribution;
     }
 
@@ -148,6 +169,34 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction {
             "Not approved"
         );
         _;
+    }
+
+    ////////////////////////////////////
+    ///// GOVERNANCE- OWNER (SETUP) ////
+    ////////////////////////////////////
+    /// @dev all functions should have onlyOwner modifier
+
+    /// @notice address of the xDai Proxy contract
+    function setProxyXdaiAddress(IRCProxyXdai _newAddress) external onlyOwner {
+        require(address(_newAddress) != address(0));
+        proxy = _newAddress;
+    }
+
+    /// @notice where the NFTs live
+    /// @dev nftMintCount will probably need to be reset to zero if new nft contract, but
+    /// @dev ... keeping flexible in case returning to previous contract
+    function setNftHubAddress(
+        IRCNftHubXdai _newAddress,
+        uint256 _newNftMintCount
+    ) external onlyOwner {
+        require(address(_newAddress) != address(0));
+        nfthub = _newAddress;
+        totalNftMintCount = _newNftMintCount;
+    }
+
+    function setOrderbookAddress(IRCOrderbook _newAddress) external onlyOwner {
+        require(address(_newAddress) != address(0));
+        orderbook = _newAddress;
     }
 
     ////////////////////////////////////
@@ -169,12 +218,9 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction {
         uint256 _cardAffiliateCut
     ) public onlyOwner {
         require(
-            _artistCut
-                .add(_affiliateCut)
-                .add(_creatorCut)
-                .add(_winnerCut)
-                .add(_affiliateCut)
-                .add(_cardAffiliateCut) <= 1000,
+            _artistCut.add(_winnerCut).add(_creatorCut).add(_affiliateCut).add(
+                _cardAffiliateCut
+            ) <= 1000,
             "Cuts too big"
         );
         potDistribution[0] = _artistCut;
@@ -197,29 +243,16 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction {
         hotPotatoWeekDivisor = _newDivisor;
     }
 
+    /// @dev A limit to the number of NFTs to mint per market
+    function setNFTMintingLimit(uint256 _mintLimit) public onlyOwner {
+        nftMintingLimit = _mintLimit;
+    }
+
     /// NOT CALLED WITHIN CONSTRUCTOR (external)
-
-    /// @notice address of the xDai Proxy contract
-    function setProxyXdaiAddress(IRCProxyXdai _newAddress) external onlyOwner {
-        proxy = _newAddress;
-    }
-
-    /// @notice where the NFTs live
-    /// @dev nftMintCount will probably need to be reset to zero if new nft contract, but
-    /// @dev ... keeping flexible in case returning to previous contract
-    function setNftHubAddress(
-        IRCNftHubXdai _newAddress,
-        uint256 _newNftMintCount
-    ) external onlyOwner {
-        nfthub = _newAddress;
-        totalNftMintCount = _newNftMintCount;
-    }
 
     /// @notice whether or not only governors can create the market
     function changeMarketCreationGovernorsOnly() external onlyOwner {
-        marketCreationGovernorsOnly = marketCreationGovernorsOnly
-            ? false
-            : true;
+        marketCreationGovernorsOnly = !marketCreationGovernorsOnly;
     }
 
     /// @notice how much xdai must be sent in the createMarket tx which forms the initial pot
@@ -229,7 +262,7 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction {
 
     /// @notice if true, Cards in unapproved markets can't be upgraded
     function changeTrapCardsIfUnapproved() external onlyOwner {
-        trapIfUnapproved = trapIfUnapproved ? false : true;
+        trapIfUnapproved = !trapIfUnapproved;
     }
 
     /// @notice market opening time must be at least this many seconds in the future
@@ -248,7 +281,8 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction {
 
     /// @notice add or remove an address from market creator whitelist
     function changeGovernorApproval(address _governor) external onlyOwner {
-        governors[_governor] = governors[_governor] ? false : true;
+        require(_governor != address(0));
+        governors[_governor] = !governors[_governor];
     }
 
     ////////////////////////////////////
@@ -258,13 +292,15 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction {
 
     /// @notice markets are default hidden from the interface, this reveals them
     function changeMarketApproval(address _market) external onlyGovernors {
-        isMarketApproved[_market] = isMarketApproved[_market] ? false : true;
+        require(_market != address(0));
+        isMarketApproved[_market] = !isMarketApproved[_market];
         emit LogMarketApproved(_market, isMarketApproved[_market]);
     }
 
     /// @notice artistAddress, passed in createMarket, must be approved
     function changeArtistApproval(address _artist) external onlyGovernors {
-        isArtistApproved[_artist] = isArtistApproved[_artist] ? false : true;
+        require(_artist != address(0));
+        isArtistApproved[_artist] = !isArtistApproved[_artist];
     }
 
     /// @notice affiliateAddress, passed in createMarket, must be approved
@@ -272,9 +308,8 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction {
         external
         onlyGovernors
     {
-        isAffiliateApproved[_affiliate] = isAffiliateApproved[_affiliate]
-            ? false
-            : true;
+        require(_affiliate != address(0));
+        isAffiliateApproved[_affiliate] = !isAffiliateApproved[_affiliate];
     }
 
     /// @notice cardAffiliateAddress, passed in createMarket, must be approved
@@ -282,11 +317,10 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction {
         external
         onlyGovernors
     {
-        isCardAffiliateApproved[_affiliate] = isCardAffiliateApproved[
+        require(_affiliate != address(0));
+        isCardAffiliateApproved[_affiliate] = !isCardAffiliateApproved[
             _affiliate
-        ]
-            ? false
-            : true;
+        ];
     }
 
     ////////////////////////////////////
@@ -300,6 +334,7 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction {
     /// @notice change the reference contract for the contract logic
     function setReferenceContractAddress(address _newAddress) external {
         require(msg.sender == uberOwner, "Extremely Verboten");
+        require(_newAddress != address(0));
         // check it's an RC contract
         IRCMarket newContractVariable = IRCMarket(_newAddress);
         assert(newContractVariable.isMarket());
@@ -311,6 +346,7 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction {
 
     function changeUberOwner(address _newUberOwner) external {
         require(msg.sender == uberOwner, "Extremely Verboten");
+        require(_newUberOwner != address(0));
         uberOwner = _newUberOwner;
     }
 
@@ -318,6 +354,7 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction {
     //////// MARKET CREATION ///////////
     ////////////////////////////////////
 
+    /// @notice Creates a new market with the given parameters
     /// @param _mode 0 = normal, 1 = winner takes all, 2 = hot potato
     /// @param _timestamps for market opening, locking, and oracle resolution
     /// @param _tokenURIs location of NFT metadata
@@ -334,7 +371,7 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction {
         address _affiliateAddress,
         address[] memory _cardAffiliateAddresses,
         string memory _realitioQuestion
-    ) public payable returns (address) {
+    ) external payable returns (address) {
         // check sponsorship
         require(msg.value >= sponsorshipRequired, "Insufficient sponsorship");
 
@@ -368,6 +405,7 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction {
         }
 
         // check timestamps
+        require(_timestamps.length == 3, "Incorrect number of array elements");
         // check market opening time
         if (advancedWarning != 0) {
             require(
@@ -393,17 +431,16 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction {
             "Oracle resolution time error"
         );
 
+        // check the number of NFTs to mint is within limits
+        require(
+            _tokenURIs.length <= nftMintingLimit,
+            "Too many tokens to mint"
+        );
         uint256 _numberOfTokens = _tokenURIs.length;
 
         // create the market and emit the appropriate events
         // two events to avoid stack too deep error
         address _newAddress = Clones.clone(referenceContractAddress);
-
-        // tell Treasury, Proxy, and NFT hub about new market
-        treasury.addMarket(_newAddress);
-        proxy.addMarket(_newAddress);
-        nfthub.addMarket(_newAddress);
-
         emit LogMarketCreated1(
             _newAddress,
             address(treasury),
@@ -418,6 +455,22 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction {
             _timestamps,
             totalNftMintCount
         );
+
+        // tell Treasury, Proxy, and NFT hub about new market
+        // before initialize as during initialize the market may call the treasury
+        treasury.addMarket(_newAddress);
+        proxy.addMarket(_newAddress);
+        nfthub.addMarket(_newAddress);
+        orderbook.addMarket(
+            _newAddress,
+            _numberOfTokens,
+            minimumPriceIncreasePercent
+        );
+
+        // update internals
+        marketAddresses[_mode].push(_newAddress);
+        mappingOfMarkets[_newAddress] = true;
+
         IRCMarket(_newAddress).initialize({
             _mode: _mode,
             _timestamps: _timestamps,
@@ -433,7 +486,10 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction {
         require(address(nfthub) != address(0), "Nfthub not set");
         for (uint256 i = 0; i < _numberOfTokens; i++) {
             uint256 _tokenId = i.add(totalNftMintCount);
-            assert(nfthub.mintNft(_newAddress, _tokenId, _tokenURIs[i]));
+            require(
+                nfthub.mintNft(_newAddress, _tokenId, _tokenURIs[i]),
+                "Nft Minting Failed"
+            );
         }
 
         // increment totalNftMintCount
@@ -446,10 +502,6 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction {
             _realitioQuestion,
             _timestamps[2]
         );
-
-        // update internals
-        marketAddresses[_mode].push(_newAddress);
-        mappingOfMarkets[_newAddress] = true;
 
         // pay sponsorship, if applicable
         if (msg.value > 0) {

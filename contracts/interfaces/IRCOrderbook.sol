@@ -18,7 +18,7 @@ interface IRCOrderbook {
 
     function removeBidFromOrderbook(address _user, uint256 _token) external;
 
-    function findNewOwner(uint256 _token) external;
+    function findNewOwner(uint256 _token) external returns (address _newOwner);
 
     function findNextBid(
         address _user,
@@ -31,18 +31,15 @@ interface IRCOrderbook {
         view
         returns (uint256);
 
-    function userRentalRate(address _user) external view returns (uint256);
-
-    function userBidRate(address _user) external view returns (uint256);
-
-    function adjustedBidRate(address _user, uint256 _token)
-        external
-        view
-        returns (uint256);
-
     function getTimeHeldlimit(address _user, uint256 _token)
         external
         returns (uint256);
+
+    function bidExists(
+        address _user,
+        address _market,
+        uint256 _token
+    ) external view returns (bool);
 
     function setTimeHeldlimit(
         address _user,

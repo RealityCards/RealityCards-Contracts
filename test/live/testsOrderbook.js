@@ -631,21 +631,8 @@ contract('TestOrderbook', (accounts) => {
     await newRental(50, 0, user9); // 0, 50
     // withdraw deposit of 9, will it switch to 0
     await time.increase(time.duration.minutes(10));
-    console.log("exiting user9 ", user9);
     await withdrawDeposit(1000, user9);
-    console.log("calling for collect rent all cards");
     await realitycards.collectRentAllCards();
-    await rcorderbook.printOrderbook(realitycards.address, 0);
-    console.log("0", user0);
-    console.log("1", user1);
-    console.log("2", user2);
-    console.log("3", user3);
-    console.log("4", user4);
-    console.log("5", user5);
-    console.log("6", user6);
-    console.log("7", user7);
-    console.log("8", user8);
-    console.log("9", user9);
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner, user5);
     var price = await realitycards.tokenPrice.call(0);

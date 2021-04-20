@@ -38,7 +38,7 @@ const delay = duration => new Promise(resolve => setTimeout(resolve, duration));
 contract('TestProxies', (accounts) => {
 
   var realitycards;
-  var tokenURIs = ['x','x','x','uri','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x','x']; // 20 tokens
+  var tokenURIs = ['x', 'x', 'x', 'uri', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x']; // 20 tokens
   var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
   var maxuint256 = 4294967295;
 
@@ -61,9 +61,9 @@ contract('TestProxies', (accounts) => {
     var latestTime = await time.latest();
     var oneYear = new BN('31104000');
     var oneYearInTheFuture = oneYear.add(latestTime);
-    var marketLockingTime = oneYearInTheFuture; 
-    var oracleResolutionTime = oneYearInTheFuture; 
-    var timestamps = [0,marketLockingTime,oracleResolutionTime];
+    var marketLockingTime = oneYearInTheFuture;
+    var oracleResolutionTime = oneYearInTheFuture;
+    var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     // main contracts
@@ -97,18 +97,18 @@ contract('TestProxies', (accounts) => {
     await bridge.setProxyMainnetAddress(mainnetproxy.address);
     await nfthubmainnet.setProxyMainnetAddress(mainnetproxy.address);
     // tell the treasury about the ARB
-	await treasury.setAlternateReceiverAddress(alternateReceiverBridge.address);
-	// market creation
-	await rcfactory.createMarket(
-        0,
-        '0x0',
-        timestamps,
-        tokenURIs,
-        artistAddress,
-        affiliateAddress,
-        cardRecipients,
-        question,
-      );
+    await treasury.setAlternateReceiverAddress(alternateReceiverBridge.address);
+    // market creation
+    await rcfactory.createMarket(
+      0,
+      '0x0',
+      timestamps,
+      tokenURIs,
+      artistAddress,
+      affiliateAddress,
+      cardRecipients,
+      question,
+    );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards = await RCMarket.at(marketAddress);
   });
@@ -117,24 +117,24 @@ contract('TestProxies', (accounts) => {
     var latestTime = await time.latest();
     var oneYear = new BN('31104000');
     var oneYearInTheFuture = oneYear.add(latestTime);
-    var marketLockingTime = oneYearInTheFuture; 
+    var marketLockingTime = oneYearInTheFuture;
     var oracleResolutionTime = oneYearInTheFuture;
-    var timestamps = [0,marketLockingTime,oracleResolutionTime];
+    var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = user8;
     await rcfactory.changeArtistApproval(user8);
     var affiliateAddress = user7;
     await rcfactory.changeAffiliateApproval(user7);
     var slug = 'y';
     await rcfactory.createMarket(
-        0,
-        '0x0',
-        timestamps,
-        tokenURIs,
-        artistAddress,
-        affiliateAddress,
-        cardRecipients,
-        question,
-      );
+      0,
+      '0x0',
+      timestamps,
+      tokenURIs,
+      artistAddress,
+      affiliateAddress,
+      cardRecipients,
+      question,
+    );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
     return realitycards2;
@@ -144,23 +144,23 @@ contract('TestProxies', (accounts) => {
     var latestTime = await time.latest();
     var oneYear = new BN('31104000');
     var oneYearInTheFuture = oneYear.add(latestTime);
-    var marketLockingTime = oneYearInTheFuture; 
+    var marketLockingTime = oneYearInTheFuture;
     var oracleResolutionTime = oneYearInTheFuture;
-    var timestamps = [0,marketLockingTime,oracleResolutionTime];
+    var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = user8;
     var affiliateAddress = user7;
     // artist and affiliate already approved from createMarketWithArtistSet
     var slug = 'z';
     await rcfactory.createMarket(
-        0,
-        '0x0',
-        timestamps,
-        tokenURIs,
-        artistAddress,
-        affiliateAddress,
-        cardRecipients,
-        question,
-      );
+      0,
+      '0x0',
+      timestamps,
+      tokenURIs,
+      artistAddress,
+      affiliateAddress,
+      cardRecipients,
+      question,
+    );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
     return realitycards2;
@@ -170,22 +170,22 @@ contract('TestProxies', (accounts) => {
     var latestTime = await time.latest();
     var oneYear = new BN('31104000');
     var oneYearInTheFuture = oneYear.add(latestTime);
-    var marketLockingTime = oneYearInTheFuture; 
+    var marketLockingTime = oneYearInTheFuture;
     var oracleResolutionTime = oneYearInTheFuture;
-    var timestamps = [0,marketLockingTime,oracleResolutionTime];
+    var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     var slug = 'y';
     await rcfactory.createMarket(
-        mode,
-        '0x0',
-        timestamps,
-        tokenURIs,
-        artistAddress,
-        affiliateAddress,
-        cardRecipients,
-        question,
-      );
+      mode,
+      '0x0',
+      timestamps,
+      tokenURIs,
+      artistAddress,
+      affiliateAddress,
+      cardRecipients,
+      question,
+    );
     var marketAddress = await rcfactory.getMostRecentMarket.call(mode);
     realitycards2 = await RCMarket.at(marketAddress);
     return realitycards2;
@@ -193,55 +193,55 @@ contract('TestProxies', (accounts) => {
 
   async function depositDai(amount, user) {
     amount = web3.utils.toWei(amount.toString(), 'ether');
-    await treasury.deposit(user,{ from: user, value: amount });
+    await treasury.deposit(user, { from: user, value: amount });
   }
 
   async function newRental(price, outcome, user) {
     price = web3.utils.toWei(price.toString(), 'ether');
-    await realitycards.newRental(price,0,zeroAddress,outcome,{ from: user});
+    await realitycards.newRental(price, 0, zeroAddress, outcome, { from: user });
   }
 
   async function newRentalWithStartingPosition(price, outcome, position, user) {
     price = web3.utils.toWei(price.toString(), 'ether');
-    await realitycards.newRental(price,0,position,outcome,{ from: user});
+    await realitycards.newRental(price, 0, position, outcome, { from: user });
   }
 
   async function newRentalWithDeposit(price, outcome, user, dai) {
     price = web3.utils.toWei(price.toString(), 'ether');
     dai = web3.utils.toWei(dai.toString(), 'ether');
-    await realitycards.newRental(price,0,zeroAddress,outcome,{ from: user, value: dai});
+    await realitycards.newRental(price, 0, zeroAddress, outcome, { from: user, value: dai });
   }
 
   async function newRentalCustomContract(contract, price, outcome, user) {
     price = web3.utils.toWei(price.toString(), 'ether');
-    await contract.newRental(price,maxuint256.toString(),zeroAddress,outcome,{ from: user});
+    await contract.newRental(price, maxuint256.toString(), zeroAddress, outcome, { from: user });
   }
 
   async function newRentalWithDepositCustomContract(contract, price, outcome, user, dai) {
     price = web3.utils.toWei(price.toString(), 'ether');
     dai = web3.utils.toWei(dai.toString(), 'ether');
-    await contract.newRental(price,maxuint256.toString(),zeroAddress,outcome,{ from: user, value: dai});
+    await contract.newRental(price, maxuint256.toString(), zeroAddress, outcome, { from: user, value: dai });
   }
 
   async function newRentalCustomTimeLimit(price, timelimit, outcome, user) {
     price = web3.utils.toWei(price.toString(), 'ether');
-    await realitycards.newRental(price,(timelimit*3600*24).toString(),zeroAddress,outcome,{ from: user});
-  }    
+    await realitycards.newRental(price, (timelimit * 3600 * 24).toString(), zeroAddress, outcome, { from: user });
+  }
 
   async function userRemainingDeposit(outcome, userx) {
-    await realitycards.userRemainingDeposit.call(outcome, {from: userx} );
+    await realitycards.userRemainingDeposit.call(outcome, { from: userx });
   }
 
   async function withdraw(userx) {
-    await realitycards.withdraw({from:userx} );
+    await realitycards.withdraw({ from: userx });
   }
 
-  async function withdrawDeposit(amount,userx) {
+  async function withdrawDeposit(amount, userx) {
     amount = web3.utils.toWei(amount.toString(), 'ether');
-    await treasury.withdrawDeposit(amount,true,{ from: userx});
+    await treasury.withdrawDeposit(amount, true, { from: userx });
   }
 
-it('test RCProxyMainnet various', async () => {
+  it('test RCProxyMainnet various', async () => {
     // test changing xdai proxy
     var xdaiproxy2 = await XdaiProxy2.new(bridge.address, rcfactory.address, treasury.address, realitio.address, treasury.address);
     await xdaiproxy2.setProxyMainnetAddress(mainnetproxy.address);
@@ -252,112 +252,114 @@ it('test RCProxyMainnet various', async () => {
     await rcfactory.setProxyXdaiAddress(xdaiproxy2.address);
     realitycards2 = await createMarketWithArtistSet();
     await realitio.setResult(2);
-    await time.increase(time.duration.years(1)); 
-    await realitycards2.lockMarket(); 
+    await time.increase(time.duration.years(1));
+    await realitycards2.lockMarket();
     // should be 4 even though 2 was set
     await xdaiproxy2.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     var winner = await realitycards2.winningOutcome();
-    assert.equal(winner,4);
+    assert.equal(winner, 4);
     // test changing setBridgeMainnetAddress
     await mainnetproxy.setBridgeMainnetAddress(user0);
     var newproxy = await mainnetproxy.bridge.call();
-    assert.equal(newproxy,user0);
- });
+    assert.equal(newproxy, user0);
+  });
 
 
-it('test RCProxyMainnet, various 2', async () => {
+  it('test RCProxyMainnet, various 2', async () => {
     // change relaitio, winner should return 69
     realitio2 = await RealitioMockup2.new();
     await xdaiproxy.setRealitioAddress(realitio2.address);
     realitycards2 = await createMarketWithArtistSet();
     await realitio2.setResult(2);
     await time.increase(time.duration.years(1));
-    await xdaiproxy.getWinnerFromOracle(realitycards2.address); 
+    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     var winner = await realitycards2.winningOutcome();
-    assert.equal(winner,69);
+    assert.equal(winner, 69);
     // change arbitrator
     await xdaiproxy.setArbitrator(user0);
     var newarb = await xdaiproxy.arbitrator.call();
-    assert.equal(newarb,user0)
+    assert.equal(newarb, user0)
     // change timeout
     await xdaiproxy.setTimeout(69);
     var newtime = await xdaiproxy.timeout.call();
-    assert.equal(newtime,69)
-});
+    assert.equal(newtime, 69)
+  });
 
-it('test setAmicableResolution', async () => {
+  it('test setAmicableResolution', async () => {
     // normal setup, dont call the bridge, see if payout works
-    await time.increase(time.duration.years(1)); 
-    await expectRevert(xdaiproxy.setAmicableResolution(realitycards.address,2, {from: user1}), "caller is not the owner");
+    await time.increase(time.duration.years(1));
+    await expectRevert(xdaiproxy.setAmicableResolution(realitycards.address, 2, { from: user1 }), "caller is not the owner");
     // first check that setWinner cannot be called directly
     await expectRevert(realitycards.setWinner(2), "Not proxy");
-    await xdaiproxy.setAmicableResolution(realitycards.address,2);
+    await xdaiproxy.setAmicableResolution(realitycards.address, 2);
     // cant call it again
     await expectRevert(realitycards.lockMarket(), "Incorrect state");
     // await realitycards.determineWinner();
     var winner = await realitycards.winningOutcome();
-    assert.equal(winner,2);
+    assert.equal(winner, 2);
     // new market, resolve the normal way, check cant use setAmicableResolution
     var realitycards2 = await createMarketWithArtistSet();
-    await time.increase(time.duration.years(1)); 
+    await time.increase(time.duration.years(1));
     await realitycards2.lockMarket();
     await realitio.setResult(2);
     await xdaiproxy.getWinnerFromOracle(realitycards2.address);
-    await expectRevert(xdaiproxy.setAmicableResolution(realitycards.address,2),"Incorrect state");
-});
+    await expectRevert(xdaiproxy.setAmicableResolution(realitycards.address, 2), "Incorrect state");
+  });
 
 
-it('test NFT upgrade', async () => {
+  it.skip('test NFT upgrade', async () => {
+    // need to implement check that user has already claimed card (and market is over)
+    // before trying to exit them on a withdraw, then this test can be re-instated.
     await rcfactory.changeMarketApproval(realitycards.address);
-    await depositDai(1000,user1);
-    await depositDai(1000,user2);
-    await depositDai(1000,user3);
-    await newRental(10,3,user1);
+    await depositDai(1000, user1);
+    await depositDai(1000, user2);
+    await depositDai(1000, user3);
+    await newRental(10, 3, user1);
     await time.increase(time.duration.weeks(4));
-    await newRental(500,3,user2);
+    await newRental(500, 3, user2);
     await time.increase(time.duration.years(1));
     await realitio.setResult(3);
     await realitycards.lockMarket();
-    await expectRevert(realitycards.upgradeCard(3, {from: user1}),"Incorrect state");
+    await expectRevert(realitycards.upgradeCard(3, { from: user1 }), "Incorrect state");
     await xdaiproxy.getWinnerFromOracle(realitycards.address);
-    await realitycards.withdraw({from: user1});
-    await expectRevert(realitycards.upgradeCard(3, {from: user2}), "Not owner");
-    await realitycards.upgradeCard(3, {from: user1});
+    await realitycards.withdraw({ from: user1 });
+    await expectRevert(realitycards.upgradeCard(3, { from: user2 }), "Not owner");
+    await realitycards.upgradeCard(3, { from: user1 });
     var ownerxdai = await realitycards.ownerOf(3);
-    assert.equal(ownerxdai,realitycards.address);
+    assert.equal(ownerxdai, realitycards.address);
     var ownermainnet = await nfthubmainnet.ownerOf(3);
-    assert.equal(ownermainnet,user1);
+    assert.equal(ownermainnet, user1);
     // check token uri
     var tokenuri = await nfthubmainnet.tokenURI(3);
-    assert.equal("uri",tokenuri);
+    assert.equal("uri", tokenuri);
     // test cant call certain functions directly
-    await expectRevert(xdaiproxy.saveCardToUpgrade(3,"asdfsadf",user0), "Not market");
-    await expectRevert(mainnetproxy.upgradeCard(3,"asdfsadf",user0), "Not bridge");
+    await expectRevert(xdaiproxy.saveCardToUpgrade(3, "asdfsadf", user0), "Not market");
+    await expectRevert(mainnetproxy.upgradeCard(3, "asdfsadf", user0), "Not bridge");
     // now, create new market and make sure token IDs on mainnet increment correctly
     var nftMintCount = await rcfactory.totalNftMintCount.call();
-    assert.equal(nftMintCount,20);
+    assert.equal(nftMintCount, 20);
     var realitycards2 = await createMarketWithArtistSet();
     await rcfactory.changeMarketApproval(realitycards2.address);
-    await newRentalCustomContract(realitycards2,1,5,user3); 
+    await newRentalCustomContract(realitycards2, 1, 5, user3);
     await time.increase(time.duration.years(1));
     await realitio.setResult(5);
     await realitycards2.lockMarket();
     await xdaiproxy.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
-    await realitycards2.upgradeCard(5, {from: user3});
+    await realitycards2.upgradeCard(5, { from: user3 });
     var ownermainnet = await nfthubmainnet.ownerOf(25);
-    assert.equal(ownermainnet,user3);
+    assert.equal(ownermainnet, user3);
     var tokenuri = await nfthubmainnet.tokenURI(25);
-    assert.equal("x",tokenuri);
+    assert.equal("x", tokenuri);
     await time.increase(time.duration.minutes(10));
-    await withdrawDeposit(1000,user1);
-    await withdrawDeposit(1000,user3);
-});
+    await withdrawDeposit(1000, user1);
+    await withdrawDeposit(1000, user3);
+  });
 
 
-it('test dai->xdai bridge', async () => {
+  it('test dai->xdai bridge', async () => {
     // add 1000 eth to the float
     await xdaiproxy.send(web3.utils.toWei('100', 'ether'));
     // check cant confirm deposit if not validator
@@ -365,33 +367,33 @@ it('test dai->xdai bridge', async () => {
     // add user9 as validator
     await xdaiproxy.setValidator(user9, true);
     // backend just saw user1 send 10 eth
-    await xdaiproxy.confirmDaiDeposit(user1, ether('10'), 0, {from: user9});
+    await xdaiproxy.confirmDaiDeposit(user1, ether('10'), 0, { from: user9 });
     // check user1 received 10 eth
     var deposit = await treasury.userDeposit.call(user1);
     assert.equal(deposit.toString(), ether('10').toString());
     // confirm again check funds not sent again
-    await xdaiproxy.confirmDaiDeposit(user1, ether('10'), 0, {from: user9});
+    await xdaiproxy.confirmDaiDeposit(user1, ether('10'), 0, { from: user9 });
     var deposit = await treasury.userDeposit.call(user1);
     assert.equal(deposit.toString(), ether('10').toString());
     // check cant call execute when already executed
     await expectRevert(xdaiproxy.executeDaiDeposit(0), "Already executed");
     // add a second validator, new deposit, should not have executed yet
     await xdaiproxy.setValidator(user8, true);
-    await xdaiproxy.confirmDaiDeposit(user2, ether('20'), 1, {from: user9});
+    await xdaiproxy.confirmDaiDeposit(user2, ether('20'), 1, { from: user9 });
     var deposit = await treasury.userDeposit.call(user2);
     assert.equal(deposit.toString(), ether('0').toString());
     // catch errors if different details
-    await expectRevert(xdaiproxy.confirmDaiDeposit(user5, ether('20'), 1, {from: user8}), "Addresses don't match");
-    await expectRevert(xdaiproxy.confirmDaiDeposit(user2, ether('10'), 1, {from: user8}), "Amounts don't match");
+    await expectRevert(xdaiproxy.confirmDaiDeposit(user5, ether('20'), 1, { from: user8 }), "Addresses don't match");
+    await expectRevert(xdaiproxy.confirmDaiDeposit(user2, ether('10'), 1, { from: user8 }), "Amounts don't match");
     // catch errors if call execute before confirmed
     await expectRevert(xdaiproxy.executeDaiDeposit(1), "Not confirmed");
     // second confirmation, should now execute
-    await xdaiproxy.confirmDaiDeposit(user2, ether('20'), 1, {from: user8});
+    await xdaiproxy.confirmDaiDeposit(user2, ether('20'), 1, { from: user8 });
     var deposit = await treasury.userDeposit.call(user2);
     assert.equal(deposit.toString(), ether('20').toString());
     // Transfer more than the contract has
-    await xdaiproxy.confirmDaiDeposit(user3, ether('150'), 2, {from: user8});
-    await xdaiproxy.confirmDaiDeposit(user3, ether('150'), 2, {from: user9});
+    await xdaiproxy.confirmDaiDeposit(user3, ether('150'), 2, { from: user8 });
+    await xdaiproxy.confirmDaiDeposit(user3, ether('150'), 2, { from: user9 });
     // check user has received nothing
     var deposit = await treasury.userDeposit.call(user3);
     assert.equal(deposit.toString(), ether('0').toString());
@@ -403,7 +405,7 @@ it('test dai->xdai bridge', async () => {
     // test remove validator
     await xdaiproxy.setValidator(user8, false);
     // third transfer, should execute immediately
-    await xdaiproxy.confirmDaiDeposit(user4, ether('3'), 3, {from: user9});
+    await xdaiproxy.confirmDaiDeposit(user4, ether('3'), 3, { from: user9 });
     var deposit = await treasury.userDeposit.call(user4);
     assert.equal(deposit.toString(), ether('3').toString());
     // test withdraw float
@@ -411,11 +413,11 @@ it('test dai->xdai bridge', async () => {
     await xdaiproxy.withdrawFloat(ether('5'));
     var balanceAfter = await web3.eth.getBalance(user0);
     var depositWithdrawn = await balanceAfter - balanceBefore;
-    var difference = Math.abs(depositWithdrawn.toString()-ether('5').toString());
-    assert.isBelow(difference/deposit,0.00001);
-});
+    var difference = Math.abs(depositWithdrawn.toString() - ether('5').toString());
+    assert.isBelow(difference / deposit, 0.00001);
+  });
 
-it('test dai->xdai bridge if exceeds contract balance limit', async () => {
+  it('test dai->xdai bridge if exceeds contract balance limit', async () => {
     // set Treasury max balance
     await treasury.setMaxContractBalance(web3.utils.toWei('100', 'ether'));
     // add 1000 eth to the float
@@ -423,43 +425,43 @@ it('test dai->xdai bridge if exceeds contract balance limit', async () => {
     // add user9 as validator
     await xdaiproxy.setValidator(user9, true);
     // backend just saw user1 send 10 eth
-    await xdaiproxy.confirmDaiDeposit(user1, ether('75'), 0, {from: user9});
+    await xdaiproxy.confirmDaiDeposit(user1, ether('75'), 0, { from: user9 });
     // check user1 received 10 eth
     var deposit = await treasury.userDeposit.call(user1);
     assert.equal(deposit.toString(), ether('75').toString());
     // repeat the above, this time it should be diverted to user's balance
     var balanceBefore = await web3.eth.getBalance(user1);
-    await xdaiproxy.confirmDaiDeposit(user1, ether('75'), 1, {from: user9});
+    await xdaiproxy.confirmDaiDeposit(user1, ether('75'), 1, { from: user9 });
     var balanceAfter = await web3.eth.getBalance(user1);
     var depositWithdrawn = await balanceAfter - balanceBefore;
-    var difference = Math.abs(depositWithdrawn.toString()-ether('75').toString());
-    assert.isBelow(difference/deposit,0.00001);
-});
+    var difference = Math.abs(depositWithdrawn.toString() - ether('75').toString());
+    assert.isBelow(difference / deposit, 0.00001);
+  });
 
-it('test deposit dai mainnet proxy', async () => {
+  it('test deposit dai mainnet proxy', async () => {
     // make sure ARB has enough funds
     await alternateReceiverBridge.send(web3.utils.toWei('100', 'ether'));
     // send 10 dai via mainnet
     await mainnetproxy.depositDai(web3.utils.toWei('10', 'ether'));
     // check xdai proxy now has 10 xDai
     var balance = await web3.eth.getBalance(xdaiproxy.address);
-    assert.equal(balance,ether('10'));
+    assert.equal(balance, ether('10'));
     // add user9 as validator
     await xdaiproxy.setValidator(user9, true);
     // backend just saw user1 send 10 eth
-    await xdaiproxy.confirmDaiDeposit(user1, ether('10'), 0, {from: user9});
+    await xdaiproxy.confirmDaiDeposit(user1, ether('10'), 0, { from: user9 });
     // check user1 received 10 eth
     var deposit = await treasury.userDeposit.call(user1);
     assert.equal(deposit.toString(), ether('10').toString());
     // disable deposits, should revert
     await mainnetproxy.changeDepositsEnabled();
-    await expectRevert(mainnetproxy.depositDai(web3.utils.toWei('10', 'ether')),"Deposits disabled");
+    await expectRevert(mainnetproxy.depositDai(web3.utils.toWei('10', 'ether')), "Deposits disabled");
     // enable deposits, should not revert
     await mainnetproxy.changeDepositsEnabled();
     await mainnetproxy.depositDai(web3.utils.toWei('15', 'ether'));
     var balance = await web3.eth.getBalance(xdaiproxy.address);
-    assert.equal(balance,ether('15'));
-});
+    assert.equal(balance, ether('15'));
+  });
 
 
 
