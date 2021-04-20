@@ -152,8 +152,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
                 _prevUser
             );
         }
-
-        //TODO ownership may have just changed, deal with it
     }
 
     /// @dev finds the correct location in the orderbook for a given bid
@@ -375,7 +373,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
                 ] = _index;
             }
         }
-        //TODO ask the market to emit LogRemoveFromOrderbook(_tempPrev, _tokenId);
     }
 
     /// @dev to assist troubleshooting during testing
@@ -543,8 +540,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         override
         onlyTreasury
     {
-        //TODO what if user is owner of any cards!?
-
         foreclosureTime[_user] = block.timestamp;
         uint256 i = user[_user].bids.length.sub(1);
         uint256 _limit = 0;
