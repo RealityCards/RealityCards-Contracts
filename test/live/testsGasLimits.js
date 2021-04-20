@@ -61,125 +61,126 @@ contract("TestTreasury", (accounts) => {
   var zeroAddress = "0x0000000000000000000000000000000000000000";
 
   beforeEach(async () => {
-      // main contracts
-      treasury = await RCTreasury.new();
-      rcfactory = await RCFactory.new(treasury.address);
-      rcreference = await RCMarket.new();
-      rcorderbook = await RCOrderbook.new(rcfactory.address, treasury.address);
-      // nft hubs
-      nfthubxdai = await NftHubXDai.new(rcfactory.address);
-      nfthubmainnet = await NftHubMainnet.new();
-      // tell treasury about factory, tell factory about nft hub and reference
-      await treasury.setFactoryAddress(rcfactory.address);
-      await rcfactory.setReferenceContractAddress(rcreference.address);
-      await rcfactory.setNftHubAddress(nfthubxdai.address, 0);
-      await rcfactory.setOrderbookAddress(rcorderbook.address);
-      await treasury.setOrderbookAddress(rcorderbook.address);
-      // mockups
-      realitio = await RealitioMockup.new();
-      bridge = await BridgeMockup.new();
-      alternateReceiverBridge = await AlternateReceiverBridgeMockup.new();
-      dai = await DaiMockup.new();
-      // bridge contracts
-      xdaiproxy = await XdaiProxy.new(bridge.address, rcfactory.address, treasury.address, realitio.address, realitio.address);
-      mainnetproxy = await MainnetProxy.new(bridge.address, nfthubmainnet.address, alternateReceiverBridge.address, dai.address);
-      // tell the factory, mainnet proxy and bridge the xdai proxy address
-      await rcfactory.setProxyXdaiAddress(xdaiproxy.address);
-      await mainnetproxy.setProxyXdaiAddress(xdaiproxy.address);
-      await bridge.setProxyXdaiAddress(xdaiproxy.address);
-      // tell the xdai proxy, nft mainnet hub and bridge the mainnet proxy address
-      await xdaiproxy.setProxyMainnetAddress(mainnetproxy.address);
-      await bridge.setProxyMainnetAddress(mainnetproxy.address);
-      await nfthubmainnet.setProxyMainnetAddress(mainnetproxy.address);
-      // tell the treasury about the ARB
-      await treasury.setAlternateReceiverAddress(alternateReceiverBridge.address);
-      // market creation, start off without any.
-      market.length = 0;
-      marketAddress.length = 0;
-      await createMarket();
+    // main contracts
+    treasury = await RCTreasury.new();
+    rcfactory = await RCFactory.new(treasury.address);
+    rcreference = await RCMarket.new();
+    rcorderbook = await RCOrderbook.new(rcfactory.address, treasury.address);
+    // nft hubs
+    nfthubxdai = await NftHubXDai.new(rcfactory.address);
+    nfthubmainnet = await NftHubMainnet.new();
+    // tell treasury about factory, tell factory about nft hub and reference
+    await treasury.setFactoryAddress(rcfactory.address);
+    await rcfactory.setReferenceContractAddress(rcreference.address);
+    await rcfactory.setNftHubAddress(nfthubxdai.address, 0);
+    await treasury.setNftHubAddress(nfthubxdai.address);
+    await rcfactory.setOrderbookAddress(rcorderbook.address);
+    await treasury.setOrderbookAddress(rcorderbook.address);
+    // mockups
+    realitio = await RealitioMockup.new();
+    bridge = await BridgeMockup.new();
+    alternateReceiverBridge = await AlternateReceiverBridgeMockup.new();
+    dai = await DaiMockup.new();
+    // bridge contracts
+    xdaiproxy = await XdaiProxy.new(bridge.address, rcfactory.address, treasury.address, realitio.address, realitio.address);
+    mainnetproxy = await MainnetProxy.new(bridge.address, nfthubmainnet.address, alternateReceiverBridge.address, dai.address);
+    // tell the factory, mainnet proxy and bridge the xdai proxy address
+    await rcfactory.setProxyXdaiAddress(xdaiproxy.address);
+    await mainnetproxy.setProxyXdaiAddress(xdaiproxy.address);
+    await bridge.setProxyXdaiAddress(xdaiproxy.address);
+    // tell the xdai proxy, nft mainnet hub and bridge the mainnet proxy address
+    await xdaiproxy.setProxyMainnetAddress(mainnetproxy.address);
+    await bridge.setProxyMainnetAddress(mainnetproxy.address);
+    await nfthubmainnet.setProxyMainnetAddress(mainnetproxy.address);
+    // tell the treasury about the ARB
+    await treasury.setAlternateReceiverAddress(alternateReceiverBridge.address);
+    // market creation, start off without any.
+    market.length = 0;
+    marketAddress.length = 0;
+    await createMarket();
   });
 
   afterEach(async () => {
-      // // withdraw all users
-      // //await time.increase(time.duration.minutes(20));
-      // for (i = 0; i < 10; i++) {
-      //     user = eval("user" + i);
-      //     var deposit = await treasury.userDeposit.call(user)
-      //     console.log(deposit.toString());
-      //     if (deposit > 0) {
-      //         console.log('withdrawing ', user);
-      //         console.log('treasury ', treasury.address);
-      //         await treasury.withdrawDeposit(web3.utils.toWei('10000', 'ether'), { from: user });
-      //     }
-      // }
-      // await time.increase(time.duration.minutes(20));
+    // // withdraw all users
+    // //await time.increase(time.duration.minutes(20));
+    // for (i = 0; i < 10; i++) {
+    //     user = eval("user" + i);
+    //     var deposit = await treasury.userDeposit.call(user)
+    //     console.log(deposit.toString());
+    //     if (deposit > 0) {
+    //         console.log('withdrawing ', user);
+    //         console.log('treasury ', treasury.address);
+    //         await treasury.withdrawDeposit(web3.utils.toWei('10000', 'ether'), { from: user });
+    //     }
+    // }
+    // await time.increase(time.duration.minutes(20));
   });
 
   async function createMarket(options) {
-      // default values if no parameter passed
-      // mode, 0 = classic, 1 = winner takes all, 2 = hot potato
-      // timestamps are in seconds from now
-      var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
-      var defaults = {
-          mode: 0,
-          openTime: 0,
-          closeTime: 31536000,
-          resolveTime: 31536000,
-          numberOfCards: 50,
-          artistAddress: zeroAddress,
-          affiliateAddress: zeroAddress,
-          cardAffiliate: [zeroAddress],
-      };
-      options = setDefaults(options, defaults);
-      // assemble arrays
-      var closeTime = new BN(options.closeTime).add(await time.latest());
-      var resolveTime = new BN(options.resolveTime).add(await time.latest());
-      var timestamps = [options.openTime, closeTime, resolveTime];
-      var tokenURIs = [];
-      for (i = 0; i < options.numberOfCards; i++) {
-          tokenURIs.push("x");
-      }
+    // default values if no parameter passed
+    // mode, 0 = classic, 1 = winner takes all, 2 = hot potato
+    // timestamps are in seconds from now
+    var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
+    var defaults = {
+      mode: 0,
+      openTime: 0,
+      closeTime: 31536000,
+      resolveTime: 31536000,
+      numberOfCards: 50,
+      artistAddress: zeroAddress,
+      affiliateAddress: zeroAddress,
+      cardAffiliate: [zeroAddress],
+    };
+    options = setDefaults(options, defaults);
+    // assemble arrays
+    var closeTime = new BN(options.closeTime).add(await time.latest());
+    var resolveTime = new BN(options.resolveTime).add(await time.latest());
+    var timestamps = [options.openTime, closeTime, resolveTime];
+    var tokenURIs = [];
+    for (i = 0; i < options.numberOfCards; i++) {
+      tokenURIs.push("x");
+    }
 
-      await rcfactory.createMarket(
-          options.mode,
-          "0x0",
-          timestamps,
-          tokenURIs,
-          options.artistAddress,
-          options.affiliateAddress,
-          options.cardAffiliate,
-          question
-      );
-      marketAddress.push(await rcfactory.getMostRecentMarket.call(0));
-      market.push(await RCMarket.at(await rcfactory.getMostRecentMarket.call(0)));
+    await rcfactory.createMarket(
+      options.mode,
+      "0x0",
+      timestamps,
+      tokenURIs,
+      options.artistAddress,
+      options.affiliateAddress,
+      options.cardAffiliate,
+      question
+    );
+    marketAddress.push(await rcfactory.getMostRecentMarket.call(0));
+    market.push(await RCMarket.at(await rcfactory.getMostRecentMarket.call(0)));
   }
 
   async function depositDai(amount, user) {
-      amount = web3.utils.toWei(amount.toString(), "ether");
-      await treasury.deposit(user, { from: user, value: amount });
+    amount = web3.utils.toWei(amount.toString(), "ether");
+    await treasury.deposit(user, { from: user, value: amount });
   }
 
   function setDefaults(options, defaults) {
-      return _.defaults({}, _.clone(options), defaults);
+    return _.defaults({}, _.clone(options), defaults);
   }
 
   async function newRental(options) {
-      var defaults = {
-          market: market[0],
-          outcome: 0,
-          price: 1,
-          from: user0,
-          timeLimit: 0,
-          startingPosition: zeroAddress,
-      };
-      options = setDefaults(options, defaults);
-      options.price = web3.utils.toWei(options.price.toString(), "ether");
-      await options.market.newRental(options.price, options.timeLimit, options.startingPosition, options.outcome, { from: options.from });
+    var defaults = {
+      market: market[0],
+      outcome: 0,
+      price: 1,
+      from: user0,
+      timeLimit: 0,
+      startingPosition: zeroAddress,
+    };
+    options = setDefaults(options, defaults);
+    options.price = web3.utils.toWei(options.price.toString(), "ether");
+    await options.market.newRental(options.price, options.timeLimit, options.startingPosition, options.outcome, { from: options.from });
   }
 
   async function withdrawDeposit(amount, userx) {
-      amount = web3.utils.toWei(amount.toString(), "ether");
-      await treasury.withdrawDeposit(amount, true ,{ from: userx });
+    amount = web3.utils.toWei(amount.toString(), "ether");
+    await treasury.withdrawDeposit(amount, true, { from: userx });
   }
 
   if (testChoice == 1) {
@@ -387,7 +388,7 @@ contract("TestTreasury", (accounts) => {
     it('test maximum number of cards/market', async () => {
       var markets = [];
       var tokenURIs = ['x']; // Start with 1 token
-      
+
       //create markets
       while (true) {
         // create another market for the next loop and add it to the array

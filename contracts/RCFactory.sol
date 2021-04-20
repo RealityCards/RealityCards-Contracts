@@ -20,11 +20,11 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     using SafeMath for uint256;
     using SafeMath for uint32;
 
-    ////////////////////////////////////
-    //////// VARIABLES /////////////////
-    ////////////////////////////////////
+    /*╔═════════════════════════════════╗
+      ║           VARIABLES             ║
+      ╚═════════════════════════════════╝*/
 
-    ///// CONTRACT VARIABLES /////
+    //≡≡≡≡≡≡≡ CONTRACT VARIABLES ≡≡≡≡≡≡≡//
     IRCTreasury public override treasury;
     IRCProxyXdai public override proxy;
     IRCNftHubXdai public override nfthub;
@@ -79,9 +79,9 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     /// @dev ... so the appropriate token id is used when upgrading to mainnet
     uint256 public totalNftMintCount;
 
-    ////////////////////////////////////
-    //////// EVENTS ////////////////////
-    ////////////////////////////////////
+    /*╔═════════════════════════════════╗
+      ║            EVENTS               ║
+      ╚═════════════════════════════════╝*/
 
     event LogMarketCreated1(
         address contractAddress,
@@ -101,9 +101,9 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     event LogAdvancedWarning(uint256 _newAdvancedWarning);
     event LogMaximumDuration(uint256 _newMaximumDuration);
 
-    ////////////////////////////////////
-    //////// CONSTRUCTOR ///////////////
-    ////////////////////////////////////
+    /*╔═════════════════════════════════╗
+      ║          CONSTRUCTOR            ║
+      ╚═════════════════════════════════╝*/
 
     /// @dev Treasury must be deployed before Factory
     constructor(IRCTreasury _treasuryAddress) {
@@ -125,9 +125,9 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         setNFTMintingLimit(50); // current gas limit (12.5m) allows for 50 NFTs to be minted
     }
 
-    ////////////////////////////////////
-    ///////// VIEW FUNCTIONS ///////////
-    ////////////////////////////////////
+    /*╔═════════════════════════════════╗
+      ║          VIEW FUNCTIONS         ║
+      ╚═════════════════════════════════╝*/
 
     /// @notice Fetch the address of the most recently created market
     /// @param _mode Filter by market mode, 0=Classic 1=Winner Takes All 2=Hot Potato
@@ -159,9 +159,9 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         return potDistribution;
     }
 
-    ////////////////////////////////////
-    //////////// MODIFERS //////////////
-    ////////////////////////////////////
+    /*╔═════════════════════════════════╗
+      ║           MODIFIERS             ║
+      ╚═════════════════════════════════╝*/
 
     modifier onlyGovernors() {
         require(
@@ -171,9 +171,9 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         _;
     }
 
-    ////////////////////////////////////
-    ///// GOVERNANCE- OWNER (SETUP) ////
-    ////////////////////////////////////
+    /*╔═════════════════════════════════╗
+      ║     GOVERNANCE - OWNER (SETUP)  ║
+      ╚═════════════════════════════════╝*/
     /// @dev all functions should have onlyOwner modifier
 
     /// @notice address of the xDai Proxy contract
@@ -199,14 +199,16 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         orderbook = _newAddress;
     }
 
-    ////////////////////////////////////
-    /////// GOVERNANCE- OWNER //////////
-    ////////////////////////////////////
+    /*╔═════════════════════════════════╗
+      ║       GOVERNANCE - OWNER        ║
+      ╚═════════════════════════════════╝*/
     /// @dev all functions should have onlyOwner modifier
     // Min price increase, pot distribution & hot potato events emitted by Market.
     // Advanced Warning and Maximum Duration events emitted here. Nothing else need be emitted.
 
-    /// CALLED WITHIN CONSTRUCTOR (public)
+    /*┌────────────────────────────────────┐
+      │ CALLED WITHIN CONSTRUTOR - PUBLIC  │
+      └────────────────────────────────────┘*/
 
     /// @notice update stakeholder payouts
     /// @dev in 10s of basis points (so 1000 = 100%)
@@ -248,7 +250,9 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         nftMintingLimit = _mintLimit;
     }
 
-    /// NOT CALLED WITHIN CONSTRUCTOR (external)
+    /*┌──────────────────────────────────────────┐
+      │ NOT CALLED WITHIN CONSTRUTOR - EXTERNAL  │
+      └──────────────────────────────────────────┘*/
 
     /// @notice whether or not only governors can create the market
     function changeMarketCreationGovernorsOnly() external onlyOwner {
@@ -285,9 +289,9 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         governors[_governor] = !governors[_governor];
     }
 
-    ////////////////////////////////////
-    ///// GOVERNANCE- GOVERNORS ////////
-    ////////////////////////////////////
+    /*╔═════════════════════════════════╗
+      ║     GOVERNANCE - GOVERNORS      ║
+      ╚═════════════════════════════════╝*/
     /// @dev all functions should have onlyGovernors modifier
 
     /// @notice markets are default hidden from the interface, this reveals them
@@ -323,10 +327,11 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         ];
     }
 
-    ////////////////////////////////////
-    ////// GOVERNANCE- UBER OWNER //////
-    ////////////////////////////////////
-    //// ******** DANGER ZONE ******** ////
+    /*╔═════════════════════════════════╗
+      ║     GOVERNANCE - UBER OWNER     ║
+      ╠═════════════════════════════════╣
+      ║  ******** DANGER ZONE ********  ║
+      ╚═════════════════════════════════╝*/
     /// @dev uber owner required for upgrades
     /// @dev this is seperated so owner so can be set to multisig, or burn address to relinquish upgrade ability
     /// @dev ... while maintaining governance over other governanace functions
@@ -350,9 +355,9 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         uberOwner = _newUberOwner;
     }
 
-    ////////////////////////////////////
-    //////// MARKET CREATION ///////////
-    ////////////////////////////////////
+    /*╔═════════════════════════════════╗
+      ║         MARKET CREATION         ║
+      ╚═════════════════════════════════╝*/
 
     /// @notice Creates a new market with the given parameters
     /// @param _mode 0 = normal, 1 = winner takes all, 2 = hot potato

@@ -78,6 +78,7 @@ contract('TestProxies', (accounts) => {
     await treasury.setFactoryAddress(rcfactory.address);
     await rcfactory.setReferenceContractAddress(rcreference.address);
     await rcfactory.setNftHubAddress(nfthubxdai.address, 0);
+    await treasury.setNftHubAddress(nfthubxdai.address);
     await rcfactory.setOrderbookAddress(rcorderbook.address);
     await treasury.setOrderbookAddress(rcorderbook.address);
     // mockups 
