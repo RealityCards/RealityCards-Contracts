@@ -2,6 +2,10 @@
 pragma solidity ^0.7.5;
 
 interface IRCOrderbook {
+    function changeUberOwner(address) external;
+
+    function setFactoryAddress(address) external;
+
     function addMarket(
         address _market,
         uint256 _tokenCount,

@@ -50,6 +50,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
     uint256 public MAX_DELETIONS = 100;
     address public factoryAddress;
     address public treasuryAddress;
+    address public uberOwner;
     IRCTreasury treasury;
 
     // consider renaming this, we may need onlyTreasury also
@@ -66,10 +67,18 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         factoryAddress = _factoryAddress;
         treasuryAddress = _treasuryAddress;
         treasury = IRCTreasury(treasuryAddress);
+        uberOwner = msg.sender;
     }
 
-    // TODO make onlyOwner, or governance function
-    function setFactoryAddress(address _newFactory) external {
+    function changeUberOwner(address _newUberOwner) external override {
+        require(msgSender() == uberOwner, "Extremely Verboten");
+        require(_newUberOwner != address(0));
+        uberOwner = _newUberOwner;
+    }
+
+    function setFactoryAddress(address _newFactory) external override {
+        require(msgSender() == uberOwner, "Extremely Verboten");
+        require(_newFactory != address(0));
         factoryAddress = _newFactory;
     }
 
