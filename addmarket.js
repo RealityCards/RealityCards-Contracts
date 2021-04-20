@@ -7,10 +7,10 @@ var factoryAddress = '0xbF8852673F2eb61f069251f40FCC82c1975F1d1d'; //dev on Soko
 
 // variables market specific
 var marketOpeningTime = 0;
-var marketLockingTime = 1616997600; 
-var oracleResolutionTime = 1616997600; 
-var ipfsHash = 'QmdWBMbrFY9LvMmEYmdntS1LNbxWu7vh7CMZyvv8PyKg8g';
-var question = 'What will the state of Starship SN11 be at the end of this week?';
+var marketLockingTime = 1618920939; 
+var oracleResolutionTime = 1618920939; 
+var ipfsHash = 'QmTpe2gSttnUShyUgf6BFfbjC5QCWUHcqAkBmqMPE3XKMx';
+var question = 'XXXX?';
 var artistAddress = "0x0000000000000000000000000000000000000000";
 var affiliateAddress = "0x0000000000000000000000000000000000000000";
 var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000','0x0000000000000000000000000000000000000000'];
@@ -44,8 +44,10 @@ module.exports = function() {
 
     var lastAddress = await factory.getMostRecentMarket.call(0);
     console.log("Market created at address: ", lastAddress);
+    await factory.changeMarketApproval(lastAddress);
     console.log("Block number: ", transaction.receipt.blockNumber);
     process.exit();
   }
   createMarket();
+  
 };

@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 // read in extra arguments, this is to help deploy across multiple networks
 // myArgs[0] = first extra argument.. etc
 var myArgs = process.argv.slice(6, 9)
@@ -21,24 +23,24 @@ var BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
 var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
 var ARBMockup = artifacts.require('./mockups/AlternateReceiverBridgeMockup.sol')
 
-// variables
-// TODO: update chilvers' script with the relevant addresses here https://github.com/realitio/realitio-contracts/blob/master/config/arbitrators.json
+// MAINNET ADDRESS
+// kleros addresses: https://github.com/realitio/realitio-contracts/blob/master/config/arbitrators.json
 var ambAddressXdai = '0x75Df5AF045d91108662D8080fD1FEFAd6aA0bb59';
 var ambAddressMainnet = '0x4C36d2919e407f0Cc2Ee3c993ccF8ac26d9CE64e';
-var realitioAddress = '0x325a2e0F3CCA2ddbaeBB4DfC38Df8D19ca165b47';
 var arbAddressMainnet = '0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016'; // may not be correct
 var arbAddressXdai = '0x7301CFA0e1756B71869E93d4e4Dca5c7d0eb0AA6'; // may not be correct
-var kleros = '0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D'; //double check this
-var daiAddressMainnet = '0x6b175474e89094c44da98b954eedeac495271d0f'
+var daiAddressMainnet = '0x6b175474e89094c44da98b954eedeac495271d0f';
+var realitioAddressXdai = '0x79e32aE03fb27B07C89c0c568F80287C01ca2E57';
+var klerosXdai = '0xe40DD83a262da3f56976038F1554Fe541Fa75ecd';
 
-// Testnet addresses
-var ambAddressSokol = '0xFe446bEF1DbF7AFE24E81e05BC8B271C1BA9a560'
-var ambAddressKovan = '0xFe446bEF1DbF7AFE24E81e05BC8B271C1BA9a560'
-var realitioAddressKovan = '0x325a2e0F3CCA2ddbaeBB4DfC38Df8D19ca165b47'
-var arbAddressKovan = '0xEa7F8C8d2c55eE242f2F22c11F43421E459229b8'
-var arbAddressSokol = '0xed47976103eBcCF7685e8aF185deD9EcF57E146A'
+// TESTNET ADDRESSES
+var ambAddressSokol = '0xFe446bEF1DbF7AFE24E81e05BC8B271C1BA9a560';
+var ambAddressKovan = '0xFe446bEF1DbF7AFE24E81e05BC8B271C1BA9a560';
+var arbAddressKovan = '0xEa7F8C8d2c55eE242f2F22c11F43421E459229b8';
+var arbAddressSokol = '0xed47976103eBcCF7685e8aF185deD9EcF57E146A';
 // this is the trialBridge Dai contract, more info here: https://docs.tokenbridge.net/xdai-bridge/trial-the-bridge
-var daiAddressKovan = '0x40a81c34f36EbE2D98baC578d66d3EE952A48f24'
+var daiAddressKovan = '0x40a81c34f36EbE2D98baC578d66d3EE952A48f24';
+var klerosSokol = '0x37Fcdb26F12f3FC76F2424EC6B94D434a959A0f7';
 
 // read input arguments
 var xdaiProxyAddress = myArgs[0]
@@ -75,8 +77,8 @@ module.exports = async (deployer, network, accounts) => {
         ambAddressXdai,
         factory.address,
         treasury.address,
-        realitioAddress,
-        kleros
+        realitioAddressXdai,
+        klerosXdai
       )
     } else {
       // for sokol, deploy realitio mockup
@@ -89,7 +91,7 @@ module.exports = async (deployer, network, accounts) => {
         factory.address,
         treasury.address,
         realitio.address,
-        kleros
+        klerosSokol
       )
     }
     xdaiproxy = await XdaiProxy.deployed()
