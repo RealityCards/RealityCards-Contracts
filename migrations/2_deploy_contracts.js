@@ -35,9 +35,10 @@ var daiAddressMainnet = '0x6b175474e89094c44da98b954eedeac495271d0f'
 var ambAddressSokol = '0xFe446bEF1DbF7AFE24E81e05BC8B271C1BA9a560'
 var ambAddressKovan = '0xFe446bEF1DbF7AFE24E81e05BC8B271C1BA9a560'
 var realitioAddressKovan = '0x325a2e0F3CCA2ddbaeBB4DfC38Df8D19ca165b47'
-var arbAddressKovan = '0xA960d095470f7509955d5402e36d9DB984B5C8E2'
-// this is just a blank ERC20 contract
-var daiAddressKovan = '0xd133b22BCCcb3Cd3ca752D206b0632932D530Fda'
+var arbAddressKovan = '0xEa7F8C8d2c55eE242f2F22c11F43421E459229b8'
+var arbAddressSokol = '0xed47976103eBcCF7685e8aF185deD9EcF57E146A'
+// this is the trialBridge Dai contract, more info here: https://docs.tokenbridge.net/xdai-bridge/trial-the-bridge
+var daiAddressKovan = '0x40a81c34f36EbE2D98baC578d66d3EE952A48f24'
 
 // read input arguments
 var xdaiProxyAddress = myArgs[0]
@@ -64,11 +65,11 @@ module.exports = async (deployer, network, accounts) => {
     nfthubxdai = await NftHubXDai.deployed();
     // tell treasury about factory & ARB, tell factory about nft hub and reference
     await treasury.setFactoryAddress(factory.address);
-    await treasury.setAlternateReceiverAddress(arbAddressXdai);
     await factory.setReferenceContractAddress(reference.address);
-    await factory.setNftHubAddress(nfthubxdai.address,0);
+    await factory.setNftHubAddress(nfthubxdai.address, 0);
     // deploy xdai proxy
     if (network === 'stage1') {
+      await treasury.setAlternateReceiverAddress(arbAddressXdai);
       await deployer.deploy(
         XdaiProxy,
         ambAddressXdai,
@@ -81,6 +82,7 @@ module.exports = async (deployer, network, accounts) => {
       // for sokol, deploy realitio mockup
       await deployer.deploy(RealitioMockup);
       realitio = await RealitioMockup.deployed();
+      await treasury.setAlternateReceiverAddress(arbAddressSokol);
       await deployer.deploy(
         XdaiProxy,
         ambAddressSokol,
@@ -114,10 +116,10 @@ module.exports = async (deployer, network, accounts) => {
     nfthubmainnet = await NftHubMainnet.deployed()
     if (network === 'stage2') {
       // deploy mainnet proxy on mainnet
-      await deployer.deploy(MainnetProxy, ambAddressMainnet, realitioAddress, arbAddressMainnet);
+      await deployer.deploy(MainnetProxy, ambAddressMainnet, nfthubmainnet.address, arbAddressMainnet, daiAddressMainnet);
     } else {
       // deploy mainnet proxy on Kovan
-      await deployer.deploy(MainnetProxy, ambAddressKovan, realitioAddressKovan, arbAddressKovan);
+      await deployer.deploy(MainnetProxy, ambAddressKovan, nfthubmainnet.address, arbAddressKovan, daiAddressKovan);
     }
 
     mainnetproxy = await MainnetProxy.deployed();
