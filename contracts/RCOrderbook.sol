@@ -54,7 +54,11 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
 
     // consider renaming this, we may need onlyTreasury also
     modifier onlyMarkets {
-        //require(isMarket[msgSender()], "Not authorised");
+        require(isMarket[msgSender()], "Not authorised");
+        _;
+    }
+    modifier onlyTreasury {
+        require(msgSender() == address(treasury), "Not authorised");
         _;
     }
 
@@ -528,7 +532,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
     function removeUserFromOrderbook(address _user)
         external
         override
-        onlyMarkets
+        onlyTreasury
     {
         //TODO what if user is owner of any cards!?
 
