@@ -401,8 +401,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         } while (foreclosureTime[_head.next] != 0);
         // TODO make sure user has minimum rental left
         _newOwner = user[_market].bids[index[_market][_market][_token]].next;
-
-        return _newOwner;
     }
 
     function findNextBid(
