@@ -149,6 +149,11 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         _;
     }
 
+    modifier onlyOrderbook {
+        require(msgSender() == address(orderbook), "Not authorised");
+        _;
+    }
+
     modifier rentCollect(address _user) {
         collectRentUser(_user);
         _;
@@ -469,8 +474,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         address _newOwner,
         uint256 _oldPrice,
         uint256 _newPrice
-    ) external override {
-        // TODO only orderbook callable
+    ) external override onlyOrderbook {
         // Must add before subtract, to avoid underflow in the case a user is only updating their price.
         user[_newOwner].rentalRate = user[_newOwner].rentalRate.add(_newPrice);
         user[_oldOwner].rentalRate = user[_oldOwner].rentalRate.sub(_oldPrice);
@@ -479,8 +483,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     function updateBidRate(address _user, int256 _priceChange)
         external
         override
+        onlyOrderbook
     {
-        // TODO only orderbook callable
         user[_user].bidRate = SafeCast.toUint256(
             int256(user[_user].bidRate).add(_priceChange)
         );
