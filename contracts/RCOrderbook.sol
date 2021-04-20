@@ -594,6 +594,19 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
     ) external override onlyMarkets {
         /// @dev loop isn't unbounded, it is limited by the max number of tokens in a market
         for (uint256 i = 0; i < _tokens.length; i++) {
+            // reduce bidRate, if owner then reduce rentalRate
+            uint256 _price =
+                user[_user].bids[index[_user][_market][_tokens[i]]].price;
+            if (
+                user[_user].bids[index[_user][_market][_tokens[i]]].prev ==
+                _market
+            ) {
+                treasury.updateRentalRate(_user, _market, _price, 0);
+            }
+
+            int256 _priceChange = int256(0).sub(int256(_price));
+            treasury.updateBidRate(_user, _priceChange);
+
             // overwrite array element
             uint256 _index = index[_user][_market][_tokens[i]];
             uint256 _lastRecord = user[_user].bids.length.sub(1);
