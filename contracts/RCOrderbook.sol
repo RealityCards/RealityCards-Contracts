@@ -414,7 +414,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
             // TODO create a lighter weight version and only deal with ownership when new owner is settled on
             removeBidFromOrderbook(_head.next, _token);
             // delete next bid if foreclosed
-        } while (treasury.foreclosureTimeUser(_head.next) != 0);
+        } while (treasury.foreclosureTimeUser(_head.next) > block.timestamp);
         // TODO make sure user has minimum rental left
         _newOwner = user[_market].bids[index[_market][_market][_token]].next;
     }
@@ -594,7 +594,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         //TODO reset users rental rates etc
         if (user[_user].bids.length == 0) {
             //and get rid of them
-
             // delete user[_user];
         }
     }
