@@ -49,11 +49,16 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
     uint256 public MAX_DELETIONS = 100;
     address public factoryAddress;
     address public treasuryAddress;
+    address public uberOwner;
     IRCTreasury treasury;
 
     // consider renaming this, we may need onlyTreasury also
     modifier onlyMarkets {
-        //require(isMarket[msgSender()], "Not authorised");
+        require(isMarket[msgSender()], "Not authorised");
+        _;
+    }
+    modifier onlyTreasury {
+        require(msgSender() == address(treasury), "Not authorised");
         _;
     }
 
@@ -61,10 +66,18 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         factoryAddress = _factoryAddress;
         treasuryAddress = _treasuryAddress;
         treasury = IRCTreasury(treasuryAddress);
+        uberOwner = msg.sender;
     }
 
-    // TODO make onlyOwner, or governance function
-    function setFactoryAddress(address _newFactory) external {
+    function changeUberOwner(address _newUberOwner) external override {
+        require(msgSender() == uberOwner, "Extremely Verboten");
+        require(_newUberOwner != address(0));
+        uberOwner = _newUberOwner;
+    }
+
+    function setFactoryAddress(address _newFactory) external override {
+        require(msgSender() == uberOwner, "Extremely Verboten");
+        require(_newFactory != address(0));
         factoryAddress = _newFactory;
     }
 
@@ -119,7 +132,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
 
         if (bidExists(_user, _market, _token)) {
             // old bid exists, update it
-            // console.log("uh oh, it's an update ");
             _updateBidInOrderbook(
                 _user,
                 _market,
@@ -130,7 +142,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
             );
         } else {
             // new bid, add it
-            // console.log("yes it's new ");
             _newBidInOrderbook(
                 _user,
                 _market,
@@ -140,10 +151,10 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
                 _prevUser
             );
         }
-
-        //TODO ownership may have just changed, deal with it
     }
 
+    /// @dev finds the correct location in the orderbook for a given bid
+    /// @dev returns an adjusted (lowered) bid price if necessary.
     function _searchOrderbook(
         Bid storage _prevUser,
         address _market,
@@ -177,12 +188,16 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         }
         require(i < MAX_SEARCH_ITERATIONS, "Position in orderbook not found");
 
+        // if previous price is zero it must be the market and this is a new owner
+        // .. then don't reduce their price, we already checked they are 10% higher
+        // .. than the previous owner.
         if (_prevUser.price != 0 && _prevUser.price < _price) {
             _price = _prevUser.price;
         }
         return (_prevUser, _price);
     }
 
+    /// @dev add a new bid to the orderbook
     function _newBidInOrderbook(
         address _user,
         address _market,
@@ -236,6 +251,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         }
     }
 
+    /// @dev updates a bid that is already in the orderbook
     function _updateBidInOrderbook(
         address _user,
         address _market,
@@ -303,7 +319,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         }
     }
 
-    /// @dev removes a bid from the orderbook
+    /// @dev removes a single bid from the orderbook
     function removeBidFromOrderbook(address _user, uint256 _token)
         public
         override
@@ -356,7 +372,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
                 ] = _index;
             }
         }
-        //TODO ask the market to emit LogRemoveFromOrderbook(_tempPrev, _tokenId);
     }
 
     /// @dev to assist troubleshooting during testing
@@ -373,6 +388,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         console.log(" end of orderbook ");
     }
 
+    /// @dev to assist troubleshooting during testing
     function printUserBids(address _user) public view {
         console.log("printing bids for ", _user);
         uint256 i;
@@ -383,6 +399,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         console.log(" done printing bids ");
     }
 
+    /// @dev find the next valid owner of a given card
     function findNewOwner(uint256 _token)
         external
         override
@@ -400,10 +417,9 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         } while (treasury.foreclosureTimeUser(_head.next) != 0);
         // TODO make sure user has minimum rental left
         _newOwner = user[_market].bids[index[_market][_market][_token]].next;
-
-        return _newOwner;
     }
 
+    /// @dev currently not used anywhere
     function findNextBid(
         address _user,
         address _market,
@@ -521,9 +537,8 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
     function removeUserFromOrderbook(address _user)
         external
         override
-        onlyMarkets
+        onlyTreasury
     {
-        //TODO what if user is owner of any cards!?
         uint256 i = user[_user].bids.length.sub(1);
         uint256 _limit = 0;
         if (i > MAX_DELETIONS) {
@@ -554,6 +569,10 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
                 );
                 transferCard(_market, _token, _user, _tempNext, _price);
             }
+
+            int256 _priceChange =
+                int256(0).sub(int256(user[_user].bids[i].price));
+            treasury.updateBidRate(_user, _priceChange);
 
             user[_tempNext].bids[
                 index[_tempNext][user[_user].bids[i].market][
@@ -588,6 +607,19 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
     ) external override onlyMarkets {
         /// @dev loop isn't unbounded, it is limited by the max number of tokens in a market
         for (uint256 i = 0; i < _tokens.length; i++) {
+            // reduce bidRate, if owner then reduce rentalRate
+            uint256 _price =
+                user[_user].bids[index[_user][_market][_tokens[i]]].price;
+            if (
+                user[_user].bids[index[_user][_market][_tokens[i]]].prev ==
+                _market
+            ) {
+                treasury.updateRentalRate(_user, _market, _price, 0);
+            }
+
+            int256 _priceChange = int256(0).sub(int256(_price));
+            treasury.updateBidRate(_user, _priceChange);
+
             // overwrite array element
             uint256 _index = index[_user][_market][_tokens[i]];
             uint256 _lastRecord = user[_user].bids.length.sub(1);

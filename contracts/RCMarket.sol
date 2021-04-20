@@ -22,7 +22,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     using SafeMath for uint256;
     using SignedSafeMath for int256;
 
-    // VARIABLES
+    /*╔═════════════════════════════════╗
+      ║            VARIABLES            ║
+      ╚═════════════════════════════════╝*/
 
     // CONTRACT SETUP
     /// @dev = how many outcomes/teams/NFTs etc
@@ -131,7 +133,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     uint256 public cardAffiliateCut;
     mapping(uint256 => bool) public cardAffiliatePaid;
 
-    // EVENTS
+    /*╔═════════════════════════════════╗
+      ║             EVENTS              ║
+      ╚═════════════════════════════════╝*/
 
     event LogAddToOrderbook(
         address indexed newOwner,
@@ -195,7 +199,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         uint256 hotPotatoWeekDivisor
     );
 
-    // CONSTRUCTOR
+    /*╔═════════════════════════════════╗
+      ║           CONSTRUCTOR           ║
+      ╚═════════════════════════════════╝*/
 
     /// @param _mode 0 = normal, 1 = winner takes all, 2 = hot potato
     /// @param _timestamps for market opening, locking, and oracle resolution
@@ -308,7 +314,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         );
     }
 
-    // MODIFIERS
+    /*╔═════════════════════════════════╗
+      ║            MODIFIERS            ║
+      ╚═════════════════════════════════╝*/
 
     /// @dev automatically opens market if appropriate
     modifier autoUnlock() {
@@ -359,7 +367,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         timeLastCollected[card] = collectedUntil;
     }
 
-    // ORACLE PROXY CONTRACT CALLS
+    /*╔═════════════════════════════════╗
+      ║   ORACLE PROXY CONTRACT CALLS   ║
+      ╚═════════════════════════════════╝*/
 
     /// @notice send NFT to mainnet
     /// @dev upgrades not possible if market not approved
@@ -378,7 +388,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         emit LogNftUpgraded(_tokenId, _actualTokenId);
     }
 
-    // NFT HUB CONTRACT CALLS
+    /*╔═════════════════════════════════╗
+      ║     NFT HUB CONTRACT CALLS      ║
+      ╚═════════════════════════════════╝*/
 
     /// @notice gets the owner of the NFT via their Card Id
     function ownerOf(uint256 _tokenId) public view override returns (address) {
@@ -426,7 +438,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         tokenPrice[_tokenId] = _price;
     }
 
-    // MARKET RESOLUTION FUNCTIONS
+    /*╔═════════════════════════════════╗
+      ║  MARKET RESOLUTION FUNCTIONS    ║
+      ╚═════════════════════════════════╝*/
 
     /// @notice checks whether the competition has ended, if so moves to LOCKED state
     /// @dev can be called by anyone
@@ -590,7 +604,11 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         }
     }
 
-    // CORE FUNCTIONS- EXTERNAL
+    /*╔═════════════════════════════════╗
+      ║         CORE FUNCTIONS          ║
+      ╠═════════════════════════════════╣
+      ║             EXTERNAL            ║
+      ╚═════════════════════════════════╝*/
 
     /// @dev basically functions that have _checkState(States.OPEN) on first line
 
@@ -811,7 +829,11 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         emit LogSponsor(msgSender(), msg.value);
     }
 
-    // CORE FUNCTIONS- INTERNAL
+    /*╔═════════════════════════════════╗
+      ║         CORE FUNCTIONS          ║
+      ╠═════════════════════════════════╣
+      ║             INTERNAL            ║
+      ╚═════════════════════════════════╝*/
 
     /// @notice collects rent for a specific token
     /// @dev also calculates and updates how long the current user has held the token for
@@ -939,332 +961,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         }
     }
 
-    // /// @dev user is not in the orderbook
-    // function _newBid(
-    //     uint256 _newPrice,
-    //     uint256 _tokenId,
-    //     uint256 _timeHeldLimit,
-    //     address _startingPosition
-    // ) internal {
-    //     // check user not in the orderbook
-    //     // assert(orderbook[_tokenId][msgSender()].price == 0);
-    //     uint256 _minPriceToOwn =
-    //         (tokenPrice[_tokenId].mul(minimumPriceIncreasePercent.add(100)))
-    //             .div(100);
-    //     // case 1: user is sufficiently above highest bidder (or only bidder)
-    //     if (ownerOf(_tokenId) == address(this) || _newPrice >= _minPriceToOwn) {
-    //         _setNewOwner(_newPrice, _tokenId, _timeHeldLimit);
-    //     } else {
-    //         // case 2: user is not sufficiently above highest bidder
-    //         _placeInList(
-    //             _newPrice,
-    //             _tokenId,
-    //             _timeHeldLimit,
-    //             _startingPosition
-    //         );
-    //     }
-    // }
-
-    // /// @dev user is already in the orderbook
-    // function _updateBid(
-    //     uint256 _newPrice,
-    //     uint256 _tokenId,
-    //     uint256 _timeHeldLimit,
-    //     address _startingPosition
-    // ) internal {
-    //     uint256 _minPriceToOwn;
-    //     address _msgSender = msgSender();
-    //     // ensure user is in the orderbook
-    //     assert(orderbook[_tokenId][_msgSender].price > 0);
-    //     // case 1: user is currently the owner
-    //     if (_msgSender == ownerOf(_tokenId)) {
-    //         _minPriceToOwn = (
-    //             tokenPrice[_tokenId].mul(minimumPriceIncreasePercent.add(100))
-    //         )
-    //             .div(100);
-    //         // case 1A: new price must be X% higher than previous OR lower, otherwise revert the tx to prevent frontrunning
-    //         require(
-    //             _newPrice >= _minPriceToOwn ||
-    //                 _newPrice <= tokenPrice[_tokenId],
-    //             "Not 10% higher"
-    //         );
-    //         // case 1B: new price is at least X% above current price- adjust price & timeHeldLimit. newRental event required.
-    //         if (_newPrice >= _minPriceToOwn) {
-    //             orderbook[_tokenId][_msgSender].price = SafeCast.toUint128(
-    //                 _newPrice
-    //             );
-    //             orderbook[_tokenId][_msgSender].timeHeldLimit = SafeCast
-    //                 .toUint128(_timeHeldLimit);
-    //             _processUpdateOwner(_newPrice, _tokenId);
-    //             emit LogAddToOrderbook(
-    //                 _msgSender,
-    //                 _newPrice,
-    //                 _timeHeldLimit,
-    //                 nonce,
-    //                 _tokenId
-    //             );
-    //             // case 1C: new price is equal or below old price
-    //         } else {
-    //             _minPriceToOwn = (
-    //                 uint256(
-    //                     orderbook[_tokenId][
-    //                         orderbook[_tokenId][_msgSender].next
-    //                     ]
-    //                         .price
-    //                 )
-    //                     .mul(minimumPriceIncreasePercent.add(100))
-    //             )
-    //                 .div(100);
-    //             // case 1Ca: still the highest owner- adjust price & timeHeldLimit. newRental event required.
-    //             if (_newPrice >= _minPriceToOwn) {
-    //                 int256 _priceChange =
-    //                     int256(_newPrice).sub(
-    //                         int256(orderbook[_tokenId][_msgSender].price)
-    //                     );
-    //                 treasury.updateUserTotalBids(
-    //                     ownerOf(_tokenId),
-    //                     _priceChange
-    //                 );
-    //                 orderbook[_tokenId][_msgSender].price = SafeCast.toUint128(
-    //                     _newPrice
-    //                 );
-    //                 orderbook[_tokenId][_msgSender].timeHeldLimit = SafeCast
-    //                     .toUint128(_timeHeldLimit);
-    //                 _processUpdateOwner(_newPrice, _tokenId);
-    //                 emit LogAddToOrderbook(
-    //                     _msgSender,
-    //                     _newPrice,
-    //                     _timeHeldLimit,
-    //                     nonce,
-    //                     _tokenId
-    //                 );
-    //                 // case 1Cb: user is not owner anymore-  remove from list & add back. newRental event called in _setNewOwner or _placeInList via _newBid
-    //             } else {
-    //                 _revertToUnderbidder(_tokenId);
-    //                 _newBid(
-    //                     _newPrice,
-    //                     _tokenId,
-    //                     _timeHeldLimit,
-    //                     _startingPosition
-    //                 );
-    //             }
-    //         }
-    //         // case 2: user is not currently the owner- remove and add them back
-    //     } else {
-    //         // remove from the list
-    //         int256 _priceChange =
-    //             int256(0).sub(int256(orderbook[_tokenId][_msgSender].price));
-    //         treasury.updateUserTotalBids(_msgSender, _priceChange);
-    //         orderbook[_tokenId][orderbook[_tokenId][_msgSender].prev]
-    //             .next = orderbook[_tokenId][_msgSender].next;
-    //         orderbook[_tokenId][orderbook[_tokenId][_msgSender].next]
-    //             .prev = orderbook[_tokenId][_msgSender].prev;
-    //         delete orderbook[_tokenId][_msgSender]; // no LogRemoveFromOrderbook they are being added right back
-    //         _minPriceToOwn = (
-    //             tokenPrice[_tokenId].mul(minimumPriceIncreasePercent.add(100))
-    //         )
-    //             .div(100);
-    //         // case 2A: should be owner, add on top. newRental event called in _setNewOwner
-    //         if (_newPrice >= _minPriceToOwn) {
-    //             treasury.updateUserTotalBids(_msgSender, int256(_newPrice));
-    //             _setNewOwner(_newPrice, _tokenId, _timeHeldLimit);
-    //             // case 2B: should not be owner, add to list. newRental event called in _placeInList
-    //         } else {
-    //             _placeInList(
-    //                 _newPrice,
-    //                 _tokenId,
-    //                 _timeHeldLimit,
-    //                 _startingPosition
-    //             );
-    //         }
-    //     }
-    // }
-
-    // /// @dev only for when user is NOT already in the list and IS the highest bidder
-    // function _setNewOwner(
-    //     uint256 _newPrice,
-    //     uint256 _tokenId,
-    //     uint256 _timeHeldLimit
-    // ) internal {
-    //     // if hot potato mode, pay current owner
-    //     address _msgSender = msgSender();
-    //     if (mode == Mode.HOT_POTATO) {
-    //         uint256 _duration = uint256(1 weeks).div(hotPotatoWeekDivisor);
-    //         uint256 _requiredPayment =
-    //             (tokenPrice[_tokenId].mul(_duration)).div(uint256(1 days));
-    //         assert(
-    //             treasury.processHarbergerPayment(
-    //                 _msgSender,
-    //                 ownerOf(_tokenId),
-    //                 _requiredPayment
-    //             )
-    //         );
-    //     }
-    //     // process new owner
-    //     orderbook[_tokenId][_msgSender] = Bid(
-    //         SafeCast.toUint128(_newPrice),
-    //         SafeCast.toUint128(_timeHeldLimit),
-    //         ownerOf(_tokenId),
-    //         address(this)
-    //     );
-    //     orderbook[_tokenId][ownerOf(_tokenId)].prev = _msgSender;
-    //     // _processNewOwner must be after LogAddToOrderbook so LogNewOwner is not emitted before user is in the orderbook
-    //     emit LogAddToOrderbook(
-    //         _msgSender,
-    //         _newPrice,
-    //         _timeHeldLimit,
-    //         nonce,
-    //         _tokenId
-    //     );
-    //     _processNewOwner(_msgSender, _newPrice, _tokenId);
-    // }
-
-    // /// @dev only for when user is NOT already in the list and NOT the highest bidder
-    // function _placeInList(
-    //     uint256 _newPrice,
-    //     uint256 _tokenId,
-    //     uint256 _timeHeldLimit,
-    //     address _startingPosition
-    // ) internal {
-    //     uint256 _oldPrice = _newPrice;
-    //     // if starting position is not set, start at the top
-    //     if (_startingPosition == address(0)) {
-    //         _startingPosition = ownerOf(_tokenId);
-    //         // _newPrice could be the highest, but not X% above owner, hence _newPrice must be reduced or require statement below would fail
-    //         if (orderbook[_tokenId][_startingPosition].price < _newPrice) {
-    //             _newPrice = orderbook[_tokenId][_startingPosition].price;
-    //         }
-    //     }
-    //     // check the starting location is not too low down the list
-    //     require(
-    //         orderbook[_tokenId][_startingPosition].price >= _newPrice,
-    //         "Location too low"
-    //     );
-
-    //     address _tempNext = _startingPosition;
-    //     address _tempPrev;
-    //     uint256 _loopCount = 0;
-    //     uint256 _requiredPrice;
-
-    //     // loop through orderbook until bid is at least _requiredPrice above that user
-    //     do {
-    //         _tempPrev = _tempNext;
-    //         _tempNext = orderbook[_tokenId][_tempPrev].next;
-    //         _requiredPrice = (
-    //             uint256(orderbook[_tokenId][_tempNext].price).mul(
-    //                 minimumPriceIncreasePercent.add(100)
-    //             )
-    //         )
-    //             .div(100);
-    //         _loopCount = _loopCount.add(1);
-    //     } while (
-    //         // break loop if match price above AND above price below (so if either is false, continue, hence OR )
-    //         (_newPrice != orderbook[_tokenId][_tempPrev].price ||
-    //             _newPrice <= orderbook[_tokenId][_tempNext].price) &&
-    //             // break loop if price x% above below
-    //             _newPrice < _requiredPrice &&
-    //             // break loop if hits max iterations
-    //             _loopCount < LIST_MAX_ITERATIONS
-    //     );
-    //     require(_loopCount < LIST_MAX_ITERATIONS, "Location too high");
-
-    //     // reduce user's price to the user above them in the list if necessary, so prices are in order
-    //     if (orderbook[_tokenId][_tempPrev].price < _newPrice) {
-    //         _newPrice = orderbook[_tokenId][_tempPrev].price;
-    //     }
-    //     if (_oldPrice != _newPrice) {
-    //         int256 _priceChange = int256(_newPrice).sub(int256(_oldPrice));
-    //         treasury.updateUserTotalBids(msgSender(), _priceChange);
-    //     }
-    //     // add to the list
-    //     orderbook[_tokenId][msgSender()] = Bid(
-    //         SafeCast.toUint128(_newPrice),
-    //         SafeCast.toUint128(_timeHeldLimit),
-    //         _tempNext,
-    //         _tempPrev
-    //     );
-    //     orderbook[_tokenId][_tempPrev].next = msgSender();
-    //     orderbook[_tokenId][_tempNext].prev = msgSender();
-    //     emit LogAddToOrderbook(
-    //         msgSender(),
-    //         _newPrice,
-    //         _timeHeldLimit,
-    //         nonce,
-    //         _tokenId
-    //     );
-    // }
-
-    // /// @notice if a users deposit runs out, either return to previous owner or foreclose
-    // /// @dev can be called by anyone via collectRent, therefore should never use msg.sender
-    // function _revertToUnderbidder(uint256 _tokenId) internal {
-    //     address _tempNext = ownerOf(_tokenId);
-    //     address _tempPrev;
-    //     uint256 _tempNextDeposit;
-    //     uint256 _requiredDeposit;
-    //     uint256 _loopCount = 0;
-
-    //     // loop through orderbook list for user with sufficient deposit, deleting users who fail the test
-    //     do {
-    //         // get the address of next person in the list
-    //         _tempPrev = _tempNext;
-    //         _tempNext = orderbook[_tokenId][_tempPrev].next;
-    //         // remove the previous user
-    //         treasury.updateUserBids(
-    //             _tempPrev,
-    //             orderbook[_tokenId][_tempPrev].price,
-    //             _tokenId,
-    //             false
-    //         );
-    //         orderbook[_tokenId][_tempNext].prev = address(this);
-    //         delete orderbook[_tokenId][_tempPrev];
-    //         emit LogRemoveFromOrderbook(_tempPrev, _tokenId);
-    //         // get required  and actual deposit of next user
-    //         _tempNextDeposit = treasury.userDeposit(_tempNext);
-    //         uint256 _nextUserTotalBids =
-    //             treasury.userTotalBids(_tempNext).add(
-    //                 orderbook[_tokenId][_tempNext].price
-    //             );
-    //         _requiredDeposit = _nextUserTotalBids.div(minRentalDayDivisor);
-    //         _loopCount = _loopCount.add(1);
-    //     } while (
-    //         _tempNext != address(this) &&
-    //             _tempNextDeposit < _requiredDeposit &&
-    //             _loopCount < UNDERBID_MAX_ITERATIONS
-    //     );
-
-    //     exitedTimestamp[ownerOf(_tokenId)] = block.timestamp;
-    //     _processNewOwner(
-    //         _tempNext,
-    //         orderbook[_tokenId][_tempNext].price,
-    //         _tokenId
-    //     );
-    // }
-
-    // /// @dev we don't emit LogAddToOrderbook because this is not correct if called via _revertToUnderbidder
-    // function _processNewOwner(
-    //     address _newOwner,
-    //     uint256 _newPrice,
-    //     uint256 _tokenId
-    // ) internal {
-    //     treasury.updateOwnership(
-    //         ownerOf(_tokenId),
-    //         _newOwner,
-    //         tokenPrice[_tokenId],
-    //         _newPrice,
-    //         _tokenId
-    //     );
-    //     _transferCard(ownerOf(_tokenId), _newOwner, _tokenId);
-    //     tokenPrice[_tokenId] = _newPrice;
-    // }
-
-    // /// @dev same as above except does not transfer the Card or update last rental time
-    // function _processUpdateOwner(uint256 _newPrice, uint256 _tokenId) internal {
-    //     int256 _priceChange =
-    //         int256(_newPrice).sub(int256(tokenPrice[_tokenId]));
-    //     treasury.updateUserRentalRate(ownerOf(_tokenId), _priceChange);
-    //     tokenPrice[_tokenId] = _newPrice;
-    // }
-
     function _checkState(States currentState) internal view {
         require(state == currentState, "Incorrect state");
     }
@@ -1283,7 +979,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         emit LogStateChange(uint256(state));
     }
 
-    // CIRCUIT BREAKER
+    /*╔═════════════════════════════════╗
+      ║        CIRCUIT BREAKER          ║
+      ╚═════════════════════════════════╝*/
 
     /// @dev alternative to determineWinner, in case Oracle never resolves for any reason
     /// @dev does not set a winner so same as invalid outcome
