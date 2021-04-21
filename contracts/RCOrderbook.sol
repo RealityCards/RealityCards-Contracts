@@ -614,8 +614,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
             ]
                 .next = _tempNext;
             user[_user].bids.pop();
-            // TODO finish implementing max iteration limit
-        } while (user[_user].bids.length != 0);
+        } while (user[_user].bids.length > _limit);
 
         //TODO reset users rental rates etc
         if (user[_user].bids.length == 0) {
