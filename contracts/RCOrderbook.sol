@@ -1,11 +1,7 @@
 // SPDX-License-Identifier: UNDEFINED
-pragma solidity ^0.7.5;
-pragma abicoder v2; // only needed for getBid(), remove once tests updated
+pragma solidity 0.8.3;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/math/SignedSafeMath.sol";
-import "@openzeppelin/contracts/utils/SafeCast.sol";
 import "hardhat/console.sol";
 import "./lib/NativeMetaTransaction.sol";
 import "./interfaces/IRCTreasury.sol";

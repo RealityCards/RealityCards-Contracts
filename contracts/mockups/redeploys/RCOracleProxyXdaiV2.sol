@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNDEFINED
-pragma solidity ^0.7.5;
+pragma solidity 0.8.3;
 
 import "../../interfaces/IRCProxyMainnet.sol";
 import "../../interfaces/IBridge.sol";

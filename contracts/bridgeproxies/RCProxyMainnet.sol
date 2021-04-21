@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNDEFINED
-pragma solidity ^0.7.5;
+pragma solidity 0.8.3;
 
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -171,7 +171,14 @@ contract RCProxyMainnet is Ownable {
     function _depositDai(address _sender, uint256 _amount) internal {
         require(depositsEnabled, "Deposits disabled");
         emit DaiDeposited(_sender, _amount, depositNonce.add(1));
-        require(dai.transferFrom(_sender, address(this), _amount), "Token transfer failed");
-        alternateReceiverBridge.relayTokens(address(this), proxyXdaiAddress, _amount);
+        require(
+            dai.transferFrom(_sender, address(this), _amount),
+            "Token transfer failed"
+        );
+        alternateReceiverBridge.relayTokens(
+            address(this),
+            proxyXdaiAddress,
+            _amount
+        );
     }
 }

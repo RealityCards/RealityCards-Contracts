@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: UNDEFINED
-pragma solidity ^0.7.5;
+pragma solidity 0.8.3;
 
 interface IERC721 {
-
-    function mintNft(uint256,string calldata,address) external;
-
+    function mintNft(
+        uint256,
+        string calldata,
+        address
+    ) external;
 }

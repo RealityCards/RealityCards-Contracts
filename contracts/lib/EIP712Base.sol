@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNDEFINED
-pragma solidity ^0.7.5;
+pragma solidity 0.8.3;
 
 import "@openzeppelin/contracts/proxy/Initializable.sol";
 
@@ -11,26 +11,27 @@ contract EIP712Base is Initializable {
         bytes32 salt;
     }
 
-    bytes32 internal constant EIP712_DOMAIN_TYPEHASH = keccak256(
-        bytes(
-            "EIP712Domain(string name,string version,address verifyingContract,bytes32 salt)"
-        )
-    );
+    bytes32 internal constant EIP712_DOMAIN_TYPEHASH =
+        keccak256(
+            bytes(
+                "EIP712Domain(string name,string version,address verifyingContract,bytes32 salt)"
+            )
+        );
     bytes32 internal domainSeperator;
 
     // supposed to be called once while initializing.
     // one of the contractsa that inherits this contract follows proxy pattern
     // so it is not possible to do this in a constructor
-    function _initializeEIP712(
-        string memory name, string memory version
-    )
+    function _initializeEIP712(string memory name, string memory version)
         internal
         initializer
     {
         _setDomainSeperator(name, version);
     }
 
-    function _setDomainSeperator(string memory name, string memory version) internal {
+    function _setDomainSeperator(string memory name, string memory version)
+        internal
+    {
         domainSeperator = keccak256(
             abi.encode(
                 EIP712_DOMAIN_TYPEHASH,
