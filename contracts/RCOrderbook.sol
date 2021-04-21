@@ -399,14 +399,58 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         address _market = msgSender();
         // the market is the head of the list, the next bid is therefore the owner
         Bid storage _head = user[_market].bids[index[_market][_market][_token]];
+        address _oldOwner = _head.next;
+        uint256 _oldPrice =
+            user[_oldOwner].bids[index[_oldOwner][_market][_token]].price;
         // delete current owner
         do {
-            // TODO create a lighter weight version and only deal with ownership when new owner is settled on
-            removeBidFromOrderbook(_head.next, _token);
+            _removeBidFromOrderbookIgnoreOwner(_head.next, _token);
             // delete next bid if foreclosed
         } while (treasury.foreclosureTimeUser(_head.next) > block.timestamp);
         // TODO make sure user has minimum rental left
         _newOwner = user[_market].bids[index[_market][_market][_token]].next;
+        uint256 _newPrice =
+            user[_newOwner].bids[index[_newOwner][_market][_token]].price;
+        treasury.updateRentalRate(_oldOwner, _newOwner, _oldPrice, _newPrice);
+        transferCard(_market, _token, _oldOwner, _newOwner, _newPrice);
+    }
+
+    /// @dev removes a single bid from the orderbook, doesn't update ownership
+    function _removeBidFromOrderbookIgnoreOwner(address _user, uint256 _token)
+        internal
+    {
+        address _market = msgSender();
+        if (bidExists(_user, _market, _token)) {
+            // update rates
+            Bid storage _currUser =
+                user[_user].bids[index[_user][_market][_token]];
+            treasury.decreaseBidRate(_user, _currUser.price);
+
+            // extract from linked list
+            address _tempNext = _currUser.next;
+            address _tempPrev = _currUser.prev;
+            user[_tempNext].bids[index[_tempNext][_market][_token]]
+                .prev = _tempPrev;
+            user[_tempPrev].bids[index[_tempPrev][_market][_token]]
+                .next = _tempNext;
+
+            // overwrite array element
+            uint256 _index = index[_user][_market][_token];
+            uint256 _lastRecord = user[_user].bids.length - (1);
+            // no point overwriting itself
+            if (_index != _lastRecord) {
+                user[_user].bids[_index] = user[_user].bids[_lastRecord];
+            }
+            user[_user].bids.pop();
+
+            // update the index to help find the record later
+            index[_user][_market][_token] = 0;
+            if (user[_user].bids.length != 0 && _index != _lastRecord) {
+                index[_user][user[_user].bids[_index].market][
+                    user[_user].bids[_index].token
+                ] = _index;
+            }
+        }
     }
 
     /// @dev currently not used anywhere
