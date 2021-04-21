@@ -217,10 +217,10 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     ) public onlyOwner {
         require(
             _artistCut +
-                (_winnerCut) +
-                (_creatorCut) +
-                (_affiliateCut) +
-                (_cardAffiliateCut) <=
+                _winnerCut +
+                _creatorCut +
+                _affiliateCut +
+                _cardAffiliateCut <=
                 1000,
             "Cuts too big"
         );
@@ -345,7 +345,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         // set
         referenceContractAddress = _newAddress;
         // increment version
-        referenceContractVersion = referenceContractVersion + (1);
+        referenceContractVersion = referenceContractVersion + 1;
     }
 
     function changeUberOwner(address _newUberOwner) external {
@@ -417,14 +417,14 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
                 "Market opening time not set"
             );
             require(
-                _timestamps[0] - (advancedWarning) > block.timestamp,
+                _timestamps[0] - advancedWarning > block.timestamp,
                 "Market opens too soon"
             );
         }
         // check market locking time
         if (maximumDuration != 0) {
             require(
-                _timestamps[1] < block.timestamp + (maximumDuration),
+                _timestamps[1] < block.timestamp + maximumDuration,
                 "Market locks too late"
             );
         }
@@ -489,7 +489,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         // create the NFTs
         require(address(nfthub) != address(0), "Nfthub not set");
         for (uint256 i = 0; i < _numberOfTokens; i++) {
-            uint256 _tokenId = i + (totalNftMintCount);
+            uint256 _tokenId = i + totalNftMintCount;
             require(
                 nfthub.mintNft(_newAddress, _tokenId, _tokenURIs[i]),
                 "Nft Minting Failed"
