@@ -841,7 +841,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     function _collectRent(uint256 _tokenId) internal {
         uint256 _timeOfThisCollection = block.timestamp;
         address _user = ownerOf(_tokenId);
-        uint256 _foreclosureTime = orderbook.foreclosureTime(_user); // JS/TODO: need to get foreclosure time from treasury
+        uint256 _foreclosureTime = treasury.foreclosureTimeUser(_user);
         if (marketLockingTime <= block.timestamp) {
             _timeOfThisCollection = marketLockingTime;
         }
@@ -956,9 +956,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         // timeLastCollected is updated regardless of whether the token is owned, so that the clock starts ticking
         // ... when the first owner buys it, because this function is run before ownership changes upon calling newRental
         timeLastCollected[_tokenId] = _timeOfThisCollection;
-        if (_timeOfThisCollection == _foreclosureTime) {
-            _collectRent(_tokenId); // a user foreclosed, calcualte for the next user, unbounded loop alert
-        }
     }
 
     function _checkState(States currentState) internal view {

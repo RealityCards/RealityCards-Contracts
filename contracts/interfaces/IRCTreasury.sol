@@ -2,6 +2,9 @@
 pragma solidity ^0.7.5;
 
 interface IRCTreasury {
+
+    function foreclosureTimeUser(address _user) external view returns (uint256);
+
     function alternateReceiverBridgeAddress() external view returns (address);
 
     function factoryAddress() external view returns (address);
