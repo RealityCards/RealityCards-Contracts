@@ -18,20 +18,18 @@ import "./interfaces/IRCNftHubXdai.sol";
 contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     using SafeMath for uint256;
     using SignedSafeMath for int256;
-    //using SafeMath32 for uint32;
-    //using SafeMath64 for uint64;
 
     /*╔═════════════════════════════════╗
       ║             VARIABLES           ║
       ╚═════════════════════════════════╝*/
+    /// @dev orderbook instance, to remove users bids on foreclosure
+    IRCOrderbook public orderbook;
+    /// @dev nfthub instance, to query current card owner
+    IRCNftHubXdai public nfthub;
     /// @dev address of the alternate Receiver Bridge for withdrawals to mainnet
     address public override alternateReceiverBridgeAddress;
     /// @dev address of the Factory so only the Factory can add new markets
     address public override factoryAddress;
-    /// @dev address of the orderbook so only the orderbook can update bids
-    address public orderbookAddress;
-    /// @dev orderbook instance to remove users bids on foreclosure
-    IRCOrderbook orderbook;
     /// @dev so only markets can use certain functions
     mapping(address => bool) public override isMarket;
     /// @dev sum of all deposits
@@ -43,10 +41,11 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     /// @dev a quick check if the market is active or not
     mapping(address => bool) public override isMarketActive;
 
+    /// @param deposit the users current deposit in wei
     /// @param rentalRate the daily cost of the cards the user current owns
     /// @param bidRate the sum total of all placed bids
-    /// @param forclosureTime The time the user will foreclose with current ownership
-    /// @param safeForclosureTime The time a user could foreclose if they gained ownership of their bids
+    /// @param lastRentCalc The timestamp of the users last rent calculation
+    /// @param lastRentalTime The timestamp the user last made a rental
     struct User {
         // lets pack this struct later, leaving it as uint256 for rapid development and testing
         uint256 deposit;
@@ -54,20 +53,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         uint256 bidRate;
         uint256 lastRentCalc;
         uint256 lastRentalTime;
-        address[] marketBids; //a list of markets this user has bids in
-        address[] marketOwned; //a list of markets this user is an owner in
-        mapping(address => uint256) marketBidsIndex;
-        mapping(address => uint256) marketOwnedIndex;
-        mapping(address => Bids) tokens; //map market to info about token bids
-    }
-    struct Bids {
-        uint256[] tokenBids;
-        uint256[] tokensOwned;
-        mapping(uint256 => uint256) tokenBidsIndex;
-        mapping(uint256 => uint256) tokensOwnedIndex;
     }
     mapping(address => User) public user;
-    uint256 test;
 
     /*╔═════════════════════════════════╗
       ║      GOVERNANCE VARIABLES       ║
@@ -93,8 +80,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
       ╚═════════════════════════════════╝*/
     /// @dev high level owner who can change the factory address
     address public override uberOwner;
-
-    IRCNftHubXdai public nfthub;
 
     /*╔═════════════════════════════════╗
       ║             EVENTS              ║
@@ -136,22 +121,26 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
       ║           MODIFIERS             ║
       ╚═════════════════════════════════╝*/
 
+    /// @notice check that funds haven't gone missing during this function call
     modifier balancedBooks {
         _;
         // using >= not == because forced Ether send via selfdestruct will not trigger a deposit via the fallback
         assert(address(this).balance >= totalDeposits.add(totalMarketPots));
     }
 
+    /// @notice only allow markets to call these functions
     modifier onlyMarkets {
         require(isMarket[msgSender()], "Not authorised");
         _;
     }
 
+    /// @notice only allow orderbook to call these functions
     modifier onlyOrderbook {
         require(msgSender() == address(orderbook), "Not authorised");
         _;
     }
 
+    /// @notice collect user rent before this function
     modifier rentCollect(address _user) {
         collectRentUser(_user);
         _;
@@ -249,8 +238,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     function setOrderbookAddress(address _newOrderbook) external {
         require(msgSender() == uberOwner, "Extremely Verboten");
         require(_newOrderbook != address(0));
-        orderbookAddress = _newOrderbook;
-        orderbook = IRCOrderbook(orderbookAddress);
+        orderbook = IRCOrderbook(_newOrderbook);
     }
 
     function setNftHubAddress(address _NFTHubAddress) external {
@@ -351,7 +339,10 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
       ╚═════════════════════════════════╝*/
     // only markets can call these functions
 
-    /// @dev a rental payment is equivalent to moving from user's deposit to market pot, called by _collectRent in the market
+    /// @notice a rental payment is equivalent to moving from user's deposit to market pot,
+    /// @notice ..called by _collectRent in the market
+    /// @param _user the user to query
+    /// @param _dai amount of rent to pay in wei
     function payRent(address _user, uint256 _dai)
         external
         override
@@ -369,7 +360,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         return true;
     }
 
-    /// @dev a payout is equivalent to moving from market pot to user's deposit (the opposite of payRent)
+    /// @notice a payout is equivalent to moving from market pot to user's deposit (the opposite of payRent)
+    /// @param _user the user to query
+    /// @param _dai amount to payout in wei
     function payout(address _user, uint256 _dai)
         external
         override
@@ -423,7 +416,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         return true;
     }
 
-    /// @dev tracks when the user last rented- so they cannot rent and immediately withdraw, thus bypassing minimum rental duration
+    /// @notice tracks when the user last rented- so they cannot rent and immediately withdraw,
+    /// @notice ..thus bypassing minimum rental duration
+    /// @param _user the user to query
     function updateLastRentalTime(address _user)
         external
         override
@@ -434,8 +429,23 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         return true;
     }
 
-    /// @dev provides the sum total of a users bids accross all markets
-    /// @dev doesn't clean the bid array first as the market does that already
+    /// @notice adds or removes a market to the active markets array
+    /// @param _open true if the market is open
+    /// @dev this appears to be unused
+    function updateMarketStatus(bool _open) external override onlyMarkets {
+        if (_open) {
+            isMarketActive[msgSender()] = true;
+        } else {
+            isMarketActive[msgSender()] = false;
+        }
+    }
+
+    /*╔═════════════════════════════════╗
+      ║        MARKET HELPERS           ║
+      ╚═════════════════════════════════╝*/
+
+    /// @notice provides the sum total of a users bids accross all markets
+    /// @param _user the user address to query
     function userTotalBids(address _user)
         external
         view
@@ -445,15 +455,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         return user[_user].bidRate;
     }
 
-    /// @dev adds or removes a market to the active markets array
-    function updateMarketStatus(bool _open) external override onlyMarkets {
-        if (_open) {
-            isMarketActive[msgSender()] = true;
-        } else {
-            isMarketActive[msgSender()] = false;
-        }
-    }
-
+    /// @notice provide the users remaining deposit
+    /// @param _user the user address to query
     function userDeposit(address _user)
         external
         view
@@ -467,6 +470,11 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
       ║      ORDERBOOK CALLABLE         ║
       ╚═════════════════════════════════╝*/
 
+    /// @notice updates users rental rates when ownership changes
+    /// @param _oldOwner the address of the user losing ownership
+    /// @param _newOwner the address of the user gaining ownership
+    /// @param _oldPrice the price the old owner was paying
+    /// @param _newPrice the price the new owner will be paying
     function updateRentalRate(
         address _oldOwner,
         address _newOwner,
@@ -492,6 +500,10 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
       ║      RENT CALC HELPERS          ║
       ╚═════════════════════════════════╝*/
 
+    /// @notice returns the rent due between the users last rent calcualtion and
+    /// @notice ..the current block.timestamp for all cards a user owns
+    /// @param _user the user to query
+    /// @dev TODO consider making this internal
     function rentOwedUser(address _user) public view returns (uint256 rentDue) {
         return
             user[_user]
@@ -500,6 +512,10 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
                 .div(1 days);
     }
 
+    /// @notice returns the amount of deposit a user is able to withdraw
+    /// @notice ..after considering rent due to be paid
+    /// @param _user the user to query
+    /// @dev TODO consider making this internal
     function depositAbleToWithdraw(address _user)
         public
         view
@@ -513,7 +529,14 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         }
     }
 
-    function foreclosureTimeUser(address _user) external override view returns (uint256) {
+    /// @notice returns the current estimate of the users foreclosure time
+    /// @param _user the user to query
+    function foreclosureTimeUser(address _user)
+        external
+        view
+        override
+        returns (uint256)
+    {
         uint256 totalUserDailyRent = user[_user].rentalRate;
         if (totalUserDailyRent > 0) {
             // timeLeftOfDeposit = deposit / (totalUserDailyRent / 1 day)
@@ -532,6 +555,10 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         }
     }
 
+    /// @notice call for a rent collection on the given user
+    /// @notice IF the user doesn't have enough deposit, returns foreclosure time
+    /// @notice ..otherwise returns zero
+    /// @param _user the user to query
     function collectRentUser(address _user)
         public
         returns (uint256 newTimeLastCollectedOnForeclosure)
