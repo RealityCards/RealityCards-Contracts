@@ -29,6 +29,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
     struct Market {
         uint256 mode;
         uint256 minimumPriceIncreasePercent;
+        uint256 minimumRentalDuration;
     }
     mapping(address => User) public user;
     mapping(address => Market) public market;
@@ -82,6 +83,9 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         require(msgSender() == factoryAddress);
         isMarket[_market] = true;
         market[_market].minimumPriceIncreasePercent = _minIncrease;
+        market[_market].minimumRentalDuration =
+            1 days /
+            treasury.minRentalDayDivisor();
         for (uint256 i; i < _tokenCount; i++) {
             // create new record
             Bid memory _newBid;
@@ -402,12 +406,15 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         address _oldOwner = _head.next;
         uint256 _oldPrice =
             user[_oldOwner].bids[index[_oldOwner][_market][_token]].price;
+        uint256 minimumTimeToOwnTo =
+            block.timestamp + market[_market].minimumRentalDuration;
+
         // delete current owner
         do {
             _removeBidFromOrderbookIgnoreOwner(_head.next, _token);
             // delete next bid if foreclosed
-        } while (treasury.foreclosureTimeUser(_head.next) > block.timestamp);
-        // TODO make sure user has minimum rental left
+        } while (treasury.foreclosureTimeUser(_head.next) > minimumTimeToOwnTo);
+
         _newOwner = user[_market].bids[index[_market][_market][_token]].next;
         uint256 _newPrice =
             user[_newOwner].bids[index[_newOwner][_market][_token]].price;
