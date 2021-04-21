@@ -386,28 +386,31 @@ module.exports = async (deployer, network, accounts) => {
     // close 4 markets (#3-6)
     await closeMarket({
       realitio: realitio,
-      mainnetproxy: mainnetproxy,
+      xdaiproxy: xdaiproxy,
       market: market[3],
       winningOutcome: 0
     })
     await closeMarket({
       realitio: realitio,
-      mainnetproxy: mainnetproxy,
+      xdaiproxy: xdaiproxy,
       market: market[4],
       winningOutcome: 1
     })
     await closeMarket({
       realitio: realitio,
-      mainnetproxy: mainnetproxy,
+      xdaiproxy: xdaiproxy,
       market: market[5],
       winningOutcome: 2
     })
     await closeMarket({
       realitio: realitio,
-      mainnetproxy: mainnetproxy,
+      xdaiproxy: xdaiproxy,
       market: market[6],
       winningOutcome: 3
     })
+
+    await market[3].claimCard(0, { from: accounts[1] })
+    await market[3].upgradeCard(0, { from: accounts[1] })
 
     console.log('Closed markets done')
 
@@ -534,12 +537,24 @@ module.exports = async (deployer, network, accounts) => {
       closeTime: time.duration.weeks(9)
     })
 
+    await market[11].sponsor({
+      from: accounts[13],
+      value: web3.utils.toWei('500', 'ether')
+    })
+
     console.log('Markets#11-12 deployed')
 
     // create 1 market (#13) - random texts
     await createMarket({ ipfs: ipfsHashes[12], numberOfCards: 2 })
 
     console.log('Market#13 deployed')
+
+    // Extra for testing stuff
+    await market[3].withdraw({ from: accounts[1] })
+
+    await factory.setAdvancedWarning('86400', { from: accounts[0] })
+    await time.increase(time.duration.hours(1))
+    await factory.setMaximumDuration('604800', { from: accounts[0] })
 
     // you can force updating the state of an open market by calling collect for all cards (do this for all open markets)
     await market[0].collectRentAllCards()
@@ -627,8 +642,10 @@ async function createMarket(options) {
     options.cardAffiliate,
     question
   )
-  marketAddress.push(await factory.getMostRecentMarket.call(0))
+  var recentMarketAddress = await factory.getMostRecentMarket.call(0)
+  marketAddress.push(recentMarketAddress)
   market.push(await RCMarket.at(await factory.getMostRecentMarket.call(0)))
+  await factory.changeMarketApproval(recentMarketAddress)
 }
 
 async function closeMarket(options) {
@@ -636,7 +653,7 @@ async function closeMarket(options) {
     market: market[0],
     winningOutcome: 0,
     realitio: {},
-    mainnetproxy: {}
+    xdaiproxy: {}
   }
   options = setDefaults(options, defaults)
 
