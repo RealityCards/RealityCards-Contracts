@@ -2,7 +2,6 @@
 pragma solidity 0.8.3;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "hardhat/console.sol";
 import "./interfaces/IRealitio.sol";
@@ -604,7 +603,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     function collectRentAllCards() public override {
         _checkState(States.OPEN);
         for (uint256 i = 0; i < numberOfTokens; i++) {
-            _collectRent(i);
+            if (ownerOf(i) != address(this)) {
+                _collectRent(i);
+            }
         }
     }
 
@@ -780,9 +781,11 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             }
             // if not owner, just delete from orderbook
         } else {
-            _collectRent(_tokenId);
-            orderbook.removeBidFromOrderbook(_msgSender, _tokenId);
-            emit LogRemoveFromOrderbook(_msgSender, _tokenId);
+            if (orderbook.bidExists(_msgSender, address(this), _tokenId)) {
+                _collectRent(_tokenId);
+                orderbook.removeBidFromOrderbook(_msgSender, _tokenId);
+                emit LogRemoveFromOrderbook(_msgSender, _tokenId);
+            }
         }
         emit LogExit(_msgSender, _tokenId);
     }
