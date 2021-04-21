@@ -522,7 +522,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
                 (
                     (depositAbleToWithdraw(_user).mul(1 days))
                     // Add this to make sure this is the value rounded up
-                        .add(totalUserDailyRent - 1)
+                        .add(totalUserDailyRent.sub(1))
                 )
                     .div(totalUserDailyRent);
 
