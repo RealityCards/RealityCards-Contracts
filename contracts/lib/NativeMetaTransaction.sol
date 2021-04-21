@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: UNDEFINED
 pragma solidity 0.8.3;
 
-import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 import {EIP712Base} from "./EIP712Base.sol";
 
 contract NativeMetaTransaction is EIP712Base {
-    using SafeMath for uint256;
     bytes32 private constant META_TRANSACTION_TYPEHASH =
         keccak256(
             bytes(
@@ -14,7 +12,7 @@ contract NativeMetaTransaction is EIP712Base {
         );
     event MetaTransactionExecuted(
         address userAddress,
-        address payable relayerAddress,
+        address relayerAddress,
         bytes functionSignature
     );
     mapping(address => uint256) nonces;
@@ -50,7 +48,7 @@ contract NativeMetaTransaction is EIP712Base {
         );
 
         // increase nonce for user (to avoid re-use)
-        nonces[userAddress] = nonces[userAddress].add(1);
+        nonces[userAddress] = nonces[userAddress] + (1);
 
         emit MetaTransactionExecuted(
             userAddress,
@@ -118,7 +116,7 @@ contract NativeMetaTransaction is EIP712Base {
                 )
             }
         } else {
-            sender = msg.sender;
+            sender = payable(msg.sender);
         }
         return sender;
     }

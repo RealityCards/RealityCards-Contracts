@@ -16,9 +16,6 @@ import "../../lib/NativeMetaTransaction.sol";
 /// @author Andrew Stanger & Daniel Chilvers
 /// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!!
 contract RCFactoryV2 is Ownable, NativeMetaTransaction, IRCFactory {
-    using SafeMath for uint256;
-    using SafeMath for uint32;
-
     ////////////////////////////////////
     //////// VARIABLES /////////////////
     ////////////////////////////////////
@@ -135,7 +132,7 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction, IRCFactory {
         view
         returns (address)
     {
-        return marketAddresses[_mode][marketAddresses[_mode].length.sub(1)];
+        return marketAddresses[_mode][marketAddresses[_mode].length - (1)];
     }
 
     /// @notice Fetch all the market addresses for a given mode
@@ -217,9 +214,12 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction, IRCFactory {
         uint256 _cardAffiliateCut
     ) public onlyOwner {
         require(
-            _artistCut.add(_winnerCut).add(_creatorCut).add(_affiliateCut).add(
-                _cardAffiliateCut
-            ) <= 1000,
+            _artistCut +
+                (_winnerCut) +
+                (_creatorCut) +
+                (_affiliateCut) +
+                (_cardAffiliateCut) <=
+                1000,
             "Cuts too big"
         );
         potDistribution[0] = _artistCut;
@@ -340,7 +340,7 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction, IRCFactory {
         // set
         referenceContractAddress = _newAddress;
         // increment version
-        referenceContractVersion = referenceContractVersion.add(1);
+        referenceContractVersion = referenceContractVersion + (1);
     }
 
     function changeUberOwner(address _newUberOwner) external {
@@ -412,20 +412,20 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction, IRCFactory {
                 "Market opening time not set"
             );
             require(
-                _timestamps[0].sub(advancedWarning) > block.timestamp,
+                _timestamps[0] - (advancedWarning) > block.timestamp,
                 "Market opens too soon"
             );
         }
         // check market locking time
         if (maximumDuration != 0) {
             require(
-                _timestamps[1] < block.timestamp.add(maximumDuration),
+                _timestamps[1] < block.timestamp + (maximumDuration),
                 "Market locks too late"
             );
         }
         // check oracle resolution time (no more than 1 week after market locking to get result)
         require(
-            _timestamps[1].add(1 weeks) > _timestamps[2] &&
+            _timestamps[1] + (1 weeks) > _timestamps[2] &&
                 _timestamps[1] <= _timestamps[2],
             "Oracle resolution time error"
         );
@@ -484,7 +484,7 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction, IRCFactory {
         // create the NFTs
         require(address(nfthub) != address(0), "Nfthub not set");
         for (uint256 i = 0; i < _numberOfTokens; i++) {
-            uint256 _tokenId = i.add(totalNftMintCount);
+            uint256 _tokenId = i + (totalNftMintCount);
             require(
                 nfthub.mintNft(_newAddress, _tokenId, _tokenURIs[i]),
                 "Nft Minting Failed"
@@ -492,7 +492,7 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction, IRCFactory {
         }
 
         // increment totalNftMintCount
-        totalNftMintCount = totalNftMintCount.add(_numberOfTokens);
+        totalNftMintCount = totalNftMintCount + (_numberOfTokens);
 
         // post question to Oracle
         require(address(proxy) != address(0), "xDai proxy not set");

@@ -17,8 +17,7 @@ contract AlternateReceiverBridgeMockup {
         uint256 _amount
     ) external payable {
         _notused;
-        address payable _recipient = address(uint160(_RCProxyAddress));
-        (bool _success, ) = _recipient.call{value: _amount}("");
+        (bool _success, ) = payable(_RCProxyAddress).call{value: _amount}("");
         require(_success, "Transfer failed");
     }
 }
