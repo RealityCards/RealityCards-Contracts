@@ -3,7 +3,6 @@ pragma solidity 0.8.3;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
-
 import "hardhat/console.sol";
 import "./lib/NativeMetaTransaction.sol";
 import "./interfaces/IRCTreasury.sol";

@@ -2,7 +2,6 @@
 pragma solidity 0.8.3;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "hardhat/console.sol";
 import "./interfaces/IRealitio.sol";
