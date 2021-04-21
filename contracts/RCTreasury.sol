@@ -480,14 +480,20 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         user[_oldOwner].rentalRate = user[_oldOwner].rentalRate - (_oldPrice);
     }
 
-    function updateBidRate(address _user, int256 _priceChange)
+    function increaseBidRate(address _user, uint256 _price)
         external
         override
         onlyOrderbook
     {
-        user[_user].bidRate = SafeCast.toUint256(
-            int256(user[_user].bidRate) + (_priceChange)
-        );
+        user[_user].bidRate += _price;
+    }
+
+    function decreaseBidRate(address _user, uint256 _price)
+        external
+        override
+        onlyOrderbook
+    {
+        user[_user].bidRate -= _price;
     }
 
     /*╔═════════════════════════════════╗

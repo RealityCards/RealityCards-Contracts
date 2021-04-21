@@ -228,7 +228,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         index[_user][_market][_token] = user[_user].bids.length - (1);
 
         // update memo value
-        treasury.updateBidRate(_user, int256(_price));
+        treasury.increaseBidRate(_user, _price);
         if (user[_user].bids[index[_user][_market][_token]].prev == _market) {
             address _oldOwner =
                 user[_user].bids[index[_user][_market][_token]].next;
@@ -281,8 +281,8 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         _prevUser.next = _user; // prev record update next link
 
         // update memo values
-        int256 _priceChange = int256(_currUser.price) - (int256(_price));
-        treasury.updateBidRate(_user, _priceChange);
+        treasury.increaseBidRate(_user, _currUser.price);
+        treasury.decreaseBidRate(_user, _price);
         if (_owner && _currUser.prev == _market) {
             // if owner before and after, update the price difference
             transferCard(_market, _token, _user, _user, _currUser.price);
@@ -321,8 +321,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
             // update rates
             Bid storage _currUser =
                 user[_user].bids[index[_user][_market][_token]];
-            int256 _priceChange = int256(0) - (int256(_currUser.price));
-            treasury.updateBidRate(_user, _priceChange);
+            treasury.decreaseBidRate(_user, _currUser.price);
             if (_currUser.prev == _market) {
                 // user is owner, deal with it
                 uint256 _price =
@@ -562,9 +561,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
                 transferCard(_market, _token, _user, _tempNext, _price);
             }
 
-            int256 _priceChange =
-                int256(0) - (int256(user[_user].bids[i].price));
-            treasury.updateBidRate(_user, _priceChange);
+            treasury.decreaseBidRate(_user, user[_user].bids[i].price);
 
             user[_tempNext].bids[
                 index[_tempNext][user[_user].bids[i].market][
@@ -607,8 +604,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
                 treasury.updateRentalRate(_user, _market, _price, 0);
             }
 
-            int256 _priceChange = int256(0) - (int256(_price));
-            treasury.updateBidRate(_user, _priceChange);
+            treasury.decreaseBidRate(_user, _price);
 
             // overwrite array element
             uint256 _index = index[_user][_market][_tokens[i]];

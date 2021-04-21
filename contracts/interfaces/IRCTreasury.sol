@@ -73,7 +73,9 @@ interface IRCTreasury {
         uint256 _newPrice
     ) external;
 
-    function updateBidRate(address _user, int256 _priceChange) external;
+    function increaseBidRate(address _user, uint256 _price) external;
+
+    function decreaseBidRate(address _user, uint256 _price) external;
 
     function updateMarketStatus(bool _open) external;
 
