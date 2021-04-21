@@ -596,32 +596,38 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         public
         returns (bool didTokenForeclose)
     {
-        // JS/TODO: if the card has NO current owner, return early (no need to collect rent on - non-existant user)
         address cardOwner = nfthub.ownerOf(card);
         uint256 newTimeLastCollectedOnForeclosure = collectRentUser(cardOwner);
 
         IRCMarket market = IRCMarket(nfthub.marketTracker(card));
 
-        didTokenForeclose = newTimeLastCollectedOnForeclosure > 0;
-        if (didTokenForeclose) {
-            // JS/TODO: handle case of transferring card to next eligible user in order-book
-            //  if eligible newOwner exists {
-            //    set time token last rent collect to 'newTimeLastCollectedOnForeclosure'
-            //  else {
-            //    set time token last rent collect to 'now'
-            //  }
-        } else {
-            uint256 cardRentalRate = market.tokenPrice(card);
-            uint256 cardTimeLastCollected = market.tokenPrice(card);
-            uint256 rentDueForCard =
-                (cardRentalRate * (block.timestamp - (cardTimeLastCollected))) /
-                    (1 days);
+        if (cardOwner != address(market)) {
+            didTokenForeclose = newTimeLastCollectedOnForeclosure > 0;
+            if (didTokenForeclose) {
+                // JS/TODO: handle case of transferring card to next eligible user in order-book
+                //  if eligible newOwner exists {
+                //    set time token last rent collect to 'newTimeLastCollectedOnForeclosure'
+                //  else {
+                //    set time token last rent collect to 'now'
+                //  }
+            } else {
+                uint256 cardRentalRate = market.tokenPrice(card);
+                uint256 cardTimeLastCollected = market.tokenPrice(card);
+                uint256 rentDueForCard =
+                    (cardRentalRate *
+                        (block.timestamp - cardTimeLastCollected)) / 1 days;
 
-            if (rentDueForCard > 0) {
-                _increaseMarketBalance(market, rentDueForCard);
+                if (rentDueForCard > 0) {
+                    _increaseMarketBalance(market, rentDueForCard);
+                }
+
+                market.updateCard(
+                    card,
+                    cardOwner,
+                    rentDueForCard,
+                    block.timestamp
+                );
             }
-
-            market.updateCard(card, cardOwner, rentDueForCard, block.timestamp);
         }
     }
 
