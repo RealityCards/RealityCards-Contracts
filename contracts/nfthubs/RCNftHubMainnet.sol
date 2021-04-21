@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: UNDEFINED
-pragma solidity ^0.7.5;
+pragma solidity 0.8.3;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "hardhat/console.sol";
 
 /// @title Reality Cards NFT Hub- mainnet side
 /// @author Andrew Stanger
-contract RCNftHubMainnet is Ownable, ERC721 {
+contract RCNftHubMainnet is Ownable, ERC721URIStorage {
     ////////////////////////////////////
     //////// VARIABLES /////////////////
     ////////////////////////////////////

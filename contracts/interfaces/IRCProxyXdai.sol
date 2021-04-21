@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNDEFINED
-pragma solidity ^0.7.5;
+pragma solidity 0.8.3;
 
 interface IRCProxyXdai {
     function setWinner(address _marketAddress, uint256 _winningOutcome)

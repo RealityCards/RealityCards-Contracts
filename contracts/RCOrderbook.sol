@@ -1,11 +1,7 @@
 // SPDX-License-Identifier: UNDEFINED
-pragma solidity ^0.7.5;
-pragma abicoder v2; // only needed for getBid(), remove once tests updated
+pragma solidity 0.8.3;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/math/SignedSafeMath.sol";
-import "@openzeppelin/contracts/utils/SafeCast.sol";
 import "hardhat/console.sol";
 import "./lib/NativeMetaTransaction.sol";
 import "./interfaces/IRCTreasury.sol";
@@ -16,9 +12,6 @@ import "./interfaces/IRCOrderbook.sol";
 /// @author Daniel Chilvers
 /// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!!
 contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
-    using SafeMath for uint256;
-    using SignedSafeMath for int256;
-
     struct Bid {
         //pack this later
         address market;
@@ -99,7 +92,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
             _newBid.price = 0;
             _newBid.timeHeldLimit = type(uint256).max;
             user[_market].bids.push(_newBid);
-            index[_market][_market][i] = user[_market].bids.length.sub(1);
+            index[_market][_market][i] = user[_market].bids.length - (1);
         }
     }
 
@@ -165,7 +158,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         Bid storage _nextUser =
             user[_prevUser.next].bids[index[_prevUser.next][_market][_token]];
         uint256 _requiredPrice =
-            (_nextUser.price.mul(_minIncrease.add(100))).div(100);
+            (_nextUser.price * (_minIncrease + (100))) / (100);
 
         uint256 i = 0;
         while (
@@ -181,9 +174,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
             _nextUser = user[_prevUser.next].bids[
                 index[_prevUser.next][_market][_token]
             ];
-            _requiredPrice = (_nextUser.price.mul(_minIncrease.add(100))).div(
-                100
-            );
+            _requiredPrice = (_nextUser.price * (_minIncrease + (100))) / (100);
             i++;
         }
         require(i < MAX_SEARCH_ITERATIONS, "Position in orderbook not found");
@@ -234,7 +225,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         user[_user].bids.push(_newBid);
 
         // update the index to help find the record later
-        index[_user][_market][_token] = user[_user].bids.length.sub(1);
+        index[_user][_market][_token] = user[_user].bids.length - (1);
 
         // update memo value
         treasury.updateBidRate(_user, int256(_price));
@@ -290,7 +281,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         _prevUser.next = _user; // prev record update next link
 
         // update memo values
-        int256 _priceChange = int256(_currUser.price).sub(int256(_price));
+        int256 _priceChange = int256(_currUser.price) - (int256(_price));
         treasury.updateBidRate(_user, _priceChange);
         if (_owner && _currUser.prev == _market) {
             // if owner before and after, update the price difference
@@ -330,7 +321,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
             // update rates
             Bid storage _currUser =
                 user[_user].bids[index[_user][_market][_token]];
-            int256 _priceChange = int256(0).sub(int256(_currUser.price));
+            int256 _priceChange = int256(0) - (int256(_currUser.price));
             treasury.updateBidRate(_user, _priceChange);
             if (_currUser.prev == _market) {
                 // user is owner, deal with it
@@ -357,7 +348,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
 
             // overwrite array element
             uint256 _index = index[_user][_market][_token];
-            uint256 _lastRecord = user[_user].bids.length.sub(1);
+            uint256 _lastRecord = user[_user].bids.length - (1);
             // no point overwriting itself
             if (_index != _lastRecord) {
                 user[_user].bids[_index] = user[_user].bids[_lastRecord];
@@ -539,15 +530,16 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         override
         onlyTreasury
     {
-        uint256 i = user[_user].bids.length.sub(1);
+        uint256 i = user[_user].bids.length;
         uint256 _limit = 0;
         if (i > MAX_DELETIONS) {
-            _limit = i.sub(MAX_DELETIONS);
+            _limit = i - MAX_DELETIONS;
         }
-        address _market = user[_user].bids[0].market;
-        uint256 _token = user[_user].bids[0].token;
+        address _market = user[_user].bids[i - 1].market;
+        uint256 _token = user[_user].bids[i - 1].token;
 
         do {
+            i--;
             index[user[_user].bids[i].market][_user][
                 user[_user].bids[i].token
             ] = 0;
@@ -571,7 +563,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
             }
 
             int256 _priceChange =
-                int256(0).sub(int256(user[_user].bids[i].price));
+                int256(0) - (int256(user[_user].bids[i].price));
             treasury.updateBidRate(_user, _priceChange);
 
             user[_tempNext].bids[
@@ -587,7 +579,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
             ]
                 .next = _tempNext;
             user[_user].bids.pop();
-            i--;
             // TODO finish implementing max iteration limit
         } while (user[_user].bids.length != 0);
 
@@ -616,12 +607,12 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
                 treasury.updateRentalRate(_user, _market, _price, 0);
             }
 
-            int256 _priceChange = int256(0).sub(int256(_price));
+            int256 _priceChange = int256(0) - (int256(_price));
             treasury.updateBidRate(_user, _priceChange);
 
             // overwrite array element
             uint256 _index = index[_user][_market][_tokens[i]];
-            uint256 _lastRecord = user[_user].bids.length.sub(1);
+            uint256 _lastRecord = user[_user].bids.length - (1);
             user[_user].bids[_index] = user[_user].bids[_lastRecord];
             user[_user].bids.pop();
 

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNDEFINED
-pragma solidity ^0.7.5;
+pragma solidity 0.8.3;
 
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
+
 import "../interfaces/IRCProxyMainnet.sol";
 import "../interfaces/IBridge.sol";
 import "../interfaces/IRCMarket.sol";
@@ -14,7 +14,6 @@ import "../interfaces/IRealitio.sol";
 /// @author Andrew Stanger, Marvin Kruse & Daniel Chilvers
 /// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!!
 contract RCProxyXdai is Ownable {
-    using SafeMath for uint256;
     ////////////////////////////////////
     //////// VARIABLES /////////////////
     ////////////////////////////////////
@@ -172,10 +171,8 @@ contract RCProxyXdai is Ownable {
     /// @dev impossible to withdraw user funds, only added float
     function withdrawFloat(uint256 _amount) external onlyOwner {
         // will throw an error if goes negative because safeMath
-        floatSize = floatSize.sub(_amount);
-        address _thisAddressNotPayable = owner();
-        address payable _recipient = address(uint160(_thisAddressNotPayable));
-        (bool _success, ) = _recipient.call{value: _amount}("");
+        floatSize = floatSize - (_amount);
+        (bool _success, ) = payable(owner()).call{value: _amount}("");
         require(_success, "Transfer failed");
         emit LogFloatWithdrawn(msg.sender, _amount);
     }
@@ -189,12 +186,12 @@ contract RCProxyXdai is Ownable {
         if (_add) {
             if (!isValidator[_validatorAddress]) {
                 isValidator[_validatorAddress] = true;
-                validatorCount = validatorCount.add(1);
+                validatorCount += 1;
             }
         } else {
             if (isValidator[_validatorAddress]) {
                 isValidator[_validatorAddress] = false;
-                validatorCount = validatorCount.sub(1);
+                validatorCount -= 1;
             }
         }
     }
@@ -291,7 +288,7 @@ contract RCProxyXdai is Ownable {
 
     /// @dev add a float, so no need to wait for arrival of xdai from ARB
     receive() external payable {
-        floatSize = floatSize.add(msg.value);
+        floatSize += msg.value;
         emit LogFloatIncreased(msg.sender, msg.value);
     }
 
@@ -317,15 +314,13 @@ contract RCProxyXdai is Ownable {
         // Add 1 confirmation, if this hasn't been done already
         if (!hasConfirmedDeposit[_nonce][msg.sender]) {
             hasConfirmedDeposit[_nonce][msg.sender] = true;
-            deposits[_nonce].confirmations = deposits[_nonce].confirmations.add(
-                1
-            );
+            deposits[_nonce].confirmations += 1;
         }
 
         // Confirm if enough confirms and pass over for execution
         if (
             !deposits[_nonce].confirmed &&
-            deposits[_nonce].confirmations >= (validatorCount.div(2)).add(1)
+            deposits[_nonce].confirmations >= (validatorCount / 2) + (1)
         ) {
             deposits[_nonce].confirmed = true;
             executeDaiDeposit(_nonce);
@@ -345,15 +340,14 @@ contract RCProxyXdai is Ownable {
             IRCTreasury treasury = IRCTreasury(treasuryAddress);
             // if Treasury will allow the deposit and globalPause is off, send it there
             if (
-                address(treasury).balance.add(_amount) <=
+                address(treasury).balance + _amount <=
                 treasury.maxContractBalance() &&
                 !treasury.globalPause()
             ) {
                 assert(treasury.deposit{value: _amount}(_user));
                 // otherwise, just send to the user
             } else {
-                address payable _recipient = address(uint160(_user));
-                (bool _success, ) = _recipient.call{value: _amount}("");
+                (bool _success, ) = payable(_user).call{value: _amount}("");
                 require(_success, "Transfer failed");
             }
         }
