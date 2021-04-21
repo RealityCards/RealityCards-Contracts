@@ -2,41 +2,43 @@
 // myArgs[0] = first extra argument.. etc
 var myArgs = process.argv.slice(6, 9)
 
-const _ = require('underscore')
-const { BN, time } = require('@openzeppelin/test-helpers')
+const _ = require("underscore");
+const { BN, time } = require('@openzeppelin/test-helpers');
 const argv = require('minimist')(process.argv.slice(2), {
   string: ['ipfs_hash']
 })
 
 /* globals artifacts */
-var RCTreasury = artifacts.require('./RCTreasury.sol')
-var RCFactory = artifacts.require('./RCFactory.sol')
-var RCMarket = artifacts.require('./RCMarket.sol')
-var NftHubXDai = artifacts.require('./nfthubs/RCNftHubXdai.sol')
-var NftHubMainnet = artifacts.require('./nfthubs/RCNftHubMainnet.sol')
-var XdaiProxy = artifacts.require('./bridgeproxies/RCProxyXdai.sol')
-var MainnetProxy = artifacts.require('./bridgeproxies/RCProxyMainnet.sol')
-var RealitioMockup = artifacts.require('./mockups/RealitioMockup.sol')
-var BridgeMockup = artifacts.require('./mockups/BridgeMockup.sol')
-var DaiMockup = artifacts.require('./mockups/DaiMockup.sol')
+var RCTreasury = artifacts.require("./RCTreasury.sol");
+var RCFactory = artifacts.require("./RCFactory.sol");
+var RCMarket = artifacts.require("./RCMarket.sol")
+var NftHubXDai = artifacts.require('./nfthubs/RCNftHubXdai.sol');
+var NftHubMainnet = artifacts.require('./nfthubs/RCNftHubMainnet.sol');
+var XdaiProxy = artifacts.require('./bridgeproxies/RCProxyXdai.sol');
+var MainnetProxy = artifacts.require('./bridgeproxies/RCProxyMainnet.sol');
+var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
+var BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
+var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
 var ARBMockup = artifacts.require('./mockups/AlternateReceiverBridgeMockup.sol')
 
 // variables
 // TODO: update chilvers' script with the relevant addresses here https://github.com/realitio/realitio-contracts/blob/master/config/arbitrators.json
-var ambAddressXdai = '0x75Df5AF045d91108662D8080fD1FEFAd6aA0bb59'
-var ambAddressMainnet = '0x4C36d2919e407f0Cc2Ee3c993ccF8ac26d9CE64e'
-var realitioAddress = '0x325a2e0F3CCA2ddbaeBB4DfC38Df8D19ca165b47'
-var arbAddressMainnet = '0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016'
-var kleros = '0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D'
+var ambAddressXdai = '0x75Df5AF045d91108662D8080fD1FEFAd6aA0bb59';
+var ambAddressMainnet = '0x4C36d2919e407f0Cc2Ee3c993ccF8ac26d9CE64e';
+var realitioAddress = '0x325a2e0F3CCA2ddbaeBB4DfC38Df8D19ca165b47';
+var arbAddressMainnet = '0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016'; // may not be correct
+var arbAddressXdai = '0x7301CFA0e1756B71869E93d4e4Dca5c7d0eb0AA6'; // may not be correct
+var kleros = '0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D'; //double check this
 var daiAddressMainnet = '0x6b175474e89094c44da98b954eedeac495271d0f'
 
 // Testnet addresses
 var ambAddressSokol = '0xFe446bEF1DbF7AFE24E81e05BC8B271C1BA9a560'
 var ambAddressKovan = '0xFe446bEF1DbF7AFE24E81e05BC8B271C1BA9a560'
 var realitioAddressKovan = '0x325a2e0F3CCA2ddbaeBB4DfC38Df8D19ca165b47'
-var arbAddressKovan = '0xA960d095470f7509955d5402e36d9DB984B5C8E2'
-// this is just a blank ERC20 contract
-var daiAddressKovan = '0xd133b22BCCcb3Cd3ca752D206b0632932D530Fda'
+var arbAddressKovan = '0xEa7F8C8d2c55eE242f2F22c11F43421E459229b8'
+var arbAddressSokol = '0xed47976103eBcCF7685e8aF185deD9EcF57E146A'
+// this is the trialBridge Dai contract, more info here: https://docs.tokenbridge.net/xdai-bridge/trial-the-bridge
+var daiAddressKovan = '0x40a81c34f36EbE2D98baC578d66d3EE952A48f24'
 
 // read input arguments
 var xdaiProxyAddress = myArgs[0]
@@ -44,41 +46,50 @@ var mainnetProxyAddress = myArgs[1]
 var ipfsHashes = argv['ipfs_hash']
 
 // an array of market instances
-var market = []
+var market = [];
 // an array of the addresses (just a more readable way of doing market[].address)
-var marketAddress = []
-var zeroAddress = '0x0000000000000000000000000000000000000000'
+var marketAddress = [];
+var zeroAddress = "0x0000000000000000000000000000000000000000";
 
 module.exports = async (deployer, network, accounts) => {
   if (network === 'teststage1' || network === 'stage1') {
     // xdai
     // deploy treasury, factory, reference market and nft hub
-    await deployer.deploy(RCTreasury)
-    treasury = await RCTreasury.deployed()
-    await deployer.deploy(RCFactory, treasury.address)
-    factory = await RCFactory.deployed()
-    await deployer.deploy(RCMarket)
-    reference = await RCMarket.deployed()
-    await deployer.deploy(NftHubXDai, factory.address)
-    nfthubxdai = await NftHubXDai.deployed()
-    // tell treasury about factory, tell factory about nft hub and reference
-    await treasury.setFactoryAddress(factory.address)
-    await factory.setReferenceContractAddress(reference.address)
-    await factory.setNftHubAddress(nfthubxdai.address)
+    await deployer.deploy(RCTreasury);
+    treasury = await RCTreasury.deployed();
+    await deployer.deploy(RCFactory, treasury.address);
+    factory = await RCFactory.deployed();
+    await deployer.deploy(RCMarket);
+    reference = await RCMarket.deployed();
+    await deployer.deploy(NftHubXDai, factory.address);
+    nfthubxdai = await NftHubXDai.deployed();
+    // tell treasury about factory & ARB, tell factory about nft hub and reference
+    await treasury.setFactoryAddress(factory.address);
+    await factory.setReferenceContractAddress(reference.address);
+    await factory.setNftHubAddress(nfthubxdai.address, 0);
     // deploy xdai proxy
     if (network === 'stage1') {
+      await treasury.setAlternateReceiverAddress(arbAddressXdai);
       await deployer.deploy(
         XdaiProxy,
         ambAddressXdai,
         factory.address,
-        treasury.address
+        treasury.address,
+        realitioAddress,
+        kleros
       )
     } else {
+      // for sokol, deploy realitio mockup
+      await deployer.deploy(RealitioMockup);
+      realitio = await RealitioMockup.deployed();
+      await treasury.setAlternateReceiverAddress(arbAddressSokol);
       await deployer.deploy(
         XdaiProxy,
         ambAddressSokol,
         factory.address,
-        treasury.address
+        treasury.address,
+        realitio.address,
+        kleros
       )
     }
     xdaiproxy = await XdaiProxy.deployed()
@@ -97,11 +108,7 @@ module.exports = async (deployer, network, accounts) => {
     console.log(RCMarket.address)
     console.log('NFTHubXDAIAddress')
     console.log(NftHubXDai.address)
-  } else if (
-    network === 'teststage2' ||
-    network === 'stage2' ||
-    network === 'develop'
-  ) {
+  } else if (network === 'teststage2' || network === 'stage2' || network === 'develop') {
     console.log('Begin Stage 2')
     // mainnet
     // deploy mainnet nft hub
@@ -109,27 +116,17 @@ module.exports = async (deployer, network, accounts) => {
     nfthubmainnet = await NftHubMainnet.deployed()
     if (network === 'stage2') {
       // deploy mainnet proxy on mainnet
-      await deployer.deploy(
-        MainnetProxy,
-        ambAddressMainnet,
-        realitioAddress,
-        arbAddressMainnet
-      )
+      await deployer.deploy(MainnetProxy, ambAddressMainnet, nfthubmainnet.address, arbAddressMainnet, daiAddressMainnet);
     } else {
       // deploy mainnet proxy on Kovan
-      await deployer.deploy(
-        MainnetProxy,
-        ambAddressKovan,
-        realitioAddressKovan,
-        arbAddressKovan
-      )
+      await deployer.deploy(MainnetProxy, ambAddressKovan, nfthubmainnet.address, arbAddressKovan, daiAddressKovan);
     }
 
-    mainnetproxy = await MainnetProxy.deployed()
+    mainnetproxy = await MainnetProxy.deployed();
     // set xdai proxy address
-    await mainnetproxy.setProxyXdaiAddress(xdaiProxyAddress)
+    await mainnetproxy.setProxyXdaiAddress(xdaiProxyAddress);
 
-    console.log('Completed stage 2')
+    console.log("Completed stage 2")
 
     // this text is used in the deploy script to locate the correct address
     console.log('TheNFTHubMainnetAddress')
@@ -140,9 +137,10 @@ module.exports = async (deployer, network, accounts) => {
     console.log('Begin Stage 3')
     // xdai
     // set mainnet proxy address
-    xdaiproxy = await XdaiProxy.deployed()
-    await xdaiproxy.setProxyMainnetAddress(mainnetProxyAddress)
+    xdaiproxy = await XdaiProxy.deployed();
+    await xdaiproxy.setProxyMainnetAddress(mainnetProxyAddress);
     console.log('Completed Stage 3')
+
   } else if (network === 'graphTesting') {
     console.log('Local Graph Testing, whoot whoot')
 
@@ -186,7 +184,7 @@ module.exports = async (deployer, network, accounts) => {
       bridge.address,
       nfthubmainnet.address,
       arb.address,
-      dai.address
+      dai.address,
     )
     mainnetproxy = await MainnetProxy.deployed()
     // tell the factory, mainnet proxy and bridge the xdai proxy address
@@ -604,12 +602,12 @@ module.exports = async (deployer, network, accounts) => {
   } else {
     console.log('No deploy script for this network')
   }
-}
+};
 
 async function createMarket(options) {
   // default values if no parameter passed
   // timestamps are in seconds from now
-  var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US'
+  var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
   var defaults = {
     mode: 0, // mode, 0 = classic, 1 = winner takes all, 2 = hot potato
     ipfs: 0x0, // ipfs hash
@@ -724,6 +722,43 @@ async function exit(options) {
   options = setDefaults(options, defaults)
 
   await options.market.exit(options.outcome, { from: options.from })
+}
+
+  await factory.createMarket(
+    options.mode,
+    options.ipfs,
+    timestamps,
+    tokenURIs,
+    options.artistAddress,
+    options.affiliateAddress,
+    options.cardAffiliate,
+    question
+  );
+  marketAddress.push(await factory.getMostRecentMarket.call(0));
+  market.push(await RCMarket.at(await factory.getMostRecentMarket.call(0)));
+}
+
+async function depositDai(amount, user) {
+  amount = web3.utils.toWei(amount.toString(), "ether");
+  await treasury.deposit(user, { from: user, value: amount });
+}
+
+function setDefaults(options, defaults) {
+  return _.defaults({}, _.clone(options), defaults);
+}
+
+async function rent(options) {
+  var defaults = {
+    market: market[0],
+    outcome: 0,
+    price: 1,
+    from: user0,
+    timeLimit: 0,
+    startingPosition: zeroAddress,
+  };
+  options = setDefaults(options, defaults);
+  options.price = web3.utils.toWei(options.price.toString(), "ether");
+  await options.market.newRental(options.price, options.timeLimit, options.startingPosition, options.outcome, { from: options.from });
 }
 
 // Most recent deployments:

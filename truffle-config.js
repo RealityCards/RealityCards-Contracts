@@ -1,161 +1,164 @@
-require("dotenv").config();
+require('dotenv').config()
 
-const path = require("path");
-const HDWalletProvider = require("truffle-hdwallet-provider");
-const INFURA_KEY = process.env.INFURA_KEY;
-const MNEMONIC = process.env.MNEMONIC;
-const ETHERSCAN_KEY = process.env.ETHERSCAN_KEY;
-const blockchainNodeHost = process.env.BLOCKCHAIN_NODE_HOST || "localhost";
+const path = require('path')
+const HDWalletProvider = require('truffle-hdwallet-provider')
+const INFURA_KEY = process.env.INFURA_KEY
+const MNEMONIC = process.env.MNEMONIC
+const ETHERSCAN_KEY = process.env.ETHERSCAN_KEY
+const blockchainNodeHost = process.env.BLOCKCHAIN_NODE_HOST || 'localhost'
 
 module.exports = {
-  plugins: ["truffle-plugin-verify", "truffle-security",'truffle-contract-size'],
-  contracts_build_directory: path.join(__dirname, "./artifactsTruffle"),
+  plugins: [
+    'truffle-plugin-verify',
+    'truffle-security',
+    'truffle-contract-size'
+  ],
+  contracts_build_directory: path.join(__dirname, './artifactsTruffle'),
   networks: {
     develop: {
-      host: "127.0.0.1",
+      host: '127.0.0.1',
       port: 8545,
-      network_id: "*",
+      network_id: '*'
     },
     graphTesting: {
       host: blockchainNodeHost, // Localhost (default: none)
       port: 8545, // Standard Ethereum port (default: none)
-      network_id: "*", // Any network (default: none)
-      gasPrice: 1000000000, // 1 gwei
+      network_id: '*', // Any network (default: none)
+      gasPrice: 1000000000 // 1 gwei
     },
     mainnet: {
       provider: () => {
         return new HDWalletProvider(
           MNEMONIC,
           `https://mainnet.infura.io/v3/${INFURA_KEY}`
-        );
+        )
       },
       network_id: 1,
       gas: 12000000,
       gasPrice: 50000000000,
-      networkCheckTimeout: 12000,
+      networkCheckTimeout: 12000
     },
     ropsten: {
       provider: () => {
         return new HDWalletProvider(
           MNEMONIC,
           `https://ropsten.infura.io/v3/${INFURA_KEY}`
-        );
+        )
       },
       network_id: 3,
-      gas: 15000000,
+      gas: 15000000
     },
     rinkeby: {
       provider: () => {
         return new HDWalletProvider(
           MNEMONIC,
           `https://rinkeby.infura.io/v3/${INFURA_KEY}`
-        );
+        )
       },
       network_id: 4,
-      gas: 15000000,
+      gas: 15000000
     },
     goerli: {
       provider: () => {
         return new HDWalletProvider(
           MNEMONIC,
           `https://goerli.infura.io/v3/${INFURA_KEY}`
-        );
+        )
       },
       network_id: 5,
-      gas: 15000000,
+      gas: 15000000
     },
     kovan: {
       provider: () => {
         return new HDWalletProvider(
           MNEMONIC,
           `https://kovan.infura.io/v3/${INFURA_KEY}`
-        );
+        )
       },
       network_id: 42,
       gas: 10000000,
       gasPrice: 1000000000, // 1 gwei
-      networkCheckTimeout: 5000,
+      networkCheckTimeout: 5000
     },
     xdai: {
       provider: function() {
-        return new HDWalletProvider(MNEMONIC, "http://rpc.xdaichain.com");
+        return new HDWalletProvider(MNEMONIC, 'http://rpc.xdaichain.com')
       },
       network_id: 100,
       gas: 12000000,
-      gasPrice: 1000000000,
+      gasPrice: 1000000000
     },
     stage1: {
-        provider: function() {
-          return new HDWalletProvider(MNEMONIC, "http://rpc.xdaichain.com");
-        },
-        network_id: 100,
-        gas: 12000000,
-        gasPrice: 1000000000,
+      provider: function() {
+        return new HDWalletProvider(MNEMONIC, 'http://rpc.xdaichain.com')
       },
-    stage2: {
-        provider: () => {
-          return new HDWalletProvider(
-            MNEMONIC,
-            `https://mainnet.infura.io/v3/${INFURA_KEY}`
-          );
-        },
-        network_id: 1,
-        gas: 3000000,
-        gasPrice: 140000000000,
-        networkCheckTimeout: 12000,
-      },
-    stage3: {
-    provider: function() {
-        return new HDWalletProvider(MNEMONIC, "http://rpc.xdaichain.com");
+      network_id: 100,
+      gas: 12000000,
+      gasPrice: 1000000000
     },
-    network_id: 100,
-    gas: 12000000,
-    gasPrice: 1000000000,
+    stage2: {
+      provider: () => {
+        return new HDWalletProvider(
+          MNEMONIC,
+          `https://mainnet.infura.io/v3/${INFURA_KEY}`
+        )
+      },
+      network_id: 1,
+      gas: 3000000,
+      gasPrice: 140000000000,
+      networkCheckTimeout: 12000
+    },
+    stage3: {
+      provider: function() {
+        return new HDWalletProvider(MNEMONIC, 'http://rpc.xdaichain.com')
+      },
+      network_id: 100,
+      gas: 12000000,
+      gasPrice: 1000000000
     },
     teststage1: {
       provider: function() {
-        return new HDWalletProvider(MNEMONIC, "https://sokol.poa.network/");
+        return new HDWalletProvider(MNEMONIC, 'https://sokol.poa.network/')
       },
       network_id: 77,
       gas: 12000000,
-      gasPrice: 1000000000,
+      gasPrice: 1000000000
     },
     teststage2: {
-        provider: () => {
-          return new HDWalletProvider(
-            MNEMONIC,
-            `https://kovan.infura.io/v3/${INFURA_KEY}`
-          );
-        },
-        network_id: 42,
-        gas: 3000000,
-        gasPrice: 140000000000,
-        networkCheckTimeout: 12000,
+      provider: () => {
+        return new HDWalletProvider(
+          MNEMONIC,
+          `https://kovan.infura.io/v3/${INFURA_KEY}`
+        )
       },
-      teststage3: {
+      network_id: 42,
+      gas: 3000000,
+      gasPrice: 20000000000,
+      networkCheckTimeout: 12000
+    },
+    teststage3: {
       provider: function() {
-          return new HDWalletProvider(MNEMONIC, "https://sokol.poa.network/");
+        return new HDWalletProvider(MNEMONIC, 'https://sokol.poa.network/')
       },
       network_id: 77,
       gas: 12000000,
-      gasPrice: 1000000000,
-      },
-
+      gasPrice: 1000000000
+    }
   },
   compilers: {
     solc: {
-      version: "0.7.5",
+      version: '0.7.5',
       settings: {
-        evmVersion: "istanbul",
+        evmVersion: 'istanbul',
         optimizer: {
           enabled: true,
-          runs: 200,
-        },
-      },
-    },
+          runs: 200
+        }
+      }
+    }
   },
   api_keys: {
-    etherscan: ETHERSCAN_KEY,
+    etherscan: ETHERSCAN_KEY
   },
   verify: {
     preamble: `Created by Andrew Stanger
@@ -165,6 +168,6 @@ module.exports = {
     ██████╔╝█████╗  ███████║██║     ██║   ██║    ╚████╔╝ ██║     ███████║██████╔╝██║  ██║███████╗
     ██╔══██╗██╔══╝  ██╔══██║██║     ██║   ██║     ╚██╔╝  ██║     ██╔══██║██╔══██╗██║  ██║╚════██║
     ██║  ██║███████╗██║  ██║███████╗██║   ██║      ██║   ╚██████╗██║  ██║██║  ██║██████╔╝███████║
-    ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝   ╚═╝      ╚═╝    ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚══════╝`,
-  },
-};
+    ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝   ╚═╝      ╚═╝    ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚══════╝`
+  }
+}
