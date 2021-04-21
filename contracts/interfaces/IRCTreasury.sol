@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: UNDEFINED
-pragma solidity ^0.7.5;
+pragma solidity 0.8.3;
 
 interface IRCTreasury {
-
     function foreclosureTimeUser(address _user) external view returns (uint256);
 
     function alternateReceiverBridgeAddress() external view returns (address);
