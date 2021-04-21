@@ -530,15 +530,16 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         override
         onlyTreasury
     {
-        uint256 i = user[_user].bids.length - (1);
+        uint256 i = user[_user].bids.length;
         uint256 _limit = 0;
         if (i > MAX_DELETIONS) {
             _limit = i - (MAX_DELETIONS);
         }
-        address _market = user[_user].bids[0].market;
-        uint256 _token = user[_user].bids[0].token;
+        address _market = user[_user].bids[i - 1].market;
+        uint256 _token = user[_user].bids[i - 1].token;
 
         do {
+            i--;
             index[user[_user].bids[i].market][_user][
                 user[_user].bids[i].token
             ] = 0;
@@ -578,7 +579,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
             ]
                 .next = _tempNext;
             user[_user].bids.pop();
-            // i--;
             // TODO finish implementing max iteration limit
         } while (user[_user].bids.length != 0);
 
