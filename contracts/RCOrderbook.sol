@@ -533,7 +533,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         uint256 i = user[_user].bids.length;
         uint256 _limit = 0;
         if (i > MAX_DELETIONS) {
-            _limit = i - (MAX_DELETIONS);
+            _limit = i - MAX_DELETIONS;
         }
         address _market = user[_user].bids[i - 1].market;
         uint256 _token = user[_user].bids[i - 1].token;
