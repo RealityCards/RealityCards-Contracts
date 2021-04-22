@@ -613,13 +613,14 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         }
     }
 
+    /// moving from the markets availiable balance to the market pot (market pot currently increased elsewhere)
     function _decreaseMarketBalance(IRCMarket market, uint256 rentCollected)
         internal
     {
         marketBalance -= rentCollected;
-        totalDeposits += rentCollected;
     }
 
+    /// moving from the deposit to the markets availiable balance
     function _increaseMarketBalance(IRCMarket market, uint256 rentCollected)
         internal
     {
@@ -661,12 +662,13 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
                     _increaseMarketBalance(market, rentDueForCard);
                 }
 
-                market.updateCard(
-                    card,
-                    cardOwner,
-                    rentDueForCard,
-                    block.timestamp
-                );
+                // the market collectRent will do this
+                // market.updateCard(
+                //     card,
+                //     cardOwner,
+                //     rentDueForCard,
+                //     block.timestamp
+                // );
             }
         }
     }
