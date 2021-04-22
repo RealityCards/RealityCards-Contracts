@@ -299,9 +299,11 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
             "Too soon"
         );
 
+        // console.log(" collect rent owned cards ", _msgSender);
         // stpe 1: collect rent on owned cards
         orderbook.collectRentOwnedCards(_msgSender);
 
+        // console.log("done rent collect ", user[_msgSender].deposit);
         // step 2: process withdrawal
         if (_dai > user[_msgSender].deposit) {
             _dai = user[_msgSender].deposit;
@@ -309,6 +311,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         emit LogDepositWithdrawal(_msgSender, _dai);
         emit LogAdjustDeposit(_msgSender, _dai, false);
         user[_msgSender].deposit -= _dai;
+        // console.log("all good till here");
+        // console.log("total deposits ", totalDeposits);
+        // console.log(" I want to withdraw ", _dai);
         totalDeposits -= _dai;
         if (_localWithdrawal) {
             (bool _success, ) = payable(_msgSender).call{value: _dai}("");
@@ -323,12 +328,14 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
             );
         }
 
+        // console.log(" about to remove bids ");
         // step 3: remove bids if insufficient deposit
         if (
             user[_msgSender].bidRate != 0 &&
             user[_msgSender].bidRate / (minRentalDayDivisor) >
             user[_msgSender].deposit
         ) {
+            console.log("removing from orderbook ", _msgSender);
             orderbook.removeUserFromOrderbook(_msgSender);
         }
     }
@@ -384,10 +391,10 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     {
         require(!globalPause, "Payouts are disabled");
         assert(marketPot[msgSender()] >= _dai);
-        user[_user].deposit = user[_user].deposit + (_dai);
-        marketPot[msgSender()] = marketPot[msgSender()] - (_dai);
-        totalMarketPots = totalMarketPots - (_dai);
-        totalDeposits = totalDeposits + (_dai);
+        user[_user].deposit += _dai;
+        marketPot[msgSender()] -= _dai;
+        totalMarketPots -= _dai;
+        totalDeposits += _dai;
         emit LogAdjustDeposit(_user, _dai, true);
         return true;
     }
@@ -599,16 +606,21 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
             newTimeLastCollectedOnForeclosure =
                 previousCollectionTime +
                 timeUsersDepositLasts;
-            _increaseMarketBalance(IRCMarket(address(0)), user[_user].deposit);
-            totalDeposits -= rentOwedByUser;
+            _increaseMarketBalance(
+                IRCMarket(address(0)),
+                user[_user].deposit,
+                _user
+            );
             user[_user].lastRentCalc = newTimeLastCollectedOnForeclosure;
-            user[_user].deposit = 0;
+            assert(user[_user].deposit == 0);
         } else {
             // User has enough deposit to pay rent.
-            _increaseMarketBalance(IRCMarket(address(0)), rentOwedByUser);
+            _increaseMarketBalance(
+                IRCMarket(address(0)),
+                rentOwedByUser,
+                _user
+            );
             user[_user].lastRentCalc = block.timestamp;
-            user[_user].deposit -= rentOwedByUser;
-            totalDeposits -= rentOwedByUser;
             emit LogAdjustDeposit(_user, rentOwedByUser, false);
         }
     }
@@ -621,11 +633,14 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         market;
     }
 
-    /// moving from the deposit to the markets availiable balance
-    function _increaseMarketBalance(IRCMarket market, uint256 rentCollected)
-        internal
-    {
+    /// moving from the user deposit to the markets availiable balance
+    function _increaseMarketBalance(
+        IRCMarket market,
+        uint256 rentCollected,
+        address _user
+    ) internal {
         marketBalance += rentCollected;
+        user[_user].deposit -= rentCollected;
         totalDeposits -= rentCollected;
         market;
         // JS/TODO: implement this function
@@ -661,7 +676,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
                         (block.timestamp - cardTimeLastCollected)) / 1 days;
 
                 if (rentDueForCard > 0) {
-                    _increaseMarketBalance(market, rentDueForCard);
+                    _increaseMarketBalance(market, rentDueForCard, cardOwner);
                 }
 
                 // the market collectRent will do this
