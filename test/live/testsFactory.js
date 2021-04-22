@@ -362,7 +362,7 @@ contract('TestFactory', (accounts) => {
   });
 
 
-  it('test setHotPotatoPayment', async () => {
+  it.skip('test setHotPotatoPayment', async () => {
     // first check only owner is set
     await expectRevert(rcfactory.setHotPotatoPayment(7 * 24, { from: user1 }), "caller is not the owner");
     await rcfactory.setHotPotatoPayment(7 * 24, { from: user0 });

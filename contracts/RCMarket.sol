@@ -50,7 +50,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
     // PRICE, DEPOSITS, RENT
     /// @dev in attodai (so 100xdai = 100000000000000000000)
-    mapping(uint256 => uint256) public override tokenPrice;
+    mapping(uint256 => uint256) public tokenPrice;
     /// @dev keeps track of all the rent paid by each user. So that it can be returned in case of an invalid market outcome.
     mapping(address => uint256) public rentCollectedPerUser;
     /// @dev keeps track of all the rent paid for each token, for card specific affiliate payout
@@ -88,7 +88,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @dev sums all the timeHelds for each. Used when paying out. Should always increment at the same time as timeHeld
     mapping(uint256 => uint256) public totalTimeHeld;
     /// @dev used to determine the rent due. Rent is due for the period (now - timeLastCollected), at which point timeLastCollected is set to now.
-    mapping(uint256 => uint256) public override timeLastCollected;
+    mapping(uint256 => uint256) public timeLastCollected;
     /// @dev to track the max timeheld of each token (for giving NFT to winner)
     mapping(uint256 => uint256) public longestTimeHeld;
     /// @dev to track who has owned it the most (for giving NFT to winner)
@@ -338,25 +338,26 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     }
 
     function updateCard(
-        uint256 card,
+        uint256 tokenId,
         address user,
         uint256 rentCollected,
         uint256 collectedUntil
     ) external override onlyTreasury() {
+        uint256 _localTokenId = totalNftMintCount - tokenId;
         rentCollectedPerUser[user] += rentCollected;
-        rentCollectedPerToken[card] += rentCollected;
+        rentCollectedPerToken[_localTokenId] += rentCollected;
         totalRentCollected += rentCollected;
 
         uint256 timeHeldSinceLastCollection =
-            collectedUntil - timeLastCollected[card];
-        timeHeld[card][user] += timeHeldSinceLastCollection;
-        if (timeHeld[card][user] > longestTimeHeld[card]) {
-            longestTimeHeld[card] = timeHeld[card][user];
-            longestOwner[card] = user;
+            collectedUntil - timeLastCollected[_localTokenId];
+        timeHeld[_localTokenId][user] += timeHeldSinceLastCollection;
+        if (timeHeld[_localTokenId][user] > longestTimeHeld[_localTokenId]) {
+            longestTimeHeld[_localTokenId] = timeHeld[_localTokenId][user];
+            longestOwner[_localTokenId] = user;
         }
-        totalTimeHeld[card] += timeHeldSinceLastCollection;
+        totalTimeHeld[_localTokenId] += timeHeldSinceLastCollection;
 
-        timeLastCollected[card] = collectedUntil;
+        timeLastCollected[_localTokenId] = collectedUntil;
     }
 
     /*╔═════════════════════════════════╗
@@ -816,6 +817,26 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                 (msg.value / numberOfTokens);
         }
         emit LogSponsor(msgSender(), msg.value);
+    }
+
+    function getTimeLastCollected(uint256 _actualTokenId)
+        external
+        view
+        override
+        returns (uint256 _timeCollected)
+    {
+        uint256 _localTokenId = _actualTokenId - totalNftMintCount;
+        _timeCollected = timeLastCollected[_localTokenId];
+    }
+
+    function getTokenPrice(uint256 _actualTokenId)
+        external
+        view
+        override
+        returns (uint256 _tokenPrice)
+    {
+        uint256 _localTokenId = _actualTokenId - totalNftMintCount;
+        _tokenPrice = tokenPrice[_localTokenId];
     }
 
     /*╔═════════════════════════════════╗

@@ -349,15 +349,21 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         returns (bool)
     {
         // console.log("payRent ", _dai);
-        // console.log("totalMarketPots ", totalMarketPots);
+        // console.log("treasury balance ", address(this).balance);
+        // console.log("total deposits ", totalDeposits);
         // console.log("market balance ", marketBalance);
-        // console.log(" total depsoits ", totalDeposits);
+        // console.log("totalMarketPots ", totalMarketPots);
         require(!globalPause, "Rentals are disabled");
         address _market = msgSender();
         //assert(marketBalance >= _dai);
         _decreaseMarketBalance(IRCMarket(_market), _dai);
         marketPot[_market] += _dai;
         totalMarketPots += _dai;
+        // console.log(" treasury balance ", address(this).balance);
+        // console.log(" total deposits ", totalDeposits);
+        // console.log(" market balance ", marketBalance);
+        // console.log(" totalMarketPots ", totalMarketPots);
+
         return true;
 
         /// @dev the following now need to be done on user rent collection
@@ -611,12 +617,14 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         internal
     {
         marketBalance -= rentCollected;
+        totalDeposits += rentCollected;
     }
 
     function _increaseMarketBalance(IRCMarket market, uint256 rentCollected)
         internal
     {
         marketBalance += rentCollected;
+        totalDeposits -= rentCollected;
         // JS/TODO: implement this function
     }
 
@@ -633,6 +641,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
 
         if (cardOwner != address(market)) {
             didTokenForeclose = newTimeLastCollectedOnForeclosure > 0;
+
             if (didTokenForeclose) {
                 // JS/TODO: handle case of transferring card to next eligible user in order-book
                 //  if eligible newOwner exists {
@@ -641,14 +650,15 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
                 //    set time token last rent collect to 'now'
                 //  }
             } else {
-                uint256 cardRentalRate = market.tokenPrice(card);
-                uint256 cardTimeLastCollected = market.timeLastCollected(card);
+                uint256 cardRentalRate = market.getTokenPrice(card);
+                uint256 cardTimeLastCollected =
+                    market.getTimeLastCollected(card);
                 uint256 rentDueForCard =
                     (cardRentalRate *
                         (block.timestamp - cardTimeLastCollected)) / 1 days;
 
                 if (rentDueForCard > 0) {
-                    //_increaseMarketBalance(market, rentDueForCard);
+                    _increaseMarketBalance(market, rentDueForCard);
                 }
 
                 market.updateCard(
