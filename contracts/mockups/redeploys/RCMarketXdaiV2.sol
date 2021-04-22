@@ -820,6 +820,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
 
     function getTimeLastCollected(uint256 _actualTokenId)
         external
+        view
         override
         returns (uint256 _timeCollected)
     {

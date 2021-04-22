@@ -618,6 +618,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         internal
     {
         marketBalance -= rentCollected;
+        market;
     }
 
     /// moving from the deposit to the markets availiable balance
@@ -626,6 +627,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     {
         marketBalance += rentCollected;
         totalDeposits -= rentCollected;
+        market;
         // JS/TODO: implement this function
     }
 
