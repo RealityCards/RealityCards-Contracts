@@ -88,7 +88,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @dev sums all the timeHelds for each. Used when paying out. Should always increment at the same time as timeHeld
     mapping(uint256 => uint256) public totalTimeHeld;
     /// @dev used to determine the rent due. Rent is due for the period (now - timeLastCollected), at which point timeLastCollected is set to now.
-    mapping(uint256 => uint256) public timeLastCollected;
+    mapping(uint256 => uint256) public override timeLastCollected;
     /// @dev to track the max timeheld of each token (for giving NFT to winner)
     mapping(uint256 => uint256) public longestTimeHeld;
     /// @dev to track who has owned it the most (for giving NFT to winner)
@@ -828,110 +828,88 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @dev also calculates and updates how long the current user has held the token for
     /// @dev is not a problem if called externally, but making internal over public to save gas
     function _collectRent(uint256 _tokenId) internal {
-        uint256 _timeOfThisCollection = block.timestamp;
         address _user = ownerOf(_tokenId);
-        uint256 _foreclosureTime = treasury.foreclosureTimeUser(_user);
+        uint256 _timeOfThisCollection = block.timestamp;
+
+        // don't collect rent beyond the locking time
         if (marketLockingTime <= block.timestamp) {
             _timeOfThisCollection = marketLockingTime;
         }
-        if (_foreclosureTime != 0 && _foreclosureTime < _timeOfThisCollection) {
-            _timeOfThisCollection = _foreclosureTime;
-        }
+        /// @dev looks like the treasury is handling this now
+        // if (_foreclosureTime != 0 && _foreclosureTime < _timeOfThisCollection) {
+        //     _timeOfThisCollection = _foreclosureTime;
+        // }
+
         //only collect rent if the token is owned (ie, if owned by the contract this implies unowned)
         // AND if the last collection was in the past (ie, don't do 2+ rent collections in the same block)
         if (
             _user != address(this) &&
             timeLastCollected[_tokenId] < _timeOfThisCollection
         ) {
-            // console.log("collecting rent ", _user);
-            // console.log("collecting rent ", _tokenId);
-            uint256 _rentOwed =
-                (tokenPrice[_tokenId] *
-                    (_timeOfThisCollection - timeLastCollected[_tokenId])) /
-                    (1 days);
-            address _collectRentFrom = _user;
-            uint256 _deposit = treasury.userDeposit(_collectRentFrom);
+            uint256 _actualTokenId = totalNftMintCount + _tokenId;
+            bool _userForeclosed =
+                treasury.collectRentUserAndSettleCard(_actualTokenId);
+            if (_userForeclosed) {
+                // user foreclosed during collection
+                uint256 _foreclosureTime = treasury.foreclosureTimeUser(_user);
+                _processRentCollection(_user, _tokenId, _foreclosureTime);
 
-            // get the maximum rent they can pay based on timeHeldLimit
-            uint256 _rentOwedLimit;
-            uint256 _timeHeldLimit =
-                orderbook.getTimeHeldlimit(_collectRentFrom, _tokenId);
-            if (_timeHeldLimit == MAX_UINT256) {
-                _rentOwedLimit = MAX_UINT256;
+                orderbook.findNewOwner(_tokenId);
+                _collectRent(_tokenId);
             } else {
-                _rentOwedLimit =
-                    (tokenPrice[_tokenId] *
-                        (_timeHeldLimit -
-                            timeHeld[_tokenId][_collectRentFrom])) /
-                    (1 days);
+                // user didn't foreclose, simple rent collection
+                _processRentCollection(_user, _tokenId, _timeOfThisCollection);
             }
 
-            // if rent owed is too high, reduce
-            if (_rentOwed >= _deposit || _rentOwed >= _rentOwedLimit) {
-                // console.log("rent owed too high, being reduced");
-                // case 1: rentOwed is reduced to _deposit
-                uint256 _timeLastCollected = timeLastCollected[_tokenId];
-                if (_deposit <= _rentOwedLimit) {
-                    // console.log("case 1");
-                    _timeOfThisCollection =
-                        _timeLastCollected +
-                        (
-                            (((_timeOfThisCollection - _timeLastCollected) *
-                                _deposit) / _rentOwed)
-                        );
-                    _rentOwed = _deposit; // take what's left
-                    // case 2: rentOwed is reduced to _rentOwedLimit
-                } else {
-                    // console.log("case 2");
-                    _timeOfThisCollection =
-                        _timeLastCollected +
-                        (
-                            (((_timeOfThisCollection - _timeLastCollected) *
-                                _rentOwedLimit) / _rentOwed)
-                        );
-                    _rentOwed = _rentOwedLimit; // take up to the max
-                }
-                orderbook.removeBidFromOrderbook(_user, _tokenId);
-                // _revertToUnderbidder(_tokenId);
-            }
-            // console.log("rent owed ", _rentOwed);
-            if (_rentOwed > 0) {
-                // decrease deposit by rent owed at the Treasury
-                assert(treasury.payRent(_collectRentFrom, _rentOwed));
-                // update internals
-                uint256 _timeHeldToIncrement =
-                    (_timeOfThisCollection - timeLastCollected[_tokenId]);
-                timeHeld[_tokenId][_collectRentFrom] += _timeHeldToIncrement;
-                totalTimeHeld[_tokenId] += _timeHeldToIncrement;
-                rentCollectedPerUser[_collectRentFrom] += _rentOwed;
+            // old rent collection below for quick reference
+            // address _collectRentFrom = _user;
+            // uint256 _deposit = treasury.userDeposit(_collectRentFrom);
 
-                rentCollectedPerToken[_tokenId] += (_rentOwed);
-                totalRentCollected += (_rentOwed);
-
-                // longest owner tracking
-                if (
-                    timeHeld[_tokenId][_collectRentFrom] >
-                    longestTimeHeld[_tokenId]
-                ) {
-                    longestTimeHeld[_tokenId] = timeHeld[_tokenId][
-                        _collectRentFrom
-                    ];
-                    // console.log("new longest owner of ", _tokenId);
-                    longestOwner[_tokenId] = _collectRentFrom;
-                }
-
-                emit LogTimeHeldUpdated(
-                    timeHeld[_tokenId][_collectRentFrom],
-                    _collectRentFrom,
-                    _tokenId
-                );
-                emit LogRentCollection(_rentOwed, _tokenId, _collectRentFrom);
-            }
+            // // get the maximum rent they can pay based on timeHeldLimit
+            // uint256 _rentOwedLimit;
+            // uint256 _timeHeldLimit =
+            //     orderbook.getTimeHeldlimit(_collectRentFrom, _tokenId);
+            // if (_timeHeldLimit == MAX_UINT256) {
+            //     _rentOwedLimit = MAX_UINT256;
+            // } else {
+            //     _rentOwedLimit =
+            //         (tokenPrice[_tokenId] *
+            //             (_timeHeldLimit -
+            //                 timeHeld[_tokenId][_collectRentFrom])) /
+            //         (1 days);
+            // }
         }
 
         // timeLastCollected is updated regardless of whether the token is owned, so that the clock starts ticking
         // ... when the first owner buys it, because this function is run before ownership changes upon calling newRental
         timeLastCollected[_tokenId] = _timeOfThisCollection;
+    }
+
+    function _processRentCollection(
+        address _user,
+        uint256 _token,
+        uint256 timeOfCollection
+    ) internal {
+        uint256 _rentOwed =
+            (tokenPrice[_token] *
+                (timeOfCollection - timeLastCollected[_token])) / 1 days;
+        treasury.payRent(_rentOwed);
+        uint256 _timeHeldToIncrement =
+            (timeOfCollection - timeLastCollected[_token]);
+        timeHeld[_token][_user] += _timeHeldToIncrement;
+        totalTimeHeld[_token] += _timeHeldToIncrement;
+        rentCollectedPerUser[_user] += _rentOwed;
+        rentCollectedPerToken[_token] += _rentOwed;
+        totalRentCollected += _rentOwed;
+        // longest owner tracking
+        if (timeHeld[_token][_user] > longestTimeHeld[_token]) {
+            longestTimeHeld[_token] = timeHeld[_token][_user];
+            // console.log("new longest owner of ", _tokenId);
+            longestOwner[_token] = _user;
+        }
+
+        emit LogTimeHeldUpdated(timeHeld[_token][_user], _user, _token);
+        emit LogRentCollection(_rentOwed, _token, _user);
     }
 
     function _checkState(States currentState) internal view {

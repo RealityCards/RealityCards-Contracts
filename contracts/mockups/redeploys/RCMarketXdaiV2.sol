@@ -752,7 +752,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction {
 
             if (_rentOwed > 0) {
                 // decrease deposit by rent owed at the Treasury
-                assert(treasury.payRent(_collectRentFrom, _rentOwed));
+                assert(treasury.payRent(_rentOwed));
                 // update internals
                 uint256 _timeHeldToIncrement =
                     (_timeOfThisCollection - (timeLastCollected[_tokenId]));

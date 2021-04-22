@@ -50,7 +50,7 @@ interface IRCTreasury {
 
     function withdrawDeposit(uint256 _dai, bool _localWithdrawal) external;
 
-    function payRent(address, uint256) external returns (bool);
+    function payRent(uint256) external returns (bool);
 
     function payout(address, uint256) external returns (bool);
 
@@ -76,6 +76,10 @@ interface IRCTreasury {
     function increaseBidRate(address _user, uint256 _price) external;
 
     function decreaseBidRate(address _user, uint256 _price) external;
+
+    function collectRentUserAndSettleCard(uint256 card)
+        external
+        returns (bool didTokenForeclose);
 
     function updateMarketStatus(bool _open) external;
 

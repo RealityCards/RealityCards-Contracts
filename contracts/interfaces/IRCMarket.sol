@@ -8,6 +8,8 @@ interface IRCMarket {
 
     function isMarket() external view returns (bool);
 
+    function timeLastCollected(uint256) external view returns (uint256);
+
     function sponsor() external payable;
 
     function initialize(
