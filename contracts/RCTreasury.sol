@@ -123,9 +123,10 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     modifier balancedBooks {
         _;
         // using >= not == because forced Ether send via selfdestruct will not trigger a deposit via the fallback
-        assert(
+        require(
             address(this).balance >=
-                totalDeposits + marketBalance + totalMarketPots
+                totalDeposits + marketBalance + totalMarketPots,
+            "books are unbalanced!"
         );
     }
 
@@ -349,6 +350,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     {
         require(!globalPause, "Rentals are disabled");
         address _market = msgSender();
+        console.log("amount to collect", _dai);
+        console.log("market balance ", marketBalance);
         //assert(marketBalance >= _dai);
         _decreaseMarketBalance(IRCMarket(_market), _dai);
         marketPot[_market] += _dai;
@@ -577,6 +580,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         returns (uint256 newTimeLastCollectedOnForeclosure)
     {
         if (user[_user].lastRentCalc < block.timestamp) {
+            console.log(" user collect rent on ", _user);
             uint256 rentOwedByUser = rentOwedUser(_user);
 
             if (rentOwedByUser > 0 && rentOwedByUser > user[_user].deposit) {

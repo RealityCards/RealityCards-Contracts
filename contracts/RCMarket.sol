@@ -869,9 +869,12 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         ) {
             uint256 _timeUserForeclosed = treasury.collectRentUser(_user);
             if (_timeUserForeclosed != 0) {
+                console.log(" user foreclosed ");
                 // user foreclosed during collection
                 _processRentCollection(_user, _tokenId, _timeUserForeclosed);
-                orderbook.findNewOwner(_tokenId);
+                address _newOwner = orderbook.findNewOwner(_tokenId);
+                console.log("collecting rent again");
+                console.log(" new owner will be ", _newOwner);
                 _collectRent(_tokenId);
             } else {
                 // user didn't foreclose, simple rent collection

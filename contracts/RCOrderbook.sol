@@ -674,9 +674,9 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         address _newOwner,
         uint256 _price
     ) internal {
-        // console.log("old owner ", _oldOwner);
-        // console.log(" token ", _token);
-        // console.log("new owner ", _newOwner);
+        console.log("old owner ", _oldOwner);
+        console.log(" token ", _token);
+        console.log("new owner ", _newOwner);
         ownerOf[_market][_token] = _newOwner;
         IRCMarket _rcmarket = IRCMarket(_market);
         _rcmarket.transferCard(_oldOwner, _newOwner, _token, _price);
