@@ -28,6 +28,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
     }
     struct Market {
         uint256 mode;
+        uint256 tokenCount;
         uint256 minimumPriceIncreasePercent;
         uint256 minimumRentalDuration;
     }
@@ -82,6 +83,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
     ) external override {
         require(msgSender() == factoryAddress);
         isMarket[_market] = true;
+        market[_market].tokenCount = _tokenCount;
         market[_market].minimumPriceIncreasePercent = _minIncrease;
         market[_market].minimumRentalDuration =
             1 days /
@@ -617,6 +619,17 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         if (user[_user].bids.length == 0) {
             //and get rid of them
             // delete user[_user];
+        }
+    }
+
+    // just reduce rental rates for owners for now
+    function closeMarket() external override onlyMarkets {
+        address _market = msg.sender;
+        for (uint256 i = 0; i < market[_market].tokenCount; i++) {
+            address _owner =
+                user[_market].bids[index[_market][_market][i]].next;
+            uint256 _price = user[_owner].bids[index[_owner][_market][i]].price;
+            treasury.updateRentalRate(_owner, _market, _price, 0);
         }
     }
 

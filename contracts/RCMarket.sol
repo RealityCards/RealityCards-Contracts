@@ -446,6 +446,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         );
         // do a final rent collection before the contract is locked down
         collectRentAllCards();
+        orderbook.closeMarket();
         // let the treasury know the market is closed
         treasury.updateMarketStatus(false);
         _incrementState();
@@ -866,14 +867,10 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             _user != address(this) &&
             timeLastCollected[_tokenId] < _timeOfThisCollection
         ) {
-            uint256 _actualTokenId = totalNftMintCount + _tokenId;
-            bool _userForeclosed =
-                treasury.collectRentUserAndSettleCard(_actualTokenId);
-            if (_userForeclosed) {
+            uint256 _timeUserForeclosed = treasury.collectRentUser(_user);
+            if (_timeUserForeclosed != 0) {
                 // user foreclosed during collection
-                uint256 _foreclosureTime = treasury.foreclosureTimeUser(_user);
-                _processRentCollection(_user, _tokenId, _foreclosureTime);
-
+                _processRentCollection(_user, _tokenId, _timeUserForeclosed);
                 orderbook.findNewOwner(_tokenId);
                 _collectRent(_tokenId);
             } else {
@@ -962,6 +959,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             "Too early"
         );
         _incrementState();
+        orderbook.closeMarket();
         state = States.WITHDRAW;
     }
 }

@@ -123,11 +123,10 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     modifier balancedBooks {
         _;
         // using >= not == because forced Ether send via selfdestruct will not trigger a deposit via the fallback
-        require(
+        assert(
             address(this).balance >=
-                totalDeposits + marketBalance + totalMarketPots,
-            "Books not balanced"
-        ); // DC- Changed from assert for testing and diagonosis
+                totalDeposits + marketBalance + totalMarketPots
+        );
     }
 
     /// @notice only allow markets to call these functions
@@ -429,6 +428,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         returns (bool)
     {
         user[_user].lastRentalTime = block.timestamp;
+        if (user[_user].lastRentCalc == 0) {
+            user[_user].lastRentCalc = block.timestamp;
+        }
         return true;
     }
 
@@ -484,9 +486,14 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         uint256 _oldPrice,
         uint256 _newPrice
     ) external override onlyOrderbook {
+        if (user[_newOwner].rentalRate != 0) {
+            collectRentUser(_newOwner);
+        } else {
+            user[_newOwner].lastRentCalc = block.timestamp;
+        }
         // Must add before subtract, to avoid underflow in the case a user is only updating their price.
-        user[_newOwner].rentalRate = user[_newOwner].rentalRate + (_newPrice);
-        user[_oldOwner].rentalRate = user[_oldOwner].rentalRate - (_oldPrice);
+        user[_newOwner].rentalRate += (_newPrice);
+        user[_oldOwner].rentalRate -= (_oldPrice);
     }
 
     function increaseBidRate(address _user, uint256 _price)
@@ -566,45 +573,46 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     /// @param _user the user to query
     function collectRentUser(address _user)
         public
+        override
         returns (uint256 newTimeLastCollectedOnForeclosure)
     {
-        if (user[_user].lastRentCalc == 0) {
-            user[_user].lastRentCalc = block.timestamp;
-        }
-        uint256 rentOwedByUser = rentOwedUser(_user);
+        if (user[_user].lastRentCalc < block.timestamp) {
+            uint256 rentOwedByUser = rentOwedUser(_user);
 
-        if (rentOwedByUser > 0 && rentOwedByUser > user[_user].deposit) {
-            // The User has run out of deposit already.
-            uint256 previousCollectionTime = user[_user].lastRentCalc;
+            if (rentOwedByUser > 0 && rentOwedByUser > user[_user].deposit) {
+                // The User has run out of deposit already.
+                uint256 previousCollectionTime = user[_user].lastRentCalc;
 
-            /*
+                /*
             timeTheirDepsitLasted = timeSinceLastUpdate * (usersDeposit/rentOwed)
                                   = (now - previousCollectionTime) * (usersDeposit/rentOwed)
             */
-            uint256 timeUsersDepositLasts =
-                ((block.timestamp - previousCollectionTime) *
-                    user[_user].deposit) / rentOwedByUser;
-            /*
+                uint256 timeUsersDepositLasts =
+                    ((block.timestamp - previousCollectionTime) *
+                        user[_user].deposit) / rentOwedByUser;
+                /*
             Users last collection time = previousCollectionTime + timeTheirDepsitLasted
             */
-            newTimeLastCollectedOnForeclosure =
-                previousCollectionTime +
-                timeUsersDepositLasts;
-            _increaseMarketBalance(
-                IRCMarket(address(0)),
-                user[_user].deposit,
-                _user
-            );
-            user[_user].lastRentCalc = newTimeLastCollectedOnForeclosure;
-            assert(user[_user].deposit == 0);
-        } else {
-            // User has enough deposit to pay rent.
-            _increaseMarketBalance(
-                IRCMarket(address(0)),
-                rentOwedByUser,
-                _user
-            );
-            user[_user].lastRentCalc = block.timestamp;
+                rentOwedByUser = user[_user].deposit;
+                newTimeLastCollectedOnForeclosure =
+                    previousCollectionTime +
+                    timeUsersDepositLasts;
+                _increaseMarketBalance(
+                    IRCMarket(address(0)),
+                    rentOwedByUser,
+                    _user
+                );
+                user[_user].lastRentCalc = newTimeLastCollectedOnForeclosure;
+                assert(user[_user].deposit == 0);
+            } else {
+                // User has enough deposit to pay rent.
+                _increaseMarketBalance(
+                    IRCMarket(address(0)),
+                    rentOwedByUser,
+                    _user
+                );
+                user[_user].lastRentCalc = block.timestamp;
+            }
             emit LogAdjustDeposit(_user, rentOwedByUser, false);
         }
     }

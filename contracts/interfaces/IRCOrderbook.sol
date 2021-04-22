@@ -22,6 +22,8 @@ interface IRCOrderbook {
 
     function removeBidFromOrderbook(address _user, uint256 _token) external;
 
+    function closeMarket() external;
+
     function findNewOwner(uint256 _token) external returns (address _newOwner);
 
     function findNextBid(
