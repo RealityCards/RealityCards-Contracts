@@ -774,7 +774,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
 
             // if still the current owner after collecting rent, revert to underbidder
             if (ownerOf(_tokenId) == _msgSender) {
-                orderbook.findNewOwner(_tokenId);
+                orderbook.findNewOwner(_tokenId, block.timestamp);
                 // if not current owner no further action necessary because they will have been deleted from the orderbook
             } else {
                 //assert(orderbook[_tokenId][_msgSender].price == 0);
@@ -874,7 +874,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
                 uint256 _foreclosureTime = treasury.foreclosureTimeUser(_user);
                 _processRentCollection(_user, _tokenId, _foreclosureTime);
 
-                orderbook.findNewOwner(_tokenId);
+                orderbook.findNewOwner(_tokenId, _foreclosureTime);
                 _collectRent(_tokenId);
             } else {
                 // user didn't foreclose, simple rent collection

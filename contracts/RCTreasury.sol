@@ -487,12 +487,13 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         address _oldOwner,
         address _newOwner,
         uint256 _oldPrice,
-        uint256 _newPrice
+        uint256 _newPrice,
+        uint256 _timeOwnershipChanged
     ) external override onlyOrderbook {
         if (user[_newOwner].rentalRate != 0) {
             collectRentUser(_newOwner);
         } else {
-            user[_newOwner].lastRentCalc = block.timestamp;
+            user[_newOwner].lastRentCalc = _timeOwnershipChanged;
         }
         // Must add before subtract, to avoid underflow in the case a user is only updating their price.
         user[_newOwner].rentalRate += (_newPrice);

@@ -775,7 +775,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
             // if still the current owner after collecting rent, revert to underbidder
             if (ownerOf(_tokenId) == _msgSender) {
-                orderbook.findNewOwner(_tokenId);
+                orderbook.findNewOwner(_tokenId, block.timestamp);
                 // if not current owner no further action necessary because they will have been deleted from the orderbook
             } else {
                 //assert(orderbook[_tokenId][_msgSender].price == 0);
@@ -869,10 +869,12 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         ) {
             uint256 _timeUserForeclosed = treasury.collectRentUser(_user);
             if (_timeUserForeclosed != 0) {
-                console.log(" user foreclosed ");
+                console.log(" user foreclosed ", _timeUserForeclosed);
                 // user foreclosed during collection
                 _processRentCollection(_user, _tokenId, _timeUserForeclosed);
-                address _newOwner = orderbook.findNewOwner(_tokenId);
+                timeLastCollected[_tokenId] = _timeUserForeclosed;
+                address _newOwner =
+                    orderbook.findNewOwner(_tokenId, _timeUserForeclosed);
                 console.log("collecting rent again");
                 console.log(" new owner will be ", _newOwner);
                 _collectRent(_tokenId);
