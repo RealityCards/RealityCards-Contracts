@@ -348,10 +348,11 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         onlyMarkets
         returns (bool)
     {
+        if (marketBalance + 1 == _dai) {
+            _dai -= 1; // TODO sort out rounding problem
+        }
         require(!globalPause, "Rentals are disabled");
         address _market = msgSender();
-        console.log("amount to collect", _dai);
-        console.log("market balance ", marketBalance);
         //assert(marketBalance >= _dai);
         _decreaseMarketBalance(IRCMarket(_market), _dai);
         marketPot[_market] += _dai;
@@ -581,7 +582,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         returns (uint256 newTimeLastCollectedOnForeclosure)
     {
         if (user[_user].lastRentCalc < block.timestamp) {
-            console.log(" user collect rent on ", _user);
             uint256 rentOwedByUser = rentOwedUser(_user);
 
             if (rentOwedByUser > 0 && rentOwedByUser > user[_user].deposit) {

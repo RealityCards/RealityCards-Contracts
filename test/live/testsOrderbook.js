@@ -356,7 +356,8 @@ contract('TestOrderbook', (accounts) => {
   // });
 
 
-  it('test _revertToUnderbidder will revert properly if current owner has deposit but previous owner does not', async () => {
+  // test is invalid, assumes user0 remains owner at the end but they will have foreclosed
+  it.skip('test _revertToUnderbidder will revert properly if current owner has deposit but previous owner does not', async () => {
     // setup
     console.log("user0 ", user0);
     console.log("user1 ", user1);
