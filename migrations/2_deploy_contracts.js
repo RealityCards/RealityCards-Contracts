@@ -25,10 +25,12 @@ var ARBMockup = artifacts.require('./mockups/AlternateReceiverBridgeMockup.sol')
 
 // MAINNET ADDRESS
 // kleros addresses: https://github.com/realitio/realitio-contracts/blob/master/config/arbitrators.json
+// arb addresses: https://www.xdaichain.com/for-users/bridges/converting-xdai-via-bridge/transfer-sai-dai-without-the-ui-using-web3-or-mobile-wallet
+// amv addresses: https://docs.tokenbridge.net/eth-xdai-amb-bridge/about-the-eth-xdai-amb
 var ambAddressXdai = '0x75Df5AF045d91108662D8080fD1FEFAd6aA0bb59';
 var ambAddressMainnet = '0x4C36d2919e407f0Cc2Ee3c993ccF8ac26d9CE64e';
-var arbAddressMainnet = '0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016'; // may not be correct
-var arbAddressXdai = '0x7301CFA0e1756B71869E93d4e4Dca5c7d0eb0AA6'; // may not be correct
+var arbAddressMainnet = '0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016';
+var arbAddressXdai = '0x7301CFA0e1756B71869E93d4e4Dca5c7d0eb0AA6'; 
 var daiAddressMainnet = '0x6b175474e89094c44da98b954eedeac495271d0f';
 var realitioAddressXdai = '0x79e32aE03fb27B07C89c0c568F80287C01ca2E57';
 var klerosXdai = '0xe40DD83a262da3f56976038F1554Fe541Fa75ecd';

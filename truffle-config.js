@@ -81,7 +81,7 @@ module.exports = {
         return new HDWalletProvider(MNEMONIC, "http://rpc.xdaichain.com");
       },
       network_id: 100,
-      gas: 12000000,
+      gas: 5500000,
       gasPrice: 1000000000,
     },
     stage1: {
@@ -89,7 +89,7 @@ module.exports = {
         return new HDWalletProvider(MNEMONIC, "http://rpc.xdaichain.com");
       },
       network_id: 100,
-      gas: 12000000,
+      gas: 5500000,
       gasPrice: 1000000000,
     },
     stage2: {
