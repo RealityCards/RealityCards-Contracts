@@ -202,7 +202,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         Bid storage _prevUser
     ) internal {
         if (ownerOf[_market][_token] != _market) {
-            // console.log("new bid, market isn't owner ");
             (_prevUser, _price) = _searchOrderbook(
                 _prevUser,
                 _market,
@@ -531,7 +530,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
             _market = user[_user].bids[i].market;
             _token[0] = user[_user].bids[i].token;
             if (ownerOf[_market][_token[0]] == _user) {
-                // console.log("collecting rent on ", _token[0]);
                 IRCMarket _rcmarket = IRCMarket(_market);
                 _rcmarket.collectRentSpecificCards(_token);
             }

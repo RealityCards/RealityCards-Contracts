@@ -669,8 +669,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         require(_newPrice >= MIN_RENTAL_VALUE, "Minimum rental 1 xDai");
         require(_tokenId < numberOfTokens, "This token does not exist");
         address _user = msgSender();
-        // console.log("new rental ", _user);
-        // console.log("on token ", _tokenId);
+
         require(
             exitedTimestamp[_user] != block.timestamp,
             "Cannot lose and re-rent in same block"
@@ -925,7 +924,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         // longest owner tracking
         if (timeHeld[_token][_user] > longestTimeHeld[_token]) {
             longestTimeHeld[_token] = timeHeld[_token][_user];
-            // console.log("new longest owner of ", _tokenId);
             longestOwner[_token] = _user;
         }
 

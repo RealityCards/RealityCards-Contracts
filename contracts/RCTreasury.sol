@@ -299,11 +299,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
             "Too soon"
         );
 
-        // console.log(" collect rent owned cards ", _msgSender);
         // stpe 1: collect rent on owned cards
         orderbook.collectRentOwnedCards(_msgSender);
 
-        // console.log("done rent collect ", user[_msgSender].deposit);
         // step 2: process withdrawal
         if (_dai > user[_msgSender].deposit) {
             _dai = user[_msgSender].deposit;
@@ -311,9 +309,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         emit LogDepositWithdrawal(_msgSender, _dai);
         emit LogAdjustDeposit(_msgSender, _dai, false);
         user[_msgSender].deposit -= _dai;
-        // console.log("all good till here");
-        // console.log("total deposits ", totalDeposits);
-        // console.log(" I want to withdraw ", _dai);
         totalDeposits -= _dai;
         if (_localWithdrawal) {
             (bool _success, ) = payable(_msgSender).call{value: _dai}("");
@@ -328,14 +323,12 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
             );
         }
 
-        // console.log(" about to remove bids ");
         // step 3: remove bids if insufficient deposit
         if (
             user[_msgSender].bidRate != 0 &&
             user[_msgSender].bidRate / (minRentalDayDivisor) >
             user[_msgSender].deposit
         ) {
-            console.log("removing from orderbook ", _msgSender);
             orderbook.removeUserFromOrderbook(_msgSender);
         }
     }
@@ -355,21 +348,12 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         onlyMarkets
         returns (bool)
     {
-        // console.log("payRent ", _dai);
-        // console.log("treasury balance ", address(this).balance);
-        // console.log("total deposits ", totalDeposits);
-        // console.log("market balance ", marketBalance);
-        // console.log("totalMarketPots ", totalMarketPots);
         require(!globalPause, "Rentals are disabled");
         address _market = msgSender();
         //assert(marketBalance >= _dai);
         _decreaseMarketBalance(IRCMarket(_market), _dai);
         marketPot[_market] += _dai;
         totalMarketPots += _dai;
-        // console.log(" treasury balance ", address(this).balance);
-        // console.log(" total deposits ", totalDeposits);
-        // console.log(" market balance ", marketBalance);
-        // console.log(" totalMarketPots ", totalMarketPots);
 
         return true;
 
@@ -667,6 +651,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
                 //  else {
                 //    set time token last rent collect to 'now'
                 //  }
+
+                console.log(" USER FORECLOSED! PANIC!");
             } else {
                 uint256 cardRentalRate = market.getTokenPrice(card);
                 uint256 cardTimeLastCollected =
