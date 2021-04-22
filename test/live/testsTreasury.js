@@ -181,7 +181,7 @@ contract("TestTreasury", (accounts) => {
 
     it("check that non markets cannot call market only functions on Treasury", async () => {
         // only testing invalid responses, valid responses checked in each functions own test
-        await expectRevert(treasury.payRent(user0, user0), "Not authorised");
+        await expectRevert(treasury.payRent(user0), "Not authorised");
         await expectRevert(treasury.payout(user0, 0), "Not authorised");
         await expectRevert(treasury.sponsor(), "Not authorised");
         await expectRevert(treasury.processHarbergerPayment(user0, user0, 0), "Not authorised");

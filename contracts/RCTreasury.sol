@@ -348,6 +348,10 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         onlyMarkets
         returns (bool)
     {
+        // console.log("payRent ", _dai);
+        // console.log("totalMarketPots ", totalMarketPots);
+        // console.log("market balance ", marketBalance);
+        // console.log(" total depsoits ", totalDeposits);
         require(!globalPause, "Rentals are disabled");
         address _market = msgSender();
         //assert(marketBalance >= _dai);
@@ -548,11 +552,11 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
             // timeLeftOfDeposit = deposit / (totalUserDailyRent / 1 day)
             //                   = (deposit * 1day) / totalUserDailyRent
             uint256 timeLeftOfDeposit =
-                ((depositAbleToWithdraw(_user) * (1 days)) +
+                ((depositAbleToWithdraw(_user) * 1 days) +
                     // Add this to make sure this is the value rounded up
-                    (totalUserDailyRent - (1))) / (totalUserDailyRent);
+                    (totalUserDailyRent - 1)) / totalUserDailyRent;
 
-            return block.timestamp + (timeLeftOfDeposit);
+            return block.timestamp + timeLeftOfDeposit;
         } else {
             // return 0;
             return type(uint256).max; // for testing, the orderbook assumes 0 means user already foreclosed
@@ -581,16 +585,17 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
                                   = (now - previousCollectionTime) * (usersDeposit/rentOwed)
             */
             uint256 timeUsersDepositLasts =
-                ((block.timestamp - (previousCollectionTime)) *
-                    (user[_user].deposit)) / (rentOwedByUser);
+                ((block.timestamp - previousCollectionTime) *
+                    user[_user].deposit) / rentOwedByUser;
             /*
             Users last collection time = previousCollectionTime + timeTheirDepsitLasted
             */
             newTimeLastCollectedOnForeclosure =
                 previousCollectionTime +
-                (timeUsersDepositLasts);
-            user[_user].lastRentCalc = newTimeLastCollectedOnForeclosure;
+                timeUsersDepositLasts;
             _increaseMarketBalance(IRCMarket(address(0)), user[_user].deposit);
+            totalDeposits -= rentOwedByUser;
+            user[_user].lastRentCalc = newTimeLastCollectedOnForeclosure;
             user[_user].deposit = 0;
         } else {
             // User has enough deposit to pay rent.
