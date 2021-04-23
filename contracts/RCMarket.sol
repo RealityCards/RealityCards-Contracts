@@ -24,12 +24,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     // CONTRACT SETUP
     /// @dev = how many outcomes/teams/NFTs etc
     uint256 public numberOfTokens;
-    /// @dev only for _revertToUnderbidder to prevent gas limits
-    uint256 public constant UNDERBID_MAX_ITERATIONS = 10;
-    /// @dev to prevent hitting gas limits during _placeInList
-    uint256 public constant LIST_MAX_ITERATIONS = 100;
     uint256 public constant MAX_UINT256 = type(uint256).max;
-    uint256 public constant MAX_UINT128 = type(uint128).max;
     uint256 public constant MIN_RENTAL_VALUE = 1 ether;
     States public override state;
     /// @dev type of event.
@@ -72,15 +67,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     // ORDERBOOK
     /// @dev incrementing nonce for each rental, for frontend sorting
     uint256 nonce;
-    /// @dev stores the orderbook. Doubly linked list.
-    //mapping(uint256 => mapping(address => Bid)) public orderbook; // tokenID // user address // Bid
-    /// @dev orderbook uses uint128 to save gas, because Struct. Using uint256 everywhere else because best for maths.
-    struct Bid {
-        uint128 price;
-        uint128 timeHeldLimit; // users can optionally set a maximum time to hold it for
-        address next; // who it will return to when current owner exits (i.e, next = going down the list)
-        address prev; // who it returned from (i.e., prev = going up the list)
-    }
 
     // TIME
     /// @dev how many seconds each user has held each token for, for determining winnings
