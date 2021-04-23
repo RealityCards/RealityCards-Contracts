@@ -871,7 +871,8 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
                 treasury.collectRentUserAndSettleCard(_actualTokenId);
             if (_userForeclosed) {
                 // user foreclosed during collection
-                uint256 _foreclosureTime = treasury.foreclosureTimeUser(_user);
+                uint256 _foreclosureTime =
+                    treasury.foreclosureTimeUser(_user, 0);
                 _processRentCollection(_user, _tokenId, _foreclosureTime);
 
                 orderbook.findNewOwner(_tokenId, _foreclosureTime);
