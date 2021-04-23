@@ -2,7 +2,10 @@
 pragma solidity 0.8.3;
 
 interface IRCTreasury {
-    function foreclosureTimeUser(address _user) external view returns (uint256);
+    function foreclosureTimeUser(address _user, uint256 _newBid)
+        external
+        view
+        returns (uint256);
 
     function alternateReceiverBridgeAddress() external view returns (address);
 
@@ -50,7 +53,7 @@ interface IRCTreasury {
 
     function withdrawDeposit(uint256 _dai, bool _localWithdrawal) external;
 
-    function payRent(address, uint256) external returns (bool);
+    function payRent(uint256) external returns (bool);
 
     function payout(address, uint256) external returns (bool);
 
@@ -70,12 +73,21 @@ interface IRCTreasury {
         address _oldOwner,
         address _newOwner,
         uint256 _oldPrice,
-        uint256 _newPrice
+        uint256 _newPrice,
+        uint256 _timeOwnershipChanged
     ) external;
 
     function increaseBidRate(address _user, uint256 _price) external;
 
     function decreaseBidRate(address _user, uint256 _price) external;
+
+    function collectRentUser(address _user)
+        external
+        returns (uint256 newTimeLastCollectedOnForeclosure);
+
+    function collectRentUserAndSettleCard(uint256 card)
+        external
+        returns (bool didTokenForeclose);
 
     function updateMarketStatus(bool _open) external;
 
