@@ -2,7 +2,10 @@
 pragma solidity 0.8.3;
 
 interface IRCTreasury {
-    function foreclosureTimeUser(address _user) external view returns (uint256);
+    function foreclosureTimeUser(address _user, uint256 _newBid)
+        external
+        view
+        returns (uint256);
 
     function alternateReceiverBridgeAddress() external view returns (address);
 

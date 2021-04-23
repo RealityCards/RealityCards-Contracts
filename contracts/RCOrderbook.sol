@@ -422,15 +422,17 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
             user[_oldOwner].bids[index[_oldOwner][_market][_token]].price;
         uint256 minimumTimeToOwnTo =
             block.timestamp + market[_market].minimumRentalDuration;
+        uint256 _newPrice;
         // delete current owner
         do {
-            _removeBidFromOrderbookIgnoreOwner(_head.next, _token);
+            _newPrice = _removeBidFromOrderbookIgnoreOwner(_head.next, _token);
             // delete next bid if foreclosed
-        } while (treasury.foreclosureTimeUser(_head.next) < minimumTimeToOwnTo);
+        } while (
+            treasury.foreclosureTimeUser(_head.next, _newPrice) <
+                minimumTimeToOwnTo
+        );
 
         _newOwner = user[_market].bids[index[_market][_market][_token]].next;
-        uint256 _newPrice =
-            user[_newOwner].bids[index[_newOwner][_market][_token]].price;
         treasury.updateRentalRate(
             _oldOwner,
             _newOwner,
@@ -444,6 +446,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
     /// @dev removes a single bid from the orderbook, doesn't update ownership
     function _removeBidFromOrderbookIgnoreOwner(address _user, uint256 _token)
         internal
+        returns (uint256 _newPrice)
     {
         address _market = msgSender();
         // update rates
@@ -458,9 +461,13 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         user[_tempPrev].bids[index[_tempPrev][_market][_token]]
             .next = _tempNext;
 
+        // return next users price to check they're eligable later
+        _newPrice = user[_tempNext].bids[index[_tempNext][_market][_token]]
+            .price;
+
         // overwrite array element
         uint256 _index = index[_user][_market][_token];
-        uint256 _lastRecord = user[_user].bids.length - (1);
+        uint256 _lastRecord = user[_user].bids.length - 1;
         // no point overwriting itself
         if (_index != _lastRecord) {
             user[_user].bids[_index] = user[_user].bids[_lastRecord];

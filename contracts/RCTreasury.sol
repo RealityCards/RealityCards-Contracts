@@ -550,13 +550,14 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
 
     /// @notice returns the current estimate of the users foreclosure time
     /// @param _user the user to query
-    function foreclosureTimeUser(address _user)
+    /// @param _newBid an option value to calculate the time with an additional bid
+    function foreclosureTimeUser(address _user, uint256 _newBid)
         external
         view
         override
         returns (uint256)
     {
-        uint256 totalUserDailyRent = user[_user].rentalRate;
+        uint256 totalUserDailyRent = user[_user].rentalRate + _newBid;
         if (totalUserDailyRent > 0) {
             // timeLeftOfDeposit = deposit / (totalUserDailyRent / 1 day)
             //                   = (deposit * 1day) / totalUserDailyRent
