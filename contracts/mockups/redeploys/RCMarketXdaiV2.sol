@@ -24,12 +24,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
     // CONTRACT SETUP
     /// @dev = how many outcomes/teams/NFTs etc
     uint256 public numberOfTokens;
-    /// @dev only for _revertToUnderbidder to prevent gas limits
-    uint256 public constant UNDERBID_MAX_ITERATIONS = 10;
-    /// @dev to prevent hitting gas limits during _placeInList
-    uint256 public constant LIST_MAX_ITERATIONS = 100;
     uint256 public constant MAX_UINT256 = type(uint256).max;
-    uint256 public constant MAX_UINT128 = type(uint128).max;
     uint256 public constant MIN_RENTAL_VALUE = 1 ether;
     States public override state;
     /// @dev type of event.
@@ -72,15 +67,6 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
     // ORDERBOOK
     /// @dev incrementing nonce for each rental, for frontend sorting
     uint256 nonce;
-    /// @dev stores the orderbook. Doubly linked list.
-    //mapping(uint256 => mapping(address => Bid)) public orderbook; // tokenID // user address // Bid
-    /// @dev orderbook uses uint128 to save gas, because Struct. Using uint256 everywhere else because best for maths.
-    struct Bid {
-        uint128 price;
-        uint128 timeHeldLimit; // users can optionally set a maximum time to hold it for
-        address next; // who it will return to when current owner exits (i.e, next = going down the list)
-        address prev; // who it returned from (i.e., prev = going up the list)
-    }
 
     // TIME
     /// @dev how many seconds each user has held each token for, for determining winnings
@@ -93,6 +79,8 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
     mapping(uint256 => uint256) public longestTimeHeld;
     /// @dev to track who has owned it the most (for giving NFT to winner)
     mapping(uint256 => address) public longestOwner;
+    /// @dev to track the token timeHeldLimit for the current owner
+    mapping(uint256 => uint256) public tokenTimeLimit;
 
     // TIMESTAMPS
     /// @dev when the market opens
@@ -338,25 +326,26 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
     }
 
     function updateCard(
-        uint256 card,
+        uint256 tokenId,
         address user,
         uint256 rentCollected,
         uint256 collectedUntil
     ) external override onlyTreasury() {
+        uint256 _localTokenId = totalNftMintCount - tokenId;
         rentCollectedPerUser[user] += rentCollected;
-        rentCollectedPerToken[card] += rentCollected;
+        rentCollectedPerToken[_localTokenId] += rentCollected;
         totalRentCollected += rentCollected;
 
         uint256 timeHeldSinceLastCollection =
-            collectedUntil - timeLastCollected[card];
-        timeHeld[card][user] += timeHeldSinceLastCollection;
-        if (timeHeld[card][user] > longestTimeHeld[card]) {
-            longestTimeHeld[card] = timeHeld[card][user];
-            longestOwner[card] = user;
+            collectedUntil - timeLastCollected[_localTokenId];
+        timeHeld[_localTokenId][user] += timeHeldSinceLastCollection;
+        if (timeHeld[_localTokenId][user] > longestTimeHeld[_localTokenId]) {
+            longestTimeHeld[_localTokenId] = timeHeld[_localTokenId][user];
+            longestOwner[_localTokenId] = user;
         }
-        totalTimeHeld[card] += timeHeldSinceLastCollection;
+        totalTimeHeld[_localTokenId] += timeHeldSinceLastCollection;
 
-        timeLastCollected[card] = collectedUntil;
+        timeLastCollected[_localTokenId] = collectedUntil;
     }
 
     /*╔═════════════════════════════════╗
@@ -421,12 +410,14 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
         address _from,
         address _to,
         uint256 _tokenId,
-        uint256 _price
+        uint256 _price,
+        uint256 _timeLimit
     ) external override {
         require(msgSender() == address(orderbook));
         if (_to != _from) {
             _transferCard(_from, _to, _tokenId);
         }
+        tokenTimeLimit[_tokenId] = _timeLimit;
         tokenPrice[_tokenId] = _price;
     }
 
@@ -445,6 +436,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
         );
         // do a final rent collection before the contract is locked down
         collectRentAllCards();
+        orderbook.closeMarket();
         // let the treasury know the market is closed
         treasury.updateMarketStatus(false);
         _incrementState();
@@ -668,8 +660,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
         require(_newPrice >= MIN_RENTAL_VALUE, "Minimum rental 1 xDai");
         require(_tokenId < numberOfTokens, "This token does not exist");
         address _user = msgSender();
-        // console.log("new rental ", _user);
-        // console.log("on token ", _tokenId);
+
         require(
             exitedTimestamp[_user] != block.timestamp,
             "Cannot lose and re-rent in same block"
@@ -855,10 +846,6 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
         if (marketLockingTime <= block.timestamp) {
             _timeOfThisCollection = marketLockingTime;
         }
-        /// @dev looks like the treasury is handling this now
-        // if (_foreclosureTime != 0 && _foreclosureTime < _timeOfThisCollection) {
-        //     _timeOfThisCollection = _foreclosureTime;
-        // }
 
         //only collect rent if the token is owned (ie, if owned by the contract this implies unowned)
         // AND if the last collection was in the past (ie, don't do 2+ rent collections in the same block)
@@ -866,41 +853,34 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
             _user != address(this) &&
             timeLastCollected[_tokenId] < _timeOfThisCollection
         ) {
-            uint256 _actualTokenId = totalNftMintCount + _tokenId;
-            bool _userForeclosed =
-                treasury.collectRentUserAndSettleCard(_actualTokenId);
-            if (_userForeclosed) {
+            uint256 _timeUserForeclosed = treasury.collectRentUser(_user);
+            if (tokenTimeLimit[_tokenId] < _timeUserForeclosed) {
+                // time limit hit before user foreclosed
+                uint256 _excessRentPaid =
+                    (tokenPrice[_tokenId] *
+                        (_timeOfThisCollection -
+                            timeLastCollected[_tokenId] -
+                            tokenTimeLimit[_tokenId])) / 1 days;
+                treasury.refundUser(_user, _excessRentPaid);
+                _processRentCollection(
+                    _user,
+                    _tokenId,
+                    tokenTimeLimit[_tokenId]
+                );
+                timeLastCollected[_tokenId] = tokenTimeLimit[_tokenId];
+                orderbook.findNewOwner(_tokenId, tokenTimeLimit[_tokenId]);
+                _collectRent(_tokenId);
+            } else if (_timeUserForeclosed != 0) {
                 // user foreclosed during collection
-                uint256 _foreclosureTime =
-                    treasury.foreclosureTimeUser(_user, 0);
-                _processRentCollection(_user, _tokenId, _foreclosureTime);
-
-                orderbook.findNewOwner(_tokenId, _foreclosureTime);
+                _processRentCollection(_user, _tokenId, _timeUserForeclosed);
+                timeLastCollected[_tokenId] = _timeUserForeclosed;
+                orderbook.findNewOwner(_tokenId, _timeUserForeclosed);
                 _collectRent(_tokenId);
             } else {
                 // user didn't foreclose, simple rent collection
                 _processRentCollection(_user, _tokenId, _timeOfThisCollection);
             }
-
-            // old rent collection below for quick reference
-            // address _collectRentFrom = _user;
-            // uint256 _deposit = treasury.userDeposit(_collectRentFrom);
-
-            // // get the maximum rent they can pay based on timeHeldLimit
-            // uint256 _rentOwedLimit;
-            // uint256 _timeHeldLimit =
-            //     orderbook.getTimeHeldlimit(_collectRentFrom, _tokenId);
-            // if (_timeHeldLimit == MAX_UINT256) {
-            //     _rentOwedLimit = MAX_UINT256;
-            // } else {
-            //     _rentOwedLimit =
-            //         (tokenPrice[_tokenId] *
-            //             (_timeHeldLimit -
-            //                 timeHeld[_tokenId][_collectRentFrom])) /
-            //         (1 days);
-            // }
         }
-
         // timeLastCollected is updated regardless of whether the token is owned, so that the clock starts ticking
         // ... when the first owner buys it, because this function is run before ownership changes upon calling newRental
         timeLastCollected[_tokenId] = _timeOfThisCollection;
@@ -925,7 +905,6 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
         // longest owner tracking
         if (timeHeld[_token][_user] > longestTimeHeld[_token]) {
             longestTimeHeld[_token] = timeHeld[_token][_user];
-            // console.log("new longest owner of ", _tokenId);
             longestOwner[_token] = _user;
         }
 
@@ -964,6 +943,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
             "Too early"
         );
         _incrementState();
+        orderbook.closeMarket();
         state = States.WITHDRAW;
     }
 }

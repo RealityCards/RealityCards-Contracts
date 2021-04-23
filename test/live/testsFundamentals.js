@@ -795,7 +795,7 @@ contract('TestFundamentals', (accounts) => {
     assert.equal(limit[5], 86400);
     await realitycards.updateTimeHeldLimit(0, 1, { from: user0 });
     var limit = await rcorderbook.getBid.call(realitycards.address, user0, 1);
-    assert.equal(limit[5], (2 ** 256) - 1);
+    assert.equal(limit[5], 0);
     // withdraw for next test
     await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000, user0);

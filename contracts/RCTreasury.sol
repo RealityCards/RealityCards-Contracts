@@ -297,7 +297,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
             block.timestamp - (user[_msgSender].lastRentalTime) >
                 uint256(1 days) / minRentalDayDivisor,
             "Too soon"
-        );
+        ); // TODO if the user never becomes owner this means they can't withdraw
 
         // stpe 1: collect rent on owned cards
         orderbook.collectRentOwnedCards(_msgSender);
@@ -384,6 +384,17 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         totalDeposits += _dai;
         emit LogAdjustDeposit(_user, _dai, true);
         return true;
+    }
+
+    function refundUser(address _user, uint256 _refund)
+        external
+        override
+        onlyMarkets
+    {
+        marketBalance -= _refund;
+        user[_user].deposit += _refund;
+        totalDeposits += _refund;
+        emit LogAdjustDeposit(_user, _refund, true);
     }
 
     /// @notice ability to add liqudity to the pot without being able to win (called by market sponsor function).

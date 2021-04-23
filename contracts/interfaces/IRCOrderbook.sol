@@ -63,5 +63,11 @@ interface IRCOrderbook {
         uint256[] calldata _tokens
     ) external;
 
+    function reduceTimeHeldLimit(
+        address _user,
+        uint256 _token,
+        uint256 _timeToReduce
+    ) external;
+
     function collectRentOwnedCards(address _user) external;
 }

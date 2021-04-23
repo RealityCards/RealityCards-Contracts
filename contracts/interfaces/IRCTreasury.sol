@@ -7,6 +7,8 @@ interface IRCTreasury {
         view
         returns (uint256);
 
+    function refundUser(address _user, uint256 _refund) external;
+
     function alternateReceiverBridgeAddress() external view returns (address);
 
     function factoryAddress() external view returns (address);
