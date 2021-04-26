@@ -391,6 +391,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         override
         onlyMarkets
     {
+        // console.log("refund amount ", _refund);
+        // console.log("marketBalance ", marketBalance);
         marketBalance -= _refund;
         user[_user].deposit += _refund;
         totalDeposits += _refund;
@@ -638,6 +640,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     function _decreaseMarketBalance(IRCMarket market, uint256 rentCollected)
         internal
     {
+        // console.log("  market balance ", marketBalance);
+        // console.log(" rent to collect ", rentCollected);
         marketBalance -= rentCollected;
         market;
     }

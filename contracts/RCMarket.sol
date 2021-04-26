@@ -858,47 +858,173 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             _user != address(this) &&
             timeLastCollected[_tokenId] < _timeOfThisCollection
         ) {
+            // User rent collect and fetch the time the user foreclosed, 0 means they didn't foreclose yet
             uint256 _timeUserForeclosed = treasury.collectRentUser(_user);
+
+            // Calculate the token timeLimitTimestamp
+            //TODO a user setting a very high timeLimit could cause this to lockup
             uint256 _tokenTimeLimitTimestamp =
                 timeLastCollected[_tokenId] + tokenTimeLimit[_tokenId];
-            if (
-                _tokenTimeLimitTimestamp < _timeUserForeclosed &&
-                tokenTimeLimit[_tokenId] != 0
-            ) {
-                // time limit hit before user foreclosed
-                uint256 _rentWasTakenUntil;
-                if (_timeUserForeclosed < block.timestamp) {
-                    _rentWasTakenUntil = _timeUserForeclosed;
+
+            // input bools
+            bool _foreclosed = _timeUserForeclosed != 0;
+            bool _limitHit =
+                tokenTimeLimit[_tokenId] != 0 &&
+                    _tokenTimeLimitTimestamp < block.timestamp;
+            bool _marketLocked = marketLockingTime <= block.timestamp;
+
+            // outputs
+            bool _newOwner;
+            uint256 _refundTime; // seconds of rent to refund the user
+
+            /* Permutations of the events: Foreclosure, Time limit and Market Locking
+            ┌───────────┬─┬─┬─┬─┬─┬─┬─┬─┐
+            │Case       │1│2│3│4│5│6│7│8│
+            ├───────────┼─┼─┼─┼─┼─┼─┼─┼─┤
+            │Foreclosure│0│0│0│0│1│1│1│1│
+            │Time Limit │0│0│1│1│0│0│1│1│
+            │Market Lock│0│1│0│1│0│1│0│1│
+            └───────────┴─┴─┴─┴─┴─┴─┴─┴─┘
+            TODO: some of these cases may be combined, or at least reordered for optimisation
+            */
+
+            if (!_foreclosed && !_limitHit && !_marketLocked) {
+                //  console.log("CASE 1", _user);
+                // CASE 1
+                // didn't foreclose AND
+                // didn't hit time limit AND
+                // didn't lock market
+                // THEN simple rent collect, same owner
+                _timeOfThisCollection = _timeOfThisCollection;
+                _newOwner = false;
+                _refundTime = 0;
+            } else if (!_foreclosed && !_limitHit && _marketLocked) {
+                //  console.log("CASE 2", _user);
+                // CASE 2
+                // didn't foreclose AND
+                // didn't hit time limit AND
+                // did lock market
+                // THEN refund rent between locking and now
+                _timeOfThisCollection = marketLockingTime;
+                _newOwner = false;
+                _refundTime = block.timestamp - marketLockingTime;
+            } else if (!_foreclosed && _limitHit && !_marketLocked) {
+                //  console.log("CASE 3", _user);
+                // CASE 3
+                // didn't foreclose AND
+                // did hit time limit AND
+                // didn't lock market
+                // THEN refund rent between time limit and now
+                _timeOfThisCollection = _tokenTimeLimitTimestamp;
+                _newOwner = true;
+                _refundTime = block.timestamp - _tokenTimeLimitTimestamp;
+            } else if (!_foreclosed && _limitHit && _marketLocked) {
+                //  console.log("CASE 4", _user);
+                // CASE 4
+                // didn't foreclose AND
+                // did hit time limit AND
+                // did lock market
+                // THEN refund rent between the earliest event and now
+                if (_tokenTimeLimitTimestamp < marketLockingTime) {
+                    // time limit hit before market locked
+                    _timeOfThisCollection = _tokenTimeLimitTimestamp;
+                    _newOwner = true;
+                    _refundTime = block.timestamp - _tokenTimeLimitTimestamp;
                 } else {
-                    _rentWasTakenUntil = block.timestamp;
+                    // market locked before time limit hit
+                    _timeOfThisCollection = marketLockingTime;
+                    _newOwner = false;
+                    _refundTime = block.timestamp - marketLockingTime;
                 }
-                uint256 _rentTaken =
-                    (tokenPrice[_tokenId] *
-                        (_rentWasTakenUntil - timeLastCollected[_tokenId])) /
-                        1 days;
-                uint256 _rentOwed =
-                    (tokenPrice[_tokenId] *
-                        (_tokenTimeLimitTimestamp -
-                            timeLastCollected[_tokenId])) / 1 days;
-                uint256 _excessRentPaid = _rentTaken - _rentOwed;
-                treasury.refundUser(_user, _excessRentPaid);
-                _processRentCollection(
-                    _user,
-                    _tokenId,
-                    _tokenTimeLimitTimestamp
-                );
-                timeLastCollected[_tokenId] = _tokenTimeLimitTimestamp;
-                orderbook.findNewOwner(_tokenId, _tokenTimeLimitTimestamp);
-                _collectRent(_tokenId);
-            } else if (_timeUserForeclosed != 0) {
-                // user foreclosed during collection
-                _processRentCollection(_user, _tokenId, _timeUserForeclosed);
-                timeLastCollected[_tokenId] = _timeUserForeclosed;
-                orderbook.findNewOwner(_tokenId, _timeUserForeclosed);
-                _collectRent(_tokenId);
+            } else if (_foreclosed && !_limitHit && !_marketLocked) {
+                //  console.log("CASE 5", _user);
+                // CASE 5
+                // did foreclose AND
+                // didn't hit time limit AND
+                // didn't lock market
+                // THEN rent OK, find new owner
+                _timeOfThisCollection = _timeOfThisCollection;
+                _newOwner = true;
+                _refundTime = 0;
+            } else if (_foreclosed && !_limitHit && _marketLocked) {
+                //  console.log("CASE 6", _user);
+                // CASE 6
+                // did foreclose AND
+                // didn't hit time limit AND
+                // did lock market
+                // THEN if foreclosed first rent ok, otherwise refund after locking
+                if (_timeUserForeclosed < marketLockingTime) {
+                    // user foreclosed before market locked
+                    _timeOfThisCollection = _timeUserForeclosed;
+                    _newOwner = true;
+                    _refundTime = 0;
+                } else {
+                    // market locked before user foreclosed
+                    _timeOfThisCollection = marketLockingTime;
+                    _newOwner = false;
+                    _refundTime = block.timestamp - marketLockingTime;
+                }
+            } else if (_foreclosed && _limitHit && !_marketLocked) {
+                //  console.log("CASE 7", _user);
+                // CASE 7
+                // did foreclose AND
+                // did hit time limit AND
+                // didn't lock market
+                // THEN if foreclosed first rent ok, otherwise refund after limit
+                if (_timeUserForeclosed < _tokenTimeLimitTimestamp) {
+                    //  console.log(" CASE 7 A");
+                    // user foreclosed before time limit
+                    _timeOfThisCollection = _timeUserForeclosed;
+                    _newOwner = true;
+                    _refundTime = 0;
+                } else {
+                    //  console.log("CASE 7 B");
+                    // time limit hit before user foreclosed
+                    _timeOfThisCollection = _tokenTimeLimitTimestamp;
+                    _newOwner = true;
+                    _refundTime =
+                        _timeUserForeclosed -
+                        _tokenTimeLimitTimestamp;
+                }
             } else {
-                // user didn't foreclose, simple rent collection
-                _processRentCollection(_user, _tokenId, _timeOfThisCollection);
+                //  console.log("CASE 8", _user);
+                // CASE 8
+                // did foreclose AND
+                // did hit time limit AND
+                // did lock market
+                // THEN (╯°益°)╯彡┻━┻
+                if (
+                    _timeUserForeclosed < _tokenTimeLimitTimestamp &&
+                    _timeUserForeclosed < marketLockingTime
+                ) {
+                    // user foreclosed first
+                    _timeOfThisCollection = _timeUserForeclosed;
+                    _newOwner = true;
+                    _refundTime = 0;
+                } else if (
+                    _tokenTimeLimitTimestamp < _timeUserForeclosed &&
+                    _tokenTimeLimitTimestamp < marketLockingTime
+                ) {
+                    // time limit hit first
+                    _timeOfThisCollection = _tokenTimeLimitTimestamp;
+                    _newOwner = true;
+                    _refundTime = block.timestamp - _tokenTimeLimitTimestamp;
+                } else {
+                    // market locked first
+                    _timeOfThisCollection = marketLockingTime;
+                    _newOwner = false;
+                    _refundTime = block.timestamp - marketLockingTime;
+                }
+            }
+            if (_refundTime != 0) {
+                uint256 _refundAmount =
+                    (_refundTime * tokenPrice[_tokenId]) / 1 days;
+                treasury.refundUser(_user, _refundAmount);
+            }
+            _processRentCollection(_user, _tokenId, _timeOfThisCollection);
+            if (_newOwner) {
+                orderbook.findNewOwner(_tokenId, _timeOfThisCollection);
+                _collectRent(_tokenId);
             }
         }
         // timeLastCollected is updated regardless of whether the token is owned, so that the clock starts ticking
@@ -909,14 +1035,14 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     function _processRentCollection(
         address _user,
         uint256 _token,
-        uint256 timeOfCollection
+        uint256 _timeOfCollection
     ) internal {
         uint256 _rentOwed =
             (tokenPrice[_token] *
-                (timeOfCollection - timeLastCollected[_token])) / 1 days;
+                (_timeOfCollection - timeLastCollected[_token])) / 1 days;
         treasury.payRent(_rentOwed);
         uint256 _timeHeldToIncrement =
-            (timeOfCollection - timeLastCollected[_token]);
+            (_timeOfCollection - timeLastCollected[_token]);
 
         // if the user has a timeLimit, adjust it as necessary
         uint256 _timeLimitSpent;
@@ -935,6 +1061,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         rentCollectedPerUser[_user] += _rentOwed;
         rentCollectedPerToken[_token] += _rentOwed;
         totalRentCollected += _rentOwed;
+        timeLastCollected[_token] = _timeOfCollection;
         // longest owner tracking
         if (timeHeld[_token][_user] > longestTimeHeld[_token]) {
             longestTimeHeld[_token] = timeHeld[_token][_user];
