@@ -701,7 +701,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             "Insufficient deposit"
         );
 
-        _timeHeldLimit = _checkTimeHeldLimit(_user, _tokenId, _timeHeldLimit);
+        _timeHeldLimit = _checkTimeHeldLimit(_timeHeldLimit);
 
         // replaces _newBid and _updateBid
         orderbook.addBidToOrderbook(
@@ -717,20 +717,16 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         //return tokenPrice[_tokenId];
     }
 
-    function _checkTimeHeldLimit(
-        address _user,
-        uint256 _tokenId,
-        uint256 _timeHeldLimit
-    ) internal view returns (uint256) {
+    function _checkTimeHeldLimit(uint256 _timeHeldLimit)
+        internal
+        view
+        returns (uint256)
+    {
         if (_timeHeldLimit == 0) {
             return 0;
         } else {
             uint256 _minRentalTime = uint256(1 days) / minRentalDayDivisor;
-            require(
-                block.timestamp + _timeHeldLimit >=
-                    timeHeld[_tokenId][_user] + _minRentalTime,
-                "Limit too low"
-            ); // must be after collectRent so timeHeld is up to date
+            require(_timeHeldLimit >= _minRentalTime, "Limit too low");
             return _timeHeldLimit;
         }
     }
@@ -746,7 +742,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
         _collectRent(_tokenId);
 
-        _timeHeldLimit = _checkTimeHeldLimit(_user, _tokenId, _timeHeldLimit);
+        _timeHeldLimit = _checkTimeHeldLimit(_timeHeldLimit);
 
         orderbook.setTimeHeldlimit(_user, _tokenId, _timeHeldLimit);
 
@@ -1021,7 +1017,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             if (_newOwner) {
                 orderbook.findNewOwner(_tokenId, _timeOfThisCollection);
                 collectRentCounter++;
-                console.log(" rent iteration ", collectRentCounter);
                 if (collectRentCounter < maxRentIterations) {
                     _collectRent(_tokenId);
                 }
