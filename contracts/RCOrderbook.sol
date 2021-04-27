@@ -14,7 +14,6 @@ import "./interfaces/IRCOrderbook.sol";
 /// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!!
 contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
     struct Bid {
-        //pack this later
         address market;
         address next;
         address prev;
