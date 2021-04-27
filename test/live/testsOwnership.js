@@ -383,7 +383,7 @@ contract('TestOwnership', (accounts) => {
     await depositDai(144, user3);
     await newRentalCustomContract(realitycards2, 144, 4, user3);
     var price = await realitycards2.tokenPrice.call(4);
-    assert.equal(price, web3.utils.toWei('288', 'ether'));
+    assert.equal(price.toString(), web3.utils.toWei('288', 'ether'));
     // check that the original market still works
     await newRental(69, 4, user3);
     var price = await realitycards.tokenPrice.call(4);

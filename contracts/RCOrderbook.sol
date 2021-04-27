@@ -28,6 +28,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
     }
     struct Market {
         uint256 mode;
+        uint256 tokenCount;
         uint256 minimumPriceIncreasePercent;
         uint256 minimumRentalDuration;
     }
@@ -82,6 +83,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
     ) external override {
         require(msgSender() == factoryAddress);
         isMarket[_market] = true;
+        market[_market].tokenCount = _tokenCount;
         market[_market].minimumPriceIncreasePercent = _minIncrease;
         market[_market].minimumRentalDuration =
             1 days /
@@ -96,6 +98,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
             _newBid.price = 0;
             _newBid.timeHeldLimit = type(uint256).max;
             user[_market].bids.push(_newBid);
+            // TODO market record index == tokenId
             index[_market][_market][i] = user[_market].bids.length - (1);
         }
     }
@@ -202,7 +205,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         Bid storage _prevUser
     ) internal {
         if (ownerOf[_market][_token] != _market) {
-            // console.log("new bid, market isn't owner ");
             (_prevUser, _price) = _searchOrderbook(
                 _prevUser,
                 _market,
@@ -241,7 +243,8 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
                 _oldOwner,
                 _user,
                 user[_oldOwner].bids[index[_oldOwner][_market][_token]].price,
-                _price
+                _price,
+                block.timestamp
             );
         }
     }
@@ -290,14 +293,26 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         if (_owner && _currUser.prev == _market) {
             // if owner before and after, update the price difference
             transferCard(_market, _token, _user, _user, _currUser.price);
-            treasury.updateRentalRate(_user, _user, _price, _currUser.price);
+            treasury.updateRentalRate(
+                _user,
+                _user,
+                _price,
+                _currUser.price,
+                block.timestamp
+            );
         } else if (_owner && _currUser.prev != _market) {
             // if owner before and not after, remove the old price
             address _newOwner =
                 user[_market].bids[index[_market][_market][_token]].next;
             uint256 _newPrice =
                 user[_newOwner].bids[index[_newOwner][_market][_token]].price;
-            treasury.updateRentalRate(_user, _newOwner, _price, _newPrice);
+            treasury.updateRentalRate(
+                _user,
+                _newOwner,
+                _price,
+                _newPrice,
+                block.timestamp
+            );
             transferCard(_market, _token, _user, _newOwner, _newPrice);
         } else if (!_owner && _currUser.prev == _market) {
             // if not owner before but is owner after, add new price
@@ -308,7 +323,8 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
                 _oldOwner,
                 _user,
                 _oldPrice,
-                _currUser.price
+                _currUser.price,
+                block.timestamp
             );
             transferCard(_market, _token, _oldOwner, _user, _currUser.price);
         }
@@ -336,7 +352,8 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
                 _user,
                 _currUser.next,
                 _currUser.price,
-                _price
+                _price,
+                block.timestamp
             );
         }
         // extract from linked list
@@ -391,7 +408,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
     }
 
     /// @dev find the next valid owner of a given card
-    function findNewOwner(uint256 _token)
+    function findNewOwner(uint256 _token, uint256 _timeOwnershipChanged)
         external
         override
         onlyMarkets
@@ -405,23 +422,31 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
             user[_oldOwner].bids[index[_oldOwner][_market][_token]].price;
         uint256 minimumTimeToOwnTo =
             block.timestamp + market[_market].minimumRentalDuration;
-
+        uint256 _newPrice;
         // delete current owner
         do {
-            _removeBidFromOrderbookIgnoreOwner(_head.next, _token);
+            _newPrice = _removeBidFromOrderbookIgnoreOwner(_head.next, _token);
             // delete next bid if foreclosed
-        } while (treasury.foreclosureTimeUser(_head.next) > minimumTimeToOwnTo);
+        } while (
+            treasury.foreclosureTimeUser(_head.next, _newPrice) <
+                minimumTimeToOwnTo
+        );
 
         _newOwner = user[_market].bids[index[_market][_market][_token]].next;
-        uint256 _newPrice =
-            user[_newOwner].bids[index[_newOwner][_market][_token]].price;
-        treasury.updateRentalRate(_oldOwner, _newOwner, _oldPrice, _newPrice);
+        treasury.updateRentalRate(
+            _oldOwner,
+            _newOwner,
+            _oldPrice,
+            _newPrice,
+            _timeOwnershipChanged
+        );
         transferCard(_market, _token, _oldOwner, _newOwner, _newPrice);
     }
 
     /// @dev removes a single bid from the orderbook, doesn't update ownership
     function _removeBidFromOrderbookIgnoreOwner(address _user, uint256 _token)
         internal
+        returns (uint256 _newPrice)
     {
         address _market = msgSender();
         // update rates
@@ -436,9 +461,13 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         user[_tempPrev].bids[index[_tempPrev][_market][_token]]
             .next = _tempNext;
 
+        // return next users price to check they're eligable later
+        _newPrice = user[_tempNext].bids[index[_tempNext][_market][_token]]
+            .price;
+
         // overwrite array element
         uint256 _index = index[_user][_market][_token];
-        uint256 _lastRecord = user[_user].bids.length - (1);
+        uint256 _lastRecord = user[_user].bids.length - 1;
         // no point overwriting itself
         if (_index != _lastRecord) {
             user[_user].bids[_index] = user[_user].bids[_lastRecord];
@@ -532,7 +561,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
             _market = user[_user].bids[i].market;
             _token[0] = user[_user].bids[i].token;
             if (ownerOf[_market][_token[0]] == _user) {
-                // console.log("collecting rent on ", _token[0]);
                 IRCMarket _rcmarket = IRCMarket(_market);
                 _rcmarket.collectRentSpecificCards(_token);
             }
@@ -594,7 +622,8 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
                     _user,
                     _tempNext,
                     user[_user].bids[i].price,
-                    _price
+                    _price,
+                    block.timestamp
                 );
                 transferCard(_market, _token, _user, _tempNext, _price);
             }
@@ -623,6 +652,50 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         }
     }
 
+    // just reduce rental rates for owners for now
+    function closeMarket() external override onlyMarkets {
+        address _market = msg.sender;
+
+        for (uint256 i = 0; i < market[_market].tokenCount; i++) {
+            // reduce owners rental rate
+            address _owner =
+                user[_market].bids[index[_market][_market][i]].next;
+            uint256 _price = user[_owner].bids[index[_owner][_market][i]].price;
+            treasury.updateRentalRate(
+                _owner,
+                _market,
+                _price,
+                0,
+                block.timestamp
+            );
+
+            // store first and last bids for later
+            address _firstBid = _owner;
+            address _lastBid =
+                user[_market].bids[index[_market][_market][i]].prev;
+
+            // detach market from rest of list
+            user[_market].bids[index[_market][_market][i]].prev = _market;
+            user[_market].bids[index[_market][_market][i]].next = _market;
+            user[_firstBid].bids[index[_market][_firstBid][i]].prev = address(
+                this
+            );
+            user[_lastBid].bids[index[_market][_lastBid][i]].next = address(
+                this
+            );
+
+            // insert bids in the waste pile
+            Bid memory _newBid;
+            _newBid.market = _market;
+            _newBid.token = i;
+            _newBid.prev = _lastBid;
+            _newBid.next = _firstBid;
+            _newBid.price = 0;
+            _newBid.timeHeldLimit = 0;
+            user[address(this)].bids.push(_newBid);
+        }
+    }
+
     /// @dev this destroys the linked list, only use after market completion
     function removeMarketFromUser(
         address _user,
@@ -634,12 +707,18 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
             // reduce bidRate, if owner then reduce rentalRate
             uint256 _price =
                 user[_user].bids[index[_user][_market][_tokens[i]]].price;
-            if (
-                user[_user].bids[index[_user][_market][_tokens[i]]].prev ==
-                _market
-            ) {
-                treasury.updateRentalRate(_user, _market, _price, 0);
-            }
+            // if (
+            //     user[_user].bids[index[_user][_market][_tokens[i]]].prev ==
+            //     _market
+            // ) {
+            //     treasury.updateRentalRate(
+            //         _user,
+            //         _market,
+            //         _price,
+            //         0,
+            //         block.timestamp
+            //     );
+            // }
 
             treasury.decreaseBidRate(_user, _price);
 
