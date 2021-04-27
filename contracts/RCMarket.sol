@@ -727,7 +727,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         } else {
             uint256 _minRentalTime = uint256(1 days) / minRentalDayDivisor;
             require(
-                _timeHeldLimit >= timeHeld[_tokenId][_user] + _minRentalTime,
+                block.timestamp + _timeHeldLimit >=
+                    timeHeld[_tokenId][_user] + _minRentalTime,
                 "Limit too low"
             ); // must be after collectRent so timeHeld is up to date
             return _timeHeldLimit;
@@ -1021,6 +1022,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             if (_newOwner) {
                 orderbook.findNewOwner(_tokenId, _timeOfThisCollection);
                 collectRentCounter++;
+                console.log(" rent iteration ", collectRentCounter);
                 if (collectRentCounter < maxRentIterations) {
                     _collectRent(_tokenId);
                 }
