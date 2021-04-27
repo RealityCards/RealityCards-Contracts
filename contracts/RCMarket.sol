@@ -743,8 +743,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     {
         _checkState(States.OPEN);
         address _user = msgSender();
-        // TODO call for the correct rent collection before updating timeHeldLimit
-        // treasury.collectRentUser(_user);
+
         _collectRent(_tokenId);
 
         _timeHeldLimit = _checkTimeHeldLimit(_user, _tokenId, _timeHeldLimit);
