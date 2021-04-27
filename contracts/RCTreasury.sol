@@ -391,8 +391,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         override
         onlyMarkets
     {
-        // console.log("refund amount ", _refund);
-        // console.log("marketBalance ", marketBalance);
         marketBalance -= _refund;
         user[_user].deposit += _refund;
         totalDeposits += _refund;
@@ -504,10 +502,35 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         uint256 _newPrice,
         uint256 _timeOwnershipChanged
     ) external override onlyOrderbook {
-        if (user[_newOwner].rentalRate != 0) {
-            collectRentUser(_newOwner);
+        // TODO both sides of this IF statement contain similar code, make it's own function?
+        if (
+            _timeOwnershipChanged < user[_newOwner].lastRentCalc &&
+            !isMarket[_newOwner]
+        ) {
+            // the user has a more recent rent collection
+            // collect rent for the new card
+            uint256 _additionalRentOwed =
+                (_newPrice *
+                    (user[_newOwner].lastRentCalc - _timeOwnershipChanged)) /
+                    (1 days);
+            IRCMarket _market = IRCMarket(address(0));
+            // TODO this could foreclose the user, how do we handle that?
+            _increaseMarketBalance(_market, _additionalRentOwed, _newOwner);
         } else {
-            user[_newOwner].lastRentCalc = _timeOwnershipChanged;
+            if (user[_newOwner].rentalRate != 0) {
+                // already owns cards, call for rent collect to sync
+                uint256 _additionalRentOwed =
+                    (_newPrice *
+                        (_timeOwnershipChanged -
+                            user[_newOwner].lastRentCalc)) / (1 days);
+                IRCMarket _market = IRCMarket(address(0));
+                // TODO this could foreclose the user, how do we handle that?
+                _increaseMarketBalance(_market, _additionalRentOwed, _newOwner);
+                collectRentUser(_newOwner);
+            } else {
+                // first card owned, set start time
+                user[_newOwner].lastRentCalc = _timeOwnershipChanged;
+            }
         }
         // Must add before subtract, to avoid underflow in the case a user is only updating their price.
         user[_newOwner].rentalRate += (_newPrice);
@@ -640,8 +663,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     function _decreaseMarketBalance(IRCMarket market, uint256 rentCollected)
         internal
     {
-        // console.log("  market balance ", marketBalance);
-        // console.log(" rent to collect ", rentCollected);
         marketBalance -= rentCollected;
         market;
     }
