@@ -63,6 +63,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     uint256 public minRentalDayDivisor;
     /// @dev if hot potato mode, how much rent new owner must pay current owner (1 week divisor: i.e. 7 = 1 day, 14 = 12 hours)
     uint256 public hotPotatoWeekDivisor;
+    uint256 public maxRentIterations;
+    uint256 public collectRentCounter;
 
     // ORDERBOOK
     /// @dev incrementing nonce for each rental, for frontend sorting
@@ -221,6 +223,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         minRentalDayDivisor = treasury.minRentalDayDivisor();
         minimumPriceIncreasePercent = factory.minimumPriceIncreasePercent();
         hotPotatoWeekDivisor = factory.hotPotatoWeekDivisor();
+        maxRentIterations = factory.maxRentIterations();
 
         // initialiiize!
         winningOutcome = MAX_UINT256; // default invalid
@@ -1014,10 +1017,14 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                 treasury.refundUser(_user, _refundAmount);
             }
             _processRentCollection(_user, _tokenId, _timeOfThisCollection);
+
             if (_newOwner) {
                 orderbook.findNewOwner(_tokenId, _timeOfThisCollection);
-
-                _collectRent(_tokenId);
+                collectRentCounter++;
+                if (collectRentCounter < maxRentIterations) {
+                    _collectRent(_tokenId);
+                }
+                collectRentCounter = 0;
             }
         }
         // timeLastCollected is updated regardless of whether the token is owned, so that the clock starts ticking

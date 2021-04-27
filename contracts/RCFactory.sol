@@ -57,6 +57,8 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     bool public override trapIfUnapproved = true;
     /// @dev high level owner who can change the factory address
     address public uberOwner;
+    /// @dev the maximum number of rent collections to perform in a single transaction
+    uint256 public override maxRentIterations;
 
     ///// GOVERNANCE VARIABLES- GOVERNORS /////
     /// @dev unapproved markets hidden from the interface
@@ -119,6 +121,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         setminimumPriceIncreasePercent(10); // 10%
         setHotPotatoPayment(7); // one day's rent
         setNFTMintingLimit(50); // current gas limit (12.5m) allows for 50 NFTs to be minted
+        setMaxRentIterations(10); // TODO find appropriate limit
     }
 
     /*╔═════════════════════════════════╗
@@ -234,19 +237,33 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     /// @notice how much above the current price a user must bid, in %
     function setminimumPriceIncreasePercent(uint256 _percentIncrease)
         public
+        override
         onlyOwner
     {
         minimumPriceIncreasePercent = _percentIncrease;
     }
 
     /// @dev if hot potato mode, how much rent new owner must pay current owner (1 week divisor: i.e. 7 = 1 day, 14 = 12 hours)
-    function setHotPotatoPayment(uint256 _newDivisor) public onlyOwner {
+    function setHotPotatoPayment(uint256 _newDivisor)
+        public
+        override
+        onlyOwner
+    {
         hotPotatoWeekDivisor = _newDivisor;
     }
 
     /// @dev A limit to the number of NFTs to mint per market
-    function setNFTMintingLimit(uint256 _mintLimit) public onlyOwner {
+    function setNFTMintingLimit(uint256 _mintLimit) public override onlyOwner {
         nftMintingLimit = _mintLimit;
+    }
+
+    /// @dev A limit to the number of rent collections per transaction
+    function setMaxRentIterations(uint256 _rentLimit)
+        public
+        override
+        onlyOwner
+    {
+        maxRentIterations = _rentLimit;
     }
 
     /*┌──────────────────────────────────────────┐
