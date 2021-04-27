@@ -861,7 +861,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             uint256 _timeUserForeclosed = treasury.collectRentUser(_user);
 
             // Calculate the token timeLimitTimestamp
-            //TODO a user setting a very high timeLimit could cause this to lockup
             uint256 _tokenTimeLimitTimestamp =
                 timeLastCollected[_tokenId] + tokenTimeLimit[_tokenId];
 
