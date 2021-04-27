@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNDEFINED
-pragma solidity 0.8.3;
+pragma solidity 0.8.4;
 
 interface IRCMarket {
     enum States {CLOSED, OPEN, LOCKED, WITHDRAW}
@@ -54,6 +54,7 @@ interface IRCMarket {
         address _oldOwner,
         address _newOwner,
         uint256 _token,
-        uint256 _price
+        uint256 _price,
+        uint256 _timeLimit
     ) external;
 }

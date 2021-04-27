@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNDEFINED
-pragma solidity 0.8.3;
+pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
@@ -297,7 +297,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
             block.timestamp - (user[_msgSender].lastRentalTime) >
                 uint256(1 days) / minRentalDayDivisor,
             "Too soon"
-        );
+        ); // TODO if the user never becomes owner this means they can't withdraw
 
         // stpe 1: collect rent on owned cards
         orderbook.collectRentOwnedCards(_msgSender);
@@ -384,6 +384,17 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         totalDeposits += _dai;
         emit LogAdjustDeposit(_user, _dai, true);
         return true;
+    }
+
+    function refundUser(address _user, uint256 _refund)
+        external
+        override
+        onlyMarkets
+    {
+        marketBalance -= _refund;
+        user[_user].deposit += _refund;
+        totalDeposits += _refund;
+        emit LogAdjustDeposit(_user, _refund, true);
     }
 
     /// @notice ability to add liqudity to the pot without being able to win (called by market sponsor function).
@@ -491,10 +502,35 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         uint256 _newPrice,
         uint256 _timeOwnershipChanged
     ) external override onlyOrderbook {
-        if (user[_newOwner].rentalRate != 0) {
-            collectRentUser(_newOwner);
+        // TODO both sides of this IF statement contain similar code, make it's own function?
+        if (
+            _timeOwnershipChanged < user[_newOwner].lastRentCalc &&
+            !isMarket[_newOwner]
+        ) {
+            // the user has a more recent rent collection
+            // collect rent for the new card
+            uint256 _additionalRentOwed =
+                (_newPrice *
+                    (user[_newOwner].lastRentCalc - _timeOwnershipChanged)) /
+                    (1 days);
+            IRCMarket _market = IRCMarket(address(0));
+            // TODO this could foreclose the user, how do we handle that?
+            _increaseMarketBalance(_market, _additionalRentOwed, _newOwner);
         } else {
-            user[_newOwner].lastRentCalc = _timeOwnershipChanged;
+            if (user[_newOwner].rentalRate != 0) {
+                // already owns cards, call for rent collect to sync
+                uint256 _additionalRentOwed =
+                    (_newPrice *
+                        (_timeOwnershipChanged -
+                            user[_newOwner].lastRentCalc)) / (1 days);
+                IRCMarket _market = IRCMarket(address(0));
+                // TODO this could foreclose the user, how do we handle that?
+                _increaseMarketBalance(_market, _additionalRentOwed, _newOwner);
+                collectRentUser(_newOwner);
+            } else {
+                // first card owned, set start time
+                user[_newOwner].lastRentCalc = _timeOwnershipChanged;
+            }
         }
         // Must add before subtract, to avoid underflow in the case a user is only updating their price.
         user[_newOwner].rentalRate += (_newPrice);

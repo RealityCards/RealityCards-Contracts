@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNDEFINED
-pragma solidity 0.8.3;
+pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 

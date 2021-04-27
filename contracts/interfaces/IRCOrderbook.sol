@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNDEFINED
-pragma solidity 0.8.3;
+pragma solidity 0.8.4;
 
 interface IRCOrderbook {
     function changeUberOwner(address) external;
@@ -61,6 +61,12 @@ interface IRCOrderbook {
         address _user,
         address _market,
         uint256[] calldata _tokens
+    ) external;
+
+    function reduceTimeHeldLimit(
+        address _user,
+        uint256 _token,
+        uint256 _timeToReduce
     ) external;
 
     function collectRentOwnedCards(address _user) external;
