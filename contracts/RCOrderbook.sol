@@ -30,17 +30,18 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
     mapping(address => Bid[]) public user;
     mapping(address => Market) public market;
     mapping(address => bool) public isMarket;
-    mapping(address => mapping(uint256 => address)) ownerOf;
+    mapping(address => mapping(uint256 => address)) public ownerOf;
 
     //index of a bid record in the user array, User|Market|Token->Index
-    mapping(address => mapping(address => mapping(uint256 => uint256))) index;
+    mapping(address => mapping(address => mapping(uint256 => uint256)))
+        public index;
 
     uint256 public MAX_SEARCH_ITERATIONS = 100; // TODO: gas test to find actual limit
     uint256 public MAX_DELETIONS = 100;
     address public factoryAddress;
     address public treasuryAddress;
     address public uberOwner;
-    IRCTreasury treasury;
+    IRCTreasury public treasury;
 
     // consider renaming this, we may need onlyTreasury also
     modifier onlyMarkets {
