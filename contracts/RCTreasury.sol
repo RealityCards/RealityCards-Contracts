@@ -45,12 +45,11 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     /// @param lastRentCalc The timestamp of the users last rent calculation
     /// @param lastRentalTime The timestamp the user last made a rental
     struct User {
-        // lets pack this struct later, leaving it as uint256 for rapid development and testing
-        uint256 deposit;
-        uint256 rentalRate;
-        uint256 bidRate;
-        uint256 lastRentCalc;
-        uint256 lastRentalTime;
+        uint128 deposit;
+        uint128 rentalRate;
+        uint128 bidRate;
+        uint64 lastRentCalc;
+        uint64 lastRentalTime;
     }
     mapping(address => User) public user;
 
@@ -274,7 +273,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         require(address(this).balance <= maxContractBalance, "Limit hit");
         require(_user != address(0), "Must set an address");
 
-        user[_user].deposit += msg.value;
+        user[_user].deposit += SafeCast.toUint128(msg.value);
         totalDeposits += msg.value;
         emit LogDepositIncreased(_user, msg.value);
         emit LogAdjustDeposit(_user, msg.value, true);
@@ -308,7 +307,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         }
         emit LogDepositWithdrawal(_msgSender, _dai);
         emit LogAdjustDeposit(_msgSender, _dai, false);
-        user[_msgSender].deposit -= _dai;
+        user[_msgSender].deposit -= SafeCast.toUint128(_dai);
         totalDeposits -= _dai;
         if (_localWithdrawal) {
             (bool _success, ) = payable(_msgSender).call{value: _dai}("");
@@ -353,8 +352,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         }
         require(!globalPause, "Rentals are disabled");
         address _market = msgSender();
-        //assert(marketBalance >= _dai);
-        _decreaseMarketBalance(IRCMarket(_market), _dai);
+        marketBalance -= _dai;
         marketPot[_market] += _dai;
         totalMarketPots += _dai;
 
@@ -378,7 +376,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     {
         require(!globalPause, "Payouts are disabled");
         assert(marketPot[msgSender()] >= _dai);
-        user[_user].deposit += _dai;
+        user[_user].deposit += SafeCast.toUint128(_dai);
         marketPot[msgSender()] -= _dai;
         totalMarketPots -= _dai;
         totalDeposits += _dai;
@@ -392,7 +390,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         onlyMarkets
     {
         marketBalance -= _refund;
-        user[_user].deposit += _refund;
+        user[_user].deposit += SafeCast.toUint128(_refund);
         totalDeposits += _refund;
         emit LogAdjustDeposit(_user, _refund, true);
     }
@@ -423,10 +421,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
             user[_newOwner].deposit >= _requiredPayment,
             "Insufficient deposit"
         );
-        user[_newOwner].deposit = user[_newOwner].deposit - (_requiredPayment);
-        user[_currentOwner].deposit =
-            user[_currentOwner].deposit +
-            (_requiredPayment);
+        user[_newOwner].deposit -= SafeCast.toUint128(_requiredPayment);
+        user[_currentOwner].deposit += SafeCast.toUint128(_requiredPayment);
         emit LogAdjustDeposit(_newOwner, _requiredPayment, false);
         emit LogAdjustDeposit(_currentOwner, _requiredPayment, true);
         emit LogHotPotatoPayment(_newOwner, _currentOwner, _requiredPayment);
@@ -442,9 +438,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         onlyMarkets
         returns (bool)
     {
-        user[_user].lastRentalTime = block.timestamp;
+        user[_user].lastRentalTime = SafeCast.toUint64(block.timestamp);
         if (user[_user].lastRentCalc == 0) {
-            user[_user].lastRentCalc = block.timestamp;
+            user[_user].lastRentCalc = SafeCast.toUint64(block.timestamp);
         }
         return true;
     }
@@ -483,7 +479,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         override
         returns (uint256)
     {
-        return user[_user].deposit;
+        return uint256(user[_user].deposit);
     }
 
     /*╔═════════════════════════════════╗
@@ -513,9 +509,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
                 (_newPrice *
                     (user[_newOwner].lastRentCalc - _timeOwnershipChanged)) /
                     (1 days);
-            IRCMarket _market = IRCMarket(address(0));
             // TODO this could foreclose the user, how do we handle that?
-            _increaseMarketBalance(_market, _additionalRentOwed, _newOwner);
+            _increaseMarketBalance(_additionalRentOwed, _newOwner);
         } else {
             if (user[_newOwner].rentalRate != 0) {
                 // already owns cards, call for rent collect to sync
@@ -523,18 +518,19 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
                     (_newPrice *
                         (_timeOwnershipChanged -
                             user[_newOwner].lastRentCalc)) / (1 days);
-                IRCMarket _market = IRCMarket(address(0));
                 // TODO this could foreclose the user, how do we handle that?
-                _increaseMarketBalance(_market, _additionalRentOwed, _newOwner);
+                _increaseMarketBalance(_additionalRentOwed, _newOwner);
                 collectRentUser(_newOwner);
             } else {
                 // first card owned, set start time
-                user[_newOwner].lastRentCalc = _timeOwnershipChanged;
+                user[_newOwner].lastRentCalc = SafeCast.toUint64(
+                    _timeOwnershipChanged
+                );
             }
         }
         // Must add before subtract, to avoid underflow in the case a user is only updating their price.
-        user[_newOwner].rentalRate += (_newPrice);
-        user[_oldOwner].rentalRate -= (_oldPrice);
+        user[_newOwner].rentalRate += SafeCast.toUint128(_newPrice);
+        user[_oldOwner].rentalRate -= SafeCast.toUint128(_oldPrice);
     }
 
     function increaseBidRate(address _user, uint256 _price)
@@ -542,7 +538,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         override
         onlyOrderbook
     {
-        user[_user].bidRate += _price;
+        user[_user].bidRate += SafeCast.toUint128(_price);
     }
 
     function decreaseBidRate(address _user, uint256 _price)
@@ -550,7 +546,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         override
         onlyOrderbook
     {
-        user[_user].bidRate -= _price;
+        user[_user].bidRate -= SafeCast.toUint128(_price);
     }
 
     /*╔═════════════════════════════════╗
@@ -560,8 +556,11 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     /// @notice returns the rent due between the users last rent calcualtion and
     /// @notice ..the current block.timestamp for all cards a user owns
     /// @param _user the user to query
-    /// @dev TODO consider making this internal
-    function rentOwedUser(address _user) public view returns (uint256 rentDue) {
+    function rentOwedUser(address _user)
+        internal
+        view
+        returns (uint256 rentDue)
+    {
         return
             (user[_user].rentalRate *
                 (block.timestamp - user[_user].lastRentCalc)) / (1 days);
@@ -570,9 +569,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     /// @notice returns the amount of deposit a user is able to withdraw
     /// @notice ..after considering rent due to be paid
     /// @param _user the user to query
-    /// @dev TODO consider making this internal
     function depositAbleToWithdraw(address _user)
-        public
+        internal
         view
         returns (uint256)
     {
@@ -580,7 +578,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         if (collection >= user[_user].deposit) {
             return 0;
         } else {
-            return user[_user].deposit - (collection);
+            return uint256(user[_user].deposit) - (collection);
         }
     }
 
@@ -631,55 +629,38 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
             */
                 uint256 timeUsersDepositLasts =
                     ((block.timestamp - previousCollectionTime) *
-                        user[_user].deposit) / rentOwedByUser;
+                        uint256(user[_user].deposit)) / rentOwedByUser;
                 /*
             Users last collection time = previousCollectionTime + timeTheirDepsitLasted
             */
-                rentOwedByUser = user[_user].deposit;
+                rentOwedByUser = uint256(user[_user].deposit);
                 newTimeLastCollectedOnForeclosure =
                     previousCollectionTime +
                     timeUsersDepositLasts;
-                _increaseMarketBalance(
-                    IRCMarket(address(0)),
-                    rentOwedByUser,
-                    _user
+                _increaseMarketBalance(rentOwedByUser, _user);
+                user[_user].lastRentCalc = SafeCast.toUint64(
+                    newTimeLastCollectedOnForeclosure
                 );
-                user[_user].lastRentCalc = newTimeLastCollectedOnForeclosure;
                 assert(user[_user].deposit == 0);
             } else {
                 // User has enough deposit to pay rent.
-                _increaseMarketBalance(
-                    IRCMarket(address(0)),
-                    rentOwedByUser,
-                    _user
-                );
-                user[_user].lastRentCalc = block.timestamp;
+                _increaseMarketBalance(rentOwedByUser, _user);
+                user[_user].lastRentCalc = SafeCast.toUint64(block.timestamp);
             }
             emit LogAdjustDeposit(_user, rentOwedByUser, false);
         }
     }
 
-    /// moving from the markets availiable balance to the market pot (market pot currently increased elsewhere)
-    function _decreaseMarketBalance(IRCMarket market, uint256 rentCollected)
+    /// moving from the user deposit to the markets availiable balance
+    function _increaseMarketBalance(uint256 rentCollected, address _user)
         internal
     {
-        marketBalance -= rentCollected;
-        market;
-    }
-
-    /// moving from the user deposit to the markets availiable balance
-    function _increaseMarketBalance(
-        IRCMarket market,
-        uint256 rentCollected,
-        address _user
-    ) internal {
         marketBalance += rentCollected;
-        user[_user].deposit -= rentCollected;
+        user[_user].deposit -= SafeCast.toUint128(rentCollected);
         totalDeposits -= rentCollected;
-        market;
-        // JS/TODO: implement this function
     }
 
+    /// @dev I'm not sure we need this now?
     // JS/TODO: Add a concept of depth (currently only 1 user deep). Only update the current user, or loop through and update many users (in the case that card forecloses)
     function collectRentUserAndSettleCard(uint256 card)
         public
@@ -712,7 +693,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
                         (block.timestamp - cardTimeLastCollected)) / 1 days;
 
                 if (rentDueForCard > 0) {
-                    _increaseMarketBalance(market, rentDueForCard, cardOwner);
+                    _increaseMarketBalance(rentDueForCard, cardOwner);
                 }
 
                 // the market collectRent will do this

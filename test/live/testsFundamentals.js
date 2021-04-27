@@ -950,5 +950,33 @@ contract('TestFundamentals', (accounts) => {
     assert.equal(price, web3.utils.toWei('9', 'ether'));
   });
 
+  // more user accounts are going to be needed to finish this test
+  it.skip('test collect rent iteration limit', async () => {
+    var i, user
+    for (i = 0; i < 10; i++) {
+      user = eval("user" + i);
+      await depositDai(100, user);
+      await newRentalCustomTimeLimit(10, 1, 0, user); // 1, 10
+    }
+    await time.increase(time.duration.weeks(10));
+    await realitycards.collectRentAllCards();
+
+    // 10 users is below the limit
+    var owner = await realitycards.ownerOf.call(0);
+    assert.equal(owner, realitycards.address);
+
+    // TODO need more user accounts
+    for (i = 0; i < 100; i++) {
+      user = eval("user" + i);
+      await depositDai(100, user);
+      await newRentalCustomTimeLimit(10, 1, 0, user); // 1, 10
+    }
+    await time.increase(time.duration.weeks(10));
+    await realitycards.collectRentAllCards();
+
+    // 100 users is below the limit
+    var owner = await realitycards.ownerOf.call(0);
+    assert.equal(owner, realitycards.address);
+  });
 
 });

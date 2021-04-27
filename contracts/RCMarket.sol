@@ -63,6 +63,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     uint256 public minRentalDayDivisor;
     /// @dev if hot potato mode, how much rent new owner must pay current owner (1 week divisor: i.e. 7 = 1 day, 14 = 12 hours)
     uint256 public hotPotatoWeekDivisor;
+    uint256 public maxRentIterations;
+    uint256 public collectRentCounter;
 
     // ORDERBOOK
     /// @dev incrementing nonce for each rental, for frontend sorting
@@ -221,6 +223,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         minRentalDayDivisor = treasury.minRentalDayDivisor();
         minimumPriceIncreasePercent = factory.minimumPriceIncreasePercent();
         hotPotatoWeekDivisor = factory.hotPotatoWeekDivisor();
+        maxRentIterations = factory.maxRentIterations();
 
         // initialiiize!
         winningOutcome = MAX_UINT256; // default invalid
@@ -698,7 +701,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             "Insufficient deposit"
         );
 
-        _timeHeldLimit = _checkTimeHeldLimit(_user, _tokenId, _timeHeldLimit);
+        _timeHeldLimit = _checkTimeHeldLimit(_timeHeldLimit);
 
         // replaces _newBid and _updateBid
         orderbook.addBidToOrderbook(
@@ -714,19 +717,16 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         //return tokenPrice[_tokenId];
     }
 
-    function _checkTimeHeldLimit(
-        address _user,
-        uint256 _tokenId,
-        uint256 _timeHeldLimit
-    ) internal view returns (uint256) {
+    function _checkTimeHeldLimit(uint256 _timeHeldLimit)
+        internal
+        view
+        returns (uint256)
+    {
         if (_timeHeldLimit == 0) {
             return 0;
         } else {
             uint256 _minRentalTime = uint256(1 days) / minRentalDayDivisor;
-            require(
-                _timeHeldLimit >= timeHeld[_tokenId][_user] + _minRentalTime,
-                "Limit too low"
-            ); // must be after collectRent so timeHeld is up to date
+            require(_timeHeldLimit >= _minRentalTime, "Limit too low");
             return _timeHeldLimit;
         }
     }
@@ -739,11 +739,10 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     {
         _checkState(States.OPEN);
         address _user = msgSender();
-        // TODO call for the correct rent collection before updating timeHeldLimit
-        // treasury.collectRentUser(_user);
+
         _collectRent(_tokenId);
 
-        _timeHeldLimit = _checkTimeHeldLimit(_user, _tokenId, _timeHeldLimit);
+        _timeHeldLimit = _checkTimeHeldLimit(_timeHeldLimit);
 
         orderbook.setTimeHeldlimit(_user, _tokenId, _timeHeldLimit);
 
@@ -862,7 +861,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             uint256 _timeUserForeclosed = treasury.collectRentUser(_user);
 
             // Calculate the token timeLimitTimestamp
-            //TODO a user setting a very high timeLimit could cause this to lockup
             uint256 _tokenTimeLimitTimestamp =
                 timeLastCollected[_tokenId] + tokenTimeLimit[_tokenId];
 
@@ -1014,10 +1012,14 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                 treasury.refundUser(_user, _refundAmount);
             }
             _processRentCollection(_user, _tokenId, _timeOfThisCollection);
+
             if (_newOwner) {
                 orderbook.findNewOwner(_tokenId, _timeOfThisCollection);
-
-                _collectRent(_tokenId);
+                collectRentCounter++;
+                if (collectRentCounter < maxRentIterations) {
+                    _collectRent(_tokenId);
+                }
+                collectRentCounter = 0;
             }
         }
         // timeLastCollected is updated regardless of whether the token is owned, so that the clock starts ticking

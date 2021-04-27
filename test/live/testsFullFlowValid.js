@@ -1622,9 +1622,7 @@ contract('TestFullFlowValid', (accounts) => {
     await depositDai(1000, user1);
     await depositDai(1000, user2);
     // rent losing teams
-    console.log("Rent token 0 ", user0);
     await newRentalCustomTimeLimit(1, 28, 0, user0); // collected 28
-    console.log("Rent token 1 ", user1);
     await newRentalCustomTimeLimit(2, 28, 1, user1); // collected 56
     // rent winning team
     await newRental(1, 2, user0); // collected 7
