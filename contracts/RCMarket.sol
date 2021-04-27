@@ -938,7 +938,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                 // didn't hit time limit AND
                 // didn't lock market
                 // THEN rent OK, find new owner
-                _timeOfThisCollection = _timeOfThisCollection;
+                _timeOfThisCollection = _timeUserForeclosed;
                 _newOwner = true;
                 _refundTime = 0;
             } else if (_foreclosed && !_limitHit && _marketLocked) {
