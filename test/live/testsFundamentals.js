@@ -465,7 +465,7 @@ contract('TestFundamentals', (accounts) => {
     var difference = Math.abs(depositWithdrawn.toString() - depositWithdrawnShouldBe.toString());
 
     // set to 0.3% loss is acceptable, this needs double checking though.
-    assert.isBelow(difference / depositWithdrawn, 0.004);
+    assert.isBelow(difference / depositWithdrawn, 0.005);
     //original user tries to withdraw again, should be nothign to withdraw 
     await expectRevert(treasury.withdrawDeposit(1000, true), "Nothing to withdraw");
   });
