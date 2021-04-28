@@ -15,6 +15,8 @@ interface IRCTreasury {
 
     function isMarket(address) external view returns (bool);
 
+    function isForeclosed(address) external view returns (bool);
+
     function totalDeposits() external view returns (uint256);
 
     function marketPot(address) external view returns (uint256);

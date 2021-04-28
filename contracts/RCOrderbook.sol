@@ -609,11 +609,8 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         return false;
     }
 
-    function removeUserFromOrderbook(address _user)
-        external
-        override
-        onlyTreasury
-    {
+    function removeUserFromOrderbook(address _user) external override {
+        require(treasury.isForeclosed(_user), "User must be foreclosed");
         uint256 i = user[_user].length;
         uint256 _limit = 0;
         if (i > MAX_DELETIONS) {
@@ -666,12 +663,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
                 .next = _tempNext;
             user[_user].pop();
         } while (user[_user].length > _limit);
-
-        //TODO reset users rental rates etc
-        if (user[_user].length == 0) {
-            //and get rid of them
-            // delete user[_user];
-        }
     }
 
     // just reduce rental rates for owners for now

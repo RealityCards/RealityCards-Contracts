@@ -38,6 +38,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     mapping(address => bool) public override isMarketActive;
     /// @dev rent taken and allocated to a particular market
     uint256 public marketBalance;
+    /// @dev a quick check if a uesr is foreclosed
+    mapping(address => bool) public override isForeclosed;
 
     /// @param deposit the users current deposit in wei
     /// @param rentalRate the daily cost of the cards the user current owns
@@ -273,6 +275,13 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         require(address(this).balance <= maxContractBalance, "Limit hit");
         require(_user != address(0), "Must set an address");
 
+        // this deposit could cancel the users foreclosure
+        if (msg.value > user[_user].bidRate / (minRentalDayDivisor)) {
+            isForeclosed[_user] = false;
+            // TODO should we revert if it's insufficient? user may believe they have deposited enough
+            // .. when they acutally haven't
+        }
+
         user[_user].deposit += SafeCast.toUint128(msg.value);
         totalDeposits += msg.value;
         emit LogDepositIncreased(_user, msg.value);
@@ -299,7 +308,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         ); // TODO if the user never becomes owner this means they can't withdraw
 
         // stpe 1: collect rent on owned cards
-        //orderbook.collectRentOwnedCards(_msgSender);
         collectRentUser(_msgSender);
 
         // step 2: process withdrawal
@@ -329,6 +337,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
             user[_msgSender].bidRate / (minRentalDayDivisor) >
             user[_msgSender].deposit
         ) {
+            isForeclosed[_msgSender] = true;
             orderbook.removeUserFromOrderbook(_msgSender);
         }
     }
@@ -643,6 +652,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
                     newTimeLastCollectedOnForeclosure
                 );
                 assert(user[_user].deposit == 0);
+                isForeclosed[_user] = true;
             } else {
                 // User has enough deposit to pay rent.
                 _increaseMarketBalance(rentOwedByUser, _user);
