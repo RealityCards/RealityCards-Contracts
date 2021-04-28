@@ -586,21 +586,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
             .toUint64(_timeHeldLimit);
     }
 
-    /// @dev temporary function to use current tests, shouldn't be required
-    /// @dev with new collect rent per user model.
-    function collectRentOwnedCards(address _user) external override {
-        address _market;
-        uint256[] memory _token = new uint256[](1);
-        for (uint256 i; i < user[_user].length; i++) {
-            _market = user[_user][i].market;
-            _token[0] = user[_user][i].token;
-            if (ownerOf[_market][_token[0]] == _user) {
-                IRCMarket _rcmarket = IRCMarket(_market);
-                _rcmarket.collectRentSpecificCards(_token);
-            }
-        }
-    }
-
     function bidExists(
         address _user,
         address _market,

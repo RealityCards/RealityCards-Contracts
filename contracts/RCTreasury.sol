@@ -299,7 +299,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         ); // TODO if the user never becomes owner this means they can't withdraw
 
         // stpe 1: collect rent on owned cards
-        orderbook.collectRentOwnedCards(_msgSender);
+        //orderbook.collectRentOwnedCards(_msgSender);
+        collectRentUser(_msgSender);
 
         // step 2: process withdrawal
         if (_dai > user[_msgSender].deposit) {
