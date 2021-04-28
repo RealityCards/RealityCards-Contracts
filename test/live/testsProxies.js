@@ -310,7 +310,7 @@ contract('TestProxies', (accounts) => {
   });
 
 
-  it.skip('test NFT upgrade', async () => {
+  it('test NFT upgrade', async () => {
     // need to implement check that user has already claimed card (and market is over)
     // before trying to exit them on a withdraw, then this test can be re-instated.
     await rcfactory.changeMarketApproval(realitycards.address);
@@ -322,7 +322,9 @@ contract('TestProxies', (accounts) => {
     await newRental(500, 3, user2);
     await time.increase(time.duration.years(1));
     await realitio.setResult(3);
+    await expectRevert(realitycards.claimCard(3, { from: user1 }), "Incorrect state");
     await realitycards.lockMarket();
+    await realitycards.claimCard(3, { from: user1 })
     await expectRevert(realitycards.upgradeCard(3, { from: user1 }), "Incorrect state");
     await xdaiproxy.getWinnerFromOracle(realitycards.address);
     await realitycards.withdraw({ from: user1 });
@@ -349,6 +351,7 @@ contract('TestProxies', (accounts) => {
     await realitycards2.lockMarket();
     await xdaiproxy.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
+    await realitycards2.claimCard(5, { from: user3 })
     await realitycards2.upgradeCard(5, { from: user3 });
     var ownermainnet = await nfthubmainnet.ownerOf(25);
     assert.equal(ownermainnet, user3);

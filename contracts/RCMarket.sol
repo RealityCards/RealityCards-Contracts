@@ -417,6 +417,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         uint256 _timeLimit
     ) external override {
         require(msgSender() == address(orderbook));
+        _checkState(States.OPEN);
         if (_to != _from) {
             _transferCard(_from, _to, _tokenId);
         }
