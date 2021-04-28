@@ -57,11 +57,7 @@ interface IRCOrderbook {
 
     function removeUserFromOrderbook(address _user) external;
 
-    function removeMarketFromUser(
-        address _user,
-        address _market,
-        uint256[] calldata _tokens
-    ) external;
+    function removeOldBids(address _user) external;
 
     function reduceTimeHeldLimit(
         address _user,

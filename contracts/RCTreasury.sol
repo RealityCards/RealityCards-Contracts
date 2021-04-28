@@ -275,6 +275,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         require(address(this).balance <= maxContractBalance, "Limit hit");
         require(_user != address(0), "Must set an address");
 
+        // do some cleaning up, it might help cancel their foreclosure
+        orderbook.removeOldBids(_user);
+
         // this deposit could cancel the users foreclosure
         if (msg.value > user[_user].bidRate / (minRentalDayDivisor)) {
             isForeclosed[_user] = false;

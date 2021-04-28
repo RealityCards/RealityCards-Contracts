@@ -689,6 +689,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             );
         }
 
+        // do some cleaning up before we collect rent or check their bidRate
+        orderbook.removeOldBids(_user);
+
         _collectRent(_tokenId);
 
         // process deposit, if sent

@@ -32,6 +32,11 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
     mapping(address => bool) public isMarket;
     mapping(address => mapping(uint256 => address)) public ownerOf;
 
+    // an array of closed markets
+    address[] public closedMarkets;
+    // how far through the array the user is
+    mapping(address => uint256) public userClosedMarketIndex;
+
     //index of a bid record in the user array, User|Market|Token->Index
     mapping(address => mapping(address => mapping(uint256 => uint256)))
         public index;
@@ -668,6 +673,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
     // just reduce rental rates for owners for now
     function closeMarket() external override onlyMarkets {
         address _market = msg.sender;
+        closedMarkets.push(_market);
 
         for (uint64 i = 0; i < market[_market].tokenCount; i++) {
             // reduce owners rental rate
@@ -680,6 +686,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
                 0,
                 block.timestamp
             );
+            /// @dev I'm not sure now we need the waste pile, function could end here
 
             // store first and last bids for later
             address _firstBid = _owner;
@@ -704,42 +711,33 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
     }
 
     /// @dev this destroys the linked list, only use after market completion
-    function removeMarketFromUser(
-        address _user,
-        address _market,
-        uint256[] calldata _tokens
-    ) external override onlyMarkets {
-        /// @dev loop isn't unbounded, it is limited by the max number of tokens in a market
-        for (uint256 i = 0; i < _tokens.length; i++) {
-            // reduce bidRate, if owner then reduce rentalRate
-            uint256 _price =
-                user[_user][index[_user][_market][_tokens[i]]].price;
-            // if (
-            //     user[_user][index[_user][_market][_tokens[i]]].prev ==
-            //     _market
-            // ) {
-            //     treasury.updateRentalRate(
-            //         _user,
-            //         _market,
-            //         _price,
-            //         0,
-            //         block.timestamp
-            //     );
-            // }
+    function removeOldBids(address _user) external override {
+        address _market;
+        uint256 _tokenCount;
+        uint256 _loopCounter;
+        while (
+            userClosedMarketIndex[_user] < closedMarkets.length &&
+            _loopCounter + _tokenCount < MAX_DELETIONS
+        ) {
+            _market = closedMarkets[userClosedMarketIndex[_user]];
+            _tokenCount = market[_market].tokenCount;
+            for (uint256 i = market[_market].tokenCount; i != 0; ) {
+                i--;
+                if (bidExists(_user, _market, i)) {
+                    // reduce bidRate
+                    uint256 _price =
+                        user[_user][index[_user][_market][i]].price;
+                    treasury.decreaseBidRate(_user, _price);
 
-            treasury.decreaseBidRate(_user, _price);
+                    // delete bid
+                    user[_user].pop();
+                    index[_user][_market][i] = 0;
 
-            // overwrite array element
-            uint256 _index = index[_user][_market][_tokens[i]];
-            uint256 _lastRecord = user[_user].length - (1);
-            user[_user][_index] = user[_user][_lastRecord];
-            user[_user].pop();
-
-            //update the index to help find the record later
-            index[_user][_market][_tokens[i]] = 0;
-            index[_user][user[_user][_index].market][
-                user[_user][_index].token
-            ] = _index;
+                    // count deletions
+                    _loopCounter++;
+                }
+            }
+            userClosedMarketIndex[_user]++;
         }
     }
 
