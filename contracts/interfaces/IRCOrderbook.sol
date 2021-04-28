@@ -28,12 +28,6 @@ interface IRCOrderbook {
         external
         returns (address _newOwner);
 
-    function findNextBid(
-        address _user,
-        address _market,
-        uint256 _token
-    ) external view returns (address _newUser, uint256 _newPrice);
-
     function getBidValue(address _user, uint256 _token)
         external
         view

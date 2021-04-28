@@ -23,8 +23,6 @@ interface IRCTreasury {
 
     function totalMarketPots() external view returns (uint256);
 
-    function isMarketActive(address) external view returns (bool);
-
     function minRentalDayDivisor() external view returns (uint256);
 
     function maxContractBalance() external view returns (uint256);
@@ -88,12 +86,6 @@ interface IRCTreasury {
     function collectRentUser(address _user)
         external
         returns (uint256 newTimeLastCollectedOnForeclosure);
-
-    function collectRentUserAndSettleCard(uint256 card)
-        external
-        returns (bool didTokenForeclose);
-
-    function updateMarketStatus(bool _open) external;
 
     function userDeposit(address) external view returns (uint256);
 }

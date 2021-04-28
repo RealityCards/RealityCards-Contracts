@@ -439,8 +439,6 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
         // do a final rent collection before the contract is locked down
         collectRentAllCards();
         orderbook.closeMarket();
-        // let the treasury know the market is closed
-        treasury.updateMarketStatus(false);
         _incrementState();
         emit LogContractLocked(true);
     }
@@ -1071,9 +1069,6 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
     function _incrementState() internal {
         assert(uint256(state) < 4);
         state = States(uint256(state) + (1));
-        if (uint256(state) == 1) {
-            treasury.updateMarketStatus(true);
-        }
         emit LogStateChange(uint256(state));
     }
 

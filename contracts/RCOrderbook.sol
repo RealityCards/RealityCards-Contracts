@@ -523,20 +523,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         }
     }
 
-    /// @dev currently not used anywhere
-    function findNextBid(
-        address _user,
-        address _market,
-        uint256 _token
-    ) external view override returns (address _newUser, uint256 _newPrice) {
-        Bid storage _currUser = user[_user][index[_user][_market][_token]];
-        Bid storage _nextUser =
-            user[_currUser.next][index[_currUser.next][_market][_token]];
-        // TODO check bid is valid before returing it
-
-        return (_nextUser.next, _nextUser.price);
-    }
-
     function getBidValue(address _user, uint256 _token)
         external
         view
