@@ -49,6 +49,10 @@ var xdaiProxyAddress = myArgs[0]
 var mainnetProxyAddress = myArgs[1]
 var ipfsHashes = argv['ipfs_hash']
 
+// AS manual override the above cos I did stage 1 already
+xdaiProxyAddress = '0x4887099dc8d9a8Df22dea57c6ee7f72045a3D9A6';
+mainnetProxyAddress = '0x5EE1CDF379664c32cAC5f85747E35Fd48e8eeA0C';
+
 // an array of market instances
 var market = [];
 // an array of the addresses (just a more readable way of doing market[].address)
@@ -112,6 +116,7 @@ module.exports = async (deployer, network, accounts) => {
     console.log(RCMarket.address)
     console.log('NFTHubXDAIAddress')
     console.log(NftHubXDai.address)
+
   } else if (network === 'teststage2' || network === 'stage2' || network === 'develop') {
     console.log('Begin Stage 2')
     // mainnet
