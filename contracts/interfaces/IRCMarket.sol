@@ -29,7 +29,7 @@ interface IRCMarket {
 
     function setWinner(uint256) external;
 
-    function collectRentAllCards() external;
+    function collectRentAllCards() external returns (bool);
 
     function collectRentSpecificCards(uint256[] calldata _cards) external;
 

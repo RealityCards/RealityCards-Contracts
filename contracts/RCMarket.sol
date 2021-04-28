@@ -439,17 +439,18 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             "Market has not finished"
         );
         // do a final rent collection before the contract is locked down
-        collectRentAllCards();
-        orderbook.closeMarket();
-        // let the treasury know the market is closed
-        treasury.updateMarketStatus(false);
-        _incrementState();
+        if (collectRentAllCards()) {
+            orderbook.closeMarket();
+            // let the treasury know the market is closed
+            treasury.updateMarketStatus(false);
+            _incrementState();
 
-        for (uint256 i; i < numberOfTokens; i++) {
-            // bring the cards back to the market so the winners get the satisfcation of claiming them
-            _transferCard(ownerOf(i), address(this), i);
+            for (uint256 i; i < numberOfTokens; i++) {
+                // bring the cards back to the market so the winners get the satisfcation of claiming them
+                _transferCard(ownerOf(i), address(this), i);
+            }
+            emit LogContractLocked(true);
         }
-        emit LogContractLocked(true);
     }
 
     /// @notice called by proxy, sets the winner
@@ -601,13 +602,18 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
     /// @notice collects rent for all tokens
     /// @dev cannot be external because it is called within the lockMarket function, therefore public
-    function collectRentAllCards() public override {
+    function collectRentAllCards() public override returns (bool) {
         _checkState(States.OPEN);
+        bool _success = true;
         for (uint256 i = 0; i < numberOfTokens; i++) {
             if (ownerOf(i) != address(this)) {
-                _collectRent(i);
+                _success = _collectRent(i);
+            }
+            if (!_success) {
+                return false;
             }
         }
+        return true;
     }
 
     /// @notice collect rent on a set of cards
@@ -851,7 +857,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @notice collects rent for a specific token
     /// @dev also calculates and updates how long the current user has held the token for
     /// @dev is not a problem if called externally, but making internal over public to save gas
-    function _collectRent(uint256 _tokenId) internal {
+    function _collectRent(uint256 _tokenId) internal returns (bool) {
         address _user = ownerOf(_tokenId);
         uint256 _timeOfThisCollection = block.timestamp;
 
@@ -1027,6 +1033,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                 collectRentCounter++;
                 if (collectRentCounter < maxRentIterations) {
                     _collectRent(_tokenId);
+                } else {
+                    return false;
                 }
                 collectRentCounter = 0;
             }
@@ -1034,6 +1042,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         // timeLastCollected is updated regardless of whether the token is owned, so that the clock starts ticking
         // ... when the first owner buys it, because this function is run before ownership changes upon calling newRental
         timeLastCollected[_tokenId] = _timeOfThisCollection;
+        return true;
     }
 
     function _processRentCollection(
