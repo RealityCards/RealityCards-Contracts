@@ -186,7 +186,6 @@ contract("TestTreasury", (accounts) => {
         await expectRevert(treasury.sponsor(), "Not authorised");
         await expectRevert(treasury.processHarbergerPayment(user0, user0, 0), "Not authorised");
         await expectRevert(treasury.updateLastRentalTime(user0), "Not authorised");
-        await expectRevert(treasury.updateMarketStatus(true), "Not authorised");
     });
 
     it("check that non owners cannot call owner only functions on Treasury", async () => {
