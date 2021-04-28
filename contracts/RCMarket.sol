@@ -443,6 +443,11 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         // let the treasury know the market is closed
         treasury.updateMarketStatus(false);
         _incrementState();
+
+        for (uint256 i; i < numberOfTokens; i++) {
+            // bring the cards back to the market so the winners get the satisfcation of claiming them
+            _transferCard(ownerOf(i), address(this), i);
+        }
         emit LogContractLocked(true);
     }
 
