@@ -236,14 +236,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         treasury.increaseBidRate(_user, _price);
         if (user[_user][index[_user][_market][_token]].prev == _market) {
             address _oldOwner = user[_user][index[_user][_market][_token]].next;
-            transferCard(
-                _market,
-                _token,
-                _oldOwner,
-                _user,
-                _price,
-                _timeHeldLimit
-            );
+            transferCard(_market, _token, _oldOwner, _user, _price);
             treasury.updateRentalRate(
                 _oldOwner,
                 _user,
@@ -300,14 +293,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         treasury.decreaseBidRate(_user, _price);
         if (_owner && _currUser.prev == _market) {
             // if owner before and after, update the price difference
-            transferCard(
-                _market,
-                _token,
-                _user,
-                _user,
-                _currUser.price,
-                _timeHeldLimit
-            );
+            transferCard(_market, _token, _user, _user, _currUser.price);
             treasury.updateRentalRate(
                 _user,
                 _user,
@@ -328,14 +314,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
                 _newPrice,
                 block.timestamp
             );
-            transferCard(
-                _market,
-                _token,
-                _user,
-                _newOwner,
-                _newPrice,
-                _timeHeldLimit
-            );
+            transferCard(_market, _token, _user, _newOwner, _newPrice);
         } else if (!_owner && _currUser.prev == _market) {
             // if not owner before but is owner after, add new price
             address _oldOwner = _currUser.next;
@@ -348,14 +327,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
                 _currUser.price,
                 block.timestamp
             );
-            transferCard(
-                _market,
-                _token,
-                _oldOwner,
-                _user,
-                _currUser.price,
-                _timeHeldLimit
-            );
+            transferCard(_market, _token, _oldOwner, _user, _currUser.price);
         }
     }
 
@@ -374,17 +346,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
             uint256 _price =
                 user[_currUser.next][index[_currUser.next][_market][_token]]
                     .price;
-            uint256 _timeLimit =
-                user[_currUser.next][index[_currUser.next][_market][_token]]
-                    .timeHeldLimit;
-            transferCard(
-                _market,
-                _token,
-                _user,
-                _currUser.next,
-                _price,
-                _timeLimit
-            );
+            transferCard(_market, _token, _user, _currUser.next, _price);
             treasury.updateRentalRate(
                 _user,
                 _currUser.next,
@@ -457,6 +419,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         uint256 minimumTimeToOwnTo =
             block.timestamp + market[_market].minimumRentalDuration;
         uint256 _newPrice;
+
         // delete current owner
         do {
             _newPrice = _removeBidFromOrderbookIgnoreOwner(_head.next, _token);
@@ -467,24 +430,37 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         );
 
         _newOwner = user[_market][index[_market][_market][_token]].next;
-        uint256 _timeLimit =
-            user[_newOwner][index[_newOwner][_market][_token]].timeHeldLimit;
-        treasury.updateRentalRate(
-            _oldOwner,
-            _newOwner,
-            _oldPrice,
-            _newPrice,
-            _timeOwnershipChanged
-        );
-        transferCard(
-            _market,
-            _token,
-            _oldOwner,
-            _newOwner,
-            _newPrice,
-            _timeLimit
-        );
+        // uint256 _timeLimit =
+        //     user[_newOwner][index[_newOwner][_market][_token]].timeHeldLimit;
+        uint256 _tokenForeclosureTime =
+            treasury.updateRentalRate(
+                _oldOwner,
+                _newOwner,
+                _oldPrice,
+                _newPrice,
+                _timeOwnershipChanged
+            );
+        transferCard(_market, _token, _oldOwner, _newOwner, _newPrice);
+        if (_tokenForeclosureTime != 0) {
+            IRCMarket(_market).userForeclosed(_token, _tokenForeclosureTime);
+        }
     }
+
+    // function _findNewOwner(
+    //     Bid storage _head,
+    //     uint256 _token,
+    //     address _market
+    // ) internal returns (uint256 _newPrice) {
+    //     uint256 minimumTimeToOwnTo =
+    //         block.timestamp + market[_market].minimumRentalDuration;
+    //     do {
+    //         _newPrice = _removeBidFromOrderbookIgnoreOwner(_head.next, _token);
+    //         // delete next bid if foreclosed
+    //     } while (
+    //         treasury.foreclosureTimeUser(_head.next, _newPrice) <
+    //             minimumTimeToOwnTo
+    //     );
+    // }
 
     /// @dev removes a single bid from the orderbook, doesn't update ownership
     function _removeBidFromOrderbookIgnoreOwner(address _user, uint256 _token)
@@ -622,9 +598,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
                 _token = user[_user][i].token;
                 uint256 _price =
                     user[_tempNext][index[_tempNext][_market][_token]].price;
-                uint256 _timeLimit =
-                    user[_tempNext][index[_tempNext][_market][_token]]
-                        .timeHeldLimit;
                 treasury.updateRentalRate(
                     _user,
                     _tempNext,
@@ -632,14 +605,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
                     _price,
                     block.timestamp
                 );
-                transferCard(
-                    _market,
-                    _token,
-                    _user,
-                    _tempNext,
-                    _price,
-                    _timeLimit
-                );
+                transferCard(_market, _token, _user, _tempNext, _price);
             }
 
             treasury.decreaseBidRate(_user, user[_user][i].price);
@@ -741,13 +707,14 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         uint256 _token,
         address _oldOwner,
         address _newOwner,
-        uint256 _price,
-        uint256 _timeLimit
+        uint256 _price
     ) internal {
         // console.log("old owner ", _oldOwner);
         // console.log(" token ", _token);
         // console.log("new owner ", _newOwner);
         ownerOf[_market][_token] = _newOwner;
+        uint256 _timeLimit =
+            user[_newOwner][index[_newOwner][_market][_token]].timeHeldLimit;
         IRCMarket _rcmarket = IRCMarket(_market);
         _rcmarket.transferCard(
             _oldOwner,

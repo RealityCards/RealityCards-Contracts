@@ -787,8 +787,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             } else {
                 //assert(orderbook[_tokenId][_msgSender].price == 0);
             }
-            // if not owner, just delete from orderbook
         } else {
+            // if not owner, just delete from orderbook
             if (orderbook.bidExists(_msgSender, address(this), _tokenId)) {
                 _collectRent(_tokenId);
                 orderbook.removeBidFromOrderbook(_msgSender, _tokenId);
@@ -871,7 +871,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             timeLastCollected[_tokenId] < _timeOfThisCollection
         ) {
             // User rent collect and fetch the time the user foreclosed, 0 means they didn't foreclose yet
-            uint256 _timeUserForeclosed = treasury.collectRentUser(_user);
+            uint256 _timeUserForeclosed =
+                treasury.collectRentUser(_user, block.timestamp);
 
             // Calculate the token timeLimitTimestamp
             uint256 _tokenTimeLimitTimestamp =
@@ -1081,6 +1082,20 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
         emit LogTimeHeldUpdated(timeHeld[_token][_user], _user, _token);
         emit LogRentCollection(_rentOwed, _token, _user);
+    }
+
+    function userForeclosed(uint256 _token, uint256 _timeOfForeclosure)
+        external
+        override
+        onlyTreasury
+    {
+        // The user foreclosed while trying to assign them ownership and sync rent collections
+        _processRentCollection(ownerOf(_token), _token, _timeOfForeclosure);
+        orderbook.findNewOwner(_token, _timeOfForeclosure);
+        collectRentCounter++;
+        if (collectRentCounter < maxRentIterations) {
+            _collectRent(_token);
+        }
     }
 
     function _checkState(States currentState) internal view {

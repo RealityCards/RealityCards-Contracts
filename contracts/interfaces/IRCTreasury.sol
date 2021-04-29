@@ -77,13 +77,13 @@ interface IRCTreasury {
         uint256 _oldPrice,
         uint256 _newPrice,
         uint256 _timeOwnershipChanged
-    ) external;
+    ) external returns (uint256);
 
     function increaseBidRate(address _user, uint256 _price) external;
 
     function decreaseBidRate(address _user, uint256 _price) external;
 
-    function collectRentUser(address _user)
+    function collectRentUser(address _user, uint256 _timeToCollectTo)
         external
         returns (uint256 newTimeLastCollectedOnForeclosure);
 
