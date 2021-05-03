@@ -77,7 +77,7 @@ interface IRCTreasury {
         uint256 _oldPrice,
         uint256 _newPrice,
         uint256 _timeOwnershipChanged
-    ) external returns (uint256);
+    ) external;
 
     function increaseBidRate(address _user, uint256 _price) external;
 

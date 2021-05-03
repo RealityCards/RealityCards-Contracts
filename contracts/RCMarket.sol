@@ -899,8 +899,10 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             └───────────┴─┴─┴─┴─┴─┴─┴─┴─┘
             TODO: some of these cases may be combined, or at least reordered for optimisation
             */
+            // console.log("token %s and user %s ", _tokenId, _user);
 
             if (!_foreclosed && !_limitHit && !_marketLocked) {
+                // console.log("CASE 1");
                 // CASE 1
                 // didn't foreclose AND
                 // didn't hit time limit AND
@@ -910,6 +912,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                 _newOwner = false;
                 _refundTime = 0;
             } else if (!_foreclosed && !_limitHit && _marketLocked) {
+                // console.log("CASE 2");
                 // CASE 2
                 // didn't foreclose AND
                 // didn't hit time limit AND
@@ -919,6 +922,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                 _newOwner = false;
                 _refundTime = block.timestamp - marketLockingTime;
             } else if (!_foreclosed && _limitHit && !_marketLocked) {
+                // console.log("CASE 3");
                 // CASE 3
                 // didn't foreclose AND
                 // did hit time limit AND
@@ -934,17 +938,20 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                 // did lock market
                 // THEN refund rent between the earliest event and now
                 if (_tokenTimeLimitTimestamp < marketLockingTime) {
+                    // console.log("CASE 4A");
                     // time limit hit before market locked
                     _timeOfThisCollection = _tokenTimeLimitTimestamp;
                     _newOwner = true;
                     _refundTime = block.timestamp - _tokenTimeLimitTimestamp;
                 } else {
+                    // console.log("CASE 4B");
                     // market locked before time limit hit
                     _timeOfThisCollection = marketLockingTime;
                     _newOwner = false;
                     _refundTime = block.timestamp - marketLockingTime;
                 }
             } else if (_foreclosed && !_limitHit && !_marketLocked) {
+                // console.log("CASE 5");
                 // CASE 5
                 // did foreclose AND
                 // didn't hit time limit AND
@@ -960,11 +967,13 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                 // did lock market
                 // THEN if foreclosed first rent ok, otherwise refund after locking
                 if (_timeUserForeclosed < marketLockingTime) {
+                    // console.log("CASE 6A");
                     // user foreclosed before market locked
                     _timeOfThisCollection = _timeUserForeclosed;
                     _newOwner = true;
                     _refundTime = 0;
                 } else {
+                    // console.log("CASE 6B");
                     // market locked before user foreclosed
                     _timeOfThisCollection = marketLockingTime;
                     _newOwner = false;
@@ -977,11 +986,13 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                 // didn't lock market
                 // THEN if foreclosed first rent ok, otherwise refund after limit
                 if (_timeUserForeclosed < _tokenTimeLimitTimestamp) {
+                    // console.log("CASE 7A");
                     // user foreclosed before time limit
                     _timeOfThisCollection = _timeUserForeclosed;
                     _newOwner = true;
                     _refundTime = 0;
                 } else {
+                    // console.log("CASE 7B");
                     // time limit hit before user foreclosed
                     _timeOfThisCollection = _tokenTimeLimitTimestamp;
                     _newOwner = true;
@@ -999,6 +1010,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                     _timeUserForeclosed < _tokenTimeLimitTimestamp &&
                     _timeUserForeclosed < marketLockingTime
                 ) {
+                    // console.log("CASE 8A");
                     // user foreclosed first
                     _timeOfThisCollection = _timeUserForeclosed;
                     _newOwner = true;
@@ -1007,6 +1019,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                     _tokenTimeLimitTimestamp < _timeUserForeclosed &&
                     _tokenTimeLimitTimestamp < marketLockingTime
                 ) {
+                    // console.log("CASE 8B");
                     // time limit hit first
                     _timeOfThisCollection = _tokenTimeLimitTimestamp;
                     _newOwner = true;
@@ -1014,6 +1027,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                         _timeUserForeclosed -
                         _tokenTimeLimitTimestamp;
                 } else {
+                    // console.log("CASE 8C");
                     // market locked first
                     _timeOfThisCollection = marketLockingTime;
                     _newOwner = false;
@@ -1057,15 +1071,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             (_timeOfCollection - timeLastCollected[_token]);
 
         // if the user has a timeLimit, adjust it as necessary
-        uint256 _timeLimitSpent;
         if (tokenTimeLimit[_token] != 0) {
-            if (_timeHeldToIncrement > tokenTimeLimit[_token]) {
-                _timeLimitSpent = tokenTimeLimit[_token];
-            } else {
-                _timeLimitSpent = _timeHeldToIncrement;
-            }
-            orderbook.reduceTimeHeldLimit(_user, _token, _timeLimitSpent);
-            tokenTimeLimit[_token] -= _timeLimitSpent;
+            orderbook.reduceTimeHeldLimit(_user, _token, _timeHeldToIncrement);
+            tokenTimeLimit[_token] -= _timeHeldToIncrement;
         }
 
         timeHeld[_token][_user] += _timeHeldToIncrement;
@@ -1082,20 +1090,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
         emit LogTimeHeldUpdated(timeHeld[_token][_user], _user, _token);
         emit LogRentCollection(_rentOwed, _token, _user);
-    }
-
-    function userForeclosed(uint256 _token, uint256 _timeOfForeclosure)
-        external
-        override
-        onlyTreasury
-    {
-        // The user foreclosed while trying to assign them ownership and sync rent collections
-        _processRentCollection(ownerOf(_token), _token, _timeOfForeclosure);
-        orderbook.findNewOwner(_token, _timeOfForeclosure);
-        collectRentCounter++;
-        if (collectRentCounter < maxRentIterations) {
-            _collectRent(_token);
-        }
     }
 
     function _checkState(States currentState) internal view {

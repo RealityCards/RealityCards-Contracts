@@ -1631,7 +1631,9 @@ contract('TestFullFlowValid', (accounts) => {
     await time.increase(time.duration.weeks(1));
     await newRentalCustomTimeLimit(3, 14, 2, user2); // collected 42
     await time.increase(time.duration.weeks(2));
+    console.log("EXIT ALL USER1 ", user1);
     await realitycards.exitAll({ from: user1 });
+    console.log("EXIT ALL USER0 ", user0);
     await realitycards.exitAll({ from: user0 });
     // exit all, progress time so marketLockingTime in the past
     await time.increase(time.duration.years(1));

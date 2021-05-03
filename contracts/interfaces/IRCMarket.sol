@@ -50,9 +50,6 @@ interface IRCMarket {
         uint256 collectedUntil
     ) external;
 
-    function userForeclosed(uint256 _token, uint256 _timeOfForeclosure)
-        external;
-
     function transferCard(
         address _oldOwner,
         address _newOwner,

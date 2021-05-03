@@ -348,9 +348,11 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         returns (bool)
     {
         require(!globalPause, "Rentals are disabled");
-        // if (marketBalance + 1 == _dai) {
-        //     _dai -= 1;
-        // }
+        console.log("market balance ", marketBalance);
+        console.log("rent to pay    ", _dai);
+        if (marketBalance + 1 == _dai) {
+            _dai -= 1;
+        }
         address _market = msgSender();
         marketBalance -= _dai;
         marketPot[_market] += _dai;
@@ -476,14 +478,13 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     /// @param _oldPrice the price the old owner was paying
     /// @param _newPrice the price the new owner will be paying
     /// @param _timeOwnershipChanged the timestamp of this event
-    /// @param _timeTokenForeclosed the time the new owner may have foreclosed at(0 means no foreclosure)
     function updateRentalRate(
         address _oldOwner,
         address _newOwner,
         uint256 _oldPrice,
         uint256 _newPrice,
         uint256 _timeOwnershipChanged
-    ) external override onlyOrderbook returns (uint256 _timeTokenForeclosed) {
+    ) external override onlyOrderbook {
         if (
             _timeOwnershipChanged != user[_newOwner].lastRentCalc &&
             !isMarket[_newOwner]
@@ -492,7 +493,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
             // See if the new owner has had a rent collection before or after this ownership change
             if (_timeOwnershipChanged < user[_newOwner].lastRentCalc) {
                 // the new owner has a more recent rent collection
-                // try and collect rent just for the new card
                 uint256 _additionalRentOwed =
                     rentOwedBetweenTimestmaps(
                         user[_newOwner].lastRentCalc,
@@ -500,51 +500,13 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
                         _newPrice
                     );
 
-                if (_additionalRentOwed > user[_newOwner].deposit) {
-                    // TODO tests need writing to test this
-                    // we can't just collect the extra because it'll foreclose them
-                    uint256 _timeUserCanAfford =
-                        (user[_newOwner].deposit * 1 days) / _newPrice;
-                    // return the time we can collect to
-                    _timeTokenForeclosed =
-                        _timeOwnershipChanged +
-                        _timeUserCanAfford;
-                    // and collect what we can
-                    _increaseMarketBalance(user[_newOwner].deposit, _newOwner);
-                } else {
-                    // they have enough funds, just collect the extra
-                    _increaseMarketBalance(_additionalRentOwed, _newOwner);
-                }
-            } else if (_timeOwnershipChanged > user[_newOwner].lastRentCalc) {
+                // they have enough funds, just collect the extra
+                _increaseMarketBalance(_additionalRentOwed, _newOwner);
+            } else {
                 // the new owner has an old rent collection, do they own anything else?
                 if (user[_newOwner].rentalRate != 0) {
-                    // already owns cards, how much do they owe?
-                    uint256 _additionalRentOwed =
-                        rentOwedBetweenTimestmaps(
-                            _timeOwnershipChanged,
-                            user[_newOwner].lastRentCalc,
-                            _newPrice
-                        );
-
-                    if (_additionalRentOwed > user[_newOwner].deposit) {
-                        // TODO tests need writing to test this
-                        // new owner can't afford this
-                        uint256 _timeUserCanAfford =
-                            (user[_newOwner].deposit * 1 days) / _newPrice;
-                        // return the time we can collect to
-                        _timeTokenForeclosed =
-                            _timeOwnershipChanged +
-                            _timeUserCanAfford;
-                        // and collect what we can
-                        _increaseMarketBalance(
-                            user[_newOwner].deposit,
-                            _newOwner
-                        );
-                    } else {
-                        // new owner can afford, rent collect upto ownership change time
-                        _increaseMarketBalance(_additionalRentOwed, _newOwner);
-                        collectRentUser(_newOwner, block.timestamp);
-                    }
+                    // rent collect upto ownership change time
+                    collectRentUser(_newOwner, _timeOwnershipChanged);
                 } else {
                     // first card owned, set start time
                     user[_newOwner].lastRentCalc = SafeCast.toUint64(
@@ -620,7 +582,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
 
     /// @notice returns the current estimate of the users foreclosure time
     /// @param _user the user to query
-    /// @param _newBid an option value to calculate the time with an additional bid
+    /// @param _newBid an optional value to calculate the time with an additional bid
     function foreclosureTimeUser(address _user, uint256 _newBid)
         external
         view
@@ -632,11 +594,13 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
             // timeLeftOfDeposit = deposit / (totalUserDailyRent / 1 day)
             //                   = (deposit * 1day) / totalUserDailyRent
             uint256 timeLeftOfDeposit =
-                ((depositAbleToWithdraw(_user) * 1 days) +
+                (
+                    (depositAbleToWithdraw(_user) * 1 days) /* +
                     // Add this to make sure this is the value rounded up
-                    (totalUserDailyRent - 1)) / totalUserDailyRent;
+                    (totalUserDailyRent - 1)*/
+                ) / totalUserDailyRent;
 
-            return block.timestamp + timeLeftOfDeposit;
+            return user[_user].lastRentCalc + timeLeftOfDeposit;
         } else {
             // return 0;
             return type(uint256).max; // for testing, the orderbook assumes 0 means user already foreclosed

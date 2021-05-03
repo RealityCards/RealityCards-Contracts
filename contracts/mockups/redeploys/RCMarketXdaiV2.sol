@@ -1058,20 +1058,6 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
         emit LogRentCollection(_rentOwed, _token, _user);
     }
 
-    function userForeclosed(uint256 _token, uint256 _timeOfForeclosure)
-        external
-        override
-        onlyTreasury
-    {
-        // The user foreclosed while trying to assign them ownership and sync rent collections
-        _processRentCollection(ownerOf(_token), _token, _timeOfForeclosure);
-        orderbook.findNewOwner(_token, _timeOfForeclosure);
-        collectRentCounter++;
-        if (collectRentCounter < maxRentIterations) {
-            _collectRent(_token);
-        }
-    }
-
     function _checkState(States currentState) internal view {
         require(state == currentState, "Incorrect state");
     }

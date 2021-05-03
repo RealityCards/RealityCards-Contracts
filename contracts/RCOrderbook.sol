@@ -432,35 +432,15 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         _newOwner = user[_market][index[_market][_market][_token]].next;
         // uint256 _timeLimit =
         //     user[_newOwner][index[_newOwner][_market][_token]].timeHeldLimit;
-        uint256 _tokenForeclosureTime =
-            treasury.updateRentalRate(
-                _oldOwner,
-                _newOwner,
-                _oldPrice,
-                _newPrice,
-                _timeOwnershipChanged
-            );
+        treasury.updateRentalRate(
+            _oldOwner,
+            _newOwner,
+            _oldPrice,
+            _newPrice,
+            _timeOwnershipChanged
+        );
         transferCard(_market, _token, _oldOwner, _newOwner, _newPrice);
-        if (_tokenForeclosureTime != 0) {
-            IRCMarket(_market).userForeclosed(_token, _tokenForeclosureTime);
-        }
     }
-
-    // function _findNewOwner(
-    //     Bid storage _head,
-    //     uint256 _token,
-    //     address _market
-    // ) internal returns (uint256 _newPrice) {
-    //     uint256 minimumTimeToOwnTo =
-    //         block.timestamp + market[_market].minimumRentalDuration;
-    //     do {
-    //         _newPrice = _removeBidFromOrderbookIgnoreOwner(_head.next, _token);
-    //         // delete next bid if foreclosed
-    //     } while (
-    //         treasury.foreclosureTimeUser(_head.next, _newPrice) <
-    //             minimumTimeToOwnTo
-    //     );
-    // }
 
     /// @dev removes a single bid from the orderbook, doesn't update ownership
     function _removeBidFromOrderbookIgnoreOwner(address _user, uint256 _token)

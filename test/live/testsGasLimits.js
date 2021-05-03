@@ -12,7 +12,7 @@ var testChoice = 0;
 // 3 = test maximum number of cards/market
 
 // maximum time to run tests for, remember Ctrl+C can cancel early
-var timeoutSeconds = 100000;
+var timeoutSeconds = 1000000;
 
 // main contracts
 var RCFactory = artifacts.require("./RCFactory.sol");
@@ -186,7 +186,7 @@ contract("TestTreasury", (accounts) => {
   if (testChoice == 1) {
     it('test maximum number of bids/user', async () => {
       treasury.setMaxBidLimit(MAX_UINT256);
-      var bidsPerMarket = 30;
+      var bidsPerMarket = 1;
       var dummyMarkets = 0;
 
       user = user0;
