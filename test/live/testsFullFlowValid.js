@@ -1972,14 +1972,12 @@ contract("TestFullFlowValid", (accounts) => {
       user0DepositBefore.toString()
     );
 
-    console.log("NEW RENTAL USER0 TOKEN 0");
     const user0FirstRentalTime = await getTimestamp(
       newRentalCustomTimeLimit(firstTokenPrice, 28, 0, user0)
     ); // collected 28
     const userRecord = await treasury.user.call(user0)
     assert.equal(user0FirstRentalTime.toString(), userRecord[3].toString())
     assert.equal(user0FirstRentalTime.toString(), (await realitycards.timeLastCollected.call(0)).toString())
-    console.log("NEW RENTAL USER1 TOKEN 1");
     const user1FirstRentalTime = await getTimestamp(
       newRentalCustomTimeLimit(secondTokenPrice, 28, 1, user1)
     ); // collected 56
@@ -1987,7 +1985,6 @@ contract("TestFullFlowValid", (accounts) => {
     assert.equal(user1FirstRentalTime.toString(), userRecord2[3].toString())
     assert.equal(user1FirstRentalTime.toString(), (await realitycards.timeLastCollected.call(1)).toString())
     // rent winning team
-    console.log("NEW RENTAL USER0 TOKEN 2");
     const user0SecondRentalTime = await getTimestamp(
       newRental(firstTokenPrice, 2, user0)
     ); // collected ~7
@@ -1995,7 +1992,6 @@ contract("TestFullFlowValid", (accounts) => {
     assert.equal(user0SecondRentalTime.toString(), userRecord3[3].toString())
     assert.equal(user0SecondRentalTime.toString(), (await realitycards.timeLastCollected.call(2)).toString())
     await time.increase(time.duration.weeks(1).sub(new BN(1)));
-    console.log("NEW RENTAL USER1 TOKEN 2");
     const user1SecondRentalTime = await getTimestamp(
       newRental(secondTokenPrice, 2, user1)
     ); // collected ~14
@@ -2004,7 +2000,6 @@ contract("TestFullFlowValid", (accounts) => {
     assert.equal(user1SecondRentalTime.toString(), (await realitycards.timeLastCollected.call(2)).toString())
 
     await time.increase(time.duration.weeks(1).sub(new BN(1)));
-    console.log("NEW RENTAL USER2 TOKEN 2");
     const user2FirstRentalTime = await getTimestamp(
       newRentalCustomTimeLimit(thirdTokenPrice, 14, 2, user2)
     ); // collected 42
@@ -2013,7 +2008,6 @@ contract("TestFullFlowValid", (accounts) => {
     assert.equal(user2FirstRentalTime.toString(), (await realitycards.timeLastCollected.call(2)).toString())
     await time.increase(time.duration.weeks(2));
     await time.increase(time.duration.hours(1));
-    console.log("EXIT ALL USER1 ", user1);
 
     const txTimestamp = await getTimestamp(realitycards.collectRentAllCards());
 
@@ -2030,8 +2024,6 @@ contract("TestFullFlowValid", (accounts) => {
 
     const currentTimestamp = (await web3.eth.getBlock("latest")).timestamp;
     const testCurTimestamp = (await web3.eth.getBlock("latest")).timestamp;
-    console.log("!!!!!!!!!!!!!!!!!!!!!!!here", txTimestamp.toString(), testCurTimestamp.toString(), (await realitycards.timeLastCollected.call(2)).toString())
-    // await realitycards.exitAll({ from: user1 });
 
     // user rent checks
     const rentOwedByUser0 = multiRentCalculator([
@@ -2085,10 +2077,6 @@ contract("TestFullFlowValid", (accounts) => {
       user2DepositAfter.toString()
     );
 
-    console.log("user0 rent paid ", rentOwedByUser0.toString());
-    console.log("user1 rent paid ", rentOwedByUser1.toString());
-    console.log("user2 rent paid ", rentOwedByUser2.toString());
-
     // treasury balance check
     const treasuryBalance = await treasury.totalDeposits.call();
     const totalUserDepsoits =
@@ -2136,66 +2124,62 @@ contract("TestFullFlowValid", (accounts) => {
       rentCollectedByToken2.toString()
     );
 
-    await realitycards.exit(2, { from: user1 });
-
-
     // --------------------------------
 
-
-    // console.log("EXIT ALL USER0 ", user0);
-    // await realitycards.exitAll({ from: user0 });
-    // // exit all, progress time so marketLockingTime in the past
-    // await time.increase(time.duration.years(1));
+    await realitycards.exitAll({ from: user1 });
+    await realitycards.exitAll({ from: user0 });
+    // exit all, progress time so marketLockingTime in the past
+    await time.increase(time.duration.years(1));
     // winner 1:
     // totalRentCollected = 147,
     // total days = 28
     // user 0 owned for 7 days
     // user 1 owned for 7 days
     // user 2 owned for 14 days
+    //////////////////////
+    await realitycards.lockMarket();
+    // // set winner 1
+    await realitio.setResult(2);
+    await xdaiproxy.getWinnerFromOracle(realitycards.address);
+    // await realitycards.determineWinner();
     ////////////////////////
-    // await realitycards.lockMarket();
-    // // // set winner 1
-    // await realitio.setResult(2);
-    // await xdaiproxy.getWinnerFromOracle(realitycards.address);
-    // // await realitycards.determineWinner();
-    // ////////////////////////
-    // var totalRentCollected = await realitycards.totalRentCollected.call();
-    // var totalRentCollectedShouldBe = web3.utils.toWei('147', 'ether');
-    // var difference = Math.abs(totalRentCollected.toString() - totalRentCollectedShouldBe.toString());
-    // assert.isBelow(difference / totalRentCollected, 0.00001);
-    // // //check user0 winnings
-    // var depositBefore = await treasury.userDeposit.call(user0);
-    // await withdraw(user0);
-    // var depositAfter = await treasury.userDeposit.call(user0);
-    // var winningsSentToUser = depositAfter - depositBefore;
-    // var winningsShouldBe = ether('147').mul(new BN('7')).div(new BN('28'));
-    // var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
-    // assert.isBelow(difference / winningsSentToUser, 0.00001);
-    // //check user0 cant withdraw again
-    // await expectRevert(withdraw(user0), "Already withdrawn");
-    // //check user1 winnings
-    // var depositBefore = await treasury.userDeposit.call(user1);
-    // await withdraw(user1);
-    // var depositAfter = await treasury.userDeposit.call(user1);
-    // var winningsSentToUser = depositAfter - depositBefore;
-    // var winningsShouldBe = ether('147').mul(new BN('7')).div(new BN('28'));
-    // var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
-    // assert.isBelow(difference / winningsSentToUser, 0.00001);
-    // //check user2 winnings
-    // var depositBefore = await treasury.userDeposit.call(user2);
-    // await withdraw(user2);
-    // var depositAfter = await treasury.userDeposit.call(user2);
-    // var winningsSentToUser = depositAfter - depositBefore;
-    // var winningsShouldBe = ether('147').mul(new BN('14')).div(new BN('28'));
-    // var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
-    // assert.isBelow(difference / winningsSentToUser, 0.00001);
-    // // check random user can't withdraw
-    // await expectRevert(realitycards.withdraw({ from: user6 }), "Not a winner");
-    // // withdraw for next test
-    // await time.increase(time.duration.minutes(10));
-    // await withdrawDeposit(1000, user0);
-    // await withdrawDeposit(1000, user1);
-    // await withdrawDeposit(1000, user2);
+    var totalRentCollected = await realitycards.totalRentCollected.call();
+    var totalRentCollectedShouldBe = web3.utils.toWei('147', 'ether');
+    var difference = Math.abs(totalRentCollected.toString() - totalRentCollectedShouldBe.toString());
+    assert.isBelow(difference / totalRentCollected, 0.00001);
+    // //check user0 winnings
+    var depositBefore = await treasury.userDeposit.call(user0);
+    await withdraw(user0);
+    var depositAfter = await treasury.userDeposit.call(user0);
+    var winningsSentToUser = depositAfter - depositBefore;
+    var winningsShouldBe = ether('147').mul(new BN('7')).div(new BN('28'));
+    var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
+    assert.isBelow(difference / winningsSentToUser, 0.00001);
+    //check user0 cant withdraw again
+    await expectRevert(withdraw(user0), "Already withdrawn");
+    //check user1 winnings
+    var depositBefore = await treasury.userDeposit.call(user1);
+    await withdraw(user1);
+    var depositAfter = await treasury.userDeposit.call(user1);
+    var winningsSentToUser = depositAfter - depositBefore;
+    var winningsShouldBe = ether('147').mul(new BN('7')).div(new BN('28'));
+    var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
+    assert.isBelow(difference / winningsSentToUser, 0.00001);
+    //check user2 winnings
+    var depositBefore = await treasury.userDeposit.call(user2);
+    await withdraw(user2);
+    var depositAfter = await treasury.userDeposit.call(user2);
+    var winningsSentToUser = depositAfter - depositBefore;
+    var winningsShouldBe = ether('147').mul(new BN('14')).div(new BN('28'));
+    var difference = Math.abs(winningsSentToUser.toString() - winningsShouldBe.toString());
+    assert.isBelow(difference / winningsSentToUser, 0.00001);
+    // check random user can't withdraw
+    await expectRevert(realitycards.withdraw({ from: user6 }), "Not a winner");
+    // withdraw for next test
+    await time.increase(time.duration.minutes(10));
+    await withdrawDeposit(1000, user0);
+    await withdrawDeposit(1000, user1);
+    await withdrawDeposit(1000, user2);
   });
 
   it("test winner/withdraw recreated using newRentalWithDeposit", async () => {
