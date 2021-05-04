@@ -386,6 +386,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         override
         onlyMarkets
     {
+        console.log("refund for ", _refund);
         marketBalance -= _refund;
         user[_user].deposit += SafeCast.toUint128(_refund);
         totalDeposits += _refund;
@@ -493,19 +494,23 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
             // See if the new owner has had a rent collection before or after this ownership change
             if (_timeOwnershipChanged < user[_newOwner].lastRentCalc) {
                 // the new owner has a more recent rent collection
+
                 uint256 _additionalRentOwed =
                     rentOwedBetweenTimestmaps(
-                        user[_newOwner].lastRentCalc,
+                        block.timestamp,
                         _timeOwnershipChanged,
                         _newPrice
                     );
+                collectRentUser(_newOwner, block.timestamp);
 
+                console.log("COLLECTING ADDITIONAL RENT", _additionalRentOwed);
                 // they have enough funds, just collect the extra
                 _increaseMarketBalance(_additionalRentOwed, _newOwner);
             } else {
                 // the new owner has an old rent collection, do they own anything else?
                 if (user[_newOwner].rentalRate != 0) {
                     // rent collect upto ownership change time
+                    console.log("COLLECTING USER RENT AGAIN");
                     collectRentUser(_newOwner, _timeOwnershipChanged);
                 } else {
                     // first card owned, set start time
@@ -616,12 +621,16 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         override
         returns (uint256 newTimeLastCollectedOnForeclosure)
     {
-        if (_timeToCollectTo == 0) {
-            _timeToCollectTo = block.timestamp;
-        }
+        // if (_timeToCollectTo == 0) {
+        //     _timeToCollectTo = block.timestamp;
+        // }
+        assert(_timeToCollectTo != 0);
         if (user[_user].lastRentCalc < _timeToCollectTo) {
             uint256 rentOwedByUser = rentOwedUser(_user, _timeToCollectTo);
+            console.log("TIME LAST COLLECTED BEFORE", user[_user].lastRentCalc);
+            console.log("RENT OWED BY USER", rentOwedByUser);
 
+            console.log("RENT OWED BY USER", rentOwedByUser);
             if (rentOwedByUser > 0 && rentOwedByUser > user[_user].deposit) {
                 // The User has run out of deposit already.
                 uint256 previousCollectionTime = user[_user].lastRentCalc;
@@ -650,6 +659,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
                 // User has enough deposit to pay rent.
                 _increaseMarketBalance(rentOwedByUser, _user);
                 user[_user].lastRentCalc = SafeCast.toUint64(_timeToCollectTo);
+                console.log("TIME LAST COLLECTED", user[_user].lastRentCalc);
             }
             emit LogAdjustDeposit(_user, rentOwedByUser, false);
         }
@@ -659,6 +669,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     function _increaseMarketBalance(uint256 rentCollected, address _user)
         internal
     {
+        console.log("increase market balance user ", _user);
+        console.log("user rent collected ", rentCollected);
         marketBalance += rentCollected;
         user[_user].deposit -= SafeCast.toUint128(rentCollected);
         totalDeposits -= rentCollected;
