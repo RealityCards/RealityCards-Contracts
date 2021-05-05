@@ -724,43 +724,6 @@ async function exit(options) {
   await options.market.exit(options.outcome, { from: options.from })
 }
 
-  await factory.createMarket(
-    options.mode,
-    options.ipfs,
-    timestamps,
-    tokenURIs,
-    options.artistAddress,
-    options.affiliateAddress,
-    options.cardAffiliate,
-    question
-  );
-  marketAddress.push(await factory.getMostRecentMarket.call(0));
-  market.push(await RCMarket.at(await factory.getMostRecentMarket.call(0)));
-}
-
-async function depositDai(amount, user) {
-  amount = web3.utils.toWei(amount.toString(), "ether");
-  await treasury.deposit(user, { from: user, value: amount });
-}
-
-function setDefaults(options, defaults) {
-  return _.defaults({}, _.clone(options), defaults);
-}
-
-async function rent(options) {
-  var defaults = {
-    market: market[0],
-    outcome: 0,
-    price: 1,
-    from: user0,
-    timeLimit: 0,
-    startingPosition: zeroAddress,
-  };
-  options = setDefaults(options, defaults);
-  options.price = web3.utils.toWei(options.price.toString(), "ether");
-  await options.market.newRental(options.price, options.timeLimit, options.startingPosition, options.outcome, { from: options.from });
-}
-
 // Most recent deployments:
 
 // Treasury: 0xbfD33bb4e15140FcdC713e00fFA16bB86C8afe00
