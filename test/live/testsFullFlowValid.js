@@ -1071,15 +1071,15 @@ contract("TestFullFlowValid", (accounts) => {
     await withdrawDeposit(1000, user2);
   });
 
-  it("test winner/withdraw mode 2- zero artist/creator cut", async () => {
-    var realitycards2 = await createMarketCustomMode(2);
+  it("test winner/withdraw mode 3- zero artist/creator cut", async () => {
+    var realitycards2 = await createMarketCustomMode(3);
     /////// SETUP //////
     await depositDai(1000, user0);
     await depositDai(1000, user1);
     await depositDai(1000, user2);
     // rent losing teams
     await newRentalCustomContract(realitycards2, 1, 0, user0); // collected 28
-    await newRentalCustomContract(realitycards2, 2, 1, user1); // collected 52
+    await newRentalCustomContract(realitycards2, 2, 1, user1); // collected 56
     // rent winning team
     await newRentalCustomContract(realitycards2, 1, 2, user0); // collected 7
     await time.increase(time.duration.weeks(1));
@@ -1116,7 +1116,7 @@ contract("TestFullFlowValid", (accounts) => {
     await realitycards2.withdraw({ from: user0 });
     var depositAfter = await treasury.userDeposit.call(user0);
     var winningsSentToUser = depositAfter - depositBefore;
-    var winningsShouldBe = ether("147").mul(new BN("7")).div(new BN("28"));
+    var winningsShouldBe = ether("7").add(ether("84").mul(new BN("7")).div(new BN("28")));
     var difference = Math.abs(
       winningsSentToUser.toString() - winningsShouldBe.toString()
     );
@@ -1131,7 +1131,7 @@ contract("TestFullFlowValid", (accounts) => {
     await realitycards2.withdraw({ from: user1 });
     var depositAfter = await treasury.userDeposit.call(user1);
     var winningsSentToUser = depositAfter - depositBefore;
-    var winningsShouldBe = ether("147").mul(new BN("7")).div(new BN("28"));
+    var winningsShouldBe = ether("14").add(ether("84").mul(new BN("7")).div(new BN("28")));
     var difference = Math.abs(
       winningsSentToUser.toString() - winningsShouldBe.toString()
     );
@@ -1141,7 +1141,7 @@ contract("TestFullFlowValid", (accounts) => {
     await realitycards2.withdraw({ from: user2 });
     var depositAfter = await treasury.userDeposit.call(user2);
     var winningsSentToUser = depositAfter - depositBefore;
-    var winningsShouldBe = ether("147").mul(new BN("14")).div(new BN("28"));
+    var winningsShouldBe = ether("42").add(ether("84").mul(new BN("14")).div(new BN("28")));
     var difference = Math.abs(
       winningsSentToUser.toString() - winningsShouldBe.toString()
     );

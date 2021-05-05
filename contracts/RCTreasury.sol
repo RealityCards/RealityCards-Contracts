@@ -325,12 +325,10 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
             user[_msgSender].bidRate / (minRentalDayDivisor) >
             user[_msgSender].deposit
         ) {
-            console.log("Set user foreclosed");
             isForeclosed[_msgSender] = true;
             isForeclosed[_msgSender] = orderbook.removeUserFromOrderbook(
                 _msgSender
             );
-            console.log("user still foreclosed?? ", isForeclosed[_msgSender]);
         }
     }
 

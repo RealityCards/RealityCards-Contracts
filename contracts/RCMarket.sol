@@ -28,7 +28,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     uint256 public constant MIN_RENTAL_VALUE = 1 ether;
     States public override state;
     /// @dev type of event.
-    enum Mode {CLASSIC, WINNER_TAKES_ALL, HOT_POTATO}
+    enum Mode {CLASSIC, WINNER_TAKES_ALL, HOT_POTATO, SAFE_MODE}
     Mode public mode;
     /// @dev so the Factory can check it's a market
     bool public constant override isMarket = true;
@@ -50,6 +50,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     mapping(address => uint256) public rentCollectedPerUser;
     /// @dev keeps track of all the rent paid for each token, for card specific affiliate payout
     mapping(uint256 => uint256) public rentCollectedPerToken;
+    /// @dev keeps track of the rent each user has paid for each token, for Safe mode payout
+    mapping(address => mapping(uint256 => uint256)) rentCollectedPerUserPerToken;
     /// @dev an easy way to track the above across all tokens
     uint256 public totalRentCollected;
     /// @dev prevents user from exiting and re-renting in the same block (prevents troll attacks)
@@ -188,7 +190,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
       ║           CONSTRUCTOR           ║
       ╚═════════════════════════════════╝*/
 
-    /// @param _mode 0 = normal, 1 = winner takes all, 2 = hot potato
+    /// @param _mode 0 = normal, 1 = winner takes all, 2 = hot potato, 3 = Safe Mode
     /// @param _timestamps for market opening, locking, and oracle resolution
     /// @param _numberOfTokens how many Cards in this market
     /// @param _totalNftMintCount total existing Cards across all markets excl this event's Cards
@@ -206,7 +208,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         address[] memory _cardAffiliateAddresses,
         address _marketCreatorAddress
     ) external override initializer {
-        assert(_mode <= 2);
+        assert(_mode <= 3);
+        assert(_mode != 2);
 
         // initialise MetaTransactions
         _initializeEIP712("RealityCardsMarket", "1");
@@ -268,7 +271,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         }
 
         // if winner takes all mode, set winnerCut to max
-        if (_mode == 1) {
+        if (_mode == uint8(Mode.WINNER_TAKES_ALL)) {
             winnerCut =
                 (((uint256(1000) - artistCut) - creatorCut) - affiliateCut) -
                 cardAffiliateCut;
@@ -499,13 +502,24 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         uint256 _remainingCut =
             ((((uint256(1000) - artistCut) - affiliateCut)) -
                 cardAffiliateCut -
-                winnerCut) - (creatorCut);
+                winnerCut) - creatorCut;
         // calculate longest owner's extra winnings, if relevant
         if (longestOwner[winningOutcome] == msgSender() && winnerCut > 0) {
             _winningsToTransfer = (totalRentCollected * winnerCut) / (1000);
         }
-        // calculate normal winnings, if any
-        uint256 _remainingPot = (totalRentCollected * _remainingCut) / (1000);
+        uint256 _remainingPot = 0;
+        if (mode == Mode.SAFE_MODE) {
+            _remainingPot =
+                ((totalRentCollected - rentCollectedPerToken[winningOutcome]) *
+                    _remainingCut) /
+                (1000);
+            _winningsToTransfer += rentCollectedPerUserPerToken[msgSender()][
+                winningOutcome
+            ];
+        } else {
+            // calculate normal winnings, if any
+            _remainingPot = (totalRentCollected * _remainingCut) / (1000);
+        }
         uint256 _winnersTimeHeld = timeHeld[winningOutcome][msgSender()];
         uint256 _numerator = _remainingPot * _winnersTimeHeld;
         _winningsToTransfer =
@@ -1107,6 +1121,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         totalTimeHeld[_token] += _timeHeldToIncrement;
         rentCollectedPerUser[_user] += _rentOwed;
         rentCollectedPerToken[_token] += _rentOwed;
+        rentCollectedPerUserPerToken[_user][_token] += _rentOwed;
         totalRentCollected += _rentOwed;
         timeLastCollected[_token] = _timeOfCollection;
 
