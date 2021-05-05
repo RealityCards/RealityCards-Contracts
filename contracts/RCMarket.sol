@@ -620,19 +620,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         return true;
     }
 
-    /// @notice collect rent on a set of cards
-    /// @dev used by the treasury to collect rent on specifc cards
-    /// @param _cards the tokenId of the cards to collect rent on
-    function collectRentSpecificCards(uint256[] calldata _cards)
-        external
-        override
-    {
-        //_checkState(States.OPEN);
-        for (uint256 i; i < _cards.length; i++) {
-            _collectRent(_cards[i]);
-        }
-    }
-
     /// @notice rent every Card at the minimum price
     /// @param _maxSumOfPrices a limit to the sum of the bids to place
     function rentAllCards(uint256 _maxSumOfPrices) external {
@@ -788,27 +775,28 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         _checkState(States.OPEN);
         address _msgSender = msgSender();
 
+        // collectRent first
+        _collectRent(_tokenId);
+
         // if current owner, collect rent, revert if necessary
         if (ownerOf(_tokenId) == _msgSender) {
-            // collectRent first
-            _collectRent(_tokenId);
-
             // if still the current owner after collecting rent, revert to underbidder
             if (ownerOf(_tokenId) == _msgSender) {
                 orderbook.findNewOwner(_tokenId, block.timestamp);
                 // if not current owner no further action necessary because they will have been deleted from the orderbook
             } else {
-                //assert(orderbook[_tokenId][_msgSender].price == 0);
+                assert(
+                    !orderbook.bidExists(_msgSender, address(this), _tokenId)
+                );
             }
         } else {
             // if not owner, just delete from orderbook
             if (orderbook.bidExists(_msgSender, address(this), _tokenId)) {
-                _collectRent(_tokenId);
                 orderbook.removeBidFromOrderbook(_msgSender, _tokenId);
                 emit LogRemoveFromOrderbook(_msgSender, _tokenId);
+                emit LogExit(_msgSender, _tokenId);
             }
         }
-        emit LogExit(_msgSender, _tokenId);
     }
 
     function exit(uint256 _tokenId) public override {

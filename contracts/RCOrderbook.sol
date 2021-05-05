@@ -48,13 +48,8 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
     address public uberOwner;
     IRCTreasury public treasury;
 
-    // consider renaming this, we may need onlyTreasury also
     modifier onlyMarkets {
         require(isMarket[msgSender()], "Not authorised");
-        _;
-    }
-    modifier onlyTreasury {
-        require(msgSender() == address(treasury), "Not authorised");
         _;
     }
 
@@ -377,30 +372,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
                 user[_user][_index].token
             ] = _index;
         }
-    }
-
-    /// @dev to assist troubleshooting during testing
-    function printOrderbook(address _market, uint256 _token) public view {
-        Bid storage _currUser = user[_market][index[_market][_market][_token]];
-        console.log(" start of orderbook ");
-        do {
-            console.log(_currUser.next);
-            _currUser = user[_currUser.next][
-                index[_currUser.next][_market][_token]
-            ];
-        } while (_currUser.next != _market);
-        console.log(" end of orderbook ");
-    }
-
-    /// @dev to assist troubleshooting during testing
-    function printUserBids(address _user) public view {
-        console.log("printing bids for ", _user);
-        uint256 i;
-        do {
-            console.log(" bid 0 ", user[_user][i].token);
-            i++;
-        } while (i < user[_user].length);
-        console.log(" done printing bids ");
     }
 
     /// @dev find the next valid owner of a given card

@@ -605,19 +605,6 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
         return true;
     }
 
-    /// @notice collect rent on a set of cards
-    /// @dev used by the treasury to collect rent on specifc cards
-    /// @param _cards the tokenId of the cards to collect rent on
-    function collectRentSpecificCards(uint256[] calldata _cards)
-        external
-        override
-    {
-        //_checkState(States.OPEN);
-        for (uint256 i; i < _cards.length; i++) {
-            _collectRent(_cards[i]);
-        }
-    }
-
     /// @notice rent every Card at the minimum price
     /// @param _maxSumOfPrices a limit to the sum of the bids to place
     function rentAllCards(uint256 _maxSumOfPrices) external {
