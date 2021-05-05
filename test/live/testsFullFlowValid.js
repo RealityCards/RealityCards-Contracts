@@ -1072,7 +1072,7 @@ contract("TestFullFlowValid", (accounts) => {
   });
 
   it("test winner/withdraw mode 3- zero artist/creator cut", async () => {
-    var realitycards2 = await createMarketCustomMode(3);
+    var realitycards2 = await createMarketCustomMode(2);
     /////// SETUP //////
     await depositDai(1000, user0);
     await depositDai(1000, user1);
