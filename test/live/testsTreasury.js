@@ -555,34 +555,4 @@ contract("TestTreasury", (accounts) => {
 
     });
 
-    // work in progress, might not be necessary anymore
-    it.skip("updateRentalRate correctly forecloses user", async () => {
-        await createMarket({ closeTime: time.duration.days(6), resolveTime: time.duration.days(6) });
-        await depositDai(20, user0);
-        await depositDai(100, user1);
-        await depositDai(100, user2);
-
-        // user0 has 2 cards, user1 outbids one with a 1day timelimit
-        await newRental({ from: user0, price: 50, market: market[1], outcome: 0 })
-        await newRental({ from: user0, price: 5, market: market[1], outcome: 1 })
-        await newRental({ from: user1, price: 10, market: market[1], outcome: 1, timeLimit: 86400 })
-        await time.increase(time.duration.days(2));
-
-
-        // make a newRental to force a single card rent collection
-        // user1 will have exited after time limit
-        // user0 will be given outcome 1 but it will foreclose them
-        await newRental({ from: user2, price: 1, market: market[1], outcome: 1 })
-        // assert.equal(await market[1].ownerOf(1), user2);
-        // assert.equal(await treasury.userDeposit(user0), 0);
-
-        // deposit with user0, they are now not foreclosed
-        // await depositDai(20, user0);
-        // await newRental({ from: user1, price: 50, market: market[1], outcome: 1 })
-        // await newRental({ from: user1, price: 60, market: market[1], outcome: 1, timeLimit: 3600 })
-        // await time.increase(time.duration.days(2));
-        // await newRental({ from: user1, price: 50, market: market[1], outcome: 2 })
-
-
-    });
 });
