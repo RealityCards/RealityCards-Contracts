@@ -407,25 +407,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         return true;
     }
 
-    /// @dev new owner pays current owner for hot potato mode
-    function processHarbergerPayment(
-        address _newOwner,
-        address _currentOwner,
-        uint256 _requiredPayment
-    ) external override balancedBooks onlyMarkets returns (bool) {
-        require(!globalPause, "Global Pause is Enabled");
-        require(
-            user[_newOwner].deposit >= _requiredPayment,
-            "Insufficient deposit"
-        );
-        user[_newOwner].deposit -= SafeCast.toUint128(_requiredPayment);
-        user[_currentOwner].deposit += SafeCast.toUint128(_requiredPayment);
-        emit LogAdjustDeposit(_newOwner, _requiredPayment, false);
-        emit LogAdjustDeposit(_currentOwner, _requiredPayment, true);
-        emit LogHotPotatoPayment(_newOwner, _currentOwner, _requiredPayment);
-        return true;
-    }
-
     /// @notice tracks when the user last rented- so they cannot rent and immediately withdraw,
     /// @notice ..thus bypassing minimum rental duration
     /// @param _user the user to query

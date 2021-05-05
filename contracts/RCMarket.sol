@@ -28,7 +28,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     uint256 public constant MIN_RENTAL_VALUE = 1 ether;
     States public override state;
     /// @dev type of event.
-    enum Mode {CLASSIC, WINNER_TAKES_ALL, HOT_POTATO, SAFE_MODE}
+    enum Mode {CLASSIC, WINNER_TAKES_ALL, SAFE_MODE}
     Mode public mode;
     /// @dev so the Factory can check it's a market
     bool public constant override isMarket = true;
@@ -63,8 +63,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     uint256 public minimumPriceIncreasePercent;
     /// @dev minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
     uint256 public minRentalDayDivisor;
-    /// @dev if hot potato mode, how much rent new owner must pay current owner (1 week divisor: i.e. 7 = 1 day, 14 = 12 hours)
-    uint256 public hotPotatoWeekDivisor;
+
     uint256 public maxRentIterations;
     uint256 public collectRentCounter;
 
@@ -182,15 +181,14 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     );
     event LogSettings(
         uint256 indexed minRentalDayDivisor,
-        uint256 indexed minimumPriceIncreasePercent,
-        uint256 hotPotatoWeekDivisor
+        uint256 indexed minimumPriceIncreasePercent
     );
 
     /*╔═════════════════════════════════╗
       ║           CONSTRUCTOR           ║
       ╚═════════════════════════════════╝*/
 
-    /// @param _mode 0 = normal, 1 = winner takes all, 2 = hot potato, 3 = Safe Mode
+    /// @param _mode 0 = normal, 1 = winner takes all, 2 = Safe Mode
     /// @param _timestamps for market opening, locking, and oracle resolution
     /// @param _numberOfTokens how many Cards in this market
     /// @param _totalNftMintCount total existing Cards across all markets excl this event's Cards
@@ -208,8 +206,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         address[] memory _cardAffiliateAddresses,
         address _marketCreatorAddress
     ) external override initializer {
-        assert(_mode <= 3);
-        assert(_mode != 2);
+        assert(_mode <= 2);
 
         // initialise MetaTransactions
         _initializeEIP712("RealityCardsMarket", "1");
@@ -225,7 +222,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         uint256[5] memory _potDistribution = factory.getPotDistribution();
         minRentalDayDivisor = treasury.minRentalDayDivisor();
         minimumPriceIncreasePercent = factory.minimumPriceIncreasePercent();
-        hotPotatoWeekDivisor = factory.hotPotatoWeekDivisor();
         maxRentIterations = factory.maxRentIterations();
 
         // initialiiize!
@@ -293,11 +289,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             affiliateCut,
             cardAffiliateCut
         );
-        emit LogSettings(
-            minRentalDayDivisor,
-            minimumPriceIncreasePercent,
-            hotPotatoWeekDivisor
-        );
+        emit LogSettings(minRentalDayDivisor, minimumPriceIncreasePercent);
     }
 
     /*╔═════════════════════════════════╗

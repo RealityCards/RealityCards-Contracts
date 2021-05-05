@@ -61,12 +61,6 @@ interface IRCTreasury {
 
     function sponsor() external payable returns (bool);
 
-    function processHarbergerPayment(
-        address,
-        address,
-        uint256
-    ) external returns (bool);
-
     function updateLastRentalTime(address) external returns (bool);
 
     function userTotalBids(address) external view returns (uint256);

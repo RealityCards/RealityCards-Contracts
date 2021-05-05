@@ -222,7 +222,6 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
         uint256[5] memory _potDistribution = factory.getPotDistribution();
         minRentalDayDivisor = treasury.minRentalDayDivisor();
         minimumPriceIncreasePercent = factory.minimumPriceIncreasePercent();
-        hotPotatoWeekDivisor = factory.hotPotatoWeekDivisor();
 
         // initialiiize!
         winningOutcome = MAX_UINT256; // default invalid
