@@ -186,8 +186,7 @@ contract("TestTreasury", (accounts) => {
   if (testChoice == 1) {
     it('test maximum number of bids/user', async () => {
       treasury.setMaxBidLimit(MAX_UINT256);
-      var bidsPerMarket = 1;
-      var dummyMarkets = 0;
+      var bidsPerMarket = 10;
 
       user = user0;
       var i = 0;
@@ -203,34 +202,23 @@ contract("TestTreasury", (accounts) => {
       while (true) {
         // we're stuck here now, hold on tight!
         k++
-        console.log('iteration k ', k);
         await depositDai(100, user);
-        for (j = dummyMarkets; j < k; j++) {
-          // start slowly, 1 market at a time
-          //console.log('Market index ', j);
+        for (j = 0; j < k; j++) {
           tempMarket = await RCMarket.at(markets[j]);
-
-
           for (i = 0; i < bidsPerMarket; i++) {
             //await newRental(1,i,user);
             await tempMarket.newRental(tokenPrice, 0, zeroAddress, i, { from: user });
           }
         }
-        console.log('Dummy Markets ', dummyMarkets);
-        console.log('About to withdraw from ', (k * i) - dummyMarkets);
-
-        //var market = await treasury.totalDeposits();
-        //console.log(market.toString());
-        await time.increase(time.duration.seconds(600));
-
-        //await withdrawDeposit(web3.utils.toWei('100', 'ether'),user);
-        await treasury.withdrawDeposit(web3.utils.toWei('100000', 'ether'), { from: user });
-
-        await time.increase(time.duration.seconds(600));
 
         var userBids = await treasury.userTotalBids(user);
         console.log(userBids.toString());
         //console.log(user);
+
+        await time.increase(time.duration.seconds(600));
+
+        //await withdrawDeposit(web3.utils.toWei('100', 'ether'),user);
+        await treasury.withdrawDeposit(web3.utils.toWei('10000', 'ether'), { from: user });
 
         // create another market for the next loop and add it to the array
         var latestTime = await time.latest();
