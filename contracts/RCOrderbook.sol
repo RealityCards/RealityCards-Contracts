@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNDEFINED
+// SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -42,7 +42,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         public index;
 
     uint256 public MAX_SEARCH_ITERATIONS = 100; // TODO: gas test to find actual limit
-    uint256 public MAX_DELETIONS = 100;
+    uint256 public MAX_DELETIONS = 70;
     address public factoryAddress;
     address public treasuryAddress;
     address public uberOwner;
@@ -568,7 +568,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
 
         do {
             i--;
-            index[user[_user][i].market][_user][user[_user][i].token] = 0;
+            index[_user][user[_user][i].market][user[_user][i].token] = 0;
             address _tempPrev = user[_user][i].prev;
             address _tempNext = user[_user][i].next;
 
