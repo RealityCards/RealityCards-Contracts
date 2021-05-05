@@ -95,7 +95,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         uint256 indexed amount,
         bool increase
     );
-    event LogHotPotatoPayment(address from, address to, uint256 amount);
 
     /*╔═════════════════════════════════╗
       ║           CONSTRUCTOR           ║

@@ -1064,12 +1064,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
             if (_newOwner) {
                 orderbook.findNewOwner(_tokenId, _timeOfThisCollection);
-                collectRentCounter++;
-                if (collectRentCounter < maxRentIterations) {
-                    return true;
-                } else {
-                    return false;
-                }
+                return true;
             }
         } else {
             // timeLastCollected is updated regardless of whether the token is owned, so that the clock starts ticking
@@ -1085,9 +1080,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     {
         uint32 counter = 0;
         bool shouldContinue = true;
-        while (counter < 100 && shouldContinue) {
+        while (counter < maxRentIterations && shouldContinue) {
             shouldContinue = _collectRentAction(_tokenId);
-            counter += 1;
+            counter++;
         }
         return !shouldContinue;
     }

@@ -126,7 +126,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
       ╚═════════════════════════════════╝*/
 
     /// @notice Fetch the address of the most recently created market
-    /// @param _mode Filter by market mode, 0=Classic 1=Winner Takes All 2=Hot Potato
+    /// @param _mode Filter by market mode, 0=Classic 1=Winner Takes All 2=SafeMode
     function getMostRecentMarket(uint256 _mode)
         external
         view
@@ -136,7 +136,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     }
 
     /// @notice Fetch all the market addresses for a given mode
-    /// @param _mode Filter by market mode, 0=Classic 1=Winner Takes All 2=Hot Potato
+    /// @param _mode Filter by market mode, 0=Classic 1=Winner Takes All 2=SafeMode
     function getAllMarkets(uint256 _mode)
         external
         view
@@ -350,7 +350,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         // set
         referenceContractAddress = _newAddress;
         // increment version
-        referenceContractVersion = referenceContractVersion + 1;
+        referenceContractVersion += 1;
     }
 
     function changeUberOwner(address _newUberOwner) external {
