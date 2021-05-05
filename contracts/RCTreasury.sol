@@ -596,11 +596,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
             // timeLeftOfDeposit = deposit / (totalUserDailyRent / 1 day)
             //                   = (deposit * 1day) / totalUserDailyRent
             uint256 timeLeftOfDeposit =
-                (
-                    (depositAbleToWithdraw(_user) * 1 days) /* +
-                    // Add this to make sure this is the value rounded up
-                    (totalUserDailyRent - 1)*/
-                ) / totalUserDailyRent;
+                (depositAbleToWithdraw(_user) * 1 days) / totalUserDailyRent;
 
             return user[_user].lastRentCalc + timeLeftOfDeposit;
         } else {
