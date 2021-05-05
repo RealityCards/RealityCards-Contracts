@@ -555,6 +555,12 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
                 (_timeOfCollection - user[_user].lastRentCalc)) / (1 days);
     }
 
+    /// @notice calcualtes the rent owed between the given timestamps
+    /// @param _time1 one of the timestamps
+    /// @param _time2 the second timestamp
+    /// @param _price the rental rate for this time period
+    /// @param _rent the rent due for this time period
+    /// @dev the timestamps can be given in any order
     function rentOwedBetweenTimestmaps(
         uint256 _time1,
         uint256 _time2,
