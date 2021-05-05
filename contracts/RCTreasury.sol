@@ -268,8 +268,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         // this deposit could cancel the users foreclosure
         if (msg.value > user[_user].bidRate / (minRentalDayDivisor)) {
             isForeclosed[_user] = false;
-            // TODO should we revert if it's insufficient? user may believe they have deposited enough
-            // .. when they acutally haven't
         }
 
         user[_user].deposit += SafeCast.toUint128(msg.value);
@@ -327,8 +325,12 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
             user[_msgSender].bidRate / (minRentalDayDivisor) >
             user[_msgSender].deposit
         ) {
+            console.log("Set user foreclosed");
             isForeclosed[_msgSender] = true;
-            orderbook.removeUserFromOrderbook(_msgSender);
+            isForeclosed[_msgSender] = orderbook.removeUserFromOrderbook(
+                _msgSender
+            );
+            console.log("user still foreclosed?? ", isForeclosed[_msgSender]);
         }
     }
 
