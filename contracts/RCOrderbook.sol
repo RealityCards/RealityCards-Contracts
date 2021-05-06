@@ -43,6 +43,8 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
 
     uint256 public MAX_SEARCH_ITERATIONS = 100; // TODO: gas test to find actual limit
     uint256 public MAX_DELETIONS = 70;
+    uint256 public CLEANING_LOOPS = 2;
+    uint256 public nonce;
     address public factoryAddress;
     address public treasuryAddress;
     address public uberOwner;
@@ -52,6 +54,24 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         require(isMarket[msgSender()], "Not authorised");
         _;
     }
+
+    /*╔═════════════════════════════════╗
+      ║             EVENTS              ║
+      ╚═════════════════════════════════╝*/
+
+    event LogAddToOrderbook(
+        address indexed newOwner,
+        uint256 indexed newPrice,
+        uint256 timeHeldLimit,
+        uint256 nonce,
+        uint256 indexed tokenId,
+        address market
+    );
+    event LogRemoveFromOrderbook(
+        address indexed owner,
+        address indexed market,
+        uint256 indexed tokenId
+    );
 
     constructor(address _factoryAddress, address _treasuryAddress) {
         factoryAddress = _factoryAddress;
@@ -70,6 +90,23 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         require(msgSender() == uberOwner, "Extremely Verboten");
         require(_newFactory != address(0));
         factoryAddress = _newFactory;
+    }
+
+    function setLimits(
+        uint256 _deletionLimit,
+        uint256 _cleaningLimit,
+        uint256 _searchLimit
+    ) external override {
+        require(msgSender() == uberOwner, "Extremely Verboten");
+        if (_deletionLimit != 0) {
+            MAX_DELETIONS = _deletionLimit;
+        }
+        if (_cleaningLimit != 0) {
+            CLEANING_LOOPS = _cleaningLimit;
+        }
+        if (_searchLimit != 0) {
+            MAX_SEARCH_ITERATIONS = _searchLimit;
+        }
     }
 
     function addMarket(
@@ -109,7 +146,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         uint256 _timeHeldLimit,
         address _prevUserAddress
     ) external override onlyMarkets {
-        // TODO check for empty bids we could clean
+        cleanWastePile();
 
         if (user[_user].length == 0 && closedMarkets.length > 0) {
             //users first bid, skip already closed markets
@@ -232,6 +269,16 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         // update the index to help find the record later
         index[_user][_market][_token] = user[_user].length - (1);
 
+        emit LogAddToOrderbook(
+            _user,
+            _price,
+            _timeHeldLimit,
+            nonce,
+            _token,
+            _market
+        );
+        nonce++;
+
         // update memo value
         treasury.increaseBidRate(_user, _price);
         if (user[_user][index[_user][_market][_token]].prev == _market) {
@@ -287,6 +334,16 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         _currUser.prev = _nextUser.prev;
         _nextUser.prev = _user; // next record update prev link
         _prevUser.next = _user; // prev record update next link
+
+        emit LogAddToOrderbook(
+            _user,
+            _currUser.price,
+            _timeHeldLimit,
+            nonce,
+            _token,
+            _market
+        );
+        nonce++;
 
         // update memo values
         treasury.increaseBidRate(_user, _currUser.price);
@@ -377,6 +434,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
                 user[_user][_index].token
             ] = _index;
         }
+        emit LogRemoveFromOrderbook(_user, _market, _token);
     }
 
     /// @dev find the next valid owner of a given card
@@ -453,6 +511,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
                 user[_user][_index].token
             ] = _index;
         }
+        emit LogRemoveFromOrderbook(_user, _market, _token);
     }
 
     function getBidValue(address _user, uint256 _token)
@@ -627,40 +686,47 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
     }
 
     function cleanWastePile() internal {
-        if (user[address(this)].length > 0) {
+        uint256 i;
+        while (i < CLEANING_LOOPS && user[address(this)].length > 0) {
             uint256 _pileHeight = user[address(this)].length - 1;
-            address _market = user[address(this)][_pileHeight].market;
-            uint256 _token = user[address(this)][_pileHeight].token;
-            address _user =
-                user[address(this)][index[address(this)][_market][_token]].next;
-
-            Bid storage _currUser = user[_user][index[_user][_market][_token]];
-            // extract from linked list
-            address _tempNext = _currUser.next;
-            address _tempPrev = _currUser.prev;
-            user[_tempNext][index[_tempNext][_market][_token]].prev = _tempPrev;
-            user[_tempPrev][index[_tempPrev][_market][_token]].next = _tempNext;
-
-            // overwrite array element
-            uint256 _index = index[_user][_market][_token];
-            uint256 _lastRecord = user[_user].length - (1);
-            // no point overwriting itself
-            if (_index != _lastRecord) {
-                user[_user][_index] = user[_user][_lastRecord];
-            }
-            user[_user].pop();
-
-            // update the index to help find the record later
-            index[_user][_market][_token] = 0;
-            if (user[_user].length != 0 && _index != _lastRecord) {
-                index[_user][user[_user][_index].market][
-                    user[_user][_index].token
-                ] = _index;
-            }
 
             if (user[address(this)][_pileHeight].next == address(this)) {
                 user[address(this)].pop();
+            } else {
+                address _market = user[address(this)][_pileHeight].market;
+                uint256 _token = user[address(this)][_pileHeight].token;
+                address _user =
+                    user[address(this)][index[address(this)][_market][_token]]
+                        .next;
+
+                Bid storage _currUser =
+                    user[_user][index[_user][_market][_token]];
+                // extract from linked list
+                address _tempNext = _currUser.next;
+                address _tempPrev = _currUser.prev;
+                user[_tempNext][index[_tempNext][_market][_token]]
+                    .prev = _tempPrev;
+                user[_tempPrev][index[_tempPrev][_market][_token]]
+                    .next = _tempNext;
+
+                // overwrite array element
+                uint256 _index = index[_user][_market][_token];
+                uint256 _lastRecord = user[_user].length - (1);
+                // no point overwriting itself
+                if (_index != _lastRecord) {
+                    user[_user][_index] = user[_user][_lastRecord];
+                }
+                user[_user].pop();
+
+                // update the index to help find the record later
+                index[_user][_market][_token] = 0;
+                if (user[_user].length != 0 && _index != _lastRecord) {
+                    index[_user][user[_user][_index].market][
+                        user[_user][_index].token
+                    ] = _index;
+                }
             }
+            i++;
         }
     }
 
