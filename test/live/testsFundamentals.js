@@ -465,7 +465,7 @@ contract('TestFundamentals', (accounts) => {
     var difference = Math.abs(depositWithdrawn.toString() - depositWithdrawnShouldBe.toString());
 
     // set to 0.3% loss is acceptable, this needs double checking though.
-    assert.isBelow(difference / depositWithdrawn, 0.004);
+    assert.isBelow(difference / depositWithdrawn, 0.005);
     //original user tries to withdraw again, should be nothign to withdraw 
     await expectRevert(treasury.withdrawDeposit(1000, true), "Nothing to withdraw");
   });
@@ -836,57 +836,6 @@ contract('TestFundamentals', (accounts) => {
     await expectRevert(realitycards.rentAllCards(web3.utils.toWei('25', 'ether')), "Prices too high");
     realitycards.rentAllCards(web3.utils.toWei('30', 'ether'));
     // withdraw
-    await time.increase(time.duration.minutes(10));
-    await withdrawDeposit(1000, user0);
-    await withdrawDeposit(1000, user1);
-  });
-
-
-  it.skip('test hot potato mode fundamentals', async () => {
-    // hot potato mode being ignored for now, reinstate test if mode re-introduced
-
-    var realitycards2 = await createMarketCustomMode(2);
-    /////// SETUP //////
-    await depositDai(1000, user0);
-    await depositDai(0.5, user1);
-    // user0 rents
-    await newRentalCustomContract(realitycards2, 1, 0, user0);
-    // check user 1 cant rent cos not enough deposted
-    await expectRevert(newRentalCustomContract(realitycards2, 2, 0, user1), "Insufficient deposit");
-    // user 1 rents properly this time
-    await depositDai(999.5, user1);
-    var depositBefore = await treasury.userDeposit.call(user0);
-    await newRentalCustomContract(realitycards2, 2, 0, user1);
-    // check user 0 has extra 1 xdai
-    var depositAfter = await treasury.userDeposit.call(user0);
-    var paymentSentToUser = depositAfter - depositBefore;
-    var paymentSentToUserShouldBe = web3.utils.toWei('1', 'ether');
-    var difference = Math.abs(paymentSentToUser.toString() - paymentSentToUserShouldBe.toString());
-    assert.isBelow(difference / paymentSentToUser, 0.0001);
-    // try again user 1
-    var depositBefore = await treasury.userDeposit.call(user1);
-    // user 1 rents
-    await newRentalCustomContract(realitycards2, 500, 0, user0);
-    // check user 1 has 2 extra xdai
-    var depositAfter = await treasury.userDeposit.call(user1);
-    var paymentSentToUser = depositAfter - depositBefore;
-    var paymentSentToUserShouldBe = web3.utils.toWei('2', 'ether');
-    var difference = Math.abs(paymentSentToUser.toString() - paymentSentToUserShouldBe.toString());
-    assert.isBelow(difference / paymentSentToUser, 0.0001);
-    // try again once more for luck
-    var depositBefore = await treasury.userDeposit.call(user0);
-    // user 1 rents
-    await newRentalCustomContract(realitycards2, 600, 0, user1);
-    // check user 1 has 500 extra xdai
-    var depositAfter = await treasury.userDeposit.call(user0);
-    var paymentSentToUser = depositAfter - depositBefore;
-    var paymentSentToUserShouldBe = web3.utils.toWei('500', 'ether');
-    var difference = Math.abs(paymentSentToUser.toString() - paymentSentToUserShouldBe.toString());
-    assert.isBelow(difference / paymentSentToUser, 0.0001);
-    // check user2 cant take it off them cos insufficient deposit
-    await depositDai(500, user2);
-    await expectRevert(newRentalCustomContract(realitycards2, 700, 0, user2), "Insufficient deposit");
-    // withdraw for next test
     await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000, user0);
     await withdrawDeposit(1000, user1);

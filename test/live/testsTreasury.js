@@ -184,9 +184,7 @@ contract("TestTreasury", (accounts) => {
         await expectRevert(treasury.payRent(user0), "Not authorised");
         await expectRevert(treasury.payout(user0, 0), "Not authorised");
         await expectRevert(treasury.sponsor(), "Not authorised");
-        await expectRevert(treasury.processHarbergerPayment(user0, user0, 0), "Not authorised");
         await expectRevert(treasury.updateLastRentalTime(user0), "Not authorised");
-        await expectRevert(treasury.updateMarketStatus(true), "Not authorised");
     });
 
     it("check that non owners cannot call owner only functions on Treasury", async () => {
@@ -340,7 +338,7 @@ contract("TestTreasury", (accounts) => {
         assert.equal(startBalance.toString(), (currentBalance.add(web3.utils.toBN(gasUsed))).toString());
 
         // check no rent collected yet
-        assert.equal((await treasury.totalMarketPots()).toString(), 0);
+        assert.equal((await treasury.marketBalance()).toString(), 0);
         await newRental({ from: user2 })
         // can't withdraw too quickly ( ͡° ͜ʖ ͡°)	
         await expectRevert(treasury.withdrawDeposit(1, true, { from: user2 }), "Too soon");
@@ -348,7 +346,7 @@ contract("TestTreasury", (accounts) => {
         // now we can partial withdraw 
         await treasury.withdrawDeposit(ether("10"), true, { from: user2 });
         // check we collected some rent
-        assert(await treasury.totalMarketPots() != 0, "Rent wasn't collected");
+        assert(await treasury.marketBalance() != 0, "Rent wasn't collected");
         // check we still own the card
         assert.equal((await market[0].ownerOf(0)), user2)
         await time.increase(time.duration.days(1));
@@ -407,9 +405,7 @@ contract("TestTreasury", (accounts) => {
         await depositDai(100, user6);
     });
 
-    it.skip("test updateUserBids", async () => {
-        // in the final assertion it is assumed many foreclosures will be processed
-        // this needs amending before the test is re-introduced
+    it("test updateUserBids", async () => {
 
         // setup
         await createMarket();
@@ -557,4 +553,5 @@ contract("TestTreasury", (accounts) => {
         assert.equal((await treasury.totalDeposits()).toString(), ether('200').toString());
 
     });
+
 });

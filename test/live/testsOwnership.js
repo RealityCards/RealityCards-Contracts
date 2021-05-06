@@ -256,7 +256,6 @@ contract('TestOwnership', (accounts) => {
 
   it('check onlyOwner is on relevant Factory functions', async () => {
     await expectRevert(rcfactory.setPotDistribution(0, 0, 0, 0, 0, { from: user1 }), "caller is not the owner");
-    await expectRevert(rcfactory.setHotPotatoPayment(7 * 24, { from: user1 }), "caller is not the owner");
     await expectRevert(treasury.setMinRental(7 * 24, { from: user1 }), "caller is not the owner");
     await expectRevert(rcfactory.changeGovernorApproval(user0, { from: user1 }), "caller is not the owner");
     await expectRevert(rcfactory.changeMarketCreationGovernorsOnly({ from: user1 }), "caller is not the owner");

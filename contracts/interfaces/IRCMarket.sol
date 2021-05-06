@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNDEFINED
+// SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.4;
 
 interface IRCMarket {
@@ -29,9 +29,7 @@ interface IRCMarket {
 
     function setWinner(uint256) external;
 
-    function collectRentAllCards() external;
-
-    function collectRentSpecificCards(uint256[] calldata _cards) external;
+    function collectRentAllCards() external returns (bool);
 
     function exitAll() external;
 

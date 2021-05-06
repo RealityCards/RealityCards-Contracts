@@ -361,31 +361,6 @@ contract('TestFactory', (accounts) => {
     await expectRevert(treasury.addMarket(user3), "Not factory");
   });
 
-
-  it.skip('test setHotPotatoPayment', async () => {
-    // first check only owner is set
-    await expectRevert(rcfactory.setHotPotatoPayment(7 * 24, { from: user1 }), "caller is not the owner");
-    await rcfactory.setHotPotatoPayment(7 * 24, { from: user0 });
-    /////// SETUP //////
-    var realitycards2 = await createMarketCustomMode(2);
-    await depositDai(1000, user0);
-    await depositDai(1000, user1);
-    await newRentalCustomContract(realitycards2, 24, 0, user0);
-    var depositBefore = await treasury.userDeposit.call(user0);
-    await newRentalCustomContract(realitycards2, 590, 0, user1);
-    var depositAfter = await treasury.userDeposit.call(user0);
-    var paymentSentToUser = depositAfter - depositBefore;
-    var paymentSentToUserShouldBe = ether('1');
-    var difference = Math.abs(paymentSentToUser.toString() - paymentSentToUserShouldBe.toString());
-    assert.isBelow(difference / paymentSentToUser, 0.001);
-    // withdraw for next test
-    await time.increase(time.duration.minutes(10));
-    await withdrawDeposit(1000, user0);
-    await withdrawDeposit(1000, user1);
-  });
-
-
-
   it('test setMinimumPriceIncrease', async () => {
     var realitycards2 = await createMarketCustomMode(0);
     /////// SETUP //////

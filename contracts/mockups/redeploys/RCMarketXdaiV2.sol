@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNDEFINED
+// SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
@@ -63,6 +63,8 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
     uint256 public minRentalDayDivisor;
     /// @dev if hot potato mode, how much rent new owner must pay current owner (1 week divisor: i.e. 7 = 1 day, 14 = 12 hours)
     uint256 public hotPotatoWeekDivisor;
+    uint256 public maxRentIterations;
+    uint256 public collectRentCounter;
 
     // ORDERBOOK
     /// @dev incrementing nonce for each rental, for frontend sorting
@@ -220,7 +222,6 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
         uint256[5] memory _potDistribution = factory.getPotDistribution();
         minRentalDayDivisor = treasury.minRentalDayDivisor();
         minimumPriceIncreasePercent = factory.minimumPriceIncreasePercent();
-        hotPotatoWeekDivisor = factory.hotPotatoWeekDivisor();
 
         // initialiiize!
         winningOutcome = MAX_UINT256; // default invalid
@@ -437,8 +438,6 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
         // do a final rent collection before the contract is locked down
         collectRentAllCards();
         orderbook.closeMarket();
-        // let the treasury know the market is closed
-        treasury.updateMarketStatus(false);
         _incrementState();
         emit LogContractLocked(true);
     }
@@ -592,26 +591,18 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
 
     /// @notice collects rent for all tokens
     /// @dev cannot be external because it is called within the lockMarket function, therefore public
-    function collectRentAllCards() public override {
+    function collectRentAllCards() public override returns (bool) {
         _checkState(States.OPEN);
+        bool _success = true;
         for (uint256 i = 0; i < numberOfTokens; i++) {
             if (ownerOf(i) != address(this)) {
-                _collectRent(i);
+                _success = _collectRent(i);
+            }
+            if (!_success) {
+                return false;
             }
         }
-    }
-
-    /// @notice collect rent on a set of cards
-    /// @dev used by the treasury to collect rent on specifc cards
-    /// @param _cards the tokenId of the cards to collect rent on
-    function collectRentSpecificCards(uint256[] calldata _cards)
-        external
-        override
-    {
-        //_checkState(States.OPEN);
-        for (uint256 i; i < _cards.length; i++) {
-            _collectRent(_cards[i]);
-        }
+        return true;
     }
 
     /// @notice rent every Card at the minimum price
@@ -838,7 +829,7 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
     /// @notice collects rent for a specific token
     /// @dev also calculates and updates how long the current user has held the token for
     /// @dev is not a problem if called externally, but making internal over public to save gas
-    function _collectRent(uint256 _tokenId) internal {
+    function _collectRent(uint256 _tokenId) internal returns (bool) {
         address _user = ownerOf(_tokenId);
         uint256 _timeOfThisCollection = block.timestamp;
 
@@ -853,37 +844,178 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
             _user != address(this) &&
             timeLastCollected[_tokenId] < _timeOfThisCollection
         ) {
-            uint256 _timeUserForeclosed = treasury.collectRentUser(_user);
-            if (tokenTimeLimit[_tokenId] < _timeUserForeclosed) {
-                // time limit hit before user foreclosed
-                uint256 _excessRentPaid =
-                    (tokenPrice[_tokenId] *
-                        (_timeOfThisCollection -
-                            timeLastCollected[_tokenId] -
-                            tokenTimeLimit[_tokenId])) / 1 days;
-                treasury.refundUser(_user, _excessRentPaid);
-                _processRentCollection(
-                    _user,
-                    _tokenId,
-                    tokenTimeLimit[_tokenId]
-                );
-                timeLastCollected[_tokenId] = tokenTimeLimit[_tokenId];
-                orderbook.findNewOwner(_tokenId, tokenTimeLimit[_tokenId]);
-                _collectRent(_tokenId);
-            } else if (_timeUserForeclosed != 0) {
-                // user foreclosed during collection
-                _processRentCollection(_user, _tokenId, _timeUserForeclosed);
-                timeLastCollected[_tokenId] = _timeUserForeclosed;
-                orderbook.findNewOwner(_tokenId, _timeUserForeclosed);
-                _collectRent(_tokenId);
+            // User rent collect and fetch the time the user foreclosed, 0 means they didn't foreclose yet
+            uint256 _timeUserForeclosed =
+                treasury.collectRentUser(_user, block.timestamp);
+
+            // Calculate the token timeLimitTimestamp
+            uint256 _tokenTimeLimitTimestamp =
+                timeLastCollected[_tokenId] + tokenTimeLimit[_tokenId];
+
+            // input bools
+            bool _foreclosed = _timeUserForeclosed != 0;
+            bool _limitHit =
+                tokenTimeLimit[_tokenId] != 0 &&
+                    _tokenTimeLimitTimestamp < block.timestamp;
+            bool _marketLocked = marketLockingTime <= block.timestamp;
+
+            // outputs
+            bool _newOwner;
+            uint256 _refundTime; // seconds of rent to refund the user
+
+            /* Permutations of the events: Foreclosure, Time limit and Market Locking
+            ┌───────────┬─┬─┬─┬─┬─┬─┬─┬─┐
+            │Case       │1│2│3│4│5│6│7│8│
+            ├───────────┼─┼─┼─┼─┼─┼─┼─┼─┤
+            │Foreclosure│0│0│0│0│1│1│1│1│
+            │Time Limit │0│0│1│1│0│0│1│1│
+            │Market Lock│0│1│0│1│0│1│0│1│
+            └───────────┴─┴─┴─┴─┴─┴─┴─┴─┘
+            TODO: some of these cases may be combined, or at least reordered for optimisation
+            */
+
+            if (!_foreclosed && !_limitHit && !_marketLocked) {
+                // CASE 1
+                // didn't foreclose AND
+                // didn't hit time limit AND
+                // didn't lock market
+                // THEN simple rent collect, same owner
+                _timeOfThisCollection = _timeOfThisCollection;
+                _newOwner = false;
+                _refundTime = 0;
+            } else if (!_foreclosed && !_limitHit && _marketLocked) {
+                // CASE 2
+                // didn't foreclose AND
+                // didn't hit time limit AND
+                // did lock market
+                // THEN refund rent between locking and now
+                _timeOfThisCollection = marketLockingTime;
+                _newOwner = false;
+                _refundTime = block.timestamp - marketLockingTime;
+            } else if (!_foreclosed && _limitHit && !_marketLocked) {
+                // CASE 3
+                // didn't foreclose AND
+                // did hit time limit AND
+                // didn't lock market
+                // THEN refund rent between time limit and now
+                _timeOfThisCollection = _tokenTimeLimitTimestamp;
+                _newOwner = true;
+                _refundTime = block.timestamp - _tokenTimeLimitTimestamp;
+            } else if (!_foreclosed && _limitHit && _marketLocked) {
+                // CASE 4
+                // didn't foreclose AND
+                // did hit time limit AND
+                // did lock market
+                // THEN refund rent between the earliest event and now
+                if (_tokenTimeLimitTimestamp < marketLockingTime) {
+                    // time limit hit before market locked
+                    _timeOfThisCollection = _tokenTimeLimitTimestamp;
+                    _newOwner = true;
+                    _refundTime = block.timestamp - _tokenTimeLimitTimestamp;
+                } else {
+                    // market locked before time limit hit
+                    _timeOfThisCollection = marketLockingTime;
+                    _newOwner = false;
+                    _refundTime = block.timestamp - marketLockingTime;
+                }
+            } else if (_foreclosed && !_limitHit && !_marketLocked) {
+                // CASE 5
+                // did foreclose AND
+                // didn't hit time limit AND
+                // didn't lock market
+                // THEN rent OK, find new owner
+                _timeOfThisCollection = _timeUserForeclosed;
+                _newOwner = true;
+                _refundTime = 0;
+            } else if (_foreclosed && !_limitHit && _marketLocked) {
+                // CASE 6
+                // did foreclose AND
+                // didn't hit time limit AND
+                // did lock market
+                // THEN if foreclosed first rent ok, otherwise refund after locking
+                if (_timeUserForeclosed < marketLockingTime) {
+                    // user foreclosed before market locked
+                    _timeOfThisCollection = _timeUserForeclosed;
+                    _newOwner = true;
+                    _refundTime = 0;
+                } else {
+                    // market locked before user foreclosed
+                    _timeOfThisCollection = marketLockingTime;
+                    _newOwner = false;
+                    _refundTime = block.timestamp - marketLockingTime;
+                }
+            } else if (_foreclosed && _limitHit && !_marketLocked) {
+                // CASE 7
+                // did foreclose AND
+                // did hit time limit AND
+                // didn't lock market
+                // THEN if foreclosed first rent ok, otherwise refund after limit
+                if (_timeUserForeclosed < _tokenTimeLimitTimestamp) {
+                    // user foreclosed before time limit
+                    _timeOfThisCollection = _timeUserForeclosed;
+                    _newOwner = true;
+                    _refundTime = 0;
+                } else {
+                    // time limit hit before user foreclosed
+                    _timeOfThisCollection = _tokenTimeLimitTimestamp;
+                    _newOwner = true;
+                    _refundTime =
+                        _timeUserForeclosed -
+                        _tokenTimeLimitTimestamp;
+                }
             } else {
-                // user didn't foreclose, simple rent collection
-                _processRentCollection(_user, _tokenId, _timeOfThisCollection);
+                // CASE 8
+                // did foreclose AND
+                // did hit time limit AND
+                // did lock market
+                // THEN (╯°益°)╯彡┻━┻
+                if (
+                    _timeUserForeclosed < _tokenTimeLimitTimestamp &&
+                    _timeUserForeclosed < marketLockingTime
+                ) {
+                    // user foreclosed first
+                    _timeOfThisCollection = _timeUserForeclosed;
+                    _newOwner = true;
+                    _refundTime = 0;
+                } else if (
+                    _tokenTimeLimitTimestamp < _timeUserForeclosed &&
+                    _tokenTimeLimitTimestamp < marketLockingTime
+                ) {
+                    // time limit hit first
+                    _timeOfThisCollection = _tokenTimeLimitTimestamp;
+                    _newOwner = true;
+                    _refundTime =
+                        _timeUserForeclosed -
+                        _tokenTimeLimitTimestamp;
+                } else {
+                    // market locked first
+                    _timeOfThisCollection = marketLockingTime;
+                    _newOwner = false;
+                    _refundTime = _timeUserForeclosed - marketLockingTime;
+                }
+            }
+            if (_refundTime != 0) {
+                uint256 _refundAmount =
+                    (_refundTime * tokenPrice[_tokenId]) / 1 days;
+                treasury.refundUser(_user, _refundAmount);
+            }
+            _processRentCollection(_user, _tokenId, _timeOfThisCollection);
+
+            if (_newOwner) {
+                orderbook.findNewOwner(_tokenId, _timeOfThisCollection);
+                collectRentCounter++;
+                if (collectRentCounter < maxRentIterations) {
+                    _collectRent(_tokenId);
+                } else {
+                    return false;
+                }
+                collectRentCounter = 0;
             }
         }
         // timeLastCollected is updated regardless of whether the token is owned, so that the clock starts ticking
         // ... when the first owner buys it, because this function is run before ownership changes upon calling newRental
         timeLastCollected[_tokenId] = _timeOfThisCollection;
+        return true;
     }
 
     function _processRentCollection(
@@ -924,9 +1056,6 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
     function _incrementState() internal {
         assert(uint256(state) < 4);
         state = States(uint256(state) + (1));
-        if (uint256(state) == 1) {
-            treasury.updateMarketStatus(true);
-        }
         emit LogStateChange(uint256(state));
     }
 

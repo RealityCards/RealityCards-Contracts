@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNDEFINED
+// SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.4;
 
 interface IRCTreasury {
@@ -15,13 +15,13 @@ interface IRCTreasury {
 
     function isMarket(address) external view returns (bool);
 
+    function isForeclosed(address) external view returns (bool);
+
     function totalDeposits() external view returns (uint256);
 
     function marketPot(address) external view returns (uint256);
 
     function totalMarketPots() external view returns (uint256);
-
-    function isMarketActive(address) external view returns (bool);
 
     function minRentalDayDivisor() external view returns (uint256);
 
@@ -61,12 +61,6 @@ interface IRCTreasury {
 
     function sponsor() external payable returns (bool);
 
-    function processHarbergerPayment(
-        address,
-        address,
-        uint256
-    ) external returns (bool);
-
     function updateLastRentalTime(address) external returns (bool);
 
     function userTotalBids(address) external view returns (uint256);
@@ -83,15 +77,9 @@ interface IRCTreasury {
 
     function decreaseBidRate(address _user, uint256 _price) external;
 
-    function collectRentUser(address _user)
+    function collectRentUser(address _user, uint256 _timeToCollectTo)
         external
         returns (uint256 newTimeLastCollectedOnForeclosure);
-
-    function collectRentUserAndSettleCard(uint256 card)
-        external
-        returns (bool didTokenForeclose);
-
-    function updateMarketStatus(bool _open) external;
 
     function userDeposit(address) external view returns (uint256);
 }

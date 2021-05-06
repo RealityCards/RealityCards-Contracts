@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNDEFINED
+// SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -47,8 +47,6 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction, IRCFactory {
     uint32 public advancedWarning;
     /// @dev market closing time must be no more than this many seconds in the future
     uint32 public maximumDuration;
-    /// @dev if hot potato mode, how much rent new owner must pay current owner (1 week divisor: i.e. 7 = 1 day's rent, 14 = 12 hours's rent)
-    uint256 public override hotPotatoWeekDivisor;
     /// @dev list of governors
     mapping(address => bool) public governors;
     /// @dev if false, anyone can create markets
@@ -119,7 +117,6 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction, IRCFactory {
         // artist // winner // creator // affiliate // card affiliates
         setPotDistribution(20, 0, 0, 20, 100); // 2% artist, 2% affiliate, 10% card affiliate
         setminimumPriceIncreasePercent(10); // 10%
-        setHotPotatoPayment(7); // one day's rent
         setNFTMintingLimit(50); // current gas limit (12.5m) allows for 50 NFTs to be minted
         setMaxRentIterations(10);
     }
@@ -239,15 +236,6 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction, IRCFactory {
         onlyOwner
     {
         minimumPriceIncreasePercent = _percentIncrease;
-    }
-
-    /// @dev if hot potato mode, how much rent new owner must pay current owner (1 week divisor: i.e. 7 = 1 day, 14 = 12 hours)
-    function setHotPotatoPayment(uint256 _newDivisor)
-        public
-        override
-        onlyOwner
-    {
-        hotPotatoWeekDivisor = _newDivisor;
     }
 
     /// @dev A limit to the number of NFTs to mint per market

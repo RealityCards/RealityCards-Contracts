@@ -666,5 +666,31 @@ contract('TestOrderbook', (accounts) => {
     assert.equal(bid[0], 0);
   });
 
+  it('test remove old bids', async () => {
+    await time.increase(time.duration.weeks(50));
+    await depositDai(100, user0);
+    await depositDai(1000, user1);
+    for (i = 0; i < 20; i++) {
+      await newRental(1, i, user0);
+      await newRental(2, i, user1);
+    }
+    await time.increase(time.duration.weeks(3));
+    await realitycards.lockMarket();
+
+    // check bids exist
+    for (i = 0; i < 20; i++) {
+      var exists = await rcorderbook.bidExists(user0, realitycards.address, i);
+      assert.equal(exists, true);
+    }
+
+    // depositing should remove old bids
+    await depositDai(100, user0);
+
+    // check bids were deleted
+    for (i = 0; i < 20; i++) {
+      var exists = await rcorderbook.bidExists(user0, realitycards.address, i);
+      assert.equal(exists, false);
+    }
+  });
 
 });

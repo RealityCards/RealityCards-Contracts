@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNDEFINED
+// SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.4;
 
 interface IRCOrderbook {
@@ -28,12 +28,6 @@ interface IRCOrderbook {
         external
         returns (address _newOwner);
 
-    function findNextBid(
-        address _user,
-        address _market,
-        uint256 _token
-    ) external view returns (address _newUser, uint256 _newPrice);
-
     function getBidValue(address _user, uint256 _token)
         external
         view
@@ -55,19 +49,15 @@ interface IRCOrderbook {
         uint256 _timeHeldLimit
     ) external;
 
-    function removeUserFromOrderbook(address _user) external;
+    function removeUserFromOrderbook(address _user)
+        external
+        returns (bool _userForeclosed);
 
-    function removeMarketFromUser(
-        address _user,
-        address _market,
-        uint256[] calldata _tokens
-    ) external;
+    function removeOldBids(address _user) external;
 
     function reduceTimeHeldLimit(
         address _user,
         uint256 _token,
         uint256 _timeToReduce
     ) external;
-
-    function collectRentOwnedCards(address _user) external;
 }
