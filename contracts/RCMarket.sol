@@ -123,22 +123,11 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
       ║             EVENTS              ║
       ╚═════════════════════════════════╝*/
 
-    event LogAddToOrderbook(
-        address indexed newOwner,
-        uint256 indexed newPrice,
-        uint256 timeHeldLimit,
-        uint256 nonce,
-        uint256 indexed tokenId
-    );
     event LogNewOwner(uint256 indexed tokenId, address indexed newOwner);
     event LogRentCollection(
         uint256 indexed rentCollected,
         uint256 indexed tokenId,
         address indexed owner
-    );
-    event LogRemoveFromOrderbook(
-        address indexed owner,
-        uint256 indexed tokenId
     );
     event LogContractLocked(bool indexed didTheEventFinish);
     event LogWinnerKnown(uint256 indexed winningOutcome);
@@ -162,7 +151,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         uint256 newLimit,
         uint256 tokenId
     );
-    event LogExit(address indexed owner, uint256 tokenId);
     event LogSponsor(address indexed sponsor, uint256 indexed amount);
     event LogNftUpgraded(
         uint256 indexed currentTokenId,
@@ -793,8 +781,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             // if not owner, just delete from orderbook
             if (orderbook.bidExists(_msgSender, address(this), _tokenId)) {
                 orderbook.removeBidFromOrderbook(_msgSender, _tokenId);
-                emit LogRemoveFromOrderbook(_msgSender, _tokenId);
-                emit LogExit(_msgSender, _tokenId);
             }
         }
     }
