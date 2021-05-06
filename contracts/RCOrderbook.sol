@@ -689,37 +689,42 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         uint256 i;
         while (i < CLEANING_LOOPS && user[address(this)].length > 0) {
             uint256 _pileHeight = user[address(this)].length - 1;
-            address _market = user[address(this)][_pileHeight].market;
-            uint256 _token = user[address(this)][_pileHeight].token;
-            address _user =
-                user[address(this)][index[address(this)][_market][_token]].next;
-
-            Bid storage _currUser = user[_user][index[_user][_market][_token]];
-            // extract from linked list
-            address _tempNext = _currUser.next;
-            address _tempPrev = _currUser.prev;
-            user[_tempNext][index[_tempNext][_market][_token]].prev = _tempPrev;
-            user[_tempPrev][index[_tempPrev][_market][_token]].next = _tempNext;
-
-            // overwrite array element
-            uint256 _index = index[_user][_market][_token];
-            uint256 _lastRecord = user[_user].length - (1);
-            // no point overwriting itself
-            if (_index != _lastRecord) {
-                user[_user][_index] = user[_user][_lastRecord];
-            }
-            user[_user].pop();
-
-            // update the index to help find the record later
-            index[_user][_market][_token] = 0;
-            if (user[_user].length != 0 && _index != _lastRecord) {
-                index[_user][user[_user][_index].market][
-                    user[_user][_index].token
-                ] = _index;
-            }
 
             if (user[address(this)][_pileHeight].next == address(this)) {
                 user[address(this)].pop();
+            } else {
+                address _market = user[address(this)][_pileHeight].market;
+                uint256 _token = user[address(this)][_pileHeight].token;
+                address _user =
+                    user[address(this)][index[address(this)][_market][_token]]
+                        .next;
+
+                Bid storage _currUser =
+                    user[_user][index[_user][_market][_token]];
+                // extract from linked list
+                address _tempNext = _currUser.next;
+                address _tempPrev = _currUser.prev;
+                user[_tempNext][index[_tempNext][_market][_token]]
+                    .prev = _tempPrev;
+                user[_tempPrev][index[_tempPrev][_market][_token]]
+                    .next = _tempNext;
+
+                // overwrite array element
+                uint256 _index = index[_user][_market][_token];
+                uint256 _lastRecord = user[_user].length - (1);
+                // no point overwriting itself
+                if (_index != _lastRecord) {
+                    user[_user][_index] = user[_user][_lastRecord];
+                }
+                user[_user].pop();
+
+                // update the index to help find the record later
+                index[_user][_market][_token] = 0;
+                if (user[_user].length != 0 && _index != _lastRecord) {
+                    index[_user][user[_user][_index].market][
+                        user[_user][_index].token
+                    ] = _index;
+                }
             }
             i++;
         }
