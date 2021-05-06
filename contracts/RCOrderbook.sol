@@ -92,6 +92,23 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         factoryAddress = _newFactory;
     }
 
+    function setLimits(
+        uint256 _deletionLimit,
+        uint256 _cleaningLimit,
+        uint256 _searchLimit
+    ) external override {
+        require(msgSender() == uberOwner, "Extremely Verboten");
+        if (_deletionLimit != 0) {
+            MAX_DELETIONS = _deletionLimit;
+        }
+        if (_cleaningLimit != 0) {
+            CLEANING_LOOPS = _cleaningLimit;
+        }
+        if (_searchLimit != 0) {
+            MAX_SEARCH_ITERATIONS = _searchLimit;
+        }
+    }
+
     function addMarket(
         address _market,
         uint256 _tokenCount,
