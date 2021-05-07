@@ -25,7 +25,7 @@ module.exports = {
   },
   paths: {
     artifacts: "./artifactsBuidler",
-    tests: "./test/live",
+    tests: "./test",
   },
   networks: {
     hardhat: {
