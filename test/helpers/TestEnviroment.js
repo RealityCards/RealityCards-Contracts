@@ -3,6 +3,7 @@ const { BN, expectRevert, ether, expectEvent, balance, time } = require("@openze
 const _ = require("underscore");
 const { current } = require("@openzeppelin/test-helpers/src/balance");
 const { web3 } = require("@openzeppelin/test-helpers/src/setup");
+const { object } = require("underscore");
 
 // main contracts
 const RCFactory = artifacts.require("./RCFactory.sol");
@@ -51,6 +52,10 @@ module.exports = class TestEnviroment {
         this.constants = Object.assign(
             {},
             require("@openzeppelin/test-helpers").constants
+        );
+        this.testHelpers = Object.assign(
+            {},
+            require("@openzeppelin/test-helpers")
         );
         this.contracts = {};
     }
@@ -139,5 +144,42 @@ module.exports = class TestEnviroment {
             question
         );
         return RCMarket.at(await this.contracts.factory.getMostRecentMarket.call(0));
+    }
+    async newRental(options) {
+        var defaults = {
+            market: markets[0],
+            outcome: 0,
+            price: 1,
+            from: this.aliases.alice,
+            timeLimit: 0,
+            startingPosition: zeroAddress,
+        };
+        options = setDefaults(options, defaults);
+        options.price = web3.utils.toWei(options.price.toString(), "ether");
+        await options.market.newRental(options.price, options.timeLimit, options.startingPosition, options.outcome, { from: options.from });
+    }
+
+    async deposit(user, amount) {
+        amount = web3.utils.toWei(amount.toString(), "ether");
+        await this.contracts.treasury.deposit(user, { from: user, value: amount });
+    }
+
+    async withdrawDeposit(amount, userx) {
+        amount = web3.utils.toWei(amount.toString(), "ether");
+        await treasury.withdrawDeposit(amount, true, { from: userx });
+    }
+
+    async newRental(options) {
+        var defaults = {
+            market: this.contracts.markets[0],
+            outcome: 0,
+            price: 1,
+            from: this.aliases.alice,
+            timeLimit: 0,
+            startingPosition: zeroAddress,
+        };
+        options = this.setDefaults(options, defaults);
+        options.price = web3.utils.toWei(options.price.toString(), "ether");
+        await options.market.newRental(options.price, options.timeLimit, options.startingPosition, options.outcome, { from: options.from });
     }
 };
