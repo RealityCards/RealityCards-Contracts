@@ -10,8 +10,11 @@ contract("RealityCardsTests", (accounts) => {
         await rc.setup();
         ({ treasury, factory, orderbook, markets, xdaiproxy } = rc.contracts);
     });
+    afterEach(async function () {
+        await rc.cleanup();
+    });
 
-    describe.only("Treasury tests ", () => {
+    describe("Treasury tests ", () => {
         it("Ensure only factory can add markets", async () => {
             // prove Factory can create a market
             var nextMarket = markets.length;
@@ -401,7 +404,560 @@ contract("RealityCardsTests", (accounts) => {
         });
     })
 
-    it("my second test here", async () => {
+    describe("Orderbook tests ", () => {
+        describe.only("Bid order tests ", () => {
+            it(' Underbidders correctly placed in orderbook ', async () => {
+                let bids = []
+                bids[0] = {
+                    from: alice,
+                    next: bob,
+                    price: 50,
+                }
+                bids[1] = {
+                    from: bob,
+                    prev: alice,
+                    next: carol,
+                    price: 40,
+                }
+                bids[2] = {
+                    from: carol,
+                    prev: bob,
+                    next: dan,
+                    price: 30,
+                }
+                bids[3] = {
+                    from: dan,
+                    prev: carol,
+                    next: eve,
+                    price: 20,
+                }
+                bids[4] = {
+                    from: eve,
+                    prev: dan,
+                    price: 10,
+                }
+                // make deposits and place bids
+                await Promise.all(bids.map(async (bid) => {
+                    await rc.deposit(100, bid.from);
+                    await rc.newRental(bid);
+                }));
+
+                // check the bids are in the correct order in the orderbook
+                await rc.checkOwner(bids[0]);
+                await Promise.all(bids.map(async (bid) => {
+                    await rc.checkOrderbook(bid);
+                }));
+            })
+            it(' New owners correctly placed in orderbook ', async () => {
+                let bids = []
+                bids[4] = {
+                    from: alice,
+                    next: bob,
+                    price: 50,
+                }
+                bids[3] = {
+                    from: bob,
+                    prev: alice,
+                    next: carol,
+                    price: 40,
+                }
+                bids[2] = {
+                    from: carol,
+                    prev: bob,
+                    next: dan,
+                    price: 30,
+                }
+                bids[1] = {
+                    from: dan,
+                    prev: carol,
+                    next: eve,
+                    price: 20,
+                }
+                bids[0] = {
+                    from: eve,
+                    prev: dan,
+                    price: 10,
+                }
+                // make deposits and place bids
+                await Promise.all(bids.map(async (bid) => {
+                    await rc.deposit(100, bid.from);
+                    await rc.newRental(bid);
+                }));
+
+                // check the bids are in the correct order in the orderbook
+                await rc.checkOwner(bids[4]);
+                await Promise.all(bids.map(async (bid) => {
+                    await rc.checkOrderbook(bid);
+                }));
+            })
+            it(' Equal bids correctly placed in orderbook ', async () => {
+                let bids = []
+                bids[0] = {
+                    from: alice,
+                    next: bob,
+                    price: 50,
+                }
+                bids[1] = {
+                    from: bob,
+                    prev: alice,
+                    next: carol,
+                    price: 30,
+                }
+                bids[2] = {
+                    from: carol,
+                    prev: bob,
+                    next: dan,
+                    price: 30,
+                }
+                bids[3] = {
+                    from: dan,
+                    prev: carol,
+                    next: eve,
+                    price: 30,
+                }
+                bids[4] = {
+                    from: eve,
+                    prev: dan,
+                    price: 10,
+                }
+                // make deposits and place bids
+                await Promise.all(bids.map(async (bid) => {
+                    await rc.deposit(100, bid.from);
+                    await rc.newRental(bid);
+                }));
+
+                // check the bids are in the correct order in the orderbook
+                await rc.checkOwner(bids[0]);
+                await Promise.all(bids.map(async (bid) => {
+                    await rc.checkOrderbook(bid);
+                }));
+            })
+            it(' Bids reduced and correctly placed in orderbook ', async () => {
+                let bids = []
+                bids[0] = {
+                    from: alice,
+                    next: bob,
+                    price: 50,
+                }
+                bids[1] = {
+                    from: bob,
+                    prev: alice,
+                    next: carol,
+                    price: 30,
+                }
+                bids[2] = {
+                    from: carol,
+                    prev: bob,
+                    next: dan,
+                    price: 31,
+                }
+                bids[3] = {
+                    from: dan,
+                    prev: carol,
+                    next: eve,
+                    price: 29,
+                }
+                bids[4] = {
+                    from: eve,
+                    prev: dan,
+                    price: 29.5,
+                }
+                // make deposits and place bids
+                await Promise.all(bids.map(async (bid) => {
+                    await rc.deposit(100, bid.from);
+                    await rc.newRental(bid);
+                }));
+
+                // bids 2 & 4 should have been reduced by contract, reduce them here before checking
+                bids[2].price = 30;
+                bids[4].price = 29;
+
+                // check the bids are in the correct order in the orderbook
+                await rc.checkOwner(bids[0]);
+                await Promise.all(bids.map(async (bid) => {
+                    await rc.checkOrderbook(bid);
+                }));
+            })
+            it(' Owner changes their price (no change in owner) ', async () => {
+                let bids = []
+                bids[0] = {
+                    from: alice,
+                    next: bob,
+                    price: 50,
+                }
+                bids[1] = {
+                    from: bob,
+                    prev: alice,
+                    next: carol,
+                    price: 40,
+                }
+                bids[2] = {
+                    from: carol,
+                    prev: bob,
+                    price: 30,
+                }
+
+                // make deposits and place bids
+                await Promise.all(bids.map(async (bid) => {
+                    await rc.deposit(100, bid.from);
+                    await rc.newRental(bid);
+                }));
+
+                // owner increases price
+                bids[0].price += 5
+                await rc.newRental(bids[0])
+
+                // owner decreases price
+                bids[0].price -= 10
+                await rc.newRental(bids[0])
+
+                // check the bids are in the correct order in the orderbook
+                await rc.checkOwner(bids[0]);
+                await Promise.all(bids.map(async (bid) => {
+                    await rc.checkOrderbook(bid);
+                }));
+            })
+            it.skip(' Owner changes their price (change in owner) ', async () => {
+                let bids = []
+                bids[0] = {
+                    from: alice,
+                    price: 50,
+                }
+                bids[1] = {
+                    from: bob,
+                    price: 40,
+                }
+                bids[2] = {
+                    from: carol,
+                    price: 30,
+                }
+                bids = await rc.populateBidArray(bids)
+
+                // make deposits and place bids
+                await Promise.all(bids.map(async (bid) => {
+                    await rc.deposit(100, bid.from);
+                    await rc.newRental(bid);
+                }));
+
+                // owner decreases price, looses ownership
+                bids[0].price = bids[1].price - 5;
+                [bids[0].next, bids[0].prev, bids[2].prev] = [bids[1].next, bids[2].prev, bids[0].next];
+
+                await rc.newRental(bids[0])
+
+                // // owner decreases price
+                // bids[0].price -= 10
+                // await rc.newRental(bids[0])
+
+                // check the bids are in the correct order in the orderbook
+                await rc.checkOwner(bids[1]);
+                await Promise.all(bids.map(async (bid) => {
+                    await rc.checkOrderbook(bid);
+                }));
+            })
+        })
+        it('test orderbook various', async () => {
+            // Tests the following:
+            // add to orderbook in correct order
+            // reduces the price to match that above it in the list
+            // expected revert because incorrect starting location: too high and too low
+            // update bid: test all cases
+            user10 = accounts[10];
+            user11 = accounts[11];
+            user12 = accounts[12];
+            user13 = accounts[13];
+            user14 = accounts[14];
+            await depositDai(10, user0);
+            await depositDai(10, user1);
+            await depositDai(10, user2);
+            await depositDai(10, user3);
+            await depositDai(10, user4);
+            await depositDai(10, user5);
+            await depositDai(10, user6);
+            await depositDai(10, user7);
+            await depositDai(10, user8);
+            await depositDai(10, user9);
+            await depositDai(10, user10);
+            await depositDai(10, user11);
+            await depositDai(10, user12);
+            await depositDai(10, user13);
+            await depositDai(10, user14);
+            // rentals: position/price
+            await newRentalCustomTimeLimit(10, 1, 0, user0); // 2, 10
+            await newRental(9, 0, user1); // 5, 9
+            await newRental(8, 0, user2); // 6, 8
+            await newRental(10, 0, user3); // 3,1 10
+            // var returnedPrice = await realitycards.newRental.call(ether('10.9'), 0, zeroAddress, 0, { from: user4 });
+            //assert.equal(returnedPrice.toString(), ether('10').toString());
+            await newRental(10.9, 0, user4); // 4, 10
+            await newRental(20, 0, user5); // 1, 20
+            await newRental(5, 0, user6); // 9, 5
+            await newRental(8.5, 0, user7); // 7, 8
+            await newRental(6, 0, user8); // 8, 6
+            await newRental(50, 0, user9); // 0, 50
+            await newRentalWithStartingPosition(4.8, 0, user5, user12); // 11, 4.8
+            await newRentalWithStartingPosition(5, 0, user5, user13); // 10, 5 // <- this one checks that it matches one above, it is not reduced
+            await newRentalWithStartingPosition(4.8, 0, user7, user14); // 12, 4.8
+            var owner = await realitycards.ownerOf.call(0);
+            assert.equal(owner, user9);
+            var price = await realitycards.tokenPrice.call(0);
+            assert.equal(price, web3.utils.toWei('50', 'ether'));
+            // check position and price
+            // position 0
+            var bid = await rcorderbook.getBid.call(realitycards.address, user9, 0);
+            assert.equal(bid[4], web3.utils.toWei('50', 'ether'));
+            assert.equal(bid[1], user5);
+            assert.equal(bid[2], realitycards.address);
+            // position 1
+            var bid = await rcorderbook.getBid.call(realitycards.address, user5, 0);
+            assert.equal(bid[4], web3.utils.toWei('20', 'ether'));
+            assert.equal(bid[1], user0);
+            assert.equal(bid[2], user9);
+            // position 2
+            var bid = await rcorderbook.getBid.call(realitycards.address, user0, 0);
+            assert.equal(bid[4], web3.utils.toWei('10', 'ether'));
+            //assert.equal(bid[5], (3600 * 24)); //timeHeldLimit now reduces as time is accrued, test needs updating.
+            assert.equal(bid[1], user3);
+            assert.equal(bid[2], user5);
+            // position 3
+            var bid = await rcorderbook.getBid.call(realitycards.address, user3, 0);
+            assert.equal(bid[4], web3.utils.toWei('10', 'ether'));
+            assert.equal(bid[1], user4);
+            assert.equal(bid[2], user0);
+            // position 4
+            var bid = await rcorderbook.getBid.call(realitycards.address, user4, 0);
+            assert.equal(bid[4], web3.utils.toWei('10', 'ether'));
+            assert.equal(bid[1], user1);
+            assert.equal(bid[2], user3);
+            // position 5
+            var bid = await rcorderbook.getBid.call(realitycards.address, user1, 0);
+            assert.equal(bid[4], web3.utils.toWei('9', 'ether'));
+            assert.equal(bid[1], user2);
+            assert.equal(bid[2], user4);
+            // position 6
+            var bid = await rcorderbook.getBid.call(realitycards.address, user2, 0);
+            assert.equal(bid[4], web3.utils.toWei('8', 'ether'));
+            assert.equal(bid[1], user7);
+            assert.equal(bid[2], user1);
+            // position 7
+            var bid = await rcorderbook.getBid.call(realitycards.address, user7, 0);
+            assert.equal(bid[4], web3.utils.toWei('8', 'ether'));
+            assert.equal(bid[1], user8);
+            assert.equal(bid[2], user2);
+            // position 8
+            var bid = await rcorderbook.getBid.call(realitycards.address, user8, 0);
+            assert.equal(bid[4], web3.utils.toWei('6', 'ether'));
+            assert.equal(bid[1], user6);
+            assert.equal(bid[2], user7);
+            // position 9
+            var bid = await rcorderbook.getBid.call(realitycards.address, user6, 0);
+            assert.equal(bid[4], web3.utils.toWei('5', 'ether'));
+            assert.equal(bid[1], user13);
+            assert.equal(bid[2], user8);
+            // position 10
+            var bid = await rcorderbook.getBid.call(realitycards.address, user13, 0);
+            assert.equal(bid[4], web3.utils.toWei('5', 'ether'));
+            assert.equal(bid[1], user12);
+            assert.equal(bid[2], user6);
+            // position 11
+            var bid = await rcorderbook.getBid.call(realitycards.address, user12, 0);
+            assert.equal(bid[4], web3.utils.toWei('4.8', 'ether'));
+            assert.equal(bid[1], user14);
+            assert.equal(bid[2], user13);
+            // position 12
+            var bid = await rcorderbook.getBid.call(realitycards.address, user14, 0);
+            assert.equal(bid[4], web3.utils.toWei('4.8', 'ether'));
+            assert.equal(bid[1], realitycards.address);
+            assert.equal(bid[2], user12);
+            // check starting position
+            // starting position too high - need more user account to test this now iteration limit is 100
+            //await expectRevert(newRental(1,0,user10), "Location too high"); 
+            //await expectRevert(newRentalWithStartingPosition(1,0,user9,user10), "Location too high");
+            await newRentalWithStartingPosition(1, 0, user6, user10);
+            // starting position too low
+            await expectRevert(newRentalWithStartingPosition(10, 0, user1, user11), "Location too low");
+            // update bid case 1A: was winner, > 10% higher, should just update price + limit
+            await newRentalCustomTimeLimit(60, 1, 0, user9);
+            var owner = await realitycards.ownerOf.call(0);
+            assert.equal(owner, user9);
+            var price = await realitycards.tokenPrice.call(0);
+            assert.equal(price.toString(), web3.utils.toWei('60', 'ether'));
+            // await rcorderbook.printOrderbook(realitycards.address, 0);
+            // console.log("0", user0);
+            // console.log("1", user1);
+            // console.log("2", user2);
+            // console.log("3", user3);
+            // console.log("4", user4);
+            // console.log("5", user5);
+            // console.log("6", user6);
+            // console.log("7", user7);
+            // console.log("8", user8);
+            // console.log("9", user9);
+            // console.log("10", user10);
+            // console.log("11", user11);
+            // console.log("12", user12);
+            // console.log("13", user13);
+            // console.log("14", user14);
+            var bid = await rcorderbook.getBid.call(realitycards.address, user9, 0);
+            assert.equal(bid[4], web3.utils.toWei('60', 'ether'));
+            assert.equal(bid[5], (3600 * 24));
+            assert.equal(bid[1], user5);
+            assert.equal(bid[2], realitycards.address);
+            // update bid case 1B: was winner, higher but < 10%, should remove
+            await expectRevert(newRental(65, 0, user9), "Not 10% higher");
+            await realitycards.exit(0, { from: user9 });
+            // update bid case 1Ca: was winner, lower than prevous, but still winner, just update detials
+            await newRentalCustomTimeLimit(15, 2, 0, user5);
+            var owner = await realitycards.ownerOf.call(0);
+            assert.equal(owner, user5);
+            var price = await realitycards.tokenPrice.call(0);
+            assert.equal(price.toString(), web3.utils.toWei('15', 'ether'));
+            var bid = await rcorderbook.getBid.call(realitycards.address, user5, 0);
+            assert.equal(bid[4], web3.utils.toWei('15', 'ether'));
+            assert.equal(bid[5], (3600 * 48));
+            assert.equal(bid[1], user0);
+            assert.equal(bid[2], realitycards.address);
+            // update bid case 1Cb: was winner, but no longer winner, remove and add back
+            await newRentalCustomTimeLimit(10.5, 0.5, 0, user5);
+            var owner = await realitycards.ownerOf.call(0);
+            assert.equal(owner, user0);
+            var price = await realitycards.tokenPrice.call(0);
+            assert.equal(price, web3.utils.toWei('10', 'ether'));
+            var bid = await rcorderbook.getBid.call(realitycards.address, user5, 0);
+            assert.equal(bid[4], web3.utils.toWei('10', 'ether'));
+            assert.equal(bid[5], (3600 * 12));
+            assert.equal(bid[1], user1);
+            assert.equal(bid[2], user4);
+            // update bid case 2A: not winner, but now is [includes check that been deleted from previous location]
+            await newRentalCustomTimeLimit(100, 0.5, 0, user7);
+            var owner = await realitycards.ownerOf.call(0);
+            assert.equal(owner, user7);
+            var price = await realitycards.tokenPrice.call(0);
+            assert.equal(price, web3.utils.toWei('100', 'ether'));
+            var bid = await rcorderbook.getBid.call(realitycards.address, user7, 0);
+            assert.equal(bid[4], web3.utils.toWei('100', 'ether'));
+            assert.equal(bid[5], (3600 * 12));
+            assert.equal(bid[1], user0);
+            assert.equal(bid[2], realitycards.address);
+            var bid = await rcorderbook.getBid.call(realitycards.address, user2, 0);
+            assert.equal(bid[1], user8);
+            var bid = await rcorderbook.getBid.call(realitycards.address, user8, 0);
+            assert.equal(bid[2], user2);
+            // update bid case 2B: not winner, still isn't. Let's move user 8 up a few [and check moved from previous]
+            await newRentalCustomTimeLimit(20, 2, 0, user8);
+            var owner = await realitycards.ownerOf.call(0);
+            assert.equal(owner, user7);
+            var price = await realitycards.tokenPrice.call(0);
+            assert.equal(price, web3.utils.toWei('100', 'ether'));
+            var bid = await rcorderbook.getBid.call(realitycards.address, user8, 0);
+            assert.equal(bid[4], web3.utils.toWei('20', 'ether'));
+            assert.equal(bid[5], (3600 * 48));
+            assert.equal(bid[1], user0);
+            assert.equal(bid[2], user7);
+            var bid = await rcorderbook.getBid.call(realitycards.address, user2, 0);
+            assert.equal(bid[1], user6);
+            var bid = await rcorderbook.getBid.call(realitycards.address, user6, 0);
+            assert.equal(bid[2], user2);
+        });
+
+        it('test _revertToUnderbidder', async () => {
+            // console.log(user0); 
+            // console.log(user1);
+            // console.log(user2);
+            // console.log(user3); 
+            // console.log(user4);
+            // console.log(user5);
+            // console.log(user6); 
+            // console.log(user7);
+            // console.log(user8);
+            // console.log(user9); 
+            // console.log(user10); 
+            // console.log(use11); 
+            // console.log(user12); 
+            // console.log(user3); 
+            // console.log(realitycards.address); 
+            await depositDai(10, user0);
+            await depositDai(10, user1);
+            await depositDai(10, user2);
+            await depositDai(10, user3);
+            await depositDai(10, user4);
+            await depositDai(10, user5);
+            await depositDai(10, user6);
+            await depositDai(10, user7);
+            await depositDai(10, user8);
+            await depositDai(10, user9);
+            // rentals: position/price
+            await newRentalCustomTimeLimit(10, 1, 0, user0); // 2, 10
+            await newRental(9, 0, user1); // 5, 9
+            await newRental(8, 0, user2); // 6, 8
+            await newRental(10, 0, user3); // 3,1 10
+            await newRental(10.9, 0, user4); // 4, 10
+            await newRental(20, 0, user5); // 1, 20
+            await newRental(5, 0, user6); // 9, 5
+            await newRental(8.5, 0, user7); // 7, 8
+            await newRental(6, 0, user8); // 8, 6
+            await newRental(50, 0, user9); // 0, 50
+            // withdraw deposit of 9, will it switch to 0
+            await time.increase(time.duration.minutes(10));
+            await withdrawDeposit(1000, user9);
+            await realitycards.collectRentAllCards();
+            var owner = await realitycards.ownerOf.call(0);
+            assert.equal(owner, user5);
+            var price = await realitycards.tokenPrice.call(0);
+            assert.equal(price, web3.utils.toWei('20', 'ether'));
+            var bid = await rcorderbook.getBid.call(realitycards.address, user5, 0);
+            assert.equal(bid[2], realitycards.address);
+            var bid = await rcorderbook.getBid.call(realitycards.address, user9, 0);
+            assert.equal(bid[0], 0);
+            // withraw deposit for next 4 in line, check it cyles through
+            await time.increase(time.duration.minutes(10));
+            await withdrawDeposit(1000, user5);
+            await withdrawDeposit(1000, user0);
+            await withdrawDeposit(1000, user3);
+            await withdrawDeposit(1000, user4);
+            await realitycards.collectRentAllCards();
+            var owner = await realitycards.ownerOf.call(0);
+            assert.equal(owner, user1);
+            var price = await realitycards.tokenPrice.call(0);
+            assert.equal(price, web3.utils.toWei('9', 'ether'));
+            var bid = await rcorderbook.getBid.call(realitycards.address, user1, 0);
+            assert.equal(bid[2], realitycards.address);
+            var bid = await rcorderbook.getBid.call(realitycards.address, user5, 0);
+            assert.equal(bid[0], 0);
+            var bid = await rcorderbook.getBid.call(realitycards.address, user0, 0);
+            assert.equal(bid[0], 0);
+            var bid = await rcorderbook.getBid.call(realitycards.address, user3, 0);
+            assert.equal(bid[0], 0);
+            var bid = await rcorderbook.getBid.call(realitycards.address, user4, 0);
+            assert.equal(bid[0], 0);
+        });
+
+        it('test remove old bids', async () => {
+            await time.increase(time.duration.weeks(50));
+            await depositDai(100, user0);
+            await depositDai(1000, user1);
+            for (i = 0; i < 20; i++) {
+                await newRental(1, i, user0);
+                await newRental(2, i, user1);
+            }
+            await time.increase(time.duration.weeks(3));
+            await realitycards.lockMarket();
+
+            // check bids exist
+            for (i = 0; i < 20; i++) {
+                var exists = await rcorderbook.bidExists(user0, realitycards.address, i);
+                assert.equal(exists, true);
+            }
+
+            // depositing should remove old bids
+            await depositDai(100, user0);
+
+            // check bids were deleted
+            for (i = 0; i < 20; i++) {
+                var exists = await rcorderbook.bidExists(user0, realitycards.address, i);
+                assert.equal(exists, false);
+            }
+        });
 
     });
 })

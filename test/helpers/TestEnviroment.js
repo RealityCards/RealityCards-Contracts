@@ -4,6 +4,7 @@ const _ = require("underscore");
 const { current } = require("@openzeppelin/test-helpers/src/balance");
 const { web3 } = require("@openzeppelin/test-helpers/src/setup");
 const { object } = require("underscore");
+const { createSolutionBuilderHost } = require("typescript");
 
 // main contracts
 const RCFactory = artifacts.require("./RCFactory.sol");
@@ -156,7 +157,7 @@ module.exports = class TestEnviroment {
         };
         options = setDefaults(options, defaults);
         options.price = web3.utils.toWei(options.price.toString(), "ether");
-        await options.market.newRental(options.price, options.timeLimit, options.startingPosition, options.outcome, { from: options.from });
+        return await options.market.newRental(options.price, options.timeLimit, options.startingPosition, options.outcome, { from: options.from });
     }
 
     async deposit(amount, user) {
@@ -197,5 +198,89 @@ module.exports = class TestEnviroment {
 
     async SelfDestructMockup() {
         return await SelfDestructMockup.new()
+    }
+
+    async checkOrderbook(expectedResult) {
+        var defaults = {
+            from: this.aliases.alice,
+            market: this.contracts.markets[0].address,
+            next: this.contracts.markets[0].address,
+            prev: this.contracts.markets[0].address,
+            outcome: 0,
+            price: 1,
+            timeLimit: 0,
+        };
+        expectedResult = this.setDefaults(expectedResult, defaults);
+        expectedResult.price = web3.utils.toWei(expectedResult.price.toString(), "ether");
+        let index = await this.contracts.orderbook.index(expectedResult.market, expectedResult.from, expectedResult.outcome);
+        let bid = await this.contracts.orderbook.user(expectedResult.from, index);
+        assert.equal(bid[0], expectedResult.market, "Bid is for incorrect Market")
+        assert.equal(bid[1], expectedResult.next, "Next user in list is incorrect");
+        assert.equal(bid[2], expectedResult.prev, "Prev user in list is incorrect");
+        assert.equal(bid[3], expectedResult.outcome, "Bid is for incorrect Outcome");
+        assert.equal(bid[4].toString(), expectedResult.price, "Bid price is incorrect");
+        assert.equal(bid[5], expectedResult.timeLimit, "Time limit doesn't match");
+        return expectedResult
+    }
+
+    async checkOwner(expectedResult) {
+        var defaults = {
+            from: this.aliases.alice,
+            market: this.contracts.markets[0].address,
+            outcome: 0,
+        };
+        expectedResult = this.setDefaults(expectedResult, defaults);
+
+        // check the orderbook thinks they are the owner
+        let index = await this.contracts.orderbook.index(expectedResult.market, expectedResult.market, expectedResult.outcome);
+        let bid = await this.contracts.orderbook.user(expectedResult.market, index);
+        assert.equal(bid[0], expectedResult.market, "Bid is for incorrect Market")
+        assert.equal(bid[1], expectedResult.from, "Market doesn't think this is the owner");
+        assert.equal(bid[3], expectedResult.outcome, "Bid is for incorrect Outcome");
+    }
+
+    populateBidArray(bids, options) {
+        var defaults = {
+            market: this.contracts.markets[0],
+            outcome: 0,
+        };
+        options = this.setDefaults(options, defaults);
+
+        for (let index = 0; index < bids.length; index++) {
+            if (index == 0) {
+                bids[index].prev = options.market.address
+                console.log("first bid");
+            } else {
+                bids[index].prev = bids[index - 1].from
+                console.log("further bid");
+            }
+            if (index == bids.length - 1) {
+                bids[index].next = options.market.address
+            } else {
+                bids[index].next = bids[index + 1].from
+            }
+        }
+        return bids
+    }
+
+    swapBids(bids, pos1, pos2) {
+        let temp1 = bids[pos1]
+        let temp2 = bids[pos2]
+
+        bids[pos1].next = temp2.next;
+        bids[pos1].prev = temp2.prev;
+
+        // WIP, finish swappping bid positions
+        return bids
+    }
+
+    async cleanup() {
+        for (const [key, value] of Object.entries(this.aliases)) {
+            try {
+                await this.withdrawDeposit(9999, value);
+            } catch (error) {
+                // console.log("failed withdraw", error)
+            }
+        }
     }
 };
