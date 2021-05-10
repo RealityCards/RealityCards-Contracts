@@ -2,7 +2,7 @@ const TestEnviroment = require('./helpers/TestEnviroment');
 
 contract("RealityCardsTests", (accounts) => {
     const rc = new TestEnviroment(accounts);
-    const { admin, alice, bob, carol, dan } = rc.aliases;
+    const { admin, alice, bob, carol, dan, eve, frank, grace, harold, ivan } = rc.aliases;
     const { MAX_UINT256, ZERO_ADDRESS } = rc.constants;
     const { expectRevert, time, ether, balance } = rc.testHelpers;
 
@@ -26,10 +26,10 @@ contract("RealityCardsTests", (accounts) => {
 
         it("check that non markets cannot call market only functions on Treasury", async () => {
             // only testing invalid responses, valid responses checked in each functions own test
-            await expectRevert(treasury.payRent(user0), "Not authorised");
-            await expectRevert(treasury.payout(user0, 0), "Not authorised");
+            await expectRevert(treasury.payRent(admin), "Not authorised");
+            await expectRevert(treasury.payout(admin, 0), "Not authorised");
             await expectRevert(treasury.sponsor(), "Not authorised");
-            await expectRevert(treasury.updateLastRentalTime(user0), "Not authorised");
+            await expectRevert(treasury.updateLastRentalTime(admin), "Not authorised");
         });
 
         it("check that non owners cannot call owner only functions on Treasury", async () => {
@@ -63,7 +63,7 @@ contract("RealityCardsTests", (accounts) => {
             // change deposit balance limit to 500 ether
             await treasury.setMaxContractBalance(web3.utils.toWei("500", "ether"));
             // 400 should work
-            await rc.deposit(alice, 400);
+            await rc.deposit(400, alice);
             // another 400 should not
             await expectRevert(treasury.deposit(alice, { value: web3.utils.toWei("400", "ether") }), "Limit hit");
         });
@@ -135,14 +135,14 @@ contract("RealityCardsTests", (accounts) => {
             // check for zero address
             await expectRevert.unspecified(treasury.changeUberOwner(ZERO_ADDRESS));
             // set value
-            await treasury.changeUberOwner(user9);
+            await treasury.changeUberOwner(alice, { from: admin });
             // check value
-            assert.equal(await treasury.uberOwner(), user9);
+            assert.equal(await treasury.uberOwner(), alice);
             // change the value
-            await expectRevert(treasury.changeUberOwner(user2, { from: user1 }), "Extremely Verboten");
-            await treasury.changeUberOwner(user8, { from: user9 });
+            await expectRevert(treasury.changeUberOwner(bob, { from: admin }), "Extremely Verboten");
+            await treasury.changeUberOwner(bob, { from: alice });
             // check again
-            assert.equal(await treasury.uberOwner(), user8);
+            assert.equal(await treasury.uberOwner(), bob);
         });
 
         it("test deposit", async () => {
@@ -150,8 +150,8 @@ contract("RealityCardsTests", (accounts) => {
             await expectRevert(treasury.deposit(alice), "Must deposit something");
             await expectRevert(treasury.deposit(ZERO_ADDRESS, { value: 1 }), "Must set an address");
             // make some deposits
-            await rc.deposit(alice, 10);
-            await rc.deposit(bob, 20);
+            await rc.deposit(10, alice);
+            await rc.deposit(20, bob);
             // check the individual and total deposit amounts
             assert.equal((await treasury.userDeposit(alice)).toString(), ether("10").toString());
             assert.equal((await treasury.userDeposit(bob)).toString(), ether("20").toString());
@@ -163,7 +163,7 @@ contract("RealityCardsTests", (accounts) => {
             // can't withdraw if theres nothing to withdraw
             await expectRevert(treasury.withdrawDeposit(1, true), "Nothing to withdraw");
             // lets check we get all our funds back
-            await rc.deposit(bob, 100); // just so the contract has spare funds
+            await rc.deposit(100, bob); // just so the contract has spare funds
             // record the users balance
             var tracker = await balance.tracker(alice);
             const startBalance = await tracker.get()
@@ -202,24 +202,24 @@ contract("RealityCardsTests", (accounts) => {
             assert.equal((await treasury.userTotalBids(bob)), 0);
 
             // test the value transfer sucess
-            noFallback = await NoFallback.new();
+            noFallback = await rc.NoFallback();
             await noFallback.deposit(treasury.address, { value: ether('10') });
             await expectRevert(noFallback.withdrawDeposit(treasury.address, ether('10')), "Transfer failed");
         });
 
         it("check cant rent or deposit if globalpause", async () => {
             // check it works normally
-            await rc.deposit(alice, 10);
+            await rc.deposit(10, alice);
             await rc.newRental({ from: alice });
             // turn on global pause
             await treasury.changeGlobalPause();
             // now it should revert
-            await expectRevert(rc.deposit(alice, 100), "Deposits are disabled");
+            await expectRevert(rc.deposit(100, alice), "Deposits are disabled");
             await expectRevert(rc.newRental({ from: alice }), "Rentals are disabled");
             // change it back
             await treasury.changeGlobalPause();
             // and it works again
-            await rc.deposit(alice, 100);
+            await rc.deposit(100, alice);
             await rc.newRental({ outcome: 1, from: alice });
         });
 
@@ -227,12 +227,12 @@ contract("RealityCardsTests", (accounts) => {
             // setup
             markets.push(await rc.createMarket());
             // check it works normally
-            await rc.deposit(alice, 100);
+            await rc.deposit(100, alice);
             await rc.newRental();
             // turn on market pause
             await treasury.changePauseMarket(markets[0].address);
             // we can still deposit
-            await rc.deposit(alice, 144);
+            await rc.deposit(144, alice);
             // we can't use that market
             await expectRevert(rc.newRental(), "Rentals are disabled");
             // we can use a different market
@@ -242,22 +242,22 @@ contract("RealityCardsTests", (accounts) => {
         });
 
         it("test force sending Ether to Treasury via self destruct", async () => {
-            selfdestruct = await SelfDestructMockup.new();
+            let selfdestruct = await rc.SelfDestructMockup();
             // send ether direct to self destruct contract
             await selfdestruct.send(web3.utils.toWei("1000", "ether"));
             await selfdestruct.killme(treasury.address);
             // do a regs deposit
-            await rc.deposit(100, user6);
+            await rc.deposit(100, ivan);
         });
 
         it("test updateUserBids", async () => {
 
             // setup
             markets.push(await rc.createMarket());
-            await rc.deposit(alice, 10);
-            await rc.deposit(bob, 100);
-            await rc.deposit(carol, 10);
-            await rc.deposit(dan, 10);
+            await rc.deposit(10, alice);
+            await rc.deposit(100, bob);
+            await rc.deposit(10, carol);
+            await rc.deposit(10, dan);
             // make a rental, check it updates the userBids
             await rc.newRental({ price: 5 });
             var totalRentals = await treasury.userTotalBids(alice);
@@ -315,7 +315,7 @@ contract("RealityCardsTests", (accounts) => {
         it("test withdraw deposit after market close", async () => {
             // create a market that'll expire soon
             markets.push(await rc.createMarket({ closeTime: time.duration.weeks(1), resolveTime: time.duration.weeks(1) }));
-            await rc.deposit(alice, 100);
+            await rc.deposit(100, alice);
             await rc.newRental({ market: markets[1] });
             await time.increase(time.duration.weeks(1));
             //await market[1].collectRentAllCards();
@@ -324,7 +324,7 @@ contract("RealityCardsTests", (accounts) => {
         });
 
         it("check bids are exited when user withdraws everything", async () => {
-            await rc.deposit(alice, 100);
+            await rc.deposit(100, alice);
             await rc.newRental({ price: 5 });
             await time.increase(time.duration.days(1));
             await rc.withdrawDeposit(5, alice);
@@ -336,36 +336,35 @@ contract("RealityCardsTests", (accounts) => {
             assert.notEqual(owner, alice);
         });
 
-        it.only("check payRent", async () => {
+        it("check payRent", async () => {
+            const deposit = '100';
+            const bid = '50';
             // global pause tested in it's own test
             // setup alternative market and bid on it
             markets.push(await rc.createMarket());
-            await rc.deposit(alice, 100);
-            await rc.newRental({ from: alice, market: markets[1] });
+            // have alice bid elsewhere
+            await rc.deposit(deposit, alice);
+            await rc.newRental({ from: alice, market: markets[0] });
+            assert.equal((await treasury.userDeposit(alice)).toString(), ether(deposit).toString());
 
-            assert.equal((await treasury.userDeposit(alice)).toString(), ether('100').toString());
-            // depsoit some dai and confirm all values
-            await rc.deposit(bob, 100);
-            assert.equal((await treasury.userDeposit(bob)).toString(), ether('100').toString());
+            // deposit some dai and confirm all values
+            await rc.deposit(deposit, bob);
+            assert.equal((await treasury.userDeposit(bob)).toString(), ether(deposit).toString());
             assert.equal((await treasury.marketPot(markets[1].address)).toString(), '0');
             assert.equal((await treasury.totalMarketPots()).toString(), '0');
-            assert.equal((await treasury.totalDeposits()).toString(), ether('200').toString());
+            assert.equal((await treasury.totalDeposits()).toString(), ether((deposit * 2).toString()).toString());
 
             //pay some rent
-            var txReceipt = await markets[1].newRental.call(ether('50'), 0, ZERO_ADDRESS, 0, { from: alice });
-            var startTime = (await web3.eth.getBlock(txReceipt.receipt.blockNumber)).timestamp;
+            const tx1 = await rc.newRental({ market: markets[1], price: bid, from: bob });
             await time.increase(time.duration.days(1));
-            txReceipt = await markets[0].collectRentAllCards();
-            var endTime = (await web3.eth.getBlock(txReceipt.receipt.blockNumber)).timestamp;
-            // must perform calcualtion in this order to avoid rounding
-            var rentDue = ether('50').muln(endTime - startTime).divn(86400);
-            console.log(rentDue.toString())
-            console.log((await treasury.userDeposit(alice)).toString())
+            const tx2 = await markets[1].collectRentAllCards();
+            let rentDue = await rc.rentDue(tx1, tx2, bid)
+
             // check the values have all been correcly adjusted
-            assert.equal((await treasury.userDeposit(alice)).toString(), (ether('100').sub(rentDue)).toString());
-            assert.equal((await treasury.marketPot(markets[0].address)).toString(), rentDue.toString());
+            assert.equal((await treasury.userDeposit(bob)).toString(), (ether(deposit).sub(rentDue)).toString());
+            assert.equal((await treasury.marketPot(markets[1].address)).toString(), rentDue.toString());
             assert.equal((await treasury.totalMarketPots()).toString(), rentDue.toString());
-            assert.equal((await treasury.totalDeposits()).toString(), (ether('200').sub(rentDue)).toString());
+            assert.equal((await treasury.totalDeposits()).toString(), (ether((deposit * 2).toString()).sub(rentDue)).toString());
 
         });
 
@@ -373,8 +372,8 @@ contract("RealityCardsTests", (accounts) => {
             // global pause tested in it's own test
             // depsoit some dai and confirm all values
             markets.push(await rc.createMarket({ closeTime: time.duration.days(3), resolveTime: time.duration.days(3) }));
-            await rc.deposit(alice, 100);
-            await rc.deposit(bob, 100);
+            await rc.deposit(100, alice);
+            await rc.deposit(100, bob);
             assert.equal((await treasury.userDeposit(alice)).toString(), ether('100').toString());
             assert.equal((await treasury.userDeposit(bob)).toString(), ether('100').toString());
             assert.equal((await treasury.marketPot(markets[1].address)).toString(), '0');

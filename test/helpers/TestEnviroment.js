@@ -159,7 +159,7 @@ module.exports = class TestEnviroment {
         await options.market.newRental(options.price, options.timeLimit, options.startingPosition, options.outcome, { from: options.from });
     }
 
-    async deposit(user, amount) {
+    async deposit(amount, user) {
         amount = web3.utils.toWei(amount.toString(), "ether");
         await this.contracts.treasury.deposit(user, { from: user, value: amount });
     }
@@ -167,6 +167,13 @@ module.exports = class TestEnviroment {
     async withdrawDeposit(amount, userx) {
         amount = web3.utils.toWei(amount.toString(), "ether");
         await treasury.withdrawDeposit(amount, true, { from: userx });
+    }
+
+    async rentDue(startTx, endTx, price) {
+        let startTime = (await web3.eth.getBlock(startTx.receipt.blockNumber)).timestamp;
+        let endTime = (await web3.eth.getBlock(endTx.receipt.blockNumber)).timestamp;
+        let rentDue = ether(price).muln(endTime - startTime).divn(86400);
+        return rentDue
     }
 
     async newRental(options) {
@@ -180,6 +187,15 @@ module.exports = class TestEnviroment {
         };
         options = this.setDefaults(options, defaults);
         options.price = web3.utils.toWei(options.price.toString(), "ether");
-        await options.market.newRental(options.price, options.timeLimit, options.startingPosition, options.outcome, { from: options.from });
+        let receipt = await options.market.newRental(options.price, options.timeLimit, options.startingPosition, options.outcome, { from: options.from });
+        return receipt;
+    }
+
+    async NoFallback() {
+        return await NoFallback.new()
+    }
+
+    async SelfDestructMockup() {
+        return await SelfDestructMockup.new()
     }
 };
