@@ -189,7 +189,11 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         uint256 affiliateCut,
         uint256 cardAffiliateCut
     );
-    event LogSettings(uint256 indexed minRentalDayDivisor, uint256 indexed minimumPriceIncreasePercent, uint256 hotPotatoWeekDivisor);
+    event LogSettings(
+        uint256 indexed minRentalDayDivisor,
+        uint256 indexed minimumPriceIncreasePercent,
+        uint256 hotPotatoWeekDivisor
+    );
     event LogLongestOwner(uint256 tokenId, address longestOwner);
 
     ////////////////////////////////////
@@ -404,7 +408,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
         _incrementState();
         // emit longest owner event
         for (uint256 i = 0; i < numberOfTokens; i++) {
-            emit LogLongestOwner(i,longestOwner[i]);
+            emit LogLongestOwner(i, longestOwner[i]);
         }
         emit LogContractLocked(true);
     }
@@ -420,7 +424,7 @@ contract RCMarket is Initializable, NativeMetaTransaction {
             lockMarket();
         }
         _checkState(States.LOCKED);
-        require(msgSender() == address(proxy), "Not proxy");
+        // require(msgSender() == address(proxy), "Not proxy");
         // get the winner. This will revert if answer is not resolved.
         winningOutcome = _winningOutcome;
         _incrementState();
