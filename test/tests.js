@@ -407,35 +407,29 @@ contract("RealityCardsTests", (accounts) => {
     describe("Orderbook tests ", () => {
         describe.only("Bid order tests ", () => {
             it(' Underbidders correctly placed in orderbook ', async () => {
-                let bids = []
+                let bids = [];
                 bids[0] = {
                     from: alice,
-                    next: bob,
                     price: 50,
-                }
+                };
                 bids[1] = {
                     from: bob,
-                    prev: alice,
-                    next: carol,
                     price: 40,
-                }
+                };
                 bids[2] = {
                     from: carol,
-                    prev: bob,
-                    next: dan,
                     price: 30,
-                }
+                };
                 bids[3] = {
                     from: dan,
-                    prev: carol,
-                    next: eve,
                     price: 20,
-                }
+                };
                 bids[4] = {
                     from: eve,
-                    prev: dan,
                     price: 10,
-                }
+                };
+                await rc.populateBidArray(bids);
+
                 // make deposits and place bids
                 await Promise.all(bids.map(async (bid) => {
                     await rc.deposit(100, bid.from);
@@ -449,77 +443,69 @@ contract("RealityCardsTests", (accounts) => {
                 }));
             })
             it(' New owners correctly placed in orderbook ', async () => {
-                let bids = []
-                bids[4] = {
+                let bids = [];
+                bids[0] = {
                     from: alice,
-                    next: bob,
                     price: 50,
-                }
-                bids[3] = {
+                };
+                bids[1] = {
                     from: bob,
-                    prev: alice,
-                    next: carol,
                     price: 40,
-                }
+                };
                 bids[2] = {
                     from: carol,
-                    prev: bob,
-                    next: dan,
                     price: 30,
-                }
-                bids[1] = {
+                };
+                bids[3] = {
                     from: dan,
-                    prev: carol,
-                    next: eve,
                     price: 20,
-                }
-                bids[0] = {
+                };
+                bids[4] = {
                     from: eve,
-                    prev: dan,
                     price: 10,
-                }
+                };
+                await rc.populateBidArray(bids);
+
                 // make deposits and place bids
                 await Promise.all(bids.map(async (bid) => {
                     await rc.deposit(100, bid.from);
-                    await rc.newRental(bid);
                 }));
 
+                // place bids in reverse order, so next bid is always new owner
+                for (let i = (bids.length - 1); i >= 0; i--) {
+                    await rc.newRental(bids[i]);
+                }
+
                 // check the bids are in the correct order in the orderbook
-                await rc.checkOwner(bids[4]);
+                await rc.checkOwner(bids[0]);
                 await Promise.all(bids.map(async (bid) => {
                     await rc.checkOrderbook(bid);
                 }));
             })
             it(' Equal bids correctly placed in orderbook ', async () => {
-                let bids = []
+                let bids = [];
                 bids[0] = {
                     from: alice,
-                    next: bob,
                     price: 50,
-                }
+                };
                 bids[1] = {
                     from: bob,
-                    prev: alice,
-                    next: carol,
                     price: 30,
-                }
+                };
                 bids[2] = {
                     from: carol,
-                    prev: bob,
-                    next: dan,
                     price: 30,
-                }
+                };
                 bids[3] = {
                     from: dan,
-                    prev: carol,
-                    next: eve,
                     price: 30,
-                }
+                };
                 bids[4] = {
                     from: eve,
-                    prev: dan,
                     price: 10,
-                }
+                };
+                await rc.populateBidArray(bids);
+
                 // make deposits and place bids
                 await Promise.all(bids.map(async (bid) => {
                     await rc.deposit(100, bid.from);
@@ -533,35 +519,29 @@ contract("RealityCardsTests", (accounts) => {
                 }));
             })
             it(' Bids reduced and correctly placed in orderbook ', async () => {
-                let bids = []
+                let bids = [];
                 bids[0] = {
                     from: alice,
-                    next: bob,
                     price: 50,
-                }
+                };
                 bids[1] = {
                     from: bob,
-                    prev: alice,
-                    next: carol,
                     price: 30,
-                }
+                };
                 bids[2] = {
                     from: carol,
-                    prev: bob,
-                    next: dan,
                     price: 31,
-                }
+                };
                 bids[3] = {
                     from: dan,
-                    prev: carol,
-                    next: eve,
                     price: 29,
-                }
+                };
                 bids[4] = {
                     from: eve,
-                    prev: dan,
                     price: 29.5,
-                }
+                };
+                await rc.populateBidArray(bids);
+
                 // make deposits and place bids
                 await Promise.all(bids.map(async (bid) => {
                     await rc.deposit(100, bid.from);
@@ -579,23 +559,20 @@ contract("RealityCardsTests", (accounts) => {
                 }));
             })
             it(' Owner changes their price (no change in owner) ', async () => {
-                let bids = []
+                let bids = [];
                 bids[0] = {
                     from: alice,
-                    next: bob,
                     price: 50,
-                }
+                };
                 bids[1] = {
                     from: bob,
-                    prev: alice,
-                    next: carol,
                     price: 40,
-                }
+                };
                 bids[2] = {
                     from: carol,
-                    prev: bob,
                     price: 30,
-                }
+                };
+                await rc.populateBidArray(bids);
 
                 // make deposits and place bids
                 await Promise.all(bids.map(async (bid) => {
@@ -617,7 +594,7 @@ contract("RealityCardsTests", (accounts) => {
                     await rc.checkOrderbook(bid);
                 }));
             })
-            it.skip(' Owner changes their price (change in owner) ', async () => {
+            it(' Owner changes their price (change in owner) ', async () => {
                 let bids = []
                 bids[0] = {
                     from: alice,
@@ -641,16 +618,76 @@ contract("RealityCardsTests", (accounts) => {
 
                 // owner decreases price, looses ownership
                 bids[0].price = bids[1].price - 5;
-                [bids[0].next, bids[0].prev, bids[2].prev] = [bids[1].next, bids[2].prev, bids[0].next];
-
-                await rc.newRental(bids[0])
-
-                // // owner decreases price
-                // bids[0].price -= 10
-                // await rc.newRental(bids[0])
+                bids = rc.swapBids(bids, 0, 1)
+                await rc.newRental(bids[1])
 
                 // check the bids are in the correct order in the orderbook
-                await rc.checkOwner(bids[1]);
+                await rc.checkOwner(bids[0]);
+                await Promise.all(bids.map(async (bid) => {
+                    await rc.checkOrderbook(bid);
+                }));
+            })
+            it(' Underbidder decreases their price (no change in position) ', async () => {
+                let bids = []
+                bids[0] = {
+                    from: alice,
+                    price: 50,
+                }
+                bids[1] = {
+                    from: bob,
+                    price: 40,
+                }
+                bids[2] = {
+                    from: carol,
+                    price: 30,
+                }
+                bids = await rc.populateBidArray(bids)
+
+                // make deposits and place bids
+                await Promise.all(bids.map(async (bid) => {
+                    await rc.deposit(100, bid.from);
+                    await rc.newRental(bid);
+                }));
+
+                // underbidder decreases price, no change in ownership
+                bids[1].price -= 5;
+                await rc.newRental(bids[1])
+
+                // check the bids are in the correct order in the orderbook
+                await rc.checkOwner(bids[0]);
+                await Promise.all(bids.map(async (bid) => {
+                    await rc.checkOrderbook(bid);
+                }));
+            })
+            it(' Underbidder increases their price (change in position) ', async () => {
+                let bids = []
+                bids[0] = {
+                    from: alice,
+                    price: 50,
+                }
+                bids[1] = {
+                    from: bob,
+                    price: 40,
+                }
+                bids[2] = {
+                    from: carol,
+                    price: 30,
+                }
+                bids = await rc.populateBidArray(bids)
+
+                // make deposits and place bids
+                await Promise.all(bids.map(async (bid) => {
+                    await rc.deposit(100, bid.from);
+                    await rc.newRental(bid);
+                }));
+
+                // owner decreases price, looses ownership
+                bids[1].price = bids[2].price - 5;
+                bids = rc.swapBids(bids, 1, 2)
+                await rc.newRental(bids[2])
+
+                // check the bids are in the correct order in the orderbook
+                await rc.checkOwner(bids[0]);
                 await Promise.all(bids.map(async (bid) => {
                     await rc.checkOrderbook(bid);
                 }));

@@ -241,21 +241,20 @@ module.exports = class TestEnviroment {
 
     populateBidArray(bids, options) {
         var defaults = {
-            market: this.contracts.markets[0],
+            market: this.contracts.markets[0].address,
             outcome: 0,
         };
         options = this.setDefaults(options, defaults);
 
         for (let index = 0; index < bids.length; index++) {
             if (index == 0) {
-                bids[index].prev = options.market.address
-                console.log("first bid");
+                bids[index].prev = options.market
             } else {
                 bids[index].prev = bids[index - 1].from
-                console.log("further bid");
             }
+            bids[index].outcome = options.outcome;
             if (index == bids.length - 1) {
-                bids[index].next = options.market.address
+                bids[index].next = options.market
             } else {
                 bids[index].next = bids[index + 1].from
             }
@@ -264,14 +263,24 @@ module.exports = class TestEnviroment {
     }
 
     swapBids(bids, pos1, pos2) {
-        let temp1 = bids[pos1]
-        let temp2 = bids[pos2]
+        // preserve the market and outcome for populating later
+        let options = {
+            market: bids[0].prev,
+            outcome: bids[0].outcome,
+        };
 
-        bids[pos1].next = temp2.next;
-        bids[pos1].prev = temp2.prev;
+        //swap the array records so any extra parameters are moved
+        [bids[pos1], bids[pos2]] = [bids[pos2], bids[pos1]];
 
-        // WIP, finish swappping bid positions
-        return bids
+        // just run populate again to get all the prev and next records
+        let newBids = this.populateBidArray(bids, options);
+        return newBids;
+    }
+
+    newBid(bids, bid, pos) {
+        bids.push(bid);
+        bids = this.swapBids(bids, pos, (bids.length - 1));
+        return bids;
     }
 
     async cleanup() {
