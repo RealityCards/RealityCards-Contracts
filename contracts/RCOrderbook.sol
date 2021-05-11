@@ -41,7 +41,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
     mapping(address => mapping(address => mapping(uint256 => uint256)))
         public index;
 
-    uint256 public MAX_SEARCH_ITERATIONS = 100; // TODO: gas test to find actual limit
+    uint256 public MAX_SEARCH_ITERATIONS = 100; // rough estimate puts limit around 2000
     uint256 public MAX_DELETIONS = 70;
     uint256 public CLEANING_LOOPS = 2;
     uint256 public nonce;

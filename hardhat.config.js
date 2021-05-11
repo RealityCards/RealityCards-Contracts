@@ -33,6 +33,9 @@ module.exports = {
       gasPrice: 12500000,
       blockGasLimit: 12500000,
       gasPrice: 1,
+      accounts: {
+        count: 2000,
+      }
     },
   },
 };

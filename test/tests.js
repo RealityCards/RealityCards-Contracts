@@ -692,6 +692,15 @@ contract("RealityCardsTests", (accounts) => {
                     await rc.checkOrderbook(bid);
                 }));
             })
+            it(' Max search iterations ', async () => {
+                let hundredUsers = accounts.slice(10, 110);
+                await Promise.all(hundredUsers.map(async (user) => {
+                    await rc.deposit(100, user)
+                    await rc.newRental({ from: user })
+                }));
+                await rc.deposit(100, alice)
+                await expectRevert(rc.newRental({ from: alice }), "Position in orderbook not found");
+            })
         })
         it('test orderbook various', async () => {
             // Tests the following:
