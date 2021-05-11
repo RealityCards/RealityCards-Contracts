@@ -693,8 +693,9 @@ contract("RealityCardsTests", (accounts) => {
                 }));
             })
             it(' Max search iterations ', async () => {
-                let hundredUsers = accounts.slice(10, 110);
-                await Promise.all(hundredUsers.map(async (user) => {
+                let maxSearchLimit = (await orderbook.MAX_SEARCH_ITERATIONS()).toNumber();
+                let safeNumberOfUsers = accounts.slice(10, (maxSearchLimit + 10));
+                await Promise.all(safeNumberOfUsers.map(async (user) => {
                     await rc.deposit(100, user)
                     await rc.newRental({ from: user })
                 }));
