@@ -49,6 +49,7 @@ module.exports = class TestEnviroment {
         this.configs = {
             MAX_DELETIONS: 50,
             LOOP_LIMIT: 100,
+            ACCOUNTS_OFFSET: 10,
         }
         this.constants = Object.assign(
             {},
@@ -301,18 +302,41 @@ module.exports = class TestEnviroment {
         options = this.setDefaults(options, defaults);
         let complete = false;
         let i = 0;
-        let index = await this.contracts.orderbook.index(options.market, options.market, options.outcome);
-        let bid = await this.contracts.orderbook.user(options.market, index);
-        let user = bid[1];
+        let index;
+        let bid = [];
+        let user = options.market;
         while (!complete) {
-            console.log(" User %s in orderbook: %s", i, bid[1]);
             i++;
             index = await this.contracts.orderbook.index(user, options.market, options.outcome);
             bid = await this.contracts.orderbook.user(user, index);
             user = bid[1];
             if (bid[1] == options.market) {
                 complete = true;
+            } else {
+                console.log(" User %s in orderbook: %s", i, bid[1]);
             }
         }
+    }
+    async orderbookSize(options) {
+        var defaults = {
+            market: this.contracts.markets[0].address,
+            outcome: 0,
+        };
+        options = this.setDefaults(options, defaults);
+        let complete = false;
+        let i = 0;
+        let index, bid;
+        let user = options.market;
+        while (!complete) {
+            index = await this.contracts.orderbook.index(user, options.market, options.outcome);
+            bid = await this.contracts.orderbook.user(user, index);
+            user = bid[1];
+            if (bid[1] == options.market) {
+                complete = true;
+            } else {
+                i++;
+            }
+        }
+        return i;
     }
 };
