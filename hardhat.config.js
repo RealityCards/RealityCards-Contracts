@@ -25,7 +25,7 @@ module.exports = {
   },
   paths: {
     artifacts: "./artifactsBuidler",
-    tests: "./test/live",
+    tests: "./test",
   },
   networks: {
     hardhat: {
@@ -33,6 +33,9 @@ module.exports = {
       gasPrice: 12500000,
       blockGasLimit: 12500000,
       gasPrice: 1,
+      accounts: {
+        count: 2000,
+      }
     },
   },
 };

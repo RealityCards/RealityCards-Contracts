@@ -118,7 +118,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         setPotDistribution(20, 0, 0, 20, 100); // 2% artist, 2% affiliate, 10% card affiliate
         setminimumPriceIncreasePercent(10); // 10%
         setNFTMintingLimit(60); // current gas limit (12.5m) allows for 60 NFTs to be minted
-        setMaxRentIterations(10); // TODO find appropriate limit
+        setMaxRentIterations(35); // limit appears to be 41, set safe at 35 for now.
     }
 
     /*╔═════════════════════════════════╗

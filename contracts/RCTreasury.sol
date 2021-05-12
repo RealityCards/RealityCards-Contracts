@@ -571,20 +571,38 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     /// @notice returns the current estimate of the users foreclosure time
     /// @param _user the user to query
     /// @param _newBid an optional value to calculate the time with an additional bid
-    function foreclosureTimeUser(address _user, uint256 _newBid)
-        external
-        view
-        override
-        returns (uint256)
-    {
-        uint256 totalUserDailyRent = user[_user].rentalRate + _newBid;
+    function foreclosureTimeUser(
+        address _user,
+        uint256 _newBid,
+        uint256 _timeOfNewBid
+    ) external view override returns (uint256) {
+        uint256 totalUserDailyRent = user[_user].rentalRate;
         if (totalUserDailyRent > 0) {
             // timeLeftOfDeposit = deposit / (totalUserDailyRent / 1 day)
             //                   = (deposit * 1day) / totalUserDailyRent
             uint256 timeLeftOfDeposit =
                 (depositAbleToWithdraw(_user) * 1 days) / totalUserDailyRent;
 
-            return user[_user].lastRentCalc + timeLeftOfDeposit;
+            uint256 foreclosureTimeWithoutNewCard =
+                user[_user].lastRentCalc + timeLeftOfDeposit;
+
+            if (foreclosureTimeWithoutNewCard > _timeOfNewBid) {
+                // calcuale how long they can own the new card for
+                uint256 _rentAlreadyOwed =
+                    rentOwedBetweenTimestmaps(
+                        user[_user].lastRentCalc,
+                        _timeOfNewBid,
+                        totalUserDailyRent
+                    );
+                uint256 _depositAtTimeOfNewBid =
+                    user[_user].deposit - _rentAlreadyOwed;
+                uint256 _timeLeftOfDepositWithNewBid =
+                    (_depositAtTimeOfNewBid * 1 days) /
+                        (totalUserDailyRent + _newBid);
+                return _timeOfNewBid + _timeLeftOfDepositWithNewBid;
+            } else {
+                return user[_user].lastRentCalc + timeLeftOfDeposit;
+            }
         } else {
             // return 0;
             return type(uint256).max; // for testing, the orderbook assumes 0 means user already foreclosed
