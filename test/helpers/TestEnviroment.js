@@ -292,4 +292,27 @@ module.exports = class TestEnviroment {
             }
         }
     }
+
+    async printOrderbook(options) {
+        var defaults = {
+            market: this.contracts.markets[0].address,
+            outcome: 0,
+        };
+        options = this.setDefaults(options, defaults);
+        let complete = false;
+        let i = 0;
+        let index = await this.contracts.orderbook.index(options.market, options.market, options.outcome);
+        let bid = await this.contracts.orderbook.user(options.market, index);
+        let user = bid[1];
+        while (!complete) {
+            console.log(" User %s in orderbook: %s", i, bid[1]);
+            i++;
+            index = await this.contracts.orderbook.index(user, options.market, options.outcome);
+            bid = await this.contracts.orderbook.user(user, index);
+            user = bid[1];
+            if (bid[1] == options.market) {
+                complete = true;
+            }
+        }
+    }
 };

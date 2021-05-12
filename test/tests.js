@@ -405,7 +405,7 @@ contract("RealityCardsTests", (accounts) => {
     })
 
     describe("Orderbook tests ", () => {
-        describe.only("Bid order tests ", () => {
+        describe("Bid order tests ", () => {
             it(' Underbidders correctly placed in orderbook ', async () => {
                 let bids = [];
                 bids[0] = {
@@ -692,6 +692,8 @@ contract("RealityCardsTests", (accounts) => {
                     await rc.checkOrderbook(bid);
                 }));
             })
+        })
+        describe.only("Limit tests ", () => {
             it(' Max search iterations ', async () => {
                 let maxSearchLimit = (await orderbook.MAX_SEARCH_ITERATIONS()).toNumber();
                 let safeNumberOfUsers = accounts.slice(10, (maxSearchLimit + 10));
@@ -702,6 +704,18 @@ contract("RealityCardsTests", (accounts) => {
                 await rc.deposit(100, alice)
                 await expectRevert(rc.newRental({ from: alice }), "Position in orderbook not found");
             })
+            it.only(' Max rent calculations ', async () => {
+                let maxRentCalcs = parseInt(await factory.maxRentIterations());
+                let usersToForeclose = accounts.slice(10, (maxRentCalcs + 10));
+                await Promise.all(usersToForeclose.map(async (user) => {
+                    await rc.deposit(1, user)
+                    await rc.newRental({ from: user })
+                }));
+                await rc.printOrderbook();
+                await time.increase(time.duration.days(usersToForeclose.length + 1));
+                await markets[0].collectRentAllCards();
+                await rc.printOrderbook();
+            }).timeout(1000000)
         })
         it('test orderbook various', async () => {
             // Tests the following:
