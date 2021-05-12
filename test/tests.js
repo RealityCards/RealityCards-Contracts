@@ -404,7 +404,75 @@ contract("RealityCardsTests", (accounts) => {
 
         });
     })
+    describe.skip("Limit tests ", () => {
+        it(' Max search iterations ', async () => {
+            let maxSearchLimit = (await orderbook.MAX_SEARCH_ITERATIONS()).toNumber();
+            let safeNumberOfUsers = accounts.slice(ACCOUNTS_OFFSET, (maxSearchLimit + ACCOUNTS_OFFSET));
+            await Promise.all(safeNumberOfUsers.map(async (user) => {
+                await rc.deposit(100, user)
+                await rc.newRental({ from: user })
+            }));
+            await rc.deposit(100, alice)
+            await expectRevert(rc.newRental({ from: alice }), "Position in orderbook not found");
+        })
+        it(' Max rent calculations ', async () => {
+            let extraBidsToPlace = 10;
+            let maxRentCalcs = parseInt(await factory.maxRentIterations());
+            let usersToForeclose = accounts.slice(ACCOUNTS_OFFSET, (maxRentCalcs + extraBidsToPlace + ACCOUNTS_OFFSET));
+            await Promise.all(usersToForeclose.map(async (user) => {
+                await rc.deposit(1, user)
+                await rc.newRental({ from: user })
+            }));
+            assert.equal(await rc.orderbookSize(), maxRentCalcs + extraBidsToPlace, "Incorrect number of bids placed");
+            await time.increase(time.duration.days(usersToForeclose.length + 10));
+            await markets[0].collectRentAllCards();
+            assert.equal(await rc.orderbookSize(), extraBidsToPlace, "Incorrect number of bids removed");
+            await markets[0].collectRentAllCards();
+            assert.equal(await rc.orderbookSize(), 0, "Incorrect number of bids removed");
+        })
+        it(' Foreclosed user max deletions (owner) ', async () => {
+            const bidsToPlace = 200;
+            const bidsPerMarket = 20;
 
+            // place bids and create more markets as necessary
+            let complete = false;
+            let i;
+            markets.push(await rc.createMarket({ numberOfCards: bidsPerMarket }));
+            let j = 1;
+            let bidsPlaced = 0;
+            await rc.deposit(100, alice);
+            while (!complete) {
+                for (i = 0; i < Math.min(bidsPerMarket, bidsToPlace - bidsPlaced); i++) {
+                    await rc.newRental({ outcome: i, market: markets[j] })
+                }
+                bidsPlaced += i;
+                if (bidsPlaced == bidsToPlace) {
+                    complete = true;
+                } else {
+                    markets.push(await rc.createMarket({ numberOfCards: bidsPerMarket }));
+                    j++;
+                }
+            }
+
+            await time.increase(time.duration.minutes(10));
+            let userRecord = await treasury.user(alice);
+            console.log("user bid rate ", userRecord[2].toString());
+            console.log(" is foreclosed ", await treasury.isForeclosed(alice));
+            // bids all placed, foreclose user
+            await rc.withdrawDeposit(100, alice)
+            userRecord = await treasury.user(alice);
+            console.log("user bid rate ", userRecord[2].toString());
+            console.log(" is foreclosed ", await treasury.isForeclosed(alice));
+            await rc.newRental();
+            userRecord = await treasury.user(alice);
+            console.log("user bid rate ", userRecord[2].toString());
+            console.log(" is foreclosed ", await treasury.isForeclosed(alice));
+            await rc.deposit(100, alice);
+            userRecord = await treasury.user(alice);
+            console.log("user bid rate ", userRecord[2].toString());
+            console.log(" is foreclosed ", await treasury.isForeclosed(alice));
+        })
+    })
     describe("Orderbook tests ", () => {
         describe("Bid order tests ", () => {
             it(' Underbidders correctly placed in orderbook ', async () => {
@@ -694,32 +762,8 @@ contract("RealityCardsTests", (accounts) => {
                 }));
             })
         })
-        describe.skip("Limit tests ", () => {
-            it(' Max search iterations ', async () => {
-                let maxSearchLimit = (await orderbook.MAX_SEARCH_ITERATIONS()).toNumber();
-                let safeNumberOfUsers = accounts.slice(ACCOUNTS_OFFSET, (maxSearchLimit + ACCOUNTS_OFFSET));
-                await Promise.all(safeNumberOfUsers.map(async (user) => {
-                    await rc.deposit(100, user)
-                    await rc.newRental({ from: user })
-                }));
-                await rc.deposit(100, alice)
-                await expectRevert(rc.newRental({ from: alice }), "Position in orderbook not found");
-            })
-            it(' Max rent calculations ', async () => {
-                let extraBidsToPlace = 10;
-                let maxRentCalcs = parseInt(await factory.maxRentIterations());
-                let usersToForeclose = accounts.slice(ACCOUNTS_OFFSET, (maxRentCalcs + extraBidsToPlace + ACCOUNTS_OFFSET));
-                await Promise.all(usersToForeclose.map(async (user) => {
-                    await rc.deposit(1, user)
-                    await rc.newRental({ from: user })
-                }));
-                assert.equal(await rc.orderbookSize(), maxRentCalcs + extraBidsToPlace, "Incorrect number of bids placed");
-                await time.increase(time.duration.days(usersToForeclose.length + 10));
-                await markets[0].collectRentAllCards();
-                assert.equal(await rc.orderbookSize(), extraBidsToPlace, "Incorrect number of bids removed");
-                await markets[0].collectRentAllCards();
-                assert.equal(await rc.orderbookSize(), 0, "Incorrect number of bids removed");
-            })
+        describe("Cleanup tests ", () => {
+
         })
         describe.skip("Old tests for reference ", () => {
             it('test orderbook various', async () => {
