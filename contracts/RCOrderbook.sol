@@ -451,7 +451,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         uint256 _oldPrice =
             user[_oldOwner][index[_oldOwner][_market][_token]].price;
         uint256 minimumTimeToOwnTo =
-            block.timestamp + market[_market].minimumRentalDuration;
+            _timeOwnershipChanged + market[_market].minimumRentalDuration;
         uint256 _newPrice;
 
         // delete current owner
@@ -459,8 +459,11 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
             _newPrice = _removeBidFromOrderbookIgnoreOwner(_head.next, _token);
             // delete next bid if foreclosed
         } while (
-            treasury.foreclosureTimeUser(_head.next, _newPrice) <
-                minimumTimeToOwnTo
+            treasury.foreclosureTimeUser(
+                _head.next,
+                _newPrice,
+                _timeOwnershipChanged
+            ) < minimumTimeToOwnTo
         );
 
         _newOwner = user[_market][index[_market][_market][_token]].next;
