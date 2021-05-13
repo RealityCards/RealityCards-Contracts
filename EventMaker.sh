@@ -3,14 +3,14 @@
 ###################
 #### Setup ########
 ###################
-EVENT_NAME="What will the state of Starship SN11 be at the end of this week?"
-SRC_NAME="spacex"
+EVENT_NAME=" Will the price of \$ETH be above or below \$4k by the end of 17th May UTC?"
+SRC_NAME="eth3"
 CATEGORY="other"
-SLUG="spc2"
-NUMBER_OF_CARDS="3"
-CARD0="Successful flight and landing"
-CARD1="Rapid Unplanned Dissasembly"
-CARD2="Nothing"
+SLUG="ethcoaster"
+NUMBER_OF_CARDS="2"
+CARD0="Above \$4k"
+CARD1="Below \$4k"
+CARD2=""
 CARD3=""
 CARD4=""
 CARD5=""
