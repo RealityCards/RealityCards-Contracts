@@ -82,14 +82,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
       ║             EVENTS              ║
       ╚═════════════════════════════════╝*/
 
-    event LogDepositIncreased(
-        address indexed sentBy,
-        uint256 indexed daiDeposited
-    );
-    event LogDepositWithdrawal(
-        address indexed returnedTo,
-        uint256 indexed daiWithdrawn
-    );
+    event LogUserForeclosed(address indexed user, bool indexed foreclosed);
     event LogAdjustDeposit(
         address indexed user,
         uint256 indexed amount,
@@ -267,11 +260,11 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         // this deposit could cancel the users foreclosure
         if (msg.value > user[_user].bidRate / (minRentalDayDivisor)) {
             isForeclosed[_user] = false;
+            emit LogUserForeclosed(_user, false);
         }
 
         user[_user].deposit += SafeCast.toUint128(msg.value);
         totalDeposits += msg.value;
-        emit LogDepositIncreased(_user, msg.value);
         emit LogAdjustDeposit(_user, msg.value, true);
         return true;
     }
@@ -301,7 +294,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         if (_dai > user[_msgSender].deposit) {
             _dai = user[_msgSender].deposit;
         }
-        emit LogDepositWithdrawal(_msgSender, _dai);
         emit LogAdjustDeposit(_msgSender, _dai, false);
         user[_msgSender].deposit -= SafeCast.toUint128(_dai);
         totalDeposits -= _dai;
@@ -328,6 +320,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
             isForeclosed[_msgSender] = orderbook.removeUserFromOrderbook(
                 _msgSender
             );
+            emit LogUserForeclosed(_msgSender, isForeclosed[_msgSender]);
         }
     }
 
@@ -649,6 +642,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
                 );
                 assert(user[_user].deposit == 0);
                 isForeclosed[_user] = true;
+                emit LogUserForeclosed(_user, true);
             } else {
                 // User has enough deposit to pay rent.
                 _increaseMarketBalance(rentOwedByUser, _user);
