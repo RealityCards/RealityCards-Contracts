@@ -125,7 +125,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
     event LogNewOwner(uint256 indexed tokenId, address indexed newOwner);
     event LogRentCollection(
-        uint256 indexed rentCollected,
+        uint256 rentCollected,
+        uint256 indexed newTimeHeld,
         uint256 indexed tokenId,
         address indexed owner
     );
@@ -139,11 +140,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     event LogRentReturned(
         address indexed returnedTo,
         uint256 indexed amountReturned
-    );
-    event LogTimeHeldUpdated(
-        uint256 indexed newTimeHeld,
-        address indexed owner,
-        uint256 indexed tokenId
     );
     event LogStateChange(uint256 indexed newState);
     event LogUpdateTimeHeldLimit(
@@ -1091,9 +1087,12 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             longestTimeHeld[_token] = timeHeld[_token][_user];
             longestOwner[_token] = _user;
         }
-
-        emit LogTimeHeldUpdated(timeHeld[_token][_user], _user, _token);
-        emit LogRentCollection(_rentOwed, _token, _user);
+        emit LogRentCollection(
+            _rentOwed,
+            timeHeld[_token][_user],
+            _token,
+            _user
+        );
     }
 
     function _checkState(States currentState) internal view {
