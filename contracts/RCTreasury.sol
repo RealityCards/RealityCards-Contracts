@@ -332,8 +332,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         returns (bool)
     {
         require(!globalPause, "Rentals are disabled");
-        // console.log("market balance ", marketBalance);
-        // console.log("rent to pay    ", _dai);
         if (marketBalance + 1 == _dai) {
             _dai -= 1;
         }
@@ -514,6 +512,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     /// @notice returns the rent due between the users last rent calcualtion and
     /// @notice ..the current block.timestamp for all cards a user owns
     /// @param _user the user to query
+    /// @param _timeOfCollection calculate upto a given time
     function rentOwedUser(address _user, uint256 _timeOfCollection)
         internal
         view
@@ -559,7 +558,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
 
     /// @notice returns the current estimate of the users foreclosure time
     /// @param _user the user to query
-    /// @param _newBid an optional value to calculate the time with an additional bid
+    /// @param _newBid calculate foreclosure including a new card
+    /// @param _timeOfNewBid timestamp of when a new card was gained
     function foreclosureTimeUser(
         address _user,
         uint256 _newBid,
@@ -576,7 +576,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
                 user[_user].lastRentCalc + timeLeftOfDeposit;
 
             if (foreclosureTimeWithoutNewCard > _timeOfNewBid) {
-                // calcuale how long they can own the new card for
+                // calculate how long they can own the new card for
                 uint256 _rentAlreadyOwed =
                     rentOwedBetweenTimestmaps(
                         user[_user].lastRentCalc,
@@ -593,8 +593,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
                 return user[_user].lastRentCalc + timeLeftOfDeposit;
             }
         } else {
-            // return 0;
-            return type(uint256).max; // for testing, the orderbook assumes 0 means user already foreclosed
+            // if no rentals they'll foreclose after the heat death of the universe
+            return type(uint256).max;
         }
     }
 
@@ -607,9 +607,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         override
         returns (uint256 newTimeLastCollectedOnForeclosure)
     {
-        // if (_timeToCollectTo == 0) {
-        //     _timeToCollectTo = block.timestamp;
-        // }
         assert(_timeToCollectTo != 0);
         if (user[_user].lastRentCalc < _timeToCollectTo) {
             uint256 rentOwedByUser = rentOwedUser(_user, _timeToCollectTo);
@@ -652,8 +649,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     function _increaseMarketBalance(uint256 rentCollected, address _user)
         internal
     {
-        // console.log("increase market balance user ", _user);
-        // console.log("user rent collected ", rentCollected);
         marketBalance += rentCollected;
         user[_user].deposit -= SafeCast.toUint128(rentCollected);
         totalDeposits -= rentCollected;
