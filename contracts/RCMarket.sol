@@ -67,10 +67,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     uint256 public maxRentIterations;
     uint256 public collectRentCounter;
 
-    // ORDERBOOK
-    /// @dev incrementing nonce for each rental, for frontend sorting
-    uint256 nonce;
-
     // TIME
     /// @dev how many seconds each user has held each token for, for determining winnings
     mapping(uint256 => mapping(address => uint256)) public timeHeld;
@@ -709,8 +705,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             );
 
             assert(treasury.updateLastRentalTime(_user));
-            nonce++;
-            //return tokenPrice[_tokenId];
         }
     }
 
