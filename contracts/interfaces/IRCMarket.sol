@@ -41,13 +41,6 @@ interface IRCMarket {
         external
         returns (uint256 _timeCollected);
 
-    function updateCard(
-        uint256 card,
-        address user,
-        uint256 rentCollected,
-        uint256 collectedUntil
-    ) external;
-
     function transferCard(
         address _oldOwner,
         address _newOwner,

@@ -63,9 +63,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     uint256 public minimumPriceIncreasePercent;
     /// @dev minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
     uint256 public minRentalDayDivisor;
-
+    /// @dev maximum number of times to calcualte rent in one transaction
     uint256 public maxRentIterations;
-    uint256 public collectRentCounter;
 
     // TIME
     /// @dev how many seconds each user has held each token for, for determining winnings
@@ -301,29 +300,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     modifier onlyTreasury() {
         require(address(treasury) == msgSender(), "only treasury");
         _;
-    }
-
-    function updateCard(
-        uint256 tokenId,
-        address user,
-        uint256 rentCollected,
-        uint256 collectedUntil
-    ) external override onlyTreasury() {
-        uint256 _localTokenId = totalNftMintCount - tokenId;
-        rentCollectedPerUser[user] += rentCollected;
-        rentCollectedPerToken[_localTokenId] += rentCollected;
-        totalRentCollected += rentCollected;
-
-        uint256 timeHeldSinceLastCollection =
-            collectedUntil - timeLastCollected[_localTokenId];
-        timeHeld[_localTokenId][user] += timeHeldSinceLastCollection;
-        if (timeHeld[_localTokenId][user] > longestTimeHeld[_localTokenId]) {
-            longestTimeHeld[_localTokenId] = timeHeld[_localTokenId][user];
-            longestOwner[_localTokenId] = user;
-        }
-        totalTimeHeld[_localTokenId] += timeHeldSinceLastCollection;
-
-        timeLastCollected[_localTokenId] = collectedUntil;
     }
 
     /*╔═════════════════════════════════╗
