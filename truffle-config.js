@@ -8,7 +8,7 @@ const ETHERSCAN_KEY = process.env.ETHERSCAN_KEY;
 const blockchainNodeHost = process.env.BLOCKCHAIN_NODE_HOST || "localhost";
 
 module.exports = {
-  plugins: ["truffle-plugin-verify", "truffle-security",'truffle-contract-size'],
+  plugins: ["truffle-plugin-verify", 'truffle-contract-size'],
   contracts_build_directory: path.join(__dirname, "./artifactsTruffle"),
   networks: {
     develop: {
@@ -77,7 +77,7 @@ module.exports = {
       networkCheckTimeout: 5000,
     },
     xdai: {
-      provider: function() {
+      provider: function () {
         return new HDWalletProvider(MNEMONIC, "http://rpc.xdaichain.com");
       },
       network_id: 100,
@@ -85,32 +85,60 @@ module.exports = {
       gasPrice: 1000000000,
     },
     stage1: {
-        provider: function() {
-          return new HDWalletProvider(MNEMONIC, "http://rpc.xdaichain.com");
-        },
-        network_id: 100,
-        gas: 12000000,
-        gasPrice: 1000000000,
-      },
-    stage2: {
-        provider: () => {
-          return new HDWalletProvider(
-            MNEMONIC,
-            `https://mainnet.infura.io/v3/${INFURA_KEY}`
-          );
-        },
-        network_id: 1,
-        gas: 3000000,
-        gasPrice: 140000000000,
-        networkCheckTimeout: 12000,
-      },
-    stage3: {
-    provider: function() {
+      provider: function () {
         return new HDWalletProvider(MNEMONIC, "http://rpc.xdaichain.com");
+      },
+      network_id: 100,
+      gas: 12000000,
+      gasPrice: 1000000000,
     },
-    network_id: 100,
-    gas: 12000000,
-    gasPrice: 1000000000,
+    stage2: {
+      provider: () => {
+        return new HDWalletProvider(
+          MNEMONIC,
+          `https://mainnet.infura.io/v3/${INFURA_KEY}`
+        );
+      },
+      network_id: 1,
+      gas: 3000000,
+      gasPrice: 140000000000,
+      networkCheckTimeout: 12000,
+    },
+    stage3: {
+      provider: function () {
+        return new HDWalletProvider(MNEMONIC, "http://rpc.xdaichain.com");
+      },
+      network_id: 100,
+      gas: 12000000,
+      gasPrice: 1000000000,
+    },
+    teststage1: {
+      provider: function () {
+        return new HDWalletProvider(MNEMONIC, "https://sokol.poa.network/");
+      },
+      network_id: 77,
+      gas: 12000000,
+      gasPrice: 1000000000,
+    },
+    teststage2: {
+      provider: () => {
+        return new HDWalletProvider(
+          MNEMONIC,
+          `https://kovan.infura.io/v3/${INFURA_KEY}`
+        );
+      },
+      network_id: 42,
+      gas: 3000000,
+      gasPrice: 140000000000,
+      networkCheckTimeout: 12000,
+    },
+    teststage3: {
+      provider: function () {
+        return new HDWalletProvider(MNEMONIC, "https://sokol.poa.network/");
+      },
+      network_id: 77,
+      gas: 12000000,
+      gasPrice: 1000000000,
     },
     teststage1: {
       provider: function() {
@@ -140,13 +168,11 @@ module.exports = {
       gas: 12000000,
       gasPrice: 1000000000,
       },
-
   },
   compilers: {
     solc: {
-      version: "0.7.5",
+      version: "0.8.4",
       settings: {
-        evmVersion: "istanbul",
         optimizer: {
           enabled: true,
           runs: 200,

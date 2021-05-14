@@ -16,6 +16,7 @@ var NftHubXDai = artifacts.require('./nfthubs/RCNftHubXdai.sol');
 var NftHubMainnet = artifacts.require('./nfthubs/RCNftHubMainnet.sol');
 var XdaiProxy = artifacts.require('./bridgeproxies/RCProxyXdai.sol');
 var MainnetProxy = artifacts.require('./bridgeproxies/RCProxyMainnet.sol');
+var RCOrderbook = artifacts.require('./RCOrderbook.sol');
 // mockups
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 var BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
@@ -29,12 +30,12 @@ var XdaiProxy2 = artifacts.require('./mockups/redeploys/RCProxyXdaiV2.sol');
 var RCMarket2 = artifacts.require('./mockups/redeploys/RCMarketXdaiV2.sol');
 var BridgeMockup2 = artifacts.require('./mockups/redeploys/BridgeMockupV2.sol');
 var RealitioMockup2 = artifacts.require("./mockups/redeploys/RealitioMockupV2.sol");
-
+// arbitrator
 var kleros = '0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D';
 
 const delay = duration => new Promise(resolve => setTimeout(resolve, duration));
 
-contract('TestTreasury', (accounts) => {
+contract('TestNftHubs', (accounts) => {
 
   var realitycards;
   var tokenURIs = ['x', 'x', 'x', 'uri', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x']; // 20 tokens
@@ -69,6 +70,7 @@ contract('TestTreasury', (accounts) => {
     treasury = await RCTreasury.new();
     rcfactory = await RCFactory.new(treasury.address);
     rcreference = await RCMarket.new();
+    rcorderbook = await RCOrderbook.new(rcfactory.address, treasury.address);
     // nft hubs
     nfthubxdai = await NftHubXDai.new(rcfactory.address);
     nfthubmainnet = await NftHubMainnet.new();
@@ -76,6 +78,9 @@ contract('TestTreasury', (accounts) => {
     await treasury.setFactoryAddress(rcfactory.address);
     await rcfactory.setReferenceContractAddress(rcreference.address);
     await rcfactory.setNftHubAddress(nfthubxdai.address, 0);
+    await treasury.setNftHubAddress(nfthubxdai.address);
+    await rcfactory.setOrderbookAddress(rcorderbook.address);
+    await treasury.setOrderbookAddress(rcorderbook.address);
     // mockups 
     realitio = await RealitioMockup.new();
     bridge = await BridgeMockup.new();
@@ -208,163 +213,29 @@ contract('TestTreasury', (accounts) => {
 
   async function withdrawDeposit(amount, userx) {
     amount = web3.utils.toWei(amount.toString(), 'ether');
-    await treasury.withdrawDeposit(amount, { from: userx });
+    await treasury.withdrawDeposit(amount, true, { from: userx });
   }
 
+  it('xdai nft hub check failures', async () => {
+    await expectRevert(nfthubxdai.addMarket(user0), "Not factory");
+    await expectRevert(nfthubxdai.setFactoryAddress(user0, { from: user1 }), "Ownable: caller is not the owner");
+    await expectRevert(nfthubxdai.mintNft(user0, 0, 'd'), "Not factory");
+    await expectRevert(nfthubxdai.transferNft(user0, user0, 9), "Not market");
+  });
 
-  it('check that non markets cannot call market only functions on Treasury', async () => {
-    await expectRevert(treasury.payRent(user0, user0), "Not authorised");
-    await expectRevert(treasury.payout(user0, 0), "Not authorised");
-    await expectRevert(treasury.updateUserBid(user0, 0, 0), "Not authorised");
-    await expectRevert(treasury.sponsor(), "Not authorised");
-    await expectRevert(treasury.processHarbergerPayment(user0, user0, 0), "Not authorised");
-    await expectRevert(treasury.updateLastRentalTime(user0), "Not authorised");
+  it('check token Ids of second market make sense', async () => {
+    user = user0;
+    await depositDai(10, user6);
+    // await newRental(144,0,user);
+    //second market
+    realitycards2 = await createMarketWithArtistSet();
+    await realitycards2.newRental(web3.utils.toWei('1', 'ether'), maxuint256, zeroAddress, 0, { from: user6 });
+    var ownerMarket = await realitycards2.ownerOf.call(0);
+    assert.equal(ownerMarket, user6);
+    var ownerNftHub = await nfthubxdai.ownerOf.call(20);
+    assert.equal(ownerNftHub, user6);
   });
 
 
-  it('test setMaxContractBalance function and deposit limit hit', async () => {
-    // change deposit balance limit to 500 ether
-    await treasury.setMaxContractBalance(web3.utils.toWei('500', 'ether'));
-    // 400 should work
-    await depositDai(400, user0);
-    // another 400 should not
-    await expectRevert(treasury.deposit(user0, { value: web3.utils.toWei('500', 'ether') }), "Limit hit");
-  });
-
-  it('check cant rent or deposit if globalpause', async () => {
-    // setup
-    await depositDai(144, user0);
-    await newRental(144, 0, user0);
-    await treasury.changeGlobalPause();
-    await expectRevert(depositDai(144, user0), "Deposits are disabled");
-    await expectRevert(newRental(144, 0, user1), "Rentals are disabled");
-  });
-
-  it('check cant rent if market paused', async () => {
-    // setup
-    await treasury.changePauseMarket(realitycards.address);
-    depositDai(144, user0);
-    await expectRevert(newRental(144, 0, user0), "Rentals are disabled");
-    await time.increase(time.duration.minutes(10));
-    await withdrawDeposit(1000, user0);
-  });
-
-
-  it('test force sending Ether to Treasury via self destruct', async () => {
-    selfdestruct = await SelfDestructMockup.new();
-    // send ether direct to self destruct contract
-    await selfdestruct.send(web3.utils.toWei('1000', 'ether'));
-    await selfdestruct.killme(treasury.address);
-    // do a regs deposit
-    await depositDai(100, user6);
-  });
-
-
-
-  it('test updateUserBids', async () => {
-    await depositDai(10, user0);
-    await depositDai(100, user1);
-    await depositDai(10, user2);
-    await depositDai(10, user3);
-    // make a rental, check it updates the userBids
-    await newRental(5, 0, user0);
-    var totalRentals = await treasury.userTotalBids(user0);
-    assert.equal(totalRentals.toString(), ether('5').toString());
-    // make another rental and check again
-    await newRental(3, 1, user0);
-    var totalRentals = await treasury.userTotalBids(user0);
-    assert.equal(totalRentals.toString(), ether('8').toString());
-    // different market this time
-    var realitycards2 = await createMarketWithArtistSet();
-    await newRentalCustomContract(realitycards2, 1, 7, user0);
-    var totalRentals = await treasury.userTotalBids(user0);
-    assert.equal(totalRentals.toString(), ether('9').toString());
-    // increase bid, still correct? user0=10
-    await newRental(6, 0, user0);
-    var totalRentals = await treasury.userTotalBids(user0);
-    assert.equal(totalRentals.toString(), ether('10').toString());
-    // decrease bid, still correct? user0=8
-    await newRental(4, 0, user0);
-    var totalRentals = await treasury.userTotalBids(user0);
-    assert.equal(totalRentals.toString(), ether('8').toString());
-    // someone else takes it off them, are both correct? user0=8 user1=7
-    await newRental(7, 0, user1);
-    var totalRentals = await treasury.userTotalBids(user0);
-    assert.equal(totalRentals.toString(), ether('8').toString());
-    var totalRentals = await treasury.userTotalBids(user1);
-    assert.equal(totalRentals.toString(), ether('7').toString());
-    // change tokenPrice, check both are correct user0=11.5 user1=7
-    await newRental(7.5, 0, user0);
-    var totalRentals = await treasury.userTotalBids(user0);
-    assert.equal(totalRentals.toString(), ether('11.5').toString());
-    var totalRentals = await treasury.userTotalBids(user1);
-    assert.equal(totalRentals.toString(), ether('7').toString());
-    // new user exits, still correct? user0=11.5 user1=0
-    await realitycards.exit(0, { from: user1 });
-    var totalRentals = await treasury.userTotalBids(user0);
-    assert.equal(totalRentals.toString(), ether('11.5').toString());
-    var totalRentals = await treasury.userTotalBids(user1);
-    assert.equal(totalRentals.toString(), ether('0').toString());
-    // this user exits, still correct?
-    await realitycards.exit(0, { from: user0 });
-    var totalRentals = await treasury.userTotalBids(user0);
-    assert.equal(totalRentals.toString(), ether('4').toString());
-    // increase rent to 1439 (max 1440) then rent again, check it fails
-    await newRental(1435, 0, user0);
-    await expectRevert(newRental(5, 3, user0), " Insufficient deposit");
-    // someone bids even higher, I increase my bid above what I can afford, we all run out of deposit, should not return to me
-    await newRental(2000, 0, user1);
-    await time.increase(time.duration.weeks(1));
-    await realitycards.collectRentAllCards();
-    // check owned by contract
-    var owner = await realitycards.ownerOf.call(0);
-    assert.equal(owner, realitycards.address);
-  });
-
-  it('test withdraw deposit after market close', async () => {
-    user = user0
-    // create a market that'll expire soon
-    var latestTime = await time.latest();
-    var oneDay = new BN('86400');
-    var oneDayInTheFuture = oneDay.add(latestTime);
-    var marketLockingTime = oneDayInTheFuture;
-    var oracleResolutionTime = oneDayInTheFuture;
-    var timestamps = [0, marketLockingTime, oracleResolutionTime];
-    var artistAddress = '0x0000000000000000000000000000000000000000';
-    var affiliateAddress = '0x0000000000000000000000000000000000000000';
-    var tokenURIs = ['x', 'x', 'x', 'uri', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x']; // 20 tokens
-    var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
-    var cardRecipients = ['0x0000000000000000000000000000000000000000']
-    await rcfactory.createMarket(
-      0,
-      '0x0',
-      timestamps,
-      tokenURIs,
-      artistAddress,
-      affiliateAddress,
-      cardRecipients,
-      question,
-    );
-    var shortMarket = await RCMarket.at(await rcfactory.getMostRecentMarket.call(0));
-    await depositDai(100, user);
-    await shortMarket.newRental(web3.utils.toWei('1', 'ether'), 0, zeroAddress, 0, { from: user });
-    await time.increase(time.duration.seconds(86400));
-    await shortMarket.collectRentAllCards();
-    await shortMarket.lockMarket();
-    await treasury.withdrawDeposit(web3.utils.toWei('100000', 'ether'), { from: user });
-  });
-
-  it('check bids are exited when user withdraws everything', async () => {
-    await depositDai(100, user0);
-    await newRental(5, 0, user0);
-    await time.increase(time.duration.days(1));
-    await treasury.withdrawDeposit(web3.utils.toWei('5', 'ether'), { from: user0 });
-    var totalRentals = await treasury.userTotalBids(user0);
-    assert.equal(totalRentals.toString(), ether('5').toString());
-
-    await treasury.withdrawDeposit(web3.utils.toWei('1000', 'ether'), { from: user0 });
-    var owner = await realitycards.ownerOf.call(0);
-    assert.notEqual(owner, user0);
-  });
 
 });

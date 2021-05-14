@@ -1,12 +1,9 @@
-const { assert } = require('hardhat');
-const {
-  BN,
-  expectRevert,
-  ether,
-  expectEvent,
-  balance,
-  time
-} = require('@openzeppelin/test-helpers');
+const { assert, artifacts } = require("hardhat");
+const { BN, expectRevert, ether, expectEvent, balance, time } = require("@openzeppelin/test-helpers");
+const _ = require("underscore");
+const { current } = require("@openzeppelin/test-helpers/src/balance");
+const { web3 } = require("@openzeppelin/test-helpers/src/setup");
+const { MAX_UINT256 } = require("@openzeppelin/test-helpers/src/constants");
 
 // chose the test to run by setting this to the number, or 0 to ignore these tests.
 var testChoice = 0;
@@ -15,39 +12,33 @@ var testChoice = 0;
 // 3 = test maximum number of cards/market
 
 // maximum time to run tests for, remember Ctrl+C can cancel early
-var timeoutSeconds = 100000;
+var timeoutSeconds = 1000000;
 
 // main contracts
-var RCFactory = artifacts.require('./RCFactory.sol');
-var RCTreasury = artifacts.require('./RCTreasury.sol');
-var RCMarket = artifacts.require('./RCMarket.sol');
-var NftHubXDai = artifacts.require('./nfthubs/RCNftHubXdai.sol');
-var NftHubMainnet = artifacts.require('./nfthubs/RCNftHubMainnet.sol');
-var XdaiProxy = artifacts.require('./bridgeproxies/RCProxyXdai.sol');
-var MainnetProxy = artifacts.require('./bridgeproxies/RCProxyMainnet.sol');
+var RCFactory = artifacts.require("./RCFactory.sol");
+var RCTreasury = artifacts.require("./RCTreasury.sol");
+var RCMarket = artifacts.require("./RCMarket.sol");
+var NftHubXDai = artifacts.require("./nfthubs/RCNftHubXdai.sol");
+var NftHubMainnet = artifacts.require("./nfthubs/RCNftHubMainnet.sol");
+var XdaiProxy = artifacts.require("./bridgeproxies/RCProxyXdai.sol");
+var MainnetProxy = artifacts.require("./bridgeproxies/RCProxyMainnet.sol");
+var RCOrderbook = artifacts.require('./RCOrderbook.sol');
 // mockups
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 var BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
 var AlternateReceiverBridgeMockup = artifacts.require("./mockups/AlternateReceiverBridgeMockup.sol");
 var SelfDestructMockup = artifacts.require("./mockups/SelfDestructMockup.sol");
 var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
-// redeploys
-var RCFactory2 = artifacts.require('./RCFactoryV2.sol');
-var MainnetProxy2 = artifacts.require('./mockups/redeploys/RCProxyMainnetV2.sol');
-var XdaiProxy2 = artifacts.require('./mockups/redeploys/RCProxyXdaiV2.sol');
-var RCMarket2 = artifacts.require('./mockups/redeploys/RCMarketXdaiV2.sol');
-var BridgeMockup2 = artifacts.require('./mockups/redeploys/BridgeMockupV2.sol');
-var RealitioMockup2 = artifacts.require("./mockups/redeploys/RealitioMockupV2.sol");
+var NoFallback = artifacts.require("./mockups/noFallback.sol");
+var kleros = "0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D";
+// an array of market instances
+var market = [];
+// an array of the addresses (just a more readable way of doing market[].address)
+var marketAddress = [];
 
-var kleros = '0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D';
+const delay = (duration) => new Promise((resolve) => setTimeout(resolve, duration));
 
-const delay = duration => new Promise(resolve => setTimeout(resolve, duration));
-
-contract('TestTreasury', (accounts) => {
-
-  var realitycards;
-  var tokenURIs = ['x', 'x', 'x', 'uri', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x']; // 20 tokens
-  var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
+contract("TestTreasury", (accounts) => {
   var maxuint256 = 4294967295;
 
   user0 = accounts[0]; //0xc783df8a850f42e7F7e57013759C285caa701eB6
@@ -60,24 +51,21 @@ contract('TestTreasury', (accounts) => {
   user7 = accounts[7];
   user8 = accounts[8];
   user9 = accounts[9];
-  andrewsAddress = accounts[9];
+
+  // for(i = 0; i < 20; i++){
+  //   var userNumber = "user"+i;
+  //   eval(userNumber + ' = ' + accounts[i]);
+  // }
+
   // throws a tantrum if cardRecipients is not outside beforeEach for some reason
-  var zeroAddress = '0x0000000000000000000000000000000000000000';
-  var cardRecipients = ['0x0000000000000000000000000000000000000000'];
+  var zeroAddress = "0x0000000000000000000000000000000000000000";
 
   beforeEach(async () => {
-    var latestTime = await time.latest();
-    var oneYear = new BN('31104000');
-    var oneYearInTheFuture = oneYear.add(latestTime);
-    var marketLockingTime = oneYearInTheFuture;
-    var oracleResolutionTime = oneYearInTheFuture;
-    var timestamps = [0, marketLockingTime, oracleResolutionTime];
-    var artistAddress = '0x0000000000000000000000000000000000000000';
-    var affiliateAddress = '0x0000000000000000000000000000000000000000';
     // main contracts
     treasury = await RCTreasury.new();
     rcfactory = await RCFactory.new(treasury.address);
     rcreference = await RCMarket.new();
+    rcorderbook = await RCOrderbook.new(rcfactory.address, treasury.address);
     // nft hubs
     nfthubxdai = await NftHubXDai.new(rcfactory.address);
     nfthubmainnet = await NftHubMainnet.new();
@@ -85,14 +73,17 @@ contract('TestTreasury', (accounts) => {
     await treasury.setFactoryAddress(rcfactory.address);
     await rcfactory.setReferenceContractAddress(rcreference.address);
     await rcfactory.setNftHubAddress(nfthubxdai.address, 0);
-    // mockups 
+    await treasury.setNftHubAddress(nfthubxdai.address);
+    await rcfactory.setOrderbookAddress(rcorderbook.address);
+    await treasury.setOrderbookAddress(rcorderbook.address);
+    // mockups
     realitio = await RealitioMockup.new();
     bridge = await BridgeMockup.new();
     alternateReceiverBridge = await AlternateReceiverBridgeMockup.new();
     dai = await DaiMockup.new();
     // bridge contracts
-    xdaiproxy = await XdaiProxy.new(bridge.address, rcfactory.address, treasury.address);
-    mainnetproxy = await MainnetProxy.new(bridge.address, realitio.address, nfthubmainnet.address, alternateReceiverBridge.address, dai.address, kleros);
+    xdaiproxy = await XdaiProxy.new(bridge.address, rcfactory.address, treasury.address, realitio.address, realitio.address);
+    mainnetproxy = await MainnetProxy.new(bridge.address, nfthubmainnet.address, alternateReceiverBridge.address, dai.address);
     // tell the factory, mainnet proxy and bridge the xdai proxy address
     await rcfactory.setProxyXdaiAddress(xdaiproxy.address);
     await mainnetproxy.setProxyXdaiAddress(xdaiproxy.address);
@@ -103,127 +94,98 @@ contract('TestTreasury', (accounts) => {
     await nfthubmainnet.setProxyMainnetAddress(mainnetproxy.address);
     // tell the treasury about the ARB
     await treasury.setAlternateReceiverAddress(alternateReceiverBridge.address);
-    // market creation
-    await rcfactory.createMarket(
-      0,
-      '0x0',
-      timestamps,
-      tokenURIs,
-      artistAddress,
-      affiliateAddress,
-      cardRecipients,
-      question,
-    );
-    var marketAddress = await rcfactory.getMostRecentMarket.call(0);
-    realitycards = await RCMarket.at(marketAddress);
+    // market creation, start off without any.
+    market.length = 0;
+    marketAddress.length = 0;
+    await createMarket();
   });
 
-  async function createMarketWithArtistSet() {
-    var latestTime = await time.latest();
-    var oneYear = new BN('31104000');
-    var oneYearInTheFuture = oneYear.add(latestTime);
-    var marketLockingTime = oneYearInTheFuture;
-    var oracleResolutionTime = oneYearInTheFuture;
-    var timestamps = [0, marketLockingTime, oracleResolutionTime];
-    var artistAddress = user8;
-    await rcfactory.changeArtistApproval(user8);
-    var affiliateAddress = user7;
-    await rcfactory.changeAffiliateApproval(user7);
-    var slug = 'y';
-    await rcfactory.createMarket(
-      0,
-      '0x0',
-      timestamps,
-      tokenURIs,
-      artistAddress,
-      affiliateAddress,
-      cardRecipients,
-      question,
-    );
-    var marketAddress = await rcfactory.getMostRecentMarket.call(0);
-    realitycards2 = await RCMarket.at(marketAddress);
-    return realitycards2;
-  }
+  afterEach(async () => {
+    // // withdraw all users
+    // //await time.increase(time.duration.minutes(20));
+    // for (i = 0; i < 10; i++) {
+    //     user = eval("user" + i);
+    //     var deposit = await treasury.userDeposit.call(user)
+    //     console.log(deposit.toString());
+    //     if (deposit > 0) {
+    //         console.log('withdrawing ', user);
+    //         console.log('treasury ', treasury.address);
+    //         await treasury.withdrawDeposit(web3.utils.toWei('10000', 'ether'), { from: user });
+    //     }
+    // }
+    // await time.increase(time.duration.minutes(20));
+  });
 
-  async function createMarketCustomMode(mode) {
-    var latestTime = await time.latest();
-    var oneYear = new BN('31104000');
-    var oneYearInTheFuture = oneYear.add(latestTime);
-    var marketLockingTime = oneYearInTheFuture;
-    var oracleResolutionTime = oneYearInTheFuture;
-    var timestamps = [0, marketLockingTime, oracleResolutionTime];
-    var artistAddress = '0x0000000000000000000000000000000000000000';
-    var affiliateAddress = '0x0000000000000000000000000000000000000000';
-    var slug = 'y';
+  async function createMarket(options) {
+    // default values if no parameter passed
+    // mode, 0 = classic, 1 = winner takes all, 2 = hot potato
+    // timestamps are in seconds from now
+    var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
+    var defaults = {
+      mode: 0,
+      openTime: 0,
+      closeTime: 31536000,
+      resolveTime: 31536000,
+      numberOfCards: 50,
+      artistAddress: zeroAddress,
+      affiliateAddress: zeroAddress,
+      cardAffiliate: [zeroAddress],
+    };
+    options = setDefaults(options, defaults);
+    // assemble arrays
+    var closeTime = new BN(options.closeTime).add(await time.latest());
+    var resolveTime = new BN(options.resolveTime).add(await time.latest());
+    var timestamps = [options.openTime, closeTime, resolveTime];
+    var tokenURIs = [];
+    for (i = 0; i < options.numberOfCards; i++) {
+      tokenURIs.push("x");
+    }
+
     await rcfactory.createMarket(
-      mode,
-      '0x0',
+      options.mode,
+      "0x0",
       timestamps,
       tokenURIs,
-      artistAddress,
-      affiliateAddress,
-      cardRecipients,
-      question,
+      options.artistAddress,
+      options.affiliateAddress,
+      options.cardAffiliate,
+      question
     );
-    var marketAddress = await rcfactory.getMostRecentMarket.call(mode);
-    realitycards2 = await RCMarket.at(marketAddress);
-    return realitycards2;
+    marketAddress.push(await rcfactory.getMostRecentMarket.call(0));
+    market.push(await RCMarket.at(await rcfactory.getMostRecentMarket.call(0)));
   }
 
   async function depositDai(amount, user) {
-    amount = web3.utils.toWei(amount.toString(), 'ether');
+    amount = web3.utils.toWei(amount.toString(), "ether");
     await treasury.deposit(user, { from: user, value: amount });
   }
 
-  async function newRental(price, outcome, user) {
-    price = web3.utils.toWei(price.toString(), 'ether');
-    await realitycards.newRental(price, 0, zeroAddress, outcome, { from: user });
+  function setDefaults(options, defaults) {
+    return _.defaults({}, _.clone(options), defaults);
   }
 
-  async function newRentalWithStartingPosition(price, outcome, position, user) {
-    price = web3.utils.toWei(price.toString(), 'ether');
-    await realitycards.newRental(price, 0, position, outcome, { from: user });
-  }
-
-  async function newRentalWithDeposit(price, outcome, user, dai) {
-    price = web3.utils.toWei(price.toString(), 'ether');
-    dai = web3.utils.toWei(dai.toString(), 'ether');
-    await realitycards.newRental(price, 0, zeroAddress, outcome, { from: user, value: dai });
-  }
-
-  async function newRentalCustomContract(contract, price, outcome, user) {
-    price = web3.utils.toWei(price.toString(), 'ether');
-    await contract.newRental(price, maxuint256.toString(), zeroAddress, outcome, { from: user });
-  }
-
-  async function newRentalWithDepositCustomContract(contract, price, outcome, user, dai) {
-    price = web3.utils.toWei(price.toString(), 'ether');
-    dai = web3.utils.toWei(dai.toString(), 'ether');
-    await contract.newRental(price, maxuint256.toString(), zeroAddress, outcome, { from: user, value: dai });
-  }
-
-  async function newRentalCustomTimeLimit(price, timelimit, outcome, user) {
-    price = web3.utils.toWei(price.toString(), 'ether');
-    await realitycards.newRental(price, (timelimit * 3600 * 24).toString(), zeroAddress, outcome, { from: user });
-  }
-
-  async function userRemainingDeposit(outcome, userx) {
-    await realitycards.userRemainingDeposit.call(outcome, { from: userx });
-  }
-
-  async function withdraw(userx) {
-    await realitycards.withdraw({ from: userx });
+  async function newRental(options) {
+    var defaults = {
+      market: market[0],
+      outcome: 0,
+      price: 1,
+      from: user0,
+      timeLimit: 0,
+      startingPosition: zeroAddress,
+    };
+    options = setDefaults(options, defaults);
+    options.price = web3.utils.toWei(options.price.toString(), "ether");
+    await options.market.newRental(options.price, options.timeLimit, options.startingPosition, options.outcome, { from: options.from });
   }
 
   async function withdrawDeposit(amount, userx) {
-    amount = web3.utils.toWei(amount.toString(), 'ether');
-    await treasury.withdrawDeposit(amount, { from: userx });
+    amount = web3.utils.toWei(amount.toString(), "ether");
+    await treasury.withdrawDeposit(amount, true, { from: userx });
   }
 
   if (testChoice == 1) {
     it('test maximum number of bids/user', async () => {
-      var bidsPerMarket = 1; //max is 20
-      var dummyMarkets = 0;
+      var bidsPerMarket = 10;
 
       user = user0;
       var i = 0;
@@ -239,34 +201,23 @@ contract('TestTreasury', (accounts) => {
       while (true) {
         // we're stuck here now, hold on tight!
         k++
-        console.log('iteration k ', k);
         await depositDai(100, user);
-        for (j = dummyMarkets; j < k; j++) {
-          // start slowly, 1 market at a time
-          //console.log('Market index ', j);
+        for (j = 0; j < k; j++) {
           tempMarket = await RCMarket.at(markets[j]);
-
-
           for (i = 0; i < bidsPerMarket; i++) {
             //await newRental(1,i,user);
             await tempMarket.newRental(tokenPrice, 0, zeroAddress, i, { from: user });
           }
         }
-        console.log('Dummy Markets ', dummyMarkets);
-        console.log('About to withdraw from ', (k * i) - dummyMarkets);
-
-        //var market = await treasury.totalDeposits();
-        //console.log(market.toString());
-        await time.increase(time.duration.seconds(600));
-
-        //await withdrawDeposit(web3.utils.toWei('100', 'ether'),user);
-        await treasury.withdrawDeposit(web3.utils.toWei('100000', 'ether'), { from: user });
-
-        await time.increase(time.duration.seconds(600));
 
         var userBids = await treasury.userTotalBids(user);
         console.log(userBids.toString());
         //console.log(user);
+
+        await time.increase(time.duration.seconds(600));
+
+        //await withdrawDeposit(web3.utils.toWei('100', 'ether'),user);
+        await treasury.withdrawDeposit(web3.utils.toWei('10000', 'ether'), { from: user });
 
         // create another market for the next loop and add it to the array
         var latestTime = await time.latest();
@@ -301,7 +252,7 @@ contract('TestTreasury', (accounts) => {
       var bidsPerMarket = 1; //max is 20
       var dummyMarkets = 0;
       var dummyUsers = 9;
-      var totalMarkets = 45;
+      var totalMarkets = 55;
 
       user = user0;
       var i = 0;
@@ -423,7 +374,7 @@ contract('TestTreasury', (accounts) => {
     it('test maximum number of cards/market', async () => {
       var markets = [];
       var tokenURIs = ['x']; // Start with 1 token
-      
+
       //create markets
       while (true) {
         // create another market for the next loop and add it to the array

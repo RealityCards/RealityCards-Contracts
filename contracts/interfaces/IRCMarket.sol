@@ -1,10 +1,11 @@
-// SPDX-License-Identifier: UNDEFINED
-pragma solidity ^0.7.5;
+// SPDX-License-Identifier: AGPL-3.0
+pragma solidity 0.8.4;
 
 interface IRCMarket {
     enum States {CLOSED, OPEN, LOCKED, WITHDRAW}
 
     function isMarket() external view returns (bool);
+
     function sponsor() external payable;
 
     function initialize(
@@ -18,15 +19,27 @@ interface IRCMarket {
         address _marketCreatorAddress
     ) external;
 
-
     function tokenURI(uint256) external view returns (string memory);
-    function ownerOf(uint256 tokenId) external view returns  (address);
-    function state() external view returns (States);
-    function setWinner(uint256) external;
-    function collectRentAllCards() external;
-    function collectRentSpecificCards(uint128[] calldata _cards) external;
-    function exitAll() external;
-    function exitSpecificCards(uint128[] calldata _cards, address _user) external;
-    function marketLockingTime() external returns(uint32);
 
+    function ownerOf(uint256 tokenId) external view returns (address);
+
+    function state() external view returns (States);
+
+    function setWinner(uint256) external;
+
+    function collectRentAllCards() external returns (bool);
+
+    function exitAll() external;
+
+    function exit(uint256) external;
+
+    function marketLockingTime() external returns (uint32);
+
+    function transferCard(
+        address _oldOwner,
+        address _newOwner,
+        uint256 _token,
+        uint256 _price,
+        uint256 _timeLimit
+    ) external;
 }

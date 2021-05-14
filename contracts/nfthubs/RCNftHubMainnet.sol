@@ -1,14 +1,14 @@
-// SPDX-License-Identifier: UNDEFINED
-pragma solidity ^0.7.5;
+// SPDX-License-Identifier: AGPL-3.0
+pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "hardhat/console.sol";
 
 /// @title Reality Cards NFT Hub- mainnet side
 /// @author Andrew Stanger
-contract RCNftHubMainnet is Ownable, ERC721 
-{
+contract RCNftHubMainnet is Ownable, ERC721URIStorage {
     ////////////////////////////////////
     //////// VARIABLES /////////////////
     ////////////////////////////////////
@@ -24,7 +24,7 @@ contract RCNftHubMainnet is Ownable, ERC721
     ////////////////////////////////////
     ////////// GOVERNANCE //////////////
     ////////////////////////////////////
-    
+
     /// @dev address of Mainnet Proxy contract, so only this contract can mint nfts
     function setProxyMainnetAddress(address _newAddress) external onlyOwner {
         require(_newAddress != address(0), "Must set an address");
@@ -35,10 +35,13 @@ contract RCNftHubMainnet is Ownable, ERC721
     ///////// CORE FUNCTIONS ///////////
     ////////////////////////////////////
 
-    function mintNft(uint256 _tokenId, string calldata _tokenURI, address _originalOwner) external {
+    function mintNft(
+        uint256 _tokenId,
+        string calldata _tokenURI,
+        address _originalOwner
+    ) external {
         require(msg.sender == mainnetProxyAddress, "Not proxy");
-        _mint(_originalOwner, _tokenId); 
+        _mint(_originalOwner, _tokenId);
         _setTokenURI(_tokenId, _tokenURI);
     }
-
 }

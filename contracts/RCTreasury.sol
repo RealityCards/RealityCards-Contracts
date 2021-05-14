@@ -1,83 +1,95 @@
-// SPDX-License-Identifier: UNDEFINED
-pragma solidity ^0.7.5;
+// SPDX-License-Identifier: AGPL-3.0
+pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/SafeCast.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "hardhat/console.sol";
 import "./lib/NativeMetaTransaction.sol";
+import "./interfaces/IRCTreasury.sol";
 import "./interfaces/IRCMarket.sol";
 import "./interfaces/IAlternateReceiverBridge.sol";
+import "./interfaces/IRCOrderbook.sol";
+import "./interfaces/IRCNftHubXdai.sol";
 
 /// @title Reality Cards Treasury
 /// @author Andrew Stanger & Daniel Chilvers
 /// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!!
-contract RCTreasury is Ownable, NativeMetaTransaction {
-    using SafeMath for uint256;
-
-    ////////////////////////////////////
-    //////// VARIABLES /////////////////
-    ////////////////////////////////////
-
+contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
+    /*╔═════════════════════════════════╗
+      ║             VARIABLES           ║
+      ╚═════════════════════════════════╝*/
+    /// @dev orderbook instance, to remove users bids on foreclosure
+    IRCOrderbook public orderbook;
+    /// @dev nfthub instance, to query current card owner
+    IRCNftHubXdai public nfthub;
     /// @dev address of the alternate Receiver Bridge for withdrawals to mainnet
-    address public alternateReceiverBridgeAddress;
+    address public override alternateReceiverBridgeAddress;
     /// @dev address of the Factory so only the Factory can add new markets
-    address public factoryAddress;
+    address public override factoryAddress;
     /// @dev so only markets can use certain functions
-    mapping(address => bool) public isMarket;
-    /// @dev the deposit balance of each user
-    mapping(address => uint256) public userDeposit;
+    mapping(address => bool) public override isMarket;
     /// @dev sum of all deposits
-    uint256 public totalDeposits;
+    uint256 public override totalDeposits;
     /// @dev the rental payments made in each market
-    mapping(address => uint256) public marketPot;
+    mapping(address => uint256) public override marketPot;
     /// @dev sum of all market pots
-    uint256 public totalMarketPots;
-    /// @dev when a user most recently rented (to prevent users withdrawing within minRentalTime)
-    mapping(address => uint256) public lastRentalTime;
-    /// @dev keeps track of the tokens and bid prices the user has in each market
-    struct Bid {
-        address market;
-        uint128[] tokenIds;
-        uint128[] bidPrices;
-    }
-    /// @dev maps a user address to an array of their bids
-    mapping(address => Bid[]) public userBids;
-    /// @dev total number of user bids, uses less gas than counting the array every time
-    mapping(address => uint256) public userBidCount;
-    /// @dev a quick check if the market is active or not
-    mapping(address => bool) public isMarketActive;
+    uint256 public override totalMarketPots;
+    /// @dev rent taken and allocated to a particular market
+    uint256 public marketBalance;
+    /// @dev a quick check if a uesr is foreclosed
+    mapping(address => bool) public override isForeclosed;
 
-    ///// GOVERNANCE VARIABLES /////
+    /// @param deposit the users current deposit in wei
+    /// @param rentalRate the daily cost of the cards the user current owns
+    /// @param bidRate the sum total of all placed bids
+    /// @param lastRentCalc The timestamp of the users last rent calculation
+    /// @param lastRentalTime The timestamp the user last made a rental
+    struct User {
+        uint128 deposit;
+        uint128 rentalRate;
+        uint128 bidRate;
+        uint64 lastRentCalc;
+        uint64 lastRentalTime;
+    }
+    mapping(address => User) public user;
+
+    /*╔═════════════════════════════════╗
+      ║      GOVERNANCE VARIABLES       ║
+      ╚═════════════════════════════════╝*/
     /// @dev only parameters that need to be are here, the rest are in the Factory
     /// @dev minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
-    uint256 public minRentalDayDivisor;
+    uint256 public override minRentalDayDivisor;
     /// @dev max deposit balance, to minimise funds at risk
-    uint256 public maxContractBalance;
-    /// @dev the maximum number of bids a user is allowed
-    uint256 public maxBidCountLimit;
+    uint256 public override maxContractBalance;
 
-    ///// SAFETY /////
+    /*╔═════════════════════════════════╗
+      ║             SAFETY              ║
+      ╚═════════════════════════════════╝*/
     /// @dev if true, cannot deposit, withdraw or rent any cards across all events
-    bool public globalPause;
+    bool public override globalPause;
     /// @dev if true, cannot rent any cards for specific market
-    mapping(address => bool) public marketPaused;
+    mapping(address => bool) public override marketPaused;
 
-    ///// UBER OWNER /////
+    /*╔═════════════════════════════════╗
+      ║            UBER OWNER           ║
+      ╚═════════════════════════════════╝*/
     /// @dev high level owner who can change the factory address
-    address public uberOwner;
+    address public override uberOwner;
 
-    ////////////////////////////////////
-    //////// EVENTS ////////////////////
-    ////////////////////////////////////
+    /*╔═════════════════════════════════╗
+      ║             EVENTS              ║
+      ╚═════════════════════════════════╝*/
 
-    event LogDepositIncreased(address indexed sentBy, uint256 indexed daiDeposited);
-    event LogDepositWithdrawal(address indexed returnedTo, uint256 indexed daiWithdrawn);
-    event LogAdjustDeposit(address indexed user, uint256 indexed amount, bool increase);
-    event LogHotPotatoPayment(address from, address to, uint256 amount);
+    event LogUserForeclosed(address indexed user, bool indexed foreclosed);
+    event LogAdjustDeposit(
+        address indexed user,
+        uint256 indexed amount,
+        bool increase
+    );
 
-    ////////////////////////////////////
-    //////// CONSTRUCTOR ///////////////
-    ////////////////////////////////////
+    /*╔═════════════════════════════════╗
+      ║           CONSTRUCTOR           ║
+      ╚═════════════════════════════════╝*/
 
     constructor() {
         // initialise MetaTransactions
@@ -89,113 +101,162 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
         // initialise adjustable parameters
         setMinRental(24 * 6); // MinRental is a divisor of 1 day(86400 seconds), 24*6 will set to 10 minutes
         setMaxContractBalance(1000000 ether); // 1m
-        setMaxBidLimit(30); // 30 is safe with current gas limit (12.5m)
     }
 
-    ////////////////////////////////////
-    /////////// MODIFIERS //////////////
-    ////////////////////////////////////
+    /*╔═════════════════════════════════╗
+      ║           MODIFIERS             ║
+      ╚═════════════════════════════════╝*/
 
+    /// @notice check that funds haven't gone missing during this function call
     modifier balancedBooks {
         _;
         // using >= not == because forced Ether send via selfdestruct will not trigger a deposit via the fallback
-        assert(address(this).balance >= totalDeposits.add(totalMarketPots));
+        require(
+            address(this).balance >=
+                totalDeposits + marketBalance + totalMarketPots,
+            "books are unbalanced!"
+        );
     }
 
+    /// @notice only allow markets to call these functions
     modifier onlyMarkets {
         require(isMarket[msgSender()], "Not authorised");
         _;
     }
 
-    ////////////////////////////////////
-    //////////// ADD MARKETS ///////////
-    ////////////////////////////////////
+    /// @notice only allow orderbook to call these functions
+    modifier onlyOrderbook {
+        require(msgSender() == address(orderbook), "Not authorised");
+        _;
+    }
+
+    /*╔═════════════════════════════════╗
+      ║           ADD MARKETS           ║
+      ╚═════════════════════════════════╝*/
 
     /// @dev so only markets can move funds from deposits to marketPots and vice versa
-    function addMarket(address _newMarket) external {
+    function addMarket(address _newMarket) external override {
         require(msgSender() == factoryAddress, "Not factory");
-        require(alternateReceiverBridgeAddress != address(0), "Alternate Receiver not set");
+        require(
+            alternateReceiverBridgeAddress != address(0),
+            "Alternate Receiver not set"
+        );
         isMarket[_newMarket] = true;
     }
 
-    ////////////////////////////////////
-    /////// GOVERNANCE- OWNER //////////
-    ////////////////////////////////////
+    /*╔═════════════════════════════════╗
+      ║       GOVERNANCE - OWNER        ║
+      ╚═════════════════════════════════╝*/
+
     /// @dev all functions should be onlyOwner
     // min rental event emitted by market. Nothing else need be emitted.
 
-    /// CALLED WITHIN CONSTRUCTOR (public)
+    /*┌────────────────────────────────────┐
+      │ CALLED WITHIN CONSTRUTOR - PUBLIC  │
+      └────────────────────────────────────┘*/
 
     /// @notice minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
-    function setMinRental(uint256 _newDivisor) public onlyOwner {
+    function setMinRental(uint256 _newDivisor) public override onlyOwner {
         minRentalDayDivisor = _newDivisor;
     }
 
     /// @dev max deposit balance, to minimise funds at risk
-    function setMaxContractBalance(uint256 _newBalanceLimit) public onlyOwner {
+    function setMaxContractBalance(uint256 _newBalanceLimit)
+        public
+        override
+        onlyOwner
+    {
         maxContractBalance = _newBalanceLimit;
     }
 
-    /// @dev max bid limit, to fit within gas limits
-    function setMaxBidLimit(uint256 _newBidLimit) public onlyOwner {
-        maxBidCountLimit = _newBidLimit;
-    }
-
-    /// NOT CALLED WITHIN CONSTRUCTOR (external)
+    /*┌──────────────────────────────────────────┐
+      │ NOT CALLED WITHIN CONSTRUTOR - EXTERNAL  │
+      └──────────────────────────────────────────┘*/
 
     /// @dev address of alternate receiver bridge, xdai side
-    function setAlternateReceiverAddress(address _newAddress) external onlyOwner {
+    function setAlternateReceiverAddress(address _newAddress)
+        external
+        override
+        onlyOwner
+    {
         require(_newAddress != address(0), "Must set an address");
         alternateReceiverBridgeAddress = _newAddress;
     }
 
     /// @dev if true, cannot deposit, withdraw or rent any cards
-    function changeGlobalPause() external onlyOwner {
+    function changeGlobalPause() external override onlyOwner {
         globalPause = !globalPause;
     }
 
     /// @dev if true, cannot make a new rental for a specific market
-    function changePauseMarket(address _market) external onlyOwner {
+    function changePauseMarket(address _market) external override onlyOwner {
         marketPaused[_market] = !marketPaused[_market];
     }
 
-    ////////////////////////////////////
-    ////// GOVERNANCE- UBER OWNER //////
-    ////////////////////////////////////
-    //// ******** DANGER ZONE ******** ////
+    /*╔═════════════════════════════════╗
+      ║     GOVERNANCE - UBER OWNER     ║
+      ╠═════════════════════════════════╣
+      ║  ******** DANGER ZONE ********  ║
+      ╚═════════════════════════════════╝*/
     /// @dev uber owner required for upgrades
     /// @dev deploying and setting a new factory is effectively an upgrade
     /// @dev this is seperated so owner so can be set to multisig, or burn address to relinquish upgrade ability
     /// @dev ... while maintaining governance over other governanace functions
 
-    function setFactoryAddress(address _newFactory) external {
+    function setFactoryAddress(address _newFactory) external override {
         require(msgSender() == uberOwner, "Extremely Verboten");
         require(_newFactory != address(0));
         factoryAddress = _newFactory;
     }
 
-    function changeUberOwner(address _newUberOwner) external {
+    function setOrderbookAddress(address _newOrderbook) external {
+        require(msgSender() == uberOwner, "Extremely Verboten");
+        require(_newOrderbook != address(0));
+        orderbook = IRCOrderbook(_newOrderbook);
+    }
+
+    function setNftHubAddress(address _NFTHubAddress) external {
+        require(msgSender() == uberOwner, "Extremely Verboten");
+        require(_NFTHubAddress != address(0));
+        nfthub = IRCNftHubXdai(_NFTHubAddress);
+    }
+
+    function changeUberOwner(address _newUberOwner) external override {
         require(msgSender() == uberOwner, "Extremely Verboten");
         require(_newUberOwner != address(0));
         uberOwner = _newUberOwner;
     }
 
-    ////////////////////////////////////
-    /// DEPOSIT & WITHDRAW FUNCTIONS ///
-    ////////////////////////////////////
+    /*╔═════════════════════════════════╗
+      ║ DEPOSIT AND WITHDRAW FUNCTIONS  ║
+      ╚═════════════════════════════════╝*/
 
     /// @dev it is passed the user instead of using msg.sender because might be called
     /// @dev ... via contract (fallback, newRental) or dai->xdai bot
     /// @param _user the user to credit the deposit to
-    function deposit(address _user) public payable balancedBooks returns (bool) {
+    function deposit(address _user)
+        public
+        payable
+        override
+        balancedBooks
+        returns (bool)
+    {
         require(!globalPause, "Deposits are disabled");
         require(msg.value > 0, "Must deposit something");
         require(address(this).balance <= maxContractBalance, "Limit hit");
         require(_user != address(0), "Must set an address");
 
-        userDeposit[_user] = userDeposit[_user].add(msg.value);
-        totalDeposits = totalDeposits.add(msg.value);
-        emit LogDepositIncreased(_user, msg.value);
+        // do some cleaning up, it might help cancel their foreclosure
+        orderbook.removeOldBids(_user);
+
+        // this deposit could cancel the users foreclosure
+        if (msg.value > user[_user].bidRate / (minRentalDayDivisor)) {
+            isForeclosed[_user] = false;
+            emit LogUserForeclosed(_user, false);
+        }
+
+        user[_user].deposit += SafeCast.toUint128(msg.value);
+        totalDeposits += msg.value;
         emit LogAdjustDeposit(_user, msg.value, true);
         return true;
     }
@@ -204,211 +265,401 @@ contract RCTreasury is Ownable, NativeMetaTransaction {
     /// @dev this is the only function where funds leave the contractthe
     /// @param _dai the amount to withdraw
     /// @param _localWithdrawal if true then withdraw to the users xDai address, otherwise to the mainnet
-    function withdrawDeposit(uint256 _dai, bool _localWithdrawal) external balancedBooks {
+    function withdrawDeposit(uint256 _dai, bool _localWithdrawal)
+        external
+        override
+        balancedBooks
+    {
         require(!globalPause, "Withdrawals are disabled");
         address _msgSender = msgSender();
-        require(userDeposit[_msgSender] > 0, "Nothing to withdraw");
-        require(block.timestamp.sub(lastRentalTime[_msgSender]) > uint256(1 days).div(minRentalDayDivisor), "Too soon");
+        require(user[_msgSender].deposit > 0, "Nothing to withdraw");
+        // only allow withdraw if they have no bids,
+        // OR they've had their cards for at least the minimum rental period
+        require(
+            user[_msgSender].bidRate == 0 ||
+                block.timestamp - (user[_msgSender].lastRentalTime) >
+                uint256(1 days) / minRentalDayDivisor,
+            "Too soon"
+        );
 
-        // step 1: collect rent on all user's Cards
-        uint256 _userTotalBids = 0;
-        for (uint256 i = 0; i < userBids[_msgSender].length; i++) {
-            IRCMarket _market = IRCMarket(userBids[_msgSender][i].market);
-            _market.collectRentSpecificCards(userBids[_msgSender][i].tokenIds);
-            for (uint256 j; j < userBids[_msgSender][i].tokenIds.length; j++) {
-                _userTotalBids = _userTotalBids.add(userBids[_msgSender][i].bidPrices[j]);
-            }
-        }
+        // stpe 1: collect rent on owned cards
+        collectRentUser(_msgSender, block.timestamp);
 
         // step 2: process withdrawal
-        if (_dai > userDeposit[_msgSender]) {
-            _dai = userDeposit[_msgSender];
+        if (_dai > user[_msgSender].deposit) {
+            _dai = user[_msgSender].deposit;
         }
-        emit LogDepositWithdrawal(_msgSender, _dai);
         emit LogAdjustDeposit(_msgSender, _dai, false);
-        userDeposit[_msgSender] = userDeposit[_msgSender].sub(_dai);
-        totalDeposits = totalDeposits.sub(_dai);
+        user[_msgSender].deposit -= SafeCast.toUint128(_dai);
+        totalDeposits -= _dai;
         if (_localWithdrawal) {
-            address _thisAddressNotPayable = _msgSender;
-            address payable _recipient = address(uint160(_thisAddressNotPayable));
-            (bool _success, ) = _recipient.call{ value: _dai }("");
+            (bool _success, ) = payable(_msgSender).call{value: _dai}("");
             require(_success, "Transfer failed");
         } else {
-            IAlternateReceiverBridge _alternateReceiverBridge = IAlternateReceiverBridge(alternateReceiverBridgeAddress);
-            _alternateReceiverBridge.relayTokens(address(this), _msgSender, _dai);
+            IAlternateReceiverBridge _alternateReceiverBridge =
+                IAlternateReceiverBridge(alternateReceiverBridgeAddress);
+            _alternateReceiverBridge.relayTokens{value: _dai}(
+                address(this),
+                _msgSender,
+                _dai
+            );
         }
 
         // step 3: remove bids if insufficient deposit
-        if (_userTotalBids.div(minRentalDayDivisor) > userDeposit[_msgSender]) {
-            uint256 i = 0;
-            do {
-                if (isMarketActive[userBids[_msgSender][i].market]) {
-                    IRCMarket _market = IRCMarket(userBids[_msgSender][i].market);
-                    _market.exitSpecificCards(userBids[_msgSender][i].tokenIds, _msgSender);
-                    // not incrementing i because exit cards shortens the length of the array
-                } else {
-                    i++;
-                }
-            } while (userBids[_msgSender].length > i);
+        if (
+            user[_msgSender].bidRate != 0 &&
+            user[_msgSender].bidRate / (minRentalDayDivisor) >
+            user[_msgSender].deposit
+        ) {
+            isForeclosed[_msgSender] = true;
+            isForeclosed[_msgSender] = orderbook.removeUserFromOrderbook(
+                _msgSender
+            );
+            emit LogUserForeclosed(_msgSender, isForeclosed[_msgSender]);
         }
     }
 
-    ////////////////////////////////////
-    //////    MARKET CALLABLE     //////
-    ////////////////////////////////////
-    /// only markets can call these functions
+    /*╔═════════════════════════════════╗
+      ║        MARKET CALLABLE          ║
+      ╚═════════════════════════════════╝*/
+    // only markets can call these functions
 
-    /// @dev a rental payment is equivalent to moving from user's deposit to market pot, called by _collectRent in the market
-    function payRent(address _user, uint256 _dai) external balancedBooks onlyMarkets returns (bool) {
+    /// @notice a rental payment is equivalent to moving from user's deposit to market pot,
+    /// @notice ..called by _collectRent in the market
+    /// @param _dai amount of rent to pay in wei
+    function payRent(uint256 _dai)
+        external
+        override
+        balancedBooks
+        onlyMarkets
+        returns (bool)
+    {
         require(!globalPause, "Rentals are disabled");
-        assert(userDeposit[_user] >= _dai); // assert because should have been reduced to user's deposit already
-        userDeposit[_user] = userDeposit[_user].sub(_dai);
-        marketPot[msgSender()] = marketPot[msgSender()].add(_dai);
-        totalMarketPots = totalMarketPots.add(_dai);
-        totalDeposits = totalDeposits.sub(_dai);
-        emit LogAdjustDeposit(_user, _dai, false);
+        if (marketBalance + 1 == _dai) {
+            _dai -= 1;
+        }
+        address _market = msgSender();
+        marketBalance -= _dai;
+        marketPot[_market] += _dai;
+        totalMarketPots += _dai;
+
         return true;
     }
 
-    /// @dev a payout is equivalent to moving from market pot to user's deposit (the opposite of payRent)
-    function payout(address _user, uint256 _dai) external balancedBooks onlyMarkets returns (bool) {
+    /// @notice a payout is equivalent to moving from market pot to user's deposit (the opposite of payRent)
+    /// @param _user the user to query
+    /// @param _dai amount to payout in wei
+    function payout(address _user, uint256 _dai)
+        external
+        override
+        balancedBooks
+        onlyMarkets
+        returns (bool)
+    {
         require(!globalPause, "Payouts are disabled");
         assert(marketPot[msgSender()] >= _dai);
-        userDeposit[_user] = userDeposit[_user].add(_dai);
-        marketPot[msgSender()] = marketPot[msgSender()].sub(_dai);
-        totalMarketPots = totalMarketPots.sub(_dai);
-        totalDeposits = totalDeposits.add(_dai);
+        user[_user].deposit += SafeCast.toUint128(_dai);
+        marketPot[msgSender()] -= _dai;
+        totalMarketPots -= _dai;
+        totalDeposits += _dai;
         emit LogAdjustDeposit(_user, _dai, true);
         return true;
     }
 
+    function refundUser(address _user, uint256 _refund)
+        external
+        override
+        onlyMarkets
+    {
+        marketBalance -= _refund;
+        user[_user].deposit += SafeCast.toUint128(_refund);
+        totalDeposits += _refund;
+        emit LogAdjustDeposit(_user, _refund, true);
+    }
+
     /// @notice ability to add liqudity to the pot without being able to win (called by market sponsor function).
-    function sponsor() external payable balancedBooks onlyMarkets returns (bool) {
+    function sponsor()
+        external
+        payable
+        override
+        balancedBooks
+        onlyMarkets
+        returns (bool)
+    {
         require(!globalPause, "Global Pause is Enabled");
-        marketPot[msgSender()] = marketPot[msgSender()].add(msg.value);
-        totalMarketPots = totalMarketPots.add(msg.value);
+        marketPot[msgSender()] = marketPot[msgSender()] + (msg.value);
+        totalMarketPots = totalMarketPots + (msg.value);
         return true;
     }
 
-    /// @dev new owner pays current owner for hot potato mode
-    function processHarbergerPayment(
+    /// @notice tracks when the user last rented- so they cannot rent and immediately withdraw,
+    /// @notice ..thus bypassing minimum rental duration
+    /// @param _user the user to query
+    function updateLastRentalTime(address _user)
+        external
+        override
+        onlyMarkets
+        returns (bool)
+    {
+        user[_user].lastRentalTime = SafeCast.toUint64(block.timestamp);
+        if (user[_user].lastRentCalc == 0) {
+            user[_user].lastRentCalc = SafeCast.toUint64(block.timestamp);
+        }
+        return true;
+    }
+
+    /*╔═════════════════════════════════╗
+      ║        MARKET HELPERS           ║
+      ╚═════════════════════════════════╝*/
+
+    /// @notice provides the sum total of a users bids accross all markets
+    /// @param _user the user address to query
+    function userTotalBids(address _user)
+        external
+        view
+        override
+        returns (uint256)
+    {
+        return user[_user].bidRate;
+    }
+
+    /// @notice provide the users remaining deposit
+    /// @param _user the user address to query
+    function userDeposit(address _user)
+        external
+        view
+        override
+        returns (uint256)
+    {
+        return uint256(user[_user].deposit);
+    }
+
+    /*╔═════════════════════════════════╗
+      ║      ORDERBOOK CALLABLE         ║
+      ╚═════════════════════════════════╝*/
+
+    /// @notice updates users rental rates when ownership changes
+    /// @param _oldOwner the address of the user losing ownership
+    /// @param _newOwner the address of the user gaining ownership
+    /// @param _oldPrice the price the old owner was paying
+    /// @param _newPrice the price the new owner will be paying
+    /// @param _timeOwnershipChanged the timestamp of this event
+    function updateRentalRate(
+        address _oldOwner,
         address _newOwner,
-        address _currentOwner,
-        uint256 _requiredPayment
-    ) external balancedBooks onlyMarkets returns (bool) {
-        require(!globalPause, "Global Pause is Enabled");
-        require(userDeposit[_newOwner] >= _requiredPayment, "Insufficient deposit");
-        userDeposit[_newOwner] = userDeposit[_newOwner].sub(_requiredPayment);
-        userDeposit[_currentOwner] = userDeposit[_currentOwner].add(_requiredPayment);
-        emit LogAdjustDeposit(_newOwner, _requiredPayment, false);
-        emit LogAdjustDeposit(_currentOwner, _requiredPayment, true);
-        emit LogHotPotatoPayment(_newOwner, _currentOwner, _requiredPayment);
-        return true;
-    }
+        uint256 _oldPrice,
+        uint256 _newPrice,
+        uint256 _timeOwnershipChanged
+    ) external override onlyOrderbook {
+        if (
+            _timeOwnershipChanged != user[_newOwner].lastRentCalc &&
+            !isMarket[_newOwner]
+        ) {
+            // The new owners rent must be collected before adjusting their rentalRate
+            // See if the new owner has had a rent collection before or after this ownership change
+            if (_timeOwnershipChanged < user[_newOwner].lastRentCalc) {
+                // the new owner has a more recent rent collection
 
-    /// @dev tracks when the user last rented- so they cannot rent and immediately withdraw, thus bypassing minimum rental duration
-    function updateLastRentalTime(address _user) external onlyMarkets returns (bool) {
-        lastRentalTime[_user] = block.timestamp;
-        return true;
-    }
+                uint256 _additionalRentOwed =
+                    rentOwedBetweenTimestmaps(
+                        block.timestamp,
+                        _timeOwnershipChanged,
+                        _newPrice
+                    );
+                collectRentUser(_newOwner, block.timestamp);
 
-    /// @dev provides the sum total of a users bids accross all markets
-    function userTotalBids(address _user) external view returns (uint256) {
-        uint256 _userTotalBids = 0;
-        for (uint256 i; i < userBids[_user].length; i++) {
-            for (uint256 j; j < userBids[_user][i].tokenIds.length; j++) {
-                _userTotalBids = _userTotalBids.add(userBids[_user][i].bidPrices[j]);
+                // they have enough funds, just collect the extra
+                _increaseMarketBalance(_additionalRentOwed, _newOwner);
+            } else {
+                // the new owner has an old rent collection, do they own anything else?
+                if (user[_newOwner].rentalRate != 0) {
+                    // rent collect upto ownership change time
+                    collectRentUser(_newOwner, _timeOwnershipChanged);
+                } else {
+                    // first card owned, set start time
+                    user[_newOwner].lastRentCalc = SafeCast.toUint64(
+                        _timeOwnershipChanged
+                    );
+                }
             }
         }
-        return _userTotalBids;
+        // Must add before subtract, to avoid underflow in the case a user is only updating their price.
+        user[_newOwner].rentalRate += SafeCast.toUint128(_newPrice);
+        user[_oldOwner].rentalRate -= SafeCast.toUint128(_oldPrice);
     }
 
-    /// @dev removes all non-active markets from the users bid array
-    function cleanUserBidArray(address _user) external {
-        for (uint256 i = userBids[_user].length; i > 0; i--) {
-            if (!isMarketActive[userBids[_user][i.sub(1)].market]) {
-                // This market isn't active, lets remove it
-                userBids[_user][i.sub(1)] = userBids[_user][userBids[_user].length.sub(1)];
-                userBids[_user].pop();
-            }
-        }
+    function increaseBidRate(address _user, uint256 _price)
+        external
+        override
+        onlyOrderbook
+    {
+        user[_user].bidRate += SafeCast.toUint128(_price);
     }
 
-    /// @dev tracks the total rental payments across all Cards, to enforce minimum rental duration
-    function updateUserBid(
-        address _user,
-        uint256 _tokenId,
+    function decreaseBidRate(address _user, uint256 _price)
+        external
+        override
+        onlyOrderbook
+    {
+        user[_user].bidRate -= SafeCast.toUint128(_price);
+    }
+
+    function resetUser(address _user) external override onlyOrderbook {
+        isForeclosed[_user] = false;
+    }
+
+    /*╔═════════════════════════════════╗
+      ║      RENT CALC HELPERS          ║
+      ╚═════════════════════════════════╝*/
+
+    /// @notice returns the rent due between the users last rent calcualtion and
+    /// @notice ..the current block.timestamp for all cards a user owns
+    /// @param _user the user to query
+    /// @param _timeOfCollection calculate upto a given time
+    function rentOwedUser(address _user, uint256 _timeOfCollection)
+        internal
+        view
+        returns (uint256 rentDue)
+    {
+        return
+            (user[_user].rentalRate *
+                (_timeOfCollection - user[_user].lastRentCalc)) / (1 days);
+    }
+
+    /// @notice calcualtes the rent owed between the given timestamps
+    /// @param _time1 one of the timestamps
+    /// @param _time2 the second timestamp
+    /// @param _price the rental rate for this time period
+    /// @param _rent the rent due for this time period
+    /// @dev the timestamps can be given in any order
+    function rentOwedBetweenTimestmaps(
+        uint256 _time1,
+        uint256 _time2,
         uint256 _price
-    ) external onlyMarkets returns (bool) {
-        if (_price != 0) {
-            require(userBidCount[_user] < maxBidCountLimit, "Max Bid Limit Reached");
+    ) internal pure returns (uint256 _rent) {
+        if (_time1 < _time2) {
+            (_time1, _time2) = (_time2, _time1);
         }
-        bool _done = false;
-        // in this case msgSender is the market
-        address _msgSender = msgSender();
-        // find the market
-        for (uint256 i = 0; i < userBids[_user].length; i++) {
-            if (userBids[_user][i].market == _msgSender) {
-                // find the tokenId
-                for (uint256 j = 0; j < userBids[_user][i].tokenIds.length; j++) {
-                    if (userBids[_user][i].tokenIds[j] == _tokenId) {
-                        if (_price == 0) {
-                            //price is 0, delete record
-                            if (userBids[_user][i].tokenIds.length == 1) {
-                                // There's only 1 bid in this market, just delete the whole market record
-                                userBids[_user][i] = userBids[_user][userBids[_user].length.sub(1)];
-                                userBids[_user].pop();
-                            } else {
-                                // There's more than 1 bid in this market, delete the correct one
-                                uint256 _lastRecord = userBids[_user][i].tokenIds.length.sub(1);
-                                userBids[_user][i].tokenIds[j] = userBids[_user][i].tokenIds[_lastRecord];
-                                userBids[_user][i].tokenIds.pop();
-                                userBids[_user][i].bidPrices[j] = userBids[_user][i].bidPrices[_lastRecord];
-                                userBids[_user][i].bidPrices.pop();
-                            }
-                            userBidCount[_user] = userBidCount[_user].sub(1);
-                        } else {
-                            //price is non-zero, update record
-                            userBids[_user][i].bidPrices[j] = SafeCast.toUint128(_price);
-                        }
-                        _done = true;
-                        break;
-                    }
-                }
-                if (!_done) {
-                    //we didn't find the tokenId, add it
-                    userBids[_user][i].tokenIds.push(SafeCast.toUint128(_tokenId));
-                    userBids[_user][i].bidPrices.push(SafeCast.toUint128(_price));
-                    userBidCount[_user] = userBidCount[_user].add(1);
-                }
-                _done = true;
-                break;
-            }
-        }
-        if (!_done) {
-            //we didn't find the market, add it and update the bid info
-            userBids[_user].push();
-            userBids[_user][userBids[_user].length.sub(1)].market = _msgSender;
-            userBids[_user][userBids[_user].length.sub(1)].tokenIds.push(SafeCast.toUint128(_tokenId));
-            userBids[_user][userBids[_user].length.sub(1)].bidPrices.push(SafeCast.toUint128(_price));
-            userBidCount[_user] = userBidCount[_user].add(1);
-            _done = true;
-        }
-        return _done;
+        _rent = (_price * (_time1 - _time2)) / (1 days);
     }
 
-    /// @dev adds or removes a market to the active markets array
-    function updateMarketStatus(bool _open) external onlyMarkets {
-        if (_open) {
-            isMarketActive[msgSender()] = true;
+    /// @notice returns the amount of deposit a user is able to withdraw
+    /// @notice ..after considering rent due to be paid
+    /// @param _user the user to query
+    function depositAbleToWithdraw(address _user)
+        internal
+        view
+        returns (uint256)
+    {
+        uint256 collection = rentOwedUser(_user, block.timestamp);
+        if (collection >= user[_user].deposit) {
+            return 0;
         } else {
-            isMarketActive[msgSender()] = false;
+            return uint256(user[_user].deposit) - (collection);
         }
     }
 
-    ////////////////////////////////////
-    //////////    FALLBACK     /////////
-    ////////////////////////////////////
+    /// @notice returns the current estimate of the users foreclosure time
+    /// @param _user the user to query
+    /// @param _newBid calculate foreclosure including a new card
+    /// @param _timeOfNewBid timestamp of when a new card was gained
+    function foreclosureTimeUser(
+        address _user,
+        uint256 _newBid,
+        uint256 _timeOfNewBid
+    ) external view override returns (uint256) {
+        uint256 totalUserDailyRent = user[_user].rentalRate;
+        if (totalUserDailyRent > 0) {
+            // timeLeftOfDeposit = deposit / (totalUserDailyRent / 1 day)
+            //                   = (deposit * 1day) / totalUserDailyRent
+            uint256 timeLeftOfDeposit =
+                (depositAbleToWithdraw(_user) * 1 days) / totalUserDailyRent;
+
+            uint256 foreclosureTimeWithoutNewCard =
+                user[_user].lastRentCalc + timeLeftOfDeposit;
+
+            if (foreclosureTimeWithoutNewCard > _timeOfNewBid) {
+                // calculate how long they can own the new card for
+                uint256 _rentAlreadyOwed =
+                    rentOwedBetweenTimestmaps(
+                        user[_user].lastRentCalc,
+                        _timeOfNewBid,
+                        totalUserDailyRent
+                    );
+                uint256 _depositAtTimeOfNewBid =
+                    user[_user].deposit - _rentAlreadyOwed;
+                uint256 _timeLeftOfDepositWithNewBid =
+                    (_depositAtTimeOfNewBid * 1 days) /
+                        (totalUserDailyRent + _newBid);
+                return _timeOfNewBid + _timeLeftOfDepositWithNewBid;
+            } else {
+                return user[_user].lastRentCalc + timeLeftOfDeposit;
+            }
+        } else {
+            // if no rentals they'll foreclose after the heat death of the universe
+            return type(uint256).max;
+        }
+    }
+
+    /// @notice call for a rent collection on the given user
+    /// @notice IF the user doesn't have enough deposit, returns foreclosure time
+    /// @notice ..otherwise returns zero
+    /// @param _user the user to query
+    function collectRentUser(address _user, uint256 _timeToCollectTo)
+        public
+        override
+        returns (uint256 newTimeLastCollectedOnForeclosure)
+    {
+        assert(_timeToCollectTo != 0);
+        if (user[_user].lastRentCalc < _timeToCollectTo) {
+            uint256 rentOwedByUser = rentOwedUser(_user, _timeToCollectTo);
+
+            if (rentOwedByUser > 0 && rentOwedByUser > user[_user].deposit) {
+                // The User has run out of deposit already.
+                uint256 previousCollectionTime = user[_user].lastRentCalc;
+
+                /*
+            timeTheirDepsitLasted = timeSinceLastUpdate * (usersDeposit/rentOwed)
+                                  = (now - previousCollectionTime) * (usersDeposit/rentOwed)
+            */
+                uint256 timeUsersDepositLasts =
+                    ((_timeToCollectTo - previousCollectionTime) *
+                        uint256(user[_user].deposit)) / rentOwedByUser;
+                /*
+            Users last collection time = previousCollectionTime + timeTheirDepsitLasted
+            */
+                rentOwedByUser = uint256(user[_user].deposit);
+                newTimeLastCollectedOnForeclosure =
+                    previousCollectionTime +
+                    timeUsersDepositLasts;
+                _increaseMarketBalance(rentOwedByUser, _user);
+                user[_user].lastRentCalc = SafeCast.toUint64(
+                    newTimeLastCollectedOnForeclosure
+                );
+                assert(user[_user].deposit == 0);
+                isForeclosed[_user] = true;
+                emit LogUserForeclosed(_user, true);
+            } else {
+                // User has enough deposit to pay rent.
+                _increaseMarketBalance(rentOwedByUser, _user);
+                user[_user].lastRentCalc = SafeCast.toUint64(_timeToCollectTo);
+            }
+            emit LogAdjustDeposit(_user, rentOwedByUser, false);
+        }
+    }
+
+    /// moving from the user deposit to the markets availiable balance
+    function _increaseMarketBalance(uint256 rentCollected, address _user)
+        internal
+    {
+        marketBalance += rentCollected;
+        user[_user].deposit -= SafeCast.toUint128(rentCollected);
+        totalDeposits -= rentCollected;
+    }
+
+    /*╔═════════════════════════════════╗
+      ║            FALLBACK             ║
+      ╚═════════════════════════════════╝*/
 
     /// @dev sending ether/xdai direct is equal to a deposit
     receive() external payable {
