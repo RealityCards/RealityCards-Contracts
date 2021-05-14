@@ -61,8 +61,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     uint256 public override minRentalDayDivisor;
     /// @dev max deposit balance, to minimise funds at risk
     uint256 public override maxContractBalance;
-    /// @dev the maximum number of bids a user is allowed
-    uint256 public maxBidCountLimit;
 
     /*╔═════════════════════════════════╗
       ║             SAFETY              ║
@@ -103,7 +101,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         // initialise adjustable parameters
         setMinRental(24 * 6); // MinRental is a divisor of 1 day(86400 seconds), 24*6 will set to 10 minutes
         setMaxContractBalance(1000000 ether); // 1m
-        setMaxBidLimit(30); // 30 is safe with current gas limit (12.5m)
     }
 
     /*╔═════════════════════════════════╗
@@ -170,11 +167,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         onlyOwner
     {
         maxContractBalance = _newBalanceLimit;
-    }
-
-    /// @dev max bid limit, to fit within gas limits
-    function setMaxBidLimit(uint256 _newBidLimit) public override onlyOwner {
-        maxBidCountLimit = _newBidLimit;
     }
 
     /*┌──────────────────────────────────────────┐
