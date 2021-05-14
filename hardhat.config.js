@@ -1,6 +1,5 @@
 require("@nomiclabs/hardhat-truffle5");
 require("solidity-coverage");
-require("hardhat-tracer");
 require("hardhat-gas-reporter");
 
 /**

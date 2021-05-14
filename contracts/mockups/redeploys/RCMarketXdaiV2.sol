@@ -326,29 +326,6 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
         _;
     }
 
-    function updateCard(
-        uint256 tokenId,
-        address user,
-        uint256 rentCollected,
-        uint256 collectedUntil
-    ) external override onlyTreasury() {
-        uint256 _localTokenId = totalNftMintCount - tokenId;
-        rentCollectedPerUser[user] += rentCollected;
-        rentCollectedPerToken[_localTokenId] += rentCollected;
-        totalRentCollected += rentCollected;
-
-        uint256 timeHeldSinceLastCollection =
-            collectedUntil - timeLastCollected[_localTokenId];
-        timeHeld[_localTokenId][user] += timeHeldSinceLastCollection;
-        if (timeHeld[_localTokenId][user] > longestTimeHeld[_localTokenId]) {
-            longestTimeHeld[_localTokenId] = timeHeld[_localTokenId][user];
-            longestOwner[_localTokenId] = user;
-        }
-        totalTimeHeld[_localTokenId] += timeHeldSinceLastCollection;
-
-        timeLastCollected[_localTokenId] = collectedUntil;
-    }
-
     /*╔═════════════════════════════════╗
       ║   ORACLE PROXY CONTRACT CALLS   ║
       ╚═════════════════════════════════╝*/
@@ -798,26 +775,6 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
                 (msg.value / numberOfTokens);
         }
         emit LogSponsor(msgSender(), msg.value);
-    }
-
-    function getTimeLastCollected(uint256 _actualTokenId)
-        external
-        view
-        override
-        returns (uint256 _timeCollected)
-    {
-        uint256 _localTokenId = _actualTokenId - totalNftMintCount;
-        _timeCollected = timeLastCollected[_localTokenId];
-    }
-
-    function getTokenPrice(uint256 _actualTokenId)
-        external
-        view
-        override
-        returns (uint256 _tokenPrice)
-    {
-        uint256 _localTokenId = _actualTokenId - totalNftMintCount;
-        _tokenPrice = tokenPrice[_localTokenId];
     }
 
     /*╔═════════════════════════════════╗

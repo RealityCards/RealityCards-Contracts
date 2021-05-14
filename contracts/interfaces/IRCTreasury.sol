@@ -40,8 +40,6 @@ interface IRCTreasury {
 
     function setMaxContractBalance(uint256) external;
 
-    function setMaxBidLimit(uint256 _newBidLimit) external;
-
     function setAlternateReceiverAddress(address _newAddress) external;
 
     function changeGlobalPause() external;
@@ -77,6 +75,8 @@ interface IRCTreasury {
     function increaseBidRate(address _user, uint256 _price) external;
 
     function decreaseBidRate(address _user, uint256 _price) external;
+
+    function resetUser(address _user) external;
 
     function collectRentUser(address _user, uint256 _timeToCollectTo)
         external

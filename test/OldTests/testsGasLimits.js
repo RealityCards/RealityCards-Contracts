@@ -185,7 +185,6 @@ contract("TestTreasury", (accounts) => {
 
   if (testChoice == 1) {
     it('test maximum number of bids/user', async () => {
-      treasury.setMaxBidLimit(MAX_UINT256);
       var bidsPerMarket = 10;
 
       user = user0;
@@ -250,7 +249,6 @@ contract("TestTreasury", (accounts) => {
   }
   if (testChoice == 2) {
     it('test maximum number of bids/user - with underbidders', async () => {
-      treasury.setMaxBidLimit(MAX_UINT256);
       var bidsPerMarket = 1; //max is 20
       var dummyMarkets = 0;
       var dummyUsers = 9;

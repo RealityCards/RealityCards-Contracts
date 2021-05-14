@@ -191,7 +191,6 @@ contract("TestTreasury", (accounts) => {
         // only testing invalid responses, valid responses checked in each functions own test
         await expectRevert(treasury.setMinRental(10, { from: user1 }), "Ownable: caller is not the owner");
         await expectRevert(treasury.setMaxContractBalance(10, { from: user1 }), "Ownable: caller is not the owner");
-        await expectRevert(treasury.setMaxBidLimit(10, { from: user1 }), "Ownable: caller is not the owner");
         await expectRevert(treasury.setAlternateReceiverAddress(zeroAddress, { from: user1 }), "Ownable: caller is not the owner");
         await expectRevert(treasury.changeGlobalPause({ from: user1 }), "Ownable: caller is not the owner");
         await expectRevert(treasury.changePauseMarket(zeroAddress, { from: user1 }), "Ownable: caller is not the owner");
@@ -221,17 +220,6 @@ contract("TestTreasury", (accounts) => {
         await depositDai(400, user0);
         // another 400 should not
         await expectRevert(treasury.deposit(user0, { value: web3.utils.toWei("500", "ether") }), "Limit hit");
-    });
-
-    it("test setMaxBidLimit", async () => {
-        // set value
-        await treasury.setMaxBidLimit(20);
-        // check value
-        assert.equal(await treasury.maxBidCountLimit(), 20);
-        // change the value (it might already have been 20)
-        await treasury.setMaxBidLimit(35);
-        // check again
-        assert.equal(await treasury.maxBidCountLimit(), 35);
     });
 
     it("test setAlternateReciverAddress", async () => {
