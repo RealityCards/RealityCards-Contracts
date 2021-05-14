@@ -301,6 +301,9 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     /// @notice markets are default hidden from the interface, this reveals them
     function changeMarketApproval(address _market) external onlyGovernors {
         require(_market != address(0));
+        // check it's an RC contract
+        IRCMarket _marketToApprove = IRCMarket(_market);
+        assert(_marketToApprove.isMarket());
         isMarketApproved[_market] = !isMarketApproved[_market];
         emit LogMarketApproved(_market, isMarketApproved[_market]);
     }
