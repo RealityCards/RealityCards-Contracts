@@ -273,11 +273,14 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         require(!globalPause, "Withdrawals are disabled");
         address _msgSender = msgSender();
         require(user[_msgSender].deposit > 0, "Nothing to withdraw");
+        // only allow withdraw if they have no bids,
+        // OR they've had their cards for at least the minimum rental period
         require(
-            block.timestamp - (user[_msgSender].lastRentalTime) >
+            user[_msgSender].bidRate == 0 ||
+                block.timestamp - (user[_msgSender].lastRentalTime) >
                 uint256(1 days) / minRentalDayDivisor,
             "Too soon"
-        ); // TODO if the user never becomes owner this means they can't withdraw
+        );
 
         // stpe 1: collect rent on owned cards
         collectRentUser(_msgSender, block.timestamp);
