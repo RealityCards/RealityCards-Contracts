@@ -76,6 +76,8 @@ interface IRCTreasury {
 
     function decreaseBidRate(address _user, uint256 _price) external;
 
+    function resetUser(address _user) external;
+
     function collectRentUser(address _user, uint256 _timeToCollectTo)
         external
         returns (uint256 newTimeLastCollectedOnForeclosure);

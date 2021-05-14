@@ -621,6 +621,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         } while (user[_user].length > _limit);
         if (user[_user].length == 0) {
             _userForeclosed = false;
+            treasury.resetUser();
         } else {
             _userForeclosed = true;
         }

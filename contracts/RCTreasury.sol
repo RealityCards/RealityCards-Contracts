@@ -503,6 +503,10 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         user[_user].bidRate -= SafeCast.toUint128(_price);
     }
 
+    function resetUser(address _user) external override onlyOrderbook {
+        isForeclosed[_user] = false;
+    }
+
     /*╔═════════════════════════════════╗
       ║      RENT CALC HELPERS          ║
       ╚═════════════════════════════════╝*/
