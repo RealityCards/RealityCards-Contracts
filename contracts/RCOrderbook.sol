@@ -666,7 +666,8 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         }
     }
 
-    /// @dev this destroys the linked list, only use after market completion
+    /// @notice Remove bids in closed markets for a given user
+    /// @notice this can reduce the users bidRate and chance to foreclose
     function removeOldBids(address _user) external override {
         address _market;
         uint256 _tokenCount;
@@ -685,6 +686,17 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
                         user[_user][index[_user][_market][i]].price;
                     treasury.decreaseBidRate(_user, _price);
 
+                    // preserve linked list
+                    address _tempPrev =
+                        user[_user][index[_user][_market][i]].prev;
+                    address _tempNext =
+                        user[_user][index[_user][_market][i]].next;
+
+                    user[_tempNext][index[_tempNext][_market][i]]
+                        .prev = _tempPrev;
+                    user[_tempPrev][index[_tempPrev][_market][i]]
+                        .next = _tempNext;
+
                     // delete bid
                     user[_user].pop();
                     index[_user][_market][i] = 0;
@@ -697,6 +709,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         }
     }
 
+    /// @dev remove bids in closed markets, not user specific
     function cleanWastePile() internal {
         uint256 i;
         while (i < cleaningLoops && user[address(this)].length > 0) {
