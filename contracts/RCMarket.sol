@@ -782,26 +782,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         emit LogSponsor(msgSender(), msg.value);
     }
 
-    function getTimeLastCollected(uint256 _actualTokenId)
-        external
-        view
-        override
-        returns (uint256 _timeCollected)
-    {
-        uint256 _localTokenId = _actualTokenId - totalNftMintCount;
-        _timeCollected = timeLastCollected[_localTokenId];
-    }
-
-    function getTokenPrice(uint256 _actualTokenId)
-        external
-        view
-        override
-        returns (uint256 _tokenPrice)
-    {
-        uint256 _localTokenId = _actualTokenId - totalNftMintCount;
-        _tokenPrice = tokenPrice[_localTokenId];
-    }
-
     /*╔═════════════════════════════════╗
       ║         CORE FUNCTIONS          ║
       ╠═════════════════════════════════╣
