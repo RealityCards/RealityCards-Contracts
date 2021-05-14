@@ -720,11 +720,23 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         emit LogUpdateTimeHeldLimit(_user, _timeHeldLimit, _token);
     }
 
+    /// @notice stop renting all tokens
+    function exitAll() external override {
+        for (uint256 i = 0; i < numberOfTokens; i++) {
+            _exit(i);
+        }
+    }
+
     /// @notice stop renting a token and/or remove from orderbook
     /// @dev public because called by exitAll()
     /// @dev doesn't need to be current owner so user can prevent ownership returning to them
     /// @dev does not apply minimum rental duration, because it returns ownership to the next user
     /// @param _token The token index to exit
+    function exit(uint256 _token) public override {
+        treasury.collectRentUser(msg.sender, block.timestamp);
+        _exit(_token);
+    }
+
     function _exit(uint256 _token) internal {
         _checkState(States.OPEN);
         address _msgSender = msgSender();
@@ -746,18 +758,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             if (orderbook.bidExists(_msgSender, address(this), _token)) {
                 orderbook.removeBidFromOrderbook(_msgSender, _token);
             }
-        }
-    }
-
-    function exit(uint256 _token) public override {
-        treasury.collectRentUser(msg.sender, block.timestamp);
-        _exit(_token);
-    }
-
-    /// @notice stop renting all tokens
-    function exitAll() external override {
-        for (uint256 i = 0; i < numberOfTokens; i++) {
-            _exit(i);
         }
     }
 
