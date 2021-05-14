@@ -47,12 +47,14 @@ contract RealitioMockup {
     // 69 = invalid
     function resultFor(bytes32 question_id) external view returns (bytes32) {
         require(result != 420);
-        require(question_id == actualQuestionId);
+        question_id;
+        // require(question_id == actualQuestionId);
         return bytes32(result);
     }
 
     function isFinalized(bytes32 question_id) external view returns (bool) {
-        require(question_id == actualQuestionId, "questionId incorrect");
+        // require(question_id == actualQuestionId, "questionId incorrect");
+        question_id;
         if (result == 420) {
             return false;
         } else {
@@ -66,6 +68,7 @@ contract RealitioMockup {
         returns (bytes32)
     {
         // console.logBytes32(bytes32 b);
+        question_id;
         if (question_id == actualQuestionId) {
             return actualContentHash;
         } else {

@@ -5,6 +5,7 @@ var realityCardsFactory = artifacts.require("RCFactory");
 //var factoryAddress = '0x3b557a58E5c6c4Df3e3307F9c7f5ce46472d80F7'; //beta on xDai
 var factoryAddress = '0x76d22B0065Ada142207E2cDce12322FB3F8c0bAA'; //dev on Sokol
 
+
 // variables market specific
 var marketOpeningTime = 0;
 var marketLockingTime = 1616997600; 

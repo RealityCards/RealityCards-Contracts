@@ -162,6 +162,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         uint256 indexed minRentalDayDivisor,
         uint256 indexed minimumPriceIncreasePercent
     );
+    event LogLongestOwner(uint256 tokenId, address longestOwner);
+
 
     /*╔═════════════════════════════════╗
       ║           CONSTRUCTOR           ║
@@ -390,6 +392,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             "Market has not finished"
         );
         // do a final rent collection before the contract is locked down
+
         if (collectRentAllCards()) {
             orderbook.closeMarket();
             _incrementState();
@@ -397,6 +400,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             for (uint256 i; i < numberOfTokens; i++) {
                 // bring the cards back to the market so the winners get the satisfcation of claiming them
                 _transferCard(ownerOf(i), address(this), i);
+                emit LogLongestOwner(i,longestOwner[i]);
             }
             emit LogContractLocked(true);
         }
