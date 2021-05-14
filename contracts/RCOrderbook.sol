@@ -172,9 +172,8 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
             _newBid.next = _market;
             _newBid.price = 0;
             _newBid.timeHeldLimit = type(uint64).max;
+            index[_market][_market][i] = user[_market].length;
             user[_market].push(_newBid);
-            // TODO market record index == tokenId
-            index[_market][_market][i] = user[_market].length - (1);
         }
     }
 
