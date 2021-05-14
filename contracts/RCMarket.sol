@@ -836,7 +836,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             │Time Limit │0│0│1│1│0│0│1│1│
             │Market Lock│0│1│0│1│0│1│0│1│
             └───────────┴─┴─┴─┴─┴─┴─┴─┴─┘
-            TODO: some of these cases may be combined, or at least reordered for optimisation
             */
 
             if (!_foreclosed && !_limitHit && !_marketLocked) {
