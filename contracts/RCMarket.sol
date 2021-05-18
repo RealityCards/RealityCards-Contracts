@@ -448,8 +448,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     function _payoutWinnings() internal {
         uint256 _winningsToTransfer = 0;
         uint256 _remainingCut =
-            ((((uint256(1000) - artistCut) - affiliateCut)) -
-                cardAffiliateCut -
+            ((((uint256(1000) - artistCut) - affiliateCut) - cardAffiliateCut) -
                 winnerCut) - creatorCut;
         // calculate longest owner's extra winnings, if relevant
         if (longestOwner[winningOutcome] == msgSender() && winnerCut > 0) {
