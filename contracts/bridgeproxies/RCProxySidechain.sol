@@ -3,7 +3,7 @@ pragma solidity 0.8.4;
 
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../interfaces/IRCProxyMainnet.sol";
 import "../interfaces/IBridge.sol";
 import "../interfaces/IRCMarket.sol";
@@ -13,7 +13,7 @@ import "../interfaces/IRealitio.sol";
 /// @title Reality Cards Proxy- xDai side
 /// @author Andrew Stanger, Marvin Kruse & Daniel Chilvers
 /// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!!
-contract RCProxyXdai is Ownable {
+contract RCProxySidechain is Ownable {
     ////////////////////////////////////
     //////// VARIABLES /////////////////
     ////////////////////////////////////
@@ -26,6 +26,7 @@ contract RCProxyXdai is Ownable {
     address public proxyMainnetAddress;
     address public factoryAddress;
     address public treasuryAddress;
+    IERC20 public erc20;
 
     ///// ORACLE VARIABLES /////
     mapping(address => bytes32) public questionIds;
@@ -328,6 +329,11 @@ contract RCProxyXdai is Ownable {
         }
     }
 
+    function updateTokenContract() public {
+        IRCTreasury treasury = IRCTreasury(treasuryAddress);
+        erc20 = treasury.erc20();
+    }
+
     /// @dev deposits xDai into the Treasury (if allowed) otherwise send to user
     function executeDaiDeposit(uint256 _nonce) public {
         require(deposits[_nonce].confirmed, "Not confirmed");
@@ -344,11 +350,10 @@ contract RCProxyXdai is Ownable {
                 treasury.maxContractBalance() &&
                 !treasury.globalPause()
             ) {
-                assert(treasury.deposit{value: _amount}(_user));
+                erc20.transfer(address(treasury), _amount);
                 // otherwise, just send to the user
             } else {
-                (bool _success, ) = payable(_user).call{value: _amount}("");
-                require(_success, "Transfer failed");
+                erc20.transfer(_user, _amount);
             }
         }
     }
