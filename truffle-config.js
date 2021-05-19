@@ -133,7 +133,8 @@ module.exports = {
     // },
     teststage1: {
       provider: function () {
-        return new HDWalletProvider(MNEMONIC, MUMBAI_RPC);
+        // ProTip: You need to do the free upgrade on Infura to get access to Matic
+        return new HDWalletProvider(MNEMONIC, `https://polygon-mumbai.infura.io/v3/${INFURA_KEY}`);
       },
       network_id: 80001,
       gas: 12000000,
@@ -147,11 +148,11 @@ module.exports = {
         );
       },
       network_id: 5,
-      gas: 15000000,
+      gas: 8000000,
     },
     teststage3: {
       provider: function () {
-        return new HDWalletProvider(MNEMONIC, MUMBAI_RPC);
+        return new HDWalletProvider(MNEMONIC, `https://polygon-mumbai.infura.io/v3/${INFURA_KEY}`);
       },
       network_id: 80001,
       gas: 12000000,

@@ -7,9 +7,9 @@ import "hardhat/console.sol";
 import "../../interfaces/IRealitio.sol";
 import "../../interfaces/IRCFactory.sol";
 import "../../interfaces/IRCTreasury.sol";
-import "../../interfaces/IRCProxyXdai.sol";
+import "../../interfaces/IRCProxyL2.sol";
 import "../../interfaces/IRCMarket.sol";
-import "../../interfaces/IRCNftHubXdai.sol";
+import "../../interfaces/IRCNftHubL2.sol";
 import "../../interfaces/IRCOrderbook.sol";
 import "../../lib/NativeMetaTransaction.sol";
 
@@ -39,8 +39,8 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
     // CONTRACT VARIABLES
     IRCTreasury public treasury;
     IRCFactory public factory;
-    IRCProxyXdai public proxy;
-    IRCNftHubXdai public nfthub;
+    IRCProxyL2 public proxy;
+    IRCNftHubL2 public nfthub;
     IRCOrderbook public orderbook;
 
     // PRICE, DEPOSITS, RENT

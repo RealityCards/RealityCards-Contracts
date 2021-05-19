@@ -39,6 +39,8 @@ var arbAddressKovan = '0xEa7F8C8d2c55eE242f2F22c11F43421E459229b8'
 var arbAddressSokol = '0xed47976103eBcCF7685e8aF185deD9EcF57E146A'
 // this is the trialBridge Dai contract, more info here: https://docs.tokenbridge.net/xdai-bridge/trial-the-bridge
 var daiAddressKovan = '0x40a81c34f36EbE2D98baC578d66d3EE952A48f24'
+const dummyERC20Goerli = '0x3f152B63Ec5CA5831061B2DccFb29a874C317502'
+const dummyERC20Mumbai = '0x2d7882beDcbfDDce29Ba99965dd3cdF7fcB10A1e'
 
 // read input arguments
 var xdaiProxyAddress = myArgs[0]
@@ -55,7 +57,7 @@ module.exports = async (deployer, network, accounts) => {
   if (network === 'teststage1' || network === 'stage1') {
     // xdai
     // deploy treasury, factory, reference market and nft hub
-    await deployer.deploy(RCTreasury);
+    await deployer.deploy(RCTreasury, dummyERC20Mumbai);
     treasury = await RCTreasury.deployed();
     await deployer.deploy(RCFactory, treasury.address);
     factory = await RCFactory.deployed();
@@ -119,7 +121,7 @@ module.exports = async (deployer, network, accounts) => {
       await deployer.deploy(MainnetProxy, ambAddressMainnet, nfthubmainnet.address, arbAddressMainnet, daiAddressMainnet);
     } else {
       // deploy mainnet proxy on Kovan
-      await deployer.deploy(MainnetProxy, ambAddressKovan, nfthubmainnet.address, arbAddressKovan, daiAddressKovan);
+      await deployer.deploy(MainnetProxy, ambAddressKovan, nfthubmainnet.address, arbAddressKovan, dummyERC20Goerli);
     }
 
     mainnetproxy = await MainnetProxy.deployed();

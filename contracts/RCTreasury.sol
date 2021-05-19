@@ -10,7 +10,7 @@ import "./interfaces/IRCTreasury.sol";
 import "./interfaces/IRCMarket.sol";
 import "./interfaces/IAlternateReceiverBridge.sol";
 import "./interfaces/IRCOrderbook.sol";
-import "./interfaces/IRCNftHubXdai.sol";
+import "./interfaces/IRCNftHubL2.sol";
 
 /// @title Reality Cards Treasury
 /// @author Andrew Stanger & Daniel Chilvers
@@ -22,7 +22,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     /// @dev orderbook instance, to remove users bids on foreclosure
     IRCOrderbook public orderbook;
     /// @dev nfthub instance, to query current card owner
-    IRCNftHubXdai public nfthub;
+    IRCNftHubL2 public nfthub;
     /// @dev token contract
     IERC20 public override erc20;
     /// @dev address of the alternate Receiver Bridge for withdrawals to mainnet
@@ -222,7 +222,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     function setNftHubAddress(address _NFTHubAddress) external {
         require(msgSender() == uberOwner, "Extremely Verboten");
         require(_NFTHubAddress != address(0));
-        nfthub = IRCNftHubXdai(_NFTHubAddress);
+        nfthub = IRCNftHubL2(_NFTHubAddress);
     }
 
     function setTokenAddress(address _newToken) public override {

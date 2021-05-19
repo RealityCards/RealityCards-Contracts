@@ -7,8 +7,8 @@ import "hardhat/console.sol";
 import "../../interfaces/IRCFactory.sol";
 import "../../interfaces/IRCTreasury.sol";
 import "../../interfaces/IRCMarket.sol";
-import "../../interfaces/IRCProxyXdai.sol";
-import "../../interfaces/IRCNftHubXdai.sol";
+import "../../interfaces/IRCProxyL2.sol";
+import "../../interfaces/IRCNftHubL2.sol";
 import "../../interfaces/IRCOrderbook.sol";
 import "../../lib/NativeMetaTransaction.sol";
 
@@ -22,8 +22,8 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction, IRCFactory {
 
     ///// CONTRACT VARIABLES /////
     IRCTreasury public override treasury;
-    IRCProxyXdai public override proxy;
-    IRCNftHubXdai public override nfthub;
+    IRCProxyL2 public override proxy;
+    IRCNftHubL2 public override nfthub;
     IRCOrderbook public override orderbook;
 
     ///// CONTRACT ADDRESSES /////
@@ -173,7 +173,7 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction, IRCFactory {
     /// @dev all functions should have onlyOwner modifier
 
     /// @notice address of the xDai Proxy contract
-    function setProxyXdaiAddress(IRCProxyXdai _newAddress) external onlyOwner {
+    function setProxyXdaiAddress(IRCProxyL2 _newAddress) external onlyOwner {
         require(address(_newAddress) != address(0));
         proxy = _newAddress;
     }
@@ -181,10 +181,10 @@ contract RCFactoryV2 is Ownable, NativeMetaTransaction, IRCFactory {
     /// @notice where the NFTs live
     /// @dev nftMintCount will probably need to be reset to zero if new nft contract, but
     /// @dev ... keeping flexible in case returning to previous contract
-    function setNftHubAddress(
-        IRCNftHubXdai _newAddress,
-        uint256 _newNftMintCount
-    ) external onlyOwner {
+    function setNftHubAddress(IRCNftHubL2 _newAddress, uint256 _newNftMintCount)
+        external
+        onlyOwner
+    {
         require(address(_newAddress) != address(0));
         nfthub = _newAddress;
         totalNftMintCount = _newNftMintCount;
