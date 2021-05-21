@@ -81,8 +81,8 @@ module.exports = {
         return new HDWalletProvider(MNEMONIC, "http://rpc.xdaichain.com");
       },
       network_id: 100,
-      gas: 5500000,
-      gasPrice: 1000000000,
+      gas: 12000000,
+      gasPrice: 30000000000,
     },
     stage1: {
       provider: function () {
