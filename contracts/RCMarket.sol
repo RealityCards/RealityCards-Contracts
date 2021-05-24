@@ -621,70 +621,72 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         autoUnlock()
         autoLock() /*returns (uint256)*/
     {
-        _checkState(States.OPEN);
-        require(_newPrice >= MIN_RENTAL_VALUE, "Minimum rental 1 xDai");
-        require(_token < numberOfTokens, "This token does not exist");
-        require(block.timestamp < marketLockingTime);
-        address _user = msgSender();
+        if (state == States.OPEN) {
+            require(_newPrice >= MIN_RENTAL_VALUE, "Minimum rental 1 xDai");
+            require(_token < numberOfTokens, "This token does not exist");
 
-        require(
-            exitedTimestamp[_user] != block.timestamp,
-            "Cannot lose and re-rent in same block"
-        );
-        require(
-            !treasury.marketPaused(address(this)) && !treasury.globalPause(),
-            "Rentals are disabled"
-        );
-        bool _userStillForeclosed = treasury.isForeclosed(_user);
-        if (_userStillForeclosed) {
-            _userStillForeclosed = orderbook.removeUserFromOrderbook(_user);
-        }
-        if (!_userStillForeclosed) {
-            if (ownerOf(_token) == _user) {
-                // the owner may only increase by more than 10% or reduce their price
-                uint256 _requiredPrice =
-                    (tokenPrice[_token] * (minimumPriceIncreasePercent + 100)) /
-                        (100);
-                require(
-                    _newPrice >= _requiredPrice ||
-                        _newPrice < tokenPrice[_token],
-                    "Not 10% higher"
-                );
-            }
+            address _user = msgSender();
 
-            // do some cleaning up before we collect rent or check their bidRate
-            orderbook.removeOldBids(_user);
-
-            _collectRent(_token);
-
-            // process deposit, if sent
-            if (msg.value > 0) {
-                assert(treasury.deposit{value: msg.value}(_user));
-            }
-
-            // check sufficient deposit
-            uint256 _userTotalBidRate =
-                treasury.userTotalBids(_user) -
-                    (orderbook.getBidValue(_user, _token)) +
-                    _newPrice;
             require(
-                treasury.userDeposit(_user) >=
-                    _userTotalBidRate / minRentalDayDivisor,
-                "Insufficient deposit"
+                exitedTimestamp[_user] != block.timestamp,
+                "Cannot lose and re-rent in same block"
             );
-
-            _timeHeldLimit = _checkTimeHeldLimit(_timeHeldLimit);
-
-            // replaces _newBid and _updateBid
-            orderbook.addBidToOrderbook(
-                _user,
-                _token,
-                _newPrice,
-                _timeHeldLimit,
-                _startingPosition
+            require(
+                !treasury.marketPaused(address(this)) &&
+                    !treasury.globalPause(),
+                "Rentals are disabled"
             );
+            bool _userStillForeclosed = treasury.isForeclosed(_user);
+            if (_userStillForeclosed) {
+                _userStillForeclosed = orderbook.removeUserFromOrderbook(_user);
+            }
+            if (!_userStillForeclosed) {
+                if (ownerOf(_token) == _user) {
+                    // the owner may only increase by more than 10% or reduce their price
+                    uint256 _requiredPrice =
+                        (tokenPrice[_token] *
+                            (minimumPriceIncreasePercent + 100)) / (100);
+                    require(
+                        _newPrice >= _requiredPrice ||
+                            _newPrice < tokenPrice[_token],
+                        "Not 10% higher"
+                    );
+                }
 
-            assert(treasury.updateLastRentalTime(_user));
+                // do some cleaning up before we collect rent or check their bidRate
+                orderbook.removeOldBids(_user);
+
+                _collectRent(_token);
+
+                // process deposit, if sent
+                if (msg.value > 0) {
+                    assert(treasury.deposit{value: msg.value}(_user));
+                }
+
+                // check sufficient deposit
+                uint256 _userTotalBidRate =
+                    treasury.userTotalBids(_user) -
+                        (orderbook.getBidValue(_user, _token)) +
+                        _newPrice;
+                require(
+                    treasury.userDeposit(_user) >=
+                        _userTotalBidRate / minRentalDayDivisor,
+                    "Insufficient deposit"
+                );
+
+                _timeHeldLimit = _checkTimeHeldLimit(_timeHeldLimit);
+
+                // replaces _newBid and _updateBid
+                orderbook.addBidToOrderbook(
+                    _user,
+                    _token,
+                    _newPrice,
+                    _timeHeldLimit,
+                    _startingPosition
+                );
+
+                assert(treasury.updateLastRentalTime(_user));
+            }
         }
     }
 
