@@ -249,15 +249,15 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         // do some cleaning up, it might help cancel their foreclosure
         orderbook.removeOldBids(_user);
 
-        // this deposit could cancel the users foreclosure
-        if (msg.value > user[_user].bidRate / (minRentalDayDivisor)) {
-            isForeclosed[_user] = false;
-            emit LogUserForeclosed(_user, false);
-        }
-
         user[_user].deposit += SafeCast.toUint128(msg.value);
         totalDeposits += msg.value;
         emit LogAdjustDeposit(_user, msg.value, true);
+
+        // this deposit could cancel the users foreclosure
+        if (user[_user].deposit > user[_user].bidRate / (minRentalDayDivisor)) {
+            isForeclosed[_user] = false;
+            emit LogUserForeclosed(_user, false);
+        }
         return true;
     }
 
