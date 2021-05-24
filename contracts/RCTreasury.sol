@@ -375,6 +375,13 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         user[_user].deposit += SafeCast.toUint128(_refund);
         totalDeposits += _refund;
         emit LogAdjustDeposit(_user, _refund, true);
+        if (
+            isForeclosed[_user] &&
+            user[_user].deposit > user[_user].bidRate / minRentalDayDivisor
+        ) {
+            isForeclosed[_user] = false;
+            emit LogUserForeclosed(_user, false);
+        }
     }
 
     /// @notice ability to add liqudity to the pot without being able to win (called by market sponsor function).
