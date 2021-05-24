@@ -709,17 +709,17 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         _checkState(States.OPEN);
         address _user = msgSender();
 
-        _collectRent(_token);
+        if (_collectRent(_token)) {
+            _timeHeldLimit = _checkTimeHeldLimit(_timeHeldLimit);
 
-        _timeHeldLimit = _checkTimeHeldLimit(_timeHeldLimit);
+            orderbook.setTimeHeldlimit(_user, _token, _timeHeldLimit);
 
-        orderbook.setTimeHeldlimit(_user, _token, _timeHeldLimit);
+            if (ownerOf(_token) == _user) {
+                tokenTimeLimit[_token] = _timeHeldLimit;
+            }
 
-        if (ownerOf(_token) == _user) {
-            tokenTimeLimit[_token] = _timeHeldLimit;
+            emit LogUpdateTimeHeldLimit(_user, _timeHeldLimit, _token);
         }
-
-        emit LogUpdateTimeHeldLimit(_user, _timeHeldLimit, _token);
     }
 
     /// @notice stop renting all tokens
