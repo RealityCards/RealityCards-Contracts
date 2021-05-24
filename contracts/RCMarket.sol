@@ -624,6 +624,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         _checkState(States.OPEN);
         require(_newPrice >= MIN_RENTAL_VALUE, "Minimum rental 1 xDai");
         require(_token < numberOfTokens, "This token does not exist");
+        require(block.timestamp < marketLockingTime);
         address _user = msgSender();
 
         require(
