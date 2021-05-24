@@ -746,15 +746,10 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         // collectRent first
         _collectRent(_token);
 
-        // if current owner, collect rent, revert if necessary
         if (ownerOf(_token) == _msgSender) {
-            // if still the current owner after collecting rent, revert to underbidder
-            if (ownerOf(_token) == _msgSender) {
-                orderbook.findNewOwner(_token, block.timestamp);
-                // if not current owner no further action necessary because they will have been deleted from the orderbook
-            } else {
-                assert(!orderbook.bidExists(_msgSender, address(this), _token));
-            }
+            // if current owner, find a new one
+            orderbook.findNewOwner(_token, block.timestamp);
+            assert(!orderbook.bidExists(_msgSender, address(this), _token));
         } else {
             // if not owner, just delete from orderbook
             if (orderbook.bidExists(_msgSender, address(this), _token)) {
