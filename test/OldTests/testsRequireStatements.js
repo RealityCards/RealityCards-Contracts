@@ -403,8 +403,6 @@ contract('TestRequireStatements', (accounts) => {
     // just use the default realitycards
     var state = await realitycards3.state();
     assert.equal(state, 0);
-    // check newRental fails because incorrect state
-    await expectRevert(realitycards3.newRental(web3.utils.toWei('150', 'ether'), maxuint256, zeroAddress, 2, { from: user0 }), "Incorrect state");
     // advance time so its in the past, should work
     await time.increase(time.duration.weeks(8));
     await realitycards3.newRental(web3.utils.toWei('150', 'ether'), maxuint256, zeroAddress, 2, { from: user0 })
