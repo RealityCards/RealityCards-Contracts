@@ -306,7 +306,6 @@ contract('TestProxies', (accounts) => {
     await realitycards2.lockMarket();
     await realitio.setResult(2);
     await xdaiproxy.getWinnerFromOracle(realitycards2.address);
-    await expectRevert(xdaiproxy.setAmicableResolution(realitycards.address, 2), "Incorrect state");
   });
 
 
