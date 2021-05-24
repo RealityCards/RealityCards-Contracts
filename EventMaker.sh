@@ -3,13 +3,13 @@
 ###################
 #### Setup ########
 ###################
-EVENT_NAME="Which country will win the 2021 Eurovision song contest?"
-SRC_NAME="eurovision"
+EVENT_NAME="Who will win the Champions League Final?"
+SRC_NAME="ChampionsLeague"
 CATEGORY="other"
-SLUG="eurotrash"
-NUMBER_OF_CARDS="26"
-CARD0="Albania"
-CARD1="Azerbaijan"
+SLUG="ChampionsLeague"
+NUMBER_OF_CARDS="2"
+CARD0="Manchester City"
+CARD1="Chelsea"
 CARD2="Belgium"
 CARD3="Bulgaria"
 CARD4="Cyprus"
@@ -36,7 +36,7 @@ CARD24="Ukraine"
 CARD25="United Kingdom"
 CDN="https://cdn.realitycards.io/"
 IMAGES="images/"
-IMAGE_FORMAT=".png"
+IMAGE_FORMAT=".jpeg"
 NFT="nftmetadata/"
 ##################
 
