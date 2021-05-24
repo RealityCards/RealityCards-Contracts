@@ -3,13 +3,13 @@
 ###################
 #### Setup ########
 ###################
-EVENT_NAME="Who will win the Champions League Final?"
-SRC_NAME="ChampionsLeague"
+EVENT_NAME="Will the total marketcap for crypto be above or below \$1.75 trillion by June 1st, 2021?"
+SRC_NAME="BullOrBear"
 CATEGORY="other"
-SLUG="ChampionsLeague"
+SLUG="BearOrBull"
 NUMBER_OF_CARDS="2"
-CARD0="Manchester City"
-CARD1="Chelsea"
+CARD0="Above \$1.75T"
+CARD1="Below \$1.75T"
 CARD2="Belgium"
 CARD3="Bulgaria"
 CARD4="Cyprus"
@@ -36,7 +36,7 @@ CARD24="Ukraine"
 CARD25="United Kingdom"
 CDN="https://cdn.realitycards.io/"
 IMAGES="images/"
-IMAGE_FORMAT=".jpeg"
+IMAGE_FORMAT=".jpg"
 NFT="nftmetadata/"
 ##################
 
