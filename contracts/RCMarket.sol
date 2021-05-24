@@ -727,7 +727,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @notice stop renting all tokens
     function exitAll() external override {
         for (uint256 i = 0; i < numberOfTokens; i++) {
-            _exit(i);
+            exit(i);
         }
     }
 
@@ -737,11 +737,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @dev does not apply minimum rental duration, because it returns ownership to the next user
     /// @param _token The token index to exit
     function exit(uint256 _token) public override {
-        treasury.collectRentUser(msg.sender, block.timestamp);
-        _exit(_token);
-    }
-
-    function _exit(uint256 _token) internal {
         _checkState(States.OPEN);
         address _msgSender = msgSender();
 
