@@ -740,6 +740,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         _checkState(States.OPEN);
         address _msgSender = msgSender();
 
+        // block frontrunning attack
+        exitedTimestamp[_msgSender] = block.timestamp;
+
         // collectRent first
         _collectRent(_token);
 
