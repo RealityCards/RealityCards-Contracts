@@ -347,7 +347,6 @@ contract('TestRequireStatements', (accounts) => {
     assert.equal(3, state);
     // currently in state 'WITHDRAW' the following should all fail 
     await expectRevert(realitycards2.lockMarket(), "Incorrect state");
-    await expectRevert(realitycards2.setWinner(3), "Incorrect state");
     await expectRevert(realitycards2.collectRentAllCards(), "Incorrect state");
     await expectRevert(realitycards2.newRental(0, maxuint256, zeroAddress, 0), "Incorrect state");
     await expectRevert(realitycards2.exit(0), "Incorrect state");
