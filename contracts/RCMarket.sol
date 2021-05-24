@@ -164,7 +164,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     );
     event LogLongestOwner(uint256 tokenId, address longestOwner);
 
-
     /*╔═════════════════════════════════╗
       ║           CONSTRUCTOR           ║
       ╚═════════════════════════════════╝*/
@@ -400,7 +399,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             for (uint256 i; i < numberOfTokens; i++) {
                 // bring the cards back to the market so the winners get the satisfcation of claiming them
                 _transferCard(ownerOf(i), address(this), i);
-                emit LogLongestOwner(i,longestOwner[i]);
+                emit LogLongestOwner(i, longestOwner[i]);
             }
             emit LogContractLocked(true);
         }
@@ -452,8 +451,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     function _payoutWinnings() internal {
         uint256 _winningsToTransfer = 0;
         uint256 _remainingCut =
-            ((((uint256(1000) - artistCut) - affiliateCut)) -
-                cardAffiliateCut -
+            ((((uint256(1000) - artistCut) - affiliateCut) - cardAffiliateCut) -
                 winnerCut) - creatorCut;
         // calculate longest owner's extra winnings, if relevant
         if (longestOwner[winningOutcome] == msgSender() && winnerCut > 0) {
