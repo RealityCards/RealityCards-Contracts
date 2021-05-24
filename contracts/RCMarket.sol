@@ -410,17 +410,18 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @dev .. that the market can't be closed early by the oracle.
     /// @param _winningOutcome the index of the winning card
     function setWinner(uint256 _winningOutcome) external override {
+        require(msgSender() == address(proxy), "Not proxy");
         if (state == States.OPEN) {
             // change the locking time to allow lockMarket to lock
             marketLockingTime = SafeCast.toUint32(block.timestamp);
             lockMarket();
         }
-        _checkState(States.LOCKED);
-        require(msgSender() == address(proxy), "Not proxy");
-        // get the winner. This will revert if answer is not resolved.
-        winningOutcome = _winningOutcome;
-        _incrementState();
-        emit LogWinnerKnown(winningOutcome);
+        if (state == States.LOCKED) {
+            // get the winner. This will revert if answer is not resolved.
+            winningOutcome = _winningOutcome;
+            _incrementState();
+            emit LogWinnerKnown(winningOutcome);
+        }
     }
 
     /// @notice pays out winnings, or returns funds
