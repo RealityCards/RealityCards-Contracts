@@ -833,9 +833,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         uint256 _token,
         uint256 _timeHeldLimit
     ) external override onlyMarkets {
-        address _market = msgSender();
-        require(bidExists(_user, _market, _token), "Bid doesn't exist");
-        user[_user][index[_user][_market][_token]].timeHeldLimit = SafeCast
+        user[_user][index[_user][msgSender()][_token]].timeHeldLimit = SafeCast
             .toUint64(_timeHeldLimit);
     }
 

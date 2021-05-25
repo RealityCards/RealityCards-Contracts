@@ -98,16 +98,16 @@ contract("RealityCardsTests", (accounts) => {
         });
 
         it("test changePauseMarket", async () => {
-            // check state of market
-            var pauseMarketState = await treasury.marketPaused(markets[0].address);
+            // we don't check for zero address or even that it's actaully a market
+            var pauseMarketState = await treasury.marketPaused(ZERO_ADDRESS);
             // change value
-            await treasury.changePauseMarket(markets[0].address);
+            await treasury.changePauseMarket(ZERO_ADDRESS);
             // check value
-            assert.equal(await treasury.marketPaused(markets[0].address), !pauseMarketState);
+            assert.equal(await treasury.marketPaused(ZERO_ADDRESS), !pauseMarketState);
             // change it back
-            await treasury.changePauseMarket(markets[0].address);
+            await treasury.changePauseMarket(ZERO_ADDRESS);
             // check again
-            assert.equal(await treasury.marketPaused(markets[0].address), pauseMarketState);
+            assert.equal(await treasury.marketPaused(ZERO_ADDRESS), pauseMarketState);
         });
 
         it("test setFactoryAddress", async () => {
