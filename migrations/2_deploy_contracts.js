@@ -13,9 +13,9 @@ var RCTreasury = artifacts.require("./RCTreasury.sol");
 var RCFactory = artifacts.require("./RCFactory.sol");
 var RCMarket = artifacts.require("./RCMarket.sol")
 var NftHubXDai = artifacts.require('./nfthubs/RCNftHubXdai.sol');
-var NftHubMainnet = artifacts.require('./nfthubs/RCNftHubMainnet.sol');
-var XdaiProxy = artifacts.require('./bridgeproxies/RCProxyXdai.sol');
-var MainnetProxy = artifacts.require('./bridgeproxies/RCProxyMainnet.sol');
+var NftHubMainnet = artifacts.require('./nfthubs/RCNftHubL1.sol');
+var XdaiProxy = artifacts.require('./bridgeproxies/RCProxyL2.sol');
+var MainnetProxy = artifacts.require('./bridgeproxies/RCProxyL1.sol');
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 var BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
 var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
@@ -66,7 +66,7 @@ module.exports = async (deployer, network, accounts) => {
     await treasury.setFactoryAddress(factory.address);
     await treasury.setAlternateReceiverAddress(arbAddressXdai);
     await factory.setReferenceContractAddress(reference.address);
-    await factory.setNftHubAddress(nfthubxdai.address,0);
+    await factory.setNftHubAddress(nfthubxdai.address, 0);
     // deploy xdai proxy
     if (network === 'stage1') {
       await deployer.deploy(

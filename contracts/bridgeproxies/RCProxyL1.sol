@@ -5,7 +5,7 @@ import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "../interfaces/IRCProxyXdai.sol";
+import "../interfaces/IRCProxyL2.sol";
 import "../interfaces/IBridge.sol";
 import "../interfaces/IAlternateReceiverBridge.sol";
 import "../interfaces/IERC20Dai.sol";
@@ -14,7 +14,7 @@ import "../interfaces/IERC721.sol";
 /// @title Reality Cards Proxy- Mainnet side
 /// @author Andrew Stanger, Marvin Kruse & Daniel Chilvers
 /// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!!
-contract RCProxyMainnet is Ownable {
+contract RCProxyL1 is Ownable {
     ////////////////////////////////////
     //////// VARIABLES /////////////////
     ////////////////////////////////////

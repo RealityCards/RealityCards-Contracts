@@ -13,9 +13,9 @@ var RCFactory = artifacts.require('./RCFactory.sol');
 var RCTreasury = artifacts.require('./RCTreasury.sol');
 var RCMarket = artifacts.require('./RCMarket.sol');
 var NftHubXDai = artifacts.require('./nfthubs/RCNftHubXdai.sol');
-var NftHubMainnet = artifacts.require('./nfthubs/RCNftHubMainnet.sol');
-var XdaiProxy = artifacts.require('./bridgeproxies/RCProxyXdai.sol');
-var MainnetProxy = artifacts.require('./bridgeproxies/RCProxyMainnet.sol');
+var NftHubMainnet = artifacts.require('./nfthubs/RCNftHubL1.sol');
+var XdaiProxy = artifacts.require('./bridgeproxies/RCProxyL2.sol');
+var MainnetProxy = artifacts.require('./bridgeproxies/RCProxyL1.sol');
 var RCOrderbook = artifacts.require('./RCOrderbook.sol');
 // mockups
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
@@ -25,8 +25,8 @@ var SelfDestructMockup = artifacts.require("./mockups/SelfDestructMockup.sol");
 var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
 // redeploys
 var RCFactory2 = artifacts.require('./RCFactoryV2.sol');
-var MainnetProxy2 = artifacts.require('./mockups/redeploys/RCProxyMainnetV2.sol');
-var XdaiProxy2 = artifacts.require('./mockups/redeploys/RCProxyXdaiV2.sol');
+var MainnetProxy2 = artifacts.require('./mockups/redeploys/RCProxyL1V2.sol');
+var XdaiProxy2 = artifacts.require('./mockups/redeploys/RCProxyL2V2.sol');
 var RCMarket2 = artifacts.require('./mockups/redeploys/RCMarketXdaiV2.sol');
 var BridgeMockup2 = artifacts.require('./mockups/redeploys/BridgeMockupV2.sol');
 var RealitioMockup2 = artifacts.require("./mockups/redeploys/RealitioMockupV2.sol");
@@ -242,7 +242,7 @@ contract('TestProxies', (accounts) => {
     await treasury.withdrawDeposit(amount, true, { from: userx });
   }
 
-  it('test RCProxyMainnet various', async () => {
+  it('test RCProxyL1 various', async () => {
     // test changing xdai proxy
     var xdaiproxy2 = await XdaiProxy2.new(bridge.address, rcfactory.address, treasury.address, realitio.address, treasury.address);
     await xdaiproxy2.setProxyMainnetAddress(mainnetproxy.address);
@@ -267,7 +267,7 @@ contract('TestProxies', (accounts) => {
   });
 
 
-  it('test RCProxyMainnet, various 2', async () => {
+  it('test RCProxyL1, various 2', async () => {
     // change relaitio, winner should return 69
     realitio2 = await RealitioMockup2.new();
     await xdaiproxy.setRealitioAddress(realitio2.address);

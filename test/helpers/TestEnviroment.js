@@ -11,9 +11,9 @@ const RCFactory = artifacts.require("./RCFactory.sol");
 const RCTreasury = artifacts.require("./RCTreasury.sol");
 const RCMarket = artifacts.require("./RCMarket.sol");
 const NftHubXDai = artifacts.require("./nfthubs/RCNftHubXdai.sol");
-const NftHubMainnet = artifacts.require("./nfthubs/RCNftHubMainnet.sol");
-const XdaiProxy = artifacts.require("./bridgeproxies/RCProxyXdai.sol");
-const MainnetProxy = artifacts.require("./bridgeproxies/RCProxyMainnet.sol");
+const NftHubMainnet = artifacts.require("./nfthubs/RCNftHubL1.sol");
+const XdaiProxy = artifacts.require("./bridgeproxies/RCProxyL2.sol");
+const MainnetProxy = artifacts.require("./bridgeproxies/RCProxyL1.sol");
 const RCOrderbook = artifacts.require('./RCOrderbook.sol');
 // mockups
 const RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");

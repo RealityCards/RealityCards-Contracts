@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "hardhat/console.sol";
-import "../interfaces/IRCProxyXdai.sol";
+import "../interfaces/IRCProxyL2.sol";
 import "../interfaces/IRCMarket.sol";
 
 /// @title Reality Cards NFT Hub- xDai side

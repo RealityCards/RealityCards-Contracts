@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.4;
 
-import "../../interfaces/IRCProxyMainnet.sol";
+import "../../interfaces/IRCProxyL1.sol";
 import "../../interfaces/IBridge.sol";
 import "../../interfaces/IRCTreasury.sol";
 import "../../interfaces/IRCMarket.sol";
@@ -9,7 +9,7 @@ import "../../interfaces/IRealitio.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 // a mockup to test changing the proxy, this is as per the original but always doubles the returned winner
-contract RCProxyXdaiV2 is Ownable {
+contract RCProxyL2V2 is Ownable {
     ////////////////////////////////////
     //////// VARIABLES /////////////////
     ////////////////////////////////////
@@ -247,8 +247,7 @@ contract RCProxyXdaiV2 is Ownable {
     /// @dev no harm if called again after successful posting because can't mint nft with same tokenId twice
     function postCardToUpgrade(uint256 _tokenId) public {
         require(upgradedNftId[_tokenId].set, "Nft not set");
-        bytes4 _methodSelector =
-            IRCProxyMainnet(address(0)).upgradeCard.selector;
+        bytes4 _methodSelector = IRCProxyL1(address(0)).upgradeCard.selector;
         bytes memory data =
             abi.encodeWithSelector(
                 _methodSelector,
