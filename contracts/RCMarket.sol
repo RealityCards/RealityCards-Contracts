@@ -933,10 +933,10 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                 // did lock market
                 // THEN (╯°益°)╯彡┻━┻
                 if (
-                    _timeUserForeclosed < _tokenTimeLimitTimestamp &&
+                    _timeUserForeclosed <= _tokenTimeLimitTimestamp &&
                     _timeUserForeclosed < marketLockingTime
                 ) {
-                    // user foreclosed first
+                    // user foreclosed first (or at same time as time limit)
                     _timeOfThisCollection = _timeUserForeclosed;
                     _newOwner = true;
                     _refundTime = 0;
