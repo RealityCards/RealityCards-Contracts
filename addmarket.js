@@ -9,6 +9,7 @@ var realityCardsFactory = artifacts.require("RCFactory");
 // var factoryAddress = '0x76d22B0065Ada142207E2cDce12322FB3F8c0bAA'; //dev on Sokol
 const factoryAddress = '0xbCD485e40C3ca8A08c6c0e6080ccc7e7066b1356'; // Mumbai
 
+
 // variables market specific
 var marketOpeningTime = 0;
 var marketLockingTime = 1621423800;

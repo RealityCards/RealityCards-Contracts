@@ -67,11 +67,11 @@ module.exports = async (deployer, network, accounts) => {
     nfthubxdai = await NftHubXDai.deployed();
     // tell treasury about factory & ARB, tell factory about nft hub and reference
     await treasury.setFactoryAddress(factory.address);
+    await treasury.setAlternateReceiverAddress(arbAddressXdai);
     await factory.setReferenceContractAddress(reference.address);
     await factory.setNftHubAddress(nfthubxdai.address, 0);
     // deploy xdai proxy
     if (network === 'stage1') {
-      await treasury.setAlternateReceiverAddress(arbAddressXdai);
       await deployer.deploy(
         XdaiProxy,
         ambAddressXdai,
@@ -84,7 +84,6 @@ module.exports = async (deployer, network, accounts) => {
       // for sokol, deploy realitio mockup
       await deployer.deploy(RealitioMockup);
       realitio = await RealitioMockup.deployed();
-      await treasury.setAlternateReceiverAddress(arbAddressSokol);
       await deployer.deploy(
         XdaiProxy,
         ambAddressSokol,

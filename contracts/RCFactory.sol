@@ -51,6 +51,10 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     mapping(address => bool) public governors;
     /// @dev if false, anyone can create markets
     bool public marketCreationGovernorsOnly = true;
+    /// @dev if false, anyone can be an affiliate
+    bool public approvedAffilliatesOnly = true;
+    /// @dev if false, anyone can be an artist
+    bool public approvedArtistsOnly = true;
     /// @dev if true, cards are burnt at the end of events for hidden markets to enforce scarcity
     bool public override trapIfUnapproved = true;
     /// @dev high level owner who can change the factory address
@@ -263,6 +267,16 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         marketCreationGovernorsOnly = !marketCreationGovernorsOnly;
     }
 
+    /// @notice whether or not anyone can be an artist
+    function changeApprovedArtistsOnly() external onlyOwner {
+        approvedArtistsOnly = !approvedArtistsOnly;
+    }
+
+    /// @notice whether or not anyone can be an affiliate
+    function changeApprovedAffilliatesOnly() external onlyOwner {
+        approvedAffilliatesOnly = !approvedAffilliatesOnly;
+    }
+
     /// @notice how much xdai must be sent in the createMarket tx which forms the initial pot
     function setSponsorshipRequired(uint256 _dai) external onlyOwner {
         sponsorshipRequired = _dai;
@@ -301,6 +315,9 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     /// @notice markets are default hidden from the interface, this reveals them
     function changeMarketApproval(address _market) external onlyGovernors {
         require(_market != address(0));
+        // check it's an RC contract
+        IRCMarket _marketToApprove = IRCMarket(_market);
+        assert(_marketToApprove.isMarket());
         isMarketApproved[_market] = !isMarketApproved[_market];
         emit LogMarketApproved(_market, isMarketApproved[_market]);
     }
@@ -386,23 +403,28 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
 
         // check stakeholder addresses
         // artist
-        require(
-            isArtistApproved[_artistAddress] || _artistAddress == address(0),
-            "Artist not approved"
-        );
-        // affiliate
-        require(
-            isAffiliateApproved[_affiliateAddress] ||
-                _affiliateAddress == address(0),
-            "Affiliate not approved"
-        );
-        // card affiliates
-        for (uint256 i = 0; i < _cardAffiliateAddresses.length; i++) {
+        if (approvedArtistsOnly) {
             require(
-                isCardAffiliateApproved[_cardAffiliateAddresses[i]] ||
-                    _cardAffiliateAddresses[i] == address(0),
-                "Card affiliate not approved"
+                isArtistApproved[_artistAddress] ||
+                    _artistAddress == address(0),
+                "Artist not approved"
             );
+        }
+        // affiliate
+        if (approvedAffilliatesOnly) {
+            require(
+                isAffiliateApproved[_affiliateAddress] ||
+                    _affiliateAddress == address(0),
+                "Affiliate not approved"
+            );
+            // card affiliates
+            for (uint256 i = 0; i < _cardAffiliateAddresses.length; i++) {
+                require(
+                    isCardAffiliateApproved[_cardAffiliateAddresses[i]] ||
+                        _cardAffiliateAddresses[i] == address(0),
+                    "Card affiliate not approved"
+                );
+            }
         }
 
         // check market creator is approved
