@@ -369,9 +369,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         returns (bool)
     {
         require(!globalPause, "Rentals are disabled");
-        if (marketBalance < _dai) {
-            marketBalanceDiscrepancy += _dai - marketBalance;
-            _dai -= (_dai - marketBalance);
+        if (marketBalance < _amount) {
+            marketBalanceDiscrepancy += _amount - marketBalance;
+            _amount -= (_amount - marketBalance);
         }
         address _market = msgSender();
         marketBalance -= _amount;
