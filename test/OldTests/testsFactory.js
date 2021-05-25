@@ -23,6 +23,7 @@ var BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
 var AlternateReceiverBridgeMockup = artifacts.require("./mockups/AlternateReceiverBridgeMockup.sol");
 var SelfDestructMockup = artifacts.require("./mockups/SelfDestructMockup.sol");
 var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
+const tokenMockup = artifacts.require("./mockups/tokenMockup.sol");
 // redeploys
 var RCFactory2 = artifacts.require('./RCFactoryV2.sol');
 var MainnetProxy2 = artifacts.require('./mockups/redeploys/RCProxyL1V2.sol');
@@ -66,8 +67,14 @@ contract('TestFactory', (accounts) => {
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
+    erc20 = await tokenMockup.new("Dai", "Dai", ether("10000000"), user0);
+    for (let index = 0; index < 10; index++) {
+      user = eval("user" + index);
+      erc20.transfer(user, ether("1000"), { from: user0 });
+    }
+
     // main contracts
-    treasury = await RCTreasury.new();
+    treasury = await RCTreasury.new(erc20.address);
     rcfactory = await RCFactory.new(treasury.address);
     rcreference = await RCMarket.new();
     rcorderbook = await RCOrderbook.new(rcfactory.address, treasury.address);
@@ -109,6 +116,7 @@ contract('TestFactory', (accounts) => {
       affiliateAddress,
       cardRecipients,
       question,
+      0,
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards = await RCMarket.at(marketAddress);
@@ -135,6 +143,7 @@ contract('TestFactory', (accounts) => {
       affiliateAddress,
       cardRecipients,
       question,
+      0,
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -160,6 +169,7 @@ contract('TestFactory', (accounts) => {
       affiliateAddress,
       cardRecipients,
       question,
+      0,
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(mode);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -185,41 +195,9 @@ contract('TestFactory', (accounts) => {
       affiliateAddress,
       cardRecipients,
       question,
+      0,
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(mode);
-    realitycards2 = await RCMarket.at(marketAddress);
-    return realitycards2;
-  }
-
-  async function createMarketWithArtistAndCardAffiliates() {
-    var latestTime = await time.latest();
-    var oneYear = new BN('31104000');
-    var oneYearInTheFuture = oneYear.add(latestTime);
-    var marketLockingTime = oneYearInTheFuture;
-    var oracleResolutionTime = oneYearInTheFuture;
-    var timestamps = [0, marketLockingTime, oracleResolutionTime];
-    var artistAddress = user8;
-    var affiliateAddress = user7;
-    var cardRecipients = [user5, user6, user7, user8, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0];
-    await rcfactory.changeCardAffiliateApproval(user5);
-    await rcfactory.changeCardAffiliateApproval(user6);
-    await rcfactory.changeCardAffiliateApproval(user7);
-    await rcfactory.changeCardAffiliateApproval(user8);
-    await rcfactory.changeCardAffiliateApproval(user0);
-    await rcfactory.changeAffiliateApproval(user7);
-    await rcfactory.changeArtistApproval(user8);
-    var slug = 'y';
-    await rcfactory.createMarket(
-      0,
-      '0x0',
-      timestamps,
-      tokenURIs,
-      artistAddress,
-      affiliateAddress,
-      cardRecipients,
-      question,
-    );
-    var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
     return realitycards2;
   }
@@ -243,6 +221,7 @@ contract('TestFactory', (accounts) => {
     await rcfactory.changeCardAffiliateApproval(user0);
     await rcfactory.changeAffiliateApproval(user7);
     await rcfactory.changeArtistApproval(user8);
+    await erc20.approve(treasury.address, amount, { from: user })
     await rcfactory.createMarket(
       0,
       '0x0',
@@ -251,7 +230,8 @@ contract('TestFactory', (accounts) => {
       artistAddress,
       affiliateAddress,
       cardRecipients,
-      question, { value: amount, from: user }
+      question,
+      amount, { from: user }
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -260,7 +240,8 @@ contract('TestFactory', (accounts) => {
 
   async function depositDai(amount, user) {
     amount = web3.utils.toWei(amount.toString(), 'ether');
-    await treasury.deposit(user, { from: user, value: amount });
+    await erc20.approve(treasury.address, amount, { from: user })
+    await treasury.deposit(amount, user, { from: user });
   }
 
   async function newRental(price, outcome, user) {
@@ -319,19 +300,19 @@ contract('TestFactory', (accounts) => {
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     // await rcfactory.changeMarketCreationGovernorsOnly();
-    await expectRevert(rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, { from: user1 }), "Not approved");
+    await expectRevert(rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0, { from: user1 }), "Not approved");
     // first check that only owner can call
     await expectRevert(rcfactory.changeGovernorApproval(user1, { from: user1 }), "caller is not the owner");
     // add user1 to whitelist 
     await rcfactory.changeGovernorApproval(user1);
     //try again, should work
-    await rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, { from: user1 });
+    await rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0, { from: user1 });
     // remove them, should fail again
     await rcfactory.changeGovernorApproval(user1);
     await expectRevert(rcfactory.changeGovernorApproval(user1, { from: user1 }), "caller is not the owner");
     // disable whitelist, should work
     await rcfactory.changeMarketCreationGovernorsOnly();
-    await rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, { from: user1 });
+    await rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0, { from: user1 });
     // re-enable whitelist, should not work again
     await rcfactory.changeMarketCreationGovernorsOnly();
     await expectRevert(rcfactory.changeGovernorApproval(user1, { from: user1 }), "caller is not the owner");
@@ -460,15 +441,15 @@ contract('TestFactory', (accounts) => {
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     // opening time zero, should fail
-    await expectRevert(rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question), "Market opening time not set");
+    await expectRevert(rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0), "Market opening time not set");
     // opening time not 1 day in the future, should fail
     var timestamps = [oneHourInTheFuture, marketLockingTime, oracleResolutionTime];
-    await expectRevert(rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question), "Market opens too soon");
+    await expectRevert(rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0), "Market opens too soon");
     var twoDays = new BN('172800');
     var twoDaysInTheFuture = twoDays.add(latestTime);
     // opening time 2 days in the future, should not fail
     var timestamps = [twoDaysInTheFuture, marketLockingTime, oracleResolutionTime];
-    rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question);
+    rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0);
   });
 
   it('test setMaximumDuration', async () => {
@@ -483,14 +464,14 @@ contract('TestFactory', (accounts) => {
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     var slug = 'r';
     // locking time two weeks should fail
-    await expectRevert(rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question), "Market locks too late");
+    await expectRevert(rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0), "Market locks too late");
     // locking time now two weeks in future should pass
     var twoDays = new BN('172800');
     var twoDaysInTheFuture = twoDays.add(latestTime);
     var marketLockingTime = twoDaysInTheFuture;
     var oracleResolutionTime = twoDaysInTheFuture;
     var timestamps = [twoDaysInTheFuture, marketLockingTime, oracleResolutionTime];
-    rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question);
+    rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0);
   });
 
 
@@ -500,17 +481,17 @@ contract('TestFactory', (accounts) => {
     var affiliateAddress = user2;
     var cardRecipients = ['0x0000000000000000000000000000000000000000', user6, user7, user8, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user2];
     // locking time two weeks should fail
-    await expectRevert(rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question), "Artist not approved");
+    await expectRevert(rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0), "Artist not approved");
     await rcfactory.changeArtistApproval(user2);
-    await expectRevert(rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question), "Affiliate not approved");
+    await expectRevert(rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0), "Affiliate not approved");
     await rcfactory.changeAffiliateApproval(user2);
-    await expectRevert(rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question), "Card affiliate not approved");
+    await expectRevert(rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0), "Card affiliate not approved");
     await rcfactory.changeCardAffiliateApproval(user0);
     await rcfactory.changeCardAffiliateApproval(user6);
     await rcfactory.changeCardAffiliateApproval(user7);
     await rcfactory.changeCardAffiliateApproval(user8);
     await rcfactory.changeCardAffiliateApproval(user2);
-    await rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question);
+    await rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0);
     // check that not owner cant make changes
     await expectRevert(rcfactory.changeArtistApproval(user4, { from: user2 }), "Not approved");
     await expectRevert(rcfactory.changeAffiliateApproval(user4, { from: user2 }), "Not approved");

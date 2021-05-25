@@ -294,6 +294,7 @@ async function createMarket(options) {
     artistAddress: zeroAddress,
     affiliateAddress: zeroAddress,
     cardAffiliate: [zeroAddress], // remember this is an array
+    sponsorship: 0,
   };
   options = setDefaults(options, defaults);
   // assemble arrays
@@ -313,7 +314,8 @@ async function createMarket(options) {
     options.artistAddress,
     options.affiliateAddress,
     options.cardAffiliate,
-    question
+    question,
+    sponsorship
   );
   marketAddress.push(await factory.getMostRecentMarket.call(0));
   market.push(await RCMarket.at(await factory.getMostRecentMarket.call(0)));

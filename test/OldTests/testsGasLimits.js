@@ -31,6 +31,7 @@ var SelfDestructMockup = artifacts.require("./mockups/SelfDestructMockup.sol");
 var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
 var NoFallback = artifacts.require("./mockups/noFallback.sol");
 var kleros = "0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D";
+const tokenMockup = artifacts.require("./mockups/tokenMockup.sol");
 // an array of market instances
 var market = [];
 // an array of the addresses (just a more readable way of doing market[].address)
@@ -61,8 +62,14 @@ contract("TestTreasury", (accounts) => {
   var zeroAddress = "0x0000000000000000000000000000000000000000";
 
   beforeEach(async () => {
+    erc20 = await tokenMockup.new("Dai", "Dai", ether("10000000"), user0);
+    for (let index = 0; index < 10; index++) {
+      user = eval("user" + index);
+      erc20.transfer(user, ether("1000"), { from: user0 });
+    }
+
     // main contracts
-    treasury = await RCTreasury.new();
+    treasury = await RCTreasury.new(erc20.address);
     rcfactory = await RCFactory.new(treasury.address);
     rcreference = await RCMarket.new();
     rcorderbook = await RCOrderbook.new(rcfactory.address, treasury.address);
@@ -130,6 +137,7 @@ contract("TestTreasury", (accounts) => {
       artistAddress: zeroAddress,
       affiliateAddress: zeroAddress,
       cardAffiliate: [zeroAddress],
+      sponsorship: 0,
     };
     options = setDefaults(options, defaults);
     // assemble arrays
@@ -149,17 +157,18 @@ contract("TestTreasury", (accounts) => {
       options.artistAddress,
       options.affiliateAddress,
       options.cardAffiliate,
-      question
+      question,
+      options.sponsorship,
     );
     marketAddress.push(await rcfactory.getMostRecentMarket.call(0));
     market.push(await RCMarket.at(await rcfactory.getMostRecentMarket.call(0)));
   }
 
   async function depositDai(amount, user) {
-    amount = web3.utils.toWei(amount.toString(), "ether");
-    await treasury.deposit(user, { from: user, value: amount });
+    amount = web3.utils.toWei(amount.toString(), 'ether');
+    await erc20.approve(treasury.address, amount, { from: user })
+    await treasury.deposit(amount, user, { from: user });
   }
-
   function setDefaults(options, defaults) {
     return _.defaults({}, _.clone(options), defaults);
   }
@@ -240,6 +249,7 @@ contract("TestTreasury", (accounts) => {
           affiliateAddress,
           cardRecipients,
           question,
+          0,
         );
         markets.push(await rcfactory.getMostRecentMarket.call(0));
         console.log('new market: ', markets[markets.length - 1]);
@@ -290,6 +300,7 @@ contract("TestTreasury", (accounts) => {
           affiliateAddress,
           cardRecipients,
           question,
+          0,
         );
         markets.push(await rcfactory.getMostRecentMarket.call(0));
         console.log('new market: ', markets[markets.length - 1]);
@@ -398,6 +409,7 @@ contract("TestTreasury", (accounts) => {
           affiliateAddress,
           cardRecipients,
           question,
+          0,
         );
         markets.push(await rcfactory.getMostRecentMarket.call(0));
         console.log('new market: ', markets[markets.length - 1]);
@@ -434,6 +446,7 @@ contract("TestTreasury", (accounts) => {
           affiliateAddress,
           cardRecipients,
           question,
+          0,
         );
         markets.push(await rcfactory.getMostRecentMarket.call(0));
         console.log('new market: ', markets[markets.length - 1]);

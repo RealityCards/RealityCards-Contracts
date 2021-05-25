@@ -754,25 +754,38 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         }
     }
 
+    function sponsor(uint256 _amount) external override {
+        address _creator = msgSender();
+        treasury.checkSponsorship(_creator, _amount);
+        _sponsor(_creator, _amount);
+    }
+
+    function sponsor(address _sponsorAddress, uint256 _amount)
+        external
+        override
+    {
+        _sponsor(_sponsorAddress, _amount);
+    }
+
     /// @notice ability to add liqudity to the pot without being able to win.
-    function sponsor() external payable override {
+    function _sponsor(address _sponsorAddress, uint256 _amount) internal {
         _checkNotState(States.LOCKED);
         _checkNotState(States.WITHDRAW);
-        require(msg.value > 0, "Must send something");
-        // send funds to the Treasury
-        require(treasury.sponsor{value: msg.value}());
-        totalRentCollected = totalRentCollected + (msg.value);
+        require(_amount > 0, "Must send something");
+        // send tokens to the Treasury
+        require(treasury.sponsor(_sponsorAddress, _amount));
+        totalRentCollected = totalRentCollected + _amount;
         // just so user can get it back if invalid outcome
-        rentCollectedPerUser[msgSender()] =
-            rentCollectedPerUser[msgSender()] +
-            (msg.value);
+        rentCollectedPerUser[_sponsorAddress] =
+            rentCollectedPerUser[_sponsorAddress] +
+            _amount;
         // allocate equally to each token, in case card specific affiliates
         for (uint256 i = 0; i < numberOfTokens; i++) {
             rentCollectedPerToken[i] =
                 rentCollectedPerToken[i] +
-                (msg.value / numberOfTokens);
+                (_amount / numberOfTokens);
         }
-        emit LogSponsor(msgSender(), msg.value);
+        emit LogSponsor(_sponsorAddress, _amount);
     }
 
     /*╔═════════════════════════════════╗

@@ -24,6 +24,7 @@ const DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
 const NoFallback = artifacts.require("./mockups/noFallback.sol");
 const kleros = "0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D";
 const zeroAddress = "0x0000000000000000000000000000000000000000";
+const tokenMockup = artifacts.require("./mockups/tokenMockup.sol");
 
 
 
@@ -67,8 +68,12 @@ module.exports = class TestEnviroment {
     }
 
     async setup(deployOpts = {}) {
+        this.contracts.erc20 = await tokenMockup.new("Token name", "TKN", ether("1000000"), this.aliases.admin);
+        for (let index = 0; index < 10; index++) {
+            await erc20.transfer(accounts[index], ether("1000"), { from: user0 });
+        }
         // main contracts
-        this.contracts.treasury = await RCTreasury.new();
+        this.contracts.treasury = await RCTreasury.new(this.contracts.erc20.address);
         this.contracts.factory = await RCFactory.new(this.contracts.treasury.address);
         this.contracts.reference = await RCMarket.new();
         this.contracts.orderbook = await RCOrderbook.new(this.contracts.factory.address, this.contracts.treasury.address);
@@ -124,6 +129,7 @@ module.exports = class TestEnviroment {
             artistAddress: zeroAddress,
             affiliateAddress: zeroAddress,
             cardAffiliate: [zeroAddress],
+            sponsorship: 0,
         };
         options = this.setDefaults(options, defaults);
         // assemble arrays
@@ -143,7 +149,8 @@ module.exports = class TestEnviroment {
             options.artistAddress,
             options.affiliateAddress,
             options.cardAffiliate,
-            question
+            question,
+            sponsorship
         );
         return RCMarket.at(await this.contracts.factory.getMostRecentMarket.call(0));
     }

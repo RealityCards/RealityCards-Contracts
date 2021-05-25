@@ -6,7 +6,9 @@ interface IRCMarket {
 
     function isMarket() external view returns (bool);
 
-    function sponsor() external payable;
+    function sponsor(address _sponsor, uint256 _amount) external;
+
+    function sponsor(uint256 _amount) external;
 
     function initialize(
         uint256 _mode,

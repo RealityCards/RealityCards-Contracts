@@ -27,6 +27,7 @@ var AlternateReceiverBridgeMockup = artifacts.require(
 );
 var SelfDestructMockup = artifacts.require("./mockups/SelfDestructMockup.sol");
 var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
+const tokenMockup = artifacts.require("./mockups/tokenMockup.sol");
 // redeploys
 var RCFactory2 = artifacts.require("./RCFactoryV2.sol");
 var MainnetProxy2 = artifacts.require(
@@ -95,8 +96,14 @@ contract("TestFullFlowValid", (accounts) => {
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = "0x0000000000000000000000000000000000000000";
     var affiliateAddress = "0x0000000000000000000000000000000000000000";
+    erc20 = await tokenMockup.new("Dai", "Dai", ether("10000000"), user0);
+    for (let index = 0; index < 10; index++) {
+      user = eval("user" + index);
+      erc20.transfer(user, ether("1000"), { from: user0 });
+    }
+
     // main contracts
-    treasury = await RCTreasury.new();
+    treasury = await RCTreasury.new(erc20.address);
     rcfactory = await RCFactory.new(treasury.address);
     rcreference = await RCMarket.new();
     rcorderbook = await RCOrderbook.new(rcfactory.address, treasury.address);
@@ -148,7 +155,8 @@ contract("TestFullFlowValid", (accounts) => {
       artistAddress,
       affiliateAddress,
       cardRecipients,
-      question
+      question,
+      0,
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards = await RCMarket.at(marketAddress);
@@ -174,7 +182,8 @@ contract("TestFullFlowValid", (accounts) => {
       artistAddress,
       affiliateAddress,
       cardRecipients,
-      question
+      question,
+      0,
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -199,7 +208,8 @@ contract("TestFullFlowValid", (accounts) => {
       artistAddress,
       affiliateAddress,
       cardRecipients,
-      question
+      question,
+      0,
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(mode);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -251,7 +261,8 @@ contract("TestFullFlowValid", (accounts) => {
       artistAddress,
       affiliateAddress,
       cardRecipients,
-      question
+      question,
+      0,
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -278,7 +289,8 @@ contract("TestFullFlowValid", (accounts) => {
       artistAddress,
       affiliateAddress,
       cardRecipients,
-      question
+      question,
+      0,
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(mode);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -332,7 +344,8 @@ contract("TestFullFlowValid", (accounts) => {
       artistAddress,
       affiliateAddress,
       cardRecipients,
-      question
+      question,
+      0,
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -391,7 +404,8 @@ contract("TestFullFlowValid", (accounts) => {
       affiliateAddress,
       cardRecipients,
       question,
-      { value: amount, from: user }
+      0,
+      { from: user }
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -399,8 +413,10 @@ contract("TestFullFlowValid", (accounts) => {
   }
 
   async function depositDai(amount, user) {
-    amount = web3.utils.toWei(amount.toString(), "ether");
-    await treasury.deposit(user, { from: user, value: amount });
+    amount = web3.utils.toWei(amount.toString(), 'ether');
+    erc20.approve(treasury.address, amount, { from: user })
+    // console.log("depositing ", amount, user);
+    await treasury.deposit(amount, user, { from: user });
   }
 
   async function newRental(price, outcome, user) {
@@ -416,11 +432,10 @@ contract("TestFullFlowValid", (accounts) => {
   }
 
   async function newRentalWithDeposit(price, outcome, user, dai) {
+    await depositDai(dai, user);
     price = web3.utils.toWei(price.toString(), "ether");
-    dai = web3.utils.toWei(dai.toString(), "ether");
     await realitycards.newRental(price, 0, zeroAddress, outcome, {
-      from: user,
-      value: dai,
+      from: user
     });
   }
 
@@ -443,13 +458,13 @@ contract("TestFullFlowValid", (accounts) => {
     dai
   ) {
     price = web3.utils.toWei(price.toString(), "ether");
-    dai = web3.utils.toWei(dai.toString(), "ether");
+    await depositDai(dai, user)
     await contract.newRental(
       price,
       maxuint256.toString(),
       zeroAddress,
       outcome,
-      { from: user, value: dai }
+      { from: user }
     );
   }
 
@@ -479,7 +494,7 @@ contract("TestFullFlowValid", (accounts) => {
 
   it("test winner/withdraw mode 0- zero artist/creator cut", async () => {
     /////// SETUP //////
-    await treasury.send(web3.utils.toWei("1000", "ether")); // sneaky direct send instead of deposit
+    await depositDai(1000, user0);
     await depositDai(1000, user1);
     await depositDai(1000, user2);
     // rent losing teams
@@ -1161,7 +1176,7 @@ contract("TestFullFlowValid", (accounts) => {
   it("test winner/withdraw mode 0- with card affiliate but zero artist/creator cut", async () => {
     var realitycards2 = await createMarketWithCardAffiliates();
     /////// SETUP //////
-    await treasury.send(web3.utils.toWei("1000", "ether")); // sneaky direct send instead of deposit
+    await depositDai(1000, user0);
     await depositDai(1000, user1);
     await depositDai(1000, user2);
     // rent losing teams
@@ -1556,7 +1571,7 @@ contract("TestFullFlowValid", (accounts) => {
 
   it("test sponsor", async () => {
     await expectRevert(
-      realitycards.sponsor({ from: user3 }),
+      realitycards.sponsor(0, user3, { from: user3 }),
       "Must send something"
     );
     await realitycards.sponsor({
@@ -1650,8 +1665,7 @@ contract("TestFullFlowValid", (accounts) => {
     // 10% card specific affiliates
     await rcfactory.setPotDistribution(0, 0, 0, 0, 100);
     var realitycards2 = await createMarketWithArtistAndCardAffiliates();
-    await realitycards2.sponsor({
-      value: web3.utils.toWei("200", "ether"),
+    await realitycards2.sponsor(web3.utils.toWei("200", "ether"), {
       from: user3,
     });
     await newRentalWithDepositCustomContract(realitycards2, 5, 0, user0, 1000); // paid 50

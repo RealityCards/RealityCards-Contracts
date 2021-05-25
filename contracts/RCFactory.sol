@@ -388,6 +388,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     /// @param _affiliateAddress where to send affiliate's cut, if any
     /// @param _cardAffiliateAddresses where to send card specific affiliate's cut, if any
     /// @param _realitioQuestion the details of the event to send to the oracle
+    /// @param _sponsorship amount of sponsorship to create the market with
     function createMarket(
         uint32 _mode,
         string memory _ipfsHash,
@@ -396,10 +397,17 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         address _artistAddress,
         address _affiliateAddress,
         address[] memory _cardAffiliateAddresses,
-        string memory _realitioQuestion
-    ) external payable returns (address) {
+        string memory _realitioQuestion,
+        uint256 _sponsorship
+    ) external returns (address) {
+        address _creator = msgSender();
+
         // check sponsorship
-        require(msg.value >= sponsorshipRequired, "Insufficient sponsorship");
+        require(
+            _sponsorship >= sponsorshipRequired,
+            "Insufficient sponsorship"
+        );
+        treasury.checkSponsorship(_creator, _sponsorship);
 
         // check stakeholder addresses
         // artist
@@ -429,10 +437,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
 
         // check market creator is approved
         if (marketCreationGovernorsOnly) {
-            require(
-                governors[msgSender()] || owner() == msgSender(),
-                "Not approved"
-            );
+            require(governors[_creator] || owner() == _creator, "Not approved");
         }
 
         // check timestamps
@@ -510,7 +515,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
             _artistAddress: _artistAddress,
             _affiliateAddress: _affiliateAddress,
             _cardAffiliateAddresses: _cardAffiliateAddresses,
-            _marketCreatorAddress: msgSender()
+            _marketCreatorAddress: _creator
         });
 
         // create the NFTs
@@ -535,8 +540,8 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         );
 
         // pay sponsorship, if applicable
-        if (msg.value > 0) {
-            IRCMarket(_newAddress).sponsor{value: msg.value}();
+        if (_sponsorship > 0) {
+            IRCMarket(_newAddress).sponsor(_creator, _sponsorship);
         }
 
         return _newAddress;

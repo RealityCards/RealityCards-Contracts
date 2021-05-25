@@ -120,7 +120,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         _;
         // using >= not == because forced Ether send via selfdestruct will not trigger a deposit via the fallback
         require(
-            address(this).balance >=
+            erc20.balanceOf(address(this)) >=
                 totalDeposits + marketBalance + totalMarketPots,
             "books are unbalanced!"
         );
@@ -321,8 +321,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         user[_msgSender].deposit -= SafeCast.toUint128(_amount);
         totalDeposits -= _amount;
         if (_localWithdrawal) {
-            (bool _success, ) = payable(_msgSender).call{value: _amount}("");
-            require(_success, "Transfer failed");
+            erc20.transfer(_msgSender, _amount);
         } else {
             IAlternateReceiverBridge _alternateReceiverBridge =
                 IAlternateReceiverBridge(alternateReceiverBridgeAddress);
@@ -356,6 +355,22 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
             marketBalanceDiscrepancy -= msg.value;
         }
         marketBalance += msg.value;
+    }
+
+    /*╔═════════════════════════════════╗
+      ║         ERC20 helpers           ║
+      ╚═════════════════════════════════╝*/
+
+    function checkSponsorship(address sender, uint256 _amount)
+        external
+        view
+        override
+    {
+        require(
+            erc20.allowance(sender, address(this)) >= _amount,
+            "Insufficient Allowance"
+        );
+        require(erc20.balanceOf(sender) >= _amount, "Insufficient Balance");
     }
 
     /*╔═════════════════════════════════╗
@@ -425,17 +440,21 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     }
 
     /// @notice ability to add liqudity to the pot without being able to win (called by market sponsor function).
-    function sponsor()
+    function sponsor(address _sponsor, uint256 _amount)
         external
-        payable
         override
         balancedBooks
         onlyMarkets
         returns (bool)
     {
         require(!globalPause, "Global Pause is Enabled");
-        marketPot[msgSender()] = marketPot[msgSender()] + (msg.value);
-        totalMarketPots = totalMarketPots + (msg.value);
+        require(
+            erc20.allowance(_sponsor, address(this)) >= _amount,
+            "Not approved to send this amount"
+        );
+        erc20.transferFrom(_sponsor, address(this), _amount);
+        marketPot[msgSender()] += _amount;
+        totalMarketPots += _amount;
         return true;
     }
 
