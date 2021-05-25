@@ -617,7 +617,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         uint256 _token
     )
         public
-        payable
         autoUnlock()
         autoLock() /*returns (uint256)*/
     {
@@ -657,11 +656,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                 orderbook.removeOldBids(_user);
 
                 _collectRent(_token);
-
-                // process deposit, if sent
-                if (msg.value > 0) {
-                    assert(treasury.deposit{value: msg.value}(_user));
-                }
 
                 // check sufficient deposit
                 uint256 _userTotalBidRate =

@@ -3,7 +3,7 @@ pragma solidity 0.8.4;
 
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../interfaces/IRCProxyL1.sol";
 import "../interfaces/IBridge.sol";
 import "../interfaces/IRCMarket.sol";
@@ -21,6 +21,7 @@ contract RCProxyL2 is Ownable {
     ///// CONTRACT VARIABLES /////
     IBridge public bridge;
     IRealitio public realitio;
+    IERC20 public erc20;
 
     ///// GOVERNANCE VARIABLES /////
     address public proxyMainnetAddress;
@@ -327,6 +328,11 @@ contract RCProxyL2 is Ownable {
         }
     }
 
+    function updateTokenContract() public {
+        IRCTreasury treasury = IRCTreasury(treasuryAddress);
+        erc20 = treasury.erc20();
+    }
+
     /// @dev deposits xDai into the Treasury (if allowed) otherwise send to user
     function executeDaiDeposit(uint256 _nonce) public {
         require(deposits[_nonce].confirmed, "Not confirmed");
@@ -343,11 +349,10 @@ contract RCProxyL2 is Ownable {
                 treasury.maxContractBalance() &&
                 !treasury.globalPause()
             ) {
-                assert(treasury.deposit{value: _amount}(_user));
-                // otherwise, just send to the user
+                erc20.transfer(address(treasury), _amount);
             } else {
-                (bool _success, ) = payable(_user).call{value: _amount}("");
-                require(_success, "Transfer failed");
+                // otherwise, just send to the user
+                erc20.transfer(_user, _amount);
             }
         }
     }

@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.4;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 interface IRCTreasury {
+    function setTokenAddress(address _newToken) external;
+
     function foreclosureTimeUser(
         address _user,
         uint256 _newBid,
@@ -50,7 +54,9 @@ interface IRCTreasury {
 
     function changeUberOwner(address _newUberOwner) external;
 
-    function deposit(address) external payable returns (bool);
+    function erc20() external returns (IERC20);
+
+    function deposit(uint256 _amount, address _user) external returns (bool);
 
     function withdrawDeposit(uint256 _dai, bool _localWithdrawal) external;
 

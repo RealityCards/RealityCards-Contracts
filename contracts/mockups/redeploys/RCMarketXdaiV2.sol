@@ -620,7 +620,6 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
         uint256 _tokenId
     )
         public
-        payable
         autoUnlock()
         autoLock() /*returns (uint256)*/
     {
@@ -649,11 +648,6 @@ contract RCMarketXdaiV2 is Initializable, NativeMetaTransaction, IRCMarket {
         }
 
         _collectRent(_tokenId);
-
-        // process deposit, if sent
-        if (msg.value > 0) {
-            assert(treasury.deposit{value: msg.value}(_user));
-        }
 
         // check sufficient deposit
         uint256 _userTotalBidRate =

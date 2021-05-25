@@ -7,6 +7,7 @@ import "../../interfaces/IRCTreasury.sol";
 import "../../interfaces/IRCMarket.sol";
 import "../../interfaces/IRealitio.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // a mockup to test changing the proxy, this is as per the original but always doubles the returned winner
 contract RCProxyL2V2 is Ownable {
@@ -17,6 +18,7 @@ contract RCProxyL2V2 is Ownable {
     ///// CONTRACT VARIABLES /////
     IBridge public bridge;
     IRealitio public realitio;
+    IERC20 public erc20;
 
     ///// GOVERNANCE VARIABLES /////
     address public proxyMainnetAddress;
@@ -306,6 +308,11 @@ contract RCProxyL2V2 is Ownable {
         }
     }
 
+    function updateTokenContract() public {
+        IRCTreasury treasury = IRCTreasury(treasuryAddress);
+        erc20 = treasury.erc20();
+    }
+
     /// @dev deposits xDai into the Treasury (if allowed) otherwise send to user
     function executeDaiDeposit(uint256 _nonce) public {
         require(deposits[_nonce].confirmed, "Not confirmed");
@@ -313,20 +320,20 @@ contract RCProxyL2V2 is Ownable {
         uint256 _amount = deposits[_nonce].amount;
         address _user = deposits[_nonce].user;
         if (address(this).balance >= _amount) {
-            IRCTreasury treasury = IRCTreasury(treasuryAddress);
-            // if Treasury will allow the deposit, send it there
-            if (
-                address(treasury).balance + (_amount) <=
-                treasury.maxContractBalance()
-            ) {
-                assert(treasury.deposit{value: _amount}(_user));
-                // otherwise, just send to the user
-            } else {
-                (bool _success, ) = payable(_user).call{value: _amount}("");
-                require(_success, "Transfer failed");
-            }
             deposits[_nonce].executed = true;
             emit LogDepositExecuted(_nonce);
+            IRCTreasury treasury = IRCTreasury(treasuryAddress);
+            // if Treasury will allow the deposit and globalPause is off, send it there
+            if (
+                address(treasury).balance + _amount <=
+                treasury.maxContractBalance() &&
+                !treasury.globalPause()
+            ) {
+                erc20.transfer(address(treasury), _amount);
+            } else {
+                // otherwise, just send to the user
+                erc20.transfer(_user, _amount);
+            }
         }
     }
 }
