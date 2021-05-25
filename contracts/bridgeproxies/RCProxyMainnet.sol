@@ -168,7 +168,8 @@ contract RCProxyMainnet is Ownable {
     /// @dev send Dai to xDai proxy and emit event for offchain validator
     function _depositDai(address _sender, uint256 _amount) internal {
         require(depositsEnabled, "Deposits disabled");
-        emit DaiDeposited(_sender, _amount, depositNonce + (1));
+        emit DaiDeposited(_sender, _amount, depositNonce);
+        depositNonce += 1;
         require(
             dai.transferFrom(_sender, address(this), _amount),
             "Token transfer failed"

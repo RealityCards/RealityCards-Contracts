@@ -38,6 +38,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     uint256 public marketBalance;
     /// @dev a quick check if a uesr is foreclosed
     mapping(address => bool) public override isForeclosed;
+    /// @dev to keep track of the size of the rounding issue between rent collections
+    uint256 marketBalanceDiscrepancy;
 
     /// @param deposit the users current deposit in wei
     /// @param rentalRate the daily cost of the cards the user current owns
@@ -86,6 +88,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         uint256 indexed amount,
         bool increase
     );
+    event LogMarketPaused(address market, bool paused);
+    event LogGlobalPause(bool paused);
 
     /*╔═════════════════════════════════╗
       ║           CONSTRUCTOR           ║
@@ -186,11 +190,14 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     /// @dev if true, cannot deposit, withdraw or rent any cards
     function changeGlobalPause() external override onlyOwner {
         globalPause = !globalPause;
+        emit LogGlobalPause(globalPause);
     }
 
     /// @dev if true, cannot make a new rental for a specific market
     function changePauseMarket(address _market) external override onlyOwner {
+        require(isMarket[_market], "This isn't a market");
         marketPaused[_market] = !marketPaused[_market];
+        emit LogMarketPaused(_market, marketPaused[_market]);
     }
 
     /*╔═════════════════════════════════╗
@@ -249,15 +256,15 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         // do some cleaning up, it might help cancel their foreclosure
         orderbook.removeOldBids(_user);
 
-        // this deposit could cancel the users foreclosure
-        if (msg.value > user[_user].bidRate / (minRentalDayDivisor)) {
-            isForeclosed[_user] = false;
-            emit LogUserForeclosed(_user, false);
-        }
-
         user[_user].deposit += SafeCast.toUint128(msg.value);
         totalDeposits += msg.value;
         emit LogAdjustDeposit(_user, msg.value, true);
+
+        // this deposit could cancel the users foreclosure
+        if (user[_user].deposit > user[_user].bidRate / (minRentalDayDivisor)) {
+            isForeclosed[_user] = false;
+            emit LogUserForeclosed(_user, false);
+        }
         return true;
     }
 
@@ -319,6 +326,17 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         }
     }
 
+    /// @notice to increase the market balance
+    /// @dev not strictly required but prevents markets being shortchanged due to rounding issues
+    function topupMarketBalance() external payable override {
+        if (msg.value > marketBalanceDiscrepancy) {
+            marketBalanceDiscrepancy = 0;
+        } else {
+            marketBalanceDiscrepancy -= msg.value;
+        }
+        marketBalance += msg.value;
+    }
+
     /*╔═════════════════════════════════╗
       ║        MARKET CALLABLE          ║
       ╚═════════════════════════════════╝*/
@@ -335,8 +353,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         returns (bool)
     {
         require(!globalPause, "Rentals are disabled");
-        if (marketBalance + 1 == _dai) {
-            _dai -= 1;
+        if (marketBalance < _dai) {
+            marketBalanceDiscrepancy += _dai - marketBalance;
+            _dai -= (_dai - marketBalance);
         }
         address _market = msgSender();
         marketBalance -= _dai;
@@ -375,6 +394,13 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         user[_user].deposit += SafeCast.toUint128(_refund);
         totalDeposits += _refund;
         emit LogAdjustDeposit(_user, _refund, true);
+        if (
+            isForeclosed[_user] &&
+            user[_user].deposit > user[_user].bidRate / minRentalDayDivisor
+        ) {
+            isForeclosed[_user] = false;
+            emit LogUserForeclosed(_user, false);
+        }
     }
 
     /// @notice ability to add liqudity to the pot without being able to win (called by market sponsor function).
@@ -610,6 +636,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         override
         returns (uint256 newTimeLastCollectedOnForeclosure)
     {
+        require(!globalPause, "Global pause is enabled");
         assert(_timeToCollectTo != 0);
         if (user[_user].lastRentCalc < _timeToCollectTo) {
             uint256 rentOwedByUser = rentOwedUser(_user, _timeToCollectTo);
