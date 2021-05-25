@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.4;
 
-interface IRCNftHubXdai {
+interface IRCNftHubL2 {
     function marketTracker(uint256) external view returns (address);
 
     function ownerOf(uint256) external view returns (address);

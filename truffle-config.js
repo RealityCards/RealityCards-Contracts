@@ -1,11 +1,14 @@
 require("dotenv").config();
 
 const path = require("path");
-const HDWalletProvider = require("truffle-hdwallet-provider");
+const HDWalletProvider = require("@truffle/hdwallet-provider");
 const INFURA_KEY = process.env.INFURA_KEY;
 const MNEMONIC = process.env.MNEMONIC;
 const ETHERSCAN_KEY = process.env.ETHERSCAN_KEY;
 const blockchainNodeHost = process.env.BLOCKCHAIN_NODE_HOST || "localhost";
+const MATIC_RPC = process.env.MATIC_RPC || "https://rpc-mainnet.maticvigil.com";
+const MUMBAI_RPC = process.env.MUMBAI_RPC || "https://rpc-mumbai.maticvigil.com";
+
 
 module.exports = {
   plugins: ["truffle-plugin-verify", 'truffle-contract-size'],
@@ -84,61 +87,76 @@ module.exports = {
       gas: 12000000,
       gasPrice: 1000000000,
     },
-    stage1: {
+    matic: {
       provider: function () {
-        return new HDWalletProvider(MNEMONIC, "http://rpc.xdaichain.com");
+        return new HDWalletProvider(MNEMONIC, MATIC_RPC);
       },
-      network_id: 100,
+      network_id: 137,
       gas: 12000000,
-      gasPrice: 1000000000,
+      gasPrice: 7500000000,
     },
-    stage2: {
-      provider: () => {
-        return new HDWalletProvider(
-          MNEMONIC,
-          `https://mainnet.infura.io/v3/${INFURA_KEY}`
-        );
-      },
-      network_id: 1,
-      gas: 3000000,
-      gasPrice: 140000000000,
-      networkCheckTimeout: 12000,
-    },
-    stage3: {
+    mumbai: {
       provider: function () {
-        return new HDWalletProvider(MNEMONIC, "http://rpc.xdaichain.com");
+        return new HDWalletProvider(MNEMONIC, MUMBAI_RPC);
       },
-      network_id: 100,
+      network_id: 80001,
       gas: 12000000,
-      gasPrice: 1000000000,
+      gasPrice: 5000000000,
     },
+    // stage1: {
+    //   provider: function () {
+    //     return new HDWalletProvider(MNEMONIC, "http://rpc.xdaichain.com");
+    //   },
+    //   network_id: 100,
+    //   gas: 12000000,
+    //   gasPrice: 1000000000,
+    // },
+    // stage2: {
+    //   provider: () => {
+    //     return new HDWalletProvider(
+    //       MNEMONIC,
+    //       `https://mainnet.infura.io/v3/${INFURA_KEY}`
+    //     );
+    //   },
+    //   network_id: 1,
+    //   gas: 3000000,
+    //   gasPrice: 140000000000,
+    //   networkCheckTimeout: 12000,
+    // },
+    // stage3: {
+    //   provider: function () {
+    //     return new HDWalletProvider(MNEMONIC, "http://rpc.xdaichain.com");
+    //   },
+    //   network_id: 100,
+    //   gas: 12000000,
+    //   gasPrice: 1000000000,
+    // },
     teststage1: {
       provider: function () {
-        return new HDWalletProvider(MNEMONIC, "https://sokol.poa.network/");
+        // ProTip: You need to do the free upgrade on Infura to get access to Matic
+        return new HDWalletProvider(MNEMONIC, `https://polygon-mumbai.infura.io/v3/${INFURA_KEY}`);
       },
-      network_id: 77,
+      network_id: 80001,
       gas: 12000000,
-      gasPrice: 1000000000,
+      gasPrice: 5000000000,
     },
     teststage2: {
       provider: () => {
         return new HDWalletProvider(
           MNEMONIC,
-          `https://kovan.infura.io/v3/${INFURA_KEY}`
+          `https://goerli.infura.io/v3/${INFURA_KEY}`
         );
       },
-      network_id: 42,
-      gas: 3000000,
-      gasPrice: 140000000000,
-      networkCheckTimeout: 12000,
+      network_id: 5,
+      gas: 8000000,
     },
     teststage3: {
       provider: function () {
-        return new HDWalletProvider(MNEMONIC, "https://sokol.poa.network/");
+        return new HDWalletProvider(MNEMONIC, `https://polygon-mumbai.infura.io/v3/${INFURA_KEY}`);
       },
-      network_id: 77,
+      network_id: 80001,
       gas: 12000000,
-      gasPrice: 1000000000,
+      gasPrice: 5000000000,
     },
     teststage1: {
       provider: function() {

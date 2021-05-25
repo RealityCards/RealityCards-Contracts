@@ -2,7 +2,7 @@
 pragma solidity 0.8.4;
 
 import "../../interfaces/IRealitio.sol";
-import "../../interfaces/IRCProxyXdai.sol";
+import "../../interfaces/IRCProxyL2.sol";
 import "../../interfaces/IBridge.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -87,8 +87,7 @@ contract RCProxyMainnetV2 is Ownable {
         // if finalised, send result over to xDai proxy
         if (_isFinalized) {
             bytes32 _winningOutcome = bytes32(uint256(69));
-            bytes4 _methodSelector =
-                IRCProxyXdai(address(0)).setWinner.selector;
+            bytes4 _methodSelector = IRCProxyL2(address(0)).setWinner.selector;
             bytes memory data =
                 abi.encodeWithSelector(
                     _methodSelector,

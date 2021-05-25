@@ -3,8 +3,8 @@ pragma solidity 0.8.4;
 
 import "hardhat/console.sol";
 
-import "../interfaces/IRCProxyXdai.sol";
-import "../interfaces/IRCProxyMainnet.sol";
+import "../interfaces/IRCProxyL2.sol";
+import "../interfaces/IRCProxyL1.sol";
 
 // this is only for ganache testing. Public chain deployments will use the existing Realitio contracts.
 

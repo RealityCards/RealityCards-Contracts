@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.4;
 
-interface IRCProxyXdai {
+interface IRCProxyL2 {
     function setWinner(address _marketAddress, uint256 _winningOutcome)
         external;
 

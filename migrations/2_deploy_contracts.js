@@ -35,9 +35,12 @@ var daiAddressMainnet = '0x6b175474e89094c44da98b954eedeac495271d0f'
 var ambAddressSokol = '0xFe446bEF1DbF7AFE24E81e05BC8B271C1BA9a560'
 var ambAddressKovan = '0xFe446bEF1DbF7AFE24E81e05BC8B271C1BA9a560'
 var realitioAddressKovan = '0x325a2e0F3CCA2ddbaeBB4DfC38Df8D19ca165b47'
-var arbAddressKovan = '0xA960d095470f7509955d5402e36d9DB984B5C8E2'
-// this is just a blank ERC20 contract
-var daiAddressKovan = '0xd133b22BCCcb3Cd3ca752D206b0632932D530Fda'
+var arbAddressKovan = '0xEa7F8C8d2c55eE242f2F22c11F43421E459229b8'
+var arbAddressSokol = '0xed47976103eBcCF7685e8aF185deD9EcF57E146A'
+// this is the trialBridge Dai contract, more info here: https://docs.tokenbridge.net/xdai-bridge/trial-the-bridge
+var daiAddressKovan = '0x40a81c34f36EbE2D98baC578d66d3EE952A48f24'
+const dummyERC20Goerli = '0x3f152B63Ec5CA5831061B2DccFb29a874C317502'
+const dummyERC20Mumbai = '0x2d7882beDcbfDDce29Ba99965dd3cdF7fcB10A1e'
 
 // read input arguments
 var xdaiProxyAddress = myArgs[0]
@@ -54,7 +57,7 @@ module.exports = async (deployer, network, accounts) => {
   if (network === 'teststage1' || network === 'stage1') {
     // xdai
     // deploy treasury, factory, reference market and nft hub
-    await deployer.deploy(RCTreasury);
+    await deployer.deploy(RCTreasury, dummyERC20Mumbai);
     treasury = await RCTreasury.deployed();
     await deployer.deploy(RCFactory, treasury.address);
     factory = await RCFactory.deployed();
@@ -66,7 +69,7 @@ module.exports = async (deployer, network, accounts) => {
     await treasury.setFactoryAddress(factory.address);
     await treasury.setAlternateReceiverAddress(arbAddressXdai);
     await factory.setReferenceContractAddress(reference.address);
-    await factory.setNftHubAddress(nfthubxdai.address,0);
+    await factory.setNftHubAddress(nfthubxdai.address, 0);
     // deploy xdai proxy
     if (network === 'stage1') {
       await deployer.deploy(
@@ -114,10 +117,10 @@ module.exports = async (deployer, network, accounts) => {
     nfthubmainnet = await NftHubMainnet.deployed()
     if (network === 'stage2') {
       // deploy mainnet proxy on mainnet
-      await deployer.deploy(MainnetProxy, ambAddressMainnet, realitioAddress, arbAddressMainnet);
+      await deployer.deploy(MainnetProxy, ambAddressMainnet, nfthubmainnet.address, arbAddressMainnet, daiAddressMainnet);
     } else {
       // deploy mainnet proxy on Kovan
-      await deployer.deploy(MainnetProxy, ambAddressKovan, realitioAddressKovan, arbAddressKovan);
+      await deployer.deploy(MainnetProxy, ambAddressKovan, nfthubmainnet.address, arbAddressKovan, dummyERC20Goerli);
     }
 
     mainnetproxy = await MainnetProxy.deployed();
@@ -131,7 +134,6 @@ module.exports = async (deployer, network, accounts) => {
     console.log(NftHubMainnet.address)
     console.log('TheMainnetProxyAddress')
     console.log(MainnetProxy.address)
-
   } else if (network === 'teststage3' || network === 'stage3') {
     console.log('Begin Stage 3')
     // xdai
@@ -142,22 +144,6 @@ module.exports = async (deployer, network, accounts) => {
 
   } else if (network === 'graphTesting') {
     console.log('Local Graph Testing, whoot whoot')
-
-    user0 = accounts[0]
-    user1 = accounts[1]
-    user2 = accounts[2]
-    user3 = accounts[3]
-    user4 = accounts[4]
-    user5 = accounts[5]
-    user6 = accounts[6]
-    user7 = accounts[7]
-    user8 = accounts[8]
-    andrewsAddress = accounts[9]
-
-    // print accounts
-    accounts.map((account, index) =>
-      console.log('Account' + index + ': ', account)
-    )
 
     // deploy treasury, factory, reference market and nft hub
     await deployer.deploy(RCTreasury)
@@ -218,60 +204,398 @@ module.exports = async (deployer, network, accounts) => {
      *                                     *
      **************************************/
 
-
-    // Make some deposits
-    await depositDai(100, user0)
-    await depositDai(100, user1)
-    await depositDai(100, user2)
-
-    // create a new market with all default values
-    await createMarket()
-    console.log('new market here: ', marketAddress[0])
-
-    // marketAddress is an array of the market addresses, market is an array of market objects
-    // so market[x].address == marketAddress[x]
-
-    // create a market with one of the ipfs hashes, options passed in must be in cruly braces{}
+    // create a market with one of the ipfs hashes, options passed in must be in curly braces{}
+    // all other values are the default values (4 cards, starting right away, closing in one year)
     // TAKE CARE, Misspelling an option will silently fail
+    // TAKE CARE, if using the same ipfs for two markets, the second market won't be displayed in the UI - the slug should be unique
     await createMarket({ ipfs: ipfsHashes[0] })
-    console.log('market with ipfs hash here: ', marketAddress[1])
+    console.log('New market here: ', market[0].address)
+    // market is an array of market objects, this is how you can access a market and call its methods (rent, exit, withdraw winnings)
 
-    //rent a card, by default this is user0, market[0], card 0, 1 xDai
-    await rent()
+    // create 6 markets (#1-6)
+    await createMarket({
+      ipfs: ipfsHashes[1],
+      closeTime: time.duration.weeks(3)
+    })
+    await createMarket({
+      ipfs: ipfsHashes[2],
+      closeTime: time.duration.weeks(4)
+    })
+    await createMarket({
+      ipfs: ipfsHashes[3],
+      closeTime: time.duration.weeks(5)
+    })
+    await createMarket({
+      ipfs: ipfsHashes[4],
+      closeTime: time.duration.weeks(3)
+    })
+    await createMarket({
+      ipfs: ipfsHashes[5],
+      closeTime: time.duration.weeks(4)
+    })
+    await createMarket({
+      ipfs: ipfsHashes[6],
+      closeTime: time.duration.weeks(5)
+    })
 
-    // rent in the last market we made
-    tempMarket = market[market.length - 1] //don't use a fixed index, incase we later create a market before this one
-    await rent({ market: tempMarket })
-    // same bidder, just increase the price from default 1, to 2 xDai/day
-    await rent({ market: tempMarket, price: 2 })
-    // new bidder and higher price
-    await rent({ market: tempMarket, price: 3, from: user1 })
-    // bid on a different outcome (outcome is zero index)
-    await rent({ market: tempMarket, outcome: 1 })
-    await rent({ market: tempMarket, outcome: 1, price: 3, from: user1 })
+    console.log('Markets #1-6 deployed')
 
-    console.log('renting in market ', tempMarket.address)
+    // make some deposits
+    await depositDai(500, accounts[0])
+    await depositDai(900, accounts[1])
+    await depositDai(500, accounts[2])
+    await depositDai(500, accounts[3])
+    await depositDai(500, accounts[4])
+    await depositDai(500, accounts[5])
+    await depositDai(500, accounts[6])
+    await depositDai(500, accounts[7])
+    await depositDai(500, accounts[8])
+    await depositDai(500, accounts[9])
+    await depositDai(500, accounts[10])
+    await depositDai(500, accounts[11])
+    await depositDai(500, accounts[12])
 
-    await time.increase(time.duration.weeks(1))
+    console.log('Deposits done')
 
-    //tempMarket we copied from market[] so it's a market object which means we can call functions directly
-    await tempMarket.collectRentAllCards()
-    var countCards = await tempMarket.numberOfTokens()
-    console.log('Number of cards in this market:', countCards.toString())
+    //rent a card, if the price is not specified it will rent at 10% higher than the current price (or 1 if current is 0)
+    await rent({ from: accounts[1], market: market[0], outcome: 0 })
+    // skip some time
+    await time.increase(time.duration.days(3))
+    // exit position
+    await exit({ from: accounts[1], market: market[0], outcome: 0 })
 
+    console.log('Test rent done')
 
-    // create a market with a delayed start, 10 cards and an ipfs hash 
-    await createMarket({ openTime: 120, numberOfCards: 10, ipfs: ipfsHashes[1] })
+    // account1 setup: rent 4 winnings cards, 6 losing cards, 6 locked cards
 
+    // 3 locked cards (market#1)
+    await rent({
+      from: accounts[1],
+      market: market[1],
+      outcome: 0,
+      price: '20'
+    })
+    await time.increase(time.duration.hours(2))
+    await exit({ from: accounts[1], market: market[1], outcome: 0 })
 
+    await rent({
+      from: accounts[1],
+      market: market[1],
+      outcome: 1,
+      price: '10'
+    })
+    await time.increase(time.duration.hours(4))
+    await exit({ from: accounts[1], market: market[1], outcome: 1 })
 
+    await rent({ from: accounts[1], market: market[1], outcome: 2, price: '5' })
+    await time.increase(time.duration.hours(6))
+    await exit({ from: accounts[1], market: market[1], outcome: 2 })
 
+    // 3 locked cards (market#2)
+    await rent({ from: accounts[1], market: market[2], outcome: 2, price: '4' })
+    await time.increase(time.duration.hours(3))
+    await exit({ from: accounts[1], market: market[2], outcome: 2 })
+
+    await rent({ from: accounts[1], market: market[2], outcome: 1, price: '8' })
+    await time.increase(time.duration.hours(5))
+    await exit({ from: accounts[1], market: market[2], outcome: 1 })
+
+    await rent({
+      from: accounts[1],
+      market: market[2],
+      outcome: 0,
+      price: '66'
+    })
+    await time.increase(time.duration.hours(7))
+    await exit({ from: accounts[1], market: market[2], outcome: 0 })
+
+    console.log('Locked cards done')
+
+    // 4 winnings cards (market#3)
+    await rent({ from: accounts[1], market: market[3], outcome: 0, price: '4' })
+    await time.increase(time.duration.hours(12))
+    await exit({ from: accounts[1], market: market[3], outcome: 0 })
+
+    await rent({ from: accounts[1], market: market[4], outcome: 1, price: '8' })
+    await time.increase(time.duration.hours(5))
+    await exit({ from: accounts[1], market: market[4], outcome: 1 })
+
+    await rent({
+      from: accounts[1],
+      market: market[5],
+      outcome: 2,
+      price: '16'
+    })
+    await time.increase(time.duration.hours(7))
+    await exit({ from: accounts[1], market: market[5], outcome: 2 })
+
+    await rent({
+      from: accounts[1],
+      market: market[6],
+      outcome: 3,
+      price: '32'
+    })
+    await time.increase(time.duration.hours(9))
+    await exit({ from: accounts[1], market: market[6], outcome: 3 })
+
+    console.log('Winning cards done')
+
+    // 6 losing cards
+    await rent({ from: accounts[1], market: market[3], outcome: 1 })
+    await time.increase(time.duration.hours(1))
+    await exit({ from: accounts[1], market: market[3], outcome: 1 })
+
+    await rent({ from: accounts[1], market: market[3], outcome: 2 })
+    await time.increase(time.duration.hours(1))
+    await exit({ from: accounts[1], market: market[3], outcome: 2 })
+
+    await rent({ from: accounts[1], market: market[4], outcome: 2 })
+    await time.increase(time.duration.hours(1))
+    await exit({ from: accounts[1], market: market[4], outcome: 2 })
+
+    await rent({ from: accounts[1], market: market[4], outcome: 3 })
+    await time.increase(time.duration.hours(1))
+    await exit({ from: accounts[1], market: market[4], outcome: 3 })
+
+    await rent({
+      from: accounts[1],
+      market: market[5],
+      outcome: 3
+    })
+    await time.increase(time.duration.hours(1))
+    await exit({ from: accounts[1], market: market[5], outcome: 3 })
+
+    await rent({
+      from: accounts[1],
+      market: market[6],
+      outcome: 0
+    })
+    await time.increase(time.duration.hours(1))
+    await exit({ from: accounts[1], market: market[6], outcome: 0 })
+
+    console.log('Losing cards done')
+
+    // skip more time to make sure all markets are past their closing time
+    await time.increase(time.duration.weeks(5))
+
+    // lock 2 markets (#1 and #2)
+    await market[1].lockMarket()
+    await market[2].lockMarket()
+
+    // close 4 markets (#3-6)
+    await closeMarket({
+      realitio: realitio,
+      xdaiproxy: xdaiproxy,
+      market: market[3],
+      winningOutcome: 0
+    })
+    await closeMarket({
+      realitio: realitio,
+      xdaiproxy: xdaiproxy,
+      market: market[4],
+      winningOutcome: 1
+    })
+    await closeMarket({
+      realitio: realitio,
+      xdaiproxy: xdaiproxy,
+      market: market[5],
+      winningOutcome: 2
+    })
+    await closeMarket({
+      realitio: realitio,
+      xdaiproxy: xdaiproxy,
+      market: market[6],
+      winningOutcome: 3
+    })
+
+    await market[3].claimCard(0, { from: accounts[1] })
+    await market[3].upgradeCard(0, { from: accounts[1] })
+
+    console.log('Closed markets done')
+
+    // account#1 setup: rent some cards from market 0
+    await rent({ from: accounts[1], market: market[0], outcome: 1, price: 5 })
+    await rent({ from: accounts[1], market: market[0], outcome: 2, price: 10 })
+    // set users to market#0's leaderboard and orderbook (outcome 0)
+    await rent({ from: accounts[2], market: market[0], outcome: 0 })
+    await time.increase(time.duration.hours(11))
+    await rent({ from: accounts[3], market: market[0], outcome: 0 })
+    await time.increase(time.duration.hours(22))
+    await rent({ from: accounts[4], market: market[0], outcome: 0 })
+    await time.increase(time.duration.hours(33))
+    await rent({ from: accounts[5], market: market[0], outcome: 0 })
+    await time.increase(time.duration.hours(44))
+    await rent({ from: accounts[7], market: market[0], outcome: 0 })
+    await time.increase(time.duration.hours(55))
+    await rent({ from: accounts[8], market: market[0], outcome: 0 })
+    await time.increase(time.duration.hours(66))
+    await rent({ from: accounts[9], market: market[0], outcome: 0 })
+    await time.increase(time.duration.hours(77))
+    await rent({ from: accounts[10], market: market[0], outcome: 0 })
+    await time.increase(time.duration.hours(88))
+    await rent({ from: accounts[11], market: market[0], outcome: 0 })
+    await time.increase(time.duration.hours(99))
+    await rent({ from: accounts[12], market: market[0], outcome: 0 })
+    await time.increase(time.duration.hours(200))
+
+    console.log('Market#0 rents done')
+
+    // create 2 markets (#7-8)
+    await createMarket({
+      ipfs: ipfsHashes[7],
+      numberOfCards: 6,
+      closeTime: time.duration.weeks(24)
+    })
+    await createMarket({
+      ipfs: ipfsHashes[8],
+      numberOfCards: 10,
+      closeTime: time.duration.weeks(4)
+    })
+
+    // account#1 setup: rent some cards from markets 7 and 8
+    await rent({ from: accounts[1], market: market[7], outcome: 0 })
+    await time.increase(time.duration.hours(24))
+    await rent({ from: accounts[1], market: market[7], outcome: 2, price: 7 })
+    await rent({ from: accounts[1], market: market[7], outcome: 4, price: 9 })
+    await time.increase(time.duration.hours(15))
+    await rent({ from: accounts[1], market: market[8], outcome: 1 })
+    await rent({ from: accounts[1], market: market[8], outcome: 3, price: 2 })
+    await time.increase(time.duration.hours(18))
+    await rent({ from: accounts[1], market: market[8], outcome: 5, price: 4 })
+    await rent({ from: accounts[1], market: market[8], outcome: 7, price: 6 })
+    await time.increase(time.duration.hours(10))
+    await rent({ from: accounts[1], market: market[8], outcome: 9 })
+    // high prices for market#10's cards
+    await rent({
+      from: accounts[2],
+      market: market[7],
+      outcome: 0,
+      price: '10000'
+    })
+    await rent({
+      from: accounts[2],
+      market: market[7],
+      outcome: 1,
+      price: '33000'
+    })
+    await rent({
+      from: accounts[2],
+      market: market[7],
+      outcome: 2,
+      price: '67890'
+    })
+    await rent({
+      from: accounts[2],
+      market: market[7],
+      outcome: 3,
+      price: '100000'
+    })
+    await rent({
+      from: accounts[2],
+      market: market[7],
+      outcome: 4,
+      price: '1000000'
+    })
+    await rent({
+      from: accounts[2],
+      market: market[7],
+      outcome: 5,
+      price: '1000000000'
+    })
+
+    console.log('Markets#7-8 deployed')
+
+    // create 2 markets (#9-10)
+    await createMarket({
+      ipfs: ipfsHashes[9],
+      numberOfCards: 5,
+      closeTime: time.duration.weeks(1)
+    })
+    await createMarket({
+      ipfs: ipfsHashes[10],
+      numberOfCards: 2,
+      closeTime: time.duration.days(1)
+    })
+
+    // account#1 setup: rent some cards from markets 9 and 10
+    await rent({ from: accounts[1], market: market[9], outcome: 3, price: 5 })
+    await rent({ from: accounts[1], market: market[9], outcome: 4, price: 10 })
+    await rent({ from: accounts[1], market: market[10], outcome: 0 })
+
+    console.log('Markets#9-10 deployed')
+
+    // create 2 markets with a delayed start (#11-12) - coming soon markets
+    await createMarket({
+      ipfs: ipfsHashes[11],
+      openTime: time.duration.weeks(3),
+      closeTime: time.duration.weeks(4)
+    })
+    await createMarket({
+      ipfs: ipfsHashes[12],
+      openTime: time.duration.days(2),
+      closeTime: time.duration.weeks(9)
+    })
+
+    await market[11].sponsor({
+      from: accounts[13],
+      value: web3.utils.toWei('500', 'ether')
+    })
+
+    console.log('Markets#11-12 deployed')
+
+    // create 1 market (#13) - random texts
+    await createMarket({ ipfs: ipfsHashes[12], numberOfCards: 2 })
+
+    console.log('Market#13 deployed')
+
+    // Extra for testing stuff
+    await market[3].withdraw({ from: accounts[1] })
+
+    await factory.setAdvancedWarning('86400', { from: accounts[0] })
+    await time.increase(time.duration.hours(1))
+    await factory.setMaximumDuration('604800', { from: accounts[0] })
+
+    // you can force updating the state of an open market by calling collect for all cards (do this for all open markets)
+    await market[0].collectRentAllCards()
+    await market[7].collectRentAllCards()
+    await market[8].collectRentAllCards()
+    await market[9].collectRentAllCards()
+    await market[10].collectRentAllCards()
+
+    console.log('Collect rents from open markets')
+
+    /* MARKET LEDGER
+     * -------------------
+     * Market#0  - open, 4 cards, 1 year until closed
+     * Market#1  - locked, 4 cards
+     * Market#2  - locked, 4 cards
+     * Market#3  - closed, 4 cards, winning 0
+     * Market#4  - closed, 4 cards, winning 1
+     * Market#5  - closed, 4 cards, winning 2
+     * Market#6  - closed, 4 cards, winning 3
+     * Market#7  - open,  6 cards, 6 months until closed (high prices / expired cards)
+     * Market#8  - open, 10 cards, 1 month until closed
+     * Market#9  - open,  5 cards, 1 week until closed
+     * Market#10 - open,  2 cards, 1 day until closed
+     * Market#11 - coming soon, 4 cards, 3 weeks until open (short question)
+     * Market#12 - coming soon, 4 cards, 2 days until open (long question)
+     * Market#13 - open, 2 cards (testing ipfs strings)
+     * -------------------
+     * account#1 - 6 locked cards, 
+     *             4 winning cards, 
+     *             6 losing cards, 
+     *             10 trophy cards,
+     *             10 owned cards,
+     *             14 active positions 
+     * 
+     * market#0, outcome#0 - 11 accounts leaderboard,
+     *                       11 accounts orderbook   
+     * /
     /**************************************
-    *                                     *
-    *    END LOCAL TESTING SETUP HERE     *
-    *                                     *
-    **************************************/
-
+     *                                     *
+     *    END LOCAL TESTING SETUP HERE     *
+     *                                     *
+     **************************************/
 
     console.log('factory.address: ', factory.address)
     console.log('treasury.address: ', treasury.address)
@@ -293,16 +617,17 @@ async function createMarket(options) {
     numberOfCards: 4, // the number of cards to create
     artistAddress: zeroAddress,
     affiliateAddress: zeroAddress,
-    cardAffiliate: [zeroAddress], // remember this is an array
-  };
-  options = setDefaults(options, defaults);
+    cardAffiliate: [zeroAddress] // remember this is an array
+  }
+  options = setDefaults(options, defaults)
   // assemble arrays
-  var closeTime = new BN(options.closeTime).add(await time.latest());
-  var resolveTime = new BN(options.resolveTime).add(closeTime);
-  var timestamps = [options.openTime, closeTime, resolveTime];
-  var tokenURIs = [];
+  var openTime = new BN(options.openTime).add(await time.latest())
+  var closeTime = new BN(options.closeTime).add(await time.latest())
+  var resolveTime = new BN(options.resolveTime).add(closeTime)
+  var timestamps = [openTime, closeTime, resolveTime]
+  var tokenURIs = []
   for (i = 0; i < options.numberOfCards; i++) {
-    tokenURIs.push("x");
+    tokenURIs.push('x')
   }
 
   await factory.createMarket(
@@ -314,32 +639,88 @@ async function createMarket(options) {
     options.affiliateAddress,
     options.cardAffiliate,
     question
-  );
-  marketAddress.push(await factory.getMostRecentMarket.call(0));
-  market.push(await RCMarket.at(await factory.getMostRecentMarket.call(0)));
+  )
+  var recentMarketAddress = await factory.getMostRecentMarket.call(0)
+  marketAddress.push(recentMarketAddress)
+  market.push(await RCMarket.at(await factory.getMostRecentMarket.call(0)))
+  await factory.changeMarketApproval(recentMarketAddress)
+}
+
+async function closeMarket(options) {
+  var defaults = {
+    market: market[0],
+    winningOutcome: 0,
+    realitio: {},
+    xdaiproxy: {}
+  }
+  options = setDefaults(options, defaults)
+
+  await options.market.lockMarket()
+  await options.realitio.setResult(options.winningOutcome)
+  await options.xdaiproxy.getWinnerFromOracle(options.market.address)
 }
 
 async function depositDai(amount, user) {
-  amount = web3.utils.toWei(amount.toString(), "ether");
-  await treasury.deposit(user, { from: user, value: amount });
+  amount = web3.utils.toWei(amount.toString(), 'ether')
+  await treasury.deposit(user, { from: user, value: amount })
 }
 
 function setDefaults(options, defaults) {
-  return _.defaults({}, _.clone(options), defaults);
+  return _.defaults({}, _.clone(options), defaults)
 }
 
 async function rent(options) {
   var defaults = {
     market: market[0],
     outcome: 0,
-    price: 1,
-    from: user0,
+    from: 0x00,
     timeLimit: 0,
-    startingPosition: zeroAddress,
-  };
-  options = setDefaults(options, defaults);
-  options.price = web3.utils.toWei(options.price.toString(), "ether");
-  await options.market.newRental(options.price, options.timeLimit, options.startingPosition, options.outcome, { from: options.from });
+    startingPosition: zeroAddress
+  }
+  options = setDefaults(options, defaults)
+  let newPrice = web3.utils.toWei('1', 'ether')
+
+  try {
+    if (options.price) {
+      newPrice = web3.utils.toWei(options.price.toString(), 'ether')
+    } else {
+      const currentPrice = await options.market.tokenPrice(options.outcome)
+      const currentPriceBN = new BN(currentPrice)
+      newPrice = currentPriceBN.add(currentPriceBN.div(new BN('10')))
+      if (!newPrice.isZero()) {
+        newPrice = newPrice.toString()
+      } else {
+        newPrice = web3.utils.toWei('1', 'ether')
+      }
+    }
+    await options.market.newRental(
+      newPrice,
+      options.timeLimit,
+      options.startingPosition,
+      options.outcome,
+      { from: options.from }
+    )
+  } catch (err) {
+    console.log(
+      err,
+      `on rent from account:${options.from}, market: ${options.market.address
+      }, card: ${options.outcome}, price: ${web3.utils.fromWei(
+        newPrice,
+        'ether'
+      )}, timeLimit: ${options.timeLimit}`
+    )
+  }
+}
+
+async function exit(options) {
+  var defaults = {
+    market: market[0],
+    outcome: 0,
+    from: 0x00
+  }
+  options = setDefaults(options, defaults)
+
+  await options.market.exit(options.outcome, { from: options.from })
 }
 
 // Most recent deployments:
