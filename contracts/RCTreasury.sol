@@ -86,6 +86,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         uint256 indexed amount,
         bool increase
     );
+    event LogMarketPaused(address market, bool paused);
+    event LogGlobalPause(bool paused);
 
     /*╔═════════════════════════════════╗
       ║           CONSTRUCTOR           ║
@@ -186,11 +188,14 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     /// @dev if true, cannot deposit, withdraw or rent any cards
     function changeGlobalPause() external override onlyOwner {
         globalPause = !globalPause;
+        emit LogGlobalPause(globalPause);
     }
 
     /// @dev if true, cannot make a new rental for a specific market
     function changePauseMarket(address _market) external override onlyOwner {
+        require(isMarket[_market], "This isn't a market");
         marketPaused[_market] = !marketPaused[_market];
+        emit LogMarketPaused(_market, marketPaused[_market]);
     }
 
     /*╔═════════════════════════════════╗
