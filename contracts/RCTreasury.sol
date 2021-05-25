@@ -38,6 +38,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     uint256 public marketBalance;
     /// @dev a quick check if a uesr is foreclosed
     mapping(address => bool) public override isForeclosed;
+    /// @dev to keep track of the size of the rounding issue between rent collections
+    uint256 marketBalanceDiscrepancy;
 
     /// @param deposit the users current deposit in wei
     /// @param rentalRate the daily cost of the cards the user current owns
@@ -324,6 +326,17 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         }
     }
 
+    /// @notice to increase the market balance
+    /// @dev not strictly required but prevents markets being shortchanged due to rounding issues
+    function topupMarketBalance() external payable override {
+        if (msg.value > marketBalanceDiscrepancy) {
+            marketBalanceDiscrepancy = 0;
+        } else {
+            marketBalanceDiscrepancy -= msg.value;
+        }
+        marketBalance += msg.value;
+    }
+
     /*╔═════════════════════════════════╗
       ║        MARKET CALLABLE          ║
       ╚═════════════════════════════════╝*/
@@ -340,8 +353,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         returns (bool)
     {
         require(!globalPause, "Rentals are disabled");
-        if (marketBalance + 1 == _dai) {
-            _dai -= 1;
+        if (marketBalance < _dai) {
+            marketBalanceDiscrepancy += _dai - marketBalance;
+            _dai -= (_dai - marketBalance);
         }
         address _market = msgSender();
         marketBalance -= _dai;
