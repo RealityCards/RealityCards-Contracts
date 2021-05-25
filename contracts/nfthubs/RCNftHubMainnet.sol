@@ -8,7 +8,7 @@ import "hardhat/console.sol";
 
 /// @title Reality Cards NFT Hub- mainnet side
 /// @author Andrew Stanger
-contract RCNftHubL1 is Ownable, ERC721URIStorage {
+contract RCNftHubMainnet is Ownable, ERC721URIStorage {
     ////////////////////////////////////
     //////// VARIABLES /////////////////
     ////////////////////////////////////

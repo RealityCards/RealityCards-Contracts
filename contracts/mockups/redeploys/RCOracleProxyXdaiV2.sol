@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.4;
 
-import "../../interfaces/IRCProxyL1.sol";
+import "../../interfaces/IRCProxyMainnet.sol";
 import "../../interfaces/IBridge.sol";
 import "../../interfaces/IRCTreasury.sol";
 import "../../interfaces/IRCMarket.sol";
 import "../../interfaces/IRealitio.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // a mockup to test changing the proxy, this is as per the original but always doubles the returned winner
 contract RCProxyXdaiV2 is Ownable {
@@ -23,7 +22,6 @@ contract RCProxyXdaiV2 is Ownable {
     address public proxyMainnetAddress;
     address public factoryAddress;
     address public treasuryAddress;
-    IERC20 public erc20;
 
     ///// ORACLE VARIABLES /////
     mapping(address => bytes32) public questionIds;
@@ -249,7 +247,8 @@ contract RCProxyXdaiV2 is Ownable {
     /// @dev no harm if called again after successful posting because can't mint nft with same tokenId twice
     function postCardToUpgrade(uint256 _tokenId) public {
         require(upgradedNftId[_tokenId].set, "Nft not set");
-        bytes4 _methodSelector = IRCProxyL1(address(0)).upgradeCard.selector;
+        bytes4 _methodSelector =
+            IRCProxyMainnet(address(0)).upgradeCard.selector;
         bytes memory data =
             abi.encodeWithSelector(
                 _methodSelector,
@@ -308,11 +307,6 @@ contract RCProxyXdaiV2 is Ownable {
         }
     }
 
-    function updateTokenContract() public {
-        IRCTreasury treasury = IRCTreasury(treasuryAddress);
-        erc20 = treasury.erc20();
-    }
-
     /// @dev deposits xDai into the Treasury (if allowed) otherwise send to user
     function executeDaiDeposit(uint256 _nonce) public {
         require(deposits[_nonce].confirmed, "Not confirmed");
@@ -320,20 +314,20 @@ contract RCProxyXdaiV2 is Ownable {
         uint256 _amount = deposits[_nonce].amount;
         address _user = deposits[_nonce].user;
         if (address(this).balance >= _amount) {
-            deposits[_nonce].executed = true;
-            emit LogDepositExecuted(_nonce);
             IRCTreasury treasury = IRCTreasury(treasuryAddress);
-            // if Treasury will allow the deposit and globalPause is off, send it there
+            // if Treasury will allow the deposit, send it there
             if (
-                address(treasury).balance + _amount <=
-                treasury.maxContractBalance() &&
-                !treasury.globalPause()
+                address(treasury).balance + (_amount) <=
+                treasury.maxContractBalance()
             ) {
-                erc20.transfer(address(treasury), _amount);
+                assert(treasury.deposit{value: _amount}(_user));
                 // otherwise, just send to the user
             } else {
-                erc20.transfer(_user, _amount);
+                (bool _success, ) = payable(_user).call{value: _amount}("");
+                require(_success, "Transfer failed");
             }
+            deposits[_nonce].executed = true;
+            emit LogDepositExecuted(_nonce);
         }
     }
 }

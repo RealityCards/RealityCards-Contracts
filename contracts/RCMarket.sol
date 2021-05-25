@@ -7,9 +7,9 @@ import "hardhat/console.sol";
 import "./interfaces/IRealitio.sol";
 import "./interfaces/IRCFactory.sol";
 import "./interfaces/IRCTreasury.sol";
-import "./interfaces/IRCProxyL2.sol";
+import "./interfaces/IRCProxyXdai.sol";
 import "./interfaces/IRCMarket.sol";
-import "./interfaces/IRCNftHubL2.sol";
+import "./interfaces/IRCNftHubXdai.sol";
 import "./interfaces/IRCOrderbook.sol";
 import "./lib/NativeMetaTransaction.sol";
 
@@ -39,8 +39,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     // CONTRACT VARIABLES
     IRCTreasury public treasury;
     IRCFactory public factory;
-    IRCProxyL2 public proxy;
-    IRCNftHubL2 public nfthub;
+    IRCProxyXdai public proxy;
+    IRCNftHubXdai public nfthub;
     IRCOrderbook public orderbook;
 
     // PRICE, DEPOSITS, RENT
@@ -617,6 +617,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         uint256 _token
     )
         public
+        payable
         autoUnlock()
         autoLock() /*returns (uint256)*/
     {
@@ -657,16 +658,21 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
                 _collectRent(_token);
 
-            // check sufficient deposit
-            uint256 _userTotalBidRate =
-                treasury.userTotalBids(_user) -
-                    (orderbook.getBidValue(_user, _token)) +
-                    _newPrice;
-            require(
-                treasury.userDeposit(_user) >=
-                    _userTotalBidRate / minRentalDayDivisor,
-                "Insufficient deposit"
-            );
+                // process deposit, if sent
+                if (msg.value > 0) {
+                    assert(treasury.deposit{value: msg.value}(_user));
+                }
+
+                // check sufficient deposit
+                uint256 _userTotalBidRate =
+                    treasury.userTotalBids(_user) -
+                        (orderbook.getBidValue(_user, _token)) +
+                        _newPrice;
+                require(
+                    treasury.userDeposit(_user) >=
+                        _userTotalBidRate / minRentalDayDivisor,
+                    "Insufficient deposit"
+                );
 
                 _timeHeldLimit = _checkTimeHeldLimit(_timeHeldLimit);
 

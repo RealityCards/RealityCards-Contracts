@@ -3,8 +3,8 @@ pragma solidity 0.8.4;
 
 import "hardhat/console.sol";
 
-import "../../interfaces/IRCProxyL2.sol";
-import "../../interfaces/IRCProxyL1.sol";
+import "../../interfaces/IRCProxyXdai.sol";
+import "../../interfaces/IRCProxyMainnet.sol";
 
 // a mockup to test changing the proxy, this is as per the original has a new number variable which is read
 contract BridgeMockupV2 {

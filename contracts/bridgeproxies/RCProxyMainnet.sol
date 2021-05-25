@@ -5,7 +5,7 @@ import "hardhat/console.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "../interfaces/IRCProxyL2.sol";
+import "../interfaces/IRCProxyXdai.sol";
 import "../interfaces/IBridge.sol";
 import "../interfaces/IAlternateReceiverBridge.sol";
 import "../interfaces/IERC20Dai.sol";

@@ -3,14 +3,14 @@ pragma solidity 0.8.4;
 
 import "./IRealitio.sol";
 import "./IRCTreasury.sol";
-import "./IRCProxyL2.sol";
-import "./IRCNftHubL2.sol";
+import "./IRCProxyXdai.sol";
+import "./IRCNftHubXdai.sol";
 import "./IRCOrderbook.sol";
 
 interface IRCFactory {
-    function proxy() external returns (IRCProxyL2);
+    function proxy() external returns (IRCProxyXdai);
 
-    function nfthub() external returns (IRCNftHubL2);
+    function nfthub() external returns (IRCNftHubXdai);
 
     function treasury() external returns (IRCTreasury);
 
