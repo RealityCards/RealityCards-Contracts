@@ -385,6 +385,7 @@ contract("TestFullFlowValid", (accounts) => {
     await rcfactory.changeCardAffiliateApproval(user0);
     await rcfactory.changeAffiliateApproval(user7);
     await rcfactory.changeArtistApproval(user8);
+    await erc20.approve(treasury.address, ether('200'), { from: user })
     await rcfactory.createMarket(
       0,
       "0x0",
@@ -394,7 +395,7 @@ contract("TestFullFlowValid", (accounts) => {
       affiliateAddress,
       cardRecipients,
       question,
-      0,
+      ether("200"),
       { from: user }
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
@@ -1702,7 +1703,7 @@ contract("TestFullFlowValid", (accounts) => {
     await withdrawDeposit(1000, user1);
   });
 
-  it.only("test sponsor via market creation with card affiliate cut", async () => {
+  it("test sponsor via market creation with card affiliate cut", async () => {
     // 10% card specific affiliates
     await rcfactory.setPotDistribution(0, 0, 0, 0, 100);
     // add user3 to whitelist
@@ -1729,7 +1730,6 @@ contract("TestFullFlowValid", (accounts) => {
     var deposit = await treasury.userDeposit.call(user5);
     var depositShouldBe = ether("60").div(new BN("10"));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
-    // console.log("User 5 deposit ", deposit.toString());
     assert.isBelow(difference / deposit, 0.00001);
     // token 1
     var deposit = await treasury.userDeposit.call(user6);
