@@ -271,9 +271,8 @@ contract('TestOwnership', (accounts) => {
     await expectRevert(rcfactory.setMaximumDuration(23, { from: user1 }), "caller is not the owner");
   });
 
-  it('check onlyOwner is on relevant xdai proxy functions', async () => {
+  it.only('check onlyOwner is on relevant xdai proxy functions', async () => {
     await expectRevert(proxyL2.setAmicableResolution(user0, 3, { from: user1 }), "caller is not the owner");
-    await expectRevert(proxyL2.setValidator(user0, true, { from: user1 }), "caller is not the owner");
     await expectRevert(proxyL2.setProxyL1Address(user0, { from: user1 }), "caller is not the owner");
     await expectRevert(proxyL2.setBridgeL2Address(user0, { from: user1 }), "caller is not the owner");
     await expectRevert(proxyL2.setFactoryAddress(user0, { from: user1 }), "caller is not the owner");
