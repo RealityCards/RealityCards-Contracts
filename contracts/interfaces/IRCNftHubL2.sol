@@ -10,7 +10,7 @@ interface IRCNftHubL2 {
 
     function addMarket(address) external;
 
-    function mintNft(
+    function mint(
         address,
         uint256,
         string calldata
@@ -22,5 +22,5 @@ interface IRCNftHubL2 {
         uint256
     ) external returns (bool);
 
-    function upgradeCard(address, uint256) external returns (bool);
+    function deposit(address user, bytes calldata depositData) external;
 }

@@ -12,7 +12,7 @@ const {
 var RCFactory = artifacts.require('./RCFactory.sol');
 var RCTreasury = artifacts.require('./RCTreasury.sol');
 var RCMarket = artifacts.require('./RCMarket.sol');
-var NftHubL2 = artifacts.require('./nfthubs/RCNftHubXdai.sol');
+var NftHubL2 = artifacts.require('./nfthubs/RCNftHubL2.sol');
 var NftHubL1 = artifacts.require('./nfthubs/RCNftHubL1.sol');
 var ProxyL2 = artifacts.require('./bridgeproxies/RCProxyL2.sol');
 var ProxyL1 = artifacts.require('./bridgeproxies/RCProxyL1.sol');

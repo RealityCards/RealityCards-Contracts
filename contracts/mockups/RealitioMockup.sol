@@ -12,7 +12,7 @@ contract RealitioMockup {
 
     function setResult(uint256 _result) public {
         if (_result == 69) {
-            result = ((2**256) - 1);
+            result = type(uint256).max;
         } else {
             result = _result;
         }

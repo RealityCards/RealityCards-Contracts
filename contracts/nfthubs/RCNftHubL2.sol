@@ -4,13 +4,22 @@ pragma solidity 0.8.4;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 import "hardhat/console.sol";
 import "../interfaces/IRCProxyL2.sol";
 import "../interfaces/IRCMarket.sol";
+import "../lib/NativeMetaTransaction.sol";
+import "../interfaces/IRCNftHubL2.sol";
 
 /// @title Reality Cards NFT Hub- xDai side
 /// @author Andrew Stanger
-contract RCNftHubXdai is Ownable, ERC721URIStorage {
+contract RCNftHubL2 is
+    Ownable,
+    ERC721URIStorage,
+    AccessControl,
+    NativeMetaTransaction,
+    IRCNftHubL2
+{
     ////////////////////////////////////
     //////// VARIABLES /////////////////
     ////////////////////////////////////
@@ -18,16 +27,33 @@ contract RCNftHubXdai is Ownable, ERC721URIStorage {
     /// @dev so only markets can move NFTs
     mapping(address => bool) public isMarket;
     /// @dev the market each NFT belongs to, so that it can only be moved in withdraw state
-    mapping(uint256 => address) public marketTracker;
+    mapping(uint256 => address) public override marketTracker;
 
     /// @dev governance variables
     address public factoryAddress;
+
+    /// @dev matic mintable asset requirements
+    bytes32 public constant DEPOSITOR_ROLE = keccak256("DEPOSITOR_ROLE");
+    mapping(uint256 => bool) public withdrawnTokens;
+    event WithdrawnBatch(address indexed user, uint256[] tokenIds);
+    event TransferWithMetadata(
+        address indexed from,
+        address indexed to,
+        uint256 indexed tokenId,
+        bytes metaData
+    );
 
     ////////////////////////////////////
     /////////// CONSTRUCTOR ////////////
     ////////////////////////////////////
 
-    constructor(address _factoryAddress) ERC721("RealityCards", "RC") {
+    constructor(address _factoryAddress, address childChainManager)
+        ERC721("RealityCards", "RC")
+    {
+        // initialise MetaTransactions
+        _initializeEIP712("RealityCardsNftHubL2", "1");
+        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
+        _setupRole(DEPOSITOR_ROLE, childChainManager);
         setFactoryAddress(_factoryAddress);
     }
 
@@ -36,7 +62,7 @@ contract RCNftHubXdai is Ownable, ERC721URIStorage {
     ////////////////////////////////////
 
     /// @dev so only markets can change ownership
-    function addMarket(address _newMarket) external {
+    function addMarket(address _newMarket) external override {
         require(msg.sender == factoryAddress, "Not factory");
         isMarket[_newMarket] = true;
     }
@@ -56,11 +82,15 @@ contract RCNftHubXdai is Ownable, ERC721URIStorage {
     ////////////////////////////////////
 
     // FACTORY ONLY
-    function mintNft(
+    function mint(
         address _originalOwner,
         uint256 _tokenId,
         string calldata _tokenURI
-    ) external returns (bool) {
+    ) external override returns (bool) {
+        require(
+            !withdrawnTokens[_tokenId],
+            "ChildMintableERC721: TOKEN_EXISTS_ON_ROOT_CHAIN"
+        );
         require(msg.sender == factoryAddress, "Not factory");
         _mint(_originalOwner, _tokenId);
         _setTokenURI(_tokenId, _tokenURI);
@@ -73,10 +103,68 @@ contract RCNftHubXdai is Ownable, ERC721URIStorage {
         address _currentOwner,
         address _newOwner,
         uint256 _tokenId
-    ) external returns (bool) {
+    ) external override returns (bool) {
         require(isMarket[msg.sender], "Not market");
         _transfer(_currentOwner, _newOwner, _tokenId);
         return true;
+    }
+
+    function ownerOf(uint256 tokenId)
+        public
+        view
+        virtual
+        override(ERC721, IRCNftHubL2)
+        returns (address)
+    {
+        return ERC721.ownerOf(tokenId);
+    }
+
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        virtual
+        override(ERC721URIStorage, IRCNftHubL2)
+        returns (string memory)
+    {
+        return ERC721URIStorage.tokenURI(tokenId);
+    }
+
+    ////////////////////////////////////
+    ///////// MATIC MINTABLE ///////////
+    ////////////////////////////////////
+
+    function deposit(address user, bytes calldata depositData)
+        external
+        override
+        onlyRole(DEPOSITOR_ROLE)
+    {
+        // deposit single
+        if (depositData.length == 32) {
+            uint256 tokenId = abi.decode(depositData, (uint256));
+            withdrawnTokens[tokenId] = false;
+            _mint(user, tokenId);
+
+            // deposit batch
+        } else {
+            uint256[] memory tokenIds = abi.decode(depositData, (uint256[]));
+            uint256 length = tokenIds.length;
+            for (uint256 i; i < length; i++) {
+                withdrawnTokens[tokenIds[i]] = false;
+                _mint(user, tokenIds[i]);
+            }
+        }
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(AccessControl, ERC721)
+        returns (bool)
+    {
+        return
+            interfaceId == type(IRCNftHubL2).interfaceId ||
+            super.supportsInterface(interfaceId);
     }
 
     ////////////////////////////////////

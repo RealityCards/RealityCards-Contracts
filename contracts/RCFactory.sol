@@ -523,7 +523,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         for (uint256 i = 0; i < _numberOfTokens; i++) {
             uint256 _tokenId = i + totalNftMintCount;
             require(
-                nfthub.mintNft(_newAddress, _tokenId, _tokenURIs[i]),
+                nfthub.mint(_newAddress, _tokenId, _tokenURIs[i]),
                 "Nft Minting Failed"
             );
         }

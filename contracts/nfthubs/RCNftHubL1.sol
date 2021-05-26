@@ -35,7 +35,7 @@ contract RCNftHubL1 is Ownable, ERC721URIStorage {
     ///////// CORE FUNCTIONS ///////////
     ////////////////////////////////////
 
-    function mintNft(
+    function mint(
         uint256 _tokenId,
         string calldata _tokenURI,
         address _originalOwner

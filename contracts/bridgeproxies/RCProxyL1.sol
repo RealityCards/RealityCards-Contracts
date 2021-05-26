@@ -109,7 +109,7 @@ contract RCProxyL1 is Ownable {
         address _owner
     ) external onlyOwner {
         require(_owner != address(0), "Must set an address");
-        nfthub.mintNft(_newTokenId, _tokenUri, _owner);
+        nfthub.mint(_newTokenId, _tokenUri, _owner);
     }
 
     ////////////////////////////////////
@@ -134,7 +134,7 @@ contract RCProxyL1 is Ownable {
         require(msg.sender == address(bridge), "Not bridge");
         require(bridge.messageSender() == proxyL2Address, "Not proxy");
         require(_owner != address(0), "Must set an address");
-        nfthub.mintNft(_newTokenId, _tokenUri, _owner);
+        nfthub.mint(_newTokenId, _tokenUri, _owner);
     }
 
     ////////////////////////////////////

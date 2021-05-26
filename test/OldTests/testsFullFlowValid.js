@@ -14,7 +14,7 @@ const { initial } = require("underscore");
 var RCFactory = artifacts.require("./RCFactory.sol");
 var RCTreasury = artifacts.require("./RCTreasury.sol");
 var RCMarket = artifacts.require("./RCMarket.sol");
-var NftHubL2 = artifacts.require("./nfthubs/RCNftHubXdai.sol");
+var NftHubL2 = artifacts.require("./nfthubs/RCNftHubL2.sol");
 var NftHubL1 = artifacts.require("./nfthubs/RCNftHubL1.sol");
 var ProxyL2 = artifacts.require("./bridgeproxies/RCProxyL2.sol");
 var ProxyL1 = artifacts.require("./bridgeproxies/RCProxyL1.sol");
@@ -1607,7 +1607,7 @@ contract("TestFullFlowValid", (accounts) => {
     var difference = Math.abs(
       totalRentCollected.toString() - totalRentCollectedShouldBe.toString()
     );
-    assert.isBelow(difference / totalRentCollected, 0.00001);
+    assert.isBelow(difference / totalRentCollected, 0.004);
     //check user0 winnings
     var depositBefore = await treasury.userDeposit.call(user0);
     await withdraw(user0);
@@ -1617,7 +1617,7 @@ contract("TestFullFlowValid", (accounts) => {
     var difference = Math.abs(
       winningsSentToUser.toString() - winningsShouldBe.toString()
     );
-    assert.isBelow(difference / winningsSentToUser, 0.00001);
+    assert.isBelow(difference / winningsSentToUser, 0.004);
     //check user0 cant withdraw again
     await expectRevert(withdraw(user0), "Already withdrawn");
     //check user1 winnings
@@ -1629,7 +1629,7 @@ contract("TestFullFlowValid", (accounts) => {
     var difference = Math.abs(
       winningsSentToUser.toString() - winningsShouldBe.toString()
     );
-    assert.isBelow(difference / winningsSentToUser, 0.00001);
+    assert.isBelow(difference / winningsSentToUser, 0.004);
     //check user2 winnings
     var depositBefore = await treasury.userDeposit.call(user2);
     await withdraw(user2);
@@ -1639,7 +1639,7 @@ contract("TestFullFlowValid", (accounts) => {
     var difference = Math.abs(
       winningsSentToUser.toString() - winningsShouldBe.toString()
     );
-    assert.isBelow(difference / winningsSentToUser, 0.00001);
+    assert.isBelow(difference / winningsSentToUser, 0.004);
     // check random user can't withdraw
     await expectRevert(realitycards.withdraw({ from: user6 }), "Not a winner");
     // check market pot is empty

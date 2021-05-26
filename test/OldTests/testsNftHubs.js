@@ -12,7 +12,7 @@ const {
 var RCFactory = artifacts.require('./RCFactory.sol');
 var RCTreasury = artifacts.require('./RCTreasury.sol');
 var RCMarket = artifacts.require('./RCMarket.sol');
-var NftHubL2 = artifacts.require('./nfthubs/RCNftHubXdai.sol');
+var NftHubL2 = artifacts.require('./nfthubs/RCNftHubL2.sol');
 var NftHubL1 = artifacts.require('./nfthubs/RCNftHubL1.sol');
 var ProxyL2 = artifacts.require('./bridgeproxies/RCProxyL2.sol');
 var ProxyL1 = artifacts.require('./bridgeproxies/RCProxyL1.sol');
@@ -223,7 +223,7 @@ contract('TestNftHubs', (accounts) => {
   it('xdai nft hub check failures', async () => {
     await expectRevert(nftHubL2.addMarket(user0), "Not factory");
     await expectRevert(nftHubL2.setFactoryAddress(user0, { from: user1 }), "Ownable: caller is not the owner");
-    await expectRevert(nftHubL2.mintNft(user0, 0, 'd'), "Not factory");
+    await expectRevert(nftHubL2.mint(user0, 0, 'd'), "Not factory");
     await expectRevert(nftHubL2.transferNft(user0, user0, 9), "Not market");
   });
 

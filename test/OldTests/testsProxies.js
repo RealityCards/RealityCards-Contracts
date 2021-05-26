@@ -12,7 +12,7 @@ const {
 var RCFactory = artifacts.require('./RCFactory.sol');
 var RCTreasury = artifacts.require('./RCTreasury.sol');
 var RCMarket = artifacts.require('./RCMarket.sol');
-var NftHubL2 = artifacts.require('./nfthubs/RCNftHubXdai.sol');
+var NftHubL2 = artifacts.require('./nfthubs/RCNftHubL2.sol');
 var NftHubL1 = artifacts.require('./nfthubs/RCNftHubL1.sol');
 var ProxyL2 = artifacts.require('./bridgeproxies/RCProxyL2.sol');
 var ProxyL1 = artifacts.require('./bridgeproxies/RCProxyL1.sol');
@@ -251,20 +251,20 @@ contract('TestProxies', (accounts) => {
     // test changing xdai proxy
     var proxyL22 = await ProxyL2.new(bridge.address, rcfactory.address, treasury.address, realitio.address, treasury.address);
     await proxyL22.setProxyL1Address(proxyL1.address);
-    await proxyL22.setBridgeXdaiAddress(bridge.address);
+    await proxyL22.setBridgeL2Address(bridge.address);
     await proxyL22.setFactoryAddress(rcfactory.address);
     await proxyL1.setProxyL2Address(proxyL22.address);
     await bridge.setProxyL2Address(proxyL22.address);
     await rcfactory.setProxyL2Address(proxyL22.address);
     realitycards2 = await createMarketWithArtistSet();
-    await realitio.setResult(2);
+    await realitio.setResult(4);
     await time.increase(time.duration.years(1));
     await realitycards2.lockMarket();
     // should be 4 even though 2 was set
     await proxyL22.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     var winner = await realitycards2.winningOutcome();
-    assert.equal(winner, 4);
+    assert.equal(winner.toString(), 4);
     // test changing setBridgeMainnetAddress
     await proxyL1.setBridgeMainnetAddress(user0);
     var newproxy = await proxyL1.bridge.call();
@@ -282,7 +282,7 @@ contract('TestProxies', (accounts) => {
     await proxyL2.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     var winner = await realitycards2.winningOutcome();
-    assert.equal(winner, 69);
+    assert.equal(winner.toString(), 2);
     // change arbitrator
     await proxyL2.setArbitrator(user0);
     var newarb = await proxyL2.arbitrator.call();
