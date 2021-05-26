@@ -542,6 +542,11 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                 cardAffiliateAddresses[_token],
                 _cardAffiliatePayment
             );
+            // console.log(
+            //     "paying %s to user %s ",
+            //     cardAffiliateAddresses[_token],
+            //     _cardAffiliatePayment
+            // );
         }
     }
 

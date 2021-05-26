@@ -24,13 +24,7 @@ var AlternateReceiverBridgeMockup = artifacts.require("./mockups/AlternateReceiv
 var SelfDestructMockup = artifacts.require("./mockups/SelfDestructMockup.sol");
 var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
 const tokenMockup = artifacts.require("./mockups/tokenMockup.sol");
-// redeploys
-var RCFactory2 = artifacts.require('./RCFactoryV2.sol');
-var ProxyL12 = artifacts.require('./mockups/redeploys/RCProxyL1V2.sol');
-var ProxyL22 = artifacts.require('./mockups/redeploys/RCProxyL2V2.sol');
-var RCMarket2 = artifacts.require('./mockups/redeploys/RCMarketXdaiV2.sol');
-var BridgeMockup2 = artifacts.require('./mockups/redeploys/BridgeMockupV2.sol');
-var RealitioMockup2 = artifacts.require("./mockups/redeploys/RealitioMockupV2.sol");
+
 // arbitrator
 var kleros = '0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D';
 
@@ -319,7 +313,7 @@ contract('TestOwnership', (accounts) => {
     await expectRevert(treasury.changeUberOwner(user0), "Verboten");
     await expectRevert(treasury.setFactoryAddress(user0), "Verboten");
     // deploy new factory, update address
-    rcfactory2 = await RCFactory2.new(treasury.address);
+    rcfactory2 = await RCFactory.new(treasury.address);
     await rcfactory2.getAllMarkets(0);
     await rcfactory2.changeCardAffiliateApproval(user5);
     await rcfactory2.changeCardAffiliateApproval(user6);
@@ -382,7 +376,7 @@ contract('TestOwnership', (accounts) => {
     await expectRevert(rcfactory.changeUberOwner(user0), "Verboten");
     await expectRevert(rcfactory.setReferenceContractAddress(user0), "Verboten");
     // deploy new reference, update address
-    rcreference2 = await RCMarket2.new();
+    rcreference2 = await RCMarket.new();
     await rcfactory.setReferenceContractAddress(rcreference2.address, { from: user5 });
     // check version has increased 
     var version = await rcfactory.referenceContractVersion.call();

@@ -24,13 +24,7 @@ var AlternateReceiverBridgeMockup = artifacts.require("./mockups/AlternateReceiv
 var SelfDestructMockup = artifacts.require("./mockups/SelfDestructMockup.sol");
 var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
 const tokenMockup = artifacts.require("./mockups/tokenMockup.sol");
-// redeploys
-var RCFactory2 = artifacts.require('./RCFactoryV2.sol');
-var ProxyL12 = artifacts.require('./mockups/redeploys/RCProxyL1V2.sol');
-var ProxyL22 = artifacts.require('./mockups/redeploys/RCProxyL2V2.sol');
-var RCMarket2 = artifacts.require('./mockups/redeploys/RCMarketXdaiV2.sol');
-var BridgeMockup2 = artifacts.require('./mockups/redeploys/BridgeMockupV2.sol');
-var RealitioMockup2 = artifacts.require("./mockups/redeploys/RealitioMockupV2.sol");
+
 // arbitrator
 var kleros = '0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D';
 
@@ -255,7 +249,7 @@ contract('TestProxies', (accounts) => {
 
   it('test RCProxyL1 various', async () => {
     // test changing xdai proxy
-    var proxyL22 = await ProxyL22.new(bridge.address, rcfactory.address, treasury.address, realitio.address, treasury.address);
+    var proxyL22 = await ProxyL2.new(bridge.address, rcfactory.address, treasury.address, realitio.address, treasury.address);
     await proxyL22.setProxyL1Address(proxyL1.address);
     await proxyL22.setBridgeXdaiAddress(bridge.address);
     await proxyL22.setFactoryAddress(rcfactory.address);
@@ -280,7 +274,7 @@ contract('TestProxies', (accounts) => {
 
   it('test RCProxyL1, various 2', async () => {
     // change relaitio, winner should return 69
-    realitio2 = await RealitioMockup2.new();
+    realitio2 = await RealitioMockup.new();
     await proxyL2.setRealitioAddress(realitio2.address);
     realitycards2 = await createMarketWithArtistSet();
     await realitio2.setResult(2);
@@ -451,8 +445,6 @@ contract('TestProxies', (accounts) => {
     var balanceAfter = await erc20.balanceOf(user1);
     var depositWithdrawn = await balanceAfter - balanceBefore;
     var difference = Math.abs(depositWithdrawn.toString() - ether('75').toString());
-    console.log("before", balanceBefore.toString());
-    console.log("after", balanceAfter.toString());
     assert.isBelow(difference / deposit, 0.00001);
   });
 

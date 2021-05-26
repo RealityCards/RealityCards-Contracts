@@ -24,13 +24,7 @@ var AlternateReceiverBridgeMockup = artifacts.require("./mockups/AlternateReceiv
 var SelfDestructMockup = artifacts.require("./mockups/SelfDestructMockup.sol");
 var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
 const tokenMockup = artifacts.require("./mockups/tokenMockup.sol");
-// redeploys
-var RCFactory2 = artifacts.require('./RCFactoryV2.sol');
-var ProxyL12 = artifacts.require('./mockups/redeploys/RCProxyL1V2.sol');
-var ProxyL22 = artifacts.require('./mockups/redeploys/RCProxyL2V2.sol');
-var RCMarket2 = artifacts.require('./mockups/redeploys/RCMarketXdaiV2.sol');
-var BridgeMockup2 = artifacts.require('./mockups/redeploys/BridgeMockupV2.sol');
-var RealitioMockup2 = artifacts.require("./mockups/redeploys/RealitioMockupV2.sol");
+
 // arbitrator
 var kleros = '0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D';
 

@@ -28,17 +28,7 @@ var AlternateReceiverBridgeMockup = artifacts.require(
 var SelfDestructMockup = artifacts.require("./mockups/SelfDestructMockup.sol");
 var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
 const tokenMockup = artifacts.require("./mockups/tokenMockup.sol");
-// redeploys
-var RCFactory2 = artifacts.require("./RCFactoryV2.sol");
-var ProxyL12 = artifacts.require(
-  "./mockups/redeploys/RCProxyL1V2.sol"
-);
-var ProxyL22 = artifacts.require("./mockups/redeploys/RCProxyL2V2.sol");
-var RCMarket2 = artifacts.require("./mockups/redeploys/RCMarketXdaiV2.sol");
-var BridgeMockup2 = artifacts.require("./mockups/redeploys/BridgeMockupV2.sol");
-var RealitioMockup2 = artifacts.require(
-  "./mockups/redeploys/RealitioMockupV2.sol"
-);
+
 // arbitrator
 var kleros = "0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D";
 
@@ -1712,7 +1702,7 @@ contract("TestFullFlowValid", (accounts) => {
     await withdrawDeposit(1000, user1);
   });
 
-  it("test sponsor via market creation with card affiliate cut", async () => {
+  it.only("test sponsor via market creation with card affiliate cut", async () => {
     // 10% card specific affiliates
     await rcfactory.setPotDistribution(0, 0, 0, 0, 100);
     // add user3 to whitelist
@@ -1739,6 +1729,7 @@ contract("TestFullFlowValid", (accounts) => {
     var deposit = await treasury.userDeposit.call(user5);
     var depositShouldBe = ether("60").div(new BN("10"));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
+    // console.log("User 5 deposit ", deposit.toString());
     assert.isBelow(difference / deposit, 0.00001);
     // token 1
     var deposit = await treasury.userDeposit.call(user6);
