@@ -317,8 +317,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             "Upgrade blocked"
         );
         uint256 _actualTokenId = _token + totalNftMintCount;
-        nfthub.withdrawWithMetadata(_actualTokenId);
         _transferCard(ownerOf(_token), address(this), _token); // contract becomes final resting place
+        nfthub.withdrawWithMetadata(_actualTokenId);
         emit LogNftUpgraded(_token, _actualTokenId);
     }
 
