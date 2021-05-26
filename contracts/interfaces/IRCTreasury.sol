@@ -58,7 +58,7 @@ interface IRCTreasury {
 
     function deposit(uint256 _amount, address _user) external returns (bool);
 
-    function withdrawDeposit(uint256 _dai, bool _localWithdrawal) external;
+    function withdrawDeposit(uint256 _amount, bool _localWithdrawal) external;
 
     function payRent(uint256) external returns (bool);
 

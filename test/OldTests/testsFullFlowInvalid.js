@@ -12,10 +12,10 @@ const {
 var RCFactory = artifacts.require('./RCFactory.sol');
 var RCTreasury = artifacts.require('./RCTreasury.sol');
 var RCMarket = artifacts.require('./RCMarket.sol');
-var NftHubXDai = artifacts.require('./nfthubs/RCNftHubXdai.sol');
-var NftHubMainnet = artifacts.require('./nfthubs/RCNftHubL1.sol');
-var XdaiProxy = artifacts.require('./bridgeproxies/RCProxyL2.sol');
-var MainnetProxy = artifacts.require('./bridgeproxies/RCProxyL1.sol');
+var NftHubL2 = artifacts.require('./nfthubs/RCNftHubXdai.sol');
+var NftHubL1 = artifacts.require('./nfthubs/RCNftHubL1.sol');
+var ProxyL2 = artifacts.require('./bridgeproxies/RCProxyL2.sol');
+var ProxyL1 = artifacts.require('./bridgeproxies/RCProxyL1.sol');
 var RCOrderbook = artifacts.require('./RCOrderbook.sol');
 // mockups
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
@@ -26,8 +26,8 @@ var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
 const tokenMockup = artifacts.require("./mockups/tokenMockup.sol");
 // redeploys
 var RCFactory2 = artifacts.require('./RCFactoryV2.sol');
-var MainnetProxy2 = artifacts.require('./mockups/redeploys/RCProxyL1V2.sol');
-var XdaiProxy2 = artifacts.require('./mockups/redeploys/RCProxyL2V2.sol');
+var ProxyL12 = artifacts.require('./mockups/redeploys/RCProxyL1V2.sol');
+var ProxyL22 = artifacts.require('./mockups/redeploys/RCProxyL2V2.sol');
 var RCMarket2 = artifacts.require('./mockups/redeploys/RCMarketXdaiV2.sol');
 var BridgeMockup2 = artifacts.require('./mockups/redeploys/BridgeMockupV2.sol');
 var RealitioMockup2 = artifacts.require("./mockups/redeploys/RealitioMockupV2.sol");
@@ -79,13 +79,13 @@ contract('TestFullFlowInvalid', (accounts) => {
     rcreference = await RCMarket.new();
     rcorderbook = await RCOrderbook.new(rcfactory.address, treasury.address);
     // nft hubs
-    nfthubxdai = await NftHubXDai.new(rcfactory.address);
-    nfthubmainnet = await NftHubMainnet.new();
+    nftHubL2 = await NftHubL2.new(rcfactory.address);
+    nftHubL1 = await NftHubL1.new();
     // tell treasury about factory, tell factory about nft hub and reference
     await treasury.setFactoryAddress(rcfactory.address);
     await rcfactory.setReferenceContractAddress(rcreference.address);
-    await rcfactory.setNftHubAddress(nfthubxdai.address, 0);
-    await treasury.setNftHubAddress(nfthubxdai.address);
+    await rcfactory.setNftHubAddress(nftHubL2.address, 0);
+    await treasury.setNftHubAddress(nftHubL2.address);
     await rcfactory.setOrderbookAddress(rcorderbook.address);
     await treasury.setOrderbookAddress(rcorderbook.address);
     // mockups 
@@ -94,16 +94,16 @@ contract('TestFullFlowInvalid', (accounts) => {
     alternateReceiverBridge = await AlternateReceiverBridgeMockup.new();
     dai = await DaiMockup.new();
     // bridge contracts
-    xdaiproxy = await XdaiProxy.new(bridge.address, rcfactory.address, treasury.address, realitio.address, realitio.address);
-    mainnetproxy = await MainnetProxy.new(bridge.address, nfthubmainnet.address, alternateReceiverBridge.address, dai.address);
+    proxyL2 = await ProxyL2.new(bridge.address, rcfactory.address, treasury.address, realitio.address, realitio.address);
+    proxyL1 = await ProxyL1.new(bridge.address, nftHubL1.address, alternateReceiverBridge.address, dai.address);
     // tell the factory, mainnet proxy and bridge the xdai proxy address
-    await rcfactory.setProxyXdaiAddress(xdaiproxy.address);
-    await mainnetproxy.setProxyXdaiAddress(xdaiproxy.address);
-    await bridge.setProxyXdaiAddress(xdaiproxy.address);
+    await rcfactory.setProxyL2Address(proxyL2.address);
+    await proxyL1.setProxyL2Address(proxyL2.address);
+    await bridge.setProxyL2Address(proxyL2.address);
     // tell the xdai proxy, nft mainnet hub and bridge the mainnet proxy address
-    await xdaiproxy.setProxyMainnetAddress(mainnetproxy.address);
-    await bridge.setProxyMainnetAddress(mainnetproxy.address);
-    await nfthubmainnet.setProxyMainnetAddress(mainnetproxy.address);
+    await proxyL2.setProxyL1Address(proxyL1.address);
+    await bridge.setProxyL1Address(proxyL1.address);
+    await nftHubL1.setProxyL1Address(proxyL1.address);
     // tell the treasury about the ARB
     await treasury.setAlternateReceiverAddress(alternateReceiverBridge.address);
     // market creation
@@ -365,7 +365,7 @@ contract('TestFullFlowInvalid', (accounts) => {
     await realitycards.lockMarket();
     // set winner 
     await realitio.setResult(20);
-    await xdaiproxy.getWinnerFromOracle(realitycards.address);
+    await proxyL2.getWinnerFromOracle(realitycards.address);
     // await realitycards.determineWinner();
     ////////////////////////
     //check sponsor winnings
@@ -405,7 +405,7 @@ contract('TestFullFlowInvalid', (accounts) => {
     await time.increase(time.duration.years(1));
     await realitycards2.lockMarket();
     await realitio.setResult(69);
-    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
+    await proxyL2.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     // token 0
     for (i = 0; i < 20; i++) {
@@ -483,7 +483,7 @@ contract('TestFullFlowInvalid', (accounts) => {
     await realitycards.lockMarket();
     // set invalid winner
     await realitio.setResult(69);
-    await xdaiproxy.getWinnerFromOracle(realitycards.address);
+    await proxyL2.getWinnerFromOracle(realitycards.address);
     // await realitycards.determineWinner();
     ////////////////////////
     // total deposits = 139, check:
@@ -562,7 +562,7 @@ contract('TestFullFlowInvalid', (accounts) => {
     await realitycards2.lockMarket();
     // set invalid winner
     await realitio.setResult(69);
-    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
+    await proxyL2.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     ////////////////////////
     // total deposits = 139, check:
@@ -646,7 +646,7 @@ contract('TestFullFlowInvalid', (accounts) => {
     await realitycards2.lockMarket();
     // set invalid winner
     await realitio.setResult(69);
-    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
+    await proxyL2.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     ////////////////////////
     // total deposits = 139, check:
@@ -736,7 +736,7 @@ contract('TestFullFlowInvalid', (accounts) => {
     await realitycards2.lockMarket();
     // set invalid winner
     await realitio.setResult(69);
-    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
+    await proxyL2.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     ////////////////////////
     // total deposits = 147, check:
@@ -811,7 +811,7 @@ contract('TestFullFlowInvalid', (accounts) => {
     await realitycards2.lockMarket();
     // set invalid winner
     await realitio.setResult(69);
-    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
+    await proxyL2.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     ////////////////////////
     // total deposits = 139, check:
@@ -894,7 +894,7 @@ contract('TestFullFlowInvalid', (accounts) => {
     await realitycards2.lockMarket();
     // set invalid winner
     await realitio.setResult(69);
-    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
+    await proxyL2.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     ////////////////////////
     // total deposits = 147, check:
@@ -998,7 +998,7 @@ contract('TestFullFlowInvalid', (accounts) => {
     await realitycards2.lockMarket();
     // set invalid winner
     await realitio.setResult(69);
-    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
+    await proxyL2.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     ////////////////////////
     // total deposits = 139, check:
@@ -1105,7 +1105,7 @@ contract('TestFullFlowInvalid', (accounts) => {
     // // set winner 1
     await realitio.setResult(69);
     var depositCreatorBefore = await treasury.userDeposit.call(user0);
-    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
+    await proxyL2.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     await realitycards2.payArtist();
     await expectRevert(realitycards2.payMarketCreator(), "No winner");

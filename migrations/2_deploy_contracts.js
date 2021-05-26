@@ -12,10 +12,10 @@ const argv = require('minimist')(process.argv.slice(2), {
 var RCTreasury = artifacts.require("./RCTreasury.sol");
 var RCFactory = artifacts.require("./RCFactory.sol");
 var RCMarket = artifacts.require("./RCMarket.sol")
-var NftHubXDai = artifacts.require('./nfthubs/RCNftHubXdai.sol');
-var NftHubMainnet = artifacts.require('./nfthubs/RCNftHubL1.sol');
-var XdaiProxy = artifacts.require('./bridgeproxies/RCProxyL2.sol');
-var MainnetProxy = artifacts.require('./bridgeproxies/RCProxyL1.sol');
+var NftHubL2 = artifacts.require('./nfthubs/RCNftHubXdai.sol');
+var NftHubL1 = artifacts.require('./nfthubs/RCNftHubL1.sol');
+var ProxyL2 = artifacts.require('./bridgeproxies/RCProxyL2.sol');
+var proxyL1 = artifacts.require('./bridgeproxies/RCProxyL1.sol');
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 var BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
 var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
@@ -40,8 +40,8 @@ var arbAddressKovan = '0xA960d095470f7509955d5402e36d9DB984B5C8E2'
 var daiAddressKovan = '0xd133b22BCCcb3Cd3ca752D206b0632932D530Fda'
 
 // read input arguments
-var xdaiProxyAddress = myArgs[0]
-var mainnetProxyAddress = myArgs[1]
+var ProxyL2Address = myArgs[0]
+var proxyL1Address = myArgs[1]
 var ipfsHashes = argv['ipfs_hash']
 
 // an array of market instances
@@ -52,7 +52,6 @@ var zeroAddress = "0x0000000000000000000000000000000000000000";
 
 module.exports = async (deployer, network, accounts) => {
   if (network === 'teststage1' || network === 'stage1') {
-    // xdai
     // deploy treasury, factory, reference market and nft hub
     await deployer.deploy(RCTreasury);
     treasury = await RCTreasury.deployed();
@@ -60,17 +59,17 @@ module.exports = async (deployer, network, accounts) => {
     factory = await RCFactory.deployed();
     await deployer.deploy(RCMarket);
     reference = await RCMarket.deployed();
-    await deployer.deploy(NftHubXDai, factory.address);
-    nfthubxdai = await NftHubXDai.deployed();
+    await deployer.deploy(NftHubL2, factory.address);
+    nftHubL2 = await NftHubL2.deployed();
     // tell treasury about factory & ARB, tell factory about nft hub and reference
     await treasury.setFactoryAddress(factory.address);
     await treasury.setAlternateReceiverAddress(arbAddressXdai);
     await factory.setReferenceContractAddress(reference.address);
-    await factory.setNftHubAddress(nfthubxdai.address, 0);
+    await factory.setNftHubAddress(nftHubL2.address, 0);
     // deploy xdai proxy
     if (network === 'stage1') {
       await deployer.deploy(
-        XdaiProxy,
+        ProxyL2,
         ambAddressXdai,
         factory.address,
         treasury.address,
@@ -82,7 +81,7 @@ module.exports = async (deployer, network, accounts) => {
       await deployer.deploy(RealitioMockup);
       realitio = await RealitioMockup.deployed();
       await deployer.deploy(
-        XdaiProxy,
+        ProxyL2,
         ambAddressSokol,
         factory.address,
         treasury.address,
@@ -90,54 +89,54 @@ module.exports = async (deployer, network, accounts) => {
         kleros
       )
     }
-    xdaiproxy = await XdaiProxy.deployed()
+    proxyL2 = await ProxyL2.deployed()
     // tell factory about the proxy
-    await factory.setProxyXdaiAddress(xdaiproxy.address)
+    await factory.setProxyL2Address(proxyL2.address)
 
     // print out some stuff to be picked up by the deploy script ready for the next stage
     console.log('Completed stage 1')
-    console.log('xDaiProxyAddress')
-    console.log(xdaiproxy.address)
+    console.log('ProxyL2Address')
+    console.log(proxyL2.address)
     console.log('RCTreasuryAddress')
     console.log(RCTreasury.address)
     console.log('RCFactoryAddress')
     console.log(RCFactory.address)
     console.log('RCMarketAddress')
     console.log(RCMarket.address)
-    console.log('NFTHubXDAIAddress')
-    console.log(NftHubXDai.address)
+    console.log('NFTHubL2Address')
+    console.log(NftHubL2.address)
   } else if (network === 'teststage2' || network === 'stage2' || network === 'develop') {
     console.log('Begin Stage 2')
     // mainnet
     // deploy mainnet nft hub
-    await deployer.deploy(NftHubMainnet)
-    nfthubmainnet = await NftHubMainnet.deployed()
+    await deployer.deploy(NftHubL1)
+    nftHubL1 = await NftHubL1.deployed()
     if (network === 'stage2') {
       // deploy mainnet proxy on mainnet
-      await deployer.deploy(MainnetProxy, ambAddressMainnet, realitioAddress, arbAddressMainnet);
+      await deployer.deploy(proxyL1, ambAddressMainnet, realitioAddress, arbAddressMainnet);
     } else {
       // deploy mainnet proxy on Kovan
-      await deployer.deploy(MainnetProxy, ambAddressKovan, realitioAddressKovan, arbAddressKovan);
+      await deployer.deploy(proxyL1, ambAddressKovan, realitioAddressKovan, arbAddressKovan);
     }
 
-    mainnetproxy = await MainnetProxy.deployed();
+    proxyL1 = await proxyL1.deployed();
     // set xdai proxy address
-    await mainnetproxy.setProxyXdaiAddress(xdaiProxyAddress);
+    await proxyL1.setProxyL2Address(ProxyL2Address);
 
     console.log("Completed stage 2")
 
     // this text is used in the deploy script to locate the correct address
     console.log('TheNFTHubMainnetAddress')
-    console.log(NftHubMainnet.address)
-    console.log('TheMainnetProxyAddress')
-    console.log(MainnetProxy.address)
+    console.log(NftHubL1.address)
+    console.log('TheproxyL1Address')
+    console.log(proxyL1.address)
 
   } else if (network === 'teststage3' || network === 'stage3') {
     console.log('Begin Stage 3')
     // xdai
     // set mainnet proxy address
-    xdaiproxy = await XdaiProxy.deployed();
-    await xdaiproxy.setProxyMainnetAddress(mainnetProxyAddress);
+    proxyL2 = await ProxyL2.deployed();
+    await proxyL2.setProxyL1Address(proxyL1Address);
     console.log('Completed Stage 3')
 
   } else if (network === 'graphTesting') {
@@ -166,14 +165,14 @@ module.exports = async (deployer, network, accounts) => {
     factory = await RCFactory.deployed()
     await deployer.deploy(RCMarket)
     reference = await RCMarket.deployed()
-    await deployer.deploy(NftHubXDai, factory.address)
-    nfthubxdai = await NftHubXDai.deployed()
-    await deployer.deploy(NftHubMainnet)
-    nfthubmainnet = await NftHubMainnet.deployed()
+    await deployer.deploy(NftHubL2, factory.address)
+    nftHubL2 = await NftHubL2.deployed()
+    await deployer.deploy(NftHubL1)
+    nftHubL1 = await NftHubL1.deployed()
     // tell treasury about factory, tell factory about nft hub and reference
     await treasury.setFactoryAddress(factory.address)
     await factory.setReferenceContractAddress(reference.address)
-    await factory.setNftHubAddress(nfthubxdai.address, 0)
+    await factory.setNftHubAddress(nftHubL2.address, 0)
     // mockups
     await deployer.deploy(RealitioMockup)
     var realitio = await RealitioMockup.deployed()
@@ -186,30 +185,30 @@ module.exports = async (deployer, network, accounts) => {
     await treasury.setAlternateReceiverAddress(arb.address)
     // deploy bridge contracts
     await deployer.deploy(
-      XdaiProxy,
+      ProxyL2,
       bridge.address,
       factory.address,
       treasury.address,
       realitio.address,
       arbAddressMainnet
     )
-    xdaiproxy = await XdaiProxy.deployed()
+    proxyL2 = await ProxyL2.deployed()
     await deployer.deploy(
-      MainnetProxy,
+      proxyL1,
       bridge.address,
-      nfthubmainnet.address,
+      nftHubL1.address,
       arb.address,
       dai.address,
     )
-    mainnetproxy = await MainnetProxy.deployed()
+    proxyL1 = await proxyL1.deployed()
     // tell the factory, mainnet proxy and bridge the xdai proxy address
-    await factory.setProxyXdaiAddress(xdaiproxy.address)
-    await mainnetproxy.setProxyXdaiAddress(xdaiproxy.address)
-    await bridge.setProxyXdaiAddress(xdaiproxy.address)
+    await factory.setProxyL2Address(proxyL2.address)
+    await proxyL1.setProxyL2Address(proxyL2.address)
+    await bridge.setProxyL2Address(proxyL2.address)
     // tell the xdai proxy and bridge the mainnet proxy address
-    await xdaiproxy.setProxyMainnetAddress(mainnetproxy.address)
-    await bridge.setProxyMainnetAddress(mainnetproxy.address)
-    await nfthubmainnet.setProxyMainnetAddress(mainnetproxy.address)
+    await proxyL2.setProxyL1Address(proxyL1.address)
+    await bridge.setProxyL1Address(proxyL1.address)
+    await nftHubL1.setProxyL1Address(proxyL1.address)
     //var tempMarket;
 
     /***************************************

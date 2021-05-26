@@ -181,7 +181,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
       │ NOT CALLED WITHIN CONSTRUTOR - EXTERNAL  │
       └──────────────────────────────────────────┘*/
 
-    /// @dev address of alternate receiver bridge, xdai side
+    /// @dev address of alternate receiver bridge on layer2
     function setAlternateReceiverAddress(address _newAddress)
         external
         override
@@ -249,7 +249,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
       ╚═════════════════════════════════╝*/
 
     /// @dev it is passed the user instead of using msg.sender because might be called
-    /// @dev ... via contract (fallback, newRental) or dai->xdai bot
+    /// @dev ... via contract (fallback, newRental) or Layer1->Layer2 bot
     /// @param _user the user to credit the deposit to
     function deposit(uint256 _amount, address _user)
         public
@@ -268,7 +268,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
             (erc20.balanceOf(address(this)) + _amount) <= maxContractBalance,
             "Limit hit"
         );
-        require(_user != address(0), "Must set an address");
+        require(_amount > 0, "Must deposit something");
         erc20.transferFrom(msg.sender, address(this), _amount);
 
         // do some cleaning up, it might help cancel their foreclosure
@@ -723,11 +723,4 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         user[_user].deposit -= SafeCast.toUint128(rentCollected);
         totalDeposits -= rentCollected;
     }
-
-    /*╔═════════════════════════════════╗
-      ║            FALLBACK             ║
-      ╚═════════════════════════════════╝*/
-
-    /// @dev sending ether/xdai direct is equal to a deposit
-    receive() external payable {}
 }

@@ -12,10 +12,10 @@ const {
 var RCFactory = artifacts.require('./RCFactory.sol');
 var RCTreasury = artifacts.require('./RCTreasury.sol');
 var RCMarket = artifacts.require('./RCMarket.sol');
-var NftHubXDai = artifacts.require('./nfthubs/RCNftHubXdai.sol');
-var NftHubMainnet = artifacts.require('./nfthubs/RCNftHubL1.sol');
-var XdaiProxy = artifacts.require('./bridgeproxies/RCProxyL2.sol');
-var MainnetProxy = artifacts.require('./bridgeproxies/RCProxyL1.sol');
+var NftHubL2 = artifacts.require('./nfthubs/RCNftHubXdai.sol');
+var NftHubL1 = artifacts.require('./nfthubs/RCNftHubL1.sol');
+var ProxyL2 = artifacts.require('./bridgeproxies/RCProxyL2.sol');
+var ProxyL1 = artifacts.require('./bridgeproxies/RCProxyL1.sol');
 var RCOrderbook = artifacts.require('./RCOrderbook.sol');
 // mockups
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
@@ -26,8 +26,8 @@ var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
 const tokenMockup = artifacts.require("./mockups/tokenMockup.sol");
 // redeploys
 var RCFactory2 = artifacts.require('./RCFactoryV2.sol');
-var MainnetProxy2 = artifacts.require('./mockups/redeploys/RCProxyL1V2.sol');
-var XdaiProxy2 = artifacts.require('./mockups/redeploys/RCProxyL2V2.sol');
+var ProxyL12 = artifacts.require('./mockups/redeploys/RCProxyL1V2.sol');
+var ProxyL22 = artifacts.require('./mockups/redeploys/RCProxyL2V2.sol');
 var RCMarket2 = artifacts.require('./mockups/redeploys/RCMarketXdaiV2.sol');
 var BridgeMockup2 = artifacts.require('./mockups/redeploys/BridgeMockupV2.sol');
 var RealitioMockup2 = artifacts.require("./mockups/redeploys/RealitioMockupV2.sol");
@@ -79,13 +79,13 @@ contract('TestRequireStatements', (accounts) => {
     rcreference = await RCMarket.new();
     rcorderbook = await RCOrderbook.new(rcfactory.address, treasury.address);
     // nft hubs
-    nfthubxdai = await NftHubXDai.new(rcfactory.address);
-    nfthubmainnet = await NftHubMainnet.new();
+    nftHubL2 = await NftHubL2.new(rcfactory.address);
+    nftHubL1 = await NftHubL1.new();
     // tell treasury about factory, tell factory about nft hub and reference
     await treasury.setFactoryAddress(rcfactory.address);
     await rcfactory.setReferenceContractAddress(rcreference.address);
-    await rcfactory.setNftHubAddress(nfthubxdai.address, 0);
-    await treasury.setNftHubAddress(nfthubxdai.address);
+    await rcfactory.setNftHubAddress(nftHubL2.address, 0);
+    await treasury.setNftHubAddress(nftHubL2.address);
     await rcfactory.setOrderbookAddress(rcorderbook.address);
     await treasury.setOrderbookAddress(rcorderbook.address);
     // mockups 
@@ -94,16 +94,16 @@ contract('TestRequireStatements', (accounts) => {
     alternateReceiverBridge = await AlternateReceiverBridgeMockup.new();
     dai = await DaiMockup.new();
     // bridge contracts
-    xdaiproxy = await XdaiProxy.new(bridge.address, rcfactory.address, treasury.address, realitio.address, realitio.address);
-    mainnetproxy = await MainnetProxy.new(bridge.address, nfthubmainnet.address, alternateReceiverBridge.address, dai.address);
+    proxyL2 = await ProxyL2.new(bridge.address, rcfactory.address, treasury.address, realitio.address, realitio.address);
+    proxyL1 = await ProxyL1.new(bridge.address, nftHubL1.address, alternateReceiverBridge.address, dai.address);
     // tell the factory, mainnet proxy and bridge the xdai proxy address
-    await rcfactory.setProxyXdaiAddress(xdaiproxy.address);
-    await mainnetproxy.setProxyXdaiAddress(xdaiproxy.address);
-    await bridge.setProxyXdaiAddress(xdaiproxy.address);
+    await rcfactory.setProxyL2Address(proxyL2.address);
+    await proxyL1.setProxyL2Address(proxyL2.address);
+    await bridge.setProxyL2Address(proxyL2.address);
     // tell the xdai proxy, nft mainnet hub and bridge the mainnet proxy address
-    await xdaiproxy.setProxyMainnetAddress(mainnetproxy.address);
-    await bridge.setProxyMainnetAddress(mainnetproxy.address);
-    await nfthubmainnet.setProxyMainnetAddress(mainnetproxy.address);
+    await proxyL2.setProxyL1Address(proxyL1.address);
+    await bridge.setProxyL1Address(proxyL1.address);
+    await nftHubL1.setProxyL1Address(proxyL1.address);
     // tell the treasury about the ARB
     await treasury.setAlternateReceiverAddress(alternateReceiverBridge.address);
     // market creation
@@ -303,27 +303,27 @@ contract('TestRequireStatements', (accounts) => {
     var owner = await realitycards.ownerOf(2);
     assert.equal(owner, user);
     // buidler giving me shit when I try and intercept revert message so just testing revert, in OPEN state
-    await expectRevert(nfthubxdai.transferFrom(user, user1, 2), "Incorrect state");
-    await expectRevert(nfthubxdai.safeTransferFrom(user, user1, 2), "Incorrect state");
-    await expectRevert(nfthubxdai.safeTransferFrom(user, user1, 2, web3.utils.asciiToHex("123456789")), "Incorrect state");
+    await expectRevert(nftHubL2.transferFrom(user, user1, 2), "Incorrect state");
+    await expectRevert(nftHubL2.safeTransferFrom(user, user1, 2), "Incorrect state");
+    await expectRevert(nftHubL2.safeTransferFrom(user, user1, 2, web3.utils.asciiToHex("123456789")), "Incorrect state");
     await time.increase(time.duration.years(1));
     await realitycards.lockMarket();
     // should fail cos LOCKED
-    await expectRevert(nfthubxdai.transferFrom(user, user1, 2), "Incorrect state");
-    await expectRevert(nfthubxdai.safeTransferFrom(user, user1, 2), "Incorrect state");
-    await expectRevert(nfthubxdai.safeTransferFrom(user, user1, 2, web3.utils.asciiToHex("123456789")), "Incorrect state");
+    await expectRevert(nftHubL2.transferFrom(user, user1, 2), "Incorrect state");
+    await expectRevert(nftHubL2.safeTransferFrom(user, user1, 2), "Incorrect state");
+    await expectRevert(nftHubL2.safeTransferFrom(user, user1, 2, web3.utils.asciiToHex("123456789")), "Incorrect state");
     await realitio.setResult(2);
-    await xdaiproxy.getWinnerFromOracle(realitycards.address);
+    await proxyL2.getWinnerFromOracle(realitycards.address);
     // await realitycards.determineWinner();
     await realitycards.claimCard(2, { from: user });
     // these shoudl all fail cos wrong owner:
     var owner = await realitycards.ownerOf(2);
     assert.equal(owner, user);
-    await expectRevert(nfthubxdai.transferFrom(user, user1, 2, { from: user1 }), "Not owner");
-    await expectRevert(nfthubxdai.safeTransferFrom(user1, user1, 2, { from: user1 }), "Not owner");
+    await expectRevert(nftHubL2.transferFrom(user, user1, 2, { from: user1 }), "Not owner");
+    await expectRevert(nftHubL2.safeTransferFrom(user1, user1, 2, { from: user1 }), "Not owner");
     // these should not
-    await nfthubxdai.transferFrom(user, user1, 2, { from: user });
-    await nfthubxdai.safeTransferFrom(user1, user, 2, { from: user1 });
+    await nftHubL2.transferFrom(user, user1, 2, { from: user });
+    await nftHubL2.safeTransferFrom(user1, user, 2, { from: user1 });
   });
 
   it('make sure functions cant be called in the wrong state', async () => {
@@ -346,13 +346,13 @@ contract('TestRequireStatements', (accounts) => {
     await expectRevert(realitycards2.collectRentAllCards(), "Incorrect state");
     await expectRevert(realitycards2.newRental(0, maxuint256, zeroAddress, 0), "Incorrect state");
     await expectRevert(realitycards2.exit(0), "Incorrect state");
-    await expectRevert(realitycards2.sponsor(3, user0), "Incorrect state");
+    await expectRevert(realitycards2.sponsor(user0, 3), "Incorrect state");
     await expectRevert(realitycards2.payArtist(), "Incorrect state");
     await expectRevert(realitycards2.payMarketCreator(), "Incorrect state");
     await expectRevert(realitycards2.payCardAffiliate(8), "Incorrect state");
     // increment state
     await realitio.setResult(1);
-    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
+    await proxyL2.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     var state = await realitycards2.state.call();
     assert.equal(3, state);
@@ -361,7 +361,8 @@ contract('TestRequireStatements', (accounts) => {
     await expectRevert(realitycards2.collectRentAllCards(), "Incorrect state");
     await expectRevert(realitycards2.newRental(0, maxuint256, zeroAddress, 0), "Incorrect state");
     await expectRevert(realitycards2.exit(0), "Incorrect state");
-    await expectRevert(realitycards2.sponsor({ value: 3 }), "Incorrect state");
+    await erc20.approve(treasury.address, ether('3')) // we aren't testing erc20 here
+    await expectRevert(realitycards2.sponsor(ether('3')), "Incorrect state");
   });
 
   it('check oracleResolutionTime and marketLockingTime expected failures', async () => {

@@ -1,3 +1,4 @@
+const { ERC1820 } = require('@openzeppelin/test-helpers/src/makeInterfaceId');
 const TestEnviroment = require('./helpers/TestEnviroment');
 
 contract("RealityCardsTests", (accounts) => {
@@ -8,8 +9,8 @@ contract("RealityCardsTests", (accounts) => {
     const { ACCOUNTS_OFFSET } = rc.configs;
 
     beforeEach(async function () {
-        await rc.setup();
-        ({ treasury, factory, orderbook, markets, xdaiproxy } = rc.contracts);
+        await rc.setup(accounts);
+        ({ treasury, factory, orderbook, markets, proxyL2, erc20 } = rc.contracts);
     });
     afterEach(async function () {
         await rc.cleanup();
@@ -32,7 +33,7 @@ contract("RealityCardsTests", (accounts) => {
             // only testing invalid responses, valid responses checked in each functions own test
             await expectRevert(treasury.payRent(admin), "Not authorised");
             await expectRevert(treasury.payout(admin, 0), "Not authorised");
-            await expectRevert(treasury.sponsor(), "Not authorised");
+            await expectRevert(treasury.sponsor(admin, 1), "Not authorised");
             await expectRevert(treasury.updateLastRentalTime(admin), "Not authorised");
         });
 
@@ -68,7 +69,8 @@ contract("RealityCardsTests", (accounts) => {
             // 400 should work
             await rc.deposit(400, alice);
             // another 400 should not
-            await expectRevert(treasury.deposit(alice, { value: web3.utils.toWei("400", "ether") }), "Limit hit");
+            await erc20.approve(treasury.address, ether("400"), { from: alice });
+            await expectRevert(treasury.deposit(ether("400"), alice, { from: alice }), "Limit hit");
         });
 
         it("test setAlternateReciverAddress", async () => {
@@ -139,8 +141,7 @@ contract("RealityCardsTests", (accounts) => {
 
         it("test deposit", async () => {
             // check for zero address
-            await expectRevert(treasury.deposit(alice), "Must deposit something");
-            await expectRevert(treasury.deposit(ZERO_ADDRESS, { value: 1 }), "Must set an address");
+            await expectRevert(treasury.deposit(0, alice), "Must deposit something");
             // make some deposits
             await rc.deposit(10, alice);
             await rc.deposit(20, bob);
@@ -160,7 +161,8 @@ contract("RealityCardsTests", (accounts) => {
             var tracker = await balance.tracker(alice);
             const startBalance = await tracker.get()
             // make a deposit and get a receipt to find the gas cost
-            var txReceipt = await treasury.deposit(user1, { value: ether("10"), from: alice });
+            await erc20.approve(treasury.address, ether('100'), { from: alice });
+            var txReceipt = await treasury.deposit(ether('10'), alice, { from: alice });
             var gasUsed = txReceipt.receipt.gasUsed;
             // let some time pass
             await time.increase(time.duration.minutes(10));
@@ -339,7 +341,7 @@ contract("RealityCardsTests", (accounts) => {
             await rc.newRental({ from: alice, market: markets[0] });
             assert.equal((await treasury.userDeposit(alice)).toString(), ether(deposit).toString());
 
-            // deposit some dai and confirm all values
+            // deposit something and confirm all values
             await rc.deposit(deposit, bob);
             assert.equal((await treasury.userDeposit(bob)).toString(), ether(deposit).toString());
             assert.equal((await treasury.marketPot(markets[1].address)).toString(), '0');
@@ -380,7 +382,7 @@ contract("RealityCardsTests", (accounts) => {
             await markets[1].lockMarket();
 
             // card 0 won, user0 should get the payout
-            await xdaiproxy.setAmicableResolution(markets[1].address, 0)
+            await proxyL2.setAmicableResolution(markets[1].address, 0)
             await markets[1].withdraw({ from: alice });
 
             // check the values have all been correcly adjusted

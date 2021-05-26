@@ -12,10 +12,10 @@ const {
 var RCFactory = artifacts.require('./RCFactory.sol');
 var RCTreasury = artifacts.require('./RCTreasury.sol');
 var RCMarket = artifacts.require('./RCMarket.sol');
-var NftHubXDai = artifacts.require('./nfthubs/RCNftHubXdai.sol');
-var NftHubMainnet = artifacts.require('./nfthubs/RCNftHubL1.sol');
-var XdaiProxy = artifacts.require('./bridgeproxies/RCProxyL2.sol');
-var MainnetProxy = artifacts.require('./bridgeproxies/RCProxyL1.sol');
+var NftHubL2 = artifacts.require('./nfthubs/RCNftHubXdai.sol');
+var NftHubL1 = artifacts.require('./nfthubs/RCNftHubL1.sol');
+var ProxyL2 = artifacts.require('./bridgeproxies/RCProxyL2.sol');
+var ProxyL1 = artifacts.require('./bridgeproxies/RCProxyL1.sol');
 var RCOrderbook = artifacts.require('./RCOrderbook.sol');
 // mockups
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
@@ -26,8 +26,8 @@ var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
 const tokenMockup = artifacts.require("./mockups/tokenMockup.sol");
 // redeploys
 var RCFactory2 = artifacts.require('./RCFactoryV2.sol');
-var MainnetProxy2 = artifacts.require('./mockups/redeploys/RCProxyL1V2.sol');
-var XdaiProxy2 = artifacts.require('./mockups/redeploys/RCProxyL2V2.sol');
+var ProxyL12 = artifacts.require('./mockups/redeploys/RCProxyL1V2.sol');
+var ProxyL22 = artifacts.require('./mockups/redeploys/RCProxyL2V2.sol');
 var RCMarket2 = artifacts.require('./mockups/redeploys/RCMarketXdaiV2.sol');
 var BridgeMockup2 = artifacts.require('./mockups/redeploys/BridgeMockupV2.sol');
 var RealitioMockup2 = artifacts.require("./mockups/redeploys/RealitioMockupV2.sol");
@@ -79,13 +79,13 @@ contract('TestOwnership', (accounts) => {
     rcreference = await RCMarket.new();
     rcorderbook = await RCOrderbook.new(rcfactory.address, treasury.address);
     // nft hubs
-    nfthubxdai = await NftHubXDai.new(rcfactory.address);
-    nfthubmainnet = await NftHubMainnet.new();
+    nftHubL2 = await NftHubL2.new(rcfactory.address);
+    nftHubL1 = await NftHubL1.new();
     // tell treasury about factory, tell factory about nft hub and reference
     await treasury.setFactoryAddress(rcfactory.address);
     await rcfactory.setReferenceContractAddress(rcreference.address);
-    await rcfactory.setNftHubAddress(nfthubxdai.address, 0);
-    await treasury.setNftHubAddress(nfthubxdai.address);
+    await rcfactory.setNftHubAddress(nftHubL2.address, 0);
+    await treasury.setNftHubAddress(nftHubL2.address);
     await rcfactory.setOrderbookAddress(rcorderbook.address);
     await treasury.setOrderbookAddress(rcorderbook.address);
     // mockups 
@@ -94,16 +94,16 @@ contract('TestOwnership', (accounts) => {
     alternateReceiverBridge = await AlternateReceiverBridgeMockup.new();
     dai = await DaiMockup.new();
     // bridge contracts
-    xdaiproxy = await XdaiProxy.new(bridge.address, rcfactory.address, treasury.address, realitio.address, realitio.address);
-    mainnetproxy = await MainnetProxy.new(bridge.address, nfthubmainnet.address, alternateReceiverBridge.address, dai.address);
+    proxyL2 = await ProxyL2.new(bridge.address, rcfactory.address, treasury.address, realitio.address, realitio.address);
+    proxyL1 = await ProxyL1.new(bridge.address, nftHubL1.address, alternateReceiverBridge.address, dai.address);
     // tell the factory, mainnet proxy and bridge the xdai proxy address
-    await rcfactory.setProxyXdaiAddress(xdaiproxy.address);
-    await mainnetproxy.setProxyXdaiAddress(xdaiproxy.address);
-    await bridge.setProxyXdaiAddress(xdaiproxy.address);
+    await rcfactory.setProxyL2Address(proxyL2.address);
+    await proxyL1.setProxyL2Address(proxyL2.address);
+    await bridge.setProxyL2Address(proxyL2.address);
     // tell the xdai proxy, nft mainnet hub and bridge the mainnet proxy address
-    await xdaiproxy.setProxyMainnetAddress(mainnetproxy.address);
-    await bridge.setProxyMainnetAddress(mainnetproxy.address);
-    await nfthubmainnet.setProxyMainnetAddress(mainnetproxy.address);
+    await proxyL2.setProxyL1Address(proxyL1.address);
+    await bridge.setProxyL1Address(proxyL1.address);
+    await nftHubL1.setProxyL1Address(proxyL1.address);
     // tell the treasury about the ARB
     await treasury.setAlternateReceiverAddress(alternateReceiverBridge.address);
     // market creation
@@ -278,28 +278,28 @@ contract('TestOwnership', (accounts) => {
   });
 
   it('check onlyOwner is on relevant xdai proxy functions', async () => {
-    await expectRevert(xdaiproxy.setAmicableResolution(user0, 3, { from: user1 }), "caller is not the owner");
-    await expectRevert(xdaiproxy.withdrawFloat(3, { from: user1 }), "caller is not the owner");
-    await expectRevert(xdaiproxy.setValidator(user0, true, { from: user1 }), "caller is not the owner");
-    await expectRevert(xdaiproxy.setProxyMainnetAddress(user0, { from: user1 }), "caller is not the owner");
-    await expectRevert(xdaiproxy.setBridgeXdaiAddress(user0, { from: user1 }), "caller is not the owner");
-    await expectRevert(xdaiproxy.setFactoryAddress(user0, { from: user1 }), "caller is not the owner");
-    await expectRevert(xdaiproxy.setTreasuryAddress(user0, { from: user1 }), "caller is not the owner");
-    await expectRevert(xdaiproxy.setRealitioAddress(user0, { from: user1 }), "caller is not the owner");
-    await expectRevert(xdaiproxy.setArbitrator(user0, { from: user1 }), "caller is not the owner");
-    await expectRevert(xdaiproxy.setTimeout(1234, { from: user1 }), "caller is not the owner");
-    await expectRevert(xdaiproxy.postQuestionToOracle(user0, "x", 0, { from: user1 }), "Not factory");
+    await expectRevert(proxyL2.setAmicableResolution(user0, 3, { from: user1 }), "caller is not the owner");
+    await expectRevert(proxyL2.withdrawFloat(3, { from: user1 }), "caller is not the owner");
+    await expectRevert(proxyL2.setValidator(user0, true, { from: user1 }), "caller is not the owner");
+    await expectRevert(proxyL2.setProxyL1Address(user0, { from: user1 }), "caller is not the owner");
+    await expectRevert(proxyL2.setBridgeL2Address(user0, { from: user1 }), "caller is not the owner");
+    await expectRevert(proxyL2.setFactoryAddress(user0, { from: user1 }), "caller is not the owner");
+    await expectRevert(proxyL2.setTreasuryAddress(user0, { from: user1 }), "caller is not the owner");
+    await expectRevert(proxyL2.setRealitioAddress(user0, { from: user1 }), "caller is not the owner");
+    await expectRevert(proxyL2.setArbitrator(user0, { from: user1 }), "caller is not the owner");
+    await expectRevert(proxyL2.setTimeout(1234, { from: user1 }), "caller is not the owner");
+    await expectRevert(proxyL2.postQuestionToOracle(user0, "x", 0, { from: user1 }), "Not factory");
   });
 
 
   it('check onlyOwner is on relevant mainnet proxy functions', async () => {
-    await expectRevert(mainnetproxy.setProxyXdaiAddress(user0, { from: user1 }), "caller is not the owner");
-    await expectRevert(mainnetproxy.setBridgeMainnetAddress(user0, { from: user1 }), "caller is not the owner");
-    await expectRevert(mainnetproxy.setNftHubAddress(user0, { from: user1 }), "caller is not the owner");
-    await expectRevert(mainnetproxy.setAlternateReceiverAddress(user0, { from: user1 }), "caller is not the owner");
-    await expectRevert(mainnetproxy.setDaiAddress(user0, { from: user1 }), "caller is not the owner");
-    await expectRevert(mainnetproxy.upgradeCardAdmin(3, "x", user4, { from: user1 }), "caller is not the owner");
-    await expectRevert(mainnetproxy.changeDepositsEnabled({ from: user1 }), "caller is not the owner");
+    await expectRevert(proxyL1.setProxyL2Address(user0, { from: user1 }), "caller is not the owner");
+    await expectRevert(proxyL1.setBridgeMainnetAddress(user0, { from: user1 }), "caller is not the owner");
+    await expectRevert(proxyL1.setNftHubAddress(user0, { from: user1 }), "caller is not the owner");
+    await expectRevert(proxyL1.setAlternateReceiverAddress(user0, { from: user1 }), "caller is not the owner");
+    await expectRevert(proxyL1.setDaiAddress(user0, { from: user1 }), "caller is not the owner");
+    await expectRevert(proxyL1.upgradeCardAdmin(3, "x", user4, { from: user1 }), "caller is not the owner");
+    await expectRevert(proxyL1.changeDepositsEnabled({ from: user1 }), "caller is not the owner");
   });
 
   it('test uberOwner Treasury', async () => {
@@ -327,17 +327,17 @@ contract('TestOwnership', (accounts) => {
     await rcfactory2.changeCardAffiliateApproval(user8);
     await rcfactory2.changeCardAffiliateApproval(user0);
     await treasury.setFactoryAddress(rcfactory2.address, { from: user5 });
-    await xdaiproxy.setFactoryAddress(rcfactory2.address);
-    await nfthubxdai.setFactoryAddress(rcfactory2.address);
+    await proxyL2.setFactoryAddress(rcfactory2.address);
+    await nftHubL2.setFactoryAddress(rcfactory2.address);
     await rcfactory2.setReferenceContractAddress(rcreference.address);
-    await rcfactory2.setProxyXdaiAddress(xdaiproxy.address);
+    await rcfactory2.setProxyL2Address(proxyL2.address);
     // create market with old factory, should fail
     await expectRevert(rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0), "Not factory");
     // create market with new factory and do some standard stuff
-    // nfthubxdai = await NftHubXDai.new(rcfactory.address);
+    // nftHubL2 = await NftHubL2.new(rcfactory.address);
     await rcfactory2.setOrderbookAddress(rcorderbook.address);
     await rcorderbook.setFactoryAddress(rcfactory2.address);
-    await rcfactory2.setNftHubAddress(nfthubxdai.address, 100);
+    await rcfactory2.setNftHubAddress(nftHubL2.address, 100);
     await rcfactory2.createMarket(
       0,
       '0x0',

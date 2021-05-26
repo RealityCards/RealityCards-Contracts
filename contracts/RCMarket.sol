@@ -44,7 +44,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     IRCOrderbook public orderbook;
 
     // PRICE, DEPOSITS, RENT
-    /// @dev in attodai (so 100xdai = 100000000000000000000)
+    /// @dev in wei
     mapping(uint256 => uint256) public tokenPrice;
     /// @dev keeps track of all the rent paid by each user. So that it can be returned in case of an invalid market outcome.
     mapping(address => uint256) public rentCollectedPerUser;

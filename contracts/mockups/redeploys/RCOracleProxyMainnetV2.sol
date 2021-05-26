@@ -29,7 +29,7 @@ contract RCProxyL1V2 is Ownable {
     // OWNED FUNCTIONS
 
     /// @dev not set in constructor, address not known at deployment
-    function setProxyXdaiAddress(address _newAddress) external onlyOwner {
+    function setProxyL2Address(address _newAddress) external onlyOwner {
         oracleProxyXdaiAddress = _newAddress;
     }
 

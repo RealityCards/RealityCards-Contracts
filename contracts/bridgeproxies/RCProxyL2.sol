@@ -78,16 +78,17 @@ contract RCProxyL2 is Ownable {
     ////////////////////////////////////
 
     constructor(
-        address _bridgeXdaiAddress,
+        address _bridgeL2Address,
         address _factoryAddress,
         address _treasuryAddress,
         address _realitioAddress,
         address _arbitratorAddress
     ) {
         // general
-        setBridgeXdaiAddress(_bridgeXdaiAddress);
+        setBridgeL2Address(_bridgeL2Address);
         setFactoryAddress(_factoryAddress);
         setTreasuryAddress(_treasuryAddress);
+        updateTokenContract();
         // oracle
         setArbitrator(_arbitratorAddress);
         setRealitioAddress(_realitioAddress);
@@ -110,13 +111,13 @@ contract RCProxyL2 is Ownable {
 
     /// @dev address of mainnet oracle proxy, called by the mainnet side of the arbitrary message bridge
     /// @dev not set in constructor, address not known at deployment
-    function setProxyMainnetAddress(address _newAddress) external onlyOwner {
+    function setProxyL1Address(address _newAddress) external onlyOwner {
         require(_newAddress != address(0), "Must set an address");
         proxyMainnetAddress = _newAddress;
     }
 
-    /// @dev address of arbitrary message bridge, xdai side
-    function setBridgeXdaiAddress(address _newAddress) public onlyOwner {
+    /// @dev address of arbitrary message bridge, Layer2 side
+    function setBridgeL2Address(address _newAddress) public onlyOwner {
         require(_newAddress != address(0), "Must set an address");
         bridge = IBridge(_newAddress);
     }
@@ -171,14 +172,13 @@ contract RCProxyL2 is Ownable {
 
     /// @dev impossible to withdraw user funds, only added float
     function withdrawFloat(uint256 _amount) external onlyOwner {
-        // will throw an error if goes negative because safeMath
-        floatSize = floatSize - (_amount);
-        (bool _success, ) = payable(owner()).call{value: _amount}("");
-        require(_success, "Transfer failed");
+        require(_amount < floatSize, "Can't withdraw more than the float");
+        floatSize -= _amount;
+        erc20.transfer(owner(), _amount);
         emit LogFloatWithdrawn(msg.sender, _amount);
     }
 
-    /// @dev modify validators for dai deposits
+    /// @dev modify validators for token deposits
     function setValidator(address _validatorAddress, bool _add)
         external
         onlyOwner
@@ -286,10 +286,11 @@ contract RCProxyL2 is Ownable {
     //// CORE FUNCTIONS - DAI BRIDGE ///
     ////////////////////////////////////
 
-    /// @dev add a float, so no need to wait for arrival of xdai from ARB
-    receive() external payable {
-        floatSize += msg.value;
-        emit LogFloatIncreased(msg.sender, msg.value);
+    /// @dev add a float, so no need to wait for arrival of tokens from ARB
+    function topupFloat(uint256 _amount) external {
+        erc20.transferFrom(msg.sender, address(this), _amount);
+        floatSize += _amount;
+        emit LogFloatIncreased(msg.sender, _amount);
     }
 
     /// @dev called by off chain validator, in response to deposit on mainnet
@@ -339,17 +340,23 @@ contract RCProxyL2 is Ownable {
         require(!deposits[_nonce].executed, "Already executed");
         uint256 _amount = deposits[_nonce].amount;
         address _user = deposits[_nonce].user;
-        if (address(this).balance >= _amount) {
+        if (erc20.balanceOf(address(this)) >= _amount) {
             deposits[_nonce].executed = true;
             emit LogDepositExecuted(_nonce);
             IRCTreasury treasury = IRCTreasury(treasuryAddress);
             // if Treasury will allow the deposit and globalPause is off, send it there
             if (
-                address(treasury).balance + _amount <=
+                erc20.balanceOf(address(treasury)) + _amount <=
                 treasury.maxContractBalance() &&
                 !treasury.globalPause()
             ) {
-                erc20.transfer(address(treasury), _amount);
+                if (
+                    erc20.allowance(address(this), address(treasury)) < _amount
+                ) {
+                    erc20.approve(address(treasury), type(uint256).max);
+                }
+                treasury.deposit(_amount, _user);
+                // erc20.transfer(address(treasury), _amount);
             } else {
                 // otherwise, just send to the user
                 erc20.transfer(_user, _amount);

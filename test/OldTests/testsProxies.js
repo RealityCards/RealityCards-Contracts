@@ -12,10 +12,10 @@ const {
 var RCFactory = artifacts.require('./RCFactory.sol');
 var RCTreasury = artifacts.require('./RCTreasury.sol');
 var RCMarket = artifacts.require('./RCMarket.sol');
-var NftHubXDai = artifacts.require('./nfthubs/RCNftHubXdai.sol');
-var NftHubMainnet = artifacts.require('./nfthubs/RCNftHubL1.sol');
-var XdaiProxy = artifacts.require('./bridgeproxies/RCProxyL2.sol');
-var MainnetProxy = artifacts.require('./bridgeproxies/RCProxyL1.sol');
+var NftHubL2 = artifacts.require('./nfthubs/RCNftHubXdai.sol');
+var NftHubL1 = artifacts.require('./nfthubs/RCNftHubL1.sol');
+var ProxyL2 = artifacts.require('./bridgeproxies/RCProxyL2.sol');
+var ProxyL1 = artifacts.require('./bridgeproxies/RCProxyL1.sol');
 var RCOrderbook = artifacts.require('./RCOrderbook.sol');
 // mockups
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
@@ -26,8 +26,8 @@ var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
 const tokenMockup = artifacts.require("./mockups/tokenMockup.sol");
 // redeploys
 var RCFactory2 = artifacts.require('./RCFactoryV2.sol');
-var MainnetProxy2 = artifacts.require('./mockups/redeploys/RCProxyL1V2.sol');
-var XdaiProxy2 = artifacts.require('./mockups/redeploys/RCProxyL2V2.sol');
+var ProxyL12 = artifacts.require('./mockups/redeploys/RCProxyL1V2.sol');
+var ProxyL22 = artifacts.require('./mockups/redeploys/RCProxyL2V2.sol');
 var RCMarket2 = artifacts.require('./mockups/redeploys/RCMarketXdaiV2.sol');
 var BridgeMockup2 = artifacts.require('./mockups/redeploys/BridgeMockupV2.sol');
 var RealitioMockup2 = artifacts.require("./mockups/redeploys/RealitioMockupV2.sol");
@@ -79,13 +79,13 @@ contract('TestProxies', (accounts) => {
     rcreference = await RCMarket.new();
     rcorderbook = await RCOrderbook.new(rcfactory.address, treasury.address);
     // nft hubs
-    nfthubxdai = await NftHubXDai.new(rcfactory.address);
-    nfthubmainnet = await NftHubMainnet.new();
+    nftHubL2 = await NftHubL2.new(rcfactory.address);
+    nftHubL1 = await NftHubL1.new();
     // tell treasury about factory, tell factory about nft hub and reference
     await treasury.setFactoryAddress(rcfactory.address);
     await rcfactory.setReferenceContractAddress(rcreference.address);
-    await rcfactory.setNftHubAddress(nfthubxdai.address, 0);
-    await treasury.setNftHubAddress(nfthubxdai.address);
+    await rcfactory.setNftHubAddress(nftHubL2.address, 0);
+    await treasury.setNftHubAddress(nftHubL2.address);
     await rcfactory.setOrderbookAddress(rcorderbook.address);
     await treasury.setOrderbookAddress(rcorderbook.address);
     // mockups 
@@ -94,16 +94,16 @@ contract('TestProxies', (accounts) => {
     alternateReceiverBridge = await AlternateReceiverBridgeMockup.new();
     dai = await DaiMockup.new();
     // bridge contracts
-    xdaiproxy = await XdaiProxy.new(bridge.address, rcfactory.address, treasury.address, realitio.address, realitio.address);
-    mainnetproxy = await MainnetProxy.new(bridge.address, nfthubmainnet.address, alternateReceiverBridge.address, dai.address);
+    proxyL2 = await ProxyL2.new(bridge.address, rcfactory.address, treasury.address, realitio.address, realitio.address);
+    proxyL1 = await ProxyL1.new(bridge.address, nftHubL1.address, alternateReceiverBridge.address, dai.address);
     // tell the factory, mainnet proxy and bridge the xdai proxy address
-    await rcfactory.setProxyXdaiAddress(xdaiproxy.address);
-    await mainnetproxy.setProxyXdaiAddress(xdaiproxy.address);
-    await bridge.setProxyXdaiAddress(xdaiproxy.address);
+    await rcfactory.setProxyL2Address(proxyL2.address);
+    await proxyL1.setProxyL2Address(proxyL2.address);
+    await bridge.setProxyL2Address(proxyL2.address);
     // tell the xdai proxy, nft mainnet hub and bridge the mainnet proxy address
-    await xdaiproxy.setProxyMainnetAddress(mainnetproxy.address);
-    await bridge.setProxyMainnetAddress(mainnetproxy.address);
-    await nfthubmainnet.setProxyMainnetAddress(mainnetproxy.address);
+    await proxyL2.setProxyL1Address(proxyL1.address);
+    await bridge.setProxyL1Address(proxyL1.address);
+    await nftHubL1.setProxyL1Address(proxyL1.address);
     // tell the treasury about the ARB
     await treasury.setAlternateReceiverAddress(alternateReceiverBridge.address);
     // market creation
@@ -255,25 +255,25 @@ contract('TestProxies', (accounts) => {
 
   it('test RCProxyL1 various', async () => {
     // test changing xdai proxy
-    var xdaiproxy2 = await XdaiProxy2.new(bridge.address, rcfactory.address, treasury.address, realitio.address, treasury.address);
-    await xdaiproxy2.setProxyMainnetAddress(mainnetproxy.address);
-    await xdaiproxy2.setBridgeXdaiAddress(bridge.address);
-    await xdaiproxy2.setFactoryAddress(rcfactory.address);
-    await mainnetproxy.setProxyXdaiAddress(xdaiproxy2.address);
-    await bridge.setProxyXdaiAddress(xdaiproxy2.address);
-    await rcfactory.setProxyXdaiAddress(xdaiproxy2.address);
+    var proxyL22 = await ProxyL22.new(bridge.address, rcfactory.address, treasury.address, realitio.address, treasury.address);
+    await proxyL22.setProxyL1Address(proxyL1.address);
+    await proxyL22.setBridgeXdaiAddress(bridge.address);
+    await proxyL22.setFactoryAddress(rcfactory.address);
+    await proxyL1.setProxyL2Address(proxyL22.address);
+    await bridge.setProxyL2Address(proxyL22.address);
+    await rcfactory.setProxyL2Address(proxyL22.address);
     realitycards2 = await createMarketWithArtistSet();
     await realitio.setResult(2);
     await time.increase(time.duration.years(1));
     await realitycards2.lockMarket();
     // should be 4 even though 2 was set
-    await xdaiproxy2.getWinnerFromOracle(realitycards2.address);
+    await proxyL22.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     var winner = await realitycards2.winningOutcome();
     assert.equal(winner, 4);
     // test changing setBridgeMainnetAddress
-    await mainnetproxy.setBridgeMainnetAddress(user0);
-    var newproxy = await mainnetproxy.bridge.call();
+    await proxyL1.setBridgeMainnetAddress(user0);
+    var newproxy = await proxyL1.bridge.call();
     assert.equal(newproxy, user0);
   });
 
@@ -281,31 +281,31 @@ contract('TestProxies', (accounts) => {
   it('test RCProxyL1, various 2', async () => {
     // change relaitio, winner should return 69
     realitio2 = await RealitioMockup2.new();
-    await xdaiproxy.setRealitioAddress(realitio2.address);
+    await proxyL2.setRealitioAddress(realitio2.address);
     realitycards2 = await createMarketWithArtistSet();
     await realitio2.setResult(2);
     await time.increase(time.duration.years(1));
-    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
+    await proxyL2.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     var winner = await realitycards2.winningOutcome();
     assert.equal(winner, 69);
     // change arbitrator
-    await xdaiproxy.setArbitrator(user0);
-    var newarb = await xdaiproxy.arbitrator.call();
+    await proxyL2.setArbitrator(user0);
+    var newarb = await proxyL2.arbitrator.call();
     assert.equal(newarb, user0)
     // change timeout
-    await xdaiproxy.setTimeout(69);
-    var newtime = await xdaiproxy.timeout.call();
+    await proxyL2.setTimeout(69);
+    var newtime = await proxyL2.timeout.call();
     assert.equal(newtime, 69)
   });
 
   it('test setAmicableResolution', async () => {
     // normal setup, dont call the bridge, see if payout works
     await time.increase(time.duration.years(1));
-    await expectRevert(xdaiproxy.setAmicableResolution(realitycards.address, 2, { from: user1 }), "caller is not the owner");
+    await expectRevert(proxyL2.setAmicableResolution(realitycards.address, 2, { from: user1 }), "caller is not the owner");
     // first check that setWinner cannot be called directly
     await expectRevert(realitycards.setWinner(2), "Not proxy");
-    await xdaiproxy.setAmicableResolution(realitycards.address, 2);
+    await proxyL2.setAmicableResolution(realitycards.address, 2);
     // cant call it again
     await expectRevert(realitycards.lockMarket(), "Incorrect state");
     // await realitycards.determineWinner();
@@ -316,7 +316,7 @@ contract('TestProxies', (accounts) => {
     await time.increase(time.duration.years(1));
     await realitycards2.lockMarket();
     await realitio.setResult(2);
-    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
+    await proxyL2.getWinnerFromOracle(realitycards2.address);
   });
 
 
@@ -336,20 +336,20 @@ contract('TestProxies', (accounts) => {
     await realitycards.lockMarket();
     await realitycards.claimCard(3, { from: user1 })
     await expectRevert(realitycards.upgradeCard(3, { from: user1 }), "Incorrect state");
-    await xdaiproxy.getWinnerFromOracle(realitycards.address);
+    await proxyL2.getWinnerFromOracle(realitycards.address);
     await realitycards.withdraw({ from: user1 });
     await expectRevert(realitycards.upgradeCard(3, { from: user2 }), "Not owner");
     await realitycards.upgradeCard(3, { from: user1 });
     var ownerxdai = await realitycards.ownerOf(3);
     assert.equal(ownerxdai, realitycards.address);
-    var ownermainnet = await nfthubmainnet.ownerOf(3);
+    var ownermainnet = await nftHubL1.ownerOf(3);
     assert.equal(ownermainnet, user1);
     // check token uri
-    var tokenuri = await nfthubmainnet.tokenURI(3);
+    var tokenuri = await nftHubL1.tokenURI(3);
     assert.equal("uri", tokenuri);
     // test cant call certain functions directly
-    await expectRevert(xdaiproxy.saveCardToUpgrade(3, "asdfsadf", user0), "Not market");
-    await expectRevert(mainnetproxy.upgradeCard(3, "asdfsadf", user0), "Not bridge");
+    await expectRevert(proxyL2.saveCardToUpgrade(3, "asdfsadf", user0), "Not market");
+    await expectRevert(proxyL1.upgradeCard(3, "asdfsadf", user0), "Not bridge");
     // now, create new market and make sure token IDs on mainnet increment correctly
     var nftMintCount = await rcfactory.totalNftMintCount.call();
     assert.equal(nftMintCount, 20);
@@ -359,13 +359,13 @@ contract('TestProxies', (accounts) => {
     await time.increase(time.duration.years(1));
     await realitio.setResult(5);
     await realitycards2.lockMarket();
-    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
+    await proxyL2.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     await realitycards2.claimCard(5, { from: user3 })
     await realitycards2.upgradeCard(5, { from: user3 });
-    var ownermainnet = await nfthubmainnet.ownerOf(25);
+    var ownermainnet = await nftHubL1.ownerOf(25);
     assert.equal(ownermainnet, user3);
-    var tokenuri = await nfthubmainnet.tokenURI(25);
+    var tokenuri = await nftHubL1.tokenURI(25);
     assert.equal("x", tokenuri);
     await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000, user1);
@@ -375,57 +375,58 @@ contract('TestProxies', (accounts) => {
 
   it('test dai->xdai bridge', async () => {
     // add 1000 eth to the float
-    await xdaiproxy.send(web3.utils.toWei('100', 'ether'));
+    await erc20.approve(proxyL2.address, ether('1000'));
+    await proxyL2.topupFloat(ether('100'));
     // check cant confirm deposit if not validator
-    await expectRevert(xdaiproxy.confirmDaiDeposit(user1, ether('10'), 0), "Not a validator");
+    await expectRevert(proxyL2.confirmDaiDeposit(user1, ether('10'), 0), "Not a validator");
     // add user9 as validator
-    await xdaiproxy.setValidator(user9, true);
+    await proxyL2.setValidator(user9, true);
     // backend just saw user1 send 10 eth
-    await xdaiproxy.confirmDaiDeposit(user1, ether('10'), 0, { from: user9 });
+    await proxyL2.confirmDaiDeposit(user1, ether('10'), 0, { from: user9 });
     // check user1 received 10 eth
     var deposit = await treasury.userDeposit.call(user1);
     assert.equal(deposit.toString(), ether('10').toString());
     // confirm again check funds not sent again
-    await xdaiproxy.confirmDaiDeposit(user1, ether('10'), 0, { from: user9 });
+    await proxyL2.confirmDaiDeposit(user1, ether('10'), 0, { from: user9 });
     var deposit = await treasury.userDeposit.call(user1);
     assert.equal(deposit.toString(), ether('10').toString());
     // check cant call execute when already executed
-    await expectRevert(xdaiproxy.executeDaiDeposit(0), "Already executed");
+    await expectRevert(proxyL2.executeDaiDeposit(0), "Already executed");
     // add a second validator, new deposit, should not have executed yet
-    await xdaiproxy.setValidator(user8, true);
-    await xdaiproxy.confirmDaiDeposit(user2, ether('20'), 1, { from: user9 });
+    await proxyL2.setValidator(user8, true);
+    await proxyL2.confirmDaiDeposit(user2, ether('20'), 1, { from: user9 });
     var deposit = await treasury.userDeposit.call(user2);
     assert.equal(deposit.toString(), ether('0').toString());
     // catch errors if different details
-    await expectRevert(xdaiproxy.confirmDaiDeposit(user5, ether('20'), 1, { from: user8 }), "Addresses don't match");
-    await expectRevert(xdaiproxy.confirmDaiDeposit(user2, ether('10'), 1, { from: user8 }), "Amounts don't match");
+    await expectRevert(proxyL2.confirmDaiDeposit(user5, ether('20'), 1, { from: user8 }), "Addresses don't match");
+    await expectRevert(proxyL2.confirmDaiDeposit(user2, ether('10'), 1, { from: user8 }), "Amounts don't match");
     // catch errors if call execute before confirmed
-    await expectRevert(xdaiproxy.executeDaiDeposit(1), "Not confirmed");
+    await expectRevert(proxyL2.executeDaiDeposit(1), "Not confirmed");
     // second confirmation, should now execute
-    await xdaiproxy.confirmDaiDeposit(user2, ether('20'), 1, { from: user8 });
+    await proxyL2.confirmDaiDeposit(user2, ether('20'), 1, { from: user8 });
     var deposit = await treasury.userDeposit.call(user2);
     assert.equal(deposit.toString(), ether('20').toString());
     // Transfer more than the contract has
-    await xdaiproxy.confirmDaiDeposit(user3, ether('150'), 2, { from: user8 });
-    await xdaiproxy.confirmDaiDeposit(user3, ether('150'), 2, { from: user9 });
+    await proxyL2.confirmDaiDeposit(user3, ether('150'), 2, { from: user8 });
+    await proxyL2.confirmDaiDeposit(user3, ether('150'), 2, { from: user9 });
     // check user has received nothing
     var deposit = await treasury.userDeposit.call(user3);
     assert.equal(deposit.toString(), ether('0').toString());
     // transfer the extra, and try again
-    await xdaiproxy.send(web3.utils.toWei('100', 'ether'));
-    await xdaiproxy.executeDaiDeposit(2);
+    await proxyL2.topupFloat(ether('100'));
+    await proxyL2.executeDaiDeposit(2);
     var deposit = await treasury.userDeposit.call(user3);
     assert.equal(deposit.toString(), ether('150').toString());
     // test remove validator
-    await xdaiproxy.setValidator(user8, false);
+    await proxyL2.setValidator(user8, false);
     // third transfer, should execute immediately
-    await xdaiproxy.confirmDaiDeposit(user4, ether('3'), 3, { from: user9 });
+    await proxyL2.confirmDaiDeposit(user4, ether('3'), 3, { from: user9 });
     var deposit = await treasury.userDeposit.call(user4);
     assert.equal(deposit.toString(), ether('3').toString());
     // test withdraw float
-    var balanceBefore = await web3.eth.getBalance(user0);
-    await xdaiproxy.withdrawFloat(ether('5'));
-    var balanceAfter = await web3.eth.getBalance(user0);
+    var balanceBefore = await erc20.balanceOf(user0);
+    await proxyL2.withdrawFloat(ether('5'));
+    var balanceAfter = await erc20.balanceOf(user0);
     var depositWithdrawn = await balanceAfter - balanceBefore;
     var difference = Math.abs(depositWithdrawn.toString() - ether('5').toString());
     assert.isBelow(difference / deposit, 0.00001);
@@ -435,20 +436,23 @@ contract('TestProxies', (accounts) => {
     // set Treasury max balance
     await treasury.setMaxContractBalance(web3.utils.toWei('100', 'ether'));
     // add 1000 eth to the float
-    await xdaiproxy.send(web3.utils.toWei('1000', 'ether'));
+    await erc20.approve(proxyL2.address, ether('1000'));
+    await erc20.transfer(proxyL2.address, ether('1000'));
     // add user9 as validator
-    await xdaiproxy.setValidator(user9, true);
+    await proxyL2.setValidator(user9, true);
     // backend just saw user1 send 10 eth
-    await xdaiproxy.confirmDaiDeposit(user1, ether('75'), 0, { from: user9 });
+    await proxyL2.confirmDaiDeposit(user1, ether('75'), 0, { from: user9 });
     // check user1 received 10 eth
     var deposit = await treasury.userDeposit.call(user1);
     assert.equal(deposit.toString(), ether('75').toString());
     // repeat the above, this time it should be diverted to user's balance
-    var balanceBefore = await web3.eth.getBalance(user1);
-    await xdaiproxy.confirmDaiDeposit(user1, ether('75'), 1, { from: user9 });
-    var balanceAfter = await web3.eth.getBalance(user1);
+    var balanceBefore = await erc20.balanceOf(user1);
+    await proxyL2.confirmDaiDeposit(user1, ether('75'), 1, { from: user9 });
+    var balanceAfter = await erc20.balanceOf(user1);
     var depositWithdrawn = await balanceAfter - balanceBefore;
     var difference = Math.abs(depositWithdrawn.toString() - ether('75').toString());
+    console.log("before", balanceBefore.toString());
+    console.log("after", balanceAfter.toString());
     assert.isBelow(difference / deposit, 0.00001);
   });
 
@@ -456,24 +460,24 @@ contract('TestProxies', (accounts) => {
     // make sure ARB has enough funds
     await alternateReceiverBridge.send(web3.utils.toWei('100', 'ether'));
     // send 10 dai via mainnet
-    await mainnetproxy.depositDai(web3.utils.toWei('10', 'ether'));
+    await proxyL1.depositDai(web3.utils.toWei('10', 'ether'));
     // check xdai proxy now has 10 xDai
-    var balance = await web3.eth.getBalance(xdaiproxy.address);
+    var balance = await web3.eth.getBalance(proxyL2.address);
     assert.equal(balance, ether('10'));
     // add user9 as validator
-    await xdaiproxy.setValidator(user9, true);
+    await proxyL2.setValidator(user9, true);
     // backend just saw user1 send 10 eth
-    await xdaiproxy.confirmDaiDeposit(user1, ether('10'), 0, { from: user9 });
+    await proxyL2.confirmDaiDeposit(user1, ether('10'), 0, { from: user9 });
     // check user1 received 10 eth
     var deposit = await treasury.userDeposit.call(user1);
     assert.equal(deposit.toString(), ether('10').toString());
     // disable deposits, should revert
-    await mainnetproxy.changeDepositsEnabled();
-    await expectRevert(mainnetproxy.depositDai(web3.utils.toWei('10', 'ether')), "Deposits disabled");
+    await proxyL1.changeDepositsEnabled();
+    await expectRevert(proxyL1.depositDai(web3.utils.toWei('10', 'ether')), "Deposits disabled");
     // enable deposits, should not revert
-    await mainnetproxy.changeDepositsEnabled();
-    await mainnetproxy.depositDai(web3.utils.toWei('15', 'ether'));
-    var balance = await web3.eth.getBalance(xdaiproxy.address);
+    await proxyL1.changeDepositsEnabled();
+    await proxyL1.depositDai(web3.utils.toWei('15', 'ether'));
+    var balance = await web3.eth.getBalance(proxyL2.address);
     assert.equal(balance, ether('15'));
   });
 

@@ -26,10 +26,10 @@ contract RCProxyL1 is Ownable {
     IERC721 public nfthub;
 
     /// @dev governance variables
-    address public proxyXdaiAddress;
+    address public proxyL2Address;
     address public nftHubAddress;
 
-    /// @dev dai deposits
+    /// @dev token deposits
     uint256 internal depositNonce;
     bool internal depositsEnabled = true;
 
@@ -59,12 +59,12 @@ contract RCProxyL1 is Ownable {
     /////// GOVERNANCE - SETUP /////////
     ////////////////////////////////////
 
-    /// @notice address of xdai oracle proxy, called by the xdai side of the arbitrary message bridge
+    /// @notice address of Layer2 oracle proxy, called by the Layer2 side of the arbitrary message bridge
     /// @dev not set in constructor, address not known at deployment
     /// @param _newAddress the new address to set
-    function setProxyXdaiAddress(address _newAddress) external onlyOwner {
+    function setProxyL2Address(address _newAddress) external onlyOwner {
         require(_newAddress != address(0), "Must set an address");
-        proxyXdaiAddress = _newAddress;
+        proxyL2Address = _newAddress;
     }
 
     /// @notice to set the address of arbitrary message bridge, mainnet side
@@ -132,7 +132,7 @@ contract RCProxyL1 is Ownable {
         address _owner
     ) external {
         require(msg.sender == address(bridge), "Not bridge");
-        require(bridge.messageSender() == proxyXdaiAddress, "Not proxy");
+        require(bridge.messageSender() == proxyL2Address, "Not proxy");
         require(_owner != address(0), "Must set an address");
         nfthub.mintNft(_newTokenId, _tokenUri, _owner);
     }
@@ -176,7 +176,7 @@ contract RCProxyL1 is Ownable {
         );
         alternateReceiverBridge.relayTokens(
             address(this),
-            proxyXdaiAddress,
+            proxyL2Address,
             _amount
         );
     }

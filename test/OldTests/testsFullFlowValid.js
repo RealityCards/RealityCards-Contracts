@@ -14,10 +14,10 @@ const { initial } = require("underscore");
 var RCFactory = artifacts.require("./RCFactory.sol");
 var RCTreasury = artifacts.require("./RCTreasury.sol");
 var RCMarket = artifacts.require("./RCMarket.sol");
-var NftHubXDai = artifacts.require("./nfthubs/RCNftHubXdai.sol");
-var NftHubMainnet = artifacts.require("./nfthubs/RCNftHubL1.sol");
-var XdaiProxy = artifacts.require("./bridgeproxies/RCProxyL2.sol");
-var MainnetProxy = artifacts.require("./bridgeproxies/RCProxyL1.sol");
+var NftHubL2 = artifacts.require("./nfthubs/RCNftHubXdai.sol");
+var NftHubL1 = artifacts.require("./nfthubs/RCNftHubL1.sol");
+var ProxyL2 = artifacts.require("./bridgeproxies/RCProxyL2.sol");
+var ProxyL1 = artifacts.require("./bridgeproxies/RCProxyL1.sol");
 var RCOrderbook = artifacts.require("./RCOrderbook.sol");
 // mockups
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
@@ -30,10 +30,10 @@ var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
 const tokenMockup = artifacts.require("./mockups/tokenMockup.sol");
 // redeploys
 var RCFactory2 = artifacts.require("./RCFactoryV2.sol");
-var MainnetProxy2 = artifacts.require(
+var ProxyL12 = artifacts.require(
   "./mockups/redeploys/RCProxyL1V2.sol"
 );
-var XdaiProxy2 = artifacts.require("./mockups/redeploys/RCProxyL2V2.sol");
+var ProxyL22 = artifacts.require("./mockups/redeploys/RCProxyL2V2.sol");
 var RCMarket2 = artifacts.require("./mockups/redeploys/RCMarketXdaiV2.sol");
 var BridgeMockup2 = artifacts.require("./mockups/redeploys/BridgeMockupV2.sol");
 var RealitioMockup2 = artifacts.require(
@@ -108,13 +108,13 @@ contract("TestFullFlowValid", (accounts) => {
     rcreference = await RCMarket.new();
     rcorderbook = await RCOrderbook.new(rcfactory.address, treasury.address);
     // nft hubs
-    nfthubxdai = await NftHubXDai.new(rcfactory.address);
-    nfthubmainnet = await NftHubMainnet.new();
+    nftHubL2 = await NftHubL2.new(rcfactory.address);
+    nftHubL1 = await NftHubL1.new();
     // tell treasury about factory, tell factory about nft hub and reference
     await treasury.setFactoryAddress(rcfactory.address);
     await rcfactory.setReferenceContractAddress(rcreference.address);
-    await rcfactory.setNftHubAddress(nfthubxdai.address, 0);
-    await treasury.setNftHubAddress(nfthubxdai.address);
+    await rcfactory.setNftHubAddress(nftHubL2.address, 0);
+    await treasury.setNftHubAddress(nftHubL2.address);
     await rcfactory.setOrderbookAddress(rcorderbook.address);
     await treasury.setOrderbookAddress(rcorderbook.address);
     // mockups
@@ -123,27 +123,27 @@ contract("TestFullFlowValid", (accounts) => {
     alternateReceiverBridge = await AlternateReceiverBridgeMockup.new();
     dai = await DaiMockup.new();
     // bridge contracts
-    xdaiproxy = await XdaiProxy.new(
+    proxyL2 = await ProxyL2.new(
       bridge.address,
       rcfactory.address,
       treasury.address,
       realitio.address,
       realitio.address
     );
-    mainnetproxy = await MainnetProxy.new(
+    proxyL1 = await ProxyL1.new(
       bridge.address,
-      nfthubmainnet.address,
+      nftHubL1.address,
       alternateReceiverBridge.address,
       dai.address
     );
     // tell the factory, mainnet proxy and bridge the xdai proxy address
-    await rcfactory.setProxyXdaiAddress(xdaiproxy.address);
-    await mainnetproxy.setProxyXdaiAddress(xdaiproxy.address);
-    await bridge.setProxyXdaiAddress(xdaiproxy.address);
+    await rcfactory.setProxyL2Address(proxyL2.address);
+    await proxyL1.setProxyL2Address(proxyL2.address);
+    await bridge.setProxyL2Address(proxyL2.address);
     // tell the xdai proxy, nft mainnet hub and bridge the mainnet proxy address
-    await xdaiproxy.setProxyMainnetAddress(mainnetproxy.address);
-    await bridge.setProxyMainnetAddress(mainnetproxy.address);
-    await nfthubmainnet.setProxyMainnetAddress(mainnetproxy.address);
+    await proxyL2.setProxyL1Address(proxyL1.address);
+    await bridge.setProxyL1Address(proxyL1.address);
+    await nftHubL1.setProxyL1Address(proxyL1.address);
     // tell the treasury about the ARB
     await treasury.setAlternateReceiverAddress(alternateReceiverBridge.address);
     // market creation
@@ -522,7 +522,7 @@ contract("TestFullFlowValid", (accounts) => {
     await newRental(1, 2, user0); // auto locks
     // // set winner 1
     await realitio.setResult(2);
-    await xdaiproxy.getWinnerFromOracle(realitycards.address);
+    await proxyL2.getWinnerFromOracle(realitycards.address);
     // await realitycards.determineWinner();
     ////////////////////////
     var totalRentCollected = await realitycards.totalRentCollected.call();
@@ -608,7 +608,7 @@ contract("TestFullFlowValid", (accounts) => {
     // // set winner 1
     await realitio.setResult(2);
     var depositCreatorBefore = await treasury.userDeposit.call(user0);
-    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
+    await proxyL2.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     await realitycards2.payArtist();
     await realitycards2.payMarketCreator();
@@ -722,7 +722,7 @@ contract("TestFullFlowValid", (accounts) => {
     // // set winner 1
     await realitio.setResult(2);
     var depositCreatorBefore = await treasury.userDeposit.call(user0);
-    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
+    await proxyL2.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     await realitycards2.payArtist();
     await realitycards2.payMarketCreator();
@@ -840,7 +840,7 @@ contract("TestFullFlowValid", (accounts) => {
     // // set winner 1
     await realitio.setResult(2);
     var depositCreatorBefore = await treasury.userDeposit.call(user0);
-    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
+    await proxyL2.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     await realitycards2.payArtist();
     await realitycards2.payAffiliate();
@@ -966,7 +966,7 @@ contract("TestFullFlowValid", (accounts) => {
     await realitycards2.lockMarket();
     // // set winner 1
     await realitio.setResult(2);
-    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
+    await proxyL2.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     ////////////////////////
     var totalRentCollected = await realitycards2.totalRentCollected.call();
@@ -1031,7 +1031,7 @@ contract("TestFullFlowValid", (accounts) => {
     // // set winner 1
     await realitio.setResult(2);
     var depositCreatorBefore = await treasury.userDeposit.call(user0);
-    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
+    await proxyL2.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     await realitycards2.payArtist();
     await realitycards2.payMarketCreator();
@@ -1117,7 +1117,7 @@ contract("TestFullFlowValid", (accounts) => {
     await realitycards2.lockMarket();
     // // set winner 1
     await realitio.setResult(2);
-    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
+    await proxyL2.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     ////////////////////////
     var totalRentCollected = await realitycards2.totalRentCollected.call();
@@ -1204,7 +1204,7 @@ contract("TestFullFlowValid", (accounts) => {
     await realitycards2.lockMarket();
     // // set winner 1
     await realitio.setResult(2);
-    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
+    await proxyL2.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     ////////////////////////
     var totalRentCollected = await realitycards2.totalRentCollected.call();
@@ -1321,7 +1321,7 @@ contract("TestFullFlowValid", (accounts) => {
     // // set winner 1
     await realitio.setResult(2);
     var depositCreatorBefore = await treasury.userDeposit.call(user0);
-    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
+    await proxyL2.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     await realitycards2.payArtist();
     await realitycards2.payMarketCreator();
@@ -1465,7 +1465,7 @@ contract("TestFullFlowValid", (accounts) => {
     // // set winner 1
     await realitio.setResult(2);
     var depositCreatorBefore = await treasury.userDeposit.call(user0);
-    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
+    await proxyL2.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     await realitycards2.payArtist();
     await realitycards2.payMarketCreator();
@@ -1571,12 +1571,12 @@ contract("TestFullFlowValid", (accounts) => {
 
   it("test sponsor", async () => {
     await expectRevert(
-      realitycards.sponsor(0, user3, { from: user3 }),
+      realitycards.sponsor(user3, 0, { from: user3 }),
       "Must send something"
     );
-    await realitycards.sponsor({
-      value: web3.utils.toWei("153", "ether"),
-      from: user3,
+    await erc20.approve(treasury.address, ether('200'), { from: user3 })
+    await realitycards.sponsor(user3, ether('152'), {
+      from: user3
     });
     ///// SETUP //////
     await depositDai(1000, user0);
@@ -1607,7 +1607,7 @@ contract("TestFullFlowValid", (accounts) => {
     await realitycards.lockMarket();
     // set winner
     await realitio.setResult(2);
-    await xdaiproxy.getWinnerFromOracle(realitycards.address);
+    await proxyL2.getWinnerFromOracle(realitycards.address);
     // await realitycards.determineWinner();
     ////////////////////////
     // total deposits = 139, check:
@@ -1665,7 +1665,8 @@ contract("TestFullFlowValid", (accounts) => {
     // 10% card specific affiliates
     await rcfactory.setPotDistribution(0, 0, 0, 0, 100);
     var realitycards2 = await createMarketWithArtistAndCardAffiliates();
-    await realitycards2.sponsor(web3.utils.toWei("200", "ether"), {
+    await erc20.approve(treasury.address, ether('200'), { from: user3 })
+    await realitycards2.sponsor(user3, web3.utils.toWei("200", "ether"), {
       from: user3,
     });
     await newRentalWithDepositCustomContract(realitycards2, 5, 0, user0, 1000); // paid 50
@@ -1676,7 +1677,7 @@ contract("TestFullFlowValid", (accounts) => {
     await time.increase(time.duration.years(1));
     await realitycards2.lockMarket();
     await realitio.setResult(0);
-    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
+    await proxyL2.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     // token 0
     for (i = 0; i < 20; i++) {
@@ -1729,7 +1730,7 @@ contract("TestFullFlowValid", (accounts) => {
     await time.increase(time.duration.years(1));
     await realitycards2.lockMarket();
     await realitio.setResult(0);
-    await xdaiproxy.getWinnerFromOracle(realitycards2.address);
+    await proxyL2.getWinnerFromOracle(realitycards2.address);
     // await realitycards2.determineWinner();
     // token 0
     for (i = 0; i < 20; i++) {
@@ -1925,7 +1926,7 @@ contract("TestFullFlowValid", (accounts) => {
     await realitycards.lockMarket();
     // set winner
     await realitio.setResult(0);
-    await xdaiproxy.getWinnerFromOracle(realitycards.address);
+    await proxyL2.getWinnerFromOracle(realitycards.address);
     // await realitycards.determineWinner();
     await realitycards.claimCard(0, { from: user1 });
     await realitycards.claimCard(1, { from: user1 });
@@ -2154,7 +2155,7 @@ contract("TestFullFlowValid", (accounts) => {
     await realitycards.lockMarket();
     // // set winner 1
     await realitio.setResult(2);
-    await xdaiproxy.getWinnerFromOracle(realitycards.address);
+    await proxyL2.getWinnerFromOracle(realitycards.address);
     // await realitycards.determineWinner();
     ////////////////////////
     var totalRentCollected = await realitycards.totalRentCollected.call();
@@ -2230,7 +2231,7 @@ contract("TestFullFlowValid", (accounts) => {
     await realitycards.lockMarket();
     // // set winner 1
     await realitio.setResult(2);
-    await xdaiproxy.getWinnerFromOracle(realitycards.address);
+    await proxyL2.getWinnerFromOracle(realitycards.address);
     // await realitycards.determineWinner();
     ////////////////////////
     var totalRentCollected = await realitycards.totalRentCollected.call();

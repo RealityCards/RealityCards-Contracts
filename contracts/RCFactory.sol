@@ -177,7 +177,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     /// @dev all functions should have onlyOwner modifier
 
     /// @notice address of the xDai Proxy contract
-    function setProxyXdaiAddress(IRCProxyL2 _newAddress) external onlyOwner {
+    function setProxyL2Address(IRCProxyL2 _newAddress) external onlyOwner {
         require(address(_newAddress) != address(0));
         proxy = _newAddress;
     }
@@ -277,9 +277,9 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         approvedAffilliatesOnly = !approvedAffilliatesOnly;
     }
 
-    /// @notice how much xdai must be sent in the createMarket tx which forms the initial pot
-    function setSponsorshipRequired(uint256 _dai) external onlyOwner {
-        sponsorshipRequired = _dai;
+    /// @notice how many tokens must be sent in the createMarket tx which forms the initial pot
+    function setSponsorshipRequired(uint256 _amount) external onlyOwner {
+        sponsorshipRequired = _amount;
     }
 
     /// @notice if true, Cards in unapproved markets can't be upgraded

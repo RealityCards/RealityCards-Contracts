@@ -10,10 +10,10 @@ const { createSolutionBuilderHost } = require("typescript");
 const RCFactory = artifacts.require("./RCFactory.sol");
 const RCTreasury = artifacts.require("./RCTreasury.sol");
 const RCMarket = artifacts.require("./RCMarket.sol");
-const NftHubXDai = artifacts.require("./nfthubs/RCNftHubXdai.sol");
-const NftHubMainnet = artifacts.require("./nfthubs/RCNftHubL1.sol");
-const XdaiProxy = artifacts.require("./bridgeproxies/RCProxyL2.sol");
-const MainnetProxy = artifacts.require("./bridgeproxies/RCProxyL1.sol");
+const NftHubL2 = artifacts.require("./nfthubs/RCNftHubXdai.sol");
+const NftHubL1 = artifacts.require("./nfthubs/RCNftHubL1.sol");
+const ProxyL2 = artifacts.require("./bridgeproxies/RCProxyL2.sol");
+const ProxyL1 = artifacts.require("./bridgeproxies/RCProxyL1.sol");
 const RCOrderbook = artifacts.require('./RCOrderbook.sol');
 // mockups
 const RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
@@ -67,10 +67,10 @@ module.exports = class TestEnviroment {
         if (err) throw err;
     }
 
-    async setup(deployOpts = {}) {
+    async setup(accounts) {
         this.contracts.erc20 = await tokenMockup.new("Token name", "TKN", ether("1000000"), this.aliases.admin);
         for (let index = 0; index < 10; index++) {
-            await erc20.transfer(accounts[index], ether("1000"), { from: user0 });
+            await this.contracts.erc20.transfer(accounts[index], ether("1000"), { from: user0 });
         }
         // main contracts
         this.contracts.treasury = await RCTreasury.new(this.contracts.erc20.address);
@@ -78,13 +78,13 @@ module.exports = class TestEnviroment {
         this.contracts.reference = await RCMarket.new();
         this.contracts.orderbook = await RCOrderbook.new(this.contracts.factory.address, this.contracts.treasury.address);
         // nft hubs
-        this.contracts.nfthubxdai = await NftHubXDai.new(this.contracts.factory.address);
-        this.contracts.nfthubmainnet = await NftHubMainnet.new();
+        this.contracts.nftHubL2 = await NftHubL2.new(this.contracts.factory.address);
+        this.contracts.nftHubL1 = await NftHubL1.new();
         // tell treasury about factory, tell factory about nft hub and reference
         await this.contracts.treasury.setFactoryAddress(this.contracts.factory.address);
         await this.contracts.factory.setReferenceContractAddress(this.contracts.reference.address);
-        await this.contracts.factory.setNftHubAddress(this.contracts.nfthubxdai.address, 0);
-        await this.contracts.treasury.setNftHubAddress(this.contracts.nfthubxdai.address);
+        await this.contracts.factory.setNftHubAddress(this.contracts.nftHubL2.address, 0);
+        await this.contracts.treasury.setNftHubAddress(this.contracts.nftHubL2.address);
         await this.contracts.factory.setOrderbookAddress(this.contracts.orderbook.address);
         await this.contracts.treasury.setOrderbookAddress(this.contracts.orderbook.address);
         // mockups
@@ -93,16 +93,16 @@ module.exports = class TestEnviroment {
         this.contracts.alternateReceiverBridge = await AlternateReceiverBridgeMockup.new();
         this.contracts.dai = await DaiMockup.new();
         // bridge contracts
-        this.contracts.xdaiproxy = await XdaiProxy.new(this.contracts.bridge.address, this.contracts.factory.address, this.contracts.treasury.address, this.contracts.realitio.address, this.contracts.realitio.address);
-        this.contracts.mainnetproxy = await MainnetProxy.new(this.contracts.bridge.address, this.contracts.nfthubmainnet.address, this.contracts.alternateReceiverBridge.address, this.contracts.dai.address);
+        this.contracts.proxyL2 = await ProxyL2.new(this.contracts.bridge.address, this.contracts.factory.address, this.contracts.treasury.address, this.contracts.realitio.address, this.contracts.realitio.address);
+        this.contracts.proxyL1 = await ProxyL1.new(this.contracts.bridge.address, this.contracts.nftHubL1.address, this.contracts.alternateReceiverBridge.address, this.contracts.dai.address);
         // tell the factory, mainnet proxy and bridge the xdai proxy address
-        await this.contracts.factory.setProxyXdaiAddress(this.contracts.xdaiproxy.address);
-        await this.contracts.mainnetproxy.setProxyXdaiAddress(this.contracts.xdaiproxy.address);
-        await this.contracts.bridge.setProxyXdaiAddress(this.contracts.xdaiproxy.address);
+        await this.contracts.factory.setProxyL2Address(this.contracts.proxyL2.address);
+        await this.contracts.proxyL1.setProxyL2Address(this.contracts.proxyL2.address);
+        await this.contracts.bridge.setProxyL2Address(this.contracts.proxyL2.address);
         // tell the xdai proxy, nft mainnet hub and bridge the mainnet proxy address
-        await this.contracts.xdaiproxy.setProxyMainnetAddress(this.contracts.mainnetproxy.address);
-        await this.contracts.bridge.setProxyMainnetAddress(this.contracts.mainnetproxy.address);
-        await this.contracts.nfthubmainnet.setProxyMainnetAddress(this.contracts.mainnetproxy.address);
+        await this.contracts.proxyL2.setProxyL1Address(this.contracts.proxyL1.address);
+        await this.contracts.bridge.setProxyL1Address(this.contracts.proxyL1.address);
+        await this.contracts.nftHubL1.setProxyL1Address(this.contracts.proxyL1.address);
         // tell the treasury about the ARB
         await this.contracts.treasury.setAlternateReceiverAddress(this.contracts.alternateReceiverBridge.address);
         // market creation, start off without any.
@@ -140,7 +140,7 @@ module.exports = class TestEnviroment {
         for (let i = 0; i < options.numberOfCards; i++) {
             tokenURIs.push("x");
         }
-        await this.contracts.factory.setProxyXdaiAddress(this.contracts.xdaiproxy.address);
+        await this.contracts.factory.setProxyL2Address(this.contracts.proxyL2.address);
         await this.contracts.factory.createMarket(
             options.mode,
             "0x0",
@@ -150,7 +150,7 @@ module.exports = class TestEnviroment {
             options.affiliateAddress,
             options.cardAffiliate,
             question,
-            sponsorship
+            options.sponsorship
         );
         return RCMarket.at(await this.contracts.factory.getMostRecentMarket.call(0));
     }
@@ -170,7 +170,8 @@ module.exports = class TestEnviroment {
 
     async deposit(amount, user) {
         amount = web3.utils.toWei(amount.toString(), "ether");
-        await this.contracts.treasury.deposit(user, { from: user, value: amount });
+        await this.contracts.erc20.approve(this.contracts.treasury.address, ether(amount.toString()), { from: user })
+        await this.contracts.treasury.deposit(amount, user, { from: user });
     }
 
     async withdrawDeposit(amount, userx) {

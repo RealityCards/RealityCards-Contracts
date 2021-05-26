@@ -1,7 +1,7 @@
 #!/bin/bash
 echo Starting deployment, please be patient..
 stage1=`truffle migrate --network teststage1 --reset`
-temp=${stage1##*xDaiProxyAddress}
+temp=${stage1##*ProxyL2Address}
 xDaiProxyAddress=${temp:1:42}
 temp=${stage1##*RCTreasuryAddress}
 RCTreasuryAddress=${temp:1:42}
@@ -9,12 +9,12 @@ temp=${stage1##*RCFactoryAddress}
 RCFactoryAddress=${temp:1:42}
 temp=${stage1##*RCMarketAddress}
 RCMarketAddress=${temp:1:42}
-temp=${stage1##*NFTHubXDAIAddress}
-NFTHubXDAIAddress=${temp:1:42}
+temp=${stage1##*NFTHubL2Address}
+NFTHubL2Address=${temp:1:42}
 
 echo Completed stage 1, Starting stage 2
 stage2=`truffle migrate --network teststage2 --reset ${xDaiProxyAddress}`
-temp2=${stage2##*TheMainnetProxyAddress}
+temp2=${stage2##*TheproxyL1Address}
 mainnetProxyAddress=${temp2:1:42}
 temp2=${stage2##*TheNFTHubMainnetAddress}
 NFTHubMainnetAddress=${temp2:1:42}
@@ -29,7 +29,7 @@ echo Treasury - $RCTreasuryAddress
 echo Factory  - $RCFactoryAddress
 echo Market   - $RCMarketAddress
 echo xDaiProxy- $xDaiProxyAddress
-echo NFT Hub  - $NFTHubXDAIAddress
+echo NFT Hub  - $NFTHubL2Address
 
 #Print out the mainnet/kovan contract addresses
 echo
@@ -48,7 +48,7 @@ echo Treasury  - $RCTreasuryAddress                         >> DeployedContracts
 echo Factory   - $RCFactoryAddress                          >> DeployedContracts.txt
 echo Market    - $RCMarketAddress                           >> DeployedContracts.txt
 echo xDaiProxy - $xDaiProxyAddress                          >> DeployedContracts.txt
-echo NFT Hub   - $NFTHubXDAIAddress                         >> DeployedContracts.txt
+echo NFT Hub   - $NFTHubL2Address                         >> DeployedContracts.txt
 echo ------------------------------------------------------ >> DeployedContracts.txt
 echo Mainnet/Kovan Contracts                                >> DeployedContracts.txt
 echo ------------------------------------------------------ >> DeployedContracts.txt

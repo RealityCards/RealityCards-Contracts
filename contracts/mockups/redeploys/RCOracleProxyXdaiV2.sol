@@ -105,7 +105,7 @@ contract RCProxyL2V2 is Ownable {
 
     /// @dev address of mainnet oracle proxy, called by the mainnet side of the arbitrary message bridge
     /// @dev not set in constructor, address not known at deployment
-    function setProxyMainnetAddress(address _newAddress) external onlyOwner {
+    function setProxyL1Address(address _newAddress) external onlyOwner {
         proxyMainnetAddress = _newAddress;
     }
 
