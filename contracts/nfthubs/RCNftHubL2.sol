@@ -63,7 +63,7 @@ contract RCNftHubL2 is
 
     /// @dev so only markets can change ownership
     function addMarket(address _newMarket) external override {
-        require(msg.sender == factoryAddress, "Not factory");
+        require(msgSender() == factoryAddress, "Not factory");
         isMarket[_newMarket] = true;
     }
 
@@ -91,7 +91,7 @@ contract RCNftHubL2 is
             !withdrawnTokens[_tokenId],
             "ChildMintableERC721: TOKEN_EXISTS_ON_ROOT_CHAIN"
         );
-        require(msg.sender == factoryAddress, "Not factory");
+        require(msgSender() == factoryAddress, "Not factory");
         _mint(_originalOwner, _tokenId);
         _setTokenURI(_tokenId, _tokenURI);
         marketTracker[_tokenId] = _originalOwner;
@@ -104,7 +104,7 @@ contract RCNftHubL2 is
         address _newOwner,
         uint256 _tokenId
     ) external override returns (bool) {
-        require(isMarket[msg.sender], "Not market");
+        require(isMarket[msgSender()], "Not market");
         _transfer(_currentOwner, _newOwner, _tokenId);
         return true;
     }
@@ -155,6 +155,42 @@ contract RCNftHubL2 is
         }
     }
 
+    function withdraw(uint256 tokenId) external override {
+        require(
+            _msgSender() == ownerOf(tokenId),
+            "ChildMintableERC721: INVALID_TOKEN_OWNER"
+        );
+        withdrawnTokens[tokenId] = true;
+        _burn(tokenId);
+    }
+
+    function withdrawWithMetadata(uint256 tokenId) external override {
+        require(
+            msgSender() == ownerOf(tokenId),
+            "ChildMintableERC721: INVALID_TOKEN_OWNER"
+        );
+        withdrawnTokens[tokenId] = true;
+
+        // Encoding metadata associated with tokenId & emitting event
+        emit TransferWithMetadata(
+            ownerOf(tokenId),
+            address(0),
+            tokenId,
+            this.encodeTokenMetadata(tokenId)
+        );
+
+        _burn(tokenId);
+    }
+
+    function encodeTokenMetadata(uint256 tokenId)
+        external
+        view
+        virtual
+        returns (bytes memory)
+    {
+        return abi.encode(tokenURI(tokenId));
+    }
+
     function supportsInterface(bytes4 interfaceId)
         public
         view
@@ -179,7 +215,7 @@ contract RCNftHubL2 is
     ) public override {
         IRCMarket market = IRCMarket(marketTracker[tokenId]);
         require(market.state() == IRCMarket.States.WITHDRAW, "Incorrect state");
-        require(ownerOf(tokenId) == msg.sender, "Not owner");
+        require(ownerOf(tokenId) == msgSender(), "Not owner");
         _transfer(from, to, tokenId);
     }
 
@@ -191,7 +227,7 @@ contract RCNftHubL2 is
     ) public override {
         IRCMarket market = IRCMarket(marketTracker[tokenId]);
         require(market.state() == IRCMarket.States.WITHDRAW, "Incorrect state");
-        require(ownerOf(tokenId) == msg.sender, "Not owner");
+        require(ownerOf(tokenId) == msgSender(), "Not owner");
         _transfer(from, to, tokenId);
         _data;
     }

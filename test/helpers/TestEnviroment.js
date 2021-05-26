@@ -78,7 +78,7 @@ module.exports = class TestEnviroment {
         this.contracts.reference = await RCMarket.new();
         this.contracts.orderbook = await RCOrderbook.new(this.contracts.factory.address, this.contracts.treasury.address);
         // nft hubs
-        this.contracts.nftHubL2 = await NftHubL2.new(this.contracts.factory.address);
+        this.contracts.nftHubL2 = await NftHubL2.new(this.contracts.factory.address, this.constants.ZERO_ADDRESS);
         this.contracts.nftHubL1 = await NftHubL1.new();
         // tell treasury about factory, tell factory about nft hub and reference
         await this.contracts.treasury.setFactoryAddress(this.contracts.factory.address);
@@ -102,7 +102,6 @@ module.exports = class TestEnviroment {
         // tell the xdai proxy, nft mainnet hub and bridge the mainnet proxy address
         await this.contracts.proxyL2.setProxyL1Address(this.contracts.proxyL1.address);
         await this.contracts.bridge.setProxyL1Address(this.contracts.proxyL1.address);
-        await this.contracts.nftHubL1.setProxyL1Address(this.contracts.proxyL1.address);
         // tell the treasury about the ARB
         await this.contracts.treasury.setAlternateReceiverAddress(this.contracts.alternateReceiverBridge.address);
         // market creation, start off without any.

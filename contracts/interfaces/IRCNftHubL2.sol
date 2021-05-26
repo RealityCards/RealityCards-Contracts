@@ -23,4 +23,8 @@ interface IRCNftHubL2 {
     ) external returns (bool);
 
     function deposit(address user, bytes calldata depositData) external;
+
+    function withdraw(uint256 tokenId) external;
+
+    function withdrawWithMetadata(uint256 tokenId) external;
 }

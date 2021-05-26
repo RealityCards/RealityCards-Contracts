@@ -7,6 +7,7 @@ const {
   balance,
   time
 } = require('@openzeppelin/test-helpers');
+const { ZERO_ADDRESS } = require('@openzeppelin/test-helpers/src/constants');
 
 // main contracts
 var RCFactory = artifacts.require('./RCFactory.sol');
@@ -73,7 +74,7 @@ contract('TestProxies', (accounts) => {
     rcreference = await RCMarket.new();
     rcorderbook = await RCOrderbook.new(rcfactory.address, treasury.address);
     // nft hubs
-    nftHubL2 = await NftHubL2.new(rcfactory.address);
+    nftHubL2 = await NftHubL2.new(rcfactory.address, ZERO_ADDRESS);
     nftHubL1 = await NftHubL1.new();
     // tell treasury about factory, tell factory about nft hub and reference
     await treasury.setFactoryAddress(rcfactory.address);
@@ -97,7 +98,6 @@ contract('TestProxies', (accounts) => {
     // tell the xdai proxy, nft mainnet hub and bridge the mainnet proxy address
     await proxyL2.setProxyL1Address(proxyL1.address);
     await bridge.setProxyL1Address(proxyL1.address);
-    await nftHubL1.setProxyL1Address(proxyL1.address);
     // tell the treasury about the ARB
     await treasury.setAlternateReceiverAddress(alternateReceiverBridge.address);
     // market creation
@@ -365,115 +365,5 @@ contract('TestProxies', (accounts) => {
     await withdrawDeposit(1000, user1);
     await withdrawDeposit(1000, user3);
   });
-
-
-  it('test dai->xdai bridge', async () => {
-    // add 1000 eth to the float
-    await erc20.approve(proxyL2.address, ether('1000'));
-    await proxyL2.topupFloat(ether('100'));
-    // check cant confirm deposit if not validator
-    await expectRevert(proxyL2.confirmDaiDeposit(user1, ether('10'), 0), "Not a validator");
-    // add user9 as validator
-    await proxyL2.setValidator(user9, true);
-    // backend just saw user1 send 10 eth
-    await proxyL2.confirmDaiDeposit(user1, ether('10'), 0, { from: user9 });
-    // check user1 received 10 eth
-    var deposit = await treasury.userDeposit.call(user1);
-    assert.equal(deposit.toString(), ether('10').toString());
-    // confirm again check funds not sent again
-    await proxyL2.confirmDaiDeposit(user1, ether('10'), 0, { from: user9 });
-    var deposit = await treasury.userDeposit.call(user1);
-    assert.equal(deposit.toString(), ether('10').toString());
-    // check cant call execute when already executed
-    await expectRevert(proxyL2.executeDaiDeposit(0), "Already executed");
-    // add a second validator, new deposit, should not have executed yet
-    await proxyL2.setValidator(user8, true);
-    await proxyL2.confirmDaiDeposit(user2, ether('20'), 1, { from: user9 });
-    var deposit = await treasury.userDeposit.call(user2);
-    assert.equal(deposit.toString(), ether('0').toString());
-    // catch errors if different details
-    await expectRevert(proxyL2.confirmDaiDeposit(user5, ether('20'), 1, { from: user8 }), "Addresses don't match");
-    await expectRevert(proxyL2.confirmDaiDeposit(user2, ether('10'), 1, { from: user8 }), "Amounts don't match");
-    // catch errors if call execute before confirmed
-    await expectRevert(proxyL2.executeDaiDeposit(1), "Not confirmed");
-    // second confirmation, should now execute
-    await proxyL2.confirmDaiDeposit(user2, ether('20'), 1, { from: user8 });
-    var deposit = await treasury.userDeposit.call(user2);
-    assert.equal(deposit.toString(), ether('20').toString());
-    // Transfer more than the contract has
-    await proxyL2.confirmDaiDeposit(user3, ether('150'), 2, { from: user8 });
-    await proxyL2.confirmDaiDeposit(user3, ether('150'), 2, { from: user9 });
-    // check user has received nothing
-    var deposit = await treasury.userDeposit.call(user3);
-    assert.equal(deposit.toString(), ether('0').toString());
-    // transfer the extra, and try again
-    await proxyL2.topupFloat(ether('100'));
-    await proxyL2.executeDaiDeposit(2);
-    var deposit = await treasury.userDeposit.call(user3);
-    assert.equal(deposit.toString(), ether('150').toString());
-    // test remove validator
-    await proxyL2.setValidator(user8, false);
-    // third transfer, should execute immediately
-    await proxyL2.confirmDaiDeposit(user4, ether('3'), 3, { from: user9 });
-    var deposit = await treasury.userDeposit.call(user4);
-    assert.equal(deposit.toString(), ether('3').toString());
-    // test withdraw float
-    var balanceBefore = await erc20.balanceOf(user0);
-    await proxyL2.withdrawFloat(ether('5'));
-    var balanceAfter = await erc20.balanceOf(user0);
-    var depositWithdrawn = await balanceAfter - balanceBefore;
-    var difference = Math.abs(depositWithdrawn.toString() - ether('5').toString());
-    assert.isBelow(difference / deposit, 0.00001);
-  });
-
-  it('test dai->xdai bridge if exceeds contract balance limit', async () => {
-    // set Treasury max balance
-    await treasury.setMaxContractBalance(web3.utils.toWei('100', 'ether'));
-    // add 1000 eth to the float
-    await erc20.approve(proxyL2.address, ether('1000'));
-    await erc20.transfer(proxyL2.address, ether('1000'));
-    // add user9 as validator
-    await proxyL2.setValidator(user9, true);
-    // backend just saw user1 send 10 eth
-    await proxyL2.confirmDaiDeposit(user1, ether('75'), 0, { from: user9 });
-    // check user1 received 10 eth
-    var deposit = await treasury.userDeposit.call(user1);
-    assert.equal(deposit.toString(), ether('75').toString());
-    // repeat the above, this time it should be diverted to user's balance
-    var balanceBefore = await erc20.balanceOf(user1);
-    await proxyL2.confirmDaiDeposit(user1, ether('75'), 1, { from: user9 });
-    var balanceAfter = await erc20.balanceOf(user1);
-    var depositWithdrawn = await balanceAfter - balanceBefore;
-    var difference = Math.abs(depositWithdrawn.toString() - ether('75').toString());
-    assert.isBelow(difference / deposit, 0.00001);
-  });
-
-  it('test deposit dai mainnet proxy', async () => {
-    // make sure ARB has enough funds
-    await alternateReceiverBridge.send(web3.utils.toWei('100', 'ether'));
-    // send 10 dai via mainnet
-    await proxyL1.depositDai(web3.utils.toWei('10', 'ether'));
-    // check xdai proxy now has 10 xDai
-    var balance = await web3.eth.getBalance(proxyL2.address);
-    assert.equal(balance, ether('10'));
-    // add user9 as validator
-    await proxyL2.setValidator(user9, true);
-    // backend just saw user1 send 10 eth
-    await proxyL2.confirmDaiDeposit(user1, ether('10'), 0, { from: user9 });
-    // check user1 received 10 eth
-    var deposit = await treasury.userDeposit.call(user1);
-    assert.equal(deposit.toString(), ether('10').toString());
-    // disable deposits, should revert
-    await proxyL1.changeDepositsEnabled();
-    await expectRevert(proxyL1.depositDai(web3.utils.toWei('10', 'ether')), "Deposits disabled");
-    // enable deposits, should not revert
-    await proxyL1.changeDepositsEnabled();
-    await proxyL1.depositDai(web3.utils.toWei('15', 'ether'));
-    var balance = await web3.eth.getBalance(proxyL2.address);
-    assert.equal(balance, ether('15'));
-  });
-
-
-
 
 });

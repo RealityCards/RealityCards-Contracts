@@ -495,7 +495,6 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         // tell Treasury, Proxy, and NFT hub about new market
         // before initialize as during initialize the market may call the treasury
         treasury.addMarket(_newAddress);
-        proxy.addMarket(_newAddress);
         nfthub.addMarket(_newAddress);
         orderbook.addMarket(
             _newAddress,

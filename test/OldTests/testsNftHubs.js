@@ -7,6 +7,7 @@ const {
   balance,
   time
 } = require('@openzeppelin/test-helpers');
+const { ZERO_ADDRESS } = require('@openzeppelin/test-helpers/src/constants');
 
 // main contracts
 var RCFactory = artifacts.require('./RCFactory.sol');
@@ -73,7 +74,7 @@ contract('TestNftHubs', (accounts) => {
     rcreference = await RCMarket.new();
     rcorderbook = await RCOrderbook.new(rcfactory.address, treasury.address);
     // nft hubs
-    nftHubL2 = await NftHubL2.new(rcfactory.address);
+    nftHubL2 = await NftHubL2.new(rcfactory.address, ZERO_ADDRESS);
     nftHubL1 = await NftHubL1.new();
     // tell treasury about factory, tell factory about nft hub and reference
     await treasury.setFactoryAddress(rcfactory.address);
@@ -97,7 +98,6 @@ contract('TestNftHubs', (accounts) => {
     // tell the xdai proxy, nft mainnet hub and bridge the mainnet proxy address
     await proxyL2.setProxyL1Address(proxyL1.address);
     await bridge.setProxyL1Address(proxyL1.address);
-    await nftHubL1.setProxyL1Address(proxyL1.address);
     // tell the treasury about the ARB
     await treasury.setAlternateReceiverAddress(alternateReceiverBridge.address);
     // market creation
