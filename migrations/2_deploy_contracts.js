@@ -14,12 +14,10 @@ var RCFactory = artifacts.require("./RCFactory.sol");
 var RCMarket = artifacts.require("./RCMarket.sol")
 var NftHubL2 = artifacts.require('./nfthubs/RCNftHubL2.sol');
 var NftHubL1 = artifacts.require('./nfthubs/RCNftHubL1.sol');
-var ProxyL2 = artifacts.require('./bridgeproxies/RCProxyL2.sol');
-var proxyL1 = artifacts.require('./bridgeproxies/RCProxyL1.sol');
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 var BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
 var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
-var ARBMockup = artifacts.require('./mockups/AlternateReceiverBridgeMockup.sol')
+
 
 // variables
 // TODO: update chilvers' script with the relevant addresses here https://github.com/realitio/realitio-contracts/blob/master/config/arbitrators.json

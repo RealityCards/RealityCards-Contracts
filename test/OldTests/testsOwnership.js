@@ -15,13 +15,10 @@ var RCTreasury = artifacts.require('./RCTreasury.sol');
 var RCMarket = artifacts.require('./RCMarket.sol');
 var NftHubL2 = artifacts.require('./nfthubs/RCNftHubL2.sol');
 var NftHubL1 = artifacts.require('./nfthubs/RCNftHubL1.sol');
-var ProxyL2 = artifacts.require('./bridgeproxies/RCProxyL2.sol');
-var ProxyL1 = artifacts.require('./bridgeproxies/RCProxyL1.sol');
 var RCOrderbook = artifacts.require('./RCOrderbook.sol');
 // mockups
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
-var BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
-var AlternateReceiverBridgeMockup = artifacts.require("./mockups/AlternateReceiverBridgeMockup.sol");
+
 var SelfDestructMockup = artifacts.require("./mockups/SelfDestructMockup.sol");
 var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
 const tokenMockup = artifacts.require("./mockups/tokenMockup.sol");
@@ -67,10 +64,12 @@ contract('TestOwnership', (accounts) => {
       user = eval("user" + index);
       erc20.transfer(user, ether("1000"), { from: user0 });
     }
-
+    // mockups 
+    realitio = await RealitioMockup.new();
+    dai = await DaiMockup.new();
     // main contracts
     treasury = await RCTreasury.new(erc20.address);
-    rcfactory = await RCFactory.new(treasury.address);
+    rcfactory = await RCFactory.new(treasury.address, realitio.address, kleros);
     rcreference = await RCMarket.new();
     rcorderbook = await RCOrderbook.new(rcfactory.address, treasury.address);
     // nft hubs
@@ -83,23 +82,7 @@ contract('TestOwnership', (accounts) => {
     await treasury.setNftHubAddress(nftHubL2.address);
     await rcfactory.setOrderbookAddress(rcorderbook.address);
     await treasury.setOrderbookAddress(rcorderbook.address);
-    // mockups 
-    realitio = await RealitioMockup.new();
-    bridge = await BridgeMockup.new();
-    alternateReceiverBridge = await AlternateReceiverBridgeMockup.new();
-    dai = await DaiMockup.new();
-    // bridge contracts
-    proxyL2 = await ProxyL2.new(bridge.address, rcfactory.address, treasury.address, realitio.address, realitio.address);
-    proxyL1 = await ProxyL1.new(bridge.address, nftHubL1.address, alternateReceiverBridge.address, dai.address);
-    // tell the factory, mainnet proxy and bridge the xdai proxy address
-    await rcfactory.setProxyL2Address(proxyL2.address);
-    await proxyL1.setProxyL2Address(proxyL2.address);
-    await bridge.setProxyL2Address(proxyL2.address);
-    // tell the xdai proxy, nft mainnet hub and bridge the mainnet proxy address
-    await proxyL2.setProxyL1Address(proxyL1.address);
-    await bridge.setProxyL1Address(proxyL1.address);
-    // tell the treasury about the ARB
-    await treasury.setAlternateReceiverAddress(alternateReceiverBridge.address);
+
     // market creation
     await rcfactory.createMarket(
       0,
@@ -271,29 +254,6 @@ contract('TestOwnership', (accounts) => {
     await expectRevert(rcfactory.setMaximumDuration(23, { from: user1 }), "caller is not the owner");
   });
 
-  it('check onlyOwner is on relevant xdai proxy functions', async () => {
-    await expectRevert(proxyL2.setAmicableResolution(user0, 3, { from: user1 }), "caller is not the owner");
-    await expectRevert(proxyL2.setProxyL1Address(user0, { from: user1 }), "caller is not the owner");
-    await expectRevert(proxyL2.setBridgeL2Address(user0, { from: user1 }), "caller is not the owner");
-    await expectRevert(proxyL2.setFactoryAddress(user0, { from: user1 }), "caller is not the owner");
-    await expectRevert(proxyL2.setTreasuryAddress(user0, { from: user1 }), "caller is not the owner");
-    await expectRevert(proxyL2.setRealitioAddress(user0, { from: user1 }), "caller is not the owner");
-    await expectRevert(proxyL2.setArbitrator(user0, { from: user1 }), "caller is not the owner");
-    await expectRevert(proxyL2.setTimeout(1234, { from: user1 }), "caller is not the owner");
-    await expectRevert(proxyL2.postQuestionToOracle(user0, "x", 0, { from: user1 }), "Not factory");
-  });
-
-
-  it('check onlyOwner is on relevant mainnet proxy functions', async () => {
-    await expectRevert(proxyL1.setProxyL2Address(user0, { from: user1 }), "caller is not the owner");
-    await expectRevert(proxyL1.setBridgeMainnetAddress(user0, { from: user1 }), "caller is not the owner");
-    await expectRevert(proxyL1.setNftHubAddress(user0, { from: user1 }), "caller is not the owner");
-    await expectRevert(proxyL1.setAlternateReceiverAddress(user0, { from: user1 }), "caller is not the owner");
-    await expectRevert(proxyL1.setDaiAddress(user0, { from: user1 }), "caller is not the owner");
-    await expectRevert(proxyL1.upgradeCardAdmin(3, "x", user4, { from: user1 }), "caller is not the owner");
-    await expectRevert(proxyL1.changeDepositsEnabled({ from: user1 }), "caller is not the owner");
-  });
-
   it('test uberOwner Treasury', async () => {
     // market creation shit
     var latestTime = await time.latest();
@@ -311,7 +271,7 @@ contract('TestOwnership', (accounts) => {
     await expectRevert(treasury.changeUberOwner(user0), "Verboten");
     await expectRevert(treasury.setFactoryAddress(user0), "Verboten");
     // deploy new factory, update address
-    rcfactory2 = await RCFactory.new(treasury.address);
+    rcfactory2 = await RCFactory.new(treasury.address, realitio.address, kleros);
     await rcfactory2.getAllMarkets(0);
     await rcfactory2.changeCardAffiliateApproval(user5);
     await rcfactory2.changeCardAffiliateApproval(user6);
@@ -319,10 +279,8 @@ contract('TestOwnership', (accounts) => {
     await rcfactory2.changeCardAffiliateApproval(user8);
     await rcfactory2.changeCardAffiliateApproval(user0);
     await treasury.setFactoryAddress(rcfactory2.address, { from: user5 });
-    await proxyL2.setFactoryAddress(rcfactory2.address);
     await nftHubL2.setFactoryAddress(rcfactory2.address);
     await rcfactory2.setReferenceContractAddress(rcreference.address);
-    await rcfactory2.setProxyL2Address(proxyL2.address);
     // create market with old factory, should fail
     await expectRevert(rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0), "Not factory");
     // create market with new factory and do some standard stuff

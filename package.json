@@ -20,6 +20,7 @@
     "@codechecks/client": "^0.1.10",
     "@openzeppelin/contracts": "^4.1.0",
     "@openzeppelin/test-helpers": "^0.5.11",
+    "@truffle/hdwallet-provider": "^1.4.0",
     "acorn": "^8.2.4",
     "dotenv": "^8.6.0",
     "minimist": "^1.2.5",

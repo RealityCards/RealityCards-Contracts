@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.4;
 
+import "../interfaces/IRealitio.sol";
+
 interface IRCMarket {
     enum States {CLOSED, OPEN, LOCKED, WITHDRAW}
 
@@ -18,7 +20,8 @@ interface IRCMarket {
         address _artistAddress,
         address _affiliateAddress,
         address[] calldata _cardAffiliateAddresses,
-        address _marketCreatorAddress
+        address _marketCreatorAddress,
+        string calldata _realitioQuestion
     ) external;
 
     function tokenURI(uint256) external view returns (string memory);
@@ -26,8 +29,6 @@ interface IRCMarket {
     function ownerOf(uint256 tokenId) external view returns (address);
 
     function state() external view returns (States);
-
-    function setWinner(uint256) external;
 
     function collectRentAllCards() external returns (bool);
 

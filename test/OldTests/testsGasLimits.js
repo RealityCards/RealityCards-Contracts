@@ -20,16 +20,12 @@ var RCTreasury = artifacts.require("./RCTreasury.sol");
 var RCMarket = artifacts.require("./RCMarket.sol");
 var NftHubL2 = artifacts.require("./nfthubs/RCNftHubL2.sol");
 var NftHubL1 = artifacts.require("./nfthubs/RCNftHubL1.sol");
-var ProxyL2 = artifacts.require("./bridgeproxies/RCProxyL2.sol");
-var ProxyL1 = artifacts.require("./bridgeproxies/RCProxyL1.sol");
 var RCOrderbook = artifacts.require('./RCOrderbook.sol');
 // mockups
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
-var BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
-var AlternateReceiverBridgeMockup = artifacts.require("./mockups/AlternateReceiverBridgeMockup.sol");
+
 var SelfDestructMockup = artifacts.require("./mockups/SelfDestructMockup.sol");
 var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
-var NoFallback = artifacts.require("./mockups/noFallback.sol");
 var kleros = "0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D";
 const tokenMockup = artifacts.require("./mockups/tokenMockup.sol");
 // an array of market instances
@@ -85,21 +81,7 @@ contract("TestTreasury", (accounts) => {
     await treasury.setOrderbookAddress(rcorderbook.address);
     // mockups
     realitio = await RealitioMockup.new();
-    bridge = await BridgeMockup.new();
-    alternateReceiverBridge = await AlternateReceiverBridgeMockup.new();
     dai = await DaiMockup.new();
-    // bridge contracts
-    proxyL2 = await ProxyL2.new(bridge.address, rcfactory.address, treasury.address, realitio.address, realitio.address);
-    proxyL1 = await ProxyL1.new(bridge.address, nftHubL1.address, alternateReceiverBridge.address, dai.address);
-    // tell the factory, mainnet proxy and bridge the xdai proxy address
-    await rcfactory.setProxyL2Address(proxyL2.address);
-    await proxyL1.setProxyL2Address(proxyL2.address);
-    await bridge.setProxyL2Address(proxyL2.address);
-    // tell the xdai proxy, nft mainnet hub and bridge the mainnet proxy address
-    await proxyL2.setProxyL1Address(proxyL1.address);
-    await bridge.setProxyL1Address(proxyL1.address);
-    // tell the treasury about the ARB
-    await treasury.setAlternateReceiverAddress(alternateReceiverBridge.address);
     // market creation, start off without any.
     market.length = 0;
     marketAddress.length = 0;

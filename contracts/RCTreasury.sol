@@ -8,7 +8,6 @@ import "hardhat/console.sol";
 import "./lib/NativeMetaTransaction.sol";
 import "./interfaces/IRCTreasury.sol";
 import "./interfaces/IRCMarket.sol";
-import "./interfaces/IAlternateReceiverBridge.sol";
 import "./interfaces/IRCOrderbook.sol";
 import "./interfaces/IRCNftHubL2.sol";
 
@@ -145,10 +144,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     /// @dev so only markets can move funds from deposits to marketPots and vice versa
     function addMarket(address _newMarket) external override {
         require(msgSender() == factoryAddress, "Not factory");
-        require(
-            alternateReceiverBridgeAddress != address(0),
-            "Alternate Receiver not set"
-        );
         isMarket[_newMarket] = true;
     }
 
@@ -323,13 +318,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         if (_localWithdrawal) {
             erc20.transfer(_msgSender, _amount);
         } else {
-            IAlternateReceiverBridge _alternateReceiverBridge =
-                IAlternateReceiverBridge(alternateReceiverBridgeAddress);
-            _alternateReceiverBridge.relayTokens{value: _amount}(
-                address(this),
-                _msgSender,
-                _amount
-            );
+            // TODO withdraw over bridge
+            erc20.transfer(_msgSender, _amount);
         }
 
         // step 3: remove bids if insufficient deposit

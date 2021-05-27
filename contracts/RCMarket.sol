@@ -7,7 +7,6 @@ import "hardhat/console.sol";
 import "./interfaces/IRealitio.sol";
 import "./interfaces/IRCFactory.sol";
 import "./interfaces/IRCTreasury.sol";
-import "./interfaces/IRCProxyL2.sol";
 import "./interfaces/IRCMarket.sol";
 import "./interfaces/IRCNftHubL2.sol";
 import "./interfaces/IRCOrderbook.sol";
@@ -39,7 +38,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     // CONTRACT VARIABLES
     IRCTreasury public treasury;
     IRCFactory public factory;
-    IRCProxyL2 public proxy;
     IRCNftHubL2 public nfthub;
     IRCOrderbook public orderbook;
 
@@ -114,6 +112,14 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     uint256 public cardAffiliateCut;
     mapping(uint256 => bool) public cardAffiliatePaid;
 
+    // ORACLE VARIABLES
+    bytes32 public questionId;
+    bool public questionFinalised;
+    address public arbitrator;
+    uint32 public timeout;
+    IRealitio public realitio;
+    address _realitioAddress;
+
     /*╔═════════════════════════════════╗
       ║             EVENTS              ║
       ╚═════════════════════════════════╝*/
@@ -163,6 +169,10 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         uint256 indexed minimumPriceIncreasePercent
     );
     event LogLongestOwner(uint256 tokenId, address longestOwner);
+    event LogQuestionPostedToOracle(
+        address indexed marketAddress,
+        bytes32 indexed questionId
+    );
 
     /*╔═════════════════════════════════╗
       ║           CONSTRUCTOR           ║
@@ -184,7 +194,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         address _artistAddress,
         address _affiliateAddress,
         address[] memory _cardAffiliateAddresses,
-        address _marketCreatorAddress
+        address _marketCreatorAddress,
+        string calldata _realitioQuestion
     ) external override initializer {
         assert(_mode <= 2);
 
@@ -194,7 +205,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         // external contract variables:
         factory = IRCFactory(msg.sender);
         treasury = factory.treasury();
-        proxy = factory.proxy();
         nfthub = factory.nfthub();
         orderbook = factory.orderbook();
 
@@ -223,6 +233,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         creatorCut = _potDistribution[2];
         affiliateCut = _potDistribution[3];
         cardAffiliateCut = _potDistribution[4];
+        (realitio, arbitrator, timeout) = factory.getOracleSettings();
 
         // reduce artist cut to zero if zero adddress set
         if (_artistAddress == address(0)) {
@@ -252,6 +263,10 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                 (((uint256(1000) - artistCut) - creatorCut) - affiliateCut) -
                 cardAffiliateCut;
         }
+
+        // post question to Oracle
+        questionFinalised = false;
+        postQuestionToOracle(_realitioQuestion, _timestamps[2]);
 
         // move to OPEN immediately if market opening time in the past
         if (marketOpeningTime <= block.timestamp) {
@@ -403,12 +418,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         }
     }
 
-    /// @notice called by proxy, sets the winner
-    /// @dev the proxy checks if the market has locked already so
-    /// @dev .. that the market can't be closed early by the oracle.
+    /// @notice called by getWinnerFromOracle, sets the winner
     /// @param _winningOutcome the index of the winning card
-    function setWinner(uint256 _winningOutcome) external override {
-        require(msgSender() == address(proxy), "Not proxy");
+    function setWinner(uint256 _winningOutcome) internal {
         if (state == States.OPEN) {
             // change the locking time to allow lockMarket to lock
             marketLockingTime = SafeCast.toUint32(block.timestamp);
@@ -1045,6 +1057,49 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         assert(uint256(state) < 4);
         state = States(uint256(state) + (1));
         emit LogStateChange(uint256(state));
+    }
+
+    /*╔═════════════════════════════════╗
+      ║        ORACLE FUNCTIONS         ║
+      ╚═════════════════════════════════╝*/
+
+    function postQuestionToOracle(
+        string calldata _question,
+        uint32 _oracleResolutionTime
+    ) internal {
+        questionId = realitio.askQuestion(
+            2,
+            _question,
+            arbitrator,
+            timeout,
+            _oracleResolutionTime,
+            0
+        );
+        emit LogQuestionPostedToOracle(address(this), questionId);
+    }
+
+    /// @notice has the oracle finalised
+    function isFinalized() public view returns (bool) {
+        bool _isFinalized = realitio.isFinalized(questionId);
+        return _isFinalized;
+    }
+
+    /// @dev sets the winning outcome
+    /// @dev market.setWinner() will revert if done twice, because wrong state
+    function getWinnerFromOracle() external {
+        require(isFinalized(), "Oracle not finalised");
+        // check market state to prevent market closing early
+        require(marketLockingTime <= block.timestamp, "Market not finished");
+        questionFinalised = true;
+        bytes32 _winningOutcome = realitio.resultFor(questionId);
+        // call the market
+        setWinner(uint256(_winningOutcome));
+    }
+
+    function setAmicableResolution(uint256 _winningOutcome) external {
+        require(msgSender() == factory.owner(), "Not authorised");
+        questionFinalised = true;
+        setWinner(_winningOutcome);
     }
 
     /*╔═════════════════════════════════╗

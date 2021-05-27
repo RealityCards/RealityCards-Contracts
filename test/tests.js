@@ -159,22 +159,19 @@ contract("RealityCardsTests", (accounts) => {
             await rc.deposit(100, bob); // just so the contract has spare funds
             // record the users balance
             var tracker = await balance.tracker(alice);
-            const startBalance = await tracker.get()
+            const startBalance = await erc20.balanceOf(alice)
             // make a deposit and get a receipt to find the gas cost
             await erc20.approve(treasury.address, ether('100'), { from: alice });
             var txReceipt = await treasury.deposit(ether('10'), alice, { from: alice });
-            var gasUsed = txReceipt.receipt.gasUsed;
             // let some time pass
             await time.increase(time.duration.minutes(10));
             // withdraw some deposit locally (getting a receipt again)
             txReceipt = await treasury.withdrawDeposit(ether("5"), true, { from: alice });
-            gasUsed += txReceipt.receipt.gasUsed;
             // withdraw the rest via the bridge (getting a receipt again)
             txReceipt = await treasury.withdrawDeposit(ether("5"), false, { from: alice });
-            gasUsed += txReceipt.receipt.gasUsed;
             // check the balance is correct (minus gas cost)
-            const currentBalance = await tracker.get()
-            assert.equal(startBalance.toString(), (currentBalance.add(web3.utils.toBN(gasUsed))).toString());
+            const currentBalance = await erc20.balanceOf(alice)
+            assert.equal(startBalance.toString(), currentBalance.toString());
 
             // check no rent collected yet
             assert.equal((await treasury.marketBalance()).toString(), 0);
@@ -194,11 +191,6 @@ contract("RealityCardsTests", (accounts) => {
             // check we don't own the card or have any bids
             assert.equal((await markets[0].ownerOf(0)), markets[0].address);
             assert.equal((await treasury.userTotalBids(bob)), 0);
-
-            // test the value transfer sucess
-            noFallback = await rc.NoFallback();
-            await noFallback.deposit(treasury.address, { value: ether('10') });
-            await expectRevert(noFallback.withdrawDeposit(treasury.address, ether('10')), "Transfer failed");
         });
 
         it("check cant rent or deposit if globalpause", async () => {
@@ -382,7 +374,7 @@ contract("RealityCardsTests", (accounts) => {
             await markets[1].lockMarket();
 
             // card 0 won, user0 should get the payout
-            await proxyL2.setAmicableResolution(markets[1].address, 0)
+            await markets[1].setAmicableResolution(0)
             await markets[1].withdraw({ from: alice });
 
             // check the values have all been correcly adjusted

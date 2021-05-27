@@ -12,16 +12,11 @@ const RCTreasury = artifacts.require("./RCTreasury.sol");
 const RCMarket = artifacts.require("./RCMarket.sol");
 const NftHubL2 = artifacts.require("./nfthubs/RCNftHubL2.sol");
 const NftHubL1 = artifacts.require("./nfthubs/RCNftHubL1.sol");
-const ProxyL2 = artifacts.require("./bridgeproxies/RCProxyL2.sol");
-const ProxyL1 = artifacts.require("./bridgeproxies/RCProxyL1.sol");
 const RCOrderbook = artifacts.require('./RCOrderbook.sol');
 // mockups
 const RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
-const BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
-const AlternateReceiverBridgeMockup = artifacts.require("./mockups/AlternateReceiverBridgeMockup.sol");
 const SelfDestructMockup = artifacts.require("./mockups/SelfDestructMockup.sol");
 const DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
-const NoFallback = artifacts.require("./mockups/noFallback.sol");
 const kleros = "0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D";
 const zeroAddress = "0x0000000000000000000000000000000000000000";
 const tokenMockup = artifacts.require("./mockups/tokenMockup.sol");
@@ -72,9 +67,12 @@ module.exports = class TestEnviroment {
         for (let index = 0; index < 10; index++) {
             await this.contracts.erc20.transfer(accounts[index], ether("1000"), { from: user0 });
         }
+        // mockups
+        this.contracts.realitio = await RealitioMockup.new();
+        this.contracts.dai = await DaiMockup.new();
         // main contracts
         this.contracts.treasury = await RCTreasury.new(this.contracts.erc20.address);
-        this.contracts.factory = await RCFactory.new(this.contracts.treasury.address);
+        this.contracts.factory = await RCFactory.new(this.contracts.treasury.address, this.contracts.realitio.address, kleros);
         this.contracts.reference = await RCMarket.new();
         this.contracts.orderbook = await RCOrderbook.new(this.contracts.factory.address, this.contracts.treasury.address);
         // nft hubs
@@ -87,23 +85,7 @@ module.exports = class TestEnviroment {
         await this.contracts.treasury.setNftHubAddress(this.contracts.nftHubL2.address);
         await this.contracts.factory.setOrderbookAddress(this.contracts.orderbook.address);
         await this.contracts.treasury.setOrderbookAddress(this.contracts.orderbook.address);
-        // mockups
-        this.contracts.realitio = await RealitioMockup.new();
-        this.contracts.bridge = await BridgeMockup.new();
-        this.contracts.alternateReceiverBridge = await AlternateReceiverBridgeMockup.new();
-        this.contracts.dai = await DaiMockup.new();
-        // bridge contracts
-        this.contracts.proxyL2 = await ProxyL2.new(this.contracts.bridge.address, this.contracts.factory.address, this.contracts.treasury.address, this.contracts.realitio.address, this.contracts.realitio.address);
-        this.contracts.proxyL1 = await ProxyL1.new(this.contracts.bridge.address, this.contracts.nftHubL1.address, this.contracts.alternateReceiverBridge.address, this.contracts.dai.address);
-        // tell the factory, mainnet proxy and bridge the xdai proxy address
-        await this.contracts.factory.setProxyL2Address(this.contracts.proxyL2.address);
-        await this.contracts.proxyL1.setProxyL2Address(this.contracts.proxyL2.address);
-        await this.contracts.bridge.setProxyL2Address(this.contracts.proxyL2.address);
-        // tell the xdai proxy, nft mainnet hub and bridge the mainnet proxy address
-        await this.contracts.proxyL2.setProxyL1Address(this.contracts.proxyL1.address);
-        await this.contracts.bridge.setProxyL1Address(this.contracts.proxyL1.address);
-        // tell the treasury about the ARB
-        await this.contracts.treasury.setAlternateReceiverAddress(this.contracts.alternateReceiverBridge.address);
+
         // market creation, start off without any.
         this.contracts.markets = [];
         this.contracts.markets.push(await this.createMarket())
@@ -139,7 +121,6 @@ module.exports = class TestEnviroment {
         for (let i = 0; i < options.numberOfCards; i++) {
             tokenURIs.push("x");
         }
-        await this.contracts.factory.setProxyL2Address(this.contracts.proxyL2.address);
         await this.contracts.factory.createMarket(
             options.mode,
             "0x0",
@@ -198,10 +179,6 @@ module.exports = class TestEnviroment {
         options.price = web3.utils.toWei(options.price.toString(), "ether");
         let receipt = await options.market.newRental(options.price, options.timeLimit, options.startingPosition, options.outcome, { from: options.from });
         return receipt;
-    }
-
-    async NoFallback() {
-        return await NoFallback.new()
     }
 
     async SelfDestructMockup() {

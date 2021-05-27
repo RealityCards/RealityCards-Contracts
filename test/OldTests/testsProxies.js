@@ -15,13 +15,10 @@ var RCTreasury = artifacts.require('./RCTreasury.sol');
 var RCMarket = artifacts.require('./RCMarket.sol');
 var NftHubL2 = artifacts.require('./nfthubs/RCNftHubL2.sol');
 var NftHubL1 = artifacts.require('./nfthubs/RCNftHubL1.sol');
-var ProxyL2 = artifacts.require('./bridgeproxies/RCProxyL2.sol');
-var ProxyL1 = artifacts.require('./bridgeproxies/RCProxyL1.sol');
 var RCOrderbook = artifacts.require('./RCOrderbook.sol');
 // mockups
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
-var BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
-var AlternateReceiverBridgeMockup = artifacts.require("./mockups/AlternateReceiverBridgeMockup.sol");
+
 var SelfDestructMockup = artifacts.require("./mockups/SelfDestructMockup.sol");
 var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
 const tokenMockup = artifacts.require("./mockups/tokenMockup.sol");
@@ -67,10 +64,12 @@ contract('TestProxies', (accounts) => {
       user = eval("user" + index);
       erc20.transfer(user, ether("1000"), { from: user0 });
     }
-
+    // mockups 
+    realitio = await RealitioMockup.new();
+    dai = await DaiMockup.new();
     // main contracts
     treasury = await RCTreasury.new(erc20.address);
-    rcfactory = await RCFactory.new(treasury.address);
+    rcfactory = await RCFactory.new(treasury.address, realitio.address, kleros);
     rcreference = await RCMarket.new();
     rcorderbook = await RCOrderbook.new(rcfactory.address, treasury.address);
     // nft hubs
@@ -83,23 +82,7 @@ contract('TestProxies', (accounts) => {
     await treasury.setNftHubAddress(nftHubL2.address);
     await rcfactory.setOrderbookAddress(rcorderbook.address);
     await treasury.setOrderbookAddress(rcorderbook.address);
-    // mockups 
-    realitio = await RealitioMockup.new();
-    bridge = await BridgeMockup.new();
-    alternateReceiverBridge = await AlternateReceiverBridgeMockup.new();
-    dai = await DaiMockup.new();
-    // bridge contracts
-    proxyL2 = await ProxyL2.new(bridge.address, rcfactory.address, treasury.address, realitio.address, realitio.address);
-    proxyL1 = await ProxyL1.new(bridge.address, nftHubL1.address, alternateReceiverBridge.address, dai.address);
-    // tell the factory, mainnet proxy and bridge the xdai proxy address
-    await rcfactory.setProxyL2Address(proxyL2.address);
-    await proxyL1.setProxyL2Address(proxyL2.address);
-    await bridge.setProxyL2Address(proxyL2.address);
-    // tell the xdai proxy, nft mainnet hub and bridge the mainnet proxy address
-    await proxyL2.setProxyL1Address(proxyL1.address);
-    await bridge.setProxyL1Address(proxyL1.address);
-    // tell the treasury about the ARB
-    await treasury.setAlternateReceiverAddress(alternateReceiverBridge.address);
+
     // market creation
     await rcfactory.createMarket(
       0,
@@ -247,59 +230,32 @@ contract('TestProxies', (accounts) => {
     await treasury.withdrawDeposit(amount, true, { from: userx });
   }
 
-  it('test RCProxyL1 various', async () => {
-    // test changing xdai proxy
-    var proxyL22 = await ProxyL2.new(bridge.address, rcfactory.address, treasury.address, realitio.address, treasury.address);
-    await proxyL22.setProxyL1Address(proxyL1.address);
-    await proxyL22.setBridgeL2Address(bridge.address);
-    await proxyL22.setFactoryAddress(rcfactory.address);
-    await proxyL1.setProxyL2Address(proxyL22.address);
-    await bridge.setProxyL2Address(proxyL22.address);
-    await rcfactory.setProxyL2Address(proxyL22.address);
-    realitycards2 = await createMarketWithArtistSet();
-    await realitio.setResult(4);
-    await time.increase(time.duration.years(1));
-    await realitycards2.lockMarket();
-    // should be 4 even though 2 was set
-    await proxyL22.getWinnerFromOracle(realitycards2.address);
-    // await realitycards2.determineWinner();
-    var winner = await realitycards2.winningOutcome();
-    assert.equal(winner.toString(), 4);
-    // test changing setBridgeMainnetAddress
-    await proxyL1.setBridgeMainnetAddress(user0);
-    var newproxy = await proxyL1.bridge.call();
-    assert.equal(newproxy, user0);
-  });
-
-
   it('test RCProxyL1, various 2', async () => {
     // change relaitio, winner should return 69
     realitio2 = await RealitioMockup.new();
-    await proxyL2.setRealitioAddress(realitio2.address);
+    await rcfactory.setRealitioAddress(realitio2.address);
     realitycards2 = await createMarketWithArtistSet();
     await realitio2.setResult(2);
     await time.increase(time.duration.years(1));
-    await proxyL2.getWinnerFromOracle(realitycards2.address);
+    await realitycards2.getWinnerFromOracle();
     // await realitycards2.determineWinner();
     var winner = await realitycards2.winningOutcome();
     assert.equal(winner.toString(), 2);
     // change arbitrator
-    await proxyL2.setArbitrator(user0);
-    var newarb = await proxyL2.arbitrator.call();
+    await rcfactory.setArbitrator(user0);
+    var newarb = await rcfactory.arbitrator.call();
     assert.equal(newarb, user0)
     // change timeout
-    await proxyL2.setTimeout(69);
-    var newtime = await proxyL2.timeout.call();
+    await rcfactory.setTimeout(69);
+    var newtime = await rcfactory.timeout.call();
     assert.equal(newtime, 69)
   });
 
   it('test setAmicableResolution', async () => {
     // normal setup, dont call the bridge, see if payout works
     await time.increase(time.duration.years(1));
-    await expectRevert(proxyL2.setAmicableResolution(realitycards.address, 2, { from: user1 }), "caller is not the owner");
-    // first check that setWinner cannot be called directly
-    await expectRevert(realitycards.setWinner(2), "Not proxy");
-    await proxyL2.setAmicableResolution(realitycards.address, 2);
+    await expectRevert(realitycards.setAmicableResolution(2, { from: user1 }), "Not authorised");
+    await realitycards.setAmicableResolution(2);
     // cant call it again
     await expectRevert(realitycards.lockMarket(), "Incorrect state");
     // await realitycards.determineWinner();
@@ -310,7 +266,7 @@ contract('TestProxies', (accounts) => {
     await time.increase(time.duration.years(1));
     await realitycards2.lockMarket();
     await realitio.setResult(2);
-    await proxyL2.getWinnerFromOracle(realitycards2.address);
+    await realitycards2.getWinnerFromOracle();
   });
 
 
@@ -330,7 +286,7 @@ contract('TestProxies', (accounts) => {
     await realitycards.lockMarket();
     await realitycards.claimCard(3, { from: user1 })
     await expectRevert(realitycards.upgradeCard(3, { from: user1 }), "Incorrect state");
-    await proxyL2.getWinnerFromOracle(realitycards.address);
+    await realitycards.getWinnerFromOracle();
     await realitycards.withdraw({ from: user1 });
     await expectRevert(realitycards.upgradeCard(3, { from: user2 }), "Not owner");
     await realitycards.upgradeCard(3, { from: user1 });
@@ -353,7 +309,7 @@ contract('TestProxies', (accounts) => {
     await time.increase(time.duration.years(1));
     await realitio.setResult(5);
     await realitycards2.lockMarket();
-    await proxyL2.getWinnerFromOracle(realitycards2.address);
+    await realitycards2.getWinnerFromOracle();
     // await realitycards2.determineWinner();
     await realitycards2.claimCard(5, { from: user3 })
     await realitycards2.upgradeCard(5, { from: user3 });

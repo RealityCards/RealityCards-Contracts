@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "hardhat/console.sol";
-import "../interfaces/IRCProxyL2.sol";
 import "../interfaces/IRCMarket.sol";
 import "../lib/NativeMetaTransaction.sol";
 import "../interfaces/IRCNftHubL2.sol";
