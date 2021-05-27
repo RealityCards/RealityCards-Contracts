@@ -102,7 +102,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         _initializeEIP712("RealityCardsTreasury", "1");
 
         // at initiation, uberOwner and owner will be the same
-        uberOwner = msg.sender;
+        uberOwner = msgSender();
 
         // initialise adjustable parameters
         setMinRental(24 * 6); // MinRental is a divisor of 1 day(86400 seconds), 24*6 will set to 10 minutes
@@ -253,10 +253,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         returns (bool)
     {
         require(!globalPause, "Deposits are disabled");
-
-        // TODO using msg.sender for initial testing, update later to _user if necessary
         require(
-            erc20.allowance(msg.sender, address(this)) >= _amount,
+            erc20.allowance(msgSender(), address(this)) >= _amount,
             "User not approved to send this amount"
         );
         require(
@@ -264,7 +262,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
             "Limit hit"
         );
         require(_amount > 0, "Must deposit something");
-        erc20.transferFrom(msg.sender, address(this), _amount);
+        erc20.transferFrom(msgSender(), address(this), _amount);
 
         // do some cleaning up, it might help cancel their foreclosure
         orderbook.removeOldBids(_user);

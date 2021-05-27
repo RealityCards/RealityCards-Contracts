@@ -107,7 +107,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         factoryAddress = _factoryAddress;
         treasuryAddress = _treasuryAddress;
         treasury = IRCTreasury(treasuryAddress);
-        uberOwner = msg.sender;
+        uberOwner = msgSender();
     }
 
     /*╔═════════════════════════════════╗
@@ -629,7 +629,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
     /// @notice reduces the rentalRates of the card owners when a market closes
     /// @dev too many bidders to reduce all bid rates also
     function closeMarket() external override onlyMarkets {
-        address _market = msg.sender;
+        address _market = msgSender();
         closedMarkets.push(_market);
 
         for (uint64 i = 0; i < market[_market].tokenCount; i++) {

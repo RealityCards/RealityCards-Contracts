@@ -118,7 +118,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         _initializeEIP712("RealityCardsFactory", "1");
 
         // at initiation, uberOwner and owner will be the same
-        uberOwner = msg.sender;
+        uberOwner = msgSender();
 
         // initialise contract variable
         treasury = _treasuryAddress;
@@ -389,7 +389,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
 
     /// @notice change the reference contract for the contract logic
     function setReferenceContractAddress(address _newAddress) external {
-        require(msg.sender == uberOwner, "Extremely Verboten");
+        require(msgSender() == uberOwner, "Extremely Verboten");
         require(_newAddress != address(0));
         // check it's an RC contract
         IRCMarket newContractVariable = IRCMarket(_newAddress);
@@ -401,7 +401,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     }
 
     function changeUberOwner(address _newUberOwner) external {
-        require(msg.sender == uberOwner, "Extremely Verboten");
+        require(msgSender() == uberOwner, "Extremely Verboten");
         require(_newUberOwner != address(0));
         uberOwner = _newUberOwner;
     }

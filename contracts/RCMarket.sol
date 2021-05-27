@@ -203,7 +203,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         _initializeEIP712("RealityCardsMarket", "1");
 
         // external contract variables:
-        factory = IRCFactory(msg.sender);
+        factory = IRCFactory(msgSender());
         treasury = factory.treasury();
         nfthub = factory.nfthub();
         orderbook = factory.orderbook();
