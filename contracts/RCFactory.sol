@@ -7,10 +7,10 @@ import "hardhat/console.sol";
 import "./interfaces/IRCFactory.sol";
 import "./interfaces/IRCTreasury.sol";
 import "./interfaces/IRCMarket.sol";
-import "./interfaces/IRCProxyXdai.sol";
-import "./interfaces/IRCNftHubXdai.sol";
+import "./interfaces/IRCNftHubL2.sol";
 import "./interfaces/IRCOrderbook.sol";
 import "./lib/NativeMetaTransaction.sol";
+import "./interfaces/IRealitio.sol";
 
 /// @title Reality Cards Factory
 /// @author Andrew Stanger & Daniel Chilvers
@@ -22,8 +22,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
 
     //≡≡≡≡≡≡≡ CONTRACT VARIABLES ≡≡≡≡≡≡≡//
     IRCTreasury public override treasury;
-    IRCProxyXdai public override proxy;
-    IRCNftHubXdai public override nfthub;
+    IRCNftHubL2 public override nfthub;
     IRCOrderbook public override orderbook;
 
     ///// CONTRACT ADDRESSES /////
@@ -61,6 +60,9 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     address public uberOwner;
     /// @dev the maximum number of rent collections to perform in a single transaction
     uint256 public override maxRentIterations;
+    address public arbitrator;
+    uint32 public timeout;
+    IRealitio public realitio;
 
     ///// GOVERNANCE VARIABLES- GOVERNORS /////
     /// @dev unapproved markets hidden from the interface
@@ -106,13 +108,17 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
       ╚═════════════════════════════════╝*/
 
     /// @dev Treasury must be deployed before Factory
-    constructor(IRCTreasury _treasuryAddress) {
+    constructor(
+        IRCTreasury _treasuryAddress,
+        address _realitioAddress,
+        address _arbitratorAddress
+    ) {
         require(address(_treasuryAddress) != address(0));
         // initialise MetaTransactions
         _initializeEIP712("RealityCardsFactory", "1");
 
         // at initiation, uberOwner and owner will be the same
-        uberOwner = msg.sender;
+        uberOwner = msgSender();
 
         // initialise contract variable
         treasury = _treasuryAddress;
@@ -123,6 +129,10 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         setminimumPriceIncreasePercent(10); // 10%
         setNFTMintingLimit(60); // current gas limit (12.5m) allows for 60 NFTs to be minted
         setMaxRentIterations(35); // limit appears to be 41, set safe at 35 for now.
+        // oracle
+        setArbitrator(_arbitratorAddress);
+        setRealitioAddress(_realitioAddress);
+        setTimeout(86400); // 24 hours
     }
 
     /*╔═════════════════════════════════╗
@@ -176,19 +186,13 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
       ╚═════════════════════════════════╝*/
     /// @dev all functions should have onlyOwner modifier
 
-    /// @notice address of the xDai Proxy contract
-    function setProxyXdaiAddress(IRCProxyXdai _newAddress) external onlyOwner {
-        require(address(_newAddress) != address(0));
-        proxy = _newAddress;
-    }
-
     /// @notice where the NFTs live
     /// @dev nftMintCount will probably need to be reset to zero if new nft contract, but
     /// @dev ... keeping flexible in case returning to previous contract
-    function setNftHubAddress(
-        IRCNftHubXdai _newAddress,
-        uint256 _newNftMintCount
-    ) external onlyOwner {
+    function setNftHubAddress(IRCNftHubL2 _newAddress, uint256 _newNftMintCount)
+        external
+        onlyOwner
+    {
         require(address(_newAddress) != address(0));
         nfthub = _newAddress;
         totalNftMintCount = _newNftMintCount;
@@ -258,6 +262,23 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         maxRentIterations = _rentLimit;
     }
 
+    /// @dev address reality.eth contracts
+    function setRealitioAddress(address _newAddress) public onlyOwner {
+        require(_newAddress != address(0), "Must set an address");
+        realitio = IRealitio(_newAddress);
+    }
+
+    /// @dev address of arbitrator, in case of continued disputes on reality.eth
+    function setArbitrator(address _newAddress) public onlyOwner {
+        require(_newAddress != address(0), "Must set an address");
+        arbitrator = _newAddress;
+    }
+
+    /// @dev how long reality.eth waits for disputes before finalising
+    function setTimeout(uint32 _newTimeout) public onlyOwner {
+        timeout = _newTimeout;
+    }
+
     /*┌──────────────────────────────────────────┐
       │ NOT CALLED WITHIN CONSTRUTOR - EXTERNAL  │
       └──────────────────────────────────────────┘*/
@@ -277,9 +298,9 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         approvedAffilliatesOnly = !approvedAffilliatesOnly;
     }
 
-    /// @notice how much xdai must be sent in the createMarket tx which forms the initial pot
-    function setSponsorshipRequired(uint256 _dai) external onlyOwner {
-        sponsorshipRequired = _dai;
+    /// @notice how many tokens must be sent in the createMarket tx which forms the initial pot
+    function setSponsorshipRequired(uint256 _amount) external onlyOwner {
+        sponsorshipRequired = _amount;
     }
 
     /// @notice if true, Cards in unapproved markets can't be upgraded
@@ -297,6 +318,15 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     function setMaximumDuration(uint32 _newMaximumDuration) external onlyOwner {
         maximumDuration = _newMaximumDuration;
         emit LogMaximumDuration(_newMaximumDuration);
+    }
+
+    function owner()
+        public
+        view
+        override(IRCFactory, Ownable)
+        returns (address)
+    {
+        return Ownable.owner();
     }
 
     // EDIT GOVERNORS
@@ -359,7 +389,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
 
     /// @notice change the reference contract for the contract logic
     function setReferenceContractAddress(address _newAddress) external {
-        require(msg.sender == uberOwner, "Extremely Verboten");
+        require(msgSender() == uberOwner, "Extremely Verboten");
         require(_newAddress != address(0));
         // check it's an RC contract
         IRCMarket newContractVariable = IRCMarket(_newAddress);
@@ -371,7 +401,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     }
 
     function changeUberOwner(address _newUberOwner) external {
-        require(msg.sender == uberOwner, "Extremely Verboten");
+        require(msgSender() == uberOwner, "Extremely Verboten");
         require(_newUberOwner != address(0));
         uberOwner = _newUberOwner;
     }
@@ -388,6 +418,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     /// @param _affiliateAddress where to send affiliate's cut, if any
     /// @param _cardAffiliateAddresses where to send card specific affiliate's cut, if any
     /// @param _realitioQuestion the details of the event to send to the oracle
+    /// @param _sponsorship amount of sponsorship to create the market with
     function createMarket(
         uint32 _mode,
         string memory _ipfsHash,
@@ -396,10 +427,17 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         address _artistAddress,
         address _affiliateAddress,
         address[] memory _cardAffiliateAddresses,
-        string memory _realitioQuestion
-    ) external payable returns (address) {
+        string calldata _realitioQuestion,
+        uint256 _sponsorship
+    ) external returns (address) {
+        address _creator = msgSender();
+
         // check sponsorship
-        require(msg.value >= sponsorshipRequired, "Insufficient sponsorship");
+        require(
+            _sponsorship >= sponsorshipRequired,
+            "Insufficient sponsorship"
+        );
+        treasury.checkSponsorship(_creator, _sponsorship);
 
         // check stakeholder addresses
         // artist
@@ -429,10 +467,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
 
         // check market creator is approved
         if (marketCreationGovernorsOnly) {
-            require(
-                governors[msgSender()] || owner() == msgSender(),
-                "Not approved"
-            );
+            require(governors[_creator] || owner() == _creator, "Not approved");
         }
 
         // check timestamps
@@ -467,7 +502,6 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
             _tokenURIs.length <= nftMintingLimit,
             "Too many tokens to mint"
         );
-        uint256 _numberOfTokens = _tokenURIs.length;
 
         // create the market and emit the appropriate events
         // two events to avoid stack too deep error
@@ -490,11 +524,10 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         // tell Treasury, Proxy, and NFT hub about new market
         // before initialize as during initialize the market may call the treasury
         treasury.addMarket(_newAddress);
-        proxy.addMarket(_newAddress);
         nfthub.addMarket(_newAddress);
         orderbook.addMarket(
             _newAddress,
-            _numberOfTokens,
+            _tokenURIs.length,
             minimumPriceIncreasePercent
         );
 
@@ -505,40 +538,46 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         IRCMarket(_newAddress).initialize({
             _mode: _mode,
             _timestamps: _timestamps,
-            _numberOfTokens: _numberOfTokens,
+            _numberOfTokens: _tokenURIs.length,
             _totalNftMintCount: totalNftMintCount,
             _artistAddress: _artistAddress,
             _affiliateAddress: _affiliateAddress,
             _cardAffiliateAddresses: _cardAffiliateAddresses,
-            _marketCreatorAddress: msgSender()
+            _marketCreatorAddress: _creator,
+            _realitioQuestion: _realitioQuestion
         });
 
         // create the NFTs
         require(address(nfthub) != address(0), "Nfthub not set");
-        for (uint256 i = 0; i < _numberOfTokens; i++) {
+        for (uint256 i = 0; i < _tokenURIs.length; i++) {
             uint256 _tokenId = i + totalNftMintCount;
             require(
-                nfthub.mintNft(_newAddress, _tokenId, _tokenURIs[i]),
+                nfthub.mint(_newAddress, _tokenId, _tokenURIs[i]),
                 "Nft Minting Failed"
             );
         }
 
         // increment totalNftMintCount
-        totalNftMintCount = totalNftMintCount + (_numberOfTokens);
-
-        // post question to Oracle
-        require(address(proxy) != address(0), "xDai proxy not set");
-        proxy.postQuestionToOracle(
-            _newAddress,
-            _realitioQuestion,
-            _timestamps[2]
-        );
+        totalNftMintCount = totalNftMintCount + _tokenURIs.length;
 
         // pay sponsorship, if applicable
-        if (msg.value > 0) {
-            IRCMarket(_newAddress).sponsor{value: msg.value}();
+        if (_sponsorship > 0) {
+            IRCMarket(_newAddress).sponsor(_creator, _sponsorship);
         }
 
         return _newAddress;
+    }
+
+    function getOracleSettings()
+        external
+        view
+        override
+        returns (
+            IRealitio,
+            address,
+            uint32
+        )
+    {
+        return (realitio, arbitrator, timeout);
     }
 }

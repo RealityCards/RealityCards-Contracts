@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.4;
 
-interface IRCNftHubXdai {
+interface IRCNftHubL2 {
     function marketTracker(uint256) external view returns (address);
 
     function ownerOf(uint256) external view returns (address);
@@ -10,7 +10,7 @@ interface IRCNftHubXdai {
 
     function addMarket(address) external;
 
-    function mintNft(
+    function mint(
         address,
         uint256,
         string calldata
@@ -22,5 +22,9 @@ interface IRCNftHubXdai {
         uint256
     ) external returns (bool);
 
-    function upgradeCard(address, uint256) external returns (bool);
+    function deposit(address user, bytes calldata depositData) external;
+
+    function withdraw(uint256 tokenId) external;
+
+    function withdrawWithMetadata(uint256 tokenId) external;
 }

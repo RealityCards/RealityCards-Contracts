@@ -3,13 +3,13 @@ pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "hardhat/console.sol";
 import "./lib/NativeMetaTransaction.sol";
 import "./interfaces/IRCTreasury.sol";
 import "./interfaces/IRCMarket.sol";
-import "./interfaces/IAlternateReceiverBridge.sol";
 import "./interfaces/IRCOrderbook.sol";
-import "./interfaces/IRCNftHubXdai.sol";
+import "./interfaces/IRCNftHubL2.sol";
 
 /// @title Reality Cards Treasury
 /// @author Andrew Stanger & Daniel Chilvers
@@ -21,7 +21,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     /// @dev orderbook instance, to remove users bids on foreclosure
     IRCOrderbook public orderbook;
     /// @dev nfthub instance, to query current card owner
-    IRCNftHubXdai public nfthub;
+    IRCNftHubL2 public nfthub;
+    /// @dev token contract
+    IERC20 public override erc20;
     /// @dev address of the alternate Receiver Bridge for withdrawals to mainnet
     address public override alternateReceiverBridgeAddress;
     /// @dev address of the Factory so only the Factory can add new markets
@@ -95,16 +97,17 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
       ║           CONSTRUCTOR           ║
       ╚═════════════════════════════════╝*/
 
-    constructor() {
+    constructor(address _tokenAddress) {
         // initialise MetaTransactions
         _initializeEIP712("RealityCardsTreasury", "1");
 
         // at initiation, uberOwner and owner will be the same
-        uberOwner = msg.sender;
+        uberOwner = msgSender();
 
         // initialise adjustable parameters
         setMinRental(24 * 6); // MinRental is a divisor of 1 day(86400 seconds), 24*6 will set to 10 minutes
         setMaxContractBalance(1000000 ether); // 1m
+        setTokenAddress(_tokenAddress);
     }
 
     /*╔═════════════════════════════════╗
@@ -116,7 +119,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         _;
         // using >= not == because forced Ether send via selfdestruct will not trigger a deposit via the fallback
         require(
-            address(this).balance >=
+            erc20.balanceOf(address(this)) >=
                 totalDeposits + marketBalance + totalMarketPots,
             "books are unbalanced!"
         );
@@ -141,10 +144,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     /// @dev so only markets can move funds from deposits to marketPots and vice versa
     function addMarket(address _newMarket) external override {
         require(msgSender() == factoryAddress, "Not factory");
-        require(
-            alternateReceiverBridgeAddress != address(0),
-            "Alternate Receiver not set"
-        );
         isMarket[_newMarket] = true;
     }
 
@@ -177,7 +176,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
       │ NOT CALLED WITHIN CONSTRUTOR - EXTERNAL  │
       └──────────────────────────────────────────┘*/
 
-    /// @dev address of alternate receiver bridge, xdai side
+    /// @dev address of alternate receiver bridge on layer2
     function setAlternateReceiverAddress(address _newAddress)
         external
         override
@@ -225,7 +224,13 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     function setNftHubAddress(address _NFTHubAddress) external {
         require(msgSender() == uberOwner, "Extremely Verboten");
         require(_NFTHubAddress != address(0));
-        nfthub = IRCNftHubXdai(_NFTHubAddress);
+        nfthub = IRCNftHubL2(_NFTHubAddress);
+    }
+
+    function setTokenAddress(address _newToken) public override {
+        require(msgSender() == uberOwner, "Extremely Verboten");
+        require(_newToken != address(0));
+        erc20 = IERC20(_newToken);
     }
 
     function changeUberOwner(address _newUberOwner) external override {
@@ -239,29 +244,38 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
       ╚═════════════════════════════════╝*/
 
     /// @dev it is passed the user instead of using msg.sender because might be called
-    /// @dev ... via contract (fallback, newRental) or dai->xdai bot
+    /// @dev ... via contract (fallback, newRental) or Layer1->Layer2 bot
     /// @param _user the user to credit the deposit to
-    function deposit(address _user)
+    function deposit(uint256 _amount, address _user)
         public
-        payable
         override
         balancedBooks
         returns (bool)
     {
         require(!globalPause, "Deposits are disabled");
-        require(msg.value > 0, "Must deposit something");
-        require(address(this).balance <= maxContractBalance, "Limit hit");
-        require(_user != address(0), "Must set an address");
+        require(
+            erc20.allowance(msgSender(), address(this)) >= _amount,
+            "User not approved to send this amount"
+        );
+        require(
+            (erc20.balanceOf(address(this)) + _amount) <= maxContractBalance,
+            "Limit hit"
+        );
+        require(_amount > 0, "Must deposit something");
+        erc20.transferFrom(msgSender(), address(this), _amount);
 
         // do some cleaning up, it might help cancel their foreclosure
         orderbook.removeOldBids(_user);
 
-        user[_user].deposit += SafeCast.toUint128(msg.value);
-        totalDeposits += msg.value;
-        emit LogAdjustDeposit(_user, msg.value, true);
+        user[_user].deposit += SafeCast.toUint128(_amount);
+        totalDeposits += _amount;
+        emit LogAdjustDeposit(_user, _amount, true);
 
         // this deposit could cancel the users foreclosure
-        if (user[_user].deposit > user[_user].bidRate / (minRentalDayDivisor)) {
+        if (
+            (user[_user].deposit + _amount) >
+            (user[_user].bidRate / minRentalDayDivisor)
+        ) {
             isForeclosed[_user] = false;
             emit LogUserForeclosed(_user, false);
         }
@@ -270,9 +284,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
 
     /// @notice withdraw a users deposit either directly or over the bridge to the mainnet
     /// @dev this is the only function where funds leave the contractthe
-    /// @param _dai the amount to withdraw
+    /// @param _amount the amount to withdraw
     /// @param _localWithdrawal if true then withdraw to the users xDai address, otherwise to the mainnet
-    function withdrawDeposit(uint256 _dai, bool _localWithdrawal)
+    function withdrawDeposit(uint256 _amount, bool _localWithdrawal)
         external
         override
         balancedBooks
@@ -293,23 +307,17 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         collectRentUser(_msgSender, block.timestamp);
 
         // step 2: process withdrawal
-        if (_dai > user[_msgSender].deposit) {
-            _dai = user[_msgSender].deposit;
+        if (_amount > user[_msgSender].deposit) {
+            _amount = user[_msgSender].deposit;
         }
-        emit LogAdjustDeposit(_msgSender, _dai, false);
-        user[_msgSender].deposit -= SafeCast.toUint128(_dai);
-        totalDeposits -= _dai;
+        emit LogAdjustDeposit(_msgSender, _amount, false);
+        user[_msgSender].deposit -= SafeCast.toUint128(_amount);
+        totalDeposits -= _amount;
         if (_localWithdrawal) {
-            (bool _success, ) = payable(_msgSender).call{value: _dai}("");
-            require(_success, "Transfer failed");
+            erc20.transfer(_msgSender, _amount);
         } else {
-            IAlternateReceiverBridge _alternateReceiverBridge =
-                IAlternateReceiverBridge(alternateReceiverBridgeAddress);
-            _alternateReceiverBridge.relayTokens{value: _dai}(
-                address(this),
-                _msgSender,
-                _dai
-            );
+            // TODO withdraw over bridge
+            erc20.transfer(_msgSender, _amount);
         }
 
         // step 3: remove bids if insufficient deposit
@@ -338,14 +346,30 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     }
 
     /*╔═════════════════════════════════╗
+      ║         ERC20 helpers           ║
+      ╚═════════════════════════════════╝*/
+
+    function checkSponsorship(address sender, uint256 _amount)
+        external
+        view
+        override
+    {
+        require(
+            erc20.allowance(sender, address(this)) >= _amount,
+            "Insufficient Allowance"
+        );
+        require(erc20.balanceOf(sender) >= _amount, "Insufficient Balance");
+    }
+
+    /*╔═════════════════════════════════╗
       ║        MARKET CALLABLE          ║
       ╚═════════════════════════════════╝*/
     // only markets can call these functions
 
     /// @notice a rental payment is equivalent to moving from user's deposit to market pot,
     /// @notice ..called by _collectRent in the market
-    /// @param _dai amount of rent to pay in wei
-    function payRent(uint256 _dai)
+    /// @param _amount amount of rent to pay in wei
+    function payRent(uint256 _amount)
         external
         override
         balancedBooks
@@ -353,22 +377,22 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         returns (bool)
     {
         require(!globalPause, "Rentals are disabled");
-        if (marketBalance < _dai) {
-            marketBalanceDiscrepancy += _dai - marketBalance;
-            _dai -= (_dai - marketBalance);
+        if (marketBalance < _amount) {
+            marketBalanceDiscrepancy += _amount - marketBalance;
+            _amount -= (_amount - marketBalance);
         }
         address _market = msgSender();
-        marketBalance -= _dai;
-        marketPot[_market] += _dai;
-        totalMarketPots += _dai;
+        marketBalance -= _amount;
+        marketPot[_market] += _amount;
+        totalMarketPots += _amount;
 
         return true;
     }
 
     /// @notice a payout is equivalent to moving from market pot to user's deposit (the opposite of payRent)
     /// @param _user the user to query
-    /// @param _dai amount to payout in wei
-    function payout(address _user, uint256 _dai)
+    /// @param _amount amount to payout in wei
+    function payout(address _user, uint256 _amount)
         external
         override
         balancedBooks
@@ -376,12 +400,12 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         returns (bool)
     {
         require(!globalPause, "Payouts are disabled");
-        assert(marketPot[msgSender()] >= _dai);
-        user[_user].deposit += SafeCast.toUint128(_dai);
-        marketPot[msgSender()] -= _dai;
-        totalMarketPots -= _dai;
-        totalDeposits += _dai;
-        emit LogAdjustDeposit(_user, _dai, true);
+        assert(marketPot[msgSender()] >= _amount);
+        user[_user].deposit += SafeCast.toUint128(_amount);
+        marketPot[msgSender()] -= _amount;
+        totalMarketPots -= _amount;
+        totalDeposits += _amount;
+        emit LogAdjustDeposit(_user, _amount, true);
         return true;
     }
 
@@ -404,17 +428,21 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     }
 
     /// @notice ability to add liqudity to the pot without being able to win (called by market sponsor function).
-    function sponsor()
+    function sponsor(address _sponsor, uint256 _amount)
         external
-        payable
         override
         balancedBooks
         onlyMarkets
         returns (bool)
     {
         require(!globalPause, "Global Pause is Enabled");
-        marketPot[msgSender()] = marketPot[msgSender()] + (msg.value);
-        totalMarketPots = totalMarketPots + (msg.value);
+        require(
+            erc20.allowance(_sponsor, address(this)) >= _amount,
+            "Not approved to send this amount"
+        );
+        erc20.transferFrom(_sponsor, address(this), _amount);
+        marketPot[msgSender()] += _amount;
+        totalMarketPots += _amount;
         return true;
     }
 
@@ -682,14 +710,5 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         marketBalance += rentCollected;
         user[_user].deposit -= SafeCast.toUint128(rentCollected);
         totalDeposits -= rentCollected;
-    }
-
-    /*╔═════════════════════════════════╗
-      ║            FALLBACK             ║
-      ╚═════════════════════════════════╝*/
-
-    /// @dev sending ether/xdai direct is equal to a deposit
-    receive() external payable {
-        require(deposit(msgSender()));
     }
 }

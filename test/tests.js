@@ -1,3 +1,4 @@
+const { ERC1820 } = require('@openzeppelin/test-helpers/src/makeInterfaceId');
 const TestEnviroment = require('./helpers/TestEnviroment');
 
 contract("RealityCardsTests", (accounts) => {
@@ -8,8 +9,8 @@ contract("RealityCardsTests", (accounts) => {
     const { ACCOUNTS_OFFSET } = rc.configs;
 
     beforeEach(async function () {
-        await rc.setup();
-        ({ treasury, factory, orderbook, markets, xdaiproxy } = rc.contracts);
+        await rc.setup(accounts);
+        ({ treasury, factory, orderbook, markets, proxyL2, erc20 } = rc.contracts);
     });
     afterEach(async function () {
         await rc.cleanup();
@@ -32,7 +33,7 @@ contract("RealityCardsTests", (accounts) => {
             // only testing invalid responses, valid responses checked in each functions own test
             await expectRevert(treasury.payRent(admin), "Not authorised");
             await expectRevert(treasury.payout(admin, 0), "Not authorised");
-            await expectRevert(treasury.sponsor(), "Not authorised");
+            await expectRevert(treasury.sponsor(admin, 1), "Not authorised");
             await expectRevert(treasury.updateLastRentalTime(admin), "Not authorised");
         });
 
@@ -68,7 +69,8 @@ contract("RealityCardsTests", (accounts) => {
             // 400 should work
             await rc.deposit(400, alice);
             // another 400 should not
-            await expectRevert(treasury.deposit(alice, { value: web3.utils.toWei("400", "ether") }), "Limit hit");
+            await erc20.approve(treasury.address, ether("400"), { from: alice });
+            await expectRevert(treasury.deposit(ether("400"), alice, { from: alice }), "Limit hit");
         });
 
         it("test setAlternateReciverAddress", async () => {
@@ -139,8 +141,7 @@ contract("RealityCardsTests", (accounts) => {
 
         it("test deposit", async () => {
             // check for zero address
-            await expectRevert(treasury.deposit(alice), "Must deposit something");
-            await expectRevert(treasury.deposit(ZERO_ADDRESS, { value: 1 }), "Must set an address");
+            await expectRevert(treasury.deposit(0, alice), "Must deposit something");
             // make some deposits
             await rc.deposit(10, alice);
             await rc.deposit(20, bob);
@@ -158,21 +159,19 @@ contract("RealityCardsTests", (accounts) => {
             await rc.deposit(100, bob); // just so the contract has spare funds
             // record the users balance
             var tracker = await balance.tracker(alice);
-            const startBalance = await tracker.get()
+            const startBalance = await erc20.balanceOf(alice)
             // make a deposit and get a receipt to find the gas cost
-            var txReceipt = await treasury.deposit(user1, { value: ether("10"), from: alice });
-            var gasUsed = txReceipt.receipt.gasUsed;
+            await erc20.approve(treasury.address, ether('100'), { from: alice });
+            var txReceipt = await treasury.deposit(ether('10'), alice, { from: alice });
             // let some time pass
             await time.increase(time.duration.minutes(10));
             // withdraw some deposit locally (getting a receipt again)
             txReceipt = await treasury.withdrawDeposit(ether("5"), true, { from: alice });
-            gasUsed += txReceipt.receipt.gasUsed;
             // withdraw the rest via the bridge (getting a receipt again)
             txReceipt = await treasury.withdrawDeposit(ether("5"), false, { from: alice });
-            gasUsed += txReceipt.receipt.gasUsed;
             // check the balance is correct (minus gas cost)
-            const currentBalance = await tracker.get()
-            assert.equal(startBalance.toString(), (currentBalance.add(web3.utils.toBN(gasUsed))).toString());
+            const currentBalance = await erc20.balanceOf(alice)
+            assert.equal(startBalance.toString(), currentBalance.toString());
 
             // check no rent collected yet
             assert.equal((await treasury.marketBalance()).toString(), 0);
@@ -192,11 +191,6 @@ contract("RealityCardsTests", (accounts) => {
             // check we don't own the card or have any bids
             assert.equal((await markets[0].ownerOf(0)), markets[0].address);
             assert.equal((await treasury.userTotalBids(bob)), 0);
-
-            // test the value transfer sucess
-            noFallback = await rc.NoFallback();
-            await noFallback.deposit(treasury.address, { value: ether('10') });
-            await expectRevert(noFallback.withdrawDeposit(treasury.address, ether('10')), "Transfer failed");
         });
 
         it("check cant rent or deposit if globalpause", async () => {
@@ -276,7 +270,7 @@ contract("RealityCardsTests", (accounts) => {
             assert.equal(totalRentals.toString(), ether("8").toString());
             var totalRentals = await treasury.userTotalBids(bob);
             assert.equal(totalRentals.toString(), ether("7").toString());
-            // change tokenPrice, check both are correct user0=12 user1=7
+            // change cardPrice, check both are correct user0=12 user1=7
             await rc.newRental({ price: 8 });
             var totalRentals = await treasury.userTotalBids(alice);
             assert.equal(totalRentals.toString(), ether("12").toString());
@@ -339,7 +333,7 @@ contract("RealityCardsTests", (accounts) => {
             await rc.newRental({ from: alice, market: markets[0] });
             assert.equal((await treasury.userDeposit(alice)).toString(), ether(deposit).toString());
 
-            // deposit some dai and confirm all values
+            // deposit something and confirm all values
             await rc.deposit(deposit, bob);
             assert.equal((await treasury.userDeposit(bob)).toString(), ether(deposit).toString());
             assert.equal((await treasury.marketPot(markets[1].address)).toString(), '0');
@@ -380,7 +374,7 @@ contract("RealityCardsTests", (accounts) => {
             await markets[1].lockMarket();
 
             // card 0 won, user0 should get the payout
-            await xdaiproxy.setAmicableResolution(markets[1].address, 0)
+            await markets[1].setAmicableResolution(0)
             await markets[1].withdraw({ from: alice });
 
             // check the values have all been correcly adjusted
@@ -798,7 +792,7 @@ contract("RealityCardsTests", (accounts) => {
                 await newRentalWithStartingPosition(4.8, 0, user7, user14); // 12, 4.8
                 var owner = await realitycards.ownerOf.call(0);
                 assert.equal(owner, user9);
-                var price = await realitycards.tokenPrice.call(0);
+                var price = await realitycards.cardPrice.call(0);
                 assert.equal(price, web3.utils.toWei('50', 'ether'));
                 // check position and price
                 // position 0
@@ -878,7 +872,7 @@ contract("RealityCardsTests", (accounts) => {
                 await newRentalCustomTimeLimit(60, 1, 0, user9);
                 var owner = await realitycards.ownerOf.call(0);
                 assert.equal(owner, user9);
-                var price = await realitycards.tokenPrice.call(0);
+                var price = await realitycards.cardPrice.call(0);
                 assert.equal(price.toString(), web3.utils.toWei('60', 'ether'));
                 // await rcorderbook.printOrderbook(realitycards.address, 0);
                 // console.log("0", user0);
@@ -908,7 +902,7 @@ contract("RealityCardsTests", (accounts) => {
                 await newRentalCustomTimeLimit(15, 2, 0, user5);
                 var owner = await realitycards.ownerOf.call(0);
                 assert.equal(owner, user5);
-                var price = await realitycards.tokenPrice.call(0);
+                var price = await realitycards.cardPrice.call(0);
                 assert.equal(price.toString(), web3.utils.toWei('15', 'ether'));
                 var bid = await rcorderbook.getBid.call(realitycards.address, user5, 0);
                 assert.equal(bid[4], web3.utils.toWei('15', 'ether'));
@@ -919,7 +913,7 @@ contract("RealityCardsTests", (accounts) => {
                 await newRentalCustomTimeLimit(10.5, 0.5, 0, user5);
                 var owner = await realitycards.ownerOf.call(0);
                 assert.equal(owner, user0);
-                var price = await realitycards.tokenPrice.call(0);
+                var price = await realitycards.cardPrice.call(0);
                 assert.equal(price, web3.utils.toWei('10', 'ether'));
                 var bid = await rcorderbook.getBid.call(realitycards.address, user5, 0);
                 assert.equal(bid[4], web3.utils.toWei('10', 'ether'));
@@ -930,7 +924,7 @@ contract("RealityCardsTests", (accounts) => {
                 await newRentalCustomTimeLimit(100, 0.5, 0, user7);
                 var owner = await realitycards.ownerOf.call(0);
                 assert.equal(owner, user7);
-                var price = await realitycards.tokenPrice.call(0);
+                var price = await realitycards.cardPrice.call(0);
                 assert.equal(price, web3.utils.toWei('100', 'ether'));
                 var bid = await rcorderbook.getBid.call(realitycards.address, user7, 0);
                 assert.equal(bid[4], web3.utils.toWei('100', 'ether'));
@@ -945,7 +939,7 @@ contract("RealityCardsTests", (accounts) => {
                 await newRentalCustomTimeLimit(20, 2, 0, user8);
                 var owner = await realitycards.ownerOf.call(0);
                 assert.equal(owner, user7);
-                var price = await realitycards.tokenPrice.call(0);
+                var price = await realitycards.cardPrice.call(0);
                 assert.equal(price, web3.utils.toWei('100', 'ether'));
                 var bid = await rcorderbook.getBid.call(realitycards.address, user8, 0);
                 assert.equal(bid[4], web3.utils.toWei('20', 'ether'));
@@ -1001,7 +995,7 @@ contract("RealityCardsTests", (accounts) => {
                 await realitycards.collectRentAllCards();
                 var owner = await realitycards.ownerOf.call(0);
                 assert.equal(owner, user5);
-                var price = await realitycards.tokenPrice.call(0);
+                var price = await realitycards.cardPrice.call(0);
                 assert.equal(price, web3.utils.toWei('20', 'ether'));
                 var bid = await rcorderbook.getBid.call(realitycards.address, user5, 0);
                 assert.equal(bid[2], realitycards.address);
@@ -1016,7 +1010,7 @@ contract("RealityCardsTests", (accounts) => {
                 await realitycards.collectRentAllCards();
                 var owner = await realitycards.ownerOf.call(0);
                 assert.equal(owner, user1);
-                var price = await realitycards.tokenPrice.call(0);
+                var price = await realitycards.cardPrice.call(0);
                 assert.equal(price, web3.utils.toWei('9', 'ether'));
                 var bid = await rcorderbook.getBid.call(realitycards.address, user1, 0);
                 assert.equal(bid[2], realitycards.address);

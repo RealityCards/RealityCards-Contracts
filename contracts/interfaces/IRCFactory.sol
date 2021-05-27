@@ -3,14 +3,11 @@ pragma solidity 0.8.4;
 
 import "./IRealitio.sol";
 import "./IRCTreasury.sol";
-import "./IRCProxyXdai.sol";
-import "./IRCNftHubXdai.sol";
+import "./IRCNftHubL2.sol";
 import "./IRCOrderbook.sol";
 
 interface IRCFactory {
-    function proxy() external returns (IRCProxyXdai);
-
-    function nfthub() external returns (IRCNftHubXdai);
+    function nfthub() external returns (IRCNftHubL2);
 
     function treasury() external returns (IRCTreasury);
 
@@ -31,4 +28,15 @@ interface IRCFactory {
     function setNFTMintingLimit(uint256 _mintLimit) external;
 
     function setMaxRentIterations(uint256 _rentLimit) external;
+
+    function getOracleSettings()
+        external
+        view
+        returns (
+            IRealitio realitio,
+            address arbitrator,
+            uint32 timeout
+        );
+
+    function owner() external view returns (address);
 }

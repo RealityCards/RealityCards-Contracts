@@ -7,29 +7,22 @@ const {
   balance,
   time
 } = require('@openzeppelin/test-helpers');
+const { ZERO_ADDRESS } = require('@openzeppelin/test-helpers/src/constants');
 
 // main contracts
 var RCFactory = artifacts.require('./RCFactory.sol');
 var RCTreasury = artifacts.require('./RCTreasury.sol');
 var RCMarket = artifacts.require('./RCMarket.sol');
-var NftHubXDai = artifacts.require('./nfthubs/RCNftHubXdai.sol');
-var NftHubMainnet = artifacts.require('./nfthubs/RCNftHubMainnet.sol');
-var XdaiProxy = artifacts.require('./bridgeproxies/RCProxyXdai.sol');
-var MainnetProxy = artifacts.require('./bridgeproxies/RCProxyMainnet.sol');
+var NftHubL2 = artifacts.require('./nfthubs/RCNftHubL2.sol');
+var NftHubL1 = artifacts.require('./nfthubs/RCNftHubL1.sol');
 var RCOrderbook = artifacts.require('./RCOrderbook.sol');
 // mockups
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
-var BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
-var AlternateReceiverBridgeMockup = artifacts.require("./mockups/AlternateReceiverBridgeMockup.sol");
+
 var SelfDestructMockup = artifacts.require("./mockups/SelfDestructMockup.sol");
 var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
-// redeploys
-var RCFactory2 = artifacts.require('./RCFactoryV2.sol');
-var MainnetProxy2 = artifacts.require('./mockups/redeploys/RCProxyMainnetV2.sol');
-var XdaiProxy2 = artifacts.require('./mockups/redeploys/RCProxyXdaiV2.sol');
-var RCMarket2 = artifacts.require('./mockups/redeploys/RCMarketXdaiV2.sol');
-var BridgeMockup2 = artifacts.require('./mockups/redeploys/BridgeMockupV2.sol');
-var RealitioMockup2 = artifacts.require("./mockups/redeploys/RealitioMockupV2.sol");
+const tokenMockup = artifacts.require("./mockups/tokenMockup.sol");
+
 // arbitrator
 var kleros = '0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D';
 
@@ -66,41 +59,30 @@ contract('TestFundamentals', (accounts) => {
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
+    erc20 = await tokenMockup.new("Dai", "Dai", ether("10000000"), user0);
+    for (let index = 0; index < 10; index++) {
+      user = eval("user" + index);
+      erc20.transfer(user, ether("1000"), { from: user0 });
+    }
+    // mockups 
+    realitio = await RealitioMockup.new();
+    dai = await DaiMockup.new();
     // main contracts
-    treasury = await RCTreasury.new();
-    rcfactory = await RCFactory.new(treasury.address);
+    treasury = await RCTreasury.new(erc20.address);
+    rcfactory = await RCFactory.new(treasury.address, realitio.address, kleros);
     rcreference = await RCMarket.new();
     rcorderbook = await RCOrderbook.new(rcfactory.address, treasury.address);
     // nft hubs
-    nfthubxdai = await NftHubXDai.new(rcfactory.address);
-    nfthubmainnet = await NftHubMainnet.new();
+    nftHubL2 = await NftHubL2.new(rcfactory.address, ZERO_ADDRESS);
+    nftHubL1 = await NftHubL1.new();
     // tell treasury about factory, tell factory about nft hub and reference
     await treasury.setFactoryAddress(rcfactory.address);
     await rcfactory.setReferenceContractAddress(rcreference.address);
-    await rcfactory.setNftHubAddress(nfthubxdai.address, 0);
-    await treasury.setNftHubAddress(nfthubxdai.address);
+    await rcfactory.setNftHubAddress(nftHubL2.address, 0);
+    await treasury.setNftHubAddress(nftHubL2.address);
     await rcfactory.setOrderbookAddress(rcorderbook.address);
     await treasury.setOrderbookAddress(rcorderbook.address);
-    // mockups 
-    realitio = await RealitioMockup.new();
-    bridge = await BridgeMockup.new();
-    alternateReceiverBridge = await AlternateReceiverBridgeMockup.new();
-    dai = await DaiMockup.new();
-    // bridge contracts
-    xdaiproxy = await XdaiProxy.new(bridge.address, rcfactory.address, treasury.address, realitio.address, realitio.address);
-    mainnetproxy = await MainnetProxy.new(bridge.address, nfthubmainnet.address, alternateReceiverBridge.address, dai.address);
-    // tell the factory, mainnet proxy and bridge the xdai proxy address
-    await rcfactory.setProxyXdaiAddress(xdaiproxy.address);
-    await mainnetproxy.setProxyXdaiAddress(xdaiproxy.address);
-    await bridge.setProxyXdaiAddress(xdaiproxy.address);
-    // tell the xdai proxy, nft mainnet hub and bridge the mainnet proxy address
-    await xdaiproxy.setProxyMainnetAddress(mainnetproxy.address);
-    await bridge.setProxyMainnetAddress(mainnetproxy.address);
-    await nfthubmainnet.setProxyMainnetAddress(mainnetproxy.address);
-    // tell the treasury about the ARB
-    await treasury.setAlternateReceiverAddress(alternateReceiverBridge.address);
-    // tell the treasury about the ARB
-    await treasury.setAlternateReceiverAddress(alternateReceiverBridge.address);
+
     // market creation
     await rcfactory.createMarket(
       0,
@@ -111,6 +93,7 @@ contract('TestFundamentals', (accounts) => {
       affiliateAddress,
       cardRecipients,
       question,
+      0,
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards = await RCMarket.at(marketAddress);
@@ -137,6 +120,7 @@ contract('TestFundamentals', (accounts) => {
       affiliateAddress,
       cardRecipients,
       question,
+      0,
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -163,6 +147,7 @@ contract('TestFundamentals', (accounts) => {
       affiliateAddress,
       cardRecipients,
       question,
+      0,
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(mode);
     realitycards2 = await RCMarket.at(marketAddress);
@@ -171,18 +156,20 @@ contract('TestFundamentals', (accounts) => {
 
   async function depositDai(amount, user) {
     amount = web3.utils.toWei(amount.toString(), 'ether');
-    await treasury.deposit(user, { from: user, value: amount });
+    await erc20.approve(treasury.address, amount, { from: user })
+    await treasury.deposit(amount, user, { from: user });
   }
-
   async function newRental(price, outcome, user) {
     price = web3.utils.toWei(price.toString(), 'ether');
     await realitycards.newRental(price, 0, zeroAddress, outcome, { from: user });
   }
 
   async function newRentalWithDeposit(price, outcome, user, dai) {
-    price = web3.utils.toWei(price.toString(), 'ether');
-    dai = web3.utils.toWei(dai.toString(), 'ether');
-    await realitycards.newRental(price, 0, zeroAddress, outcome, { from: user, value: dai });
+    await depositDai(dai, user);
+    price = web3.utils.toWei(price.toString(), "ether");
+    await realitycards.newRental(price, 0, zeroAddress, outcome, {
+      from: user
+    });
   }
 
   async function newRentalCustomContract(contract, price, outcome, user) {
@@ -215,7 +202,7 @@ contract('TestFundamentals', (accounts) => {
 
   //   // check name
   //   it('getName', async () => {
-  //     var name = await nfthubxdai.name.call();
+  //     var name = await nftHubL2.name.call();
   //     assert.equal(name, 'RealityCards');
   //   });
 
@@ -226,7 +213,7 @@ contract('TestFundamentals', (accounts) => {
   //     await depositDai(144,user);
   //     await newRental(144,4,user);
   //     // tests
-  //     var price = await realitycards.tokenPrice.call(4);
+  //     var price = await realitycards.cardPrice.call(4);
   //     assert.equal(price, web3.utils.toWei('144', 'ether'));
   //     var deposit = await treasury.userDeposit.call(user);
   //     assert.equal(deposit, web3.utils.toWei('144', 'ether'));
@@ -244,11 +231,11 @@ contract('TestFundamentals', (accounts) => {
   //     await depositDai(10,user);
   //     await newRental(1,4,user);
   //     // tests
-  //     var price = await realitycards.tokenPrice.call(4);
+  //     var price = await realitycards.cardPrice.call(4);
   //     assert.equal(price, web3.utils.toWei('1', 'ether'));
   //     // rent again
   //     await newRental(3,4,user);
-  //     var price = await realitycards.tokenPrice.call(4);
+  //     var price = await realitycards.cardPrice.call(4);
   //     assert.equal(price, web3.utils.toWei('3', 'ether'));
   //     // withdraw
   //     await time.increase(time.duration.minutes(10));
@@ -311,13 +298,13 @@ contract('TestFundamentals', (accounts) => {
   //     // check reverted
   //     var owner = await realitycards.ownerOf.call(1);
   //     assert.equal(owner, user0);
-  //     var price = await realitycards.tokenPrice.call(1);
+  //     var price = await realitycards.cardPrice.call(1);
   //     assert.equal(price, web3.utils.toWei('1', 'ether'));
   //     await time.increase(time.duration.weeks(1));
   //     await realitycards.collectRentAllCards();
   //     var owner = await realitycards.ownerOf.call(1);
   //     assert.equal(owner, realitycards.address);
-  //     var price = await realitycards.tokenPrice.call(1);
+  //     var price = await realitycards.cardPrice.call(1);
   //     assert.equal(price, 0);
   // });
 
@@ -454,12 +441,12 @@ contract('TestFundamentals', (accounts) => {
     realitycards2 = await createMarketWithArtistSet();
     await realitycards2.newRental(web3.utils.toWei('288', 'ether'), maxuint256, zeroAddress, 0, { from: user });
     // withdraw all, should be 3 left therefore only withdraw 7
-    var balanceBefore = await web3.eth.getBalance(user);
+    var balanceBefore = await erc20.balanceOf(user);
     await time.increase(time.duration.minutes(10));
     // await realitycards.collectRentAllCards();
     // await realitycards2.collectRentAllCards();
     await withdrawDeposit(1000, user);
-    var balanceAfter = await web3.eth.getBalance(user);
+    var balanceAfter = await erc20.balanceOf(user);
     var depositWithdrawn = await balanceAfter - balanceBefore;
     var depositWithdrawnShouldBe = web3.utils.toWei('7', 'ether');
     var difference = Math.abs(depositWithdrawn.toString() - depositWithdrawnShouldBe.toString());
@@ -665,13 +652,6 @@ contract('TestFundamentals', (accounts) => {
     await withdrawDeposit(1000, user1);
   });
 
-  it('check that sending ether direct is the same as a deposit', async () => {
-    await treasury.send(1);
-    var deposit = await treasury.userDeposit.call(user0);
-    assert.equal(deposit, 1);
-  });
-
-
   it('test timeHeldLimit', async () => {
     await depositDai(144, user0);
     await depositDai(144, user1);
@@ -826,10 +806,10 @@ contract('TestFundamentals', (accounts) => {
       assert.equal(owner, user0);
     }
     // check price
-    var price = await realitycards.tokenPrice.call(0);
+    var price = await realitycards.cardPrice.call(0);
     assert.equal(price, web3.utils.toWei('11', 'ether'));
     for (i = 1; i < 20; i++) {
-      var price = await realitycards.tokenPrice.call(i);
+      var price = await realitycards.cardPrice.call(i);
       assert.equal(price, web3.utils.toWei('1', 'ether'));
     }
     // sum of all prices is 19 + 11 = 30
@@ -887,7 +867,7 @@ contract('TestFundamentals', (accounts) => {
     await realitycards.collectRentAllCards();
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner, user4);
-    var price = await realitycards.tokenPrice.call(0);
+    var price = await realitycards.cardPrice.call(0);
     assert.equal(price, web3.utils.toWei('10', 'ether'));
     var bid = await rcorderbook.getBid.call(realitycards.address, user4, 0);
     assert.equal(bid[2], realitycards.address);
@@ -895,7 +875,7 @@ contract('TestFundamentals', (accounts) => {
     await realitycards.exit(0, { from: user4 });
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner, user1);
-    var price = await realitycards.tokenPrice.call(0);
+    var price = await realitycards.cardPrice.call(0);
     assert.equal(price, web3.utils.toWei('9', 'ether'));
   });
 
