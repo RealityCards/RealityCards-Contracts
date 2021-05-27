@@ -1935,9 +1935,9 @@ contract("TestFullFlowValid", (accounts) => {
     await depositDai(initialDeposit, user0);
     await depositDai(initialDeposit, user1);
     await depositDai(initialDeposit, user2);
-    const firstTokenPrice = 1;
-    const secondTokenPrice = 2;
-    const thirdTokenPrice = 3;
+    const firstcardPrice = 1;
+    const secondcardPrice = 2;
+    const thirdcardPrice = 3;
 
     // rent losing teams
     const user0DepositBefore = await treasury.userDeposit.call(user0);
@@ -1947,27 +1947,27 @@ contract("TestFullFlowValid", (accounts) => {
     );
 
     const user0FirstRentalTime = await getTimestamp(
-      newRentalCustomTimeLimit(firstTokenPrice, 28, 0, user0)
+      newRentalCustomTimeLimit(firstcardPrice, 28, 0, user0)
     ); // collected 28
     const userRecord = await treasury.user.call(user0)
     assert.equal(user0FirstRentalTime.toString(), userRecord[3].toString())
     assert.equal(user0FirstRentalTime.toString(), (await realitycards.timeLastCollected.call(0)).toString())
     const user1FirstRentalTime = await getTimestamp(
-      newRentalCustomTimeLimit(secondTokenPrice, 28, 1, user1)
+      newRentalCustomTimeLimit(secondcardPrice, 28, 1, user1)
     ); // collected 56
     const userRecord2 = await treasury.user.call(user1)
     assert.equal(user1FirstRentalTime.toString(), userRecord2[3].toString())
     assert.equal(user1FirstRentalTime.toString(), (await realitycards.timeLastCollected.call(1)).toString())
     // rent winning team
     const user0SecondRentalTime = await getTimestamp(
-      newRental(firstTokenPrice, 2, user0)
+      newRental(firstcardPrice, 2, user0)
     ); // collected ~7
     const userRecord3 = await treasury.user.call(user0)
     assert.equal(user0SecondRentalTime.toString(), userRecord3[3].toString())
     assert.equal(user0SecondRentalTime.toString(), (await realitycards.timeLastCollected.call(2)).toString())
     await time.increase(time.duration.weeks(1).sub(new BN(1)));
     const user1SecondRentalTime = await getTimestamp(
-      newRental(secondTokenPrice, 2, user1)
+      newRental(secondcardPrice, 2, user1)
     ); // collected ~14
     const userRecord4 = await treasury.user.call(user1)
     assert.equal(user1SecondRentalTime.toString(), userRecord4[3].toString())
@@ -1975,7 +1975,7 @@ contract("TestFullFlowValid", (accounts) => {
 
     await time.increase(time.duration.weeks(1).sub(new BN(1)));
     const user2FirstRentalTime = await getTimestamp(
-      newRentalCustomTimeLimit(thirdTokenPrice, 14, 2, user2)
+      newRentalCustomTimeLimit(thirdcardPrice, 14, 2, user2)
     ); // collected 42
     const userRecord5 = await treasury.user.call(user2)
     assert.equal(user2FirstRentalTime.toString(), userRecord5[3].toString())
@@ -2006,11 +2006,11 @@ contract("TestFullFlowValid", (accounts) => {
           currentTimestamp - user0FirstRentalTime,
           28 * SECONDS_IN_DAY
         ),
-        price: firstTokenPrice,
+        price: firstcardPrice,
       },
       {
         timeHeld: user1SecondRentalTime - user0SecondRentalTime,
-        price: firstTokenPrice,
+        price: firstcardPrice,
       },
     ]);
     const rentOwedByUser1 = multiRentCalculator([
@@ -2019,11 +2019,11 @@ contract("TestFullFlowValid", (accounts) => {
           currentTimestamp - user1FirstRentalTime,
           28 * SECONDS_IN_DAY
         ),
-        price: firstTokenPrice,
+        price: firstcardPrice,
       },
       {
         timeHeld: currentTimestamp - user1SecondRentalTime,
-        price: secondTokenPrice,
+        price: secondcardPrice,
       },
     ]);
     const rentOwedByUser2 = multiRentCalculator([
@@ -2032,7 +2032,7 @@ contract("TestFullFlowValid", (accounts) => {
           currentTimestamp - user2FirstRentalTime,
           14 * SECONDS_IN_DAY
         ),
-        price: thirdTokenPrice,
+        price: thirdcardPrice,
       },
     ]);
     const user0DepositAfter = await treasury.userDeposit.call(user0);
@@ -2067,34 +2067,34 @@ contract("TestFullFlowValid", (accounts) => {
     const rentCollectedByToken2 = multiRentCalculator([
       {
         timeHeld: user1SecondRentalTime - user0SecondRentalTime,
-        price: firstTokenPrice,
+        price: firstcardPrice,
       },
       {
         timeHeld: user2FirstRentalTime - user1SecondRentalTime,
-        price: secondTokenPrice,
+        price: secondcardPrice,
       },
       {
         timeHeld: Math.min(
           currentTimestamp - user2FirstRentalTime,
           14 * SECONDS_IN_DAY
         ),
-        price: thirdTokenPrice,
+        price: thirdcardPrice,
       },
       {
         timeHeld: currentTimestamp - user2FirstRentalTime - 14 * SECONDS_IN_DAY,
-        price: secondTokenPrice,
+        price: secondcardPrice,
       },
     ]);
     assert.equal(
-      (await realitycards.rentCollectedPerToken(0)).toString(),
+      (await realitycards.rentCollectedPerCard(0)).toString(),
       28 * 10 ** 18
     );
     assert.equal(
-      (await realitycards.rentCollectedPerToken(1)).toString(),
+      (await realitycards.rentCollectedPerCard(1)).toString(),
       56 * 10 ** 18
     );
     assert.equal(
-      (await realitycards.rentCollectedPerToken(2)).toString(),
+      (await realitycards.rentCollectedPerCard(2)).toString(),
       rentCollectedByToken2.toString()
     );
 

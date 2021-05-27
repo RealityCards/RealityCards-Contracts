@@ -303,11 +303,11 @@ contract('TestOwnership', (accounts) => {
     realitycards2 = await RCMarket.at(marketAddress);
     await depositDai(144, user3);
     await newRentalCustomContract(realitycards2, 144, 4, user3);
-    var price = await realitycards2.tokenPrice.call(4);
+    var price = await realitycards2.cardPrice.call(4);
     assert.equal(price, web3.utils.toWei('144', 'ether'));
     // check that the original market still works
     await newRental(69, 4, user3);
-    var price = await realitycards.tokenPrice.call(4);
+    var price = await realitycards.cardPrice.call(4);
     assert.equal(price, web3.utils.toWei('69', 'ether'));
     await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000, user3);
@@ -344,11 +344,11 @@ contract('TestOwnership', (accounts) => {
     realitycards2 = await RCMarket.at(marketAddress);
     await depositDai(144, user3);
     await newRentalCustomContract(realitycards2, 144, 4, user3);
-    var price = await realitycards2.tokenPrice.call(4);
+    var price = await realitycards2.cardPrice.call(4);
     assert.equal(price.toString(), web3.utils.toWei('288', 'ether'));
     // check that the original market still works
     await newRental(69, 4, user3);
-    var price = await realitycards.tokenPrice.call(4);
+    var price = await realitycards.cardPrice.call(4);
     assert.equal(price, web3.utils.toWei('69', 'ether'));
     await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000, user3);

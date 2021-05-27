@@ -337,9 +337,9 @@ contract('TestFactory', (accounts) => {
     var owner = await realitycards3.ownerOf.call(0);
     assert.equal(user1, owner);
     // check rent all cards works
-    var price = await realitycards3.tokenPrice(0);
+    var price = await realitycards3.cardPrice(0);
     await realitycards3.rentAllCards(web3.utils.toWei('100', 'ether'), { from: user0 });
-    var price = await realitycards3.tokenPrice(0);
+    var price = await realitycards3.cardPrice(0);
     var priceShouldBe = ether('1.1025');
     assert.equal(price.toString(), priceShouldBe.toString());
   });
