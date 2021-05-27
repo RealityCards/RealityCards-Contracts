@@ -270,7 +270,7 @@ contract('TestProxies', (accounts) => {
   });
 
 
-  it('test NFT upgrade', async () => {
+  it.skip('test NFT upgrade', async () => {
     // need to implement check that user has already claimed card (and market is over)
     // before trying to exit them on a withdraw, then this test can be re-instated.
     await rcfactory.changeMarketApproval(realitycards.address);
@@ -290,8 +290,7 @@ contract('TestProxies', (accounts) => {
     await realitycards.withdraw({ from: user1 });
     await expectRevert(realitycards.upgradeCard(3, { from: user2 }), "Not owner");
     await realitycards.upgradeCard(3, { from: user1 });
-    var ownerxdai = await realitycards.ownerOf(3);
-    assert.equal(ownerxdai, realitycards.address);
+    await expectRevert(await realitycards.ownerOf(3), "ERC721: owner query for nonexistent token");
     var ownermainnet = await nftHubL1.ownerOf(3);
     assert.equal(ownermainnet, user1);
     // check token uri
