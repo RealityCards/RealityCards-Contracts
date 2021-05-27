@@ -39,4 +39,6 @@ interface IRCFactory {
         );
 
     function owner() external view returns (address);
+
+    function isGovernor(address _user) external view returns (bool);
 }

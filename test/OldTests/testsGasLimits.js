@@ -79,6 +79,7 @@ contract("TestTreasury", (accounts) => {
     await treasury.setNftHubAddress(nftHubL2.address);
     await rcfactory.setOrderbookAddress(rcorderbook.address);
     await treasury.setOrderbookAddress(rcorderbook.address);
+    await treasury.toggleWhitelist();
     // mockups
     realitio = await RealitioMockup.new();
     dai = await DaiMockup.new();

@@ -10,6 +10,7 @@ import "./interfaces/IRCTreasury.sol";
 import "./interfaces/IRCMarket.sol";
 import "./interfaces/IRCOrderbook.sol";
 import "./interfaces/IRCNftHubL2.sol";
+import "./interfaces/IRCFactory.sol";
 
 /// @title Reality Cards Treasury
 /// @author Andrew Stanger & Daniel Chilvers
@@ -65,6 +66,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     uint256 public override minRentalDayDivisor;
     /// @dev max deposit balance, to minimise funds at risk
     uint256 public override maxContractBalance;
+    /// @dev whitelist to only allow certain addresses to deposit
+    mapping(address => bool) public isAllowed;
+    bool public whitelistEnabled;
 
     /*╔═════════════════════════════════╗
       ║             SAFETY              ║
@@ -108,6 +112,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         setMinRental(24 * 6); // MinRental is a divisor of 1 day(86400 seconds), 24*6 will set to 10 minutes
         setMaxContractBalance(1000000 ether); // 1m
         setTokenAddress(_tokenAddress);
+        whitelistEnabled = true;
     }
 
     /*╔═════════════════════════════════╗
@@ -200,6 +205,26 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     }
 
     /*╔═════════════════════════════════╗
+      ║      WHITELIST FUNCTIONS        ║
+      ╚═════════════════════════════════╝*/
+
+    function toggleWhitelist() external override onlyOwner {
+        whitelistEnabled = !whitelistEnabled;
+    }
+
+    function addToWhitelist(address _user) public override {
+        IRCFactory factory = IRCFactory(factoryAddress);
+        require(factory.isGovernor(msgSender()), "Not authorised");
+        isAllowed[_user] = !isAllowed[_user];
+    }
+
+    function batchAddToWhitelist(address[] calldata _users) public override {
+        for (uint256 index = 0; index < _users.length; index++) {
+            addToWhitelist(_users[index]);
+        }
+    }
+
+    /*╔═════════════════════════════════╗
       ║     GOVERNANCE - UBER OWNER     ║
       ╠═════════════════════════════════╣
       ║  ******** DANGER ZONE ********  ║
@@ -262,6 +287,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
             "Limit hit"
         );
         require(_amount > 0, "Must deposit something");
+        if (whitelistEnabled) {
+            require(isAllowed[msgSender()], "Not in whitelist");
+        }
         erc20.transferFrom(msgSender(), address(this), _amount);
 
         // do some cleaning up, it might help cancel their foreclosure

@@ -329,6 +329,10 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         return Ownable.owner();
     }
 
+    function isGovernor(address _user) external view override returns (bool) {
+        return governors[_user];
+    }
+
     // EDIT GOVERNORS
 
     /// @notice add or remove an address from market creator whitelist

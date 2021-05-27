@@ -93,4 +93,10 @@ interface IRCTreasury {
     function userDeposit(address) external view returns (uint256);
 
     function topupMarketBalance() external payable;
+
+    function toggleWhitelist() external;
+
+    function addToWhitelist(address _user) external;
+
+    function batchAddToWhitelist(address[] calldata _users) external;
 }

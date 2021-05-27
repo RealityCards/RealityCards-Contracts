@@ -85,6 +85,7 @@ module.exports = class TestEnviroment {
         await this.contracts.treasury.setNftHubAddress(this.contracts.nftHubL2.address);
         await this.contracts.factory.setOrderbookAddress(this.contracts.orderbook.address);
         await this.contracts.treasury.setOrderbookAddress(this.contracts.orderbook.address);
+        await this.contracts.treasury.toggleWhitelist();
 
         // market creation, start off without any.
         this.contracts.markets = [];

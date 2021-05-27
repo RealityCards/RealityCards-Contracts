@@ -82,6 +82,7 @@ contract('TestRequireStatements', (accounts) => {
     await treasury.setNftHubAddress(nftHubL2.address);
     await rcfactory.setOrderbookAddress(rcorderbook.address);
     await treasury.setOrderbookAddress(rcorderbook.address);
+    await treasury.toggleWhitelist();
 
     // market creation
     await rcfactory.createMarket(
