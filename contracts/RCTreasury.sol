@@ -227,38 +227,38 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
 
     function setFactoryAddress(address _newFactory) external override {
         require(msgSender() == uberOwner, "Extremely Verboten");
-        require(_newFactory != address(0));
+        require(_newFactory != address(0), "Must set an address");
         factoryAddress = _newFactory;
     }
 
     function setOrderbookAddress(address _newOrderbook) external {
         require(msgSender() == uberOwner, "Extremely Verboten");
-        require(_newOrderbook != address(0));
+        require(_newOrderbook != address(0), "Must set an address");
         orderbook = IRCOrderbook(_newOrderbook);
     }
 
     function setNftHubAddress(address _NFTHubAddress) external {
         require(msgSender() == uberOwner, "Extremely Verboten");
-        require(_NFTHubAddress != address(0));
+        require(_NFTHubAddress != address(0), "Must set an address");
         nfthub = IRCNftHubL2(_NFTHubAddress);
     }
 
     function setTokenAddress(address _newToken) public override {
         require(msgSender() == uberOwner, "Extremely Verboten");
-        require(_newToken != address(0));
+        require(_newToken != address(0), "Must set an address");
         erc20 = IERC20(_newToken);
     }
 
     function setBridgeAddress(address _newBridge) public override {
         require(msgSender() == uberOwner, "Extremely Verboten");
-        require(_newBridge != address(0));
+        require(_newBridge != address(0), "Must set an address");
         bridgeAddress = _newBridge;
-        erc20.approve(_newBridge,type(uint256).max);
+        erc20.approve(_newBridge, type(uint256).max);
     }
 
     function changeUberOwner(address _newUberOwner) external override {
         require(msgSender() == uberOwner, "Extremely Verboten");
-        require(_newUberOwner != address(0));
+        require(_newUberOwner != address(0), "Must set an address");
         uberOwner = _newUberOwner;
     }
 
@@ -519,7 +519,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
       ║      ORDERBOOK CALLABLE         ║
       ╚═════════════════════════════════╝*/
 
-    /// @notice updates users rental rates when ownership changes 
+    /// @notice updates users rental rates when ownership changes
     /// @dev rentalRate = sum of all active bids
     /// @param _oldOwner the address of the user losing ownership
     /// @param _newOwner the address of the user gaining ownership
