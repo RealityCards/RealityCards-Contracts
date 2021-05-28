@@ -49,7 +49,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @dev keeps track of all the rent paid for each card, for card specific affiliate payout
     mapping(uint256 => uint256) public rentCollectedPerCard;
     /// @dev keeps track of the rent each user has paid for each card, for Safe mode payout
-    mapping(address => mapping(uint256 => uint256)) rentCollectedPerUserPerCard;
+    mapping(address => mapping(uint256 => uint256))
+        public rentCollectedPerUserPerCard;
     /// @dev an easy way to track the above across all cards
     uint256 public totalRentCollected;
     /// @dev prevents user from exiting and re-renting in the same block (prevents troll attacks)
@@ -118,7 +119,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     address public arbitrator;
     uint32 public timeout;
     IRealitio public realitio;
-    address _realitioAddress;
+    address public _realitioAddress;
 
     /*╔═════════════════════════════════╗
       ║             EVENTS              ║
@@ -186,6 +187,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @param _affiliateAddress where to send affiliate's cut, if any
     /// @param _cardAffiliateAddresses where to send card specific affiliate's cut, if any
     /// @param _marketCreatorAddress where to send market creator's cut, if any
+    /// @param _realitioQuestion the question posted to the Oracle
     function initialize(
         uint256 _mode,
         uint32[] memory _timestamps,
@@ -266,7 +268,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
         // post question to Oracle
         questionFinalised = false;
-        postQuestionToOracle(_realitioQuestion, _timestamps[2]);
+        _postQuestionToOracle(_realitioQuestion, _timestamps[2]);
 
         // move to OPEN immediately if market opening time in the past
         if (marketOpeningTime <= block.timestamp) {
@@ -307,19 +309,20 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         }
     }
 
-    /// @notice what it says on the tin
+    /// @dev can only be called by Card owners
     modifier onlyTokenOwner(uint256 _token) {
         require(msgSender() == ownerOf(_token), "Not owner");
         _;
     }
 
+    /// @dev can only be called by the Treasury
     modifier onlyTreasury() {
-        require(address(treasury) == msgSender(), "only treasury");
+        require(address(treasury) == msgSender(), "Only treasury");
         _;
     }
 
     /*╔═════════════════════════════════╗
-      ║   ORACLE PROXY CONTRACT CALLS   ║
+      ║     NFT HUB CONTRACT CALLS      ║
       ╚═════════════════════════════════╝*/
 
     /// @notice send NFT to mainnet
@@ -336,10 +339,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         nfthub.withdrawWithMetadata(_tokenId);
         emit LogNftUpgraded(_card, _tokenId);
     }
-
-    /*╔═════════════════════════════════╗
-      ║     NFT HUB CONTRACT CALLS      ║
-      ╚═════════════════════════════════╝*/
 
     /// @notice gets the owner of the NFT via their Card Id
     function ownerOf(uint256 _cardId) public view override returns (address) {
@@ -359,6 +358,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     }
 
     /// @notice transfer ERC 721 between users
+    /// @dev called internally during contract open state
     function _transferCard(
         address _from,
         address _to,
@@ -374,6 +374,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         emit LogNewOwner(_cardId, _to);
     }
 
+    /// @notice transfer ERC 721 between users
+    /// @dev called externaly by Orderbook during contract open state
     function transferCard(
         address _from,
         address _to,
@@ -381,13 +383,58 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         uint256 _price,
         uint256 _timeLimit
     ) external override {
-        require(msgSender() == address(orderbook));
+        require(msgSender() == address(orderbook), "Not orderbook");
         _checkState(States.OPEN);
         if (_to != _from) {
             _transferCard(_from, _to, _cardId);
         }
         cardTimeLimit[_cardId] = _timeLimit;
         cardPrice[_cardId] = _price;
+    }
+
+    /*╔═════════════════════════════════╗
+      ║        ORACLE FUNCTIONS         ║
+      ╚═════════════════════════════════╝*/
+
+    /// @dev called within initializer only
+    function _postQuestionToOracle(
+        string calldata _question,
+        uint32 _oracleResolutionTime
+    ) internal {
+        questionId = realitio.askQuestion(
+            2,
+            _question,
+            arbitrator,
+            timeout,
+            _oracleResolutionTime,
+            0
+        );
+        emit LogQuestionPostedToOracle(address(this), questionId);
+    }
+
+    /// @notice has the oracle finalised
+    function isFinalized() public view returns (bool) {
+        bool _isFinalized = realitio.isFinalized(questionId);
+        return _isFinalized;
+    }
+
+    /// @dev sets the winning outcome
+    /// @dev market.setWinner() will revert if done twice, because wrong state
+    function getWinnerFromOracle() external {
+        require(isFinalized(), "Oracle not finalised");
+        // check market state to prevent market closing early
+        require(marketLockingTime <= block.timestamp, "Market not finished");
+        questionFinalised = true;
+        bytes32 _winningOutcome = realitio.resultFor(questionId);
+        // call the market
+        setWinner(uint256(_winningOutcome));
+    }
+
+    /// @dev admin override of the oracle
+    function setAmicableResolution(uint256 _winningOutcome) external {
+        require(msgSender() == factory.owner(), "Not authorised");
+        questionFinalised = true;
+        setWinner(_winningOutcome);
     }
 
     /*╔═════════════════════════════════╗
@@ -470,6 +517,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         }
         uint256 _remainingPot = 0;
         if (mode == Mode.SAFE_MODE) {
+            // return all rent paid on winning card
             _remainingPot =
                 ((totalRentCollected - rentCollectedPerCard[winningOutcome]) *
                     _remainingCut) /
@@ -510,8 +558,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     }
 
     /// @dev the below functions pay stakeholders (artist, creator, affiliate, card specific affiliates)
-    /// @dev they are not called within determineWinner() because of the risk of an
+    /// @dev they are not called within setWinner() because of the risk of an
     /// @dev ....  address being a contract which refuses payment, then nobody could get winnings
+    /// @dev [hangover from when ether was native currency, keeping in case we return to this]
 
     /// @notice pay artist
     function payArtist() external {
@@ -625,14 +674,10 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         uint256 _timeHeldLimit,
         address _startingPosition,
         uint256 _card
-    )
-        public
-        autoUnlock()
-        autoLock() /*returns (uint256)*/
-    {
+    ) public autoUnlock() autoLock() {
         if (state == States.OPEN) {
-            require(_newPrice >= MIN_RENTAL_VALUE, "Minimum rental 1 xDai");
-            require(_card < numberOfCards, "This card does not exist");
+            require(_newPrice >= MIN_RENTAL_VALUE, "Price below min");
+            require(_card < numberOfCards, "Card does not exist");
 
             address _user = msgSender();
 
@@ -651,14 +696,14 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             }
             if (!_userStillForeclosed) {
                 if (ownerOf(_card) == _user) {
-                    // the owner may only increase by more than 10% or reduce their price
+                    // the owner may only increase by more than X% or reduce their price
                     uint256 _requiredPrice =
                         (cardPrice[_card] *
                             (minimumPriceIncreasePercent + 100)) / (100);
                     require(
                         _newPrice >= _requiredPrice ||
                             _newPrice < cardPrice[_card],
-                        "Not 10% higher"
+                        "Invalid price"
                     );
                 }
 
@@ -764,12 +809,17 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         }
     }
 
+    /// @notice ability to add liqudity to the pot without being able to win.
+    /// @dev called by user, sponsor is msgSender
     function sponsor(uint256 _amount) external override {
         address _creator = msgSender();
         treasury.checkSponsorship(_creator, _amount);
         _sponsor(_creator, _amount);
     }
 
+    /// @notice ability to add liqudity to the pot without being able to win.
+    /// @dev called by Factory during market creation
+    /// @param _sponsorAddress the msgSender of createMarket in the Factory
     function sponsor(address _sponsorAddress, uint256 _amount)
         external
         override
@@ -777,7 +827,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         _sponsor(_sponsorAddress, _amount);
     }
 
-    /// @notice ability to add liqudity to the pot without being able to win.
+    /// @dev actually processes the sponsorship
     function _sponsor(address _sponsorAddress, uint256 _amount) internal {
         _checkNotState(States.LOCKED);
         _checkNotState(States.WITHDRAW);
@@ -975,7 +1025,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                     (_refundTime * cardPrice[_card]) / 1 days;
                 treasury.refundUser(_user, _refundAmount);
             }
-            _processRentCollection(_user, _card, _timeOfThisCollection);
+            _processRentCollection(_user, _card, _timeOfThisCollection); // where the rent collection actually happens
 
             if (_newOwner) {
                 orderbook.findNewOwner(_card, _timeOfThisCollection);
@@ -989,6 +1039,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         return false;
     }
 
+    /// @dev _collectRentAction goes back one owner at a time, this function repeatedly calls
+    /// @dev ... _collectRentAction until the backlog of next owners has been processed, or maxRentIterations hit
     function _collectRent(uint256 _card)
         internal
         returns (bool didUpdateEverything)
@@ -1002,6 +1054,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         return !shouldContinue;
     }
 
+    /// @dev processes actual rent collection and updates the state
     function _processRentCollection(
         address _user,
         uint256 _card,
@@ -1051,53 +1104,10 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     }
 
     /*╔═════════════════════════════════╗
-      ║        ORACLE FUNCTIONS         ║
-      ╚═════════════════════════════════╝*/
-
-    function postQuestionToOracle(
-        string calldata _question,
-        uint32 _oracleResolutionTime
-    ) internal {
-        questionId = realitio.askQuestion(
-            2,
-            _question,
-            arbitrator,
-            timeout,
-            _oracleResolutionTime,
-            0
-        );
-        emit LogQuestionPostedToOracle(address(this), questionId);
-    }
-
-    /// @notice has the oracle finalised
-    function isFinalized() public view returns (bool) {
-        bool _isFinalized = realitio.isFinalized(questionId);
-        return _isFinalized;
-    }
-
-    /// @dev sets the winning outcome
-    /// @dev market.setWinner() will revert if done twice, because wrong state
-    function getWinnerFromOracle() external {
-        require(isFinalized(), "Oracle not finalised");
-        // check market state to prevent market closing early
-        require(marketLockingTime <= block.timestamp, "Market not finished");
-        questionFinalised = true;
-        bytes32 _winningOutcome = realitio.resultFor(questionId);
-        // call the market
-        setWinner(uint256(_winningOutcome));
-    }
-
-    function setAmicableResolution(uint256 _winningOutcome) external {
-        require(msgSender() == factory.owner(), "Not authorised");
-        questionFinalised = true;
-        setWinner(_winningOutcome);
-    }
-
-    /*╔═════════════════════════════════╗
       ║        CIRCUIT BREAKER          ║
       ╚═════════════════════════════════╝*/
 
-    /// @dev alternative to determineWinner, in case Oracle never resolves for any reason
+    /// @dev in case Oracle never resolves for any reason
     /// @dev does not set a winner so same as invalid outcome
     /// @dev market does not need to be locked, just in case lockMarket bugs out
     function circuitBreaker() external {

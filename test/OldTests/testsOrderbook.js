@@ -528,7 +528,7 @@ contract('TestOrderbook', (accounts) => {
     assert.equal(bid[1], user5);
     assert.equal(bid[2], realitycards.address);
     // update bid case 1B: was winner, higher but < 10%, should remove
-    await expectRevert(newRental(65, 0, user9), "Not 10% higher");
+    await expectRevert(newRental(65, 0, user9), "Invalid price");
     await realitycards.exit(0, { from: user9 });
     // update bid case 1Ca: was winner, lower than prevous, but still winner, just update detials
     await newRentalCustomTimeLimit(15, 2, 0, user5);
