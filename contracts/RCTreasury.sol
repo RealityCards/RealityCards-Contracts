@@ -362,13 +362,14 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
 
     /// @notice to increase the market balance
     /// @dev not strictly required but prevents markets being shortchanged due to rounding issues
-    function topupMarketBalance() external payable override {
-        if (msg.value > marketBalanceDiscrepancy) {
+    function topupMarketBalance(uint256 _amount) external override {
+        if (_amount > marketBalanceDiscrepancy) {
             marketBalanceDiscrepancy = 0;
         } else {
-            marketBalanceDiscrepancy -= msg.value;
+            marketBalanceDiscrepancy -= _amount;
         }
-        marketBalance += msg.value;
+        erc20.transferFrom(msgSender(), address(this), _amount);
+        marketBalance += _amount;
     }
 
     /*╔═════════════════════════════════╗
