@@ -2,15 +2,15 @@
 
 var realityCardsFactory = artifacts.require("RCFactory");
 // var factoryAddress = '0x31fE0805b91c4B87CB564A47d1dB42cE8fe84bff'; //new testnet on Sokol
-var factoryAddress = '0x5b7477AcFa49Cc71530A1119ddbC0d3c30ac8ffE'; // unaudited.rc.io
+var factoryAddress = 'Qmdv3uEm74uokDNndzMxeXjrVx6spxvYqaWy1AqzbLoxtU'; // unaudited.rc.io
 
 // variables market specific
-var marketOpeningTime = 1620921600;
-var marketLockingTime = 1621296000;
-var oracleResolutionTime = 1621296000;
+var marketOpeningTime = 1622221200;
+var marketLockingTime = 1623456000;
+var oracleResolutionTime = 1623456000;
 var ipfsHash = 'QmRzmSWhLTfvDZGqJBALoRTA1YoBLXczJzLFjHDZENtZwN';
-var question = 'Will the price of $ETH be above or below $4k by the end of 17th May UTC according to coinmarketcap.com?␟“Below $4k”,“Above $4k”␟other␟en_US';
-var artistAddress = "0x0000000000000000000000000000000000000000";
+var question = 'What will the Matacritic review score of Ratchet and Clank: Rift Apart be at the end of June 11th 2021 UTC?␟“Below 85”,“85 or above”␟other␟en_US';
+var artistAddress = "0x74B4B8C7cb9A594a6440965f982deF10BB9570b9";
 var affiliateAddress = "0x0000000000000000000000000000000000000000";
 var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000', '0x0000000000000000000000000000000000000000'];
 
@@ -20,8 +20,8 @@ var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000', '0x0
 
 var timestamps = [marketOpeningTime, marketLockingTime, oracleResolutionTime];
 var tokenURIs = [
-  'https://cdn.realitycards.io/nftmetadata/eth3/token0.json',
-  'https://cdn.realitycards.io/nftmetadata/eth3/token1.json',
+  'https://cdn.realitycards.io/nftmetadata/ratchet/token0.json',
+  'https://cdn.realitycards.io/nftmetadata/ratchet/token1.json',
 ];
 
 module.exports = function () {

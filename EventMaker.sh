@@ -3,13 +3,13 @@
 ###################
 #### Setup ########
 ###################
-EVENT_NAME=" Will the price of \$ETH be above or below \$4k by the end of 17th May UTC?"
-SRC_NAME="eth3"
+EVENT_NAME="What score will Ratchet and Clank: Rift Apart have on Metacritic on release day?"
+SRC_NAME="ratchet"
 CATEGORY="other"
-SLUG="ethcoaster"
+SLUG="ratchet"
 NUMBER_OF_CARDS="2"
-CARD0="Above \$4k"
-CARD1="Below \$4k"
+CARD0="Below 85%"
+CARD1="85% or above"
 CARD2=""
 CARD3=""
 CARD4=""
@@ -17,7 +17,7 @@ CARD5=""
 CARD6=""
 CDN="https://cdn.realitycards.io/"
 IMAGES="images/"
-IMAGE_FORMAT=".gif"
+IMAGE_FORMAT=".png"
 NFT="nftmetadata/"
 ##################
 
