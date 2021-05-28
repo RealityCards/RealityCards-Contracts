@@ -374,7 +374,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     }
 
     /// @notice transfer ERC 721 between users
-    /// @dev called by externaly by Orderbook during contract open state
+    /// @dev called externaly by Orderbook during contract open state
     function transferCard(
         address _from,
         address _to,

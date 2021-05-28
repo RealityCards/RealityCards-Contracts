@@ -26,7 +26,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     IRCNftHubL2 public nfthub;
     /// @dev token contract
     IERC20 public override erc20;
-    /// @dev address of (as yet non existant) Bridge for withdrawals to mainnet
+    /// @dev address of (as yet non existent) Bridge for withdrawals to mainnet
     address public override bridgeAddress;
     /// @dev address of the Factory so only the Factory can add new markets
     address public override factoryAddress;
