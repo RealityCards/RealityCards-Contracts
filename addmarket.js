@@ -1,20 +1,20 @@
 //require("dotenv").config();
 
 var realityCardsFactory = artifacts.require("RCFactory");
-var factoryAddress = '0x31fE0805b91c4B87CB564A47d1dB42cE8fe84bff'; //new testnet on Sokol
+// var factoryAddress = '0x31fE0805b91c4B87CB564A47d1dB42cE8fe84bff'; //new testnet on Sokol
 // const factoryAddress = '0x52d51E427E334C02abD0FF83cE5CAadA99aFCF23'; // dev.rc.io
-// var factoryAddress = '0x5b7477AcFa49Cc71530A1119ddbC0d3c30ac8ffE'; // unaudited.rc.io
+var factoryAddress = '0x5b7477AcFa49Cc71530A1119ddbC0d3c30ac8ffE'; // unaudited.rc.io
 
 // curl -F file=@event.json "https://api.thegraph.com/ipfs/api/v0/add"
 // truffle exec addmarket.js --network xdai
 
 // variables market specific
-var marketOpeningTime = 1621886400;
-var marketLockingTime = 1622419200;
-var oracleResolutionTime = 1622419200;
-var ipfsHash = 'QmaLVx9VSkMvgv1xsQphJhCRpacVrJCkWhx5G34Eg55nJz';
-var question = 'Was the global crypto marketcap according to https://coinmarketcap.com/charts/ above 1,750,000,000 USD on June 1st 2021, 00:00 UTC?␟"Yes","No"␟other␟en_US';
-var artistAddress = "0xa58A30a135BA20F9FD10d13999477254f1dE192E";
+var marketOpeningTime = 1622221200;
+var marketLockingTime = 1623456000;
+var oracleResolutionTime = 1623456000;
+var ipfsHash = 'QmRzmSWhLTfvDZGqJBALoRTA1YoBLXczJzLFjHDZENtZwN';
+var question = 'What will the Matacritic review score of Ratchet and Clank: Rift Apart be at the end of June 11th 2021 UTC?␟“Below 85”,“85 or above”␟other␟en_US';
+var artistAddress = "0x74B4B8C7cb9A594a6440965f982deF10BB9570b9";
 var affiliateAddress = "0x0000000000000000000000000000000000000000";
 var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000', '0x0000000000000000000000000000000000000000'];
 
@@ -24,8 +24,8 @@ var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000', '0x0
 
 var timestamps = [marketOpeningTime, marketLockingTime, oracleResolutionTime];
 var tokenURIs = [
-  'https://cdn.realitycards.io/nftmetadata/BullOrBear/token0.json',
-  'https://cdn.realitycards.io/nftmetadata/BullOrBear/token1.json',
+  'https://cdn.realitycards.io/nftmetadata/ratchet/token0.json',
+  'https://cdn.realitycards.io/nftmetadata/ratchet/token1.json',
 ];
 
 module.exports = function () {
