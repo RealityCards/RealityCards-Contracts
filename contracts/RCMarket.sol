@@ -49,7 +49,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @dev keeps track of all the rent paid for each card, for card specific affiliate payout
     mapping(uint256 => uint256) public rentCollectedPerCard;
     /// @dev keeps track of the rent each user has paid for each card, for Safe mode payout
-    mapping(address => mapping(uint256 => uint256)) rentCollectedPerUserPerCard;
+    mapping(address => mapping(uint256 => uint256))
+        public rentCollectedPerUserPerCard;
     /// @dev an easy way to track the above across all cards
     uint256 public totalRentCollected;
     /// @dev prevents user from exiting and re-renting in the same block (prevents troll attacks)
@@ -118,7 +119,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     address public arbitrator;
     uint32 public timeout;
     IRealitio public realitio;
-    address _realitioAddress;
+    address public _realitioAddress;
 
     /*╔═════════════════════════════════╗
       ║             EVENTS              ║
