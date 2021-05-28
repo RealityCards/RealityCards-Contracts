@@ -207,7 +207,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
       ║       GOVERNANCE - OWNER        ║
       ╚═════════════════════════════════╝*/
     /// @dev all functions should have onlyOwner modifier
-    // Min price increase, pot distribution & hot potato events emitted by Market.
+    // Min price increase & pot distribution emitted by Market.
     // Advanced Warning and Maximum Duration events emitted here. Nothing else need be emitted.
 
     /*┌────────────────────────────────────┐
@@ -215,7 +215,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
       └────────────────────────────────────┘*/
 
     /// @notice update stakeholder payouts
-    /// @dev in 10s of basis points (so 1000 = 100%)
+    /// @dev in basis points (so 1000 = 100%)
     function setPotDistribution(
         uint256 _artistCut,
         uint256 _winnerCut,
@@ -525,7 +525,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
             totalNftMintCount
         );
 
-        // tell Treasury, Proxy, and NFT hub about new market
+        // tell Treasury, Orderbook, and NFT hub about new market
         // before initialize as during initialize the market may call the treasury
         treasury.addMarket(_newAddress);
         nfthub.addMarket(_newAddress);
@@ -539,6 +539,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         marketAddresses[_mode].push(_newAddress);
         mappingOfMarkets[_newAddress] = true;
 
+        // initialize the market
         IRCMarket(_newAddress).initialize({
             _mode: _mode,
             _timestamps: _timestamps,
@@ -572,6 +573,8 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         return _newAddress;
     }
 
+    /// @dev called by the market upon initialise 
+    /// @dev not passed to initialise to avoid stack too deep error
     function getOracleSettings()
         external
         view

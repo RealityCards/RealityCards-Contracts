@@ -11,6 +11,7 @@ import "./interfaces/IRCMarket.sol";
 import "./interfaces/IRCOrderbook.sol";
 import "./interfaces/IRCNftHubL2.sol";
 import "./interfaces/IRCFactory.sol";
+import "./interfaces/IRCBridge.sol";
 
 /// @title Reality Cards Treasury
 /// @author Andrew Stanger & Daniel Chilvers
@@ -25,8 +26,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     IRCNftHubL2 public nfthub;
     /// @dev token contract
     IERC20 public override erc20;
-    /// @dev address of the alternate Receiver Bridge for withdrawals to mainnet
-    address public override alternateReceiverBridgeAddress;
+    /// @dev address of (as yet non existant) Bridge for withdrawals to mainnet
+    address public override bridgeAddress;
     /// @dev address of the Factory so only the Factory can add new markets
     address public override factoryAddress;
     /// @dev so only markets can use certain functions
@@ -122,11 +123,11 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     /// @notice check that funds haven't gone missing during this function call
     modifier balancedBooks {
         _;
-        // using >= not == because forced Ether send via selfdestruct will not trigger a deposit via the fallback
+        // using >= not == in case anyone sends tokens direct to contract
         require(
             erc20.balanceOf(address(this)) >=
                 totalDeposits + marketBalance + totalMarketPots,
-            "books are unbalanced!"
+            "Books are unbalanced!"
         );
     }
 
@@ -180,16 +181,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     /*┌──────────────────────────────────────────┐
       │ NOT CALLED WITHIN CONSTRUTOR - EXTERNAL  │
       └──────────────────────────────────────────┘*/
-
-    /// @dev address of alternate receiver bridge on layer2
-    function setAlternateReceiverAddress(address _newAddress)
-        external
-        override
-        onlyOwner
-    {
-        require(_newAddress != address(0), "Must set an address");
-        alternateReceiverBridgeAddress = _newAddress;
-    }
 
     /// @dev if true, cannot deposit, withdraw or rent any cards
     function changeGlobalPause() external override onlyOwner {
@@ -258,6 +249,13 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         erc20 = IERC20(_newToken);
     }
 
+    function setBridgeAddress(address _newBridge) public override {
+        require(msgSender() == uberOwner, "Extremely Verboten");
+        require(_newBridge != address(0));
+        bridgeAddress = _newBridge;
+        erc20.approve(_newBridge,type(uint256).max);
+    }
+
     function changeUberOwner(address _newUberOwner) external override {
         require(msgSender() == uberOwner, "Extremely Verboten");
         require(_newUberOwner != address(0));
@@ -269,7 +267,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
       ╚═════════════════════════════════╝*/
 
     /// @dev it is passed the user instead of using msg.sender because might be called
-    /// @dev ... via contract (fallback, newRental) or Layer1->Layer2 bot
+    /// @dev ... via contract (newRental) or Layer1->Layer2 bot
     /// @param _user the user to credit the deposit to
     function deposit(uint256 _amount, address _user)
         public
@@ -311,9 +309,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     }
 
     /// @notice withdraw a users deposit either directly or over the bridge to the mainnet
-    /// @dev this is the only function where funds leave the contractthe
+    /// @dev this is the only function where funds leave the contract
     /// @param _amount the amount to withdraw
-    /// @param _localWithdrawal if true then withdraw to the users xDai address, otherwise to the mainnet
+    /// @param _localWithdrawal if true then withdraw to the users address, otherwise to the bridge
     function withdrawDeposit(uint256 _amount, bool _localWithdrawal)
         external
         override
@@ -344,8 +342,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         if (_localWithdrawal) {
             erc20.transfer(_msgSender, _amount);
         } else {
-            // TODO withdraw over bridge
-            erc20.transfer(_msgSender, _amount);
+            IRCBridge bridge = IRCBridge(bridgeAddress);
+            bridge.withdrawToMainnet(_msgSender, _amount);
         }
 
         // step 3: remove bids if insufficient deposit
@@ -437,6 +435,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         return true;
     }
 
+    /// @dev called by _collectRentAction() in the market in situations where collectRentUser() collected too much rent
     function refundUser(address _user, uint256 _refund)
         external
         override
@@ -494,7 +493,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
       ║        MARKET HELPERS           ║
       ╚═════════════════════════════════╝*/
 
-    /// @notice provides the sum total of a users bids accross all markets
+    /// @notice provides the sum total of a users bids accross all markets (whether active or not)
     /// @param _user the user address to query
     function userTotalBids(address _user)
         external
@@ -520,7 +519,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
       ║      ORDERBOOK CALLABLE         ║
       ╚═════════════════════════════════╝*/
 
-    /// @notice updates users rental rates when ownership changes
+    /// @notice updates users rental rates when ownership changes 
+    /// @dev rentalRate = sum of all active bids
     /// @param _oldOwner the address of the user losing ownership
     /// @param _newOwner the address of the user gaining ownership
     /// @param _oldPrice the price the old owner was paying
@@ -570,6 +570,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         user[_oldOwner].rentalRate -= SafeCast.toUint128(_oldPrice);
     }
 
+    /// @dev increase bidRate when new bid entered
     function increaseBidRate(address _user, uint256 _price)
         external
         override
@@ -578,6 +579,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         user[_user].bidRate += SafeCast.toUint128(_price);
     }
 
+    /// @dev decrease bidRate when bid removed
     function decreaseBidRate(address _user, uint256 _price)
         external
         override
@@ -586,6 +588,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         user[_user].bidRate -= SafeCast.toUint128(_price);
     }
 
+    /// @dev called when all a user's bids have been removed, disables foreclosure state
     function resetUser(address _user) external override onlyOrderbook {
         isForeclosed[_user] = false;
     }

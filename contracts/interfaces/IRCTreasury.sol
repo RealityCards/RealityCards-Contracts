@@ -14,7 +14,7 @@ interface IRCTreasury {
 
     function refundUser(address _user, uint256 _refund) external;
 
-    function alternateReceiverBridgeAddress() external view returns (address);
+    function bridgeAddress() external view returns (address);
 
     function factoryAddress() external view returns (address);
 
@@ -44,7 +44,7 @@ interface IRCTreasury {
 
     function setMaxContractBalance(uint256) external;
 
-    function setAlternateReceiverAddress(address _newAddress) external;
+    function setBridgeAddress(address _newAddress) external;
 
     function changeGlobalPause() external;
 
