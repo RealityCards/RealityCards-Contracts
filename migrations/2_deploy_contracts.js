@@ -16,7 +16,7 @@ var NftHubL2 = artifacts.require('./nfthubs/RCNftHubL2.sol');
 var NftHubL1 = artifacts.require('./nfthubs/RCNftHubL1.sol');
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 var BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
-var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
+var tokenMockup = artifacts.require("./mockups/tokenMockup.sol");
 
 
 // variables
@@ -36,6 +36,7 @@ var realitioAddressKovan = '0x325a2e0F3CCA2ddbaeBB4DfC38Df8D19ca165b47'
 var arbAddressKovan = '0xA960d095470f7509955d5402e36d9DB984B5C8E2'
 // this is just a blank ERC20 contract
 var daiAddressKovan = '0xd133b22BCCcb3Cd3ca752D206b0632932D530Fda'
+var zeroAddress = '0x0000000000000000000000000000000000000000'
 
 // read input arguments
 var ProxyL2Address = myArgs[0]
@@ -137,6 +138,11 @@ module.exports = async (deployer, network, accounts) => {
     await proxyL2.setProxyL1Address(proxyL1Address);
     console.log('Completed Stage 3')
 
+
+
+
+
+
   } else if (network === 'graphTesting') {
     console.log('Local Graph Testing, whoot whoot')
 
@@ -156,14 +162,20 @@ module.exports = async (deployer, network, accounts) => {
       console.log('Account' + index + ': ', account)
     )
 
+    // mockups
+    await deployer.deploy(tokenMockup, "Token name", "TKN", "100000000000000000000000", user0)
+    erc20 = await tokenMockup.deployed()
+    await deployer.deploy(RealitioMockup)
+    var realitio = await RealitioMockup.deployed()
+
     // deploy treasury, factory, reference market and nft hub
-    await deployer.deploy(RCTreasury)
+    await deployer.deploy(RCTreasury, erc20.address)
     treasury = await RCTreasury.deployed()
-    await deployer.deploy(RCFactory, treasury.address)
+    await deployer.deploy(RCFactory, treasury.address, realitio.address, realitio.address)
     factory = await RCFactory.deployed()
     await deployer.deploy(RCMarket)
     reference = await RCMarket.deployed()
-    await deployer.deploy(NftHubL2, factory.address)
+    await deployer.deploy(NftHubL2, factory.address, zeroAddress)
     nftHubL2 = await NftHubL2.deployed()
     await deployer.deploy(NftHubL1)
     nftHubL1 = await NftHubL1.deployed()
@@ -171,43 +183,6 @@ module.exports = async (deployer, network, accounts) => {
     await treasury.setFactoryAddress(factory.address)
     await factory.setReferenceContractAddress(reference.address)
     await factory.setNftHubAddress(nftHubL2.address, 0)
-    // mockups
-    await deployer.deploy(RealitioMockup)
-    var realitio = await RealitioMockup.deployed()
-    await deployer.deploy(BridgeMockup)
-    var bridge = await BridgeMockup.deployed()
-    await deployer.deploy(DaiMockup)
-    var dai = await DaiMockup.deployed()
-    await deployer.deploy(ARBMockup)
-    var arb = await ARBMockup.deployed()
-    await treasury.setAlternateReceiverAddress(arb.address)
-    // deploy bridge contracts
-    await deployer.deploy(
-      ProxyL2,
-      bridge.address,
-      factory.address,
-      treasury.address,
-      realitio.address,
-      arbAddressMainnet
-    )
-    proxyL2 = await ProxyL2.deployed()
-    await deployer.deploy(
-      proxyL1,
-      bridge.address,
-      nftHubL1.address,
-      arb.address,
-      dai.address,
-    )
-    proxyL1 = await proxyL1.deployed()
-    // tell the factory, mainnet proxy and bridge the xdai proxy address
-    await factory.setProxyL2Address(proxyL2.address)
-    await proxyL1.setProxyL2Address(proxyL2.address)
-    await bridge.setProxyL2Address(proxyL2.address)
-    // tell the xdai proxy and bridge the mainnet proxy address
-    await proxyL2.setProxyL1Address(proxyL1.address)
-    await bridge.setProxyL1Address(proxyL1.address)
-    await nftHubL1.setProxyL1Address(proxyL1.address)
-    //var tempMarket;
 
     /***************************************
      *                                     *
@@ -320,7 +295,8 @@ async function createMarket(options) {
 
 async function depositDai(amount, user) {
   amount = web3.utils.toWei(amount.toString(), "ether");
-  await treasury.deposit(user, { from: user, value: amount });
+  await erc20.approve(treasury.address, amount, { from: user });
+  await treasury.deposit(amount, user, { from: user });
 }
 
 function setDefaults(options, defaults) {
