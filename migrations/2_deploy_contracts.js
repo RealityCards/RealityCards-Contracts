@@ -12,11 +12,13 @@ const argv = require('minimist')(process.argv.slice(2), {
 var RCTreasury = artifacts.require("./RCTreasury.sol");
 var RCFactory = artifacts.require("./RCFactory.sol");
 var RCMarket = artifacts.require("./RCMarket.sol")
+var RCOrderbook = artifacts.require('./RCOrderbook.sol');
 var NftHubL2 = artifacts.require('./nfthubs/RCNftHubL2.sol');
 var NftHubL1 = artifacts.require('./nfthubs/RCNftHubL1.sol');
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 var BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
 var tokenMockup = artifacts.require("./mockups/tokenMockup.sol");
+
 
 
 // variables
@@ -175,21 +177,30 @@ module.exports = async (deployer, network, accounts) => {
     factory = await RCFactory.deployed()
     await deployer.deploy(RCMarket)
     reference = await RCMarket.deployed()
+    await deployer.deploy(RCOrderbook, factory.address, treasury.address)
+    orderbook = await RCOrderbook.deployed()
     await deployer.deploy(NftHubL2, factory.address, zeroAddress)
     nftHubL2 = await NftHubL2.deployed()
     await deployer.deploy(NftHubL1)
     nftHubL1 = await NftHubL1.deployed()
-    // tell treasury about factory, tell factory about nft hub and reference
+    // tell treasury and factory about various things
     await treasury.setFactoryAddress(factory.address)
+    await treasury.setOrderbookAddress(orderbook.address)
     await factory.setReferenceContractAddress(reference.address)
+    await factory.setOrderbookAddress(orderbook.address)
     await factory.setNftHubAddress(nftHubL2.address, 0)
+    // disable whitelist
+    await treasury.toggleWhitelist()
+
+    for (let index = 0; index < 10; index++) {
+        await erc20.transfer(accounts[index], "100000000000000000000", { from: user0 });
+    }
 
     /***************************************
      *                                     *
      *    START LOCAL TESTING SETUP HERE   *
      *                                     *
      **************************************/
-
 
     // Make some deposits
     await depositDai(100, user0)
@@ -231,12 +242,8 @@ module.exports = async (deployer, network, accounts) => {
     var countCards = await tempMarket.numberOfTokens()
     console.log('Number of cards in this market:', countCards.toString())
 
-
     // create a market with a delayed start, 10 cards and an ipfs hash 
     await createMarket({ openTime: 120, numberOfCards: 10, ipfs: ipfsHashes[1] })
-
-
-
 
     /**************************************
     *                                     *
@@ -287,7 +294,7 @@ async function createMarket(options) {
     options.affiliateAddress,
     options.cardAffiliate,
     question,
-    sponsorship
+    options.sponsorship
   );
   marketAddress.push(await factory.getMostRecentMarket.call(0));
   market.push(await RCMarket.at(await factory.getMostRecentMarket.call(0)));
