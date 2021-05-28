@@ -41,7 +41,6 @@ contract("RealityCardsTests", (accounts) => {
             // only testing invalid responses, valid responses checked in each functions own test
             await expectRevert(treasury.setMinRental(10, { from: alice }), "Ownable: caller is not the owner");
             await expectRevert(treasury.setMaxContractBalance(10, { from: alice }), "Ownable: caller is not the owner");
-            await expectRevert(treasury.setAlternateReceiverAddress(ZERO_ADDRESS, { from: alice }), "Ownable: caller is not the owner");
             await expectRevert(treasury.changeGlobalPause({ from: alice }), "Ownable: caller is not the owner");
             await expectRevert(treasury.changePauseMarket(ZERO_ADDRESS, { from: alice }), "Ownable: caller is not the owner");
         });
@@ -50,6 +49,7 @@ contract("RealityCardsTests", (accounts) => {
             // only testing invalid responses, valid responses checked in each functions own test
             await expectRevert(treasury.setFactoryAddress(markets[0].address, { from: alice }), "Extremely Verboten");
             await expectRevert(treasury.changeUberOwner(user2, { from: alice }), "Extremely Verboten");
+            await expectRevert(treasury.setBridgeAddress(ZERO_ADDRESS, { from: alice }), "Extremely Verboten");
         });
 
         it("test setMinRental", async () => {
@@ -75,15 +75,15 @@ contract("RealityCardsTests", (accounts) => {
 
         it("test setAlternateReciverAddress", async () => {
             // check for zero address
-            await expectRevert(treasury.setAlternateReceiverAddress(ZERO_ADDRESS), "Must set an address");
+            await expectRevert(treasury.setBridgeAddress(ZERO_ADDRESS), "Must set an address");
             // set value
-            await treasury.setAlternateReceiverAddress(user9);
+            await treasury.setBridgeAddress(user9);
             // check value
-            assert.equal(await treasury.alternateReceiverBridgeAddress(), user9);
+            assert.equal(await treasury.bridgeAddress(), user9);
             // change the value
-            await treasury.setAlternateReceiverAddress(user8);
+            await treasury.setBridgeAddress(user8);
             // check again
-            assert.equal(await treasury.alternateReceiverBridgeAddress(), user8);
+            assert.equal(await treasury.bridgeAddress(), user8);
         });
 
         it("test changeGlobalPause", async () => {
@@ -168,7 +168,9 @@ contract("RealityCardsTests", (accounts) => {
             // withdraw some deposit locally (getting a receipt again)
             txReceipt = await treasury.withdrawDeposit(ether("5"), true, { from: alice });
             // withdraw the rest via the bridge (getting a receipt again)
-            txReceipt = await treasury.withdrawDeposit(ether("5"), false, { from: alice });
+            // txReceipt = await treasury.withdrawDeposit(ether("5"), false, { from: alice });
+            // withdrawing locally again, until the bridge is finished.
+            txReceipt = await treasury.withdrawDeposit(ether("5"), true, { from: alice });
             // check the balance is correct (minus gas cost)
             const currentBalance = await erc20.balanceOf(alice)
             assert.equal(startBalance.toString(), currentBalance.toString());
@@ -187,7 +189,9 @@ contract("RealityCardsTests", (accounts) => {
             assert.equal((await markets[0].ownerOf(0)), bob)
             await time.increase(time.duration.days(1));
             // withdraw everything, but lets go via the bridge this time
-            await treasury.withdrawDeposit(ether("100"), false, { from: bob });
+            // await treasury.withdrawDeposit(ether("100"), false, { from: bob });
+            // withdrawing locally again, until the bridge is finished.
+            await treasury.withdrawDeposit(ether("100"), true, { from: bob });
             // check we don't own the card or have any bids
             assert.equal((await markets[0].ownerOf(0)), markets[0].address);
             assert.equal((await treasury.userTotalBids(bob)), 0);
