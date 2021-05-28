@@ -429,7 +429,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         setWinner(uint256(_winningOutcome));
     }
 
-    /// @dev admin override of the oracle 
+    /// @dev admin override of the oracle
     function setAmicableResolution(uint256 _winningOutcome) external {
         require(msgSender() == factory.owner(), "Not authorised");
         questionFinalised = true;
@@ -558,7 +558,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
     /// @dev the below functions pay stakeholders (artist, creator, affiliate, card specific affiliates)
     /// @dev they are not called within setWinner() because of the risk of an
-    /// @dev ....  address being a contract which refuses payment, then nobody could get winnings 
+    /// @dev ....  address being a contract which refuses payment, then nobody could get winnings
     /// @dev [hangover from when ether was native currency, keeping in case we return to this]
 
     /// @notice pay artist
@@ -673,11 +673,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         uint256 _timeHeldLimit,
         address _startingPosition,
         uint256 _card
-    )
-        public
-        autoUnlock()
-        autoLock() /*returns (uint256)*/
-    {
+    ) public autoUnlock() autoLock() {
         if (state == States.OPEN) {
             require(_newPrice >= MIN_RENTAL_VALUE, "Price below min");
             require(_card < numberOfCards, "Card does not exist");
@@ -813,7 +809,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     }
 
     /// @notice ability to add liqudity to the pot without being able to win.
-    /// @dev called by user, sponsor is msgSender 
+    /// @dev called by user, sponsor is msgSender
     function sponsor(uint256 _amount) external override {
         address _creator = msgSender();
         treasury.checkSponsorship(_creator, _amount);
@@ -1042,7 +1038,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         return false;
     }
 
-    /// @dev _collectRentAction goes back one owner at a time, this function repeatedly calls 
+    /// @dev _collectRentAction goes back one owner at a time, this function repeatedly calls
     /// @dev ... _collectRentAction until the backlog of next owners has been processed, or maxRentIterations hit
     function _collectRent(uint256 _card)
         internal
@@ -1057,7 +1053,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         return !shouldContinue;
     }
 
-    /// @dev processes actual rent collection and updates the state 
+    /// @dev processes actual rent collection and updates the state
     function _processRentCollection(
         address _user,
         uint256 _card,
