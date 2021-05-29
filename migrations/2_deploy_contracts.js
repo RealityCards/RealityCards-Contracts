@@ -3,7 +3,8 @@
 var myArgs = process.argv.slice(6, 9)
 
 const _ = require("underscore");
-const { BN, time } = require('@openzeppelin/test-helpers');
+const { BN, time, ZERO_ADDRESS } = require('@openzeppelin/test-helpers');
+const { ZERO_ADDRESS } = require("@openzeppelin/test-helpers/src/constants");
 const argv = require('minimist')(process.argv.slice(2), {
   string: ['ipfs_hash']
 })
@@ -16,10 +17,7 @@ var RCOrderbook = artifacts.require('./RCOrderbook.sol');
 var NftHubL2 = artifacts.require('./nfthubs/RCNftHubL2.sol');
 var NftHubL1 = artifacts.require('./nfthubs/RCNftHubL1.sol');
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
-var BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
 var tokenMockup = artifacts.require("./mockups/tokenMockup.sol");
-
-
 
 // variables
 // TODO: update chilvers' script with the relevant addresses here https://github.com/realitio/realitio-contracts/blob/master/config/arbitrators.json
@@ -29,16 +27,12 @@ var realitioAddress = '0x325a2e0F3CCA2ddbaeBB4DfC38Df8D19ca165b47';
 var arbAddressMainnet = '0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016'; // may not be correct
 var arbAddressXdai = '0x7301CFA0e1756B71869E93d4e4Dca5c7d0eb0AA6'; // may not be correct
 var kleros = '0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D'; //double check this
-var daiAddressMainnet = '0x6b175474e89094c44da98b954eedeac495271d0f'
 
 // Testnet addresses
 var ambAddressSokol = '0xFe446bEF1DbF7AFE24E81e05BC8B271C1BA9a560'
 var ambAddressKovan = '0xFe446bEF1DbF7AFE24E81e05BC8B271C1BA9a560'
 var realitioAddressKovan = '0x325a2e0F3CCA2ddbaeBB4DfC38Df8D19ca165b47'
 var arbAddressKovan = '0xA960d095470f7509955d5402e36d9DB984B5C8E2'
-// this is just a blank ERC20 contract
-var daiAddressKovan = '0xd133b22BCCcb3Cd3ca752D206b0632932D530Fda'
-var zeroAddress = '0x0000000000000000000000000000000000000000'
 
 // read input arguments
 var ProxyL2Address = myArgs[0]
@@ -49,7 +43,6 @@ var ipfsHashes = argv['ipfs_hash']
 var market = [];
 // an array of the addresses (just a more readable way of doing market[].address)
 var marketAddress = [];
-var zeroAddress = "0x0000000000000000000000000000000000000000";
 
 module.exports = async (deployer, network, accounts) => {
   if (network === 'teststage1' || network === 'stage1') {
@@ -180,7 +173,7 @@ module.exports = async (deployer, network, accounts) => {
     reference = await RCMarket.deployed()
     await deployer.deploy(RCOrderbook, factory.address, treasury.address)
     orderbook = await RCOrderbook.deployed()
-    await deployer.deploy(NftHubL2, factory.address, zeroAddress)
+    await deployer.deploy(NftHubL2, factory.address, ZERO_ADDRESS)
     nftHubL2 = await NftHubL2.deployed()
     await deployer.deploy(NftHubL1)
     nftHubL1 = await NftHubL1.deployed()
@@ -194,7 +187,7 @@ module.exports = async (deployer, network, accounts) => {
     await treasury.toggleWhitelist()
 
     for (let index = 0; index < 10; index++) {
-        await erc20.transfer(accounts[index], "100000000000000000000", { from: user0 });
+      await erc20.transfer(accounts[index], "100000000000000000000", { from: user0 });
     }
 
     /***************************************
@@ -273,9 +266,9 @@ async function createMarket(options) {
     closeTime: 31536000, // seconds delay from now before market closes - default 31536000 = 1 year
     resolveTime: 0, // seconds delay from close before market resolves
     numberOfCards: 4, // the number of cards to create
-    artistAddress: zeroAddress,
-    affiliateAddress: zeroAddress,
-    cardAffiliate: [zeroAddress], // remember this is an array
+    artistAddress: ZERO_ADDRESS,
+    affiliateAddress: ZERO_ADDRESS,
+    cardAffiliate: [ZERO_ADDRESS], // remember this is an array
     sponsorship: 0,
   };
   options = setDefaults(options, defaults);
@@ -320,7 +313,7 @@ async function rent(options) {
     price: 1,
     from: user0,
     timeLimit: 0,
-    startingPosition: zeroAddress,
+    startingPosition: ZERO_ADDRESS,
   };
   options = setDefaults(options, defaults);
   options.price = web3.utils.toWei(options.price.toString(), "ether");
