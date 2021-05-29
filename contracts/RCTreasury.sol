@@ -43,7 +43,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     /// @dev a quick check if a uesr is foreclosed
     mapping(address => bool) public override isForeclosed;
     /// @dev to keep track of the size of the rounding issue between rent collections
-    uint256 public marketBalanceDiscrepancy;
+    uint256 marketBalanceDiscrepancy;
 
     /// @param deposit the users current deposit in wei
     /// @param rentalRate the daily cost of the cards the user current owns
