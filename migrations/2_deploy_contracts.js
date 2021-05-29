@@ -3,7 +3,8 @@
 var myArgs = process.argv.slice(6, 9)
 
 const _ = require("underscore");
-const { BN, time } = require('@openzeppelin/test-helpers');
+const { BN, time, ZERO_ADDRESS } = require('@openzeppelin/test-helpers');
+const { ZERO_ADDRESS } = require("@openzeppelin/test-helpers/src/constants");
 const argv = require('minimist')(process.argv.slice(2), {
   string: ['ipfs_hash']
 })
@@ -12,12 +13,11 @@ const argv = require('minimist')(process.argv.slice(2), {
 var RCTreasury = artifacts.require("./RCTreasury.sol");
 var RCFactory = artifacts.require("./RCFactory.sol");
 var RCMarket = artifacts.require("./RCMarket.sol")
+var RCOrderbook = artifacts.require('./RCOrderbook.sol');
 var NftHubL2 = artifacts.require('./nfthubs/RCNftHubL2.sol');
 var NftHubL1 = artifacts.require('./nfthubs/RCNftHubL1.sol');
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
-var BridgeMockup = artifacts.require("./mockups/BridgeMockup.sol");
-var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
-
+var tokenMockup = artifacts.require("./mockups/tokenMockup.sol");
 
 // variables
 // TODO: update chilvers' script with the relevant addresses here https://github.com/realitio/realitio-contracts/blob/master/config/arbitrators.json
@@ -27,15 +27,12 @@ var realitioAddress = '0x325a2e0F3CCA2ddbaeBB4DfC38Df8D19ca165b47';
 var arbAddressMainnet = '0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016'; // may not be correct
 var arbAddressXdai = '0x7301CFA0e1756B71869E93d4e4Dca5c7d0eb0AA6'; // may not be correct
 var kleros = '0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D'; //double check this
-var daiAddressMainnet = '0x6b175474e89094c44da98b954eedeac495271d0f'
 
 // Testnet addresses
 var ambAddressSokol = '0xFe446bEF1DbF7AFE24E81e05BC8B271C1BA9a560'
 var ambAddressKovan = '0xFe446bEF1DbF7AFE24E81e05BC8B271C1BA9a560'
 var realitioAddressKovan = '0x325a2e0F3CCA2ddbaeBB4DfC38Df8D19ca165b47'
 var arbAddressKovan = '0xA960d095470f7509955d5402e36d9DB984B5C8E2'
-// this is just a blank ERC20 contract
-var daiAddressKovan = '0xd133b22BCCcb3Cd3ca752D206b0632932D530Fda'
 
 // read input arguments
 var ProxyL2Address = myArgs[0]
@@ -46,7 +43,6 @@ var ipfsHashes = argv['ipfs_hash']
 var market = [];
 // an array of the addresses (just a more readable way of doing market[].address)
 var marketAddress = [];
-var zeroAddress = "0x0000000000000000000000000000000000000000";
 
 module.exports = async (deployer, network, accounts) => {
   if (network === 'teststage1' || network === 'stage1') {
@@ -137,6 +133,12 @@ module.exports = async (deployer, network, accounts) => {
     await proxyL2.setProxyL1Address(proxyL1Address);
     console.log('Completed Stage 3')
 
+    /**************************************
+    *                                     *
+    *     GRAPH TESTING WHOOT WHOOT!      *
+    *                                     *
+    **************************************/
+
   } else if (network === 'graphTesting') {
     console.log('Local Graph Testing, whoot whoot')
 
@@ -156,65 +158,43 @@ module.exports = async (deployer, network, accounts) => {
       console.log('Account' + index + ': ', account)
     )
 
+    // mockups
+    await deployer.deploy(tokenMockup, "Token name", "TKN", "100000000000000000000000", user0)
+    erc20 = await tokenMockup.deployed()
+    await deployer.deploy(RealitioMockup)
+    var realitio = await RealitioMockup.deployed()
+
     // deploy treasury, factory, reference market and nft hub
-    await deployer.deploy(RCTreasury)
+    await deployer.deploy(RCTreasury, erc20.address)
     treasury = await RCTreasury.deployed()
-    await deployer.deploy(RCFactory, treasury.address)
+    await deployer.deploy(RCFactory, treasury.address, realitio.address, realitio.address)
     factory = await RCFactory.deployed()
     await deployer.deploy(RCMarket)
     reference = await RCMarket.deployed()
-    await deployer.deploy(NftHubL2, factory.address)
+    await deployer.deploy(RCOrderbook, factory.address, treasury.address)
+    orderbook = await RCOrderbook.deployed()
+    await deployer.deploy(NftHubL2, factory.address, ZERO_ADDRESS)
     nftHubL2 = await NftHubL2.deployed()
     await deployer.deploy(NftHubL1)
     nftHubL1 = await NftHubL1.deployed()
-    // tell treasury about factory, tell factory about nft hub and reference
+    // tell treasury and factory about various things
     await treasury.setFactoryAddress(factory.address)
+    await treasury.setOrderbookAddress(orderbook.address)
     await factory.setReferenceContractAddress(reference.address)
+    await factory.setOrderbookAddress(orderbook.address)
     await factory.setNftHubAddress(nftHubL2.address, 0)
-    // mockups
-    await deployer.deploy(RealitioMockup)
-    var realitio = await RealitioMockup.deployed()
-    await deployer.deploy(BridgeMockup)
-    var bridge = await BridgeMockup.deployed()
-    await deployer.deploy(DaiMockup)
-    var dai = await DaiMockup.deployed()
-    await deployer.deploy(ARBMockup)
-    var arb = await ARBMockup.deployed()
-    await treasury.setAlternateReceiverAddress(arb.address)
-    // deploy bridge contracts
-    await deployer.deploy(
-      ProxyL2,
-      bridge.address,
-      factory.address,
-      treasury.address,
-      realitio.address,
-      arbAddressMainnet
-    )
-    proxyL2 = await ProxyL2.deployed()
-    await deployer.deploy(
-      proxyL1,
-      bridge.address,
-      nftHubL1.address,
-      arb.address,
-      dai.address,
-    )
-    proxyL1 = await proxyL1.deployed()
-    // tell the factory, mainnet proxy and bridge the xdai proxy address
-    await factory.setProxyL2Address(proxyL2.address)
-    await proxyL1.setProxyL2Address(proxyL2.address)
-    await bridge.setProxyL2Address(proxyL2.address)
-    // tell the xdai proxy and bridge the mainnet proxy address
-    await proxyL2.setProxyL1Address(proxyL1.address)
-    await bridge.setProxyL1Address(proxyL1.address)
-    await nftHubL1.setProxyL1Address(proxyL1.address)
-    //var tempMarket;
+    // disable whitelist
+    await treasury.toggleWhitelist()
+
+    for (let index = 0; index < 10; index++) {
+      await erc20.transfer(accounts[index], "100000000000000000000", { from: user0 });
+    }
 
     /***************************************
      *                                     *
      *    START LOCAL TESTING SETUP HERE   *
      *                                     *
      **************************************/
-
 
     // Make some deposits
     await depositDai(100, user0)
@@ -230,7 +210,9 @@ module.exports = async (deployer, network, accounts) => {
 
     // create a market with one of the ipfs hashes, options passed in must be in cruly braces{}
     // TAKE CARE, Misspelling an option will silently fail
+
     await createMarket({ ipfs: ipfsHashes[0] })
+
     console.log('market with ipfs hash here: ', marketAddress[1])
 
     //rent a card, by default this is user0, market[0], card 0, 1 xDai
@@ -253,15 +235,11 @@ module.exports = async (deployer, network, accounts) => {
 
     //tempMarket we copied from market[] so it's a market object which means we can call functions directly
     await tempMarket.collectRentAllCards()
-    var countCards = await tempMarket.numberOfTokens()
+    var countCards = await tempMarket.numberOfCards()
     console.log('Number of cards in this market:', countCards.toString())
-
 
     // create a market with a delayed start, 10 cards and an ipfs hash 
     await createMarket({ openTime: 120, numberOfCards: 10, ipfs: ipfsHashes[1] })
-
-
-
 
     /**************************************
     *                                     *
@@ -288,9 +266,9 @@ async function createMarket(options) {
     closeTime: 31536000, // seconds delay from now before market closes - default 31536000 = 1 year
     resolveTime: 0, // seconds delay from close before market resolves
     numberOfCards: 4, // the number of cards to create
-    artistAddress: zeroAddress,
-    affiliateAddress: zeroAddress,
-    cardAffiliate: [zeroAddress], // remember this is an array
+    artistAddress: ZERO_ADDRESS,
+    affiliateAddress: ZERO_ADDRESS,
+    cardAffiliate: [ZERO_ADDRESS], // remember this is an array
     sponsorship: 0,
   };
   options = setDefaults(options, defaults);
@@ -312,7 +290,7 @@ async function createMarket(options) {
     options.affiliateAddress,
     options.cardAffiliate,
     question,
-    sponsorship
+    options.sponsorship
   );
   marketAddress.push(await factory.getMostRecentMarket.call(0));
   market.push(await RCMarket.at(await factory.getMostRecentMarket.call(0)));
@@ -320,7 +298,8 @@ async function createMarket(options) {
 
 async function depositDai(amount, user) {
   amount = web3.utils.toWei(amount.toString(), "ether");
-  await treasury.deposit(user, { from: user, value: amount });
+  await erc20.approve(treasury.address, amount, { from: user });
+  await treasury.deposit(amount, user, { from: user });
 }
 
 function setDefaults(options, defaults) {
@@ -334,7 +313,7 @@ async function rent(options) {
     price: 1,
     from: user0,
     timeLimit: 0,
-    startingPosition: zeroAddress,
+    startingPosition: ZERO_ADDRESS,
   };
   options = setDefaults(options, defaults);
   options.price = web3.utils.toWei(options.price.toString(), "ether");
