@@ -10,8 +10,8 @@ import "../interfaces/IRCMarket.sol";
 import "../lib/NativeMetaTransaction.sol";
 import "../interfaces/IRCNftHubL2.sol";
 
-/// @title Reality Cards NFT Hub- xDai side
-/// @author Andrew Stanger
+/// @title Reality Cards NFT Hub- Layer 2 side
+/// @author Andrew Stanger & Daniel Chilvers
 contract RCNftHubL2 is
     Ownable,
     ERC721URIStorage,
@@ -19,9 +19,9 @@ contract RCNftHubL2 is
     NativeMetaTransaction,
     IRCNftHubL2
 {
-    ////////////////////////////////////
-    //////// VARIABLES /////////////////
-    ////////////////////////////////////
+    /*╔═════════════════════════════════╗
+      ║           VARIABLES             ║
+      ╚═════════════════════════════════╝*/
 
     /// @dev so only markets can move NFTs
     mapping(address => bool) public isMarket;
@@ -42,9 +42,9 @@ contract RCNftHubL2 is
         bytes metaData
     );
 
-    ////////////////////////////////////
-    /////////// CONSTRUCTOR ////////////
-    ////////////////////////////////////
+    /*╔═════════════════════════════════╗
+      ║          CONSTRUCTOR            ║
+      ╚═════════════════════════════════╝*/
 
     constructor(address _factoryAddress, address childChainManager)
         ERC721("RealityCards", "RC")
@@ -56,9 +56,9 @@ contract RCNftHubL2 is
         setFactoryAddress(_factoryAddress);
     }
 
-    ////////////////////////////////////
-    //////////// ADD MARKETS ///////////
-    ////////////////////////////////////
+    /*╔═════════════════════════════════╗
+      ║          ADD MARKETS            ║
+      ╚═════════════════════════════════╝*/
 
     /// @dev so only markets can change ownership
     function addMarket(address _newMarket) external override {
@@ -66,9 +66,9 @@ contract RCNftHubL2 is
         isMarket[_newMarket] = true;
     }
 
-    ////////////////////////////////////
-    ////////// GOVERNANCE //////////////
-    ////////////////////////////////////
+    /*╔═════════════════════════════════╗
+      ║          GOVERNANCE             ║
+      ╚═════════════════════════════════╝*/
 
     /// @dev address of RC factory contract, so only factory can mint
     function setFactoryAddress(address _newAddress) public onlyOwner {
@@ -76,9 +76,9 @@ contract RCNftHubL2 is
         factoryAddress = _newAddress;
     }
 
-    ////////////////////////////////////
-    ///////// CORE FUNCTIONS ///////////
-    ////////////////////////////////////
+    /*╔═════════════════════════════════╗
+      ║        CORE FUNCTIONS           ║
+      ╚═════════════════════════════════╝*/
 
     // FACTORY ONLY
     function mint(
@@ -128,9 +128,9 @@ contract RCNftHubL2 is
         return ERC721URIStorage.tokenURI(tokenId);
     }
 
-    ////////////////////////////////////
-    ///////// MATIC MINTABLE ///////////
-    ////////////////////////////////////
+    /*╔═════════════════════════════════╗
+      ║        MATIC MINTABLE           ║
+      ╚═════════════════════════════════╝*/
 
     function deposit(address user, bytes calldata depositData)
         external
@@ -204,9 +204,9 @@ contract RCNftHubL2 is
             super.supportsInterface(interfaceId);
     }
 
-    ////////////////////////////////////
-    //////////// OVERRIDES /////////////
-    ////////////////////////////////////
+    /*╔═════════════════════════════════╗
+      ║           OVERRIDES             ║
+      ╚═════════════════════════════════╝*/
     /// @dev ensures NFTs can only be moved when market is resolved
 
     function transferFrom(

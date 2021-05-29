@@ -38,7 +38,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     ///// GOVERNANCE VARIABLES- OWNER /////
     /// @dev artist / winner / market creator / affiliate / card affiliate
     uint256[5] public potDistribution;
-    /// @dev minimum xDai that must be sent when creating market which forms iniital pot
+    /// @dev minimum tokens that must be sent when creating market which forms iniital pot
     uint256 public sponsorshipRequired;
     /// @dev adjust required price increase (in %)
     uint256 public override minimumPriceIncreasePercent;
@@ -573,7 +573,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         return _newAddress;
     }
 
-    /// @dev called by the market upon initialise 
+    /// @dev called by the market upon initialise
     /// @dev not passed to initialise to avoid stack too deep error
     function getOracleSettings()
         external

@@ -10,7 +10,7 @@ import "../lib/NativeMetaTransaction.sol";
 import "../interfaces/IRCNftHubL1.sol";
 
 /// @title Reality Cards NFT Hub- mainnet side
-/// @author Andrew Stanger
+/// @author Andrew Stanger & Daniel Chilvers
 contract RCNftHubL1 is
     Ownable,
     ERC721URIStorage,
@@ -18,15 +18,15 @@ contract RCNftHubL1 is
     NativeMetaTransaction,
     IRCNftHubL1
 {
-    ////////////////////////////////////
-    //////// VARIABLES /////////////////
-    ////////////////////////////////////
+    /*╔═════════════════════════════════╗
+      ║           VARIABLES             ║
+      ╚═════════════════════════════════╝*/
 
     bytes32 public constant PREDICATE_ROLE = keccak256("PREDICATE_ROLE");
 
-    ////////////////////////////////////
-    //////// CONSTRUCTOR ///////////////
-    ////////////////////////////////////
+    /*╔═════════════════════════════════╗
+      ║          CONSTRUCTOR            ║
+      ╚═════════════════════════════════╝*/
 
     constructor() ERC721("RealityCards", "RC") {
         // initialise MetaTransactions
@@ -35,9 +35,9 @@ contract RCNftHubL1 is
         _setupRole(PREDICATE_ROLE, _msgSender());
     }
 
-    ////////////////////////////////////
-    ///////// CORE FUNCTIONS ///////////
-    ////////////////////////////////////
+    /*╔═════════════════════════════════╗
+      ║        CORE FUNCTIONS           ║
+      ╚═════════════════════════════════╝*/
 
     function mint(address user, uint256 tokenId)
         external
