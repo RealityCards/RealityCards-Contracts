@@ -743,4 +743,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         user[_user].deposit -= SafeCast.toUint128(rentCollected);
         totalDeposits -= rentCollected;
     }
+    /*
+         ▲  
+        ▲ ▲ 
+              */
 }

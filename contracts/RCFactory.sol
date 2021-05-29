@@ -587,4 +587,8 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     {
         return (realitio, arbitrator, timeout);
     }
+    /*
+         ▲  
+        ▲ ▲ 
+              */
 }
