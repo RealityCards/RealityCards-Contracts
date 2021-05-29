@@ -140,10 +140,11 @@ module.exports = async (deployer, network, accounts) => {
     await proxyL2.setProxyL1Address(proxyL1Address);
     console.log('Completed Stage 3')
 
-
-
-
-
+    /**************************************
+    *                                     *
+    *     GRAPH TESTING WHOOT WHOOT!      *
+    *                                     *
+    **************************************/
 
   } else if (network === 'graphTesting') {
     console.log('Local Graph Testing, whoot whoot')
@@ -216,7 +217,9 @@ module.exports = async (deployer, network, accounts) => {
 
     // create a market with one of the ipfs hashes, options passed in must be in cruly braces{}
     // TAKE CARE, Misspelling an option will silently fail
+
     await createMarket({ ipfs: ipfsHashes[0] })
+
     console.log('market with ipfs hash here: ', marketAddress[1])
 
     //rent a card, by default this is user0, market[0], card 0, 1 xDai
@@ -239,7 +242,7 @@ module.exports = async (deployer, network, accounts) => {
 
     //tempMarket we copied from market[] so it's a market object which means we can call functions directly
     await tempMarket.collectRentAllCards()
-    var countCards = await tempMarket.numberOfTokens()
+    var countCards = await tempMarket.numberOfCards()
     console.log('Number of cards in this market:', countCards.toString())
 
     // create a market with a delayed start, 10 cards and an ipfs hash 
