@@ -53,7 +53,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         public rentCollectedPerUserPerCard;
     /// @dev an easy way to track the above across all cards
     uint256 public totalRentCollected;
-    /// @dev prevents user from exiting and re-renting in the same block (prevents troll attacks)
+    /// @dev prevents user from exiting and re-renting in the same block (limits troll attacks)
     mapping(address => uint256) public exitedTimestamp;
 
     // PARAMETERS
@@ -293,7 +293,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
       ║            MODIFIERS            ║
       ╚═════════════════════════════════╝*/
 
-    /// @dev automatically opens market if appropriate
+    /// @notice automatically opens market if appropriate
     modifier autoUnlock() {
         if (marketOpeningTime <= block.timestamp && state == States.CLOSED) {
             _incrementState();
@@ -301,7 +301,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         _;
     }
 
-    /// @dev automatically locks market if appropriate
+    /// @notice automatically locks market if appropriate
     modifier autoLock() {
         _;
         if (marketLockingTime <= block.timestamp) {
@@ -312,12 +312,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @dev can only be called by Card owners
     modifier onlyTokenOwner(uint256 _token) {
         require(msgSender() == ownerOf(_token), "Not owner");
-        _;
-    }
-
-    /// @dev can only be called by the Treasury
-    modifier onlyTreasury() {
-        require(address(treasury) == msgSender(), "Only treasury");
         _;
     }
 
