@@ -24,6 +24,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     IRCTreasury public override treasury;
     IRCNftHubL2 public override nfthub;
     IRCOrderbook public override orderbook;
+    IRealitio public realitio;
 
     ///// CONTRACT ADDRESSES /////
     /// @dev reference contract
@@ -60,9 +61,10 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     address public uberOwner;
     /// @dev the maximum number of rent collections to perform in a single transaction
     uint256 public override maxRentIterations;
+    /// @dev the address of the arbitrator
     address public arbitrator;
+    /// @dev the time allowed to dispute the oracle answer
     uint32 public timeout;
-    IRealitio public realitio;
 
     ///// GOVERNANCE VARIABLES- GOVERNORS /////
     /// @dev unapproved markets hidden from the interface
@@ -141,6 +143,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
 
     /// @notice Fetch the address of the most recently created market
     /// @param _mode Filter by market mode, 0=Classic 1=Winner Takes All 2=SafeMode
+    /// @return the address of the most recent market in the given mode
     function getMostRecentMarket(uint256 _mode)
         external
         view
@@ -151,6 +154,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
 
     /// @notice Fetch all the market addresses for a given mode
     /// @param _mode Filter by market mode, 0=Classic 1=Winner Takes All 2=SafeMode
+    /// @return an array of all markets in a given mode
     function getAllMarkets(uint256 _mode)
         external
         view
@@ -160,6 +164,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     }
 
     /// @notice Returns the currently set pot distribution
+    /// @return the pot distribution array: artist, winner, creator, affiliate, card affiliates
     function getPotDistribution()
         external
         view
@@ -173,6 +178,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
       ║           MODIFIERS             ║
       ╚═════════════════════════════════╝*/
 
+    /// @dev include the owner as a governor
     modifier onlyGovernors() {
         require(
             governors[msgSender()] || owner() == msgSender(),
@@ -189,6 +195,8 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     /// @notice where the NFTs live
     /// @dev nftMintCount will probably need to be reset to zero if new nft contract, but
     /// @dev ... keeping flexible in case returning to previous contract
+    /// @param _newAddress the address to set
+    /// @param _newNftMintCount the number of NFTs this contract has minted, in order to keep them unique
     function setNftHubAddress(IRCNftHubL2 _newAddress, uint256 _newNftMintCount)
         external
         onlyOwner
@@ -198,6 +206,8 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         totalNftMintCount = _newNftMintCount;
     }
 
+    /// @notice set the address of the orderbook contract
+    /// @param _newAddress the address to set
     function setOrderbookAddress(IRCOrderbook _newAddress) external onlyOwner {
         require(address(_newAddress) != address(0));
         orderbook = _newAddress;
@@ -216,6 +226,11 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
 
     /// @notice update stakeholder payouts
     /// @dev in basis points (so 1000 = 100%)
+    /// @param _artistCut The artist that designed the card
+    /// @param _winnerCut Extra cut for the longest owner
+    /// @param _creatorCut The creator of the market
+    /// @param _affiliateCut An affiliate for the market that doesn't fit into the other cuts
+    /// @param _cardAffiliateCut An affiliate cur for specific cards
     function setPotDistribution(
         uint256 _artistCut,
         uint256 _winnerCut,
@@ -240,6 +255,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     }
 
     /// @notice how much above the current price a user must bid, in %
+    /// @param _percentIncrease the percentage to set, e.g. 10 = 10%
     function setminimumPriceIncreasePercent(uint256 _percentIncrease)
         public
         override
@@ -248,12 +264,16 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         minimumPriceIncreasePercent = _percentIncrease;
     }
 
-    /// @dev A limit to the number of NFTs to mint per market
+    /// @notice A limit to the number of NFTs to mint per market
+    /// @dev to avoid gas limits
+    /// @param _mintLimit the limit to set
     function setNFTMintingLimit(uint256 _mintLimit) public override onlyOwner {
         nftMintingLimit = _mintLimit;
     }
 
-    /// @dev A limit to the number of rent collections per transaction
+    /// @notice A limit to the number of rent collections per transaction
+    /// @dev to avoid gas limits
+    /// @param _rentLimit the limit to set
     function setMaxRentIterations(uint256 _rentLimit)
         public
         override
@@ -262,19 +282,22 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         maxRentIterations = _rentLimit;
     }
 
-    /// @dev address reality.eth contracts
+    /// @notice set the address of the reality.eth contracts
+    /// @param _newAddress the address to set
     function setRealitioAddress(address _newAddress) public onlyOwner {
         require(_newAddress != address(0), "Must set an address");
         realitio = IRealitio(_newAddress);
     }
 
-    /// @dev address of arbitrator, in case of continued disputes on reality.eth
+    /// @notice address of the arbitrator, in case of continued disputes on reality.eth
+    /// @param _newAddress the address to set
     function setArbitrator(address _newAddress) public onlyOwner {
         require(_newAddress != address(0), "Must set an address");
         arbitrator = _newAddress;
     }
 
-    /// @dev how long reality.eth waits for disputes before finalising
+    /// @notice set how long reality.eth waits for disputes before finalising
+    /// @param _newTimeout the timeout to set in seconds, 86400 = 24hrs
     function setTimeout(uint32 _newTimeout) public onlyOwner {
         timeout = _newTimeout;
     }
@@ -299,6 +322,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     }
 
     /// @notice how many tokens must be sent in the createMarket tx which forms the initial pot
+    /// @param _amount the sponsorship required in wei
     function setSponsorshipRequired(uint256 _amount) external onlyOwner {
         sponsorshipRequired = _amount;
     }
@@ -309,17 +333,21 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     }
 
     /// @notice market opening time must be at least this many seconds in the future
+    /// @param _newAdvancedWarning the warning time to set in seconds
     function setAdvancedWarning(uint32 _newAdvancedWarning) external onlyOwner {
         advancedWarning = _newAdvancedWarning;
         emit LogAdvancedWarning(_newAdvancedWarning);
     }
 
     /// @notice market closing time must be no more than this many seconds in the future
+    /// @param _newMaximumDuration the duration limit to set in seconds
     function setMaximumDuration(uint32 _newMaximumDuration) external onlyOwner {
         maximumDuration = _newMaximumDuration;
         emit LogMaximumDuration(_newMaximumDuration);
     }
 
+    /// @notice to fetch the owner of the contract
+    /// @dev used to specifiy the Ownable contract instead of the interface
     function owner()
         public
         view
@@ -329,6 +357,9 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         return Ownable.owner();
     }
 
+    /// @notice check if an address is a governor
+    /// @param _user the address to query
+    /// @return boolean return if true or false
     function isGovernor(address _user) external view override returns (bool) {
         return governors[_user];
     }
@@ -336,6 +367,8 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     // EDIT GOVERNORS
 
     /// @notice add or remove an address from market creator whitelist
+    /// @param _governor the address to change approval for
+    /// @dev recommended to check isGovernor() afterwards to confirm the desired outcome
     function changeGovernorApproval(address _governor) external onlyOwner {
         require(_governor != address(0));
         governors[_governor] = !governors[_governor];
@@ -347,6 +380,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     /// @dev all functions should have onlyGovernors modifier
 
     /// @notice markets are default hidden from the interface, this reveals them
+    /// @param _market the market address to change approval for
     function changeMarketApproval(address _market) external onlyGovernors {
         require(_market != address(0));
         // check it's an RC contract
@@ -357,12 +391,14 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     }
 
     /// @notice artistAddress, passed in createMarket, must be approved
+    /// @param _artist the artist address to change approval for
     function changeArtistApproval(address _artist) external onlyGovernors {
         require(_artist != address(0));
         isArtistApproved[_artist] = !isArtistApproved[_artist];
     }
 
     /// @notice affiliateAddress, passed in createMarket, must be approved
+    /// @param _affiliate the affiliate address to change approval for
     function changeAffiliateApproval(address _affiliate)
         external
         onlyGovernors
@@ -372,6 +408,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     }
 
     /// @notice cardAffiliateAddress, passed in createMarket, must be approved
+    /// @param _affiliate the card affiliate address to change approval for
     function changeCardAffiliateApproval(address _affiliate)
         external
         onlyGovernors
@@ -404,6 +441,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         referenceContractVersion += 1;
     }
 
+    /// @notice to change or renounce ownership of the uberOwner role
     function changeUberOwner(address _newUberOwner) external {
         require(msgSender() == uberOwner, "Extremely Verboten");
         require(_newUberOwner != address(0));
@@ -423,6 +461,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     /// @param _cardAffiliateAddresses where to send card specific affiliate's cut, if any
     /// @param _realitioQuestion the details of the event to send to the oracle
     /// @param _sponsorship amount of sponsorship to create the market with
+    /// @return The address of the new market
     function createMarket(
         uint32 _mode,
         string memory _ipfsHash,

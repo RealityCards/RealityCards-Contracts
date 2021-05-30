@@ -165,11 +165,13 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
       └────────────────────────────────────┘*/
 
     /// @notice minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
+    /// @param _newDivisor the divisor to set
     function setMinRental(uint256 _newDivisor) public override onlyOwner {
         minRentalDayDivisor = _newDivisor;
     }
 
-    /// @dev max deposit balance, to minimise funds at risk
+    /// @notice set max deposit balance, to minimise funds at risk
+    /// @param _newBalanceLimit the max balance to set in wei
     function setMaxContractBalance(uint256 _newBalanceLimit)
         public
         override
@@ -182,13 +184,13 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
       │ NOT CALLED WITHIN CONSTRUTOR - EXTERNAL  │
       └──────────────────────────────────────────┘*/
 
-    /// @dev if true, cannot deposit, withdraw or rent any cards
+    /// @notice if true, cannot deposit, withdraw or rent any cards
     function changeGlobalPause() external override onlyOwner {
         globalPause = !globalPause;
         emit LogGlobalPause(globalPause);
     }
 
-    /// @dev if true, cannot make a new rental for a specific market
+    /// @notice if true, cannot make a new rental for a specific market
     function changePauseMarket(address _market) external override onlyOwner {
         require(isMarket[_market], "This isn't a market");
         marketPaused[_market] = !marketPaused[_market];
@@ -199,16 +201,19 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
       ║      WHITELIST FUNCTIONS        ║
       ╚═════════════════════════════════╝*/
 
+    /// @notice if true, users must be on the whitelist to deposit
     function toggleWhitelist() external override onlyOwner {
         whitelistEnabled = !whitelistEnabled;
     }
 
+    /// @notice Add a user to the whitelist
     function addToWhitelist(address _user) public override {
         IRCFactory factory = IRCFactory(factoryAddress);
         require(factory.isGovernor(msgSender()), "Not authorised");
         isAllowed[_user] = !isAllowed[_user];
     }
 
+    /// @notice Add multiple users to the whitelist
     function batchAddToWhitelist(address[] calldata _users) public override {
         for (uint256 index = 0; index < _users.length; index++) {
             addToWhitelist(_users[index]);
@@ -266,9 +271,11 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
       ║ DEPOSIT AND WITHDRAW FUNCTIONS  ║
       ╚═════════════════════════════════╝*/
 
+    /// @notice deposit tokens into RealityCards
     /// @dev it is passed the user instead of using msg.sender because might be called
     /// @dev ... via contract (newRental) or Layer1->Layer2 bot
     /// @param _user the user to credit the deposit to
+    /// @param _amount the amount to deposit, must be approved
     function deposit(uint256 _amount, address _user)
         public
         override
@@ -691,6 +698,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     /// @notice IF the user doesn't have enough deposit, returns foreclosure time
     /// @notice ..otherwise returns zero
     /// @param _user the user to query
+    /// @param _timeToCollectTo the timestamp to collect rent upto
+    /// @return newTimeLastCollectedOnForeclosure the time the user foreclosed if they foreclosed in this calculation
     function collectRentUser(address _user, uint256 _timeToCollectTo)
         public
         override
