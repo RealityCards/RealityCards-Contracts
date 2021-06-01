@@ -9,11 +9,11 @@ var factoryAddress = '0x5b7477AcFa49Cc71530A1119ddbC0d3c30ac8ffE'; // unaudited.
 // truffle exec addmarket.js --network xdai
 
 // variables market specific
-var marketOpeningTime = 1622584800;
-var marketLockingTime = 1622671200;
-var oracleResolutionTime = 1622671200;
-var ipfsHash = 'QmamxAcAFrhooKNdH7d74a9PwJV6ouqE31AzNHrG2b8uTp';
-var question = 'Will someone reach level 70 on World of Warcraft: Burning Crusade by June 2nd, 22:00 UTC?␟"Yes","No"␟other␟en_US';
+var marketOpeningTime = 1622577600;
+var marketLockingTime = 1623038400;
+var oracleResolutionTime = 1623038400;
+var ipfsHash = 'QmREQsUAuycJRnMdF75bGucqCaDoug9wqZZHJNXQuH2fM8';
+var question = 'Who won the fight between Logan Paul and Floyd Mayweather on June 6th in Miami?␟"Floyd Mayweather","Logan Paul","Tie/Other"␟other␟en_US';
 var artistAddress = "0x74B4B8C7cb9A594a6440965f982deF10BB9570b9";
 var affiliateAddress = "0x0000000000000000000000000000000000000000";
 var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000', '0x0000000000000000000000000000000000000000'];
@@ -24,8 +24,9 @@ var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000', '0x0
 
 var timestamps = [marketOpeningTime, marketLockingTime, oracleResolutionTime];
 var tokenURIs = [
-  'https://cdn.realitycards.io/nftmetadata/WoW/token0.json',
-  'https://cdn.realitycards.io/nftmetadata/WoW/token1.json',
+  'https://cdn.realitycards.io/nftmetadata/MayweatherVsPaul/token0.json',
+  'https://cdn.realitycards.io/nftmetadata/MayweatherVsPaul/token1.json',
+  'https://cdn.realitycards.io/nftmetadata/MayweatherVsPaul/token2.json',
 ];
 
 module.exports = function () {

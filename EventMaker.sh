@@ -3,14 +3,14 @@
 ###################
 #### Setup ########
 ###################
-EVENT_NAME="Will someone on World of Warcraft reach level 70 within 24 hours after Burning Crusade releases?"
-SRC_NAME="WoW"
+EVENT_NAME="Who will win the June 6th fight, Logan Paul or Floyd Mayweather?"
+SRC_NAME="MayweatherVsPaul"
 CATEGORY="other"
-SLUG="WOW"
-NUMBER_OF_CARDS="2"
-CARD0="Yes"
-CARD1="No"
-CARD2="Belgium"
+SLUG="MayweatherVsPaul"
+NUMBER_OF_CARDS="3"
+CARD0="Floyd Mayweather"
+CARD1="Logan Paul"
+CARD2="Tie/Other"
 CARD3="Bulgaria"
 CARD4="Cyprus"
 CARD5="Finland"
