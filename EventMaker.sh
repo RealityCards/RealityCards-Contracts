@@ -3,13 +3,13 @@
 ###################
 #### Setup ########
 ###################
-EVENT_NAME="Will the total marketcap for crypto be above or below \$1.75 trillion by June 1st, 2021?"
-SRC_NAME="BullOrBear"
+EVENT_NAME="Will someone on World of Warcraft reach level 70 within 24 hours after Burning Crusade releases?"
+SRC_NAME="WoW"
 CATEGORY="other"
-SLUG="BearOrBull"
+SLUG="WOW"
 NUMBER_OF_CARDS="2"
-CARD0="Above \$1.75T"
-CARD1="Below \$1.75T"
+CARD0="Yes"
+CARD1="No"
 CARD2="Belgium"
 CARD3="Bulgaria"
 CARD4="Cyprus"
@@ -36,7 +36,7 @@ CARD24="Ukraine"
 CARD25="United Kingdom"
 CDN="https://cdn.realitycards.io/"
 IMAGES="images/"
-IMAGE_FORMAT=".jpg"
+IMAGE_FORMAT=".png"
 NFT="nftmetadata/"
 ##################
 
