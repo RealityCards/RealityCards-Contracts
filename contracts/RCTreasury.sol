@@ -572,6 +572,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
                     user[_newOwner].lastRentCalc = SafeCast.toUint64(
                         _timeOwnershipChanged
                     );
+                    // send an event for the UI to have a timestamp
+                    emit LogAdjustDeposit(_newOwner, 0, false);
                 }
             }
         }
