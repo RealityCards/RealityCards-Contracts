@@ -97,6 +97,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     );
     event LogMarketPaused(address market, bool paused);
     event LogGlobalPause(bool paused);
+    event LogWhitelistUser(address user, bool allowed);
 
     /*╔═════════════════════════════════╗
       ║           CONSTRUCTOR           ║
@@ -211,6 +212,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         IRCFactory factory = IRCFactory(factoryAddress);
         require(factory.isGovernor(msgSender()), "Not authorised");
         isAllowed[_user] = !isAllowed[_user];
+        emit LogWhitelistUser(_user, isAllowed[_user]);
     }
 
     /// @notice Add multiple users to the whitelist
