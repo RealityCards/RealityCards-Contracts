@@ -88,16 +88,22 @@ module.exports = {
       gasPrice: 1000000000,
     },
     matic: {
-      provider: function () {
-        return new HDWalletProvider(MNEMONIC, MATIC_RPC);
+      provider: () => {
+        return new HDWalletProvider(
+          MNEMONIC,
+          `https://polygon-mainnet.infura.io/v3/${INFURA_KEY}`
+        );
       },
       network_id: 137,
       gas: 12000000,
       gasPrice: 7500000000,
     },
     mumbai: {
-      provider: function () {
-        return new HDWalletProvider(MNEMONIC, MUMBAI_RPC);
+      provider: () => {
+        return new HDWalletProvider(
+          MNEMONIC,
+          `https://polygon-mumbai.infura.io/v3/${INFURA_KEY}`
+        );
       },
       network_id: 80001,
       gas: 12000000,
