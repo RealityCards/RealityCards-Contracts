@@ -9,12 +9,12 @@ var factoryAddress = '0x5b7477AcFa49Cc71530A1119ddbC0d3c30ac8ffE'; // unaudited.
 // truffle exec addmarket.js --network xdai
 
 // variables market specific
-var marketOpeningTime = 1622577600;
-var marketLockingTime = 1623038400;
-var oracleResolutionTime = 1623038400;
-var ipfsHash = 'QmREQsUAuycJRnMdF75bGucqCaDoug9wqZZHJNXQuH2fM8';
-var question = 'Who won the fight between Logan Paul and Floyd Mayweather on June 6th in Miami?␟"Floyd Mayweather","Logan Paul","Tie/Other"␟other␟en_US';
-var artistAddress = "0x74B4B8C7cb9A594a6440965f982deF10BB9570b9";
+var marketOpeningTime = 1623065400;
+var marketLockingTime = 1623553200;
+var oracleResolutionTime = 1623553200;
+var ipfsHash = 'QmdPAunojHHr71g9tF1JDS5f6NL2TpeBNRDHPMbsrpHptt';
+var question = 'At the 2021 Westminster Dog Show which group will the Best in Show winner come from?␟“Herding”,“Hound”,“Non Sporting”,“Sporting”,“Terrier”,“Toy”,“Working”␟other␟en_US';
+var artistAddress = "0x0000000000000000000000000000000000000000";
 var affiliateAddress = "0x0000000000000000000000000000000000000000";
 var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000', '0x0000000000000000000000000000000000000000'];
 
@@ -24,15 +24,24 @@ var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000', '0x0
 
 var timestamps = [marketOpeningTime, marketLockingTime, oracleResolutionTime];
 var tokenURIs = [
-  'https://cdn.realitycards.io/nftmetadata/MayweatherVsPaul/token0.json',
-  'https://cdn.realitycards.io/nftmetadata/MayweatherVsPaul/token1.json',
-  'https://cdn.realitycards.io/nftmetadata/MayweatherVsPaul/token2.json',
+  'https://cdn.realitycards.io/nftmetadata/WestminsterDogs/token0.json',
+  'https://cdn.realitycards.io/nftmetadata/WestminsterDogs/token1.json',
+  'https://cdn.realitycards.io/nftmetadata/WestminsterDogs/token2.json',
+  'https://cdn.realitycards.io/nftmetadata/WestminsterDogs/token3.json',
+  'https://cdn.realitycards.io/nftmetadata/WestminsterDogs/token4.json',
+  'https://cdn.realitycards.io/nftmetadata/WestminsterDogs/token5.json',
+  'https://cdn.realitycards.io/nftmetadata/WestminsterDogs/token6.json',
 ];
 
 module.exports = function () {
   async function createMarket() {
     // create market
     let factory = await realityCardsFactory.at(factoryAddress);
+    console.log("Checking artist approval")
+    let approved = await factory.isArtistApproved();
+    if (!approved) {
+      await factory.setArtistApproval(artistAddress)
+    }
     console.log("CREATING MARKET");
     var transaction = await factory.createMarket(
       0,
