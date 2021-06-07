@@ -14,7 +14,7 @@ var marketLockingTime = 1623553200;
 var oracleResolutionTime = 1623553200;
 var ipfsHash = 'QmdPAunojHHr71g9tF1JDS5f6NL2TpeBNRDHPMbsrpHptt';
 var question = 'At the 2021 Westminster Dog Show which group will the Best in Show winner come from?␟“Herding”,“Hound”,“Non Sporting”,“Sporting”,“Terrier”,“Toy”,“Working”␟other␟en_US';
-var artistAddress = "0x0000000000000000000000000000000000000000";
+var artistAddress = "0xb1b9039672F15948A0734d471195Cd355585DE41";
 var affiliateAddress = "0x0000000000000000000000000000000000000000";
 var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000', '0x0000000000000000000000000000000000000000'];
 
@@ -38,7 +38,7 @@ module.exports = function () {
     // create market
     let factory = await realityCardsFactory.at(factoryAddress);
     console.log("Checking artist approval")
-    let approved = await factory.isArtistApproved();
+    let approved = await factory.isArtistApproved(artistAddress);
     if (!approved) {
       await factory.setArtistApproval(artistAddress)
     }
