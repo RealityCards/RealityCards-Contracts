@@ -2,9 +2,9 @@
 // myArgs[0] = first extra argument.. etc
 var myArgs = process.argv.slice(6, 9);
 
-const _ = require('underscore');
-const { BN, time } = require('@openzeppelin/test-helpers');
-const { ZERO_ADDRESS } = require('@openzeppelin/test-helpers/src/constants');
+const _ = require("underscore");
+const { BN, time, ZERO_ADDRESS } = require('@openzeppelin/test-helpers');
+
 const argv = require('minimist')(process.argv.slice(2), {
   string: ['ipfs_hash'],
 });
@@ -32,6 +32,8 @@ var realitioAddress = '0x325a2e0F3CCA2ddbaeBB4DfC38Df8D19ca165b47';
 var arbAddressMainnet = '0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016'; // may not be correct
 var arbAddressXdai = '0x7301CFA0e1756B71869E93d4e4Dca5c7d0eb0AA6'; // may not be correct
 var kleros = '0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D'; //double check this
+const PoSDai = '0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063';
+const childChainManager = '0x56E14C4C1748a818a5564D33cF774c59EB3eDF59'; //double check this
 
 // Testnet addresses
 var ambAddressSokol = '0xFe446bEF1DbF7AFE24E81e05BC8B271C1BA9a560';
@@ -50,113 +52,56 @@ var market = [];
 var marketAddress = [];
 
 module.exports = async (deployer, network, accounts) => {
-  if (network === 'teststage1' || network === 'stage1') {
+  if (network === 'teststage1' || network === 'stage1' || network === 'matic') {
     // deploy treasury, factory, reference market and nft hub
-    await deployer.deploy(RCTreasury);
+    await deployer.deploy(RCTreasury, PoSDai);
     treasury = await RCTreasury.deployed();
-    await deployer.deploy(RCFactory, treasury.address);
+    await deployer.deploy(RCFactory, treasury.address, realitioAddress, kleros);
     factory = await RCFactory.deployed();
     await deployer.deploy(RCMarket);
     reference = await RCMarket.deployed();
-    await deployer.deploy(NftHubL2, factory.address);
+    await deployer.deploy(RCOrderbook, factory.address, treasury.address);
+    orderbook = await RCOrderbook.deployed();
+    await deployer.deploy(NftHubL2, factory.address, childChainManager);
     nftHubL2 = await NftHubL2.deployed();
     // tell treasury about factory & ARB, tell factory about nft hub and reference
     await treasury.setFactoryAddress(factory.address);
-    await treasury.setAlternateReceiverAddress(arbAddressXdai);
     await factory.setReferenceContractAddress(reference.address);
     await factory.setNftHubAddress(nftHubL2.address, 0);
-    // deploy xdai proxy
-    if (network === 'stage1') {
-      await deployer.deploy(
-        ProxyL2,
-        ambAddressXdai,
-        factory.address,
-        treasury.address,
-        realitioAddress,
-        kleros
-      );
-    } else {
-      // for sokol, deploy realitio mockup
-      await deployer.deploy(RealitioMockup);
-      realitio = await RealitioMockup.deployed();
-      await deployer.deploy(
-        ProxyL2,
-        ambAddressSokol,
-        factory.address,
-        treasury.address,
-        realitio.address,
-        kleros
-      );
-    }
-    proxyL2 = await ProxyL2.deployed();
-    // tell factory about the proxy
-    await factory.setProxyL2Address(proxyL2.address);
+    await treasury.setNftHubAddress(nftHubL2.address);
+    await factory.setOrderbookAddress(orderbook.address);
+    await treasury.setOrderbookAddress(orderbook.address);
+    await treasury.toggleWhitelist();
 
     // print out some stuff to be picked up by the deploy script ready for the next stage
-    console.log('Completed stage 1');
-    console.log('ProxyL2Address');
-    console.log(proxyL2.address);
-    console.log('RCTreasuryAddress');
-    console.log(RCTreasury.address);
-    console.log('RCFactoryAddress');
-    console.log(RCFactory.address);
-    console.log('RCMarketAddress');
-    console.log(RCMarket.address);
-    console.log('NFTHubL2Address');
-    console.log(NftHubL2.address);
-  } else if (
-    network === 'teststage2' ||
-    network === 'stage2' ||
-    network === 'develop'
-  ) {
-    console.log('Begin Stage 2');
+    console.log('Completed stage 1')
+    console.log('RCTreasuryAddress')
+    console.log(RCTreasury.address)
+    console.log('RCFactoryAddress')
+    console.log(RCFactory.address)
+    console.log('RCMarketAddress')
+    console.log(RCMarket.address)
+    console.log('RCOrderbookAddress')
+    console.log(RCOrderbook.address)
+    console.log('NFTHubL2Address')
+    console.log(nftHubL2.address)
+  } else if (network === 'teststage2' || network === 'stage2' || network === 'develop') {
+    console.log('Begin Stage 2')
     // mainnet
     // deploy mainnet nft hub
-    await deployer.deploy(NftHubL1);
-    nftHubL1 = await NftHubL1.deployed();
-    if (network === 'stage2') {
-      // deploy mainnet proxy on mainnet
-      await deployer.deploy(
-        proxyL1,
-        ambAddressMainnet,
-        realitioAddress,
-        arbAddressMainnet
-      );
-    } else {
-      // deploy mainnet proxy on Kovan
-      await deployer.deploy(
-        proxyL1,
-        ambAddressKovan,
-        realitioAddressKovan,
-        arbAddressKovan
-      );
-    }
-
-    proxyL1 = await proxyL1.deployed();
-    // set xdai proxy address
-    await proxyL1.setProxyL2Address(ProxyL2Address);
+    await deployer.deploy(NftHubL1)
+    nftHubL1 = await NftHubL1.deployed()
 
     console.log('Completed stage 2');
 
-    // this text is used in the deploy script to locate the correct address
-    console.log('TheNFTHubMainnetAddress');
-    console.log(NftHubL1.address);
-    console.log('TheproxyL1Address');
-    console.log(proxyL1.address);
-  } else if (network === 'teststage3' || network === 'stage3') {
-    console.log('Begin Stage 3');
-    // xdai
-    // set mainnet proxy address
-    proxyL2 = await ProxyL2.deployed();
-    await proxyL2.setProxyL1Address(proxyL1Address);
-    console.log('Completed Stage 3');
 
-    /**************************************
-     *                                     *
-     *     GRAPH TESTING WHOOT WHOOT!      *
-     *                                     *
-     **************************************/
   } else if (network === 'graphTesting') {
+    /**************************************
+    *                                     *
+    *     GRAPH TESTING WHOOT WHOOT!      *
+    *                                     *
+    **************************************/
+
     console.log('Local Graph Testing, whoot whoot');
 
     // mockups
