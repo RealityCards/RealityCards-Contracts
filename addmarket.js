@@ -9,7 +9,7 @@ var factoryAddress = '0x5b7477AcFa49Cc71530A1119ddbC0d3c30ac8ffE'; // unaudited.
 // truffle exec addmarket.js --network xdai
 
 // variables market specific
-var marketOpeningTime = 1623065400;
+var marketOpeningTime = 1623157200;
 var marketLockingTime = 1623553200;
 var oracleResolutionTime = 1623553200;
 var ipfsHash = 'QmdPAunojHHr71g9tF1JDS5f6NL2TpeBNRDHPMbsrpHptt';
