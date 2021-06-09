@@ -9,11 +9,11 @@ var factoryAddress = '0x5b7477AcFa49Cc71530A1119ddbC0d3c30ac8ffE'; // unaudited.
 // truffle exec addmarket.js --network xdai
 
 // variables market specific
-var marketOpeningTime = 1623157200;
+var marketOpeningTime = 1623160800;
 var marketLockingTime = 1623553200;
 var oracleResolutionTime = 1623553200;
-var ipfsHash = 'QmdPAunojHHr71g9tF1JDS5f6NL2TpeBNRDHPMbsrpHptt';
-var question = 'At the 2021 Westminster Dog Show which group will the Best in Show winner come from?␟“Herding”,“Hound”,“Non Sporting”,“Sporting”,“Terrier”,“Toy”,“Working”␟other␟en_US';
+var ipfsHash = 'QmbycCxdJmPpRX2ZBZy9HFJCGcQmbHY1t6wY87GNjAsmzU';
+var question = 'At the 2021 Westminster Dog Show, which group will the Best in Show winner come from?␟“Herding”,“Hound”,“Non Sporting”,“Sporting”,“Terrier”,“Toy”,“Working”␟other␟en_US';
 var artistAddress = "0xb1b9039672F15948A0734d471195Cd355585DE41";
 var affiliateAddress = "0x0000000000000000000000000000000000000000";
 var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000', '0x0000000000000000000000000000000000000000'];
