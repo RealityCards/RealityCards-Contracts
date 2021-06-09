@@ -3,7 +3,8 @@
 var myArgs = process.argv.slice(6, 9);
 
 const _ = require("underscore");
-const { BN, time, ZERO_ADDRESS } = require('@openzeppelin/test-helpers');
+const { BN, time } = require('@openzeppelin/test-helpers');
+const { ZERO_ADDRESS } = require("@openzeppelin/test-helpers/src/constants");
 
 const argv = require('minimist')(process.argv.slice(2), {
   string: ['ipfs_hash'],
