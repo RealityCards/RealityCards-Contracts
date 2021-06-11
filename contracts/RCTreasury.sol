@@ -3,7 +3,7 @@ pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "hardhat/console.sol";
 import "./lib/NativeMetaTransaction.sol";
 import "./interfaces/IRCTreasury.sol";
@@ -17,6 +17,7 @@ import "./interfaces/IRCBridge.sol";
 /// @author Andrew Stanger & Daniel Chilvers
 /// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!!
 contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
+    using SafeERC20 for IERC20;
     /*╔═════════════════════════════════╗
       ║             VARIABLES           ║
       ╚═════════════════════════════════╝*/
@@ -297,7 +298,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         if (whitelistEnabled) {
             require(isAllowed[msgSender()], "Not in whitelist");
         }
-        erc20.transferFrom(msgSender(), address(this), _amount);
+        erc20.safeTransferFrom(msgSender(), address(this), _amount);
 
         // do some cleaning up, it might help cancel their foreclosure
         orderbook.removeOldBids(_user);
@@ -349,7 +350,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         user[_msgSender].deposit -= SafeCast.toUint128(_amount);
         totalDeposits -= _amount;
         if (_localWithdrawal) {
-            erc20.transfer(_msgSender, _amount);
+            erc20.safeTransfer(_msgSender, _amount);
         } else {
             IRCBridge bridge = IRCBridge(bridgeAddress);
             bridge.withdrawToMainnet(_msgSender, _amount);
@@ -372,7 +373,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     /// @notice to increase the market balance
     /// @dev not strictly required but prevents markets being shortchanged due to rounding issues
     function topupMarketBalance(uint256 _amount) external override {
-        erc20.transferFrom(msgSender(), address(this), _amount);
+        erc20.safeTransferFrom(msgSender(), address(this), _amount);
         if (_amount > marketBalanceDiscrepancy) {
             marketBalanceDiscrepancy = 0;
         } else {
@@ -477,7 +478,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
             erc20.allowance(_sponsor, address(this)) >= _amount,
             "Not approved to send this amount"
         );
-        erc20.transferFrom(_sponsor, address(this), _amount);
+        erc20.safeTransferFrom(_sponsor, address(this), _amount);
         marketPot[msgSender()] += _amount;
         totalMarketPots += _amount;
         return true;
