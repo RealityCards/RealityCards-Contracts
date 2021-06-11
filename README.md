@@ -112,7 +112,7 @@ This is mainly to even the playing field between superusers/bots and other users
 
 This does increase the complexity of adding bids to the orderbook because we need to maintain the 10% spacing throughout. Otherwise it would be possible to outbid the current owner by 10% on a spare account, then place an underbid just above the previous owner, then remove the bid on the spare account (having only spent the minimum rental). To prevent this when a user attempts to place a bid that is less than 10% above an existing bid their bid price will be reduced to match the existing bid and placed behind it in the orderbook. 
 
-The above, and various other considerations, are detailed here [here](https://docs.google.com/document/d/19AeyrOzVYFTmW2_aWF-c07CrURb1-zb5O6ny9Y7wGKM/edit).
+The above, and various other considerations, are detailed [here](https://docs.google.com/document/d/19AeyrOzVYFTmW2_aWF-c07CrURb1-zb5O6ny9Y7wGKM/edit).
 
 ## Quick reference
 
