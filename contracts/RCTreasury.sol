@@ -23,8 +23,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
       ╚═════════════════════════════════╝*/
     /// @dev orderbook instance, to remove users bids on foreclosure
     IRCOrderbook public orderbook;
-    /// @dev nfthub instance, to query current card owner
-    IRCNftHubL2 public nfthub;
     /// @dev token contract
     IERC20 public override erc20;
     /// @dev address of (as yet non existent) Bridge for withdrawals to mainnet
@@ -243,12 +241,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         require(msgSender() == uberOwner, "Extremely Verboten");
         require(_newOrderbook != address(0), "Must set an address");
         orderbook = IRCOrderbook(_newOrderbook);
-    }
-
-    function setNftHubAddress(address _NFTHubAddress) external {
-        require(msgSender() == uberOwner, "Extremely Verboten");
-        require(_NFTHubAddress != address(0), "Must set an address");
-        nfthub = IRCNftHubL2(_NFTHubAddress);
     }
 
     function setTokenAddress(address _newToken) public override {
