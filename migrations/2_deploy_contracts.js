@@ -69,7 +69,6 @@ module.exports = async (deployer, network, accounts) => {
     await treasury.setFactoryAddress(factory.address);
     await factory.setReferenceContractAddress(reference.address);
     await factory.setNftHubAddress(nftHubL2.address, 0);
-    await treasury.setNftHubAddress(nftHubL2.address);
     await factory.setOrderbookAddress(orderbook.address);
     await treasury.setOrderbookAddress(orderbook.address);
     await treasury.toggleWhitelist();
@@ -288,8 +287,7 @@ async function rent(options) {
   } catch (err) {
     console.log(
       err,
-      `on rent from account:${options.from}, market: ${
-        options.market.address
+      `on rent from account:${options.from}, market: ${options.market.address
       }, card: ${options.outcome}, price: ${web3.utils.fromWei(
         newPrice,
         'ether'
