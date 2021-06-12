@@ -9,12 +9,12 @@ var factoryAddress = '0x5b7477AcFa49Cc71530A1119ddbC0d3c30ac8ffE'; // unaudited.
 // truffle exec addmarket.js --network xdai
 
 // variables market specific
-var marketOpeningTime = 1623502800;
-var marketLockingTime = 1623639600;
-var oracleResolutionTime = 1623639600;
-var ipfsHash = 'QmR98ywJd9xuRZrZFCh8JuoAsSMYngB1xPAWujLK8X9wAW';
-var question = 'At the Westminster Dog Show 2021 - Which group did the Best in Show winner come from?␟"Herding","Hound","Non Sporting","Sporting","Terrier","Toy","Working"␟other␟en_US';
-var artistAddress = "0xb1b9039672F15948A0734d471195Cd355585DE41";
+var marketOpeningTime = 1623585600;
+var marketLockingTime = 1623600000;
+var oracleResolutionTime = 1623600000;
+var ipfsHash = 'QmWCAMjwedArzFJ3qLpWzKhKRAAS31YpMyWkvCRWCztdit';
+var question = 'Who won the French Open Tennis, Roland Garros, Mens Singles Finals 2021?␟"Djokovic","Tsitsipas"␟Sports␟en_US';
+var artistAddress = "0x9d69B2E8036459c3be4601F842489BE231dfAD47";
 var affiliateAddress = "0x0000000000000000000000000000000000000000";
 var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000', '0x0000000000000000000000000000000000000000'];
 
@@ -24,13 +24,8 @@ var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000', '0x0
 
 var timestamps = [marketOpeningTime, marketLockingTime, oracleResolutionTime];
 var tokenURIs = [
-  'https://cdn.realitycards.io/nftmetadata/WestminsterDogs/token0.json',
-  'https://cdn.realitycards.io/nftmetadata/WestminsterDogs/token1.json',
-  'https://cdn.realitycards.io/nftmetadata/WestminsterDogs/token2.json',
-  'https://cdn.realitycards.io/nftmetadata/WestminsterDogs/token3.json',
-  'https://cdn.realitycards.io/nftmetadata/WestminsterDogs/token4.json',
-  'https://cdn.realitycards.io/nftmetadata/WestminsterDogs/token5.json',
-  'https://cdn.realitycards.io/nftmetadata/WestminsterDogs/token6.json',
+  'https://cdn.realitycards.io/nftmetadata/yellowBalls/token0.json',
+  'https://cdn.realitycards.io/nftmetadata/yellowBalls/token1.json',
 ];
 
 module.exports = function () {

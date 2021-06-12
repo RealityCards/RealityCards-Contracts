@@ -3,13 +3,13 @@
 ###################
 #### Setup ########
 ###################
-EVENT_NAME="At the Westminster Dog Show which group will the Best in Show winner come from?"
-SRC_NAME="WestminsterDogs"
-CATEGORY="other"
-SLUG="PedigreeVsPedigreeChum"
-NUMBER_OF_CARDS="7"
-CARD0="Herding"
-CARD1="Hound"
+EVENT_NAME="Who will win the French Open Tennis Mens Singles Final 2021?"
+SRC_NAME="yellowBalls"
+CATEGORY="sport"
+SLUG="yellowBalls"
+NUMBER_OF_CARDS="2"
+CARD0="Djokovic"
+CARD1="Tsitsipas"
 CARD2="Non Sporting"
 CARD3="Sporting"
 CARD4="Terrier"
