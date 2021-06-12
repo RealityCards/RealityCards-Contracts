@@ -6,7 +6,7 @@
 EVENT_NAME="At the Westminster Dog Show which group will the Best in Show winner come from?"
 SRC_NAME="WestminsterDogs"
 CATEGORY="other"
-SLUG="WestminsterDogs"
+SLUG="PedigreeVsPedigreeChum"
 NUMBER_OF_CARDS="7"
 CARD0="Herding"
 CARD1="Hound"
@@ -36,7 +36,7 @@ CARD24="Ukraine"
 CARD25="United Kingdom"
 CDN="https://cdn.realitycards.io/"
 IMAGES="images/"
-IMAGE_FORMAT=".png"
+IMAGE_FORMAT=".jpg"
 NFT="nftmetadata/"
 ##################
 
