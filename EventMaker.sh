@@ -3,13 +3,13 @@
 ###################
 #### Setup ########
 ###################
-EVENT_NAME="Who will win the French Open Tennis Mens Singles Final 2021?"
-SRC_NAME="yellowBalls"
-CATEGORY="sport"
-SLUG="yellowBalls"
+EVENT_NAME="Will the Crypto Fear & Greed Index be above or below 50 by June 21st, 2021?"
+SRC_NAME="greedorfear"
+CATEGORY="Cryptocurrency"
+SLUG="greedorfear"
 NUMBER_OF_CARDS="2"
-CARD0="Djokovic"
-CARD1="Tsitsipas"
+CARD0="Below 50"
+CARD1="50 or Above"
 CARD2="Non Sporting"
 CARD3="Sporting"
 CARD4="Terrier"
@@ -36,7 +36,7 @@ CARD24="Ukraine"
 CARD25="United Kingdom"
 CDN="https://cdn.realitycards.io/"
 IMAGES="images/"
-IMAGE_FORMAT=".jpg"
+IMAGE_FORMAT=".gif"
 NFT="nftmetadata/"
 ##################
 

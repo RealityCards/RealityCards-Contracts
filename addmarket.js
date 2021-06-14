@@ -9,12 +9,12 @@ var factoryAddress = '0x5b7477AcFa49Cc71530A1119ddbC0d3c30ac8ffE'; // unaudited.
 // truffle exec addmarket.js --network xdai
 
 // variables market specific
-var marketOpeningTime = 1623585600;
-var marketLockingTime = 1623600000;
-var oracleResolutionTime = 1623600000;
-var ipfsHash = 'QmWCAMjwedArzFJ3qLpWzKhKRAAS31YpMyWkvCRWCztdit';
-var question = 'Who won the French Open Tennis, Roland Garros, Mens Singles Finals 2021?␟"Djokovic","Tsitsipas"␟Sports␟en_US';
-var artistAddress = "0x9d69B2E8036459c3be4601F842489BE231dfAD47";
+var marketOpeningTime = 1623693600;
+var marketLockingTime = 1624233600;
+var oracleResolutionTime = 1624233600;
+var ipfsHash = 'QmcNTYz8ns2byuN6RvvNKjzKpE4NcJVi3wWRLPk2gg7kbp';
+var question = 'Was the Crypto Fear & Greed Index on https://alternative.me/crypto/fear-and-greed-index/ below 50 on June 21st, 2021 at 00:00:00 UTC?␟"Below 50","50 or Above"␟Cryptocurrency␟en_US';
+var artistAddress = "0x74B4B8C7cb9A594a6440965f982deF10BB9570b9";
 var affiliateAddress = "0x0000000000000000000000000000000000000000";
 var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000', '0x0000000000000000000000000000000000000000'];
 
@@ -24,8 +24,8 @@ var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000', '0x0
 
 var timestamps = [marketOpeningTime, marketLockingTime, oracleResolutionTime];
 var tokenURIs = [
-  'https://cdn.realitycards.io/nftmetadata/yellowBalls/token0.json',
-  'https://cdn.realitycards.io/nftmetadata/yellowBalls/token1.json',
+  'https://cdn.realitycards.io/nftmetadata/greedorfear/token0.json',
+  'https://cdn.realitycards.io/nftmetadata/greedorfear/token1.json',
 ];
 
 module.exports = function () {
