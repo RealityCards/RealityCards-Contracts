@@ -10,9 +10,9 @@ const factoryAddress = '0x67E63bd4ea7a1114A7C452D28f2305744fee4dC0' //beta on Ma
 // truffle exec addmarket.js --network xdai
 
 // variables market specific
-var marketOpeningTime = 1623065400;
-var marketLockingTime = 1623553200;
-var oracleResolutionTime = 1623553200;
+var marketOpeningTime = 1623668400;
+var marketLockingTime = 1623747600;
+var oracleResolutionTime = 1623747600;
 const sponsorship = 0;
 var ipfsHash = 'QmdPAunojHHr71g9tF1JDS5f6NL2TpeBNRDHPMbsrpHptt';
 var question = 'At the 2021 Westminster Dog Show which group will the Best in Show winner come from?␟“Herding”,“Hound”,“Non Sporting”,“Sporting”,“Terrier”,“Toy”,“Working”␟other␟en_US';

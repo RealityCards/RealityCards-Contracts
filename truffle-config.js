@@ -33,8 +33,8 @@ module.exports = {
         );
       },
       network_id: 1,
-      gas: 12000000,
-      gasPrice: 50000000000,
+      gas: 3000000,
+      gasPrice: 10000000000,
       networkCheckTimeout: 12000,
     },
     ropsten: {
