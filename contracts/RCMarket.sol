@@ -252,6 +252,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             for (uint256 i = 0; i < _numberOfCards; i++) {
                 if (_cardAffiliateAddresses[i] == address(0)) {
                     cardAffiliateCut = 0;
+                    break;
                 }
             }
         } else {
