@@ -349,11 +349,16 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
             user[_msgSender].bidRate / (minRentalDayDivisor) >
             user[_msgSender].deposit
         ) {
+            bool foreclosureBefore = isForeclosed[_msgSender];
+            // foreclose user, this is requred to remove them from the orderbook
             isForeclosed[_msgSender] = true;
+            // remove them from the orderbook, the return will state if they remain foreclosed
             isForeclosed[_msgSender] = orderbook.removeUserFromOrderbook(
                 _msgSender
             );
-            emit LogUserForeclosed(_msgSender, isForeclosed[_msgSender]);
+            if (foreclosureBefore != isForeclosed[_msgSender]) {
+                emit LogUserForeclosed(_msgSender, isForeclosed[_msgSender]);
+            }
         }
     }
 
