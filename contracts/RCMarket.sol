@@ -198,7 +198,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         address _marketCreatorAddress,
         string calldata _realitioQuestion
     ) external override initializer {
-        assert(_mode <= 2);
+        mode = Mode(_mode);
 
         // initialise MetaTransactions
         _initializeEIP712("RealityCardsMarket", "1");
@@ -219,7 +219,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         winningOutcome = MAX_UINT256; // default invalid
 
         // assign arguments to public variables
-        mode = Mode(_mode);
         numberOfCards = _numberOfCards;
         totalNftMintCount = _totalNftMintCount;
         marketOpeningTime = _timestamps[0];
@@ -1091,8 +1090,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
     /// @dev should only be called thrice
     function _incrementState() internal {
-        assert(uint256(state) < 4);
-        state = States(uint256(state) + (1));
+        state = States(uint256(state) + 1);
         emit LogStateChange(uint256(state));
     }
 
