@@ -301,13 +301,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         emit LogAdjustDeposit(_user, _amount, true);
 
         // this deposit could cancel the users foreclosure
-        if (
-            isForeclosed[_user] &&
-            user[_user].deposit > (user[_user].bidRate / minRentalDayDivisor)
-        ) {
-            isForeclosed[_user] = false;
-            emit LogUserForeclosed(_user, false);
-        }
+        assessForeclosure(_user);
         return true;
     }
 
@@ -439,6 +433,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         marketPot[msgSender()] -= _amount;
         totalMarketPots -= _amount;
         totalDeposits += _amount;
+        assessForeclosure(_user);
         emit LogAdjustDeposit(_user, _amount, true);
         return true;
     }
@@ -454,13 +449,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         user[_user].deposit += SafeCast.toUint128(_refund);
         totalDeposits += _refund;
         emit LogAdjustDeposit(_user, _refund, true);
-        if (
-            isForeclosed[_user] &&
-            user[_user].deposit > user[_user].bidRate / minRentalDayDivisor
-        ) {
-            isForeclosed[_user] = false;
-            emit LogUserForeclosed(_user, false);
-        }
+        assessForeclosure(_user);
     }
 
     /// @notice ability to add liqudity to the pot without being able to win (called by market sponsor function).
@@ -754,6 +743,18 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         marketBalance += rentCollected;
         user[_user].deposit -= SafeCast.toUint128(rentCollected);
         totalDeposits -= rentCollected;
+    }
+
+    /// @notice checks if the user should still be foreclosed
+    /// @dev only removes foreclosure
+    function assessForeclosure(address _user) internal {
+        if (
+            isForeclosed[_user] &&
+            user[_user].deposit > (user[_user].bidRate / minRentalDayDivisor)
+        ) {
+            isForeclosed[_user] = false;
+            emit LogUserForeclosed(_user, false);
+        }
     }
     /*
          ▲  
