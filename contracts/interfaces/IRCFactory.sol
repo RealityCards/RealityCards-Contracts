@@ -23,7 +23,7 @@ interface IRCFactory {
 
     function maxRentIterations() external returns (uint256);
 
-    function setminimumPriceIncreasePercent(uint256 _percentIncrease) external;
+    function setMinimumPriceIncreasePercent(uint256 _percentIncrease) external;
 
     function setNFTMintingLimit(uint256 _mintLimit) external;
 

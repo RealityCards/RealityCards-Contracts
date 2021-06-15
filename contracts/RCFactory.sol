@@ -129,7 +129,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         // initialise adjustable parameters
         // artist // winner // creator // affiliate // card affiliates
         setPotDistribution(20, 0, 0, 20, 100); // 2% artist, 2% affiliate, 10% card affiliate
-        setminimumPriceIncreasePercent(10); // 10%
+        setMinimumPriceIncreasePercent(10); // 10%
         setNFTMintingLimit(60); // current gas limit (12.5m) allows for 60 NFTs to be minted
         setMaxRentIterations(35); // limit appears to be 41, set safe at 35 for now.
         // oracle
@@ -257,7 +257,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
 
     /// @notice how much above the current price a user must bid, in %
     /// @param _percentIncrease the percentage to set, e.g. 10 = 10%
-    function setminimumPriceIncreasePercent(uint256 _percentIncrease)
+    function setMinimumPriceIncreasePercent(uint256 _percentIncrease)
         public
         override
         onlyOwner

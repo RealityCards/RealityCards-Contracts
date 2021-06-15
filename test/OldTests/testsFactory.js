@@ -330,7 +330,7 @@ contract('TestFactory', (accounts) => {
     var owner = await realitycards2.ownerOf.call(0);
     assert.equal(user0, owner);
     // update min to 5%, try again
-    await rcfactory.setminimumPriceIncreasePercent(5);
+    await rcfactory.setMinimumPriceIncreasePercent(5);
     var realitycards3 = await createMarketCustomMode2(0);
     await newRentalCustomContract(realitycards3, 1, 0, user0);
     await realitycards3.newRental(web3.utils.toWei('1.05', 'ether'), maxuint256, zeroAddress, 0, { from: user1 });

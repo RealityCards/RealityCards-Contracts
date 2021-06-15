@@ -248,7 +248,7 @@ contract('TestOwnership', (accounts) => {
     await expectRevert(rcfactory.changeMarketCreationGovernorsOnly({ from: user1 }), "caller is not the owner");
     await expectRevert(rcfactory.setSponsorshipRequired(7 * 24, { from: user1 }), "caller is not the owner");
     await expectRevert(rcfactory.changeMarketApproval(user0, { from: user1 }), "Not approved");
-    await expectRevert(rcfactory.setminimumPriceIncreasePercent(4, { from: user1 }), "caller is not the owner");
+    await expectRevert(rcfactory.setMinimumPriceIncreasePercent(4, { from: user1 }), "caller is not the owner");
     await expectRevert(rcfactory.changeTrapCardsIfUnapproved({ from: user1 }), "caller is not the owner");
     await expectRevert(rcfactory.setAdvancedWarning(23, { from: user1 }), "caller is not the owner");
     await expectRevert(rcfactory.setMaximumDuration(23, { from: user1 }), "caller is not the owner");
