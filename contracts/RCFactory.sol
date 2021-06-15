@@ -21,7 +21,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
       ╚═════════════════════════════════╝*/
 
     //≡≡≡≡≡≡≡ CONTRACT VARIABLES ≡≡≡≡≡≡≡//
-    IRCTreasury public override treasury;
+    IRCTreasury public immutable override treasury;
     IRCNftHubL2 public override nfthub;
     IRCOrderbook public override orderbook;
     IRealitio public realitio;
