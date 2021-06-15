@@ -343,7 +343,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
     /// @notice gets tokenURI via their Card Id
     function tokenURI(uint256 _cardId)
-        public
+        external
         view
         override
         returns (string memory)
