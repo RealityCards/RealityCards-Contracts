@@ -10,6 +10,7 @@ const {
 const { current } = require("@openzeppelin/test-helpers/src/balance");
 const { initial } = require("underscore");
 const { ZERO_ADDRESS } = require('@openzeppelin/test-helpers/src/constants');
+const { factory } = require("typescript");
 
 // main contracts
 var RCFactory = artifacts.require("./RCFactory.sol");
@@ -118,6 +119,7 @@ contract("TestFullFlowValid", (accounts) => {
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards = await RCMarket.at(marketAddress);
+    await rcfactory.changeMarketApproval(marketAddress);
   });
 
   async function createMarketWithArtistSet() {
@@ -145,6 +147,7 @@ contract("TestFullFlowValid", (accounts) => {
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
+    await rcfactory.changeMarketApproval(marketAddress);
     return realitycards2;
   }
 
@@ -171,6 +174,7 @@ contract("TestFullFlowValid", (accounts) => {
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(mode);
     realitycards2 = await RCMarket.at(marketAddress);
+    await rcfactory.changeMarketApproval(marketAddress);
     return realitycards2;
   }
 
@@ -224,6 +228,7 @@ contract("TestFullFlowValid", (accounts) => {
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
+    await rcfactory.changeMarketApproval(marketAddress);
     return realitycards2;
   }
 
@@ -252,6 +257,7 @@ contract("TestFullFlowValid", (accounts) => {
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(mode);
     realitycards2 = await RCMarket.at(marketAddress);
+    await rcfactory.changeMarketApproval(marketAddress);
     return realitycards2;
   }
 
@@ -307,6 +313,7 @@ contract("TestFullFlowValid", (accounts) => {
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
+    await rcfactory.changeMarketApproval(marketAddress);
     return realitycards2;
   }
 
@@ -368,6 +375,7 @@ contract("TestFullFlowValid", (accounts) => {
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
+    await rcfactory.changeMarketApproval(marketAddress);
     return realitycards2;
   }
 

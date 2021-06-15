@@ -77,6 +77,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     bool public override globalPause;
     /// @dev if true, cannot rent any cards for specific market
     mapping(address => bool) public override marketPaused;
+    /// @dev if true, owner has locked the market pause
+    mapping(address => bool) public override lockMarketPaused;
 
     /*╔═════════════════════════════════╗
       ║            UBER OWNER           ║
@@ -150,6 +152,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     /// @dev so only markets can move funds from deposits to marketPots and vice versa
     function addMarket(address _newMarket) external override {
         require(msgSender() == factoryAddress, "Not factory");
+        // default to paused
+        marketPaused[_newMarket] = true;
         isMarket[_newMarket] = true;
     }
 
@@ -190,10 +194,24 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         emit LogGlobalPause(globalPause);
     }
 
-    /// @notice if true, cannot make a new rental for a specific market
-    function changePauseMarket(address _market) external override onlyOwner {
+    /// @notice if true, cannot make a new rental, or claim the NFT for a specific market
+    function changePauseMarket(address _market, bool _paused)
+        external
+        override
+        onlyOwner
+    {
         require(isMarket[_market], "This isn't a market");
-        marketPaused[_market] = !marketPaused[_market];
+        marketPaused[_market] = _paused;
+        lockMarketPaused[_market] = marketPaused[_market];
+        emit LogMarketPaused(_market, marketPaused[_market]);
+    }
+
+    /// @notice allow governance to approve and un pause the market if the owner hasn't paused it
+    function unPauseMarket(address _market) external override {
+        require(msgSender() == factoryAddress, "Not factory");
+        require(isMarket[_market], "This isn't a market");
+        require(!lockMarketPaused[_market], "Owner has paused market");
+        marketPaused[_market] = false;
         emit LogMarketPaused(_market, marketPaused[_market]);
     }
 

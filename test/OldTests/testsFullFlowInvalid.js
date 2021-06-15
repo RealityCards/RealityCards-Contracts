@@ -97,6 +97,7 @@ contract('TestFullFlowInvalid', (accounts) => {
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards = await RCMarket.at(marketAddress);
+    await rcfactory.changeMarketApproval(marketAddress);
   });
 
   async function createMarketWithArtistSet() {
@@ -124,6 +125,7 @@ contract('TestFullFlowInvalid', (accounts) => {
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
+    await rcfactory.changeMarketApproval(marketAddress);
     return realitycards2;
   }
 
@@ -150,6 +152,7 @@ contract('TestFullFlowInvalid', (accounts) => {
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(mode);
     realitycards2 = await RCMarket.at(marketAddress);
+    await rcfactory.changeMarketApproval(marketAddress);
     return realitycards2;
   }
 
@@ -182,6 +185,7 @@ contract('TestFullFlowInvalid', (accounts) => {
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
+    await rcfactory.changeMarketApproval(marketAddress);
     return realitycards2;
   }
 
@@ -210,6 +214,7 @@ contract('TestFullFlowInvalid', (accounts) => {
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(mode);
     realitycards2 = await RCMarket.at(marketAddress);
+    await rcfactory.changeMarketApproval(marketAddress);
     return realitycards2;
   }
 
@@ -244,6 +249,7 @@ contract('TestFullFlowInvalid', (accounts) => {
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
+    await rcfactory.changeMarketApproval(marketAddress);
     return realitycards2;
   }
 

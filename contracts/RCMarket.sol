@@ -321,13 +321,12 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
       ╚═════════════════════════════════╝*/
 
     /// @notice send NFT to mainnet
-    /// @dev upgrades not possible if market not approved
+    /// @dev upgrades not possible if market paused
     function upgradeCard(uint256 _card) external onlyTokenOwner(_card) {
         _checkState(States.WITHDRAW);
         require(
-            !factory.trapIfUnapproved() ||
-                factory.isMarketApproved(address(this)),
-            "Upgrade blocked"
+            !treasury.marketPaused(address(this)) && !treasury.globalPause(),
+            "Market is Paused"
         );
         uint256 _tokenId = _card + totalNftMintCount;
         _transferCard(ownerOf(_card), address(this), _card); // contract becomes final resting place
@@ -494,6 +493,10 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     function claimCard(uint256 _card) external {
         _checkNotState(States.CLOSED);
         _checkNotState(States.OPEN);
+        require(
+            !treasury.marketPaused(address(this)) && !treasury.globalPause(),
+            "Market is Paused"
+        );
         require(!userAlreadyClaimed[_card][msgSender()], "Already claimed");
         userAlreadyClaimed[_card][msgSender()] = true;
         require(longestOwner[_card] == msgSender(), "Not longest owner");

@@ -97,6 +97,7 @@ contract('TestRequireStatements', (accounts) => {
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards = await RCMarket.at(marketAddress);
+    await rcfactory.changeMarketApproval(marketAddress);
   });
 
   async function createMarketCustomMode(mode) {
@@ -387,6 +388,7 @@ contract('TestRequireStatements', (accounts) => {
     var oneMonthInTheFuture = oneMonth.add(latestTime);
     var oneYearInTheFuture = oneYear.add(latestTime);
     var realitycards3 = await createMarketCustomeTimestamps2(oneMonthInTheFuture, oneYearInTheFuture, oneYearInTheFuture);
+    await rcfactory.changeMarketApproval(realitycards3.address);
     // check that if in the future, state 0 originally
     // just use the default realitycards
     var state = await realitycards3.state();

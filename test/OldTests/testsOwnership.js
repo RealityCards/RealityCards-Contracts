@@ -97,6 +97,7 @@ contract('TestOwnership', (accounts) => {
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards = await RCMarket.at(marketAddress);
+    await rcfactory.changeMarketApproval(marketAddress);
   });
 
   async function createMarketCustomMode(mode) {
@@ -238,7 +239,7 @@ contract('TestOwnership', (accounts) => {
   it('check onlyOwner is on relevant Treasury functions', async () => {
     await expectRevert(treasury.setMaxContractBalance(7 * 24, { from: user1 }), "caller is not the owner");
     await expectRevert(treasury.changeGlobalPause({ from: user1 }), "caller is not the owner");
-    await expectRevert(treasury.changePauseMarket(realitycards.address, { from: user1 }), "caller is not the owner");
+    await expectRevert(treasury.changePauseMarket(realitycards.address, true, { from: user1 }), "caller is not the owner");
   });
 
   it('check onlyOwner is on relevant Factory functions', async () => {
@@ -249,7 +250,6 @@ contract('TestOwnership', (accounts) => {
     await expectRevert(rcfactory.setSponsorshipRequired(7 * 24, { from: user1 }), "caller is not the owner");
     await expectRevert(rcfactory.changeMarketApproval(user0, { from: user1 }), "Not approved");
     await expectRevert(rcfactory.setMinimumPriceIncreasePercent(4, { from: user1 }), "caller is not the owner");
-    await expectRevert(rcfactory.changeTrapCardsIfUnapproved({ from: user1 }), "caller is not the owner");
     await expectRevert(rcfactory.setAdvancedWarning(23, { from: user1 }), "caller is not the owner");
     await expectRevert(rcfactory.setMaximumDuration(23, { from: user1 }), "caller is not the owner");
   });
@@ -300,6 +300,7 @@ contract('TestOwnership', (accounts) => {
       0,
     );
     var marketAddress = await rcfactory2.getMostRecentMarket.call(0);
+    await rcfactory2.changeMarketApproval(marketAddress);
     realitycards2 = await RCMarket.at(marketAddress);
     await depositDai(144, user3);
     await newRentalCustomContract(realitycards2, 144, 4, user3);

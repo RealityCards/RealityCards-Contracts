@@ -42,7 +42,7 @@ contract("RealityCardsTests", (accounts) => {
             await expectRevert(treasury.setMinRental(10, { from: alice }), "Ownable: caller is not the owner");
             await expectRevert(treasury.setMaxContractBalance(10, { from: alice }), "Ownable: caller is not the owner");
             await expectRevert(treasury.changeGlobalPause({ from: alice }), "Ownable: caller is not the owner");
-            await expectRevert(treasury.changePauseMarket(ZERO_ADDRESS, { from: alice }), "Ownable: caller is not the owner");
+            await expectRevert(treasury.changePauseMarket(markets[0].address, true, { from: alice }), "Ownable: caller is not the owner");
         });
 
         it("check that inferior owners cannot call uberOwner functions on Treasury", async () => {
@@ -103,11 +103,11 @@ contract("RealityCardsTests", (accounts) => {
             // check state of market
             var pauseMarketState = await treasury.marketPaused(markets[0].address);
             // change value
-            await treasury.changePauseMarket(markets[0].address);
+            await treasury.changePauseMarket(markets[0].address, !pauseMarketState);
             // check value
             assert.equal(await treasury.marketPaused(markets[0].address), !pauseMarketState);
             // change it back
-            await treasury.changePauseMarket(markets[0].address);
+            await treasury.changePauseMarket(markets[0].address, pauseMarketState);
             // check again
             assert.equal(await treasury.marketPaused(markets[0].address), pauseMarketState);
         });
@@ -220,7 +220,7 @@ contract("RealityCardsTests", (accounts) => {
             await rc.deposit(100, alice);
             await rc.newRental();
             // turn on market pause
-            await treasury.changePauseMarket(markets[0].address);
+            await treasury.changePauseMarket(markets[0].address, true);
             // we can still deposit
             await rc.deposit(144, alice);
             // we can't use that market

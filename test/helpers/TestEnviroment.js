@@ -132,7 +132,9 @@ module.exports = class TestEnviroment {
             question,
             options.sponsorship
         );
-        return RCMarket.at(await this.contracts.factory.getMostRecentMarket.call(0));
+        let newMarket = await this.contracts.factory.getMostRecentMarket.call(0)
+        await this.contracts.factory.changeMarketApproval(newMarket);
+        return RCMarket.at(newMarket);
     }
     async newRental(options) {
         var defaults = {

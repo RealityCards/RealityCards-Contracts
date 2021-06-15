@@ -97,6 +97,7 @@ contract('TestFactory', (accounts) => {
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards = await RCMarket.at(marketAddress);
+    await rcfactory.changeMarketApproval(marketAddress);
   });
 
   async function createMarketWithArtistSet() {
@@ -150,6 +151,7 @@ contract('TestFactory', (accounts) => {
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(mode);
     realitycards2 = await RCMarket.at(marketAddress);
+    await rcfactory.changeMarketApproval(marketAddress);
     return realitycards2;
   }
 
@@ -176,6 +178,7 @@ contract('TestFactory', (accounts) => {
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(mode);
     realitycards2 = await RCMarket.at(marketAddress);
+    await rcfactory.changeMarketApproval(marketAddress);
     return realitycards2;
   }
 
@@ -346,6 +349,7 @@ contract('TestFactory', (accounts) => {
 
 
   it('test changeMarketApproval', async () => {
+    await rcfactory.changeMarketApproval(realitycards.address);
     // first, check that recent market is hidden
     var hidden = await rcfactory.isMarketApproved.call(realitycards.address);
     assert.equal(hidden, false);
@@ -360,47 +364,6 @@ contract('TestFactory', (accounts) => {
     await rcfactory.changeMarketApproval(realitycards.address, { from: user1 });
     hidden = await rcfactory.isMarketApproved.call(realitycards.address);
     assert.equal(hidden, false);
-    await depositDai(100, user0);
-    for (i = 0; i < 10; i++) {
-      await newRental(1, i, user0);
-    }
-    await time.increase(time.duration.minutes(1));
-    await realitycards.collectRentAllCards();
-    await realitio.setResult(2);
-    await time.increase(time.duration.years(1));
-    await realitycards.lockMarket();
-    await realitycards.getWinnerFromOracle();
-    // await realitycards.determineWinner();
-    for (i = 0; i < 10; i++) {
-      await realitycards.claimCard(i, { from: user0 });
-    }
-    for (i = 0; i < 10; i++) {
-      await expectRevert(realitycards.upgradeCard(i), "Upgrade blocked");
-    }
-    // new market, dont approve it, but switch changeTrapCardsIfUnapproved to false
-    realitycards2 = await createMarketWithArtistSet();
-    await depositDai(100, user0);
-    for (i = 0; i < 10; i++) {
-      await newRentalCustomContract(realitycards2, 1, i, user0);
-    }
-    await time.increase(time.duration.minutes(1));
-    await realitycards2.collectRentAllCards();
-    hidden = await rcfactory.isMarketApproved.call(realitycards2.address);
-    assert.equal(hidden, false);
-    await rcfactory.changeTrapCardsIfUnapproved();
-    var trapIfUnapproved = await rcfactory.trapIfUnapproved.call();
-    assert.equal(trapIfUnapproved, false);
-    await time.increase(time.duration.years(1));
-    await realitycards2.lockMarket();
-    await realitycards2.getWinnerFromOracle();
-    // await realitycards2.determineWinner();
-    for (i = 0; i < 10; i++) {
-      await realitycards2.claimCard(i, { from: user0 });
-    }
-    for (i = 0; i < 10; i++) {
-      await realitycards2.upgradeCard(i);
-    }
-    await time.increase(time.duration.minutes(10));
   });
 
 
@@ -485,16 +448,6 @@ contract('TestFactory', (accounts) => {
     await expectRevert(rcfactory.changeCardAffiliateApproval(user4, { from: user2 }), "Not approved");
   });
 
-  it('test changeTrapCardsIfUnapproved', async () => {
-    // check the value
-    assert.equal(await rcfactory.trapIfUnapproved(), true);
-    // change it
-    await rcfactory.changeTrapCardsIfUnapproved();
-    //check it again
-    assert.equal(await rcfactory.trapIfUnapproved(), false);
-    // change it back
-    await rcfactory.changeTrapCardsIfUnapproved();
-  });
   it('test getAllMarkets', async () => {
     // check the value
     var marketArray = await rcfactory.getAllMarkets(0);

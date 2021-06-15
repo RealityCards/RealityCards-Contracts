@@ -36,6 +36,10 @@ interface IRCTreasury {
 
     function marketPaused(address) external view returns (bool);
 
+    function lockMarketPaused(address _market) external view returns (bool);
+
+    function unPauseMarket(address _market) external;
+
     function uberOwner() external view returns (address);
 
     function addMarket(address) external;
@@ -48,7 +52,7 @@ interface IRCTreasury {
 
     function changeGlobalPause() external;
 
-    function changePauseMarket(address _market) external;
+    function changePauseMarket(address _market, bool _paused) external;
 
     function setFactoryAddress(address _newFactory) external;
 

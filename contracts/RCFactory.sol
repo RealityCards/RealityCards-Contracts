@@ -55,8 +55,6 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     bool public approvedAffilliatesOnly = true;
     /// @dev if false, anyone can be an artist
     bool public approvedArtistsOnly = true;
-    /// @dev if true, cards are burnt at the end of events for hidden markets to enforce scarcity
-    bool public override trapIfUnapproved = true;
     /// @dev high level owner who can change the factory address
     address public uberOwner;
     /// @dev the maximum number of rent collections to perform in a single transaction
@@ -328,11 +326,6 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         sponsorshipRequired = _amount;
     }
 
-    /// @notice if true, Cards in unapproved markets can't be upgraded
-    function changeTrapCardsIfUnapproved() external onlyOwner {
-        trapIfUnapproved = !trapIfUnapproved;
-    }
-
     /// @notice market opening time must be at least this many seconds in the future
     /// @param _newAdvancedWarning the warning time to set in seconds
     function setAdvancedWarning(uint32 _newAdvancedWarning) external onlyOwner {
@@ -388,6 +381,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         IRCMarket _marketToApprove = IRCMarket(_market);
         assert(_marketToApprove.isMarket());
         isMarketApproved[_market] = !isMarketApproved[_market];
+        treasury.unPauseMarket(_market);
         emit LogMarketApproved(_market, isMarketApproved[_market]);
     }
 

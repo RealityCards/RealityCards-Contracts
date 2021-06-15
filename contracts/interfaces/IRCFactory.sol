@@ -17,8 +17,6 @@ interface IRCFactory {
 
     function minimumPriceIncreasePercent() external returns (uint256);
 
-    function trapIfUnapproved() external returns (bool);
-
     function isMarketApproved(address) external returns (bool);
 
     function maxRentIterations() external returns (uint256);
