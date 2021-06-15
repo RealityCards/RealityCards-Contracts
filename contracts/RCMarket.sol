@@ -119,7 +119,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     address public arbitrator;
     uint32 public timeout;
     IRealitio public realitio;
-    address public _realitioAddress;
 
     /*╔═════════════════════════════════╗
       ║             EVENTS              ║
