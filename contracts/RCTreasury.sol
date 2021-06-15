@@ -208,6 +208,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
 
     /// @notice Add a user to the whitelist
     function addToWhitelist(address _user) public override {
+        require(factoryAddress != address(0), "Must set factory address");
         IRCFactory factory = IRCFactory(factoryAddress);
         require(factory.isGovernor(msgSender()), "Not authorised");
         isAllowed[_user] = !isAllowed[_user];
