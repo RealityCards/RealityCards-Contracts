@@ -79,6 +79,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     uint256 public nftMintingLimit;
 
     ///// OTHER /////
+    uint256 public constant PER_MILLE = 1000; // in MegaBip so (1000 = 100%)
     /// @dev counts the total NFTs minted across all events
     /// @dev ... so the appropriate token id is used when upgrading to mainnet
     uint256 public totalNftMintCount;
@@ -225,7 +226,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
       └────────────────────────────────────┘*/
 
     /// @notice update stakeholder payouts
-    /// @dev in basis points (so 1000 = 100%)
+    /// @dev in MegaBip (so 1000 = 100%)
     /// @param _artistCut The artist that designed the card
     /// @param _winnerCut Extra cut for the longest owner
     /// @param _creatorCut The creator of the market
@@ -244,7 +245,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
                 _creatorCut +
                 _affiliateCut +
                 _cardAffiliateCut <=
-                1000,
+                PER_MILLE,
             "Cuts too big"
         );
         potDistribution[0] = _artistCut;

@@ -22,6 +22,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
     // CONTRACT SETUP
     /// @dev = how many outcomes/teams/NFTs etc
+    uint256 public constant PER_MILLE = 1000; // in MegaBip so (1000 = 100%)
     uint256 public numberOfCards;
     uint256 public constant MAX_UINT256 = type(uint256).max;
     uint256 public constant MIN_RENTAL_VALUE = 1 ether;
@@ -260,7 +261,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         // if winner takes all mode, set winnerCut to max
         if (_mode == uint8(Mode.WINNER_TAKES_ALL)) {
             winnerCut =
-                (((uint256(1000) - artistCut) - creatorCut) - affiliateCut) -
+                (((uint256(PER_MILLE) - artistCut) - creatorCut) -
+                    affiliateCut) -
                 cardAffiliateCut;
         }
 
@@ -501,11 +503,13 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     function _payoutWinnings() internal {
         uint256 _winningsToTransfer = 0;
         uint256 _remainingCut =
-            ((((uint256(1000) - artistCut) - affiliateCut) - cardAffiliateCut) -
-                winnerCut) - creatorCut;
+            ((((uint256(PER_MILLE) - artistCut) - affiliateCut) -
+                cardAffiliateCut) - winnerCut) - creatorCut;
         // calculate longest owner's extra winnings, if relevant
         if (longestOwner[winningOutcome] == msgSender() && winnerCut > 0) {
-            _winningsToTransfer = (totalRentCollected * winnerCut) / (1000);
+            _winningsToTransfer =
+                (totalRentCollected * winnerCut) /
+                (PER_MILLE);
         }
         uint256 _remainingPot = 0;
         if (mode == Mode.SAFE_MODE) {
@@ -513,13 +517,13 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             _remainingPot =
                 ((totalRentCollected - rentCollectedPerCard[winningOutcome]) *
                     _remainingCut) /
-                (1000);
+                (PER_MILLE);
             _winningsToTransfer += rentCollectedPerUserPerCard[msgSender()][
                 winningOutcome
             ];
         } else {
             // calculate normal winnings, if any
-            _remainingPot = (totalRentCollected * _remainingCut) / (1000);
+            _remainingPot = (totalRentCollected * _remainingCut) / (PER_MILLE);
         }
         uint256 _winnersTimeHeld = timeHeld[winningOutcome][msgSender()];
         uint256 _numerator = _remainingPot * _winnersTimeHeld;
@@ -535,11 +539,12 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     function _returnRent() internal {
         // deduct artist share and card specific share if relevant but NOT market creator share or winner's share (no winner, market creator does not deserve)
         uint256 _remainingCut =
-            ((uint256(1000) - artistCut) - affiliateCut) - cardAffiliateCut;
+            ((uint256(PER_MILLE) - artistCut) - affiliateCut) -
+                cardAffiliateCut;
         uint256 _rentCollected = rentCollectedPerUser[msgSender()];
         require(_rentCollected > 0, "Paid no rent");
         uint256 _rentCollectedAdjusted =
-            (_rentCollected * _remainingCut) / (1000);
+            (_rentCollected * _remainingCut) / (PER_MILLE);
         _payout(msgSender(), _rentCollectedAdjusted);
         emit LogRentReturned(msgSender(), _rentCollectedAdjusted);
     }
@@ -586,7 +591,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         require(!cardAffiliatePaid[_card], "Card affiliate already paid");
         cardAffiliatePaid[_card] = true;
         uint256 _cardAffiliatePayment =
-            (rentCollectedPerCard[_card] * cardAffiliateCut) / (1000);
+            (rentCollectedPerCard[_card] * cardAffiliateCut) / (PER_MILLE);
         if (_cardAffiliatePayment > 0) {
             _payout(cardAffiliateAddresses[_card], _cardAffiliatePayment);
             emit LogStakeholderPaid(
@@ -600,7 +605,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         internal
     {
         if (_cut > 0) {
-            uint256 _payment = (totalRentCollected * _cut) / (1000);
+            uint256 _payment = (totalRentCollected * _cut) / (PER_MILLE);
             _payout(_recipient, _payment);
             emit LogStakeholderPaid(_recipient, _payment);
         }
