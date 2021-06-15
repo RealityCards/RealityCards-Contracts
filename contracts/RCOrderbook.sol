@@ -608,6 +608,12 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
                 transferCard(_market, _card, _user, _tempNext, _price);
             }
 
+            // If the market is closed we don't need to emit the event
+            // A closed market will have an empty linked list and so point at itself
+            if (user[_market][index[_market][_market][_card]].next != _market) {
+                emit LogRemoveFromOrderbook(_user, _market, _card);
+            }
+
             treasury.decreaseBidRate(_user, user[_user][i].price);
 
             user[_tempNext][
