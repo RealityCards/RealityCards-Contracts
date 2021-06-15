@@ -825,6 +825,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         external
         override
     {
+        require(msgSender() == address(factory));
         _sponsor(_sponsorAddress, _amount);
     }
 
