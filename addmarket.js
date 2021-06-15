@@ -9,12 +9,12 @@ var factoryAddress = '0x5b7477AcFa49Cc71530A1119ddbC0d3c30ac8ffE'; // unaudited.
 // truffle exec addmarket.js --network xdai
 
 // variables market specific
-var marketOpeningTime = 1623693600;
-var marketLockingTime = 1624233600;
-var oracleResolutionTime = 1624233600;
-var ipfsHash = 'QmcNTYz8ns2byuN6RvvNKjzKpE4NcJVi3wWRLPk2gg7kbp';
-var question = 'Was the Crypto Fear & Greed Index on https://alternative.me/crypto/fear-and-greed-index/ below 50 on June 21st, 2021 at 00:00:00 UTC?␟"Below 50","50 or Above"␟Cryptocurrency␟en_US';
-var artistAddress = "0x74B4B8C7cb9A594a6440965f982deF10BB9570b9";
+var marketOpeningTime = 1623781800;
+var marketLockingTime = 1623790800;
+var oracleResolutionTime = 1623790800;
+var ipfsHash = 'QmPFTMidpWMZ2P4xrShjXsa8p8i2zGYEj1RPw3Ad1st9Uu';
+var question = 'Who won the UEFA 2020 match between France & Germany that began on June 14th, 2021?␟"France","Germany","Draw"␟Sports␟en_US';
+var artistAddress = "0xA42F02956cE6609923F320EcB89DcF052ad6849F";
 var affiliateAddress = "0x0000000000000000000000000000000000000000";
 var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000', '0x0000000000000000000000000000000000000000'];
 
@@ -24,8 +24,9 @@ var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000', '0x0
 
 var timestamps = [marketOpeningTime, marketLockingTime, oracleResolutionTime];
 var tokenURIs = [
-  'https://cdn.realitycards.io/nftmetadata/greedorfear/token0.json',
-  'https://cdn.realitycards.io/nftmetadata/greedorfear/token1.json',
+  'https://cdn.realitycards.io/nftmetadata/DEvsFR/token0.json',
+  'https://cdn.realitycards.io/nftmetadata/DEvsFR/token1.json',
+  'https://cdn.realitycards.io/nftmetadata/DEvsFR/token2.json',
 ];
 
 module.exports = function () {

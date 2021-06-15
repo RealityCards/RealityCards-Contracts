@@ -3,14 +3,14 @@
 ###################
 #### Setup ########
 ###################
-EVENT_NAME="Will the Crypto Fear & Greed Index be above or below 50 by June 21st, 2021?"
-SRC_NAME="greedorfear"
-CATEGORY="Cryptocurrency"
-SLUG="greedorfear"
-NUMBER_OF_CARDS="2"
-CARD0="Below 50"
-CARD1="50 or Above"
-CARD2="Non Sporting"
+EVENT_NAME="Who will win tonights UEFA match between France & Germany?"
+SRC_NAME="DEvsFR"
+CATEGORY="Sports"
+SLUG="DEvsFR"
+NUMBER_OF_CARDS="3"
+CARD0="France"
+CARD1="Germany"
+CARD2="Draw"
 CARD3="Sporting"
 CARD4="Terrier"
 CARD5="Toy"
@@ -36,7 +36,7 @@ CARD24="Ukraine"
 CARD25="United Kingdom"
 CDN="https://cdn.realitycards.io/"
 IMAGES="images/"
-IMAGE_FORMAT=".gif"
+IMAGE_FORMAT=".png"
 NFT="nftmetadata/"
 ##################
 
