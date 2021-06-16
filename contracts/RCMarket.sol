@@ -395,14 +395,33 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         string calldata _question,
         uint32 _oracleResolutionTime
     ) internal {
-        questionId = realitio.askQuestion(
-            2,
-            _question,
-            arbitrator,
-            timeout,
-            _oracleResolutionTime,
-            0
+        uint256 templateId = 2; //template 2 works for all RealityCards questions
+        uint256 nonce = 0; // We don't need to ask it again, always use 0
+        bytes32 questionHash =
+            keccak256(
+                abi.encodePacked(templateId, _oracleResolutionTime, _question)
+            );
+        questionId = keccak256(
+            abi.encodePacked(
+                questionHash,
+                arbitrator,
+                timeout,
+                msg.sender,
+                nonce
+            )
         );
+        if (realitio.getContentHash(questionId) != questionHash) {
+            // check if our questionHash matches an existing questionId
+            // otherwise ask the question.
+            questionId = realitio.askQuestion(
+                templateId,
+                _question,
+                arbitrator,
+                timeout,
+                _oracleResolutionTime,
+                nonce
+            );
+        }
         emit LogQuestionPostedToOracle(address(this), questionId);
     }
 
