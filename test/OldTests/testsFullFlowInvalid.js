@@ -347,7 +347,7 @@ contract('TestFullFlowInvalid', (accounts) => {
     ////////////////////////
     await realitycards.lockMarket();
     // set winner 
-    await realitio.setResult(20);
+    await realitio.setResult(realitycards.address, 20);
     await realitycards.getWinnerFromOracle();
     // await realitycards.determineWinner();
     ////////////////////////
@@ -387,7 +387,7 @@ contract('TestFullFlowInvalid', (accounts) => {
     await realitycards2.exitAll({ from: user1 });
     await time.increase(time.duration.years(1));
     await realitycards2.lockMarket();
-    await realitio.setResult(69);
+    await realitio.setResult(realitycards2.address, 69);
     await realitycards2.getWinnerFromOracle();
     // await realitycards2.determineWinner();
     // token 0
@@ -465,7 +465,7 @@ contract('TestFullFlowInvalid', (accounts) => {
     ////////////////////////
     await realitycards.lockMarket();
     // set invalid winner
-    await realitio.setResult(69);
+    await realitio.setResult(realitycards.address, 69);
     await realitycards.getWinnerFromOracle();
     // await realitycards.determineWinner();
     ////////////////////////
@@ -544,7 +544,7 @@ contract('TestFullFlowInvalid', (accounts) => {
     ////////////////////////
     await realitycards2.lockMarket();
     // set invalid winner
-    await realitio.setResult(69);
+    await realitio.setResult(realitycards2.address, 69);
     await realitycards2.getWinnerFromOracle();
     // await realitycards2.determineWinner();
     ////////////////////////
@@ -628,7 +628,7 @@ contract('TestFullFlowInvalid', (accounts) => {
     ////////////////////////
     await realitycards2.lockMarket();
     // set invalid winner
-    await realitio.setResult(69);
+    await realitio.setResult(realitycards2.address, 69);
     await realitycards2.getWinnerFromOracle();
     // await realitycards2.determineWinner();
     ////////////////////////
@@ -718,7 +718,7 @@ contract('TestFullFlowInvalid', (accounts) => {
     ////////////////////////
     await realitycards2.lockMarket();
     // set invalid winner
-    await realitio.setResult(69);
+    await realitio.setResult(realitycards2.address, 69);
     await realitycards2.getWinnerFromOracle();
     // await realitycards2.determineWinner();
     ////////////////////////
@@ -793,7 +793,7 @@ contract('TestFullFlowInvalid', (accounts) => {
     ////////////////////////
     await realitycards2.lockMarket();
     // set invalid winner
-    await realitio.setResult(69);
+    await realitio.setResult(realitycards2.address, 69);
     await realitycards2.getWinnerFromOracle();
     // await realitycards2.determineWinner();
     ////////////////////////
@@ -876,7 +876,7 @@ contract('TestFullFlowInvalid', (accounts) => {
     ////////////////////////
     await realitycards2.lockMarket();
     // set invalid winner
-    await realitio.setResult(69);
+    await realitio.setResult(realitycards2.address, 69);
     await realitycards2.getWinnerFromOracle();
     // await realitycards2.determineWinner();
     ////////////////////////
@@ -980,7 +980,7 @@ contract('TestFullFlowInvalid', (accounts) => {
     ////////////////////////
     await realitycards2.lockMarket();
     // set invalid winner
-    await realitio.setResult(69);
+    await realitio.setResult(realitycards2.address, 69);
     await realitycards2.getWinnerFromOracle();
     // await realitycards2.determineWinner();
     ////////////////////////
@@ -1086,7 +1086,7 @@ contract('TestFullFlowInvalid', (accounts) => {
     ////////////////////////
     await realitycards2.lockMarket();
     // // set winner 1
-    await realitio.setResult(69);
+    await realitio.setResult(realitycards2.address, 69);
     var depositCreatorBefore = await treasury.userDeposit.call(user0);
     await realitycards2.getWinnerFromOracle();
     // await realitycards2.determineWinner();

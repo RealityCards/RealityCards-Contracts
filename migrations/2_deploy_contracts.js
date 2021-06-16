@@ -239,7 +239,7 @@ async function closeMarket(options) {
   options = setDefaults(options, defaults);
 
   await options.market.lockMarket();
-  await realitio.setResult(options.winningOutcome);
+  await realitio.setResult(realitycards.address, options.winningOutcome);
   await options.market.getWinnerFromOracle();
 }
 

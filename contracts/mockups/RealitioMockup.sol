@@ -16,6 +16,7 @@ contract RealitioMockup is Ownable {
         bool finalised;
     }
     mapping(bytes32 => Question) public questions;
+    mapping(address => bytes32) public marketQuestion;
 
     event LogNewQuestion(
         bytes32 indexed question_id,
@@ -36,6 +37,12 @@ contract RealitioMockup is Ownable {
     {
         questions[question_id].answer = _result;
         questions[question_id].finalised = true;
+    }
+
+    function setResult(address _market, uint256 _result) external onlyOwner {
+        bytes32 _question_id = getMarketQuestionId(_market);
+        questions[_question_id].answer = _result;
+        questions[_question_id].finalised = true;
     }
 
     function askQuestion(
@@ -66,6 +73,8 @@ contract RealitioMockup is Ownable {
         questions[question_id].timeout = timeout;
         questions[question_id].opening_ts = opening_ts;
 
+        marketQuestion[msg.sender] = question_id;
+
         emit LogNewQuestion(
             question_id,
             msg.sender,
@@ -93,11 +102,31 @@ contract RealitioMockup is Ownable {
         return questions[question_id].finalised;
     }
 
-    function getContentHash(bytes32 question_id)
-        external
+    function getContentHash(bytes32 question_id) public view returns (bytes32) {
+        return questions[question_id].content_hash;
+    }
+
+    function getTimeout(bytes32 question_id) public view returns (uint32) {
+        return questions[question_id].timeout;
+    }
+
+    function getMarketQuestionId(address _market)
+        public
         view
         returns (bytes32)
     {
-        return questions[question_id].content_hash;
+        return marketQuestion[_market];
+    }
+
+    function getMarketQuestion(address _market)
+        public
+        view
+        returns (string memory)
+    {
+        uint256 _length =
+            bytes(questions[marketQuestion[_market]].question).length;
+        string memory _question = new string(_length);
+        _question = questions[marketQuestion[_market]].question;
+        return _question;
     }
 }

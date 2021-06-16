@@ -289,7 +289,7 @@ contract('TestRequireStatements', (accounts) => {
     await expectRevert(nftHubL2.transferFrom(user, user1, 2), "Incorrect state");
     await expectRevert(nftHubL2.safeTransferFrom(user, user1, 2), "Incorrect state");
     await expectRevert(nftHubL2.safeTransferFrom(user, user1, 2, web3.utils.asciiToHex("123456789")), "Incorrect state");
-    await realitio.setResult(2);
+    await realitio.setResult(realitycards.address, 2);
     await realitycards.getWinnerFromOracle();
     // await realitycards.determineWinner();
     await realitycards.claimCard(2, { from: user });
@@ -328,7 +328,7 @@ contract('TestRequireStatements', (accounts) => {
     await expectRevert(realitycards2.payMarketCreator(), "Incorrect state");
     await expectRevert(realitycards2.payCardAffiliate(8), "Incorrect state");
     // increment state
-    await realitio.setResult(1);
+    await realitio.setResult(realitycards.address, 1);
     await realitycards2.getWinnerFromOracle();
     // await realitycards2.determineWinner();
     var state = await realitycards2.state.call();

@@ -488,7 +488,7 @@ contract("TestFullFlowValid", (accounts) => {
     ////////////////////////
     await newRental(1, 2, user0); // auto locks
     // // set winner 1
-    await realitio.setResult(2);
+    await realitio.setResult(realitycards.address, 2);
     await realitycards.getWinnerFromOracle();
     // await realitycards.determineWinner();
     ////////////////////////
@@ -573,7 +573,7 @@ contract("TestFullFlowValid", (accounts) => {
     ////////////////////////
     await realitycards2.lockMarket();
     // // set winner 1
-    await realitio.setResult(2);
+    await realitio.setResult(realitycards2.address, 2);
     var depositCreatorBefore = await treasury.userDeposit.call(user0);
     await realitycards2.getWinnerFromOracle();
     // await realitycards2.determineWinner();
@@ -687,7 +687,7 @@ contract("TestFullFlowValid", (accounts) => {
     ////////////////////////
     await realitycards2.lockMarket();
     // // set winner 1
-    await realitio.setResult(2);
+    await realitio.setResult(realitycards2.address, 2);
     var depositCreatorBefore = await treasury.userDeposit.call(user0);
     await realitycards2.getWinnerFromOracle();
     // await realitycards2.determineWinner();
@@ -805,7 +805,7 @@ contract("TestFullFlowValid", (accounts) => {
     ////////////////////////
     await realitycards2.lockMarket();
     // // set winner 1
-    await realitio.setResult(2);
+    await realitio.setResult(realitycards2.address, 2);
     var depositCreatorBefore = await treasury.userDeposit.call(user0);
     await realitycards2.getWinnerFromOracle();
     // await realitycards2.determineWinner();
@@ -932,7 +932,7 @@ contract("TestFullFlowValid", (accounts) => {
     ////////////////////////
     await realitycards2.lockMarket();
     // // set winner 1
-    await realitio.setResult(2);
+    await realitio.setResult(realitycards2.address, 2);
     await realitycards2.getWinnerFromOracle();
     // await realitycards2.determineWinner();
     ////////////////////////
@@ -996,7 +996,7 @@ contract("TestFullFlowValid", (accounts) => {
     ////////////////////////
     await realitycards2.lockMarket();
     // // set winner 1
-    await realitio.setResult(2);
+    await realitio.setResult(realitycards2.address, 2);
     var depositCreatorBefore = await treasury.userDeposit.call(user0);
     await realitycards2.getWinnerFromOracle();
     // await realitycards2.determineWinner();
@@ -1083,7 +1083,7 @@ contract("TestFullFlowValid", (accounts) => {
     ////////////////////////
     await realitycards2.lockMarket();
     // // set winner 1
-    await realitio.setResult(2);
+    await realitio.setResult(realitycards2.address, 2);
     await realitycards2.getWinnerFromOracle();
     // await realitycards2.determineWinner();
     ////////////////////////
@@ -1170,7 +1170,7 @@ contract("TestFullFlowValid", (accounts) => {
     ////////////////////////
     await realitycards2.lockMarket();
     // // set winner 1
-    await realitio.setResult(2);
+    await realitio.setResult(realitycards2.address, 2);
     await realitycards2.getWinnerFromOracle();
     // await realitycards2.determineWinner();
     ////////////////////////
@@ -1286,7 +1286,7 @@ contract("TestFullFlowValid", (accounts) => {
     ////////////////////////
     await realitycards2.lockMarket();
     // // set winner 1
-    await realitio.setResult(2);
+    await realitio.setResult(realitycards2.address, 2);
     var depositCreatorBefore = await treasury.userDeposit.call(user0);
     await realitycards2.getWinnerFromOracle();
     // await realitycards2.determineWinner();
@@ -1430,7 +1430,7 @@ contract("TestFullFlowValid", (accounts) => {
     ////////////////////////
     await realitycards2.lockMarket();
     // // set winner 1
-    await realitio.setResult(2);
+    await realitio.setResult(realitycards2.address, 2);
     var depositCreatorBefore = await treasury.userDeposit.call(user0);
     await realitycards2.getWinnerFromOracle();
     // await realitycards2.determineWinner();
@@ -1573,7 +1573,7 @@ contract("TestFullFlowValid", (accounts) => {
     ////////////////////////
     await realitycards.lockMarket();
     // set winner
-    await realitio.setResult(2);
+    await realitio.setResult(realitycards.address, 2);
     await realitycards.getWinnerFromOracle();
     // await realitycards.determineWinner();
     ////////////////////////
@@ -1643,7 +1643,7 @@ contract("TestFullFlowValid", (accounts) => {
     await realitycards2.exitAll({ from: user1 });
     await time.increase(time.duration.years(1));
     await realitycards2.lockMarket();
-    await realitio.setResult(0);
+    await realitio.setResult(realitycards2.address, 0);
     await realitycards2.getWinnerFromOracle();
     // await realitycards2.determineWinner();
     // token 0
@@ -1696,7 +1696,7 @@ contract("TestFullFlowValid", (accounts) => {
     await realitycards2.exitAll({ from: user1 });
     await time.increase(time.duration.years(1));
     await realitycards2.lockMarket();
-    await realitio.setResult(0);
+    await realitio.setResult(realitycards2.address, 0);
     await realitycards2.getWinnerFromOracle();
     // await realitycards2.determineWinner();
     // token 0
@@ -1892,7 +1892,7 @@ contract("TestFullFlowValid", (accounts) => {
     ////////////////////////
     await realitycards.lockMarket();
     // set winner
-    await realitio.setResult(0);
+    await realitio.setResult(realitycards.address, 0);
     await realitycards.getWinnerFromOracle();
     // await realitycards.determineWinner();
     await realitycards.claimCard(0, { from: user1 });
@@ -2121,7 +2121,7 @@ contract("TestFullFlowValid", (accounts) => {
     //////////////////////
     await realitycards.lockMarket();
     // // set winner 1
-    await realitio.setResult(2);
+    await realitio.setResult(realitycards.address, 2);
     await realitycards.getWinnerFromOracle();
     // await realitycards.determineWinner();
     ////////////////////////
@@ -2197,7 +2197,7 @@ contract("TestFullFlowValid", (accounts) => {
     ////////////////////////
     await realitycards.lockMarket();
     // // set winner 1
-    await realitio.setResult(2);
+    await realitio.setResult(realitycards.address, 2);
     await realitycards.getWinnerFromOracle();
     // await realitycards.determineWinner();
     ////////////////////////

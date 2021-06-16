@@ -236,7 +236,7 @@ contract('TestProxies', (accounts) => {
     realitio2 = await RealitioMockup.new();
     await rcfactory.setRealitioAddress(realitio2.address);
     realitycards2 = await createMarketWithArtistSet();
-    await realitio2.setResult(2);
+    await realitio2.setResult(realitycards2.address, 2);
     await time.increase(time.duration.years(1));
     await realitycards2.getWinnerFromOracle();
     // await realitycards2.determineWinner();
@@ -266,7 +266,7 @@ contract('TestProxies', (accounts) => {
     var realitycards2 = await createMarketWithArtistSet();
     await time.increase(time.duration.years(1));
     await realitycards2.lockMarket();
-    await realitio.setResult(2);
+    await realitio.setResult(realitycards2.address, 2);
     await realitycards2.getWinnerFromOracle();
   });
 
@@ -282,7 +282,7 @@ contract('TestProxies', (accounts) => {
     await time.increase(time.duration.weeks(4));
     await newRental(500, 3, user2);
     await time.increase(time.duration.years(1));
-    await realitio.setResult(3);
+    await realitio.setResult(realitycards.address, 3);
     await expectRevert(realitycards.claimCard(3, { from: user1 }), "Incorrect state");
     await realitycards.lockMarket();
     await realitycards.claimCard(3, { from: user1 })
@@ -307,7 +307,7 @@ contract('TestProxies', (accounts) => {
     await rcfactory.changeMarketApproval(realitycards2.address);
     await newRentalCustomContract(realitycards2, 1, 5, user3);
     await time.increase(time.duration.years(1));
-    await realitio.setResult(5);
+    await realitio.setResult(realitycards2.address, 5);
     await realitycards2.lockMarket();
     await realitycards2.getWinnerFromOracle();
     // await realitycards2.determineWinner();
