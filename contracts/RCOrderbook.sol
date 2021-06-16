@@ -163,7 +163,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         market[_market].minimumRentalDuration = SafeCast.toUint64(
             1 days / treasury.minRentalDayDivisor()
         );
-        for (uint64 i; i < _cardCount; i++) {
+        for (uint64 i = 0; i < _cardCount; i++) {
             // create new record for each card that becomes the head&tail of the linked list
             Bid memory _newBid;
             _newBid.market = _market;
@@ -678,9 +678,9 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
     /// @notice this can reduce the users bidRate and chance to foreclose
     /// @param _user the address of the users bids to remove
     function removeOldBids(address _user) external override {
-        address _market;
-        uint256 _cardCount;
-        uint256 _loopCounter;
+        address _market = address(0);
+        uint256 _cardCount = 0;
+        uint256 _loopCounter = 0;
         while (
             userClosedMarketIndex[_user] < closedMarkets.length &&
             _loopCounter + _cardCount < maxDeletions
@@ -720,7 +720,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
 
     /// @dev remove bids in closed markets, not user specific
     function cleanWastePile() internal {
-        uint256 i;
+        uint256 i = 0;
         while (i < cleaningLoops && user[address(this)].length > 0) {
             uint256 _pileHeight = user[address(this)].length - 1;
 
