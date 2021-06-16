@@ -573,6 +573,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
 
                 // they have enough funds, just collect the extra
                 _increaseMarketBalance(_additionalRentOwed, _newOwner);
+                emit LogAdjustDeposit(_newOwner, _additionalRentOwed, false);
             } else {
                 // the new owner has an old rent collection, do they own anything else?
                 if (user[_newOwner].rentalRate != 0) {
