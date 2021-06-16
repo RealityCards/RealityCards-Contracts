@@ -1138,9 +1138,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             block.timestamp > (uint256(oracleResolutionTime) + (12 weeks)),
             "Too early"
         );
-        _incrementState();
-        orderbook.closeMarket();
         state = States.WITHDRAW;
+        orderbook.closeMarket();
+        emit LogStateChange(uint256(state));
     }
     /*
          ▲  
