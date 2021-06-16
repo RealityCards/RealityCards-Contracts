@@ -34,7 +34,6 @@ contract RCNftHubL2 is
     /// @dev matic mintable asset requirements
     bytes32 public constant DEPOSITOR_ROLE = keccak256("DEPOSITOR_ROLE");
     mapping(uint256 => bool) public withdrawnTokens;
-    event WithdrawnBatch(address indexed user, uint256[] tokenIds);
     event TransferWithMetadata(
         address indexed from,
         address indexed to,
