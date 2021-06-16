@@ -213,10 +213,7 @@ contract RCNftHubL2 is
         address to,
         uint256 tokenId
     ) public override {
-        IRCMarket market = IRCMarket(marketTracker[tokenId]);
-        require(market.state() == IRCMarket.States.WITHDRAW, "Incorrect state");
-        require(ownerOf(tokenId) == msgSender(), "Not owner");
-        _transfer(from, to, tokenId);
+        executeTransfer(from, to, tokenId);
     }
 
     function safeTransferFrom(
@@ -225,11 +222,19 @@ contract RCNftHubL2 is
         uint256 tokenId,
         bytes memory _data
     ) public override {
+        executeTransfer(from, to, tokenId);
+        _data;
+    }
+
+    function executeTransfer(
+        address from,
+        address to,
+        uint256 tokenId
+    ) internal {
         IRCMarket market = IRCMarket(marketTracker[tokenId]);
         require(market.state() == IRCMarket.States.WITHDRAW, "Incorrect state");
         require(ownerOf(tokenId) == msgSender(), "Not owner");
         _transfer(from, to, tokenId);
-        _data;
     }
     /*
          ▲  
