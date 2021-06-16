@@ -723,7 +723,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         returns (uint256 newTimeLastCollectedOnForeclosure)
     {
         require(!globalPause, "Global pause is enabled");
-        assert(_timeToCollectTo != 0);
+        require(_timeToCollectTo != 0, "Must set collection time");
         if (user[_user].lastRentCalc < _timeToCollectTo) {
             uint256 rentOwedByUser = rentOwedUser(_user, _timeToCollectTo);
 

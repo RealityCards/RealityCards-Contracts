@@ -379,7 +379,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         require(_market != address(0));
         // check it's an RC contract
         IRCMarket _marketToApprove = IRCMarket(_market);
-        assert(_marketToApprove.isMarket());
+        require(_marketToApprove.isMarket(), "Not Market");
         isMarketApproved[_market] = !isMarketApproved[_market];
         treasury.unPauseMarket(_market);
         emit LogMarketApproved(_market, isMarketApproved[_market]);
@@ -429,7 +429,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         require(_newAddress != address(0));
         // check it's an RC contract
         IRCMarket newContractVariable = IRCMarket(_newAddress);
-        assert(newContractVariable.isMarket());
+        require(newContractVariable.isMarket(), "Not Market");
         // set
         referenceContractAddress = _newAddress;
         // increment version
