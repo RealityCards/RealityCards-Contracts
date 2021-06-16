@@ -343,43 +343,46 @@ contract('TestRequireStatements', (accounts) => {
   });
 
   it('check oracleResolutionTime and marketLockingTime expected failures', async () => {
+    let now = await time.latest();
+    let oneDay = new BN('86400');
     // someone else deploys question to realitio
     var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
     var arbitrator = "0xA6EAd513D05347138184324392d8ceb24C116118";
-    var timeout = 86400;
+    var timeout = oneDay;
     var templateId = 2;
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     var slug = 'y';
     // resolution time before locking, expect failure
-    var oracleResolutionTime = 69419;
-    var marketLockingTime = 69420;
+    var oracleResolutionTime = now.add(new BN(69419));
+    var marketLockingTime = now.add(new BN(69420));
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
     await expectRevert(rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0), "Oracle resolution time error");
     // resolution time > 1 weeks after locking, expect failure
-    var oracleResolutionTime = 604810;
-    var marketLockingTime = 0;
-    var timestamps = [0, marketLockingTime, oracleResolutionTime];
+    var oracleResolutionTime = now.add(new BN(604910));
+    var marketLockingTime = now.add(new BN(100));
+    var timestamps = [now, marketLockingTime, oracleResolutionTime];
     await expectRevert(rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0), "Oracle resolution time error");
     // resolution time < 1 week  after locking, no failure
-    var oracleResolutionTime = 604790;
-    var marketLockingTime = 0;
-    var timestamps = [0, marketLockingTime, oracleResolutionTime];
+    var oracleResolutionTime = now.add(new BN(604790));
+    var marketLockingTime = now.add(new BN(100));
+    var timestamps = [now, marketLockingTime, oracleResolutionTime];
     var slug = 'z';
     await rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0);
     // same time, no failure
-    var oracleResolutionTime = 0;
-    var marketLockingTime = 0;
-    var timestamps = [0, marketLockingTime, oracleResolutionTime];
+    var oracleResolutionTime = now.add(new BN(100));
+    var marketLockingTime = now.add(new BN(100));
+    var timestamps = [now, marketLockingTime, oracleResolutionTime];
     var slug = 'a';
     await rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0);
   });
 
 
   it('test marketOpeningTime stuff', async () => {
+    let now = await time.latest();
     await depositDai(144, user0);
     // // check that state is 1 if marketopening time in the past
-    var realitycards2 = await createMarketCustomeTimestamps(100, 100, 100);
+    var realitycards2 = await createMarketCustomeTimestamps(100, now.add(new BN(101)), now.add(new BN(101)));
     var state = await realitycards2.state();
     assert.equal(state, 1);
     var latestTime = await time.latest();

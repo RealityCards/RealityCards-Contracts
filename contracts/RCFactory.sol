@@ -47,6 +47,8 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     uint32 public advancedWarning;
     /// @dev market closing time must be no more than this many seconds in the future
     uint32 public maximumDuration;
+    /// @dev market closing time must be at least this many seconds after opening
+    uint32 public minimumDuration;
     /// @dev list of governors
     mapping(address => bool) public governors;
     /// @dev if false, anyone can create markets
@@ -103,6 +105,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     event LogMarketApproved(address market, bool hidden);
     event LogAdvancedWarning(uint256 _newAdvancedWarning);
     event LogMaximumDuration(uint256 _newMaximumDuration);
+    event LogMinimumDuration(uint256 _newMinimumDuration);
 
     /*╔═════════════════════════════════╗
       ║          CONSTRUCTOR            ║
@@ -340,6 +343,13 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         emit LogMaximumDuration(_newMaximumDuration);
     }
 
+    /// @notice market closing time must be at least this many seconds after opening
+    /// @param _newMinimumDuration the duration limit to set in seconds
+    function setMinimumDuration(uint32 _newMinimumDuration) external onlyOwner {
+        minimumDuration = _newMinimumDuration;
+        emit LogMinimumDuration(_newMinimumDuration);
+    }
+
     /// @notice to fetch the owner of the contract
     /// @dev used to specifiy the Ownable contract instead of the interface
     function owner()
@@ -512,6 +522,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         require(_timestamps.length == 3, "Incorrect number of array elements");
         // check market opening time
         if (advancedWarning != 0) {
+            // different statements to give clearer revert messages
             require(
                 _timestamps[0] >= block.timestamp,
                 "Market opening time not set"
@@ -528,6 +539,11 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
                 "Market locks too late"
             );
         }
+        require(
+            _timestamps[0] + minimumDuration < _timestamps[1] &&
+                block.timestamp + minimumDuration < _timestamps[1],
+            "Market lock must be after opening"
+        );
         // check oracle resolution time (no more than 1 week after market locking to get result)
         require(
             _timestamps[1] + (1 weeks) > _timestamps[2] &&

@@ -408,15 +408,17 @@ contract('TestFactory', (accounts) => {
     // locking time now two weeks in future should pass
     var twoDays = new BN('172800');
     var twoDaysInTheFuture = twoDays.add(latestTime);
-    var marketLockingTime = twoDaysInTheFuture;
-    var oracleResolutionTime = twoDaysInTheFuture;
+    var marketLockingTime = twoDaysInTheFuture.add(twoDays);
+    var oracleResolutionTime = twoDaysInTheFuture.add(twoDays);
     var timestamps = [twoDaysInTheFuture, marketLockingTime, oracleResolutionTime];
     rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0);
   });
 
 
   it('test changeArtistApproval, changeAffiliateApproval, changeCardAffiliateApproval', async () => {
-    var timestamps = [0, 0, 0];
+    let now = await time.latest();
+    let oneDay = new BN('86400');
+    var timestamps = [now, now.add(oneDay), now.add(oneDay)];
     var artistAddress = user2;
     var affiliateAddress = user2;
     var cardRecipients = ['0x0000000000000000000000000000000000000000', user6, user7, user8, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user2];
