@@ -614,6 +614,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     /// @dev called when all a user's bids have been removed, disables foreclosure state
     function resetUser(address _user) external override onlyOrderbook {
         isForeclosed[_user] = false;
+        emit LogUserForeclosed(_user, false);
     }
 
     /*╔═════════════════════════════════╗
