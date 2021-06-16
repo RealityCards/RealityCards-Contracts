@@ -56,8 +56,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
     address public uberOwner;
     /// @dev the current factory address
     address public factoryAddress;
-    /// @dev the current treasury address
-    address public treasuryAddress;
+    /// @dev the current treasury
     IRCTreasury public treasury;
     /// @dev max number of searches to place an order in the book
     /// @dev current estimates place limit around 2000
@@ -104,10 +103,9 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
       ╚═════════════════════════════════╝*/
 
     constructor(address _factoryAddress, address _treasuryAddress) {
-        factoryAddress = _factoryAddress;
-        treasuryAddress = _treasuryAddress;
-        treasury = IRCTreasury(treasuryAddress);
         uberOwner = msgSender();
+        setFactoryAddress(_factoryAddress);
+        setTreasuryAddress(_treasuryAddress);
     }
 
     /*╔═════════════════════════════════╗
@@ -120,10 +118,18 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         uberOwner = _newUberOwner;
     }
 
-    function setFactoryAddress(address _newFactory) external override {
+    /// @dev public becuase used in constructor
+    function setFactoryAddress(address _newFactory) public override {
         require(msgSender() == uberOwner, "Extremely Verboten");
         require(_newFactory != address(0));
         factoryAddress = _newFactory;
+    }
+
+    /// @dev public becuase used in constructor
+    function setTreasuryAddress(address _newTreasury) public override {
+        require(msgSender() == uberOwner, "Extremely Verboten");
+        require(_newTreasury != address(0));
+        treasury = IRCTreasury(_newTreasury);
     }
 
     function setLimits(

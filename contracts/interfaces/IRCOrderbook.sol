@@ -4,7 +4,9 @@ pragma solidity 0.8.4;
 interface IRCOrderbook {
     function changeUberOwner(address) external;
 
-    function setFactoryAddress(address) external;
+    function setFactoryAddress(address _newFactory) external;
+
+    function setTreasuryAddress(address _newTreasury) external;
 
     function addMarket(
         address _market,
