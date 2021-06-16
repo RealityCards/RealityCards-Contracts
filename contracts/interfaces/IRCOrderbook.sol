@@ -31,8 +31,7 @@ interface IRCOrderbook {
     function closeMarket() external;
 
     function findNewOwner(uint256 _token, uint256 _timeOwnershipChanged)
-        external
-        returns (address _newOwner);
+        external;
 
     function getBidValue(address _user, uint256 _token)
         external

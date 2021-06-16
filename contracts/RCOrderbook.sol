@@ -533,8 +533,8 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         external
         override
         onlyMarkets
-        returns (address _newOwner)
     {
+        address _newOwner = address(0);
         address _market = msgSender();
         // the market is the head of the list, the next bid is therefore the owner
         Bid storage _head = user[_market][index[_market][_market][_card]];

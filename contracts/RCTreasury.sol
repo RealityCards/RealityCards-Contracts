@@ -425,7 +425,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         override
         balancedBooks
         onlyMarkets
-        returns (bool)
     {
         require(!globalPause, "Rentals are disabled");
         if (marketBalance < _amount) {
@@ -436,8 +435,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         marketBalance -= _amount;
         marketPot[_market] += _amount;
         totalMarketPots += _amount;
-
-        return true;
     }
 
     /// @notice a payout is equivalent to moving from market pot to user's deposit (the opposite of payRent)
