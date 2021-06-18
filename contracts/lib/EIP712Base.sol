@@ -18,6 +18,9 @@ contract EIP712Base is Initializable {
             )
         );
     bytes32 internal domainSeperator;
+    uint256 private cachedChainId;
+    string private cachedName;
+    string private cachedVersion;
 
     // supposed to be called once while initializing.
     // one of the contractsa that inherits this contract follows proxy pattern
@@ -44,7 +47,20 @@ contract EIP712Base is Initializable {
     }
 
     function getDomainSeperator() public view returns (bytes32) {
-        return domainSeperator;
+        if (getChainId() == cachedChainId) {
+            return domainSeperator;
+        } else {
+            return
+                keccak256(
+                    abi.encode(
+                        EIP712_DOMAIN_TYPEHASH,
+                        keccak256(bytes(cachedName)),
+                        keccak256(bytes(cachedVersion)),
+                        address(this),
+                        bytes32(getChainId())
+                    )
+                );
+        }
     }
 
     function getChainId() public view returns (uint256) {
