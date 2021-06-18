@@ -3,13 +3,14 @@
 ###################
 #### Setup ########
 ###################
-EVENT_NAME="Who will win tonights UEFA match between France & Germany?"
-SRC_NAME="DEvsFR"
-CATEGORY="Sports"
-SLUG="DEvsFR"
-NUMBER_OF_CARDS="3"
-CARD0="France"
-CARD1="Germany"
+EVENT_NAME="Will Dogecoin be ranked higher in marketcap than XRP on June 25, 2021 (according to CoinGecko)?"
+SRC_NAME="dogexrp"
+CATEGORY="Cryptocurrency"
+SLUG="dogexrp"
+IMAGE_FORMAT=".gif"
+NUMBER_OF_CARDS="2"
+CARD0="Yes"
+CARD1="No"
 CARD2="Draw"
 CARD3="Sporting"
 CARD4="Terrier"
@@ -36,7 +37,6 @@ CARD24="Ukraine"
 CARD25="United Kingdom"
 CDN="https://cdn.realitycards.io/"
 IMAGES="images/"
-IMAGE_FORMAT=".png"
 NFT="nftmetadata/"
 ##################
 
