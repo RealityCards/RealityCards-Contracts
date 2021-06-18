@@ -271,7 +271,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
             _requiredPrice = (_nextUser.price * (_minIncrease + (100))) / (100);
             i++;
         }
-        require(i < maxSearchIterations, "Position in orderbook not found");
+        require(i < maxSearchIterations, "Position not found");
 
         // if previous price is zero it must be the market and this is a new owner
         // .. then don't reduce their price, we already checked they are 10% higher
@@ -446,7 +446,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
 
     /// @notice removes a single bid from the orderbook - onlyMarkets
     function removeBidFromOrderbook(address _user, uint256 _card)
-        public
+        external
         override
         onlyMarkets
     {
@@ -468,30 +468,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
                 block.timestamp
             );
         }
-        // extract from linked list
-        address _tempNext = _currUser.next;
-        address _tempPrev = _currUser.prev;
-        user[_tempNext][index[_tempNext][_market][_card]].prev = _tempPrev;
-        user[_tempPrev][index[_tempPrev][_market][_card]].next = _tempNext;
-
-        // overwrite array element
-        uint256 _index = index[_user][_market][_card];
-        uint256 _lastRecord = user[_user].length - (1);
-
-        // no point overwriting itself
-        if (_index != _lastRecord) {
-            user[_user][_index] = user[_user][_lastRecord];
-        }
-        user[_user].pop();
-
-        // update the index to help find the record later
-        index[_user][_market][_card] = 0;
-        if (user[_user].length != 0 && _index != _lastRecord) {
-            index[_user][user[_user][_index].market][
-                user[_user][_index].token
-            ] = _index;
-        }
-        emit LogRemoveFromOrderbook(_user, _market, _card);
+        _removeBidFromOrderbookIgnoreOwner(_user, _card);
     }
 
     /// @dev removes a single bid from the orderbook, doesn't update ownership
