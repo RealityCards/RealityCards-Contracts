@@ -661,6 +661,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @notice rent every Card at the minimum price
     /// @param _maxSumOfPrices a limit to the sum of the bids to place
     function rentAllCards(uint256 _maxSumOfPrices) external {
+        _checkState(States.OPEN);
         // check that not being front run
         uint256 _actualSumOfPrices;
         for (uint256 i = 0; i < numberOfCards; i++) {
