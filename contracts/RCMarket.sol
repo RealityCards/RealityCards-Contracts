@@ -335,6 +335,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
     /// @notice gets the owner of the NFT via their Card Id
     function ownerOf(uint256 _cardId) public view override returns (address) {
+        require(_cardId < numberOfCards, "Card does not exist");
         uint256 _tokenId = _cardId + totalNftMintCount;
         return nfthub.ownerOf(_tokenId);
     }
