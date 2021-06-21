@@ -844,7 +844,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @dev called by user, sponsor is msgSender
     function sponsor(uint256 _amount) external override {
         address _creator = msgSender();
-        treasury.checkSponsorship(_creator, _amount);
         _sponsor(_creator, _amount);
     }
 
