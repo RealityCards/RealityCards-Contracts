@@ -326,7 +326,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             "Market is Paused"
         );
         uint256 _tokenId = _card + totalNftMintCount;
-        _transferCard(ownerOf(_card), address(this), _card); // contract becomes final resting place
         nfthub.withdrawWithMetadata(_tokenId);
         emit LogNftUpgraded(_card, _tokenId);
     }
