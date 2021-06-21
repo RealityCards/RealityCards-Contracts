@@ -115,7 +115,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
     // ORACLE VARIABLES
     bytes32 public questionId;
-    bool public questionFinalised;
     address public arbitrator;
     uint32 public timeout;
     IRealitio public realitio;
@@ -267,7 +266,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         }
 
         // post question to Oracle
-        questionFinalised = false;
         _postQuestionToOracle(_realitioQuestion, _timestamps[2]);
 
         // move to OPEN immediately if market opening time in the past
@@ -437,7 +435,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         require(isFinalized(), "Oracle not finalised");
         // check market state to prevent market closing early
         require(marketLockingTime <= block.timestamp, "Market not finished");
-        questionFinalised = true;
         bytes32 _winningOutcome = realitio.resultFor(questionId);
         // call the market
         setWinner(uint256(_winningOutcome));
@@ -446,7 +443,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @dev admin override of the oracle
     function setAmicableResolution(uint256 _winningOutcome) external {
         require(msgSender() == factory.owner(), "Not authorised");
-        questionFinalised = true;
         setWinner(_winningOutcome);
     }
 
