@@ -480,6 +480,9 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     ) external returns (address) {
         address _creator = msgSender();
 
+        // check nfthub has been set
+        require(address(nfthub) != address(0), "Nfthub not set");
+
         // check sponsorship
         require(
             _sponsorship >= sponsorshipRequired,
@@ -603,7 +606,6 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         });
 
         // create the NFTs
-        require(address(nfthub) != address(0), "Nfthub not set");
         for (uint256 i = 0; i < _tokenURIs.length; i++) {
             uint256 _tokenId = i + totalNftMintCount;
             require(
