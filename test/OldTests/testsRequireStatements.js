@@ -288,9 +288,9 @@ contract('TestRequireStatements', (accounts) => {
     await time.increase(time.duration.years(1));
     await realitycards.lockMarket();
     // should fail cos LOCKED
-    await expectRevert(nftHubL2.transferFrom(user, user1, 2), "Incorrect state");
-    await expectRevert(nftHubL2.safeTransferFrom(user, user1, 2), "Incorrect state");
-    await expectRevert(nftHubL2.safeTransferFrom(user, user1, 2, web3.utils.asciiToHex("123456789")), "Incorrect state");
+    await expectRevert(nftHubL2.transferFrom(user, user1, 2), "ERC721: transfer caller is not owner nor approved");
+    await expectRevert(nftHubL2.safeTransferFrom(user, user1, 2), "ERC721: transfer caller is not owner nor approved");
+    await expectRevert(nftHubL2.safeTransferFrom(user, user1, 2, web3.utils.asciiToHex("123456789")), "ERC721: transfer caller is not owner nor approved");
     await realitio.setResult(realitycards.address, 2);
     await realitycards.getWinnerFromOracle();
     // await realitycards.determineWinner();
@@ -298,8 +298,8 @@ contract('TestRequireStatements', (accounts) => {
     // these shoudl all fail cos wrong owner:
     var owner = await realitycards.ownerOf(2);
     assert.equal(owner, user);
-    await expectRevert(nftHubL2.transferFrom(user, user1, 2, { from: user1 }), "Not owner");
-    await expectRevert(nftHubL2.safeTransferFrom(user1, user1, 2, { from: user1 }), "Not owner");
+    await expectRevert(nftHubL2.transferFrom(user, user1, 2, { from: user1 }), "ERC721: transfer caller is not owner nor approved");
+    await expectRevert(nftHubL2.safeTransferFrom(user1, user1, 2, { from: user1 }), "ERC721: transfer caller is not owner nor approved");
     // these should not
     await nftHubL2.transferFrom(user, user1, 2, { from: user });
     await nftHubL2.safeTransferFrom(user1, user, 2, { from: user1 });

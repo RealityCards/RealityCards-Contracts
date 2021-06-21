@@ -818,7 +818,7 @@ contract('TestFundamentals', (accounts) => {
     }
     // sum of all prices is 19 + 11 = 30
     await expectRevert(realitycards.rentAllCards(web3.utils.toWei('25', 'ether')), "Prices too high");
-    realitycards.rentAllCards(web3.utils.toWei('30', 'ether'));
+    realitycards.rentAllCards(web3.utils.toWei('35', 'ether'));
     // withdraw
     await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000, user0);

@@ -94,9 +94,9 @@ contract RCNftHubL2 is
             "ChildMintableERC721: TOKEN_EXISTS_ON_ROOT_CHAIN"
         );
         require(msgSender() == factoryAddress, "Not factory");
+        marketTracker[_tokenId] = _originalOwner;
         _mint(_originalOwner, _tokenId);
         _setTokenURI(_tokenId, _tokenURI);
-        marketTracker[_tokenId] = _originalOwner;
         return true;
     }
 
@@ -211,35 +211,25 @@ contract RCNftHubL2 is
       ║           OVERRIDES             ║
       ╚═════════════════════════════════╝*/
     /// @dev ensures NFTs can only be moved when market is resolved
-
-    function transferFrom(
+    function _beforeTokenTransfer(
         address from,
         address to,
         uint256 tokenId
-    ) public override {
-        executeTransfer(from, to, tokenId);
+    ) internal virtual override {
+        super._beforeTokenTransfer(from, to, tokenId);
+
+        if (
+            msgSender() != factoryAddress &&
+            msgSender() != marketTracker[tokenId]
+        ) {
+            IRCMarket market = IRCMarket(marketTracker[tokenId]);
+            require(
+                market.state() == IRCMarket.States.WITHDRAW,
+                "Incorrect state"
+            );
+        }
     }
 
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 tokenId,
-        bytes memory _data
-    ) public override {
-        executeTransfer(from, to, tokenId);
-        _data;
-    }
-
-    function executeTransfer(
-        address from,
-        address to,
-        uint256 tokenId
-    ) internal {
-        IRCMarket market = IRCMarket(marketTracker[tokenId]);
-        require(market.state() == IRCMarket.States.WITHDRAW, "Incorrect state");
-        require(ownerOf(tokenId) == msgSender(), "Not owner");
-        _transfer(from, to, tokenId);
-    }
     /*
          ▲  
         ▲ ▲ 
