@@ -28,7 +28,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     uint256 public constant MIN_RENTAL_VALUE = 1 ether;
     States public override state;
     /// @dev type of event.
-    enum Mode {CLASSIC, WINNER_TAKES_ALL, SAFE_MODE}
     Mode public mode;
     /// @dev so the Factory can check it's a market
     bool public constant override isMarket = true;
@@ -189,7 +188,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @param _marketCreatorAddress where to send market creator's cut, if any
     /// @param _realitioQuestion the question posted to the Oracle
     function initialize(
-        uint256 _mode,
+        Mode _mode,
         uint32[] memory _timestamps,
         uint256 _numberOfCards,
         uint256 _totalNftMintCount,
@@ -260,7 +259,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         }
 
         // if winner takes all mode, set winnerCut to max
-        if (_mode == uint8(Mode.WINNER_TAKES_ALL)) {
+        if (_mode == Mode.WINNER_TAKES_ALL) {
             winnerCut =
                 (((uint256(PER_MILLE) - artistCut) - creatorCut) -
                     affiliateCut) -

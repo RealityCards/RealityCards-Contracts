@@ -5,6 +5,7 @@ import "../interfaces/IRealitio.sol";
 
 interface IRCMarket {
     enum States {CLOSED, OPEN, LOCKED, WITHDRAW}
+    enum Mode {CLASSIC, WINNER_TAKES_ALL, SAFE_MODE}
 
     function isMarket() external view returns (bool);
 
@@ -13,7 +14,7 @@ interface IRCMarket {
     function sponsor(uint256 _amount) external;
 
     function initialize(
-        uint256 _mode,
+        Mode _mode,
         uint32[] calldata _timestamps,
         uint256 _numberOfTokens,
         uint256 _totalNftMintCount,

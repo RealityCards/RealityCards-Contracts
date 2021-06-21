@@ -33,7 +33,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     uint256 public referenceContractVersion;
     /// @dev market addresses, mode // address
     /// @dev these are not used for anything, just an easy way to get markets
-    mapping(uint256 => address[]) public marketAddresses;
+    mapping(IRCMarket.Mode => address[]) public marketAddresses;
     mapping(address => bool) public mappingOfMarkets;
 
     ///// GOVERNANCE VARIABLES- OWNER /////
@@ -96,7 +96,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     );
     event LogMarketCreated2(
         address contractAddress,
-        uint32 mode,
+        IRCMarket.Mode mode,
         string[] tokenURIs,
         string ipfsHash,
         uint32[] timestamps,
@@ -146,7 +146,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     /// @notice Fetch the address of the most recently created market
     /// @param _mode Filter by market mode, 0=Classic 1=Winner Takes All 2=SafeMode
     /// @return the address of the most recent market in the given mode
-    function getMostRecentMarket(uint256 _mode)
+    function getMostRecentMarket(IRCMarket.Mode _mode)
         external
         view
         returns (address)
@@ -157,7 +157,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     /// @notice Fetch all the market addresses for a given mode
     /// @param _mode Filter by market mode, 0=Classic 1=Winner Takes All 2=SafeMode
     /// @return an array of all markets in a given mode
-    function getAllMarkets(uint256 _mode)
+    function getAllMarkets(IRCMarket.Mode _mode)
         external
         view
         returns (address[] memory)
@@ -468,7 +468,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     /// @param _sponsorship amount of sponsorship to create the market with
     /// @return The address of the new market
     function createMarket(
-        uint32 _mode,
+        IRCMarket.Mode _mode,
         string memory _ipfsHash,
         uint32[] memory _timestamps,
         string[] memory _tokenURIs,
