@@ -362,6 +362,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         }
 
         // step 3: remove bids if insufficient deposit
+        // do some cleaning up first, it might help avoid their foreclosure
+        orderbook.removeOldBids(_msgSender);
         if (
             user[_msgSender].bidRate != 0 &&
             user[_msgSender].bidRate / (minRentalDayDivisor) >
