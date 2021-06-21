@@ -665,12 +665,13 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         // check that not being front run
         uint256 _actualSumOfPrices;
         for (uint256 i = 0; i < numberOfCards; i++) {
-            if (cardPrice[i] == 0){
+            if (cardPrice[i] == 0) {
                 _actualSumOfPrices += MIN_RENTAL_VALUE;
             } else {
-                _actualSumOfPrices += (cardPrice[i] *
-                            (minimumPriceIncreasePercent + 100)) / 100;
-            }         
+                _actualSumOfPrices +=
+                    (cardPrice[i] * (minimumPriceIncreasePercent + 100)) /
+                    100;
+            }
         }
         require(_actualSumOfPrices <= _maxSumOfPrices, "Prices too high");
 
@@ -812,24 +813,28 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @dev public because called by exitAll()
     /// @dev doesn't need to be current owner so user can prevent ownership returning to them
     /// @dev does not apply minimum rental duration, because it returns ownership to the next user
+    /// @dev doesn't revert if nonexistant bid because user might be trying to exitAll()
     /// @param _card The card index to exit
     function exit(uint256 _card) public override {
         _checkState(States.OPEN);
         address _msgSender = msgSender();
 
-        // block frontrunning attack
-        exitedTimestamp[_msgSender] = block.timestamp;
-
         // collectRent first
         _collectRent(_card);
 
         if (ownerOf(_card) == _msgSender) {
+            // block frontrunning attack
+            exitedTimestamp[_msgSender] = block.timestamp;
+
             // if current owner, find a new one
             orderbook.findNewOwner(_card, block.timestamp);
             assert(!orderbook.bidExists(_msgSender, address(this), _card));
         } else {
             // if not owner, just delete from orderbook
             if (orderbook.bidExists(_msgSender, address(this), _card)) {
+                // block frontrunning attack
+                exitedTimestamp[_msgSender] = block.timestamp;
+
                 orderbook.removeBidFromOrderbook(_msgSender, _card);
             }
         }
