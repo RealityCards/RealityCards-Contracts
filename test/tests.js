@@ -193,6 +193,7 @@ contract("RealityCardsTests", (accounts) => {
             // withdrawing locally again, until the bridge is finished.
             await treasury.withdrawDeposit(ether("100"), true, { from: bob });
             // check we don't own the card or have any bids
+            await markets[0].collectRentAllCards();
             assert.equal((await markets[0].ownerOf(0)), markets[0].address);
             assert.equal((await treasury.userTotalBids(bob)), 0);
         });
@@ -322,6 +323,7 @@ contract("RealityCardsTests", (accounts) => {
             assert.equal(totalRentals.toString(), ether("5").toString());
 
             await rc.withdrawDeposit(1000, alice);
+            await markets[0].collectRentAllCards();
             var owner = await markets[0].ownerOf.call(0);
             assert.notEqual(owner, alice);
         });

@@ -470,15 +470,15 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         }
 
         // now remove the bid
-        _removeBidFromOrderbookIgnoreOwner(_user, _card);
+        _removeBidFromOrderbookIgnoreOwner(_user, _market, _card);
     }
 
     /// @dev removes a single bid from the orderbook, doesn't update ownership
-    function _removeBidFromOrderbookIgnoreOwner(address _user, uint256 _card)
-        internal
-        returns (uint256 _newPrice)
-    {
-        address _market = msgSender();
+    function _removeBidFromOrderbookIgnoreOwner(
+        address _user,
+        address _market,
+        uint256 _card
+    ) internal returns (uint256 _newPrice) {
         // update rates
         Bid storage _currUser = user[_user][index[_user][_market][_card]];
         treasury.decreaseBidRate(_user, _currUser.price);
@@ -508,7 +508,12 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
                 user[_user][_index].token
             ] = _index;
         }
-        emit LogRemoveFromOrderbook(_user, _market, _card);
+
+        // If the market is closed we don't need to emit the event
+        // A closed market will have an empty linked list and so point at itself
+        if (user[_market][index[_market][_market][_card]].next != _market) {
+            emit LogRemoveFromOrderbook(_user, _market, _card);
+        }
     }
 
     /// @notice find the next valid owner of a given card - onlyMarkets
@@ -532,7 +537,11 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
 
         // delete current owner
         do {
-            _newPrice = _removeBidFromOrderbookIgnoreOwner(_head.next, _card);
+            _newPrice = _removeBidFromOrderbookIgnoreOwner(
+                _head.next,
+                _market,
+                _card
+            );
             // delete next bid if foreclosed
         } while (
             treasury.foreclosureTimeUser(
@@ -573,44 +582,14 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
 
         do {
             i--;
-            index[_user][user[_user][i].market][user[_user][i].token] = 0;
-            address _tempPrev = user[_user][i].prev;
-            address _tempNext = user[_user][i].next;
 
-            // reduce the rentalRate if they are owner
-            if (_tempPrev == user[_user][i].market) {
+            // If the prev record isn't the market, this is only a bid (not owned) so we can delete
+            if (user[_user][i].prev != user[_user][i].market) {
                 _market = user[_user][i].market;
                 _card = user[_user][i].token;
-                uint256 _price =
-                    user[_tempNext][index[_tempNext][_market][_card]].price;
-                treasury.updateRentalRate(
-                    _user,
-                    _tempNext,
-                    user[_user][i].price,
-                    _price,
-                    block.timestamp
-                );
-                transferCard(_market, _card, _user, _tempNext, _price);
+                _removeBidFromOrderbookIgnoreOwner(_user, _market, _card);
             }
-
-            // If the market is closed we don't need to emit the event
-            // A closed market will have an empty linked list and so point at itself
-            if (user[_market][index[_market][_market][_card]].next != _market) {
-                emit LogRemoveFromOrderbook(_user, _market, _card);
-            }
-
-            treasury.decreaseBidRate(_user, user[_user][i].price);
-
-            user[_tempNext][
-                index[_tempNext][user[_user][i].market][user[_user][i].token]
-            ]
-                .prev = _tempPrev;
-            user[_tempPrev][
-                index[_tempPrev][user[_user][i].market][user[_user][i].token]
-            ]
-                .next = _tempNext;
-            user[_user].pop();
-        } while (user[_user].length > _limit);
+        } while (user[_user].length > _limit && i > 0);
         if (user[_user].length == 0) {
             treasury.resetUser(_user);
             _userForeclosed = false;
