@@ -450,7 +450,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         returns (bool)
     {
         require(!globalPause, "Payouts are disabled");
-        assert(marketPot[msgSender()] >= _amount);
         user[_user].deposit += SafeCast.toUint128(_amount);
         marketPot[msgSender()] -= _amount;
         totalMarketPots -= _amount;

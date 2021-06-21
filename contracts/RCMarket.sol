@@ -359,7 +359,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         );
         uint256 _tokenId = _cardId + totalNftMintCount;
 
-        assert(nfthub.transferNft(_from, _to, _tokenId));
+        nfthub.transferNft(_from, _to, _tokenId);
         emit LogNewOwner(_cardId, _to);
     }
 
@@ -567,7 +567,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
     /// @notice all payouts happen through here
     function _payout(address _recipient, uint256 _amount) internal {
-        assert(treasury.payout(_recipient, _amount));
+        treasury.payout(_recipient, _amount);
     }
 
     /// @dev the below functions pay stakeholders (artist, creator, affiliate, card specific affiliates)
@@ -754,7 +754,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                     _startingPosition
                 );
 
-                assert(treasury.updateLastRentalTime(_user));
+                treasury.updateLastRentalTime(_user);
             }
         }
     }
