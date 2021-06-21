@@ -618,14 +618,15 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
                 block.timestamp
             );
 
-            // store first and last bids for later
-            address _firstBid = _lastOwner;
+            // store last bid for later
             address _lastBid = user[_market][index[_market][_market][i]].prev;
 
             // detach market from rest of list
             user[_market][index[_market][_market][i]].prev = _market;
             user[_market][index[_market][_market][i]].next = _market;
-            user[_firstBid][index[_market][_firstBid][i]].prev = address(this);
+            user[_lastOwner][index[_market][_lastOwner][i]].prev = address(
+                this
+            );
             user[_lastBid][index[_market][_lastBid][i]].next = address(this);
 
             // insert bids in the waste pile
@@ -633,7 +634,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
             _newBid.market = _market;
             _newBid.token = i;
             _newBid.prev = _lastBid;
-            _newBid.next = _firstBid;
+            _newBid.next = _lastOwner;
             _newBid.price = 0;
             _newBid.timeHeldLimit = 0;
             user[address(this)].push(_newBid);
