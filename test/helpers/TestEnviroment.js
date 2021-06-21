@@ -20,6 +20,8 @@ const DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
 const kleros = "0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D";
 const zeroAddress = "0x0000000000000000000000000000000000000000";
 const tokenMockup = artifacts.require("./mockups/tokenMockup.sol");
+// used where the address isn't important but can't be zero
+const dummyAddress = '0x0000000000000000000000000000000000000001';
 
 
 
@@ -75,8 +77,8 @@ module.exports = class TestEnviroment {
         this.contracts.factory = await RCFactory.new(this.contracts.treasury.address, this.contracts.realitio.address, kleros);
         this.contracts.reference = await RCMarket.new();
         this.contracts.orderbook = await RCOrderbook.new(this.contracts.factory.address, this.contracts.treasury.address);
-        // nft hubs
-        this.contracts.nftHubL2 = await NftHubL2.new(this.contracts.factory.address, this.constants.ZERO_ADDRESS);
+        // nft hubs 
+        this.contracts.nftHubL2 = await NftHubL2.new(this.contracts.factory.address, dummyAddress);
         this.contracts.nftHubL1 = await NftHubL1.new();
         // tell treasury about factory, tell factory about nft hub and reference
         await this.contracts.treasury.setFactoryAddress(this.contracts.factory.address);

@@ -48,6 +48,10 @@ contract RCNftHubL2 is
     constructor(address _factoryAddress, address childChainManager)
         ERC721("RealityCards", "RC")
     {
+        require(
+            childChainManager != address(0),
+            "Must add childChainManager address"
+        );
         // initialise MetaTransactions
         _initializeEIP712("RealityCardsNftHubL2", "1");
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
