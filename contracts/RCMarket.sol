@@ -665,7 +665,12 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         // check that not being front run
         uint256 _actualSumOfPrices;
         for (uint256 i = 0; i < numberOfCards; i++) {
-            _actualSumOfPrices = _actualSumOfPrices + (cardPrice[i]);
+            if (cardPrice[i] == 0){
+                _actualSumOfPrices += MIN_RENTAL_VALUE;
+            } else {
+                _actualSumOfPrices += (cardPrice[i] *
+                            (minimumPriceIncreasePercent + 100)) / 100;
+            }         
         }
         require(_actualSumOfPrices <= _maxSumOfPrices, "Prices too high");
 
