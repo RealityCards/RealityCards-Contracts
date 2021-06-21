@@ -451,9 +451,9 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         onlyMarkets
     {
         address _market = msgSender();
-        // update rates
+
+        // check if this is the owner
         Bid storage _currUser = user[_user][index[_user][_market][_card]];
-        treasury.decreaseBidRate(_user, _currUser.price);
         if (_currUser.prev == _market) {
             // user is owner, deal with it
             uint256 _price =
@@ -468,6 +468,8 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
                 block.timestamp
             );
         }
+
+        // now remove the bid
         _removeBidFromOrderbookIgnoreOwner(_user, _card);
     }
 
