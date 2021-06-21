@@ -378,8 +378,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     function changeMarketApproval(address _market) external onlyGovernors {
         require(_market != address(0));
         // check it's an RC contract
-        IRCMarket _marketToApprove = IRCMarket(_market);
-        require(_marketToApprove.isMarket(), "Not Market");
+        require(mappingOfMarkets[_market], "Not Market");
         isMarketApproved[_market] = !isMarketApproved[_market];
         treasury.unPauseMarket(_market);
         emit LogMarketApproved(_market, isMarketApproved[_market]);
