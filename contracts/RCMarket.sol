@@ -1000,7 +1000,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                     // market locked before user foreclosed
                     _timeOfThisCollection = marketLockingTime;
                     _newOwner = false;
-                    _refundTime = block.timestamp - marketLockingTime;
+                    _refundTime = _timeUserForeclosed - marketLockingTime;
                 }
             } else if (_foreclosed && _limitHit && !_marketLocked) {
                 // CASE 7
