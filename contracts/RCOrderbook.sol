@@ -563,7 +563,8 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         transferCard(_market, _card, _oldOwner, _newOwner, _newPrice);
     }
 
-    /// @notice when a user has foreclosed we can freely delete their bids
+    /// @notice when a user has foreclosed we can freely delete their bids, however leave owned cards
+    /// @notice .. as the markets will need to finish the accounting for them first.
     /// @param _user the user whose bids to start deleting
     /// @return _userForeclosed if the user doesn't have bids left they are considered not foreclosed anymore
     function removeUserFromOrderbook(address _user)
