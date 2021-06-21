@@ -180,7 +180,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @param _mode 0 = normal, 1 = winner takes all, 2 = Safe Mode
     /// @param _timestamps for market opening, locking, and oracle resolution
     /// @param _numberOfCards how many Cards in this market
-    /// @param _totalNftMintCount total existing Cards across all markets excl this event's Cards
     /// @param _artistAddress where to send artist's cut, if any
     /// @param _affiliateAddress where to send affiliate's cut, if any
     /// @param _cardAffiliateAddresses where to send card specific affiliate's cut, if any
@@ -190,7 +189,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         Mode _mode,
         uint32[] memory _timestamps,
         uint256 _numberOfCards,
-        uint256 _totalNftMintCount,
         address _artistAddress,
         address _affiliateAddress,
         address[] memory _cardAffiliateAddresses,
@@ -219,7 +217,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
         // assign arguments to public variables
         numberOfCards = _numberOfCards;
-        totalNftMintCount = _totalNftMintCount;
+        totalNftMintCount = nfthub.totalSupply();
         marketOpeningTime = _timestamps[0];
         marketLockingTime = _timestamps[1];
         oracleResolutionTime = _timestamps[2];

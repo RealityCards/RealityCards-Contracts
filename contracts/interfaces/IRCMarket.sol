@@ -17,7 +17,6 @@ interface IRCMarket {
         Mode _mode,
         uint32[] calldata _timestamps,
         uint256 _numberOfTokens,
-        uint256 _totalNftMintCount,
         address _artistAddress,
         address _affiliateAddress,
         address[] calldata _cardAffiliateAddresses,

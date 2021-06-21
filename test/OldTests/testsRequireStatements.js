@@ -80,7 +80,7 @@ contract('TestRequireStatements', (accounts) => {
     // tell treasury about factory, tell factory about nft hub and reference
     await treasury.setFactoryAddress(rcfactory.address);
     await rcfactory.setReferenceContractAddress(rcreference.address);
-    await rcfactory.setNftHubAddress(nftHubL2.address, 0);
+    await rcfactory.setNftHubAddress(nftHubL2.address);
     await rcfactory.setOrderbookAddress(rcorderbook.address);
     await treasury.setOrderbookAddress(rcorderbook.address);
     await treasury.toggleWhitelist();

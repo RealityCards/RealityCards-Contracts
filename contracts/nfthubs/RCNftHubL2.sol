@@ -2,6 +2,7 @@
 pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
@@ -14,7 +15,9 @@ import "../interfaces/IRCNftHubL2.sol";
 /// @author Andrew Stanger & Daniel Chilvers
 contract RCNftHubL2 is
     Ownable,
+    ERC721,
     ERC721URIStorage,
+    ERC721Enumerable,
     AccessControl,
     NativeMetaTransaction,
     IRCNftHubL2
@@ -111,26 +114,6 @@ contract RCNftHubL2 is
         return true;
     }
 
-    function ownerOf(uint256 tokenId)
-        public
-        view
-        virtual
-        override(ERC721, IRCNftHubL2)
-        returns (address)
-    {
-        return ERC721.ownerOf(tokenId);
-    }
-
-    function tokenURI(uint256 tokenId)
-        public
-        view
-        virtual
-        override(ERC721URIStorage, IRCNftHubL2)
-        returns (string memory)
-    {
-        return ERC721URIStorage.tokenURI(tokenId);
-    }
-
     /*╔═════════════════════════════════╗
       ║        MATIC MINTABLE           ║
       ╚═════════════════════════════════╝*/
@@ -195,18 +178,6 @@ contract RCNftHubL2 is
         return abi.encode(tokenURI(tokenId));
     }
 
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override(AccessControl, ERC721)
-        returns (bool)
-    {
-        return
-            interfaceId == type(IRCNftHubL2).interfaceId ||
-            super.supportsInterface(interfaceId);
-    }
-
     /*╔═════════════════════════════════╗
       ║           OVERRIDES             ║
       ╚═════════════════════════════════╝*/
@@ -215,7 +186,7 @@ contract RCNftHubL2 is
         address from,
         address to,
         uint256 tokenId
-    ) internal virtual override {
+    ) internal virtual override(ERC721Enumerable, ERC721) {
         super._beforeTokenTransfer(from, to, tokenId);
 
         if (
@@ -228,6 +199,55 @@ contract RCNftHubL2 is
                 "Incorrect state"
             );
         }
+    }
+
+    function _burn(uint256 _tokenId)
+        internal
+        override(ERC721, ERC721URIStorage)
+    {
+        super._burn(_tokenId);
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(AccessControl, ERC721, ERC721Enumerable)
+        returns (bool)
+    {
+        return
+            interfaceId == type(IRCNftHubL2).interfaceId ||
+            super.supportsInterface(interfaceId);
+    }
+
+    function ownerOf(uint256 tokenId)
+        public
+        view
+        virtual
+        override(ERC721, IRCNftHubL2)
+        returns (address)
+    {
+        return ERC721.ownerOf(tokenId);
+    }
+
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        virtual
+        override(ERC721, ERC721URIStorage, IRCNftHubL2)
+        returns (string memory)
+    {
+        return ERC721URIStorage.tokenURI(tokenId);
+    }
+
+    function totalSupply()
+        public
+        view
+        virtual
+        override(ERC721Enumerable, IRCNftHubL2)
+        returns (uint256)
+    {
+        return ERC721Enumerable.totalSupply();
     }
 
     /*

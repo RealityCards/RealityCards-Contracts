@@ -80,7 +80,7 @@ contract('TestOwnership', (accounts) => {
     // tell treasury about factory, tell factory about nft hub and reference
     await treasury.setFactoryAddress(rcfactory.address);
     await rcfactory.setReferenceContractAddress(rcreference.address);
-    await rcfactory.setNftHubAddress(nftHubL2.address, 0);
+    await rcfactory.setNftHubAddress(nftHubL2.address);
     await rcfactory.setOrderbookAddress(rcorderbook.address);
     await treasury.setOrderbookAddress(rcorderbook.address);
     await treasury.toggleWhitelist();
@@ -289,7 +289,7 @@ contract('TestOwnership', (accounts) => {
     // nftHubL2 = await NftHubL2.new(rcfactory.address);
     await rcfactory2.setOrderbookAddress(rcorderbook.address);
     await rcorderbook.setFactoryAddress(rcfactory2.address);
-    await rcfactory2.setNftHubAddress(nftHubL2.address, 100);
+    await rcfactory2.setNftHubAddress(nftHubL2.address);
     await rcfactory2.createMarket(
       0,
       '0x0',

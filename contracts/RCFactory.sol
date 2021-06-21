@@ -80,9 +80,6 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
 
     ///// OTHER /////
     uint256 public constant PER_MILLE = 1000; // in MegaBip so (1000 = 100%)
-    /// @dev counts the total NFTs minted across all events
-    /// @dev ... so the appropriate token id is used when upgrading to mainnet
-    uint256 public totalNftMintCount;
 
     /*╔═════════════════════════════════╗
       ║            EVENTS               ║
@@ -195,17 +192,10 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     /// @dev all functions should have onlyOwner modifier
 
     /// @notice where the NFTs live
-    /// @dev nftMintCount will probably need to be reset to zero if new nft contract, but
-    /// @dev ... keeping flexible in case returning to previous contract
     /// @param _newAddress the address to set
-    /// @param _newNftMintCount the number of NFTs this contract has minted, in order to keep them unique
-    function setNftHubAddress(IRCNftHubL2 _newAddress, uint256 _newNftMintCount)
-        external
-        onlyOwner
-    {
+    function setNftHubAddress(IRCNftHubL2 _newAddress) external onlyOwner {
         require(address(_newAddress) != address(0));
         nfthub = _newAddress;
-        totalNftMintCount = _newNftMintCount;
     }
 
     /// @notice set the address of the orderbook contract
@@ -559,7 +549,6 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
             _tokenURIs.length <= nftMintingLimit,
             "Too many tokens to mint"
         );
-
         // create the market and emit the appropriate events
         // two events to avoid stack too deep error
         address _newAddress = Clones.clone(referenceContractAddress);
@@ -575,7 +564,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
             _tokenURIs,
             _ipfsHash,
             _timestamps,
-            totalNftMintCount
+            nfthub.totalSupply()
         );
 
         // tell Treasury, Orderbook, and NFT hub about new market
@@ -597,7 +586,6 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
             _mode: _mode,
             _timestamps: _timestamps,
             _numberOfTokens: _tokenURIs.length,
-            _totalNftMintCount: totalNftMintCount,
             _artistAddress: _artistAddress,
             _affiliateAddress: _affiliateAddress,
             _cardAffiliateAddresses: _cardAffiliateAddresses,
@@ -605,17 +593,15 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
             _realitioQuestion: _realitioQuestion
         });
 
+        uint256 nftHubMintCount = nfthub.totalSupply();
         // create the NFTs
         for (uint256 i = 0; i < _tokenURIs.length; i++) {
-            uint256 _tokenId = i + totalNftMintCount;
             require(
-                nfthub.mint(_newAddress, _tokenId, _tokenURIs[i]),
+                nfthub.mint(_newAddress, nftHubMintCount, _tokenURIs[i]),
                 "Nft Minting Failed"
             );
+            nftHubMintCount++;
         }
-
-        // increment totalNftMintCount
-        totalNftMintCount = totalNftMintCount + _tokenURIs.length;
 
         // pay sponsorship, if applicable
         if (_sponsorship > 0) {

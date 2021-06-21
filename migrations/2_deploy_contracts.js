@@ -68,7 +68,7 @@ module.exports = async (deployer, network, accounts) => {
     // tell treasury about factory & ARB, tell factory about nft hub and reference
     await treasury.setFactoryAddress(factory.address);
     await factory.setReferenceContractAddress(reference.address);
-    await factory.setNftHubAddress(nftHubL2.address, 0);
+    await factory.setNftHubAddress(nftHubL2.address);
     await factory.setOrderbookAddress(orderbook.address);
     await treasury.setOrderbookAddress(orderbook.address);
     await treasury.toggleWhitelist();
@@ -139,7 +139,7 @@ module.exports = async (deployer, network, accounts) => {
     await treasury.setOrderbookAddress(orderbook.address);
     await factory.setReferenceContractAddress(reference.address);
     await factory.setOrderbookAddress(orderbook.address);
-    await factory.setNftHubAddress(nftHubL2.address, 0);
+    await factory.setNftHubAddress(nftHubL2.address);
     // disable whitelist
     await treasury.toggleWhitelist();
     // fund accounts
