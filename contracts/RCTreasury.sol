@@ -483,12 +483,14 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         returns (bool)
     {
         require(!globalPause, "Global Pause is Enabled");
+        address _msgSender = msgSender();
+        require(!lockMarketPaused[_msgSender], "Market is paused");
         require(
             erc20.allowance(_sponsor, address(this)) >= _amount,
             "Not approved to send this amount"
         );
         erc20.safeTransferFrom(_sponsor, address(this), _amount);
-        marketPot[msgSender()] += _amount;
+        marketPot[_msgSender] += _amount;
         totalMarketPots += _amount;
         return true;
     }
