@@ -480,6 +480,12 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         );
         treasury.checkSponsorship(_creator, _sponsorship);
 
+        // check the number of NFTs to mint is within limits
+        require(
+            _tokenURIs.length <= nftMintingLimit,
+            "Too many tokens to mint"
+        );
+
         // check stakeholder addresses
         // artist
         if (approvedArtistsOnly) {
@@ -489,7 +495,12 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
                 "Artist not approved"
             );
         }
+
         // affiliate
+        require(
+            _cardAffiliateAddresses.length == 0 ||
+                _cardAffiliateAddresses.length == _tokenURIs.length
+        );
         if (approvedAffilliatesOnly) {
             require(
                 isAffiliateApproved[_affiliateAddress] ||
@@ -544,11 +555,6 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
             "Oracle resolution time error"
         );
 
-        // check the number of NFTs to mint is within limits
-        require(
-            _tokenURIs.length <= nftMintingLimit,
-            "Too many tokens to mint"
-        );
         // create the market and emit the appropriate events
         // two events to avoid stack too deep error
         address _newAddress = Clones.clone(referenceContractAddress);

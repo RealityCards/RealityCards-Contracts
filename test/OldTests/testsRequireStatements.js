@@ -50,7 +50,7 @@ contract('TestRequireStatements', (accounts) => {
   andrewsAddress = accounts[9];
   // throws a tantrum if cardRecipients is not outside beforeEach for some reason
   var zeroAddress = '0x0000000000000000000000000000000000000000';
-  var cardRecipients = ['0x0000000000000000000000000000000000000000'];
+  var cardRecipients = [];
 
   beforeEach(async () => {
     var latestTime = await time.latest();

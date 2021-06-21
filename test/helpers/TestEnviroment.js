@@ -111,7 +111,7 @@ module.exports = class TestEnviroment {
             numberOfCards: 4,
             artistAddress: zeroAddress,
             affiliateAddress: zeroAddress,
-            cardAffiliate: [zeroAddress],
+            cardAffiliate: [],
             sponsorship: 0,
         };
         options = this.setDefaults(options, defaults);

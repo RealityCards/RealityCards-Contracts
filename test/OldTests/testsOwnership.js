@@ -50,7 +50,7 @@ contract('TestOwnership', (accounts) => {
   andrewsAddress = accounts[9];
   // throws a tantrum if cardRecipients is not outside beforeEach for some reason
   var zeroAddress = '0x0000000000000000000000000000000000000000';
-  var cardRecipients = ['0x0000000000000000000000000000000000000000'];
+  var cardRecipients = [];
 
   beforeEach(async () => {
     var latestTime = await time.latest();
@@ -328,7 +328,7 @@ contract('TestOwnership', (accounts) => {
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
-    var cardRecipients = ['0x0000000000000000000000000000000000000000'];
+    var cardRecipients = [];
     // first, change owner
     await rcfactory.changeUberOwner(user5);
     // now try and change again and change reference from prevous owner, should fail
