@@ -891,10 +891,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @notice collects rent for a specific card
     /// @dev also calculates and updates how long the current user has held the card for
     /// @dev is not a problem if called externally, but making internal over public to save gas
-    function _collectRentAction(uint256 _card)
-        internal
-        returns (bool shouldContinue)
-    {
+    /// @param _card the card id to collect rent for
+    /// @return true if we should repeat the rent collection
+    function _collectRentAction(uint256 _card) internal returns (bool) {
         address _user = ownerOf(_card);
         uint256 _timeOfThisCollection = block.timestamp;
 
@@ -1075,10 +1074,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
     /// @dev _collectRentAction goes back one owner at a time, this function repeatedly calls
     /// @dev ... _collectRentAction until the backlog of next owners has been processed, or maxRentIterations hit
-    function _collectRent(uint256 _card)
-        internal
-        returns (bool didUpdateEverything)
-    {
+    /// @param _card the card id to collect rent for
+    /// @return true if the rent collection was completed, (ownership updated to the current time)
+    function _collectRent(uint256 _card) internal returns (bool) {
         uint32 counter = 0;
         bool shouldContinue = true;
         while (counter < maxRentIterations && shouldContinue) {
