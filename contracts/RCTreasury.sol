@@ -653,22 +653,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         _rent = (_price * (_time1 - _time2)) / (1 days);
     }
 
-    /// @notice returns the amount of deposit a user is able to withdraw
-    /// @notice ..after considering rent due to be paid
-    /// @param _user the user to query
-    function depositAbleToWithdraw(address _user)
-        internal
-        view
-        returns (uint256)
-    {
-        uint256 collection = rentOwedUser(_user, block.timestamp);
-        if (collection >= user[_user].deposit) {
-            return 0;
-        } else {
-            return uint256(user[_user].deposit) - (collection);
-        }
-    }
-
     /// @notice returns the current estimate of the users foreclosure time
     /// @param _user the user to query
     /// @param _newBid calculate foreclosure including a new card
@@ -683,7 +667,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
             // timeLeftOfDeposit = deposit / (totalUserDailyRent / 1 day)
             //                   = (deposit * 1day) / totalUserDailyRent
             uint256 timeLeftOfDeposit =
-                (depositAbleToWithdraw(_user) * 1 days) / totalUserDailyRent;
+                (user[_user].deposit * 1 days) / totalUserDailyRent;
 
             uint256 foreclosureTimeWithoutNewCard =
                 user[_user].lastRentCalc + timeLeftOfDeposit;
