@@ -9,12 +9,12 @@ var factoryAddress = '0x5b7477AcFa49Cc71530A1119ddbC0d3c30ac8ffE'; // unaudited.
 // truffle exec addmarket.js --network xdai
 
 // variables market specific
-var marketOpeningTime = 1624032000;
-var marketLockingTime = 1624579200;
-var oracleResolutionTime = 1624579200;
-var ipfsHash = 'QmVWoLg6AX86zETANs3yUzXHTPsaVkQ6igMmbjKBXoyqqX';
-var question = 'Was Dogecoin ranked higher in marketcap than XRP according to CoinGecko.com on June 25th, 2021 at 00:00:00 UTC?␟"Yes","No"␟Cryptocurrency␟en_US';
-var artistAddress = "0x74B4B8C7cb9A594a6440965f982deF10BB9570b9";
+var marketOpeningTime = 1624473000;
+var marketLockingTime = 1624486500;
+var oracleResolutionTime = 1624486500;
+var ipfsHash = 'QmS1bJoEUqnf3VS2BgwtYUCiFXX66XmMB5YHrYsLF5SfbC';
+var question = 'Who won the EURO 2020 football match between Portugal vs. France on June 23, 2021?␟"Portugal","France","Draw"␟Sports␟en_US';
+var artistAddress = "0x890A1571174b773B01506254b8549cBfB97CAdfb";
 var affiliateAddress = "0x0000000000000000000000000000000000000000";
 var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000', '0x0000000000000000000000000000000000000000'];
 
@@ -24,8 +24,9 @@ var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000', '0x0
 
 var timestamps = [marketOpeningTime, marketLockingTime, oracleResolutionTime];
 var tokenURIs = [
-  'https://cdn.realitycards.io/nftmetadata/dogexrp/token0.json',
-  'https://cdn.realitycards.io/nftmetadata/dogexrp/token1.json',
+  'https://cdn.realitycards.io/nftmetadata/frapo/token0.json',
+  'https://cdn.realitycards.io/nftmetadata/frapo/token1.json',
+  'https://cdn.realitycards.io/nftmetadata/frapo/token2.json',
 ];
 
 module.exports = function () {
@@ -35,7 +36,7 @@ module.exports = function () {
     console.log("Checking artist approval")
     let approved = await factory.isArtistApproved(artistAddress);
     if (!approved) {
-      await factory.setArtistApproval(artistAddress)
+      await factory.changeArtistApproval(artistAddress)
     }
     console.log("CREATING MARKET");
     var transaction = await factory.createMarket(
