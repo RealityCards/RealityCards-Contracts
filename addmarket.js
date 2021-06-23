@@ -10,12 +10,12 @@ const factoryAddress = '0x67E63bd4ea7a1114A7C452D28f2305744fee4dC0' //beta on Ma
 // truffle exec addmarket.js --network xdai
 
 // variables market specific
-var marketOpeningTime = 1623668400;
-var marketLockingTime = 1623747600;
-var oracleResolutionTime = 1623747600;
 const sponsorship = 0;
-var ipfsHash = 'QmdPAunojHHr71g9tF1JDS5f6NL2TpeBNRDHPMbsrpHptt';
-var question = 'At the 2021 Westminster Dog Show which group will the Best in Show winner come from?␟“Herding”,“Hound”,“Non Sporting”,“Sporting”,“Terrier”,“Toy”,“Working”␟other␟en_US';
+var marketOpeningTime = 0;
+var marketLockingTime = 1624579200;
+var oracleResolutionTime = 1624579200;
+var ipfsHash = 'QmVWoLg6AX86zETANs3yUzXHTPsaVkQ6igMmbjKBXoyqqX';
+var question = 'Was Dogecoin ranked higher in marketcap than XRP according to CoinGecko.com on June 25th, 2021 at 00:00:00 UTC?␟"Yes","No"␟Cryptocurrency␟en_US';
 var artistAddress = "0x0000000000000000000000000000000000000000";
 var affiliateAddress = "0x0000000000000000000000000000000000000000";
 var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000', '0x0000000000000000000000000000000000000000'];
@@ -26,13 +26,8 @@ var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000', '0x0
 
 var timestamps = [marketOpeningTime, marketLockingTime, oracleResolutionTime];
 var tokenURIs = [
-  'https://cdn.realitycards.io/nftmetadata/WestminsterDogs/token0.json',
-  'https://cdn.realitycards.io/nftmetadata/WestminsterDogs/token1.json',
-  'https://cdn.realitycards.io/nftmetadata/WestminsterDogs/token2.json',
-  'https://cdn.realitycards.io/nftmetadata/WestminsterDogs/token3.json',
-  'https://cdn.realitycards.io/nftmetadata/WestminsterDogs/token4.json',
-  'https://cdn.realitycards.io/nftmetadata/WestminsterDogs/token5.json',
-  'https://cdn.realitycards.io/nftmetadata/WestminsterDogs/token6.json',
+  'https://cdn.realitycards.io/nftmetadata/dogexrp/token0.json',
+  'https://cdn.realitycards.io/nftmetadata/dogexrp/token1.json',
 ];
 
 module.exports = function () {
