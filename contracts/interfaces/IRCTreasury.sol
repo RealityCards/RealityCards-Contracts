@@ -16,7 +16,11 @@ interface IRCTreasury {
 
     function bridgeAddress() external view returns (address);
 
-    function factoryAddress() external view returns (address);
+    function checkPermission(bytes32, address) external view returns (bool);
+
+    function grantRole(bytes32, address) external;
+
+    function revokeRole(bytes32, address) external;
 
     function isMarket(address) external view returns (bool);
 
@@ -40,8 +44,6 @@ interface IRCTreasury {
 
     function unPauseMarket(address _market) external;
 
-    function uberOwner() external view returns (address);
-
     function addMarket(address) external;
 
     function setMinRental(uint256 _newDivisor) external;
@@ -50,13 +52,13 @@ interface IRCTreasury {
 
     function setBridgeAddress(address _newAddress) external;
 
+    function setOrderbookAddress(address _newAddress) external;
+
     function changeGlobalPause() external;
 
     function changePauseMarket(address _market, bool _paused) external;
 
     function setFactoryAddress(address _newFactory) external;
-
-    function changeUberOwner(address _newUberOwner) external;
 
     function erc20() external returns (IERC20);
 
@@ -100,7 +102,5 @@ interface IRCTreasury {
 
     function toggleWhitelist() external;
 
-    function addToWhitelist(address _user) external;
-
-    function batchAddToWhitelist(address[] calldata _users) external;
+    function batchWhitelist(address[] calldata _users, bool add) external;
 }

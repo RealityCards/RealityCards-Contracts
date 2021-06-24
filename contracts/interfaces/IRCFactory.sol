@@ -35,8 +35,4 @@ interface IRCFactory {
             address arbitrator,
             uint32 timeout
         );
-
-    function owner() external view returns (address);
-
-    function isGovernor(address _user) external view returns (bool);
 }

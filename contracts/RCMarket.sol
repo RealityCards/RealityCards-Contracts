@@ -23,7 +23,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     // CONTRACT SETUP
     /// @dev = how many outcomes/teams/NFTs etc
     uint256 public constant PER_MILLE = 1000; // in MegaBip so (1000 = 100%)
-    uint256 public numberOfCards;
+    uint256 public override numberOfCards;
     uint256 public constant MAX_UINT256 = type(uint256).max;
     uint256 public constant MIN_RENTAL_VALUE = 1 ether;
     States public override state;
@@ -439,7 +439,10 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
     /// @dev admin override of the oracle
     function setAmicableResolution(uint256 _winningOutcome) external {
-        require(msgSender() == factory.owner(), "Not authorised");
+        require(
+            treasury.checkPermission(keccak256("OWNER"), msgSender()),
+            "Not authorised"
+        );
         setWinner(_winningOutcome);
     }
 

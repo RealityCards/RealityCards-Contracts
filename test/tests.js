@@ -16,7 +16,7 @@ contract("RealityCardsTests", (accounts) => {
         await rc.cleanup();
     });
 
-    describe("Treasury tests ", () => {
+    describe.only("Treasury tests ", () => {
         it("Ensure only factory can add markets", async () => {
             // prove Factory can create a market
             var nextMarket = markets.length;

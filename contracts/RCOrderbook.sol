@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.4;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "hardhat/console.sol";
 import "./lib/NativeMetaTransaction.sol";
@@ -12,7 +11,7 @@ import "./interfaces/IRCOrderbook.sol";
 /// @title Reality Cards Orderbook
 /// @author Daniel Chilvers
 /// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!!
-contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
+contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
     /*╔═════════════════════════════════╗
       ║            VARIABLES            ║
       ╚═════════════════════════════════╝*/
@@ -52,10 +51,6 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
     mapping(address => uint256) public userClosedMarketIndex;
 
     ///// GOVERNANCE VARIABLES /////
-    /// @dev only allow the uberOwner to call certain functions
-    address public uberOwner;
-    /// @dev the current factory address
-    address public factoryAddress;
     /// @dev the current treasury
     IRCTreasury public treasury;
     /// @dev max number of searches to place an order in the book
@@ -69,12 +64,43 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
     uint256 public nonce;
 
     /*╔═════════════════════════════════╗
+      ║          Access Control         ║
+      ╚═════════════════════════════════╝*/
+    bytes32 public constant UBER_OWNER = keccak256("UBER_OWNER");
+    bytes32 public constant OWNER = keccak256("OWNER");
+    bytes32 public constant GOVERNOR = keccak256("GOVERNOR");
+    bytes32 public constant FACTORY = keccak256("FACTORY");
+    bytes32 public constant MARKET = keccak256("MARKET");
+    bytes32 public constant TREASURY = keccak256("TREASURY");
+    bytes32 public constant ORDERBOOK = keccak256("ORDERBOOK");
+    bytes32 public constant WHITELIST = keccak256("WHITELIST");
+
+    /*╔═════════════════════════════════╗
       ║          MODIFIERS              ║
       ╚═════════════════════════════════╝*/
 
     /// @notice only allow markets to call certain functions
     modifier onlyMarkets {
-        require(isMarket[msgSender()], "Not authorised");
+        require(
+            treasury.checkPermission(MARKET, msgSender()),
+            "Not authorised"
+        );
+        _;
+    }
+
+    modifier onlyUberOwner {
+        require(
+            treasury.checkPermission(UBER_OWNER, msgSender()),
+            "Extremely Verboten"
+        );
+        _;
+    }
+
+    modifier onlyFactory {
+        require(
+            treasury.checkPermission(FACTORY, msgSender()),
+            "Extremely Verboten"
+        );
         _;
     }
 
@@ -102,32 +128,19 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
       ║         CONSTRUCTOR             ║
       ╚═════════════════════════════════╝*/
 
-    constructor(address _factoryAddress, address _treasuryAddress) {
-        uberOwner = msgSender();
-        setFactoryAddress(_factoryAddress);
-        setTreasuryAddress(_treasuryAddress);
+    constructor(IRCTreasury _treasury) {
+        treasury = _treasury;
     }
 
     /*╔═════════════════════════════════╗
       ║         GOVERNANCE              ║
       ╚═════════════════════════════════╝*/
 
-    function changeUberOwner(address _newUberOwner) external override {
-        require(msgSender() == uberOwner, "Extremely Verboten");
-        require(_newUberOwner != address(0));
-        uberOwner = _newUberOwner;
-    }
-
-    /// @dev public becuase used in constructor
-    function setFactoryAddress(address _newFactory) public override {
-        require(msgSender() == uberOwner, "Extremely Verboten");
-        require(_newFactory != address(0));
-        factoryAddress = _newFactory;
-    }
-
-    /// @dev public becuase used in constructor
-    function setTreasuryAddress(address _newTreasury) public override {
-        require(msgSender() == uberOwner, "Extremely Verboten");
+    function setTreasuryAddress(address _newTreasury)
+        external
+        override
+        onlyUberOwner
+    {
         require(_newTreasury != address(0));
         treasury = IRCTreasury(_newTreasury);
     }
@@ -136,8 +149,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         uint256 _deletionLimit,
         uint256 _cleaningLimit,
         uint256 _searchLimit
-    ) external override {
-        require(msgSender() == uberOwner, "Extremely Verboten");
+    ) external override onlyUberOwner {
         if (_deletionLimit != 0) {
             maxDeletions = _deletionLimit;
         }
@@ -159,8 +171,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         address _market,
         uint256 _cardCount,
         uint256 _minIncrease
-    ) external override {
-        require(msgSender() == factoryAddress);
+    ) external override onlyFactory {
         isMarket[_market] = true;
         market[_market].tokenCount = SafeCast.toUint64(_cardCount);
         market[_market].minimumPriceIncreasePercent = SafeCast.toUint64(

@@ -91,7 +91,7 @@ contract RCNftHubL2 is
         address _originalOwner,
         uint256 _tokenId,
         string calldata _tokenURI
-    ) external override returns (bool) {
+    ) external override {
         require(
             !withdrawnTokens[_tokenId],
             "ChildMintableERC721: TOKEN_EXISTS_ON_ROOT_CHAIN"
@@ -100,7 +100,6 @@ contract RCNftHubL2 is
         marketTracker[_tokenId] = _originalOwner;
         _mint(_originalOwner, _tokenId);
         _setTokenURI(_tokenId, _tokenURI);
-        return true;
     }
 
     // MARKET ONLY
@@ -108,10 +107,9 @@ contract RCNftHubL2 is
         address _currentOwner,
         address _newOwner,
         uint256 _tokenId
-    ) external override returns (bool) {
+    ) external override {
         require(isMarket[msgSender()], "Not market");
         _transfer(_currentOwner, _newOwner, _tokenId);
-        return true;
     }
 
     /*╔═════════════════════════════════╗
