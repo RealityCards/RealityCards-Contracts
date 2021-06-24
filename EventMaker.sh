@@ -3,10 +3,16 @@
 ###################
 #### Setup ########
 ###################
-EVENT_NAME="What will the state of Starship SN11 be at the end of this week?"
-SRC_NAME="spacex"
+START_TIME="1624546478"
+END_TIME="1624553678"
+SPONSORSHIP="0"
+ARTIST=""
+EVENT_NAME="My test question?"
+ORACLE_QUESTION="My longer question?"
+SRC_NAME="testing"
 CATEGORY="other"
-SLUG="spc2"
+SLUG="tst"
+IMAGE_FORMAT=".gif"
 NUMBER_OF_CARDS="3"
 CARD0="Successful flight and landing"
 CARD1="Rapid Unplanned Dissasembly"
@@ -15,10 +21,16 @@ CARD3=""
 CARD4=""
 CARD5=""
 CARD6=""
+AFFILIATE=""
+CARD_AFFILIATE0="a"
+CARD_AFFILIATE1="b"
+CARD_AFFILIATE2=""
+CARD_AFFILIATE3=""
+CARD_AFFILIATE4=""
 CDN="https://cdn.realitycards.io/"
 IMAGES="images/"
-IMAGE_FORMAT=".gif"
 NFT="nftmetadata/"
+ZERO_ADDRESS="0x0000000000000000000000000000000000000000"
 ##################
 
 mkdir -p events/$SRC_NAME
@@ -58,3 +70,109 @@ cardJSON=$cardJSON'\n}'
 
 echo -e "$cardJSON" > events/$SRC_NAME/token$i.json
 done
+
+### BUILD THE CONFIG JSON ###
+
+# get the ipfs hash
+ipfscommand=$(curl -s -F file=@events/binance/event.json "https://api.thegraph.com/ipfs/api/v0/add")
+temp=${ipfscommand##*Hash}
+ipfs_hash=${temp:3:46}
+
+# check for zero addresses
+if [ "$ARTIST" == "" ];then
+    ARTIST=$ZERO_ADDRESS
+    echo WARNING: ARTIST ADDRESS NOT SET
+fi
+if [ "$AFILLIATE" == "" ];then
+    AFILLIATE=$ZERO_ADDRESS
+    echo WARNING: AFILLIATE ADDRESS NOT SET
+fi
+
+AFILLIATE_ARRAY='['
+for ((i=0;i<$NUMBER_OF_CARDS;i++))
+do
+affiliate='CARD_AFFILIATE'$i
+AFILLIATE_ARRAY=$AFILLIATE_ARRAY'\"'${!affiliate}'\"'
+if [ "${!affiliate}" == "" ];then
+    AFILLIATE_ARRAY='[\"'$ZERO_ADDRESS'\"]'
+    echo WARNING: AFFILIATE ARRAY EMPTY
+    break
+fi
+if [ $i -lt "$(($NUMBER_OF_CARDS-1))" ];then
+        AFILLIATE_ARRAY=$AFILLIATE_ARRAY','
+    else
+        AFILLIATE_ARRAY=$AFILLIATE_ARRAY']'
+    fi
+done
+
+#build oracle question and token URIs (both based on card numbers)
+ORACLE_QUESTION=$ORACLE_QUESTION'␟'
+TOKEN_URIS='['
+for ((i=0;i<$NUMBER_OF_CARDS;i++))
+do
+card='CARD'$i
+ORACLE_QUESTION=$ORACLE_QUESTION'"'${!card}'"'
+TOKEN_URIS=$TOKEN_URIS'"'$CDN$NFT$SRC_NAME'/token'$i'.json"'
+if [ $i -lt "$(($NUMBER_OF_CARDS-1))" ]
+    then
+        ORACLE_QUESTION=$ORACLE_QUESTION','
+        TOKEN_URIS=$TOKEN_URIS','
+    else
+        ORACLE_QUESTION=$ORACLE_QUESTION'␟'
+        TOKEN_URIS=$TOKEN_URIS']'
+    fi
+done
+ORACLE_QUESTION=$ORACLE_QUESTION${CATEGORY}'␟en_US'
+
+NOW=$(date)
+EPOCH=$(TZ=UTC date "+%s")
+if [ $END_TIME -lt $START_TIME ];then
+    echo WARNING: ENDING BEFORE STARTING
+fi
+if [ $START_TIME -lt $EPOCH ]; then
+    echo WARNING: START TIME BEFORE NOW
+else
+    OFFSET=$((START_TIME - EPOCH))
+    if [ $OFFSET -lt 120 ];then
+        echo STARTING IN $OFFSET SECONDS 
+    else
+        OFFSET=$(( OFFSET / 60 ))
+        if [ $OFFSET -lt 120 ];then
+            echo STARTING IN $OFFSET MINUTES 
+        else
+            OFFSET=$(( OFFSET / 60 ))
+            echo STARTING IN $OFFSET HOURS 
+        fi
+    fi
+fi
+if [ $END_TIME -lt $EPOCH ]; then
+    echo WARNING: END TIME BEFORE NOW
+else
+    OFFSET=$((END_TIME - EPOCH))
+    if [ $OFFSET -lt 120 ];then
+        echo ENDING IN $OFFSET SECONDS 
+    else
+        OFFSET=$(( OFFSET / 60 ))
+        if [ $OFFSET -lt 120 ];then
+            echo ENDING IN $OFFSET MINUTES 
+        else
+            OFFSET=$(( OFFSET / 60 ))
+            echo ENDING IN $OFFSET HOURS 
+        fi
+    fi
+fi
+
+CONFIG='{\n  "start": "'${START_TIME}'",'
+CONFIG=$CONFIG'\n  "end": "'${END_TIME}'",'
+CONFIG=$CONFIG'\n  "oracle": "'${ORACLE_QUESTION}'",'
+CONFIG=$CONFIG'\n  "ipfs": "'${ipfs_hash}'",'
+CONFIG=$CONFIG'\n  "artist": "'${ARTIST}'",'
+CONFIG=$CONFIG'\n  "sponsorship": "'${SPONSORSHIP}'",'
+CONFIG=$CONFIG'\n  "tokenURIs": '${TOKEN_URIS}','
+CONFIG=$CONFIG'\n  "affiliate": "'${AFILLIATE}'",'
+CONFIG=$CONFIG'\n  "cardAffiliates": '${AFILLIATE_ARRAY}','
+CONFIG=$CONFIG'\n  "cards": "'${NUMBER_OF_CARDS}'",'
+CONFIG=$CONFIG'\n  "dateCreated": "'${NOW}'"'
+CONFIG=$CONFIG'\n}'
+
+echo -e "$CONFIG" > events/$SRC_NAME/config.json
