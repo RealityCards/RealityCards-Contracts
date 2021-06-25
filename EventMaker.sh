@@ -3,27 +3,27 @@
 ###################
 #### Setup ########
 ###################
-START_TIME="1624546478"
-END_TIME="1624553678"
+START_TIME="1624640400"
+END_TIME="1624838400"
 SPONSORSHIP="0"
 ARTIST=""
-EVENT_NAME="My test question?"
-ORACLE_QUESTION="My longer question?"
-SRC_NAME="testing"
+EVENT_NAME="Will Canada be rank 1 in the most vaccine doses given on June 28th?"
+ORACLE_QUESTION="Was Canada ranked highest for the most vaccine doses given (first dose) on June 28, 2021 according to https://ourworldindata.org/covid-vaccinations ?"
+SRC_NAME="vaxxed"
 CATEGORY="other"
-SLUG="tst"
-IMAGE_FORMAT=".gif"
-NUMBER_OF_CARDS="3"
-CARD0="Successful flight and landing"
-CARD1="Rapid Unplanned Dissasembly"
-CARD2="Nothing"
+SLUG="vaxxed"
+IMAGE_FORMAT=".png"
+NUMBER_OF_CARDS="2"
+CARD0="Yes"
+CARD1="No"
+CARD2=""
 CARD3=""
 CARD4=""
 CARD5=""
 CARD6=""
 AFFILIATE=""
-CARD_AFFILIATE0="a"
-CARD_AFFILIATE1="b"
+CARD_AFFILIATE0=""
+CARD_AFFILIATE1=""
 CARD_AFFILIATE2=""
 CARD_AFFILIATE3=""
 CARD_AFFILIATE4=""
@@ -92,9 +92,9 @@ AFILLIATE_ARRAY='['
 for ((i=0;i<$NUMBER_OF_CARDS;i++))
 do
 affiliate='CARD_AFFILIATE'$i
-AFILLIATE_ARRAY=$AFILLIATE_ARRAY'\"'${!affiliate}'\"'
+AFILLIATE_ARRAY=$AFILLIATE_ARRAY'"'${!affiliate}'"'
 if [ "${!affiliate}" == "" ];then
-    AFILLIATE_ARRAY='[\"'$ZERO_ADDRESS'\"]'
+    AFILLIATE_ARRAY='["'$ZERO_ADDRESS'"]'
     echo WARNING: AFFILIATE ARRAY EMPTY
     break
 fi
@@ -111,7 +111,7 @@ TOKEN_URIS='['
 for ((i=0;i<$NUMBER_OF_CARDS;i++))
 do
 card='CARD'$i
-ORACLE_QUESTION=$ORACLE_QUESTION'"'${!card}'"'
+ORACLE_QUESTION=$ORACLE_QUESTION'\"'${!card}'\"'
 TOKEN_URIS=$TOKEN_URIS'"'$CDN$NFT$SRC_NAME'/token'$i'.json"'
 if [ $i -lt "$(($NUMBER_OF_CARDS-1))" ]
     then

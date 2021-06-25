@@ -1,10 +1,10 @@
+const realityCardsFactory = artifacts.require("RCFactory");
 const fs = require('fs');
 let myArgs = process.argv.slice(1, 9);
 
-const SRC = "testing" // put the event name in here (the folder it is stored in)
+const SRC = "vaxxed" // put the event name in here (the folder it is stored in)
 // truffle exec addmarket.js --network xdai
 
-const realityCardsFactory = artifacts.require("RCFactory");
 // first part of name should match the network name truffle uses
 const teststage1_Factory = '0xe1Ab9305DA70b865d610116163A82E1fDF6cCcFD'; //testnet on Sokol
 const xdai_Factory = '0x3b557a58E5c6c4Df3e3307F9c7f5ce46472d80F7'; //beta on xDai
