@@ -1,42 +1,27 @@
-//require("dotenv").config();
+const fs = require('fs');
+let myArgs = process.argv.slice(1, 9);
 
-var realityCardsFactory = artifacts.require("RCFactory");
-// var factoryAddress = '0x31fE0805b91c4B87CB564A47d1dB42cE8fe84bff'; //new testnet on Sokol
-// const factoryAddress = '0x52d51E427E334C02abD0FF83cE5CAadA99aFCF23'; // dev.rc.io
-var factoryAddress = '0x5b7477AcFa49Cc71530A1119ddbC0d3c30ac8ffE'; // unaudited.rc.io
-
-// curl -F file=@event.json "https://api.thegraph.com/ipfs/api/v0/add"
+const SRC = "testing" // put the event name in here (the folder it is stored in)
 // truffle exec addmarket.js --network xdai
 
-// variables market specific
-var marketOpeningTime = 1624473000;
-var marketLockingTime = 1624486500;
-var oracleResolutionTime = 1624486500;
-var ipfsHash = 'QmS1bJoEUqnf3VS2BgwtYUCiFXX66XmMB5YHrYsLF5SfbC';
-var question = 'Who won the EURO 2020 football match between Portugal vs. France on June 23, 2021?␟"Portugal","France","Draw"␟Sports␟en_US';
-var artistAddress = "0x890A1571174b773B01506254b8549cBfB97CAdfb";
-var affiliateAddress = "0x0000000000000000000000000000000000000000";
-var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000', '0x0000000000000000000000000000000000000000'];
+const realityCardsFactory = artifacts.require("RCFactory");
+// first part of name should match the network name truffle uses
+const teststage1_Factory = '0xe1Ab9305DA70b865d610116163A82E1fDF6cCcFD'; //testnet on Sokol
+const xdai_Factory = '0x3b557a58E5c6c4Df3e3307F9c7f5ce46472d80F7'; //beta on xDai
+const dev_Factory = '0x76d22B0065Ada142207E2cDce12322FB3F8c0bAA'; //dev on Sokol
+const matic_Factory = '0x67E63bd4ea7a1114A7C452D28f2305744fee4dC0' //beta on Matic
 
-// kovan overrides (*COMMENT OUT IF MAINNET*)
-// var marketLockingTime = 100; 
-// var oracleResolutionTime = 100; 
 
-var timestamps = [marketOpeningTime, marketLockingTime, oracleResolutionTime];
-var tokenURIs = [
-  'https://cdn.realitycards.io/nftmetadata/frapo/token0.json',
-  'https://cdn.realitycards.io/nftmetadata/frapo/token1.json',
-  'https://cdn.realitycards.io/nftmetadata/frapo/token2.json',
-];
-
-module.exports = function () {
+module.exports = async () => {
   async function createMarket() {
     // create market
     let factory = await realityCardsFactory.at(factoryAddress);
-    console.log("Checking artist approval")
-    let approved = await factory.isArtistApproved(artistAddress);
-    if (!approved) {
-      await factory.changeArtistApproval(artistAddress)
+    if (artistAddress != "0x0000000000000000000000000000000000000000") {
+      console.log("Checking artist approval")
+      let approved = await factory.isArtistApproved();
+      if (!approved) {
+        await factory.changeArtistApproval(artistAddress)
+      }
     }
     console.log("CREATING MARKET");
     var transaction = await factory.createMarket(
@@ -47,47 +32,33 @@ module.exports = function () {
       artistAddress,
       affiliateAddress,
       cardAffiliateAddresses,
-      question,
+      question
     );
 
     var lastAddress = await factory.getMostRecentMarket.call(0);
     console.log("Market created at address: ", lastAddress);
     console.log("Block number: ", transaction.receipt.blockNumber);
-    // await factory.changeMarketApproval(lastAddress);
-    // console.log("Market approved");
-    process.exit();
+
+
   }
-  createMarket();
+  let factoryAddress, question
+  try {
+    const jsonString = fs.readFileSync('./events/' + SRC + '/config.json')
+    const CONFIG = JSON.parse(jsonString)
+    timestamps = [CONFIG.start, CONFIG.end, CONFIG.end];
+    question = CONFIG.oracle
+    artistAddress = CONFIG.artist
+    affiliateAddress = CONFIG.affiliate
+    cardAffiliateAddresses = CONFIG.cardAffiliates
+    tokenURIs = CONFIG.tokenURIs
+    ipfsHash = CONFIG.ipfs
 
+  } catch (err) {
+    console.log(err)
+    return
+  }
+  factoryAddress = eval(myArgs[4] + '_Factory')
+
+  await createMarket();
+  process.exit();
 };
-
-/* for quick copy/paste, remember to change the URL:
-
-'https://cdn.realitycards.io/nftmetadata/eurovision/token0.json',
-'https://cdn.realitycards.io/nftmetadata/eurovision/token1.json',
-'https://cdn.realitycards.io/nftmetadata/eurovision/token2.json',
-'https://cdn.realitycards.io/nftmetadata/eurovision/token3.json',
-'https://cdn.realitycards.io/nftmetadata/eurovision/token4.json',
-'https://cdn.realitycards.io/nftmetadata/eurovision/token5.json',
-'https://cdn.realitycards.io/nftmetadata/eurovision/token6.json',
-'https://cdn.realitycards.io/nftmetadata/eurovision/token7.json',
-'https://cdn.realitycards.io/nftmetadata/eurovision/token8.json',
-'https://cdn.realitycards.io/nftmetadata/eurovision/token9.json',
-'https://cdn.realitycards.io/nftmetadata/eurovision/token10.json',
-'https://cdn.realitycards.io/nftmetadata/eurovision/token11.json',
-'https://cdn.realitycards.io/nftmetadata/eurovision/token12.json',
-'https://cdn.realitycards.io/nftmetadata/eurovision/token13.json',
-'https://cdn.realitycards.io/nftmetadata/eurovision/token14.json',
-'https://cdn.realitycards.io/nftmetadata/eurovision/token15.json',
-'https://cdn.realitycards.io/nftmetadata/eurovision/token16.json',
-'https://cdn.realitycards.io/nftmetadata/eurovision/token17.json',
-'https://cdn.realitycards.io/nftmetadata/eurovision/token18.json',
-'https://cdn.realitycards.io/nftmetadata/eurovision/token19.json',
-'https://cdn.realitycards.io/nftmetadata/eurovision/token20.json',
-'https://cdn.realitycards.io/nftmetadata/eurovision/token21.json',
-'https://cdn.realitycards.io/nftmetadata/eurovision/token22.json',
-'https://cdn.realitycards.io/nftmetadata/eurovision/token23.json',
-'https://cdn.realitycards.io/nftmetadata/eurovision/token24.json',
-'https://cdn.realitycards.io/nftmetadata/eurovision/token25.json',
-
-*/
