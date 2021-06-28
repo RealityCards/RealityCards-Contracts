@@ -3,12 +3,12 @@
 ###################
 #### Setup ########
 ###################
-START_TIME="1624640400"
-END_TIME="1624838400"
+START_TIME="1624881600"
+END_TIME="1625011200"
 SPONSORSHIP="0"
 ARTIST=""
-EVENT_NAME="Will Canada be rank 1 in the most vaccine doses given on June 28th?"
-ORACLE_QUESTION="Was Canada ranked highest for the most vaccine doses given (first dose) on June 28, 2021 according to https://ourworldindata.org/covid-vaccinations ?"
+EVENT_NAME="Will Canada be rank 1 in the most vaccine doses given on June 30th?"
+ORACLE_QUESTION="Was Canada ranked highest for the most vaccine doses given (first dose) on June 30, 2021 according to https://ourworldindata.org/covid-vaccinations ?"
 SRC_NAME="vaxxed"
 CATEGORY="other"
 SLUG="vaxxed"

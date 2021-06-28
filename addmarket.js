@@ -3,14 +3,14 @@ const fs = require('fs');
 let myArgs = process.argv.slice(1, 9);
 
 const SRC = "vaxxed" // put the event name in here (the folder it is stored in)
-// truffle exec addmarket.js --network xdai
+// truffle exec addmarket.js --network matic
 
 // first part of name should match the network name truffle uses
 const teststage1_Factory = '0xe1Ab9305DA70b865d610116163A82E1fDF6cCcFD'; //testnet on Sokol
 const xdai_Factory = '0x5b7477AcFa49Cc71530A1119ddbC0d3c30ac8ffE'; //unaudited beta on xDai
 const dev_Factory = '0x76d22B0065Ada142207E2cDce12322FB3F8c0bAA'; //dev on Sokol
-// const matic_Factory = '0x67E63bd4ea7a1114A7C452D28f2305744fee4dC0' //beta on Matic
-const matic_Factory = '0x0637C3548f89d61A45a476b87fEeBc6eA0c623e4' //dev on Matic
+const matic_Factory = '0x67E63bd4ea7a1114A7C452D28f2305744fee4dC0' //beta on Matic
+// const matic_Factory = '0x0637C3548f89d61A45a476b87fEeBc6eA0c623e4' //dev on Matic
 
 
 module.exports = async () => {
