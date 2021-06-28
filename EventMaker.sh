@@ -74,7 +74,7 @@ done
 ### BUILD THE CONFIG JSON ###
 
 # get the ipfs hash
-ipfscommand=$(curl -s -F file=@events/binance/event.json "https://api.thegraph.com/ipfs/api/v0/add")
+ipfscommand=$(curl -s -F file=@events/$SRC_NAME/event.json "https://api.thegraph.com/ipfs/api/v0/add")
 temp=${ipfscommand##*Hash}
 ipfs_hash=${temp:3:46}
 
