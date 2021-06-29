@@ -54,10 +54,12 @@ var marketAddress = [];
 
 module.exports = async (deployer, network, accounts) => {
   if (network === 'teststage1' || network === 'stage1' || network === 'matic') {
+    await deployer.deploy(RealitioMockup);
+    realitio = await RealitioMockup.deployed();
     // deploy treasury, factory, reference market and nft hub
     await deployer.deploy(RCTreasury, PoSDai);
     treasury = await RCTreasury.deployed();
-    await deployer.deploy(RCFactory, treasury.address, realitioAddress, kleros);
+    await deployer.deploy(RCFactory, treasury.address, realitio.address, kleros);
     factory = await RCFactory.deployed();
     await deployer.deploy(RCMarket);
     reference = await RCMarket.deployed();
