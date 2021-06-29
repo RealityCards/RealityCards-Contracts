@@ -463,7 +463,7 @@ contract("RealityCardsTests", (accounts) => {
     })
     describe("Orderbook tests ", () => {
         describe("Cleaning up tests", () => {
-            it.only("removeOldBids ", async () => {
+            it("removeOldBids ", async () => {
                 markets.push(await rc.createMarket({ closeTime: time.duration.weeks(1), resolveTime: time.duration.weeks(1) }));
                 let bids = [];
                 bids[0] = {
