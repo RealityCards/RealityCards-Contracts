@@ -462,6 +462,68 @@ contract("RealityCardsTests", (accounts) => {
         })
     })
     describe("Orderbook tests ", () => {
+        describe("Cleaning up tests", () => {
+            it.only("removeOldBids ", async () => {
+                markets.push(await rc.createMarket({ closeTime: time.duration.weeks(1), resolveTime: time.duration.weeks(1) }));
+                let bids = [];
+                bids[0] = {
+                    from: alice,
+                    price: 50,
+                    timeLimit: 86400,
+                    market: markets[1],
+                };
+                bids[1] = {
+                    from: bob,
+                    price: 40,
+                    timeLimit: 86400,
+                    market: markets[1],
+                };
+                bids[2] = {
+                    from: carol,
+                    price: 30,
+                    timeLimit: 86400,
+                    market: markets[1],
+                };
+                bids[3] = {
+                    from: dan,
+                    price: 20,
+                    timeLimit: 86400,
+                    market: markets[1],
+                    outcome: 1
+                };
+                bids[4] = {
+                    from: eve,
+                    price: 10,
+                    timeLimit: 86400,
+                    market: markets[1],
+                    outcome: 1
+                };
+                await rc.populateBidArray(bids);
+
+                // make deposits and place bids
+                await Promise.all(bids.map(async (bid) => {
+                    await rc.deposit(10, bid.from);
+                    await rc.newRental(bid);
+                }));
+
+                await time.increase(time.duration.days(8))
+                await markets[1].lockMarket();
+                markets.push(await rc.createMarket({ closeTime: time.duration.weeks(1), resolveTime: time.duration.weeks(1) }));
+
+                await markets[1].setAmicableResolution(0, { from: admin })
+
+                await Promise.all(bids.map(async (bid) => {
+                    await markets[1].withdraw({ from: bid.from })
+                }));
+
+                await rc.newRental({ from: alice, market: markets[2] })
+                await rc.newRental({ from: alice, market: markets[2], outcome: 1 })
+                await rc.newRental({ from: bob, market: markets[2], price: 2 })
+                await rc.newRental({ from: bob, market: markets[2], price: 3, outcome: 1 })
+
+
+            })
+        })
         describe("Bid order tests ", () => {
             it(' Underbidders correctly placed in orderbook ', async () => {
                 let bids = [];
