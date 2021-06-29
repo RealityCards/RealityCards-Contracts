@@ -2,7 +2,7 @@ const realityCardsFactory = artifacts.require("RCFactory");
 const fs = require('fs');
 let myArgs = process.argv.slice(1, 9);
 
-const SRC = "vaxxed" // put the event name in here (the folder it is stored in)
+const SRC = "euro1" // put the event name in here (the folder it is stored in)
 // truffle exec addmarket.js --network xdai
 
 // first part of name should match the network name truffle uses
@@ -18,7 +18,7 @@ module.exports = async () => {
     let factory = await realityCardsFactory.at(factoryAddress);
     if (artistAddress != "0x0000000000000000000000000000000000000000") {
       console.log("Checking artist approval")
-      let approved = await factory.isArtistApproved();
+      let approved = await factory.isArtistApproved(artistAddress);
       if (!approved) {
         await factory.changeArtistApproval(artistAddress)
       }
@@ -52,6 +52,7 @@ module.exports = async () => {
     cardAffiliateAddresses = CONFIG.cardAffiliates
     tokenURIs = CONFIG.tokenURIs
     ipfsHash = CONFIG.ipfs
+    artistAddress = CONFIG.artist
 
   } catch (err) {
     console.log(err)
