@@ -132,9 +132,9 @@ contract("TestFullFlowValid", (accounts) => {
     var oracleResolutionTime = oneYearInTheFuture;
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = user8;
-    await rcfactory.changeArtistApproval(user8);
+    await rcfactory.addArtist(user8);
     var affiliateAddress = user7;
-    await rcfactory.changeAffiliateApproval(user7);
+    await rcfactory.addAffiliate(user7);
     var slug = "y";
     await rcfactory.createMarket(
       0,
@@ -209,11 +209,11 @@ contract("TestFullFlowValid", (accounts) => {
       user0,
       user0,
     ];
-    await rcfactory.changeCardAffiliateApproval(user5);
-    await rcfactory.changeCardAffiliateApproval(user6);
-    await rcfactory.changeCardAffiliateApproval(user7);
-    await rcfactory.changeCardAffiliateApproval(user8);
-    await rcfactory.changeCardAffiliateApproval(user0);
+    await rcfactory.addCardAffiliate(user5);
+    await rcfactory.addCardAffiliate(user6);
+    await rcfactory.addCardAffiliate(user7);
+    await rcfactory.addCardAffiliate(user8);
+    await rcfactory.addCardAffiliate(user0);
     var artistAddress = "0x0000000000000000000000000000000000000000";
     var affiliateAddress = "0x0000000000000000000000000000000000000000";
     var slug = "y";
@@ -243,8 +243,8 @@ contract("TestFullFlowValid", (accounts) => {
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = user8;
     var affiliateAddress = user7;
-    await rcfactory.changeAffiliateApproval(user7);
-    await rcfactory.changeArtistApproval(user8);
+    await rcfactory.addAffiliate(user7);
+    await rcfactory.addArtist(user8);
     var slug = "y";
     await rcfactory.createMarket(
       mode,
@@ -294,13 +294,13 @@ contract("TestFullFlowValid", (accounts) => {
       user0,
       user0,
     ];
-    await rcfactory.changeCardAffiliateApproval(user5);
-    await rcfactory.changeCardAffiliateApproval(user6);
-    await rcfactory.changeCardAffiliateApproval(user7);
-    await rcfactory.changeCardAffiliateApproval(user8);
-    await rcfactory.changeCardAffiliateApproval(user0);
-    await rcfactory.changeAffiliateApproval(user7);
-    await rcfactory.changeArtistApproval(user8);
+    await rcfactory.addCardAffiliate(user5);
+    await rcfactory.addCardAffiliate(user6);
+    await rcfactory.addCardAffiliate(user7);
+    await rcfactory.addCardAffiliate(user8);
+    await rcfactory.addCardAffiliate(user0);
+    await rcfactory.addAffiliate(user7);
+    await rcfactory.addArtist(user8);
     var slug = "y";
     await rcfactory.createMarket(
       0,
@@ -355,13 +355,13 @@ contract("TestFullFlowValid", (accounts) => {
       user0,
       user0,
     ];
-    await rcfactory.changeCardAffiliateApproval(user5);
-    await rcfactory.changeCardAffiliateApproval(user6);
-    await rcfactory.changeCardAffiliateApproval(user7);
-    await rcfactory.changeCardAffiliateApproval(user8);
-    await rcfactory.changeCardAffiliateApproval(user0);
-    await rcfactory.changeAffiliateApproval(user7);
-    await rcfactory.changeArtistApproval(user8);
+    await rcfactory.addCardAffiliate(user5);
+    await rcfactory.addCardAffiliate(user6);
+    await rcfactory.addCardAffiliate(user7);
+    await rcfactory.addCardAffiliate(user8);
+    await rcfactory.addCardAffiliate(user0);
+    await rcfactory.addAffiliate(user7);
+    await rcfactory.addArtist(user8);
     await erc20.approve(treasury.address, ether('200'), { from: user })
     await rcfactory.createMarket(
       0,
@@ -1685,7 +1685,7 @@ contract("TestFullFlowValid", (accounts) => {
     // 10% card specific affiliates
     await rcfactory.setPotDistribution(0, 0, 0, 0, 100);
     // add user3 to whitelist
-    await rcfactory.changeGovernorApproval(user3);
+    await rcfactory.addGovernor(user3);
     var realitycards2 = await createMarketWithArtistAndCardAffiliatesAndSponsorship(
       200,
       user3

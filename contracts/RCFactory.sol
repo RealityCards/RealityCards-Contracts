@@ -350,18 +350,13 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     }
 
     // EDIT GOVERNORS
-    /// @dev these can be performed directly on the treasury, leaving here for user convenience.
-
-    /// @notice add a new governor
-    /// @param _address the address to change approval for
-    function grantRole(bytes32 _role, address _address) external {
-        treasury.grantRole(_role, _address);
+    /// @dev these can be done directly on the treasury, leaving here for user convenience
+    function addGovernor(address _newGovernor) external onlyOwner {
+        treasury.grantRole(GOVERNOR, _newGovernor);
     }
 
-    /// @notice remove a governor
-    /// @param _address the address to change approval for
-    function revokeRole(bytes32 _role, address _address) external {
-        treasury.revokeRole(_role, _address);
+    function removeGovernor(address _oldGovernor) external onlyOwner {
+        treasury.revokeRole(GOVERNOR, _oldGovernor);
     }
 
     /*╔═════════════════════════════════╗
@@ -378,6 +373,36 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         isMarketApproved[_market] = !isMarketApproved[_market];
         treasury.unPauseMarket(_market);
         emit LogMarketApproved(_market, isMarketApproved[_market]);
+    }
+
+    function addArtist(address _newArtist) external onlyGovernors {
+        treasury.grantRole(ARTIST, _newArtist);
+    }
+
+    function removeArtist(address _oldArtist) external onlyGovernors {
+        treasury.revokeRole(ARTIST, _oldArtist);
+    }
+
+    function addAffiliate(address _newAffiliate) external onlyGovernors {
+        treasury.grantRole(AFFILIATE, _newAffiliate);
+    }
+
+    function removeAffiliate(address _oldAffiliate) external onlyGovernors {
+        treasury.revokeRole(AFFILIATE, _oldAffiliate);
+    }
+
+    function addCardAffiliate(address _newCardAffiliate)
+        external
+        onlyGovernors
+    {
+        treasury.grantRole(CARD_AFFILIATE, _newCardAffiliate);
+    }
+
+    function removeCardAffiliate(address _oldCardAffiliate)
+        external
+        onlyGovernors
+    {
+        treasury.revokeRole(CARD_AFFILIATE, _oldCardAffiliate);
     }
 
     /*╔═════════════════════════════════╗

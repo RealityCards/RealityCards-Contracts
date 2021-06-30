@@ -110,9 +110,9 @@ contract('TestFundamentals', (accounts) => {
     var oracleResolutionTime = oneYearInTheFuture;
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = user8;
-    await rcfactory.changeArtistApproval(user8);
+    await rcfactory.addArtist(user8);
     var affiliateAddress = user7;
-    await rcfactory.changeAffiliateApproval(user7);
+    await rcfactory.addAffiliate(user7);
     var slug = 'y';
     await rcfactory.createMarket(
       0,
@@ -193,6 +193,12 @@ contract('TestFundamentals', (accounts) => {
   async function withdrawDeposit(amount, userx) {
     amount = web3.utils.toWei(amount.toString(), 'ether');
     await treasury.withdrawDeposit(amount, true, { from: userx });
+  }
+
+  function accessControl(user, role) {
+    let roleHash = web3.utils.soliditySha3(role)
+    let errorMsg = "AccessControl: account " + user.toLowerCase() + " is missing role " + roleHash
+    return errorMsg
   }
 
   //     // check that the contract initially owns the token
@@ -495,7 +501,7 @@ contract('TestFundamentals', (accounts) => {
   it('test exit- reduce rental time to one min', async () => {
     // this has been gimped due to removing card specific deposit, a lot of this likely makes no sense now
     // check function is owned to change limit
-    await expectRevert(treasury.setMinRental(12, { from: user1 }), "caller is not the owner");
+    await expectRevert(treasury.setMinRental(12, { from: user1 }), accessControl(user1, "OWNER"));
     // change to one min
     await treasury.setMinRental(1440);
     await depositDai(144, user0);

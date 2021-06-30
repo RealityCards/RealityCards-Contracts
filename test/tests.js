@@ -6,7 +6,7 @@ contract("RealityCardsTests", (accounts) => {
     const { admin, alice, bob, carol, dan, eve, frank, grace, harold, ivan } = rc.aliases;
     const { MAX_UINT256, ZERO_ADDRESS } = rc.constants;
     const { expectRevert, time, ether, balance } = rc.testHelpers;
-    const { ACCOUNTS_OFFSET } = rc.configs;
+    const { ACCOUNTS_OFFSET, FACTORY } = rc.configs;
 
     beforeEach(async function () {
         await rc.setup(accounts);
@@ -16,7 +16,7 @@ contract("RealityCardsTests", (accounts) => {
         await rc.cleanup();
     });
 
-    describe.only("Treasury tests ", () => {
+    describe("Treasury tests ", () => {
         it("Ensure only factory can add markets", async () => {
             // prove Factory can create a market
             var nextMarket = markets.length;
@@ -26,30 +26,29 @@ contract("RealityCardsTests", (accounts) => {
             // Assert this market now exists
             assert.equal(typeof markets[nextMarket] === "undefined", false);
             // Non-factory try and add a market
-            await expectRevert(treasury.addMarket(alice), "Not factory");
+            await expectRevert(treasury.grantRole("MARKET", alice), rc.accessControl(admin, "FACTORY"));
         });
 
         it("check that non markets cannot call market only functions on Treasury", async () => {
             // only testing invalid responses, valid responses checked in each functions own test
-            await expectRevert(treasury.payRent(admin), "Not authorised");
-            await expectRevert(treasury.payout(admin, 0), "Not authorised");
-            await expectRevert(treasury.sponsor(admin, 1), "Not authorised");
-            await expectRevert(treasury.updateLastRentalTime(admin), "Not authorised");
+            await expectRevert(treasury.payRent(admin), rc.accessControl(admin, "MARKET"));
+            await expectRevert(treasury.payout(admin, 0), rc.accessControl(admin, "MARKET"));
+            await expectRevert(treasury.sponsor(admin, 1), rc.accessControl(admin, "MARKET"));
+            await expectRevert(treasury.updateLastRentalTime(admin), rc.accessControl(admin, "MARKET"));
         });
 
         it("check that non owners cannot call owner only functions on Treasury", async () => {
             // only testing invalid responses, valid responses checked in each functions own test
-            await expectRevert(treasury.setMinRental(10, { from: alice }), "Ownable: caller is not the owner");
-            await expectRevert(treasury.setMaxContractBalance(10, { from: alice }), "Ownable: caller is not the owner");
-            await expectRevert(treasury.changeGlobalPause({ from: alice }), "Ownable: caller is not the owner");
-            await expectRevert(treasury.changePauseMarket(markets[0].address, true, { from: alice }), "Ownable: caller is not the owner");
+            await expectRevert(treasury.setMinRental(10, { from: alice }), rc.accessControl(alice, "OWNER"));
+            await expectRevert(treasury.setMaxContractBalance(10, { from: alice }), rc.accessControl(alice, "OWNER"));
+            await expectRevert(treasury.changeGlobalPause({ from: alice }), rc.accessControl(alice, "OWNER"));
+            await expectRevert(treasury.changePauseMarket(markets[0].address, true, { from: alice }), rc.accessControl(alice, "OWNER"));
         });
 
         it("check that inferior owners cannot call uberOwner functions on Treasury", async () => {
             // only testing invalid responses, valid responses checked in each functions own test
-            await expectRevert(treasury.setFactoryAddress(markets[0].address, { from: alice }), "Extremely Verboten");
-            await expectRevert(treasury.changeUberOwner(user2, { from: alice }), "Extremely Verboten");
-            await expectRevert(treasury.setBridgeAddress(ZERO_ADDRESS, { from: alice }), "Extremely Verboten");
+            await expectRevert(treasury.setFactoryAddress(markets[0].address, { from: alice }), rc.accessControl(alice, "UBER_OWNER"));
+            await expectRevert(treasury.setBridgeAddress(ZERO_ADDRESS, { from: alice }), rc.accessControl(alice, "UBER_OWNER"));
         });
 
         it("test setMinRental", async () => {
@@ -118,25 +117,11 @@ contract("RealityCardsTests", (accounts) => {
             // set value
             await treasury.setFactoryAddress(user9);
             // check value
-            assert.equal(await treasury.factoryAddress(), user9);
+            assert.equal(await treasury.factory(), user9);
             // change the value
             await treasury.setFactoryAddress(user8);
             // check again
-            assert.equal(await treasury.factoryAddress(), user8);
-        });
-
-        it("test changeUberOwner", async () => {
-            // check for zero address
-            await expectRevert.unspecified(treasury.changeUberOwner(ZERO_ADDRESS));
-            // set value
-            await treasury.changeUberOwner(alice, { from: admin });
-            // check value
-            assert.equal(await treasury.uberOwner(), alice);
-            // change the value
-            await expectRevert(treasury.changeUberOwner(bob, { from: admin }), "Extremely Verboten");
-            await treasury.changeUberOwner(bob, { from: alice });
-            // check again
-            assert.equal(await treasury.uberOwner(), bob);
+            assert.equal(await treasury.factory(), user8);
         });
 
         it("test deposit", async () => {
@@ -293,7 +278,7 @@ contract("RealityCardsTests", (accounts) => {
             assert.equal(totalRentals.toString(), ether("4").toString());
             // increase rent to 1439 (max 1440) then rent again, check it fails
             await rc.newRental({ price: 1435 });
-            await expectRevert(rc.newRental({ price: 5, outcome: 3 }), " Insufficient deposit");
+            await expectRevert(rc.newRental({ price: 5, outcome: 3 }), "Insufficient deposit");
             // someone bids even higher, I increase my bid above what I can afford, we all run out of deposit, should not return to me
             await rc.newRental({ price: 2000, from: bob });
             await time.increase(time.duration.weeks(1));

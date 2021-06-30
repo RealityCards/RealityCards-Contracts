@@ -110,9 +110,9 @@ contract('TestOrderbook', (accounts) => {
     var oracleResolutionTime = oneYearInTheFuture;
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = user8;
-    await rcfactory.changeArtistApproval(user8);
+    await rcfactory.addArtist(user8);
     var affiliateAddress = user7;
-    await rcfactory.changeAffiliateApproval(user7);
+    await rcfactory.addAffiliate(user7);
     var slug = 'y';
     await rcfactory.createMarket(
       0,
@@ -171,8 +171,8 @@ contract('TestOrderbook', (accounts) => {
     await rcfactory.changeCardAffiliateApproval(user7);
     await rcfactory.changeCardAffiliateApproval(user8);
     await rcfactory.changeCardAffiliateApproval(user0);
-    await rcfactory.changeAffiliateApproval(user7);
-    await rcfactory.changeArtistApproval(user8);
+    await rcfactory.addAffiliate(user7);
+    await rcfactory.addArtist(user8);
     var slug = 'y';
     await rcfactory.createMarket(
       0,
@@ -192,7 +192,7 @@ contract('TestOrderbook', (accounts) => {
 
   async function createMarketCustomeTimestamps(marketOpeningTime, marketLockingTime, oracleResolutionTime) {
     var artistAddress = user8;
-    await rcfactory.changeArtistApproval(user8);
+    await rcfactory.addArtist(user8);
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     var timestamps = [marketOpeningTime, marketLockingTime, oracleResolutionTime];
     var slug = 'y';

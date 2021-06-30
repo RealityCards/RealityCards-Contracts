@@ -48,6 +48,7 @@ module.exports = class TestEnviroment {
             MAX_DELETIONS: 50,
             LOOP_LIMIT: 100,
             ACCOUNTS_OFFSET: 10,
+            FACTORY: "0x547b500e425d72fd0723933cceefc203cef652b4736fd04250c3369b3e1a0a73"
         }
         this.constants = Object.assign(
             {},
@@ -270,6 +271,12 @@ module.exports = class TestEnviroment {
         bids.push(bid);
         bids = this.swapBids(bids, pos, (bids.length - 1));
         return bids;
+    }
+
+    accessControl(user, role) {
+        let roleHash = web3.utils.soliditySha3(role)
+        let errorMsg = "AccessControl: account " + user.toLowerCase() + " is missing role " + roleHash
+        return errorMsg
     }
 
     async cleanup() {

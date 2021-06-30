@@ -22,8 +22,6 @@ interface IRCTreasury {
 
     function revokeRole(bytes32, address) external;
 
-    function isMarket(address) external view returns (bool);
-
     function isForeclosed(address) external view returns (bool);
 
     function totalDeposits() external view returns (uint256);
@@ -43,8 +41,6 @@ interface IRCTreasury {
     function lockMarketPaused(address _market) external view returns (bool);
 
     function unPauseMarket(address _market) external;
-
-    function addMarket(address) external;
 
     function setMinRental(uint256 _newDivisor) external;
 

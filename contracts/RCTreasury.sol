@@ -30,8 +30,6 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     address public override bridgeAddress;
     /// @dev the Factory so only the Factory can add new markets
     IRCFactory public factory;
-    /// @dev so only markets can use certain functions
-    mapping(address => bool) public override isMarket;
     /// @dev sum of all deposits
     uint256 public override totalDeposits;
     /// @dev the rental payments made in each market
@@ -172,17 +170,6 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     }
 
     /*╔═════════════════════════════════╗
-      ║           ADD MARKETS           ║
-      ╚═════════════════════════════════╝*/
-
-    /// @dev so only markets can move funds from deposits to marketPots and vice versa
-    function addMarket(address _newMarket) external override onlyRole(FACTORY) {
-        // default to paused
-        marketPaused[_newMarket] = true;
-        isMarket[_newMarket] = true;
-    }
-
-    /*╔═════════════════════════════════╗
       ║       GOVERNANCE - OWNER        ║
       ╚═════════════════════════════════╝*/
 
@@ -225,7 +212,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         override
         onlyRole(OWNER)
     {
-        require(isMarket[_market], "This isn't a market");
+        require(hasRole(MARKET, _market), "This isn't a market");
         marketPaused[_market] = _paused;
         lockMarketPaused[_market] = marketPaused[_market];
         emit LogMarketPaused(_market, marketPaused[_market]);
@@ -287,9 +274,14 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         onlyRole(UBER_OWNER)
     {
         require(_newFactory != address(0), "Must set an address");
+        // factory is also an OWNER and GOVERNOR to use the proxy functions
         revokeRole(FACTORY, address(factory));
+        revokeRole(OWNER, address(factory));
+        revokeRole(GOVERNOR, address(factory));
         factory = IRCFactory(_newFactory);
         grantRole(FACTORY, address(factory));
+        grantRole(OWNER, address(factory));
+        grantRole(GOVERNOR, address(factory));
     }
 
     function setOrderbookAddress(address _newOrderbook)
@@ -597,19 +589,18 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     ) external override onlyRole(ORDERBOOK) {
         if (
             _timeOwnershipChanged != user[_newOwner].lastRentCalc &&
-            !isMarket[_newOwner]
+            !hasRole(MARKET, _newOwner)
         ) {
             // The new owners rent must be collected before adjusting their rentalRate
             // See if the new owner has had a rent collection before or after this ownership change
             if (_timeOwnershipChanged < user[_newOwner].lastRentCalc) {
                 // the new owner has a more recent rent collection
 
-                uint256 _additionalRentOwed =
-                    rentOwedBetweenTimestmaps(
-                        block.timestamp,
-                        _timeOwnershipChanged,
-                        _newPrice
-                    );
+                uint256 _additionalRentOwed = rentOwedBetweenTimestmaps(
+                    block.timestamp,
+                    _timeOwnershipChanged,
+                    _newPrice
+                );
                 collectRentUser(_newOwner, block.timestamp);
 
                 // they have enough funds, just collect the extra
@@ -707,25 +698,23 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         if (totalUserDailyRent > 0) {
             // timeLeftOfDeposit = deposit / (totalUserDailyRent / 1 day)
             //                   = (deposit * 1day) / totalUserDailyRent
-            uint256 timeLeftOfDeposit =
-                (user[_user].deposit * 1 days) / totalUserDailyRent;
+            uint256 timeLeftOfDeposit = (user[_user].deposit * 1 days) /
+                totalUserDailyRent;
 
-            uint256 foreclosureTimeWithoutNewCard =
-                user[_user].lastRentCalc + timeLeftOfDeposit;
+            uint256 foreclosureTimeWithoutNewCard = user[_user].lastRentCalc +
+                timeLeftOfDeposit;
 
             if (foreclosureTimeWithoutNewCard > _timeOfNewBid) {
                 // calculate how long they can own the new card for
-                uint256 _rentAlreadyOwed =
-                    rentOwedBetweenTimestmaps(
-                        user[_user].lastRentCalc,
-                        _timeOfNewBid,
-                        totalUserDailyRent
-                    );
-                uint256 _depositAtTimeOfNewBid =
-                    user[_user].deposit - _rentAlreadyOwed;
-                uint256 _timeLeftOfDepositWithNewBid =
-                    (_depositAtTimeOfNewBid * 1 days) /
-                        (totalUserDailyRent + _newBid);
+                uint256 _rentAlreadyOwed = rentOwedBetweenTimestmaps(
+                    user[_user].lastRentCalc,
+                    _timeOfNewBid,
+                    totalUserDailyRent
+                );
+                uint256 _depositAtTimeOfNewBid = user[_user].deposit -
+                    _rentAlreadyOwed;
+                uint256 _timeLeftOfDepositWithNewBid = (_depositAtTimeOfNewBid *
+                    1 days) / (totalUserDailyRent + _newBid);
                 return _timeOfNewBid + _timeLeftOfDepositWithNewBid;
             } else {
                 return user[_user].lastRentCalc + timeLeftOfDeposit;
@@ -764,9 +753,9 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
             timeTheirDepsitLasted = timeSinceLastUpdate * (usersDeposit/rentOwed)
                                   = (now - previousCollectionTime) * (usersDeposit/rentOwed)
             */
-                uint256 timeUsersDepositLasts =
-                    ((_timeToCollectTo - previousCollectionTime) *
-                        uint256(user[_user].deposit)) / rentOwedByUser;
+                uint256 timeUsersDepositLasts = ((_timeToCollectTo -
+                    previousCollectionTime) * uint256(user[_user].deposit)) /
+                    rentOwedByUser;
                 /*
             Users last collection time = previousCollectionTime + timeTheirDepsitLasted
             */
@@ -822,13 +811,22 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     }
 
     function grantRole(string memory role, address account) external {
-        AccessControl.grantRole(keccak256(abi.encodePacked(role)), account);
+        bytes32 _role = keccak256(abi.encodePacked(role));
+        if (_role == MARKET) {
+            // markets should be added in a paused state
+            marketPaused[account] = true;
+        }
+        AccessControl.grantRole(_role, account);
     }
 
     function grantRole(bytes32 role, address account)
         public
         override(AccessControl, IRCTreasury)
     {
+        if (role == MARKET) {
+            // markets should be added in a paused state
+            marketPaused[account] = true;
+        }
         AccessControl.grantRole(role, account);
     }
 
