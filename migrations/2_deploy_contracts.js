@@ -13,7 +13,7 @@ const argvMigration = require('minimist')(process.argv.slice(2), {
   string: ['migration'],
 });
 const migration = argvMigration['migration'];
-const runMigration = require('../../migrations-backup/' + migration + '.js');
+// const runMigration = require('../../migrations-backup/' + migration + '.js');
 
 /* globals artifacts */
 var RCTreasury = artifacts.require('./RCTreasury.sol');
@@ -67,10 +67,13 @@ module.exports = async (deployer, network, accounts) => {
     orderbook = await RCOrderbook.deployed();
     await deployer.deploy(NftHubL2, factory.address, childChainManager);
     nftHubL2 = await NftHubL2.deployed();
+    await deployer.deploy(RealitioMockup);
+    realitio = await RealitioMockup.deployed();
     // tell treasury about factory & ARB, tell factory about nft hub and reference
     await treasury.setFactoryAddress(factory.address);
     await factory.setReferenceContractAddress(reference.address);
     await factory.setNftHubAddress(nftHubL2.address);
+    await factory.setRealitioAddress(realitio.address);
     await factory.setOrderbookAddress(orderbook.address);
     await treasury.setOrderbookAddress(orderbook.address);
     await treasury.toggleWhitelist();
