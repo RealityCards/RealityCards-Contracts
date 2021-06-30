@@ -13,7 +13,7 @@ const argvMigration = require('minimist')(process.argv.slice(2), {
   string: ['migration'],
 });
 const migration = argvMigration['migration'];
-const runMigration = require('../../migrations-backup/' + migration + '.js');
+// const runMigration = require('../../migrations-backup/' + migration + '.js');
 
 /* globals artifacts */
 var RCTreasury = artifacts.require('./RCTreasury.sol');
@@ -53,11 +53,13 @@ var market = [];
 var marketAddress = [];
 
 module.exports = async (deployer, network, accounts) => {
-  if (network === 'teststage1' || network === 'stage1' || network === 'matic') {
+  if (network === 'teststage1' || network === 'stage1' || network === 'matic' || network === 'matic2') {
+    await deployer.deploy(RealitioMockup);
+    realitio = await RealitioMockup.deployed();
     // deploy treasury, factory, reference market and nft hub
     await deployer.deploy(RCTreasury, PoSDai);
     treasury = await RCTreasury.deployed();
-    await deployer.deploy(RCFactory, treasury.address, realitioAddress, kleros);
+    await deployer.deploy(RCFactory, treasury.address, realitio.address, kleros);
     factory = await RCFactory.deployed();
     await deployer.deploy(RCMarket);
     reference = await RCMarket.deployed();
@@ -69,6 +71,7 @@ module.exports = async (deployer, network, accounts) => {
     await treasury.setFactoryAddress(factory.address);
     await factory.setReferenceContractAddress(reference.address);
     await factory.setNftHubAddress(nftHubL2.address);
+    await factory.setRealitioAddress(realitio.address);
     await factory.setOrderbookAddress(orderbook.address);
     await treasury.setOrderbookAddress(orderbook.address);
     await treasury.toggleWhitelist();

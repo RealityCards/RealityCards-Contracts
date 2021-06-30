@@ -31,6 +31,7 @@ contract RealitioMockup is Ownable {
         uint256 created
     );
 
+    /// @notice set the result using the question_id
     function setResult(bytes32 question_id, uint256 _result)
         external
         onlyOwner
@@ -39,6 +40,7 @@ contract RealitioMockup is Ownable {
         questions[question_id].finalised = true;
     }
 
+    /// @notice set the result using the market address
     function setResult(address _market, uint256 _result) external onlyOwner {
         bytes32 _question_id = getMarketQuestionId(_market);
         questions[_question_id].answer = _result;
@@ -53,18 +55,18 @@ contract RealitioMockup is Ownable {
         uint32 opening_ts,
         uint256 nonce
     ) external payable returns (bytes32) {
-        bytes32 content_hash =
-            keccak256(abi.encodePacked(template_id, opening_ts, question));
-        bytes32 question_id =
-            keccak256(
-                abi.encodePacked(
-                    content_hash,
-                    arbitrator,
-                    timeout,
-                    msg.sender,
-                    nonce
-                )
-            );
+        bytes32 content_hash = keccak256(
+            abi.encodePacked(template_id, opening_ts, question)
+        );
+        bytes32 question_id = keccak256(
+            abi.encodePacked(
+                content_hash,
+                arbitrator,
+                timeout,
+                msg.sender,
+                nonce
+            )
+        );
 
         questions[question_id].content_hash = content_hash;
         questions[question_id].template_id = template_id;
@@ -123,8 +125,8 @@ contract RealitioMockup is Ownable {
         view
         returns (string memory)
     {
-        uint256 _length =
-            bytes(questions[marketQuestion[_market]].question).length;
+        uint256 _length = bytes(questions[marketQuestion[_market]].question)
+        .length;
         string memory _question = new string(_length);
         _question = questions[marketQuestion[_market]].question;
         return _question;

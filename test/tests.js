@@ -293,7 +293,7 @@ contract("RealityCardsTests", (accounts) => {
             assert.equal(totalRentals.toString(), ether("4").toString());
             // increase rent to 1439 (max 1440) then rent again, check it fails
             await rc.newRental({ price: 1435 });
-            await expectRevert(rc.newRental({ price: 5, outcome: 3 }), " Insufficient deposit");
+            await expectRevert(rc.newRental({ price: 5, outcome: 3 }), "Insufficient deposit");
             // someone bids even higher, I increase my bid above what I can afford, we all run out of deposit, should not return to me
             await rc.newRental({ price: 2000, from: bob });
             await time.increase(time.duration.weeks(1));

@@ -68,7 +68,7 @@ interface IRCTreasury {
 
     function payout(address, uint256) external returns (bool);
 
-    function sponsor(address _sponsor, uint256 _amount) external returns (bool);
+    function sponsor(address _sponsor, uint256 _amount) external;
 
     function updateLastRentalTime(address) external returns (bool);
 

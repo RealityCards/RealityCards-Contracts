@@ -114,21 +114,21 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
 
     function changeUberOwner(address _newUberOwner) external override {
         require(msgSender() == uberOwner, "Extremely Verboten");
-        require(_newUberOwner != address(0));
+        require(_newUberOwner != address(0), "Must set Address");
         uberOwner = _newUberOwner;
     }
 
     /// @dev public becuase used in constructor
     function setFactoryAddress(address _newFactory) public override {
         require(msgSender() == uberOwner, "Extremely Verboten");
-        require(_newFactory != address(0));
+        require(_newFactory != address(0), "Must set Address");
         factoryAddress = _newFactory;
     }
 
     /// @dev public becuase used in constructor
     function setTreasuryAddress(address _newTreasury) public override {
         require(msgSender() == uberOwner, "Extremely Verboten");
-        require(_newTreasury != address(0));
+        require(_newTreasury != address(0), "Must set Address");
         treasury = IRCTreasury(_newTreasury);
     }
 
@@ -160,7 +160,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
         uint256 _cardCount,
         uint256 _minIncrease
     ) external override {
-        require(msgSender() == factoryAddress);
+        require(msgSender() == factoryAddress, "Not Factory");
         isMarket[_market] = true;
         market[_market].tokenCount = SafeCast.toUint64(_cardCount);
         market[_market].minimumPriceIncreasePercent = SafeCast.toUint64(
