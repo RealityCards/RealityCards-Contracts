@@ -479,7 +479,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         override
         balancedBooks
         onlyMarkets
-        returns (bool)
     {
         require(!globalPause, "Global Pause is Enabled");
         address _msgSender = msgSender();
@@ -491,7 +490,6 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         erc20.safeTransferFrom(_sponsor, address(this), _amount);
         marketPot[_msgSender] += _amount;
         totalMarketPots += _amount;
-        return true;
     }
 
     /// @notice tracks when the user last rented- so they cannot rent and immediately withdraw,
@@ -563,12 +561,11 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
             if (_timeOwnershipChanged < user[_newOwner].lastRentCalc) {
                 // the new owner has a more recent rent collection
 
-                uint256 _additionalRentOwed =
-                    rentOwedBetweenTimestmaps(
-                        block.timestamp,
-                        _timeOwnershipChanged,
-                        _newPrice
-                    );
+                uint256 _additionalRentOwed = rentOwedBetweenTimestmaps(
+                    block.timestamp,
+                    _timeOwnershipChanged,
+                    _newPrice
+                );
                 collectRentUser(_newOwner, block.timestamp);
 
                 // they have enough funds, just collect the extra
@@ -666,25 +663,23 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         if (totalUserDailyRent > 0) {
             // timeLeftOfDeposit = deposit / (totalUserDailyRent / 1 day)
             //                   = (deposit * 1day) / totalUserDailyRent
-            uint256 timeLeftOfDeposit =
-                (user[_user].deposit * 1 days) / totalUserDailyRent;
+            uint256 timeLeftOfDeposit = (user[_user].deposit * 1 days) /
+                totalUserDailyRent;
 
-            uint256 foreclosureTimeWithoutNewCard =
-                user[_user].lastRentCalc + timeLeftOfDeposit;
+            uint256 foreclosureTimeWithoutNewCard = user[_user].lastRentCalc +
+                timeLeftOfDeposit;
 
             if (foreclosureTimeWithoutNewCard > _timeOfNewBid) {
                 // calculate how long they can own the new card for
-                uint256 _rentAlreadyOwed =
-                    rentOwedBetweenTimestmaps(
-                        user[_user].lastRentCalc,
-                        _timeOfNewBid,
-                        totalUserDailyRent
-                    );
-                uint256 _depositAtTimeOfNewBid =
-                    user[_user].deposit - _rentAlreadyOwed;
-                uint256 _timeLeftOfDepositWithNewBid =
-                    (_depositAtTimeOfNewBid * 1 days) /
-                        (totalUserDailyRent + _newBid);
+                uint256 _rentAlreadyOwed = rentOwedBetweenTimestmaps(
+                    user[_user].lastRentCalc,
+                    _timeOfNewBid,
+                    totalUserDailyRent
+                );
+                uint256 _depositAtTimeOfNewBid = user[_user].deposit -
+                    _rentAlreadyOwed;
+                uint256 _timeLeftOfDepositWithNewBid = (_depositAtTimeOfNewBid *
+                    1 days) / (totalUserDailyRent + _newBid);
                 return _timeOfNewBid + _timeLeftOfDepositWithNewBid;
             } else {
                 return user[_user].lastRentCalc + timeLeftOfDeposit;
@@ -723,9 +718,9 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
             timeTheirDepsitLasted = timeSinceLastUpdate * (usersDeposit/rentOwed)
                                   = (now - previousCollectionTime) * (usersDeposit/rentOwed)
             */
-                uint256 timeUsersDepositLasts =
-                    ((_timeToCollectTo - previousCollectionTime) *
-                        uint256(user[_user].deposit)) / rentOwedByUser;
+                uint256 timeUsersDepositLasts = ((_timeToCollectTo -
+                    previousCollectionTime) * uint256(user[_user].deposit)) /
+                    rentOwedByUser;
                 /*
             Users last collection time = previousCollectionTime + timeTheirDepsitLasted
             */

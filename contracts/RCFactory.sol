@@ -114,7 +114,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         address _realitioAddress,
         address _arbitratorAddress
     ) {
-        require(address(_treasuryAddress) != address(0));
+        require(address(_treasuryAddress) != address(0), "Must set Address");
         // initialise MetaTransactions
         _initializeEIP712("RealityCardsFactory", "1");
 
@@ -194,14 +194,14 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     /// @notice where the NFTs live
     /// @param _newAddress the address to set
     function setNftHubAddress(IRCNftHubL2 _newAddress) external onlyOwner {
-        require(address(_newAddress) != address(0));
+        require(address(_newAddress) != address(0), "Must set Address");
         nfthub = _newAddress;
     }
 
     /// @notice set the address of the orderbook contract
     /// @param _newAddress the address to set
     function setOrderbookAddress(IRCOrderbook _newAddress) external onlyOwner {
-        require(address(_newAddress) != address(0));
+        require(address(_newAddress) != address(0), "Must set Address");
         orderbook = _newAddress;
     }
 
@@ -364,7 +364,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     /// @param _governor the address to change approval for
     /// @dev recommended to check isGovernor() afterwards to confirm the desired outcome
     function changeGovernorApproval(address _governor) external onlyOwner {
-        require(_governor != address(0));
+        require(_governor != address(0), "Must set Address");
         governors[_governor] = !governors[_governor];
     }
 
@@ -376,7 +376,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     /// @notice markets are default hidden from the interface, this reveals them
     /// @param _market the market address to change approval for
     function changeMarketApproval(address _market) external onlyGovernors {
-        require(_market != address(0));
+        require(_market != address(0), "Must set Address");
         // check it's an RC contract
         require(mappingOfMarkets[_market], "Not Market");
         isMarketApproved[_market] = !isMarketApproved[_market];
@@ -387,7 +387,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     /// @notice artistAddress, passed in createMarket, must be approved
     /// @param _artist the artist address to change approval for
     function changeArtistApproval(address _artist) external onlyGovernors {
-        require(_artist != address(0));
+        require(_artist != address(0), "Must set Address");
         isArtistApproved[_artist] = !isArtistApproved[_artist];
     }
 
@@ -397,7 +397,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         external
         onlyGovernors
     {
-        require(_affiliate != address(0));
+        require(_affiliate != address(0), "Must set Address");
         isAffiliateApproved[_affiliate] = !isAffiliateApproved[_affiliate];
     }
 
@@ -407,7 +407,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         external
         onlyGovernors
     {
-        require(_affiliate != address(0));
+        require(_affiliate != address(0), "Must set Address");
         isCardAffiliateApproved[_affiliate] = !isCardAffiliateApproved[
             _affiliate
         ];
@@ -425,7 +425,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     /// @notice change the reference contract for the contract logic
     function setReferenceContractAddress(address _newAddress) external {
         require(msgSender() == uberOwner, "Extremely Verboten");
-        require(_newAddress != address(0));
+        require(_newAddress != address(0), "Must set Address");
         // check it's an RC contract
         IRCMarket newContractVariable = IRCMarket(_newAddress);
         require(newContractVariable.isMarket(), "Not Market");
@@ -438,7 +438,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     /// @notice to change or renounce ownership of the uberOwner role
     function changeUberOwner(address _newUberOwner) external {
         require(msgSender() == uberOwner, "Extremely Verboten");
-        require(_newUberOwner != address(0));
+        require(_newUberOwner != address(0), "Must set Address");
         uberOwner = _newUberOwner;
     }
 
@@ -457,7 +457,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
     /// @param _sponsorship amount of sponsorship to create the market with
     /// @return The address of the new market
     function createMarket(
-        IRCMarket.Mode _mode,
+        uint32 _mode,
         string memory _ipfsHash,
         uint32[] memory _timestamps,
         string[] memory _tokenURIs,
@@ -498,7 +498,8 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         // affiliate
         require(
             _cardAffiliateAddresses.length == 0 ||
-                _cardAffiliateAddresses.length == _tokenURIs.length
+                _cardAffiliateAddresses.length == _tokenURIs.length,
+            "Card Affiliate Length Error"
         );
         if (approvedAffilliatesOnly) {
             require(
@@ -565,7 +566,7 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         );
         emit LogMarketCreated2(
             _newAddress,
-            _mode,
+            IRCMarket.Mode(_mode),
             _tokenURIs,
             _ipfsHash,
             _timestamps,
@@ -583,12 +584,12 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         );
 
         // update internals
-        marketAddresses[_mode].push(_newAddress);
+        marketAddresses[IRCMarket.Mode(_mode)].push(_newAddress);
         mappingOfMarkets[_newAddress] = true;
 
         // initialize the market
         IRCMarket(_newAddress).initialize(
-            _mode,
+            IRCMarket.Mode(_mode),
             _timestamps,
             _tokenURIs.length,
             _artistAddress,
