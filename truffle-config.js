@@ -8,7 +8,7 @@ const ETHERSCAN_KEY = process.env.ETHERSCAN_KEY;
 const blockchainNodeHost = process.env.BLOCKCHAIN_NODE_HOST || "localhost";
 const MATIC_RPC = process.env.MATIC_RPC || "https://rpc-mainnet.maticvigil.com";
 const MUMBAI_RPC = process.env.MUMBAI_RPC || "https://rpc-mumbai.maticvigil.com";
-
+const MATIC_KEY = process.env.MATIC_KEY;
 
 module.exports = {
   plugins: ["truffle-plugin-verify", 'truffle-contract-size'],
@@ -97,6 +97,21 @@ module.exports = {
       network_id: 137,
       gas: 12000000,
       gasPrice: 7500000000,
+      networkCheckTimeout: 1000000,
+      timeoutBlocks: 200
+    },
+    matic2: {
+      provider: () => {
+        return new HDWalletProvider(
+          MNEMONIC,
+          `https://rpc-mainnet.maticvigil.com/v1/${MATIC_KEY}`
+        );
+      },
+      network_id: 137,
+      gas: 6000000,
+      gasPrice: 7500000000,
+      networkCheckTimeout: 1000000,
+      timeoutBlocks: 200
     },
     mumbai: {
       provider: () => {
