@@ -392,10 +392,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     ) internal {
         uint256 templateId = 2; //template 2 works for all RealityCards questions
         uint256 nonce = 0; // We don't need to ask it again, always use 0
-        bytes32 questionHash =
-            keccak256(
-                abi.encodePacked(templateId, _oracleResolutionTime, _question)
-            );
+        bytes32 questionHash = keccak256(
+            abi.encodePacked(templateId, _oracleResolutionTime, _question)
+        );
         questionId = keccak256(
             abi.encodePacked(
                 questionHash,
@@ -521,9 +520,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @notice pays winnings
     function _payoutWinnings() internal {
         uint256 _winningsToTransfer = 0;
-        uint256 _remainingCut =
-            ((((uint256(PER_MILLE) - artistCut) - affiliateCut) -
-                cardAffiliateCut) - winnerCut) - creatorCut;
+        uint256 _remainingCut = ((((uint256(PER_MILLE) - artistCut) -
+            affiliateCut) - cardAffiliateCut) - winnerCut) - creatorCut;
         // calculate longest owner's extra winnings, if relevant
         if (longestOwner[winningOutcome] == msgSender() && winnerCut > 0) {
             _winningsToTransfer =
@@ -557,13 +555,12 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @notice returns all funds to users in case of invalid outcome
     function _returnRent() internal {
         // deduct artist share and card specific share if relevant but NOT market creator share or winner's share (no winner, market creator does not deserve)
-        uint256 _remainingCut =
-            ((uint256(PER_MILLE) - artistCut) - affiliateCut) -
-                cardAffiliateCut;
+        uint256 _remainingCut = ((uint256(PER_MILLE) - artistCut) -
+            affiliateCut) - cardAffiliateCut;
         uint256 _rentCollected = rentCollectedPerUser[msgSender()];
         require(_rentCollected > 0, "Paid no rent");
-        uint256 _rentCollectedAdjusted =
-            (_rentCollected * _remainingCut) / (PER_MILLE);
+        uint256 _rentCollectedAdjusted = (_rentCollected * _remainingCut) /
+            (PER_MILLE);
         _payout(msgSender(), _rentCollectedAdjusted);
         emit LogRentReturned(msgSender(), _rentCollectedAdjusted);
     }
@@ -609,8 +606,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         _checkState(States.WITHDRAW);
         require(!cardAffiliatePaid[_card], "Card affiliate already paid");
         cardAffiliatePaid[_card] = true;
-        uint256 _cardAffiliatePayment =
-            (rentCollectedPerCard[_card] * cardAffiliateCut) / (PER_MILLE);
+        uint256 _cardAffiliatePayment = (rentCollectedPerCard[_card] *
+            cardAffiliateCut) / (PER_MILLE);
         if (_cardAffiliatePayment > 0) {
             _payout(cardAffiliateAddresses[_card], _cardAffiliatePayment);
             emit LogStakeholderPaid(
@@ -720,9 +717,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             if (!_userStillForeclosed) {
                 if (ownerOf(_card) == _user) {
                     // the owner may only increase by more than X% or reduce their price
-                    uint256 _requiredPrice =
-                        (cardPrice[_card] *
-                            (minimumPriceIncreasePercent + 100)) / (100);
+                    uint256 _requiredPrice = (cardPrice[_card] *
+                        (minimumPriceIncreasePercent + 100)) / (100);
                     require(
                         _newPrice >= _requiredPrice ||
                             _newPrice < cardPrice[_card],
@@ -736,10 +732,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                 _collectRent(_card);
 
                 // check sufficient deposit
-                uint256 _userTotalBidRate =
-                    treasury.userTotalBids(_user) -
-                        (orderbook.getBidValue(_user, _card)) +
-                        _newPrice;
+                uint256 _userTotalBidRate = treasury.userTotalBids(_user) -
+                    (orderbook.getBidValue(_user, _card)) +
+                    _newPrice;
                 require(
                     treasury.userDeposit(_user) >=
                         _userTotalBidRate / minRentalDayDivisor,
@@ -863,7 +858,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         _checkNotState(States.WITHDRAW);
         require(_amount > 0, "Must send something");
         // send tokens to the Treasury
-        require(treasury.sponsor(_sponsorAddress, _amount));
+        treasury.sponsor(_sponsorAddress, _amount);
         totalRentCollected = totalRentCollected + _amount;
         // just so user can get it back if invalid outcome
         rentCollectedPerUser[_sponsorAddress] =
@@ -905,18 +900,19 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             timeLastCollected[_card] < _timeOfThisCollection
         ) {
             // User rent collect and fetch the time the user foreclosed, 0 means they didn't foreclose yet
-            uint256 _timeUserForeclosed =
-                treasury.collectRentUser(_user, block.timestamp);
+            uint256 _timeUserForeclosed = treasury.collectRentUser(
+                _user,
+                block.timestamp
+            );
 
             // Calculate the card timeLimitTimestamp
-            uint256 _cardTimeLimitTimestamp =
-                timeLastCollected[_card] + cardTimeLimit[_card];
+            uint256 _cardTimeLimitTimestamp = timeLastCollected[_card] +
+                cardTimeLimit[_card];
 
             // input bools
             bool _foreclosed = _timeUserForeclosed != 0;
-            bool _limitHit =
-                cardTimeLimit[_card] != 0 &&
-                    _cardTimeLimitTimestamp < block.timestamp;
+            bool _limitHit = cardTimeLimit[_card] != 0 &&
+                _cardTimeLimitTimestamp < block.timestamp;
             bool _marketLocked = marketLockingTime <= block.timestamp;
 
             // outputs
@@ -1050,8 +1046,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                 }
             }
             if (_refundTime != 0) {
-                uint256 _refundAmount =
-                    (_refundTime * cardPrice[_card]) / 1 days;
+                uint256 _refundAmount = (_refundTime * cardPrice[_card]) /
+                    1 days;
                 treasury.refundUser(_user, _refundAmount);
             }
             _processRentCollection(_user, _card, _timeOfThisCollection); // where the rent collection actually happens
@@ -1088,12 +1084,11 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         uint256 _card,
         uint256 _timeOfCollection
     ) internal {
-        uint256 _rentOwed =
-            (cardPrice[_card] *
-                (_timeOfCollection - timeLastCollected[_card])) / 1 days;
+        uint256 _rentOwed = (cardPrice[_card] *
+            (_timeOfCollection - timeLastCollected[_card])) / 1 days;
         treasury.payRent(_rentOwed);
-        uint256 _timeHeldToIncrement =
-            (_timeOfCollection - timeLastCollected[_card]);
+        uint256 _timeHeldToIncrement = (_timeOfCollection -
+            timeLastCollected[_card]);
 
         // if the user has a timeLimit, adjust it as necessary
         if (cardTimeLimit[_card] != 0) {

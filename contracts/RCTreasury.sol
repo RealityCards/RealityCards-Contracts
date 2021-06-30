@@ -512,7 +512,6 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         override
         balancedBooks
         onlyRole(MARKET)
-        returns (bool)
     {
         require(!globalPause, "Global Pause is Enabled");
         address _msgSender = msgSender();
@@ -524,7 +523,6 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         erc20.safeTransferFrom(_sponsor, address(this), _amount);
         marketPot[_msgSender] += _amount;
         totalMarketPots += _amount;
-        return true;
     }
 
     /// @notice tracks when the user last rented- so they cannot rent and immediately withdraw,

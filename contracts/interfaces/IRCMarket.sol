@@ -4,8 +4,17 @@ pragma solidity 0.8.4;
 import "../interfaces/IRealitio.sol";
 
 interface IRCMarket {
-    enum States {CLOSED, OPEN, LOCKED, WITHDRAW}
-    enum Mode {CLASSIC, WINNER_TAKES_ALL, SAFE_MODE}
+    enum States {
+        CLOSED,
+        OPEN,
+        LOCKED,
+        WITHDRAW
+    }
+    enum Mode {
+        CLASSIC,
+        WINNER_TAKES_ALL,
+        SAFE_MODE
+    }
 
     function isMarket() external view returns (bool);
 
@@ -18,7 +27,7 @@ interface IRCMarket {
     function initialize(
         Mode _mode,
         uint32[] calldata _timestamps,
-        uint256 _numberOfTokens,
+        uint256 _numberOfCards,
         address _artistAddress,
         address _affiliateAddress,
         address[] calldata _cardAffiliateAddresses,
