@@ -587,16 +587,16 @@ contract RCFactory is Ownable, NativeMetaTransaction, IRCFactory {
         mappingOfMarkets[_newAddress] = true;
 
         // initialize the market
-        IRCMarket(_newAddress).initialize({
-            _mode: _mode,
-            _timestamps: _timestamps,
-            _numberOfTokens: _tokenURIs.length,
-            _artistAddress: _artistAddress,
-            _affiliateAddress: _affiliateAddress,
-            _cardAffiliateAddresses: _cardAffiliateAddresses,
-            _marketCreatorAddress: _creator,
-            _realitioQuestion: _realitioQuestion
-        });
+        IRCMarket(_newAddress).initialize(
+            _mode,
+            _timestamps,
+            _tokenURIs.length,
+            _artistAddress,
+            _affiliateAddress,
+            _cardAffiliateAddresses,
+            _creator,
+            _realitioQuestion
+        );
 
         uint256 nftHubMintCount = nfthub.totalSupply();
         // create the NFTs
