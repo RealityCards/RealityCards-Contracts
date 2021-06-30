@@ -141,7 +141,6 @@ contract RCNftHubL2 is
     }
 
     function withdraw(uint256 tokenId) external override {
-        require(isMarket[msgSender()], "Not market");
         require(
             _msgSender() == ownerOf(tokenId),
             "ChildMintableERC721: INVALID_TOKEN_OWNER"
@@ -151,7 +150,6 @@ contract RCNftHubL2 is
     }
 
     function withdrawWithMetadata(uint256 tokenId) external override {
-        require(isMarket[msgSender()], "Not market");
         require(
             msgSender() == ownerOf(tokenId),
             "ChildMintableERC721: INVALID_TOKEN_OWNER"
