@@ -117,7 +117,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         address _realitioAddress,
         address _arbitratorAddress
     ) {
-        require(address(_treasuryAddress) != address(0), "Must set Address");
+        require(address(_treasury) != address(0), "Must set Address");
         // initialise MetaTransactions
         _initializeEIP712("RealityCardsFactory", "1");
 
