@@ -214,6 +214,7 @@ contract RCOrderbook is Ownable, NativeMetaTransaction, IRCOrderbook {
                 "Location too low"
             );
         }
+        require(bidExists(_prevUserAddress, _market, _card),"Invalid starting location");
         Bid storage _prevUser = user[_prevUserAddress][
             index[_prevUserAddress][_market][_card]
         ];
