@@ -13,7 +13,7 @@ const argvMigration = require('minimist')(process.argv.slice(2), {
   string: ['migration'],
 });
 const migration = argvMigration['migration'];
-// const runMigration = require('../../migrations-backup/' + migration + '.js');
+const runMigration = require('../../migrations-backup/' + migration + '.js');
 
 /* globals artifacts */
 var RCTreasury = artifacts.require('./RCTreasury.sol');
