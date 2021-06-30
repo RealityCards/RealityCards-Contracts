@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.4;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "hardhat/console.sol";
@@ -16,8 +16,9 @@ import "./interfaces/IRCBridge.sol";
 /// @title Reality Cards Treasury
 /// @author Andrew Stanger & Daniel Chilvers
 /// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!!
-contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
+contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     using SafeERC20 for IERC20;
+
     /*╔═════════════════════════════════╗
       ║             VARIABLES           ║
       ╚═════════════════════════════════╝*/
@@ -27,10 +28,8 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     IERC20 public override erc20;
     /// @dev address of (as yet non existent) Bridge for withdrawals to mainnet
     address public override bridgeAddress;
-    /// @dev address of the Factory so only the Factory can add new markets
-    address public override factoryAddress;
-    /// @dev so only markets can use certain functions
-    mapping(address => bool) public override isMarket;
+    /// @dev the Factory so only the Factory can add new markets
+    IRCFactory public factory;
     /// @dev sum of all deposits
     uint256 public override totalDeposits;
     /// @dev the rental payments made in each market
@@ -81,10 +80,19 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     mapping(address => bool) public override lockMarketPaused;
 
     /*╔═════════════════════════════════╗
-      ║            UBER OWNER           ║
+      ║          Access Control         ║
       ╚═════════════════════════════════╝*/
-    /// @dev high level owner who can change the factory address
-    address public override uberOwner;
+    bytes32 public constant UBER_OWNER = keccak256("UBER_OWNER");
+    bytes32 public constant OWNER = keccak256("OWNER");
+    bytes32 public constant GOVERNOR = keccak256("GOVERNOR");
+    bytes32 public constant FACTORY = keccak256("FACTORY");
+    bytes32 public constant MARKET = keccak256("MARKET");
+    bytes32 public constant TREASURY = keccak256("TREASURY");
+    bytes32 public constant ORDERBOOK = keccak256("ORDERBOOK");
+    bytes32 public constant WHITELIST = keccak256("WHITELIST");
+    bytes32 public constant ARTIST = keccak256("ARTIST");
+    bytes32 public constant AFFILIATE = keccak256("AFFILIATE");
+    bytes32 public constant CARD_AFFILIATE = keccak256("CARD_AFFILIATE");
 
     /*╔═════════════════════════════════╗
       ║             EVENTS              ║
@@ -108,8 +116,36 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         // initialise MetaTransactions
         _initializeEIP712("RealityCardsTreasury", "1");
 
-        // at initiation, uberOwner and owner will be the same
-        uberOwner = msgSender();
+        /* setup AccessControl
+
+                         UBER_OWNER
+            ┌───────────┬────┴─────┬────────────┐
+            │           │          │            │
+          OWNER      FACTORY    ORDERBOOK   TREASURY
+            │           │
+         GOVERNOR     MARKET
+            │
+         WHITELIST | ARTIST | AFFILIATE | CARD_AFFILIATE
+        */
+        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
+        _setupRole(UBER_OWNER, _msgSender());
+        _setupRole(OWNER, _msgSender());
+        _setupRole(GOVERNOR, _msgSender());
+        _setupRole(WHITELIST, _msgSender());
+        // _setupRole(FACTORY, address(factory));
+        // _setupRole(ORDERBOOK, address(orderbook));
+        _setupRole(TREASURY, address(this));
+        _setRoleAdmin(UBER_OWNER, UBER_OWNER);
+        _setRoleAdmin(OWNER, UBER_OWNER);
+        _setRoleAdmin(FACTORY, UBER_OWNER);
+        _setRoleAdmin(ORDERBOOK, UBER_OWNER);
+        _setRoleAdmin(TREASURY, UBER_OWNER);
+        _setRoleAdmin(GOVERNOR, OWNER);
+        _setRoleAdmin(WHITELIST, GOVERNOR);
+        _setRoleAdmin(ARTIST, GOVERNOR);
+        _setRoleAdmin(AFFILIATE, GOVERNOR);
+        _setRoleAdmin(CARD_AFFILIATE, GOVERNOR);
+        _setRoleAdmin(MARKET, FACTORY);
 
         // initialise adjustable parameters
         setMinRental(24 * 6); // MinRental is a divisor of 1 day(86400 seconds), 24*6 will set to 10 minutes
@@ -133,35 +169,11 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         );
     }
 
-    /// @notice only allow markets to call these functions
-    modifier onlyMarkets {
-        require(isMarket[msgSender()], "Not authorised");
-        _;
-    }
-
-    /// @notice only allow orderbook to call these functions
-    modifier onlyOrderbook {
-        require(msgSender() == address(orderbook), "Not authorised");
-        _;
-    }
-
-    /*╔═════════════════════════════════╗
-      ║           ADD MARKETS           ║
-      ╚═════════════════════════════════╝*/
-
-    /// @dev so only markets can move funds from deposits to marketPots and vice versa
-    function addMarket(address _newMarket) external override {
-        require(msgSender() == factoryAddress, "Not factory");
-        // default to paused
-        marketPaused[_newMarket] = true;
-        isMarket[_newMarket] = true;
-    }
-
     /*╔═════════════════════════════════╗
       ║       GOVERNANCE - OWNER        ║
       ╚═════════════════════════════════╝*/
 
-    /// @dev all functions should be onlyOwner
+    /// @dev all functions should be onlyRole(OWNER)
     // min rental event emitted by market. Nothing else need be emitted.
 
     /*┌────────────────────────────────────┐
@@ -170,7 +182,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
 
     /// @notice minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
     /// @param _newDivisor the divisor to set
-    function setMinRental(uint256 _newDivisor) public override onlyOwner {
+    function setMinRental(uint256 _newDivisor) public override onlyRole(OWNER) {
         minRentalDayDivisor = _newDivisor;
     }
 
@@ -179,7 +191,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     function setMaxContractBalance(uint256 _newBalanceLimit)
         public
         override
-        onlyOwner
+        onlyRole(OWNER)
     {
         maxContractBalance = _newBalanceLimit;
     }
@@ -189,7 +201,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
       └──────────────────────────────────────────┘*/
 
     /// @notice if true, cannot deposit, withdraw or rent any cards
-    function changeGlobalPause() external override onlyOwner {
+    function changeGlobalPause() external override onlyRole(OWNER) {
         globalPause = !globalPause;
         emit LogGlobalPause(globalPause);
     }
@@ -198,18 +210,21 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     function changePauseMarket(address _market, bool _paused)
         external
         override
-        onlyOwner
+        onlyRole(OWNER)
     {
-        require(isMarket[_market], "This isn't a market");
+        require(hasRole(MARKET, _market), "This isn't a market");
         marketPaused[_market] = _paused;
         lockMarketPaused[_market] = marketPaused[_market];
         emit LogMarketPaused(_market, marketPaused[_market]);
     }
 
-    /// @notice allow governance to approve and un pause the market if the owner hasn't paused it
-    function unPauseMarket(address _market) external override {
-        require(msgSender() == factoryAddress, "Not factory");
-        require(isMarket[_market], "This isn't a market");
+    /// @notice allow governance (via the factory) to approve and un pause the market if the owner hasn't paused it
+    function unPauseMarket(address _market)
+        external
+        override
+        onlyRole(FACTORY)
+    {
+        require(hasRole(MARKET, _market), "This isn't a market");
         require(!lockMarketPaused[_market], "Owner has paused market");
         marketPaused[_market] = false;
         emit LogMarketPaused(_market, marketPaused[_market]);
@@ -220,23 +235,26 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
       ╚═════════════════════════════════╝*/
 
     /// @notice if true, users must be on the whitelist to deposit
-    function toggleWhitelist() external override onlyOwner {
+    function toggleWhitelist() external override onlyRole(OWNER) {
         whitelistEnabled = !whitelistEnabled;
     }
 
-    /// @notice Add a user to the whitelist
-    function addToWhitelist(address _user) public override {
-        require(factoryAddress != address(0), "Must set factory address");
-        IRCFactory factory = IRCFactory(factoryAddress);
-        require(factory.isGovernor(msgSender()), "Not authorised");
-        isAllowed[_user] = !isAllowed[_user];
-        emit LogWhitelistUser(_user, isAllowed[_user]);
-    }
-
-    /// @notice Add multiple users to the whitelist
-    function batchAddToWhitelist(address[] calldata _users) public override {
-        for (uint256 index = 0; index < _users.length; index++) {
-            addToWhitelist(_users[index]);
+    /// @notice Add/Remove multiple users to the whitelist
+    /// @param _users an array of users to add or remove
+    /// @param add true to add the users
+    function batchWhitelist(address[] calldata _users, bool add)
+        public
+        override
+        onlyRole(GOVERNOR)
+    {
+        if (add) {
+            for (uint256 index = 0; index < _users.length; index++) {
+                grantRole(WHITELIST, _users[index]);
+            }
+        } else {
+            for (uint256 index = 0; index < _users.length; index++) {
+                revokeRole(WHITELIST, _users[index]);
+            }
         }
     }
 
@@ -250,35 +268,50 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     /// @dev this is seperated so owner so can be set to multisig, or burn address to relinquish upgrade ability
     /// @dev ... while maintaining governance over other governanace functions
 
-    function setFactoryAddress(address _newFactory) external override {
-        require(msgSender() == uberOwner, "Extremely Verboten");
+    function setFactoryAddress(address _newFactory)
+        external
+        override
+        onlyRole(UBER_OWNER)
+    {
         require(_newFactory != address(0), "Must set an address");
-        factoryAddress = _newFactory;
+        // factory is also an OWNER and GOVERNOR to use the proxy functions
+        revokeRole(FACTORY, address(factory));
+        revokeRole(OWNER, address(factory));
+        revokeRole(GOVERNOR, address(factory));
+        factory = IRCFactory(_newFactory);
+        grantRole(FACTORY, address(factory));
+        grantRole(OWNER, address(factory));
+        grantRole(GOVERNOR, address(factory));
     }
 
-    function setOrderbookAddress(address _newOrderbook) external {
-        require(msgSender() == uberOwner, "Extremely Verboten");
+    function setOrderbookAddress(address _newOrderbook)
+        external
+        override
+        onlyRole(UBER_OWNER)
+    {
         require(_newOrderbook != address(0), "Must set an address");
+        revokeRole(ORDERBOOK, address(orderbook));
         orderbook = IRCOrderbook(_newOrderbook);
+        grantRole(ORDERBOOK, address(orderbook));
     }
 
-    function setTokenAddress(address _newToken) public override {
-        require(msgSender() == uberOwner, "Extremely Verboten");
+    function setTokenAddress(address _newToken)
+        public
+        override
+        onlyRole(UBER_OWNER)
+    {
         require(_newToken != address(0), "Must set an address");
         erc20 = IERC20(_newToken);
     }
 
-    function setBridgeAddress(address _newBridge) public override {
-        require(msgSender() == uberOwner, "Extremely Verboten");
+    function setBridgeAddress(address _newBridge)
+        public
+        override
+        onlyRole(UBER_OWNER)
+    {
         require(_newBridge != address(0), "Must set an address");
         bridgeAddress = _newBridge;
         erc20.approve(_newBridge, type(uint256).max);
-    }
-
-    function changeUberOwner(address _newUberOwner) external override {
-        require(msgSender() == uberOwner, "Extremely Verboten");
-        require(_newUberOwner != address(0), "Must set an address");
-        uberOwner = _newUberOwner;
     }
 
     /*╔═════════════════════════════════╗
@@ -307,7 +340,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         );
         require(_amount > 0, "Must deposit something");
         if (whitelistEnabled) {
-            require(isAllowed[msgSender()], "Not in whitelist");
+            require(hasRole(WHITELIST, _user), "Not in whitelist");
         }
         erc20.safeTransferFrom(msgSender(), address(this), _amount);
 
@@ -426,7 +459,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         external
         override
         balancedBooks
-        onlyMarkets
+        onlyRole(MARKET)
     {
         require(!globalPause, "Rentals are disabled");
         if (marketBalance < _amount) {
@@ -446,7 +479,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         external
         override
         balancedBooks
-        onlyMarkets
+        onlyRole(MARKET)
         returns (bool)
     {
         require(!globalPause, "Payouts are disabled");
@@ -464,7 +497,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         external
         override
         balancedBooks
-        onlyMarkets
+        onlyRole(MARKET)
     {
         marketBalance -= _refund;
         user[_user].deposit += SafeCast.toUint128(_refund);
@@ -478,7 +511,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         external
         override
         balancedBooks
-        onlyMarkets
+        onlyRole(MARKET)
     {
         require(!globalPause, "Global Pause is Enabled");
         address _msgSender = msgSender();
@@ -498,7 +531,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     function updateLastRentalTime(address _user)
         external
         override
-        onlyMarkets
+        onlyRole(MARKET)
         returns (bool)
     {
         user[_user].lastRentalTime = SafeCast.toUint64(block.timestamp);
@@ -551,10 +584,10 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
         uint256 _oldPrice,
         uint256 _newPrice,
         uint256 _timeOwnershipChanged
-    ) external override onlyOrderbook {
+    ) external override onlyRole(ORDERBOOK) {
         if (
             _timeOwnershipChanged != user[_newOwner].lastRentCalc &&
-            !isMarket[_newOwner]
+            !hasRole(MARKET, _newOwner)
         ) {
             // The new owners rent must be collected before adjusting their rentalRate
             // See if the new owner has had a rent collection before or after this ownership change
@@ -595,7 +628,7 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     function increaseBidRate(address _user, uint256 _price)
         external
         override
-        onlyOrderbook
+        onlyRole(ORDERBOOK)
     {
         user[_user].bidRate += SafeCast.toUint128(_price);
     }
@@ -604,13 +637,13 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
     function decreaseBidRate(address _user, uint256 _price)
         external
         override
-        onlyOrderbook
+        onlyRole(ORDERBOOK)
     {
         user[_user].bidRate -= SafeCast.toUint128(_price);
     }
 
     /// @dev called when all a user's bids have been removed, disables foreclosure state
-    function resetUser(address _user) external override onlyOrderbook {
+    function resetUser(address _user) external override onlyRole(ORDERBOOK) {
         isForeclosed[_user] = false;
         emit LogUserForeclosed(_user, false);
     }
@@ -764,6 +797,44 @@ contract RCTreasury is Ownable, NativeMetaTransaction, IRCTreasury {
             emit LogUserForeclosed(_user, false);
         }
     }
+
+    /// @dev can't be called hasRole also because AccessControl.hasRole isn't virtual
+    function checkPermission(bytes32 role, address account)
+        public
+        view
+        override
+        returns (bool)
+    {
+        return AccessControl.hasRole(role, account);
+    }
+
+    function grantRole(string memory role, address account) external {
+        bytes32 _role = keccak256(abi.encodePacked(role));
+        if (_role == MARKET) {
+            // markets should be added in a paused state
+            marketPaused[account] = true;
+        }
+        AccessControl.grantRole(_role, account);
+    }
+
+    function grantRole(bytes32 role, address account)
+        public
+        override(AccessControl, IRCTreasury)
+    {
+        if (role == MARKET) {
+            // markets should be added in a paused state
+            marketPaused[account] = true;
+        }
+        AccessControl.grantRole(role, account);
+    }
+
+    function revokeRole(bytes32 role, address account)
+        public
+        override(AccessControl, IRCTreasury)
+    {
+        AccessControl.revokeRole(role, account);
+    }
+
     /*
          ▲  
         ▲ ▲ 

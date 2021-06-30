@@ -22,6 +22,8 @@ interface IRCMarket {
 
     function sponsor(uint256 _amount) external;
 
+    function numberOfCards() external view returns (uint256);
+
     function initialize(
         Mode _mode,
         uint32[] calldata _timestamps,

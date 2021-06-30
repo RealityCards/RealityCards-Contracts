@@ -73,7 +73,7 @@ contract('TestProxies', (accounts) => {
     treasury = await RCTreasury.new(erc20.address);
     rcfactory = await RCFactory.new(treasury.address, realitio.address, kleros);
     rcreference = await RCMarket.new();
-    rcorderbook = await RCOrderbook.new(rcfactory.address, treasury.address);
+    rcorderbook = await RCOrderbook.new(treasury.address);
     // nft hubs
     nftHubL2 = await NftHubL2.new(rcfactory.address, dummyAddress);
     nftHubL1 = await NftHubL1.new();
@@ -110,9 +110,9 @@ contract('TestProxies', (accounts) => {
     var oracleResolutionTime = oneYearInTheFuture;
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = user8;
-    await rcfactory.changeArtistApproval(user8);
+    await rcfactory.addArtist(user8);
     var affiliateAddress = user7;
-    await rcfactory.changeAffiliateApproval(user7);
+    await rcfactory.addAffiliate(user7);
     var slug = 'y';
     await rcfactory.createMarket(
       0,

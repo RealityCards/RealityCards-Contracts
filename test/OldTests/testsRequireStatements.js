@@ -73,7 +73,7 @@ contract('TestRequireStatements', (accounts) => {
     treasury = await RCTreasury.new(erc20.address);
     rcfactory = await RCFactory.new(treasury.address, realitio.address, kleros);
     rcreference = await RCMarket.new();
-    rcorderbook = await RCOrderbook.new(rcfactory.address, treasury.address);
+    rcorderbook = await RCOrderbook.new(treasury.address);
     // nft hubs
     nftHubL2 = await NftHubL2.new(rcfactory.address, dummyAddress);
     nftHubL1 = await NftHubL1.new();
@@ -130,7 +130,7 @@ contract('TestRequireStatements', (accounts) => {
 
   async function createMarketCustomeTimestamps(marketOpeningTime, marketLockingTime, oracleResolutionTime) {
     var artistAddress = user8;
-    await rcfactory.changeArtistApproval(user8);
+    await rcfactory.addArtist(user8);
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     var timestamps = [marketOpeningTime, marketLockingTime, oracleResolutionTime];
     var slug = 'y';
@@ -152,7 +152,7 @@ contract('TestRequireStatements', (accounts) => {
 
   async function createMarketCustomeTimestamps2(marketOpeningTime, marketLockingTime, oracleResolutionTime) {
     var artistAddress = user8;
-    // await rcfactory.changeArtistApproval(user8);
+    // await rcfactory.addArtist(user8);
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     var timestamps = [marketOpeningTime, marketLockingTime, oracleResolutionTime];
     var slug = 'z';

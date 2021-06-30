@@ -48,6 +48,7 @@ module.exports = class TestEnviroment {
             MAX_DELETIONS: 50,
             LOOP_LIMIT: 100,
             ACCOUNTS_OFFSET: 10,
+            FACTORY: "0x547b500e425d72fd0723933cceefc203cef652b4736fd04250c3369b3e1a0a73"
         }
         this.constants = Object.assign(
             {},
@@ -76,16 +77,16 @@ module.exports = class TestEnviroment {
         this.contracts.treasury = await RCTreasury.new(this.contracts.erc20.address);
         this.contracts.factory = await RCFactory.new(this.contracts.treasury.address, this.contracts.realitio.address, kleros);
         this.contracts.reference = await RCMarket.new();
-        this.contracts.orderbook = await RCOrderbook.new(this.contracts.factory.address, this.contracts.treasury.address);
+        this.contracts.orderbook = await RCOrderbook.new(this.contracts.treasury.address);
         // nft hubs 
         this.contracts.nftHubL2 = await NftHubL2.new(this.contracts.factory.address, dummyAddress);
         this.contracts.nftHubL1 = await NftHubL1.new();
         // tell treasury about factory, tell factory about nft hub and reference
         await this.contracts.treasury.setFactoryAddress(this.contracts.factory.address);
+        await this.contracts.treasury.setOrderbookAddress(this.contracts.orderbook.address);
+        await this.contracts.factory.setOrderbookAddress(this.contracts.orderbook.address);
         await this.contracts.factory.setReferenceContractAddress(this.contracts.reference.address);
         await this.contracts.factory.setNftHubAddress(this.contracts.nftHubL2.address);
-        await this.contracts.factory.setOrderbookAddress(this.contracts.orderbook.address);
-        await this.contracts.treasury.setOrderbookAddress(this.contracts.orderbook.address);
         await this.contracts.treasury.toggleWhitelist();
 
         // market creation, start off without any.
@@ -270,6 +271,12 @@ module.exports = class TestEnviroment {
         bids.push(bid);
         bids = this.swapBids(bids, pos, (bids.length - 1));
         return bids;
+    }
+
+    accessControl(user, role) {
+        let roleHash = web3.utils.soliditySha3(role)
+        let errorMsg = "AccessControl: account " + user.toLowerCase() + " is missing role " + roleHash
+        return errorMsg
     }
 
     async cleanup() {

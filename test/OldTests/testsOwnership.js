@@ -73,7 +73,7 @@ contract('TestOwnership', (accounts) => {
     treasury = await RCTreasury.new(erc20.address);
     rcfactory = await RCFactory.new(treasury.address, realitio.address, kleros);
     rcreference = await RCMarket.new();
-    rcorderbook = await RCOrderbook.new(rcfactory.address, treasury.address);
+    rcorderbook = await RCOrderbook.new(treasury.address);
     // nft hubs
     nftHubL2 = await NftHubL2.new(rcfactory.address, dummyAddress);
     nftHubL1 = await NftHubL1.new();
@@ -138,13 +138,13 @@ contract('TestOwnership', (accounts) => {
     var artistAddress = user8;
     var affiliateAddress = user7;
     var cardRecipients = [user5, user6, user7, user8, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0];
-    await rcfactory.changeCardAffiliateApproval(user5);
-    await rcfactory.changeCardAffiliateApproval(user6);
-    await rcfactory.changeCardAffiliateApproval(user7);
-    await rcfactory.changeCardAffiliateApproval(user8);
-    await rcfactory.changeCardAffiliateApproval(user0);
-    await rcfactory.changeAffiliateApproval(user7);
-    await rcfactory.changeArtistApproval(user8);
+    await rcfactory.addCardAffiliate(user5);
+    await rcfactory.addCardAffiliate(user6);
+    await rcfactory.addCardAffiliate(user7);
+    await rcfactory.addCardAffiliate(user8);
+    await rcfactory.addCardAffiliate(user0);
+    await rcfactory.addAffiliate(user7);
+    await rcfactory.addArtist(user8);
     var slug = 'y';
     await rcfactory.createMarket(
       0,
@@ -212,151 +212,32 @@ contract('TestOwnership', (accounts) => {
     await treasury.withdrawDeposit(amount, true, { from: userx });
   }
 
-  it('check that ownership can not be changed unless correct owner, treasury and factory', async () => {
-    await expectRevert(rcfactory.transferOwnership(user1, { from: user1 }), "caller is not the owner");
-    await expectRevert(treasury.transferOwnership(user1, { from: user1 }), "caller is not the owner");
-    // check that works fine if owner
-    await rcfactory.transferOwnership(user1, { from: user0 });
-    await treasury.transferOwnership(user1, { from: user0 });
-    // check that ownership changed
-    var newOwner = await rcfactory.owner.call();
-    assert.equal(newOwner, user1);
-    var newOwner = await treasury.owner.call();
-    assert.equal(newOwner, user1);
-  });
+  function accessControl(user, role) {
+    let roleHash = web3.utils.soliditySha3(role)
+    let errorMsg = "AccessControl: account " + user.toLowerCase() + " is missing role " + roleHash
+    return errorMsg
+  }
 
-  it('check renounce ownership works, treasury and factory', async () => {
-    await expectRevert(rcfactory.renounceOwnership({ from: user1 }), "caller is not the owner");
-    await expectRevert(treasury.renounceOwnership({ from: user1 }), "caller is not the owner");
-    // check that works fine if owner
-    await rcfactory.renounceOwnership({ from: user0 });
-    await treasury.renounceOwnership({ from: user0 });
-    // check that ownership changed
-    var newOwner = await rcfactory.owner.call();
-    assert.equal(newOwner, 0);
-    var newOwner = await treasury.owner.call();
-    assert.equal(newOwner, 0);
-  });
+  function keccak256(input) {
+    return web3.utils.soliditySha3(input)
+  }
 
   it('check onlyOwner is on relevant Treasury functions', async () => {
-    await expectRevert(treasury.setMaxContractBalance(7 * 24, { from: user1 }), "caller is not the owner");
-    await expectRevert(treasury.changeGlobalPause({ from: user1 }), "caller is not the owner");
-    await expectRevert(treasury.changePauseMarket(realitycards.address, true, { from: user1 }), "caller is not the owner");
+    await expectRevert(treasury.setMaxContractBalance(7 * 24, { from: user1 }), accessControl(user1, "OWNER"));
+    await expectRevert(treasury.changeGlobalPause({ from: user1 }), accessControl(user1, "OWNER"));
+    await expectRevert(treasury.changePauseMarket(realitycards.address, true, { from: user1 }), accessControl(user1, "OWNER"));
   });
 
   it('check onlyOwner is on relevant Factory functions', async () => {
-    await expectRevert(rcfactory.setPotDistribution(0, 0, 0, 0, 0, { from: user1 }), "caller is not the owner");
-    await expectRevert(treasury.setMinRental(7 * 24, { from: user1 }), "caller is not the owner");
-    await expectRevert(rcfactory.changeGovernorApproval(user0, { from: user1 }), "caller is not the owner");
-    await expectRevert(rcfactory.changeMarketCreationGovernorsOnly({ from: user1 }), "caller is not the owner");
-    await expectRevert(rcfactory.setSponsorshipRequired(7 * 24, { from: user1 }), "caller is not the owner");
+    await expectRevert(rcfactory.setPotDistribution(0, 0, 0, 0, 0, { from: user1 }), 'Not approved');
+    await expectRevert(treasury.setMinRental(7 * 24, { from: user1 }), accessControl(user1, "OWNER"));
+    await expectRevert(rcfactory.addGovernor(user0, { from: user1 }), 'Not approved');
+    await expectRevert(rcfactory.changeMarketCreationGovernorsOnly({ from: user1 }), 'Not approved');
+    await expectRevert(rcfactory.setSponsorshipRequired(7 * 24, { from: user1 }), 'Not approved');
     await expectRevert(rcfactory.changeMarketApproval(user0, { from: user1 }), "Not approved");
-    await expectRevert(rcfactory.setMinimumPriceIncreasePercent(4, { from: user1 }), "caller is not the owner");
-    await expectRevert(rcfactory.setAdvancedWarning(23, { from: user1 }), "caller is not the owner");
-    await expectRevert(rcfactory.setMaximumDuration(23, { from: user1 }), "caller is not the owner");
+    await expectRevert(rcfactory.setMinimumPriceIncreasePercent(4, { from: user1 }), 'Not approved');
+    await expectRevert(rcfactory.setAdvancedWarning(23, { from: user1 }), 'Not approved');
+    await expectRevert(rcfactory.setMaximumDuration(23, { from: user1 }), 'Not approved');
   });
-
-  it('test uberOwner Treasury', async () => {
-    // market creation shit
-    var latestTime = await time.latest();
-    var oneYear = new BN('31104000');
-    var oneYearInTheFuture = oneYear.add(latestTime);
-    var marketLockingTime = oneYearInTheFuture;
-    var oracleResolutionTime = oneYearInTheFuture;
-    var timestamps = [0, marketLockingTime, oracleResolutionTime];
-    var artistAddress = '0x0000000000000000000000000000000000000000';
-    var affiliateAddress = '0x0000000000000000000000000000000000000000';
-    var slug = 'xr';
-    // first, change owner
-    await treasury.changeUberOwner(user5);
-    // now try and change again and change factory from prevous owner, should fail
-    await expectRevert(treasury.changeUberOwner(user0), "Verboten");
-    await expectRevert(treasury.setFactoryAddress(user0), "Verboten");
-    // deploy new factory, update address
-    rcfactory2 = await RCFactory.new(treasury.address, realitio.address, kleros);
-    await rcfactory2.getAllMarkets(0);
-    await rcfactory2.changeCardAffiliateApproval(user5);
-    await rcfactory2.changeCardAffiliateApproval(user6);
-    await rcfactory2.changeCardAffiliateApproval(user7);
-    await rcfactory2.changeCardAffiliateApproval(user8);
-    await rcfactory2.changeCardAffiliateApproval(user0);
-    await treasury.setFactoryAddress(rcfactory2.address, { from: user5 });
-    await nftHubL2.setFactoryAddress(rcfactory2.address);
-    await rcfactory2.setReferenceContractAddress(rcreference.address);
-    // create market with old factory, should fail
-    await expectRevert(rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0), "Not factory");
-    // create market with new factory and do some standard stuff
-    // nftHubL2 = await NftHubL2.new(rcfactory.address);
-    await rcfactory2.setOrderbookAddress(rcorderbook.address);
-    await rcorderbook.setFactoryAddress(rcfactory2.address);
-    await rcfactory2.setNftHubAddress(nftHubL2.address);
-    await rcfactory2.createMarket(
-      0,
-      '0x0',
-      timestamps,
-      tokenURIs,
-      artistAddress,
-      affiliateAddress,
-      cardRecipients,
-      question,
-      0,
-    );
-    var marketAddress = await rcfactory2.getMostRecentMarket.call(0);
-    await rcfactory2.changeMarketApproval(marketAddress);
-    realitycards2 = await RCMarket.at(marketAddress);
-    await depositDai(144, user3);
-    await newRentalCustomContract(realitycards2, 144, 4, user3);
-    var price = await realitycards2.cardPrice.call(4);
-    assert.equal(price, web3.utils.toWei('144', 'ether'));
-    // check that the original market still works
-    await newRental(69, 4, user3);
-    var price = await realitycards.cardPrice.call(4);
-    assert.equal(price, web3.utils.toWei('69', 'ether'));
-    await time.increase(time.duration.minutes(10));
-    await withdrawDeposit(1000, user3);
-  });
-
-  // test relies on redeploy contract multiplying prices by 2x
-  // new test needs writing that doesnt use redeploys
-  it.skip('test uberOwner factory', async () => {
-    // market creation shit
-    var latestTime = await time.latest();
-    var oneYear = new BN('31104000');
-    var oneYearInTheFuture = oneYear.add(latestTime);
-    var marketLockingTime = oneYearInTheFuture;
-    var oracleResolutionTime = oneYearInTheFuture;
-    var timestamps = [0, marketLockingTime, oracleResolutionTime];
-    var artistAddress = '0x0000000000000000000000000000000000000000';
-    var affiliateAddress = '0x0000000000000000000000000000000000000000';
-    var cardRecipients = [];
-    // first, change owner
-    await rcfactory.changeUberOwner(user5);
-    // now try and change again and change reference from prevous owner, should fail
-    await expectRevert(rcfactory.changeUberOwner(user0), "Verboten");
-    await expectRevert(rcfactory.setReferenceContractAddress(user0), "Verboten");
-    // deploy new reference, update address
-    rcreference2 = await RCMarket.new();
-    await rcfactory.setReferenceContractAddress(rcreference2.address, { from: user5 });
-    // check version has increased 
-    var version = await rcfactory.referenceContractVersion.call();
-    assert.equal(version, 2);
-    // deploy new market from new reference contract, check that price is doubling
-    var slug = 'xq';
-    await rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0);
-    var marketAddress = await rcfactory.getMostRecentMarket.call(0);
-    realitycards2 = await RCMarket.at(marketAddress);
-    await depositDai(144, user3);
-    await newRentalCustomContract(realitycards2, 144, 4, user3);
-    var price = await realitycards2.cardPrice.call(4);
-    assert.equal(price.toString(), web3.utils.toWei('288', 'ether'));
-    // check that the original market still works
-    await newRental(69, 4, user3);
-    var price = await realitycards.cardPrice.call(4);
-    assert.equal(price, web3.utils.toWei('69', 'ether'));
-    await time.increase(time.duration.minutes(10));
-    await withdrawDeposit(1000, user3);
-  });
-
-
 
 });
