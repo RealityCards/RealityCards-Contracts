@@ -53,7 +53,7 @@ var market = [];
 var marketAddress = [];
 
 module.exports = async (deployer, network, accounts) => {
-  if (network === 'teststage1' || network === 'stage1' || network === 'matic') {
+  if (network === 'teststage1' || network === 'stage1' || network === 'matic' || network === 'matic2') {
     await deployer.deploy(RealitioMockup);
     realitio = await RealitioMockup.deployed();
     // deploy treasury, factory, reference market and nft hub
@@ -67,8 +67,6 @@ module.exports = async (deployer, network, accounts) => {
     orderbook = await RCOrderbook.deployed();
     await deployer.deploy(NftHubL2, factory.address, childChainManager);
     nftHubL2 = await NftHubL2.deployed();
-    await deployer.deploy(RealitioMockup);
-    realitio = await RealitioMockup.deployed();
     // tell treasury about factory & ARB, tell factory about nft hub and reference
     await treasury.setFactoryAddress(factory.address);
     await factory.setReferenceContractAddress(reference.address);
