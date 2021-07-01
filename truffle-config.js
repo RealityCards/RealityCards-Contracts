@@ -95,10 +95,8 @@ module.exports = {
         );
       },
       network_id: 137,
-      gas: 6000000,
-      gasPrice: 7500000000,
-      networkCheckTimeout: 1000000,
-      timeoutBlocks: 200
+      gas: 10000000,
+      gasPrice: 7500000000
     },
     matic2: {
       provider: () => {
