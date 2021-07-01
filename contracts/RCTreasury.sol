@@ -813,6 +813,8 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         if (_role == MARKET) {
             // markets should be added in a paused state
             marketPaused[account] = true;
+        } else if (_role == WHITELIST) {
+            emit LogWhitelistUser(account, true);
         }
         AccessControl.grantRole(_role, account);
     }
@@ -824,6 +826,8 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         if (role == MARKET) {
             // markets should be added in a paused state
             marketPaused[account] = true;
+        } else if (role == WHITELIST) {
+            emit LogWhitelistUser(account, true);
         }
         AccessControl.grantRole(role, account);
     }
@@ -832,6 +836,9 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         public
         override(AccessControl, IRCTreasury)
     {
+        if (role == WHITELIST) {
+            emit LogWhitelistUser(account, true);
+        }
         AccessControl.revokeRole(role, account);
     }
 
