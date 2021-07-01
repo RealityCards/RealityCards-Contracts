@@ -48,7 +48,17 @@ module.exports = class TestEnviroment {
             MAX_DELETIONS: 50,
             LOOP_LIMIT: 100,
             ACCOUNTS_OFFSET: 10,
-            FACTORY: "0x547b500e425d72fd0723933cceefc203cef652b4736fd04250c3369b3e1a0a73"
+            AFFILIATE: web3.utils.soliditySha3("AFFILIATE"),
+            ARTIST: web3.utils.soliditySha3("ARTIST"),
+            CARD_AFFILIATE: web3.utils.soliditySha3("CARD_AFFILIATE"),
+            FACTORY: web3.utils.soliditySha3("FACTORY"),
+            GOVERNOR: web3.utils.soliditySha3("GOVERNOR"),
+            MARKET: web3.utils.soliditySha3("MARKET"),
+            ORDERBOOK: web3.utils.soliditySha3("ORDERBOOK"),
+            OWNER: web3.utils.soliditySha3("OWNER"),
+            TREASURY: web3.utils.soliditySha3("TREASURY"),
+            UBER_OWNER: web3.utils.soliditySha3("UBER_OWNER"),
+            WHITELIST: web3.utils.soliditySha3("WHITELIST"),
         }
         this.constants = Object.assign(
             {},

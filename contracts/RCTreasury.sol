@@ -132,8 +132,6 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         _setupRole(OWNER, _msgSender());
         _setupRole(GOVERNOR, _msgSender());
         _setupRole(WHITELIST, _msgSender());
-        // _setupRole(FACTORY, address(factory));
-        // _setupRole(ORDERBOOK, address(orderbook));
         _setupRole(TREASURY, address(this));
         _setRoleAdmin(UBER_OWNER, UBER_OWNER);
         _setRoleAdmin(OWNER, UBER_OWNER);
@@ -808,13 +806,9 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         return AccessControl.hasRole(role, account);
     }
 
-    function grantRole(string memory role, address account) external {
+    function grantRole(string memory role, address account) external override {
         bytes32 _role = keccak256(abi.encodePacked(role));
-        if (_role == MARKET) {
-            // markets should be added in a paused state
-            marketPaused[account] = true;
-        }
-        AccessControl.grantRole(_role, account);
+        RCTreasury.grantRole(_role, account);
     }
 
     function grantRole(bytes32 role, address account)
@@ -826,6 +820,11 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
             marketPaused[account] = true;
         }
         AccessControl.grantRole(role, account);
+    }
+
+    function revokeRole(string memory role, address account) external override {
+        bytes32 _role = keccak256(abi.encodePacked(role));
+        RCTreasury.revokeRole(_role, account);
     }
 
     function revokeRole(bytes32 role, address account)
