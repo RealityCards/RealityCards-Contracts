@@ -2,9 +2,9 @@
 // myArgs[0] = first extra argument.. etc
 var myArgs = process.argv.slice(6, 9);
 
-const _ = require("underscore");
+const _ = require('underscore');
 const { BN, time } = require('@openzeppelin/test-helpers');
-const { ZERO_ADDRESS } = require("@openzeppelin/test-helpers/src/constants");
+const { ZERO_ADDRESS } = require('@openzeppelin/test-helpers/src/constants');
 
 const argv = require('minimist')(process.argv.slice(2), {
   string: ['ipfs_hash'],
@@ -53,13 +53,23 @@ var market = [];
 var marketAddress = [];
 
 module.exports = async (deployer, network, accounts) => {
-  if (network === 'teststage1' || network === 'stage1' || network === 'matic' || network === 'matic2') {
+  if (
+    network === 'teststage1' ||
+    network === 'stage1' ||
+    network === 'matic' ||
+    network === 'matic2'
+  ) {
     await deployer.deploy(RealitioMockup);
     realitio = await RealitioMockup.deployed();
     // deploy treasury, factory, reference market and nft hub
     await deployer.deploy(RCTreasury, PoSDai);
     treasury = await RCTreasury.deployed();
-    await deployer.deploy(RCFactory, treasury.address, realitio.address, kleros);
+    await deployer.deploy(
+      RCFactory,
+      treasury.address,
+      realitio.address,
+      kleros
+    );
     factory = await RCFactory.deployed();
     await deployer.deploy(RCMarket);
     reference = await RCMarket.deployed();
@@ -77,33 +87,35 @@ module.exports = async (deployer, network, accounts) => {
     await treasury.toggleWhitelist();
 
     // print out some stuff to be picked up by the deploy script ready for the next stage
-    console.log('Completed stage 1')
-    console.log('RCTreasuryAddress')
-    console.log(RCTreasury.address)
-    console.log('RCFactoryAddress')
-    console.log(RCFactory.address)
-    console.log('RCMarketAddress')
-    console.log(RCMarket.address)
-    console.log('RCOrderbookAddress')
-    console.log(RCOrderbook.address)
-    console.log('NFTHubL2Address')
-    console.log(nftHubL2.address)
-  } else if (network === 'teststage2' || network === 'stage2' || network === 'develop') {
-    console.log('Begin Stage 2')
+    console.log('Completed stage 1');
+    console.log('RCTreasuryAddress');
+    console.log(RCTreasury.address);
+    console.log('RCFactoryAddress');
+    console.log(RCFactory.address);
+    console.log('RCMarketAddress');
+    console.log(RCMarket.address);
+    console.log('RCOrderbookAddress');
+    console.log(RCOrderbook.address);
+    console.log('NFTHubL2Address');
+    console.log(nftHubL2.address);
+  } else if (
+    network === 'teststage2' ||
+    network === 'stage2' ||
+    network === 'develop'
+  ) {
+    console.log('Begin Stage 2');
     // mainnet
     // deploy mainnet nft hub
-    await deployer.deploy(NftHubL1)
-    nftHubL1 = await NftHubL1.deployed()
+    await deployer.deploy(NftHubL1);
+    nftHubL1 = await NftHubL1.deployed();
 
     console.log('Completed stage 2');
-
-
   } else if (network === 'graphTesting') {
     /**************************************
-    *                                     *
-    *     GRAPH TESTING WHOOT WHOOT!      *
-    *                                     *
-    **************************************/
+     *                                     *
+     *     GRAPH TESTING WHOOT WHOOT!      *
+     *                                     *
+     **************************************/
 
     console.log('Local Graph Testing, whoot whoot');
 
@@ -203,7 +215,7 @@ async function createMarket(options) {
     numberOfCards: 4, // the number of cards to create
     artistAddress: ZERO_ADDRESS,
     affiliateAddress: ZERO_ADDRESS,
-    cardAffiliate: [ZERO_ADDRESS], // remember this is an array
+    cardAffiliate: [], // remember this is an array
     sponsorship: 0,
   };
   options = setDefaults(options, defaults);
@@ -242,7 +254,7 @@ async function closeMarket(options) {
   options = setDefaults(options, defaults);
 
   await options.market.lockMarket();
-  await realitio.setResult(realitycards.address, options.winningOutcome);
+  await realitio.setResult(options.market.address, options.winningOutcome);
   await options.market.getWinnerFromOracle();
 }
 
@@ -290,7 +302,8 @@ async function rent(options) {
   } catch (err) {
     console.log(
       err,
-      `on rent from account:${options.from}, market: ${options.market.address
+      `on rent from account:${options.from}, market: ${
+        options.market.address
       }, card: ${options.outcome}, price: ${web3.utils.fromWei(
         newPrice,
         'ether'
