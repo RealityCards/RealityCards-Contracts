@@ -9,15 +9,18 @@ const { ZERO_ADDRESS } = require('@openzeppelin/test-helpers/src/constants');
 const argv = require('minimist')(process.argv.slice(2), {
   string: ['ipfs_hash'],
 });
+
 const argvMigration = require('minimist')(process.argv.slice(2), {
   string: ['migration'],
 });
 const migration = argvMigration['migration'];
+let runMigration = null;
 try {
-  const runMigration = require('../../migrations-backup/' + migration + '.js');
+  runMigration = require('../../migrations-backup/' + migration + '.js');
 } catch (err) {
-  console.log("Migrations not found: " + err)
+  console.log('Migrations not found: ' + err);
 }
+
 /* globals artifacts */
 var RCTreasury = artifacts.require('./RCTreasury.sol');
 var RCFactory = artifacts.require('./RCFactory.sol');
@@ -305,8 +308,7 @@ async function rent(options) {
   } catch (err) {
     console.log(
       err,
-      `on rent from account:${options.from}, market: ${
-        options.market.address
+      `on rent from account:${options.from}, market: ${options.market.address
       }, card: ${options.outcome}, price: ${web3.utils.fromWei(
         newPrice,
         'ether'
