@@ -28,7 +28,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     uint256 public constant MIN_RENTAL_VALUE = 1 ether;
     States public override state;
     /// @dev type of event.
-    Mode public mode;
+    Mode public override mode;
     /// @dev so the Factory can check it's a market
     bool public constant override isMarket = true;
     /// @dev counts the total NFTs minted across all events at the time market created
@@ -36,88 +36,91 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     uint256 public totalNftMintCount;
 
     // CONTRACT VARIABLES
-    IRCTreasury public treasury;
-    IRCFactory public factory;
-    IRCNftHubL2 public nfthub;
-    IRCOrderbook public orderbook;
+    IRCTreasury public override treasury;
+    IRCFactory public override factory;
+    IRCNftHubL2 public override nfthub;
+    IRCOrderbook public override orderbook;
+    IRealitio public override realitio;
 
     // PRICE, DEPOSITS, RENT
     /// @dev in wei
-    mapping(uint256 => uint256) public cardPrice;
+    mapping(uint256 => uint256) public override cardPrice;
     /// @dev keeps track of all the rent paid by each user. So that it can be returned in case of an invalid market outcome.
-    mapping(address => uint256) public rentCollectedPerUser;
+    mapping(address => uint256) public override rentCollectedPerUser;
     /// @dev keeps track of all the rent paid for each card, for card specific affiliate payout
-    mapping(uint256 => uint256) public rentCollectedPerCard;
+    mapping(uint256 => uint256) public override rentCollectedPerCard;
     /// @dev keeps track of the rent each user has paid for each card, for Safe mode payout
     mapping(address => mapping(uint256 => uint256))
-        public rentCollectedPerUserPerCard;
+        public
+        override rentCollectedPerUserPerCard;
     /// @dev an easy way to track the above across all cards
-    uint256 public totalRentCollected;
+    uint256 public override totalRentCollected;
     /// @dev prevents user from exiting and re-renting in the same block (limits troll attacks)
-    mapping(address => uint256) public exitedTimestamp;
+    mapping(address => uint256) public override exitedTimestamp;
 
     // PARAMETERS
     /// @dev read from the Factory upon market creation, can not be changed for existing market
     /// @dev the minimum required price increase in %
-    uint256 public minimumPriceIncreasePercent;
+    uint256 public override minimumPriceIncreasePercent;
     /// @dev minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
-    uint256 public minRentalDayDivisor;
+    uint256 public override minRentalDayDivisor;
     /// @dev maximum number of times to calcualte rent in one transaction
-    uint256 public maxRentIterations;
+    uint256 public override maxRentIterations;
 
     // TIME
     /// @dev how many seconds each user has held each card for, for determining winnings
-    mapping(uint256 => mapping(address => uint256)) public timeHeld;
+    mapping(uint256 => mapping(address => uint256)) public override timeHeld;
     /// @dev sums all the timeHelds for each. Used when paying out. Should always increment at the same time as timeHeld
-    mapping(uint256 => uint256) public totalTimeHeld;
+    mapping(uint256 => uint256) public override totalTimeHeld;
     /// @dev used to determine the rent due. Rent is due for the period (now - timeLastCollected), at which point timeLastCollected is set to now.
-    mapping(uint256 => uint256) public timeLastCollected;
+    mapping(uint256 => uint256) public override timeLastCollected;
     /// @dev to track the max timeheld of each card (for giving NFT to winner)
-    mapping(uint256 => uint256) public longestTimeHeld;
+    mapping(uint256 => uint256) public override longestTimeHeld;
     /// @dev to track who has owned it the most (for giving NFT to winner)
-    mapping(uint256 => address) public longestOwner;
+    mapping(uint256 => address) public override longestOwner;
     /// @dev to track the card timeHeldLimit for the current owner
-    mapping(uint256 => uint256) public cardTimeLimit;
+    mapping(uint256 => uint256) public override cardTimeLimit;
 
     // TIMESTAMPS
     /// @dev when the market opens
-    uint32 public marketOpeningTime;
+    uint32 public override marketOpeningTime;
     /// @dev when the market locks
     uint32 public override marketLockingTime;
     /// @dev when the question can be answered on realitio
     /// @dev only needed for circuit breaker
-    uint32 public oracleResolutionTime;
+    uint32 public override oracleResolutionTime;
 
     // PAYOUT VARIABLES
-    uint256 public winningOutcome;
+    uint256 public override winningOutcome;
     /// @dev prevent users withdrawing twice
-    mapping(address => bool) public userAlreadyWithdrawn;
+    mapping(address => bool) public override userAlreadyWithdrawn;
     /// @dev prevent users claiming twice
-    mapping(uint256 => mapping(address => bool)) public userAlreadyClaimed; // cardID // user // bool
+    mapping(uint256 => mapping(address => bool))
+        public
+        override userAlreadyClaimed; // cardID // user // bool
     /// @dev the artist
-    address public artistAddress;
-    uint256 public artistCut;
-    bool public artistPaid;
+    address public override artistAddress;
+    uint256 public override artistCut;
+    bool public override artistPaid;
     /// @dev the affiliate
-    address public affiliateAddress;
-    uint256 public affiliateCut;
-    bool public affiliatePaid;
+    address public override affiliateAddress;
+    uint256 public override affiliateCut;
+    bool public override affiliatePaid;
     /// @dev the winner
-    uint256 public winnerCut;
+    uint256 public override winnerCut;
     /// @dev the market creator
-    address public marketCreatorAddress;
-    uint256 public creatorCut;
-    bool public creatorPaid;
+    address public override marketCreatorAddress;
+    uint256 public override creatorCut;
+    bool public override creatorPaid;
     /// @dev card specific recipients
-    address[] public cardAffiliateAddresses;
-    uint256 public cardAffiliateCut;
-    mapping(uint256 => bool) public cardAffiliatePaid;
+    address[] public override cardAffiliateAddresses;
+    uint256 public override cardAffiliateCut;
+    mapping(uint256 => bool) public override cardAffiliatePaid;
 
     // ORACLE VARIABLES
-    bytes32 public questionId;
-    address public arbitrator;
-    uint32 public timeout;
-    IRealitio public realitio;
+    bytes32 public override questionId;
+    address public override arbitrator;
+    uint32 public override timeout;
 
     /*╔═════════════════════════════════╗
       ║             EVENTS              ║
@@ -317,7 +320,11 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
     /// @notice send NFT to mainnet
     /// @dev upgrades not possible if market paused
-    function upgradeCard(uint256 _card) external onlyTokenOwner(_card) {
+    function upgradeCard(uint256 _card)
+        external
+        override
+        onlyTokenOwner(_card)
+    {
         _checkState(States.WITHDRAW);
         require(
             !treasury.marketPaused(address(this)) && !treasury.globalPause(),
@@ -420,14 +427,14 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     }
 
     /// @notice has the oracle finalised
-    function isFinalized() public view returns (bool) {
+    function isFinalized() public view override returns (bool) {
         bool _isFinalized = realitio.isFinalized(questionId);
         return _isFinalized;
     }
 
     /// @dev sets the winning outcome
     /// @dev market.setWinner() will revert if done twice, because wrong state
-    function getWinnerFromOracle() external {
+    function getWinnerFromOracle() external override {
         require(isFinalized(), "Oracle not finalised");
         // check market state to prevent market closing early
         require(marketLockingTime <= block.timestamp, "Market not finished");
@@ -437,7 +444,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     }
 
     /// @dev admin override of the oracle
-    function setAmicableResolution(uint256 _winningOutcome) external {
+    function setAmicableResolution(uint256 _winningOutcome) external override {
         require(
             treasury.checkPermission(keccak256("OWNER"), msgSender()),
             "Not authorised"
@@ -452,7 +459,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @notice checks whether the competition has ended, if so moves to LOCKED state
     /// @dev can be called by anyone
     /// @dev public because called within autoLock modifier & setWinner
-    function lockMarket() public {
+    function lockMarket() public override {
         _checkState(States.OPEN);
         require(
             marketLockingTime <= block.timestamp,
@@ -490,7 +497,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     }
 
     /// @notice pays out winnings, or returns funds
-    function withdraw() external {
+    function withdraw() external override {
         _checkState(States.WITHDRAW);
         require(!userAlreadyWithdrawn[msgSender()], "Already withdrawn");
         userAlreadyWithdrawn[msgSender()] = true;
@@ -504,7 +511,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @notice the longest owner of each NFT gets to keep it
     /// @dev LOCKED or WITHDRAW states are fine- does not need to wait for winner to be known
     /// @param _card the id of the card, the index
-    function claimCard(uint256 _card) external {
+    function claimCard(uint256 _card) external override {
         _checkNotState(States.CLOSED);
         _checkNotState(States.OPEN);
         require(
@@ -576,7 +583,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @dev [hangover from when ether was native currency, keeping in case we return to this]
 
     /// @notice pay artist
-    function payArtist() external {
+    function payArtist() external override {
         _checkState(States.WITHDRAW);
         require(!artistPaid, "Artist already paid");
         artistPaid = true;
@@ -584,7 +591,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     }
 
     /// @notice pay market creator
-    function payMarketCreator() external {
+    function payMarketCreator() external override {
         _checkState(States.WITHDRAW);
         require(totalTimeHeld[winningOutcome] > 0, "No winner");
         require(!creatorPaid, "Creator already paid");
@@ -593,7 +600,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     }
 
     /// @notice pay affiliate
-    function payAffiliate() external {
+    function payAffiliate() external override {
         _checkState(States.WITHDRAW);
         require(!affiliatePaid, "Affiliate already paid");
         affiliatePaid = true;
@@ -602,7 +609,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
     /// @notice pay card affiliate
     /// @dev does not call _processStakeholderPayment because it works differently
-    function payCardAffiliate(uint256 _card) external {
+    function payCardAffiliate(uint256 _card) external override {
         _checkState(States.WITHDRAW);
         require(!cardAffiliatePaid[_card], "Card affiliate already paid");
         cardAffiliatePaid[_card] = true;
@@ -653,7 +660,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
     /// @notice rent every Card at the minimum price
     /// @param _maxSumOfPrices a limit to the sum of the bids to place
-    function rentAllCards(uint256 _maxSumOfPrices) external {
+    function rentAllCards(uint256 _maxSumOfPrices) external override {
         _checkState(States.OPEN);
         // check that not being front run
         uint256 _actualSumOfPrices;
@@ -694,7 +701,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         uint256 _timeHeldLimit,
         address _startingPosition,
         uint256 _card
-    ) public autoUnlock() autoLock() {
+    ) public override autoUnlock() autoLock() {
         if (state == States.OPEN) {
             require(_newPrice >= MIN_RENTAL_VALUE, "Price below min");
             require(_card < numberOfCards, "Card does not exist");
@@ -776,6 +783,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @param _card the index of the card to update
     function updateTimeHeldLimit(uint256 _timeHeldLimit, uint256 _card)
         external
+        override
     {
         _checkState(States.OPEN);
         address _user = msgSender();
@@ -1132,7 +1140,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @dev in case Oracle never resolves for any reason
     /// @dev does not set a winner so same as invalid outcome
     /// @dev market does not need to be locked, just in case lockMarket bugs out
-    function circuitBreaker() external {
+    function circuitBreaker() external override {
         require(
             block.timestamp > (uint256(oracleResolutionTime) + (12 weeks)),
             "Too early"

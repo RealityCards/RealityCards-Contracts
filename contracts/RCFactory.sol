@@ -23,13 +23,13 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     IRCTreasury public override treasury;
     IRCNftHubL2 public override nfthub;
     IRCOrderbook public override orderbook;
-    IRealitio public realitio;
+    IRealitio public override realitio;
 
     ///// CONTRACT ADDRESSES /////
     /// @dev reference contract
-    address public referenceContractAddress;
+    address public override referenceContractAddress;
     /// @dev increments each time a new reference contract is added
-    uint256 public referenceContractVersion;
+    uint256 public override referenceContractVersion;
     /// @dev market addresses, mode // address
     /// @dev these are not used for anything, just an easy way to get markets
     mapping(IRCMarket.Mode => address[]) public marketAddresses;
@@ -39,33 +39,33 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     /// @dev artist / winner / market creator / affiliate / card affiliate
     uint256[5] public potDistribution;
     /// @dev minimum tokens that must be sent when creating market which forms iniital pot
-    uint256 public sponsorshipRequired;
+    uint256 public override sponsorshipRequired;
     /// @dev adjust required price increase (in %)
     uint256 public override minimumPriceIncreasePercent;
     /// @dev market opening time must be at least this many seconds in the future
-    uint32 public advancedWarning;
+    uint32 public override advancedWarning;
     /// @dev market closing time must be no more than this many seconds in the future
-    uint32 public maximumDuration;
+    uint32 public override maximumDuration;
     /// @dev market closing time must be at least this many seconds after opening
-    uint32 public minimumDuration;
+    uint32 public override minimumDuration;
     /// @dev if false, anyone can create markets
-    bool public marketCreationGovernorsOnly = true;
+    bool public override marketCreationGovernorsOnly = true;
     /// @dev if false, anyone can be an affiliate
-    bool public approvedAffilliatesOnly = true;
+    bool public override approvedAffilliatesOnly = true;
     /// @dev if false, anyone can be an artist
-    bool public approvedArtistsOnly = true;
+    bool public override approvedArtistsOnly = true;
     /// @dev the maximum number of rent collections to perform in a single transaction
     uint256 public override maxRentIterations;
     /// @dev the address of the arbitrator
-    address public arbitrator;
+    address public override arbitrator;
     /// @dev the time allowed to dispute the oracle answer
-    uint32 public timeout;
+    uint32 public override timeout;
 
     ///// GOVERNANCE VARIABLES- GOVERNORS /////
     /// @dev unapproved markets hidden from the interface
     mapping(address => bool) public override isMarketApproved;
     /// @dev a limit to the number of NFTs to mint per market
-    uint256 public nftMintingLimit;
+    uint256 public override nftMintingLimit;
 
     ///// OTHER /////
     uint256 public constant PER_MILLE = 1000; // in MegaBip so (1000 = 100%)
@@ -146,6 +146,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     function getMostRecentMarket(IRCMarket.Mode _mode)
         external
         view
+        override
         returns (address)
     {
         return marketAddresses[_mode][marketAddresses[_mode].length - (1)];
@@ -157,6 +158,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     function getAllMarkets(IRCMarket.Mode _mode)
         external
         view
+        override
         returns (address[] memory)
     {
         return marketAddresses[_mode];
@@ -197,25 +199,6 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     }
 
     /*╔═════════════════════════════════╗
-      ║     GOVERNANCE - OWNER (SETUP)  ║
-      ╚═════════════════════════════════╝*/
-    /// @dev all functions should have onlyOwner modifier
-
-    /// @notice where the NFTs live
-    /// @param _newAddress the address to set
-    function setNftHubAddress(IRCNftHubL2 _newAddress) external onlyOwner {
-        require(address(_newAddress) != address(0), "Must set Address");
-        nfthub = _newAddress;
-    }
-
-    /// @notice set the address of the orderbook contract
-    /// @param _newAddress the address to set
-    function setOrderbookAddress(IRCOrderbook _newAddress) external onlyOwner {
-        require(address(_newAddress) != address(0), "Must set Address");
-        orderbook = _newAddress;
-    }
-
-    /*╔═════════════════════════════════╗
       ║       GOVERNANCE - OWNER        ║
       ╚═════════════════════════════════╝*/
     /// @dev all functions should have onlyOwner modifier
@@ -239,7 +222,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         uint256 _creatorCut,
         uint256 _affiliateCut,
         uint256 _cardAffiliateCut
-    ) public onlyOwner {
+    ) public override onlyOwner {
         require(
             _artistCut +
                 _winnerCut +
@@ -286,21 +269,21 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
 
     /// @notice set the address of the reality.eth contracts
     /// @param _newAddress the address to set
-    function setRealitioAddress(address _newAddress) public onlyOwner {
+    function setRealitioAddress(address _newAddress) public override onlyOwner {
         require(_newAddress != address(0), "Must set an address");
         realitio = IRealitio(_newAddress);
     }
 
     /// @notice address of the arbitrator, in case of continued disputes on reality.eth
     /// @param _newAddress the address to set
-    function setArbitrator(address _newAddress) public onlyOwner {
+    function setArbitrator(address _newAddress) public override onlyOwner {
         require(_newAddress != address(0), "Must set an address");
         arbitrator = _newAddress;
     }
 
     /// @notice set how long reality.eth waits for disputes before finalising
     /// @param _newTimeout the timeout to set in seconds, 86400 = 24hrs
-    function setTimeout(uint32 _newTimeout) public onlyOwner {
+    function setTimeout(uint32 _newTimeout) public override onlyOwner {
         timeout = _newTimeout;
     }
 
@@ -309,54 +292,70 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
       └──────────────────────────────────────────┘*/
 
     /// @notice whether or not only governors can create the market
-    function changeMarketCreationGovernorsOnly() external onlyOwner {
+    function changeMarketCreationGovernorsOnly() external override onlyOwner {
         marketCreationGovernorsOnly = !marketCreationGovernorsOnly;
     }
 
     /// @notice whether or not anyone can be an artist
-    function changeApprovedArtistsOnly() external onlyOwner {
+    function changeApprovedArtistsOnly() external override onlyOwner {
         approvedArtistsOnly = !approvedArtistsOnly;
     }
 
     /// @notice whether or not anyone can be an affiliate
-    function changeApprovedAffilliatesOnly() external onlyOwner {
+    function changeApprovedAffilliatesOnly() external override onlyOwner {
         approvedAffilliatesOnly = !approvedAffilliatesOnly;
     }
 
     /// @notice how many tokens must be sent in the createMarket tx which forms the initial pot
     /// @param _amount the sponsorship required in wei
-    function setSponsorshipRequired(uint256 _amount) external onlyOwner {
+    function setSponsorshipRequired(uint256 _amount)
+        external
+        override
+        onlyOwner
+    {
         sponsorshipRequired = _amount;
     }
 
     /// @notice market opening time must be at least this many seconds in the future
     /// @param _newAdvancedWarning the warning time to set in seconds
-    function setAdvancedWarning(uint32 _newAdvancedWarning) external onlyOwner {
+    function setAdvancedWarning(uint32 _newAdvancedWarning)
+        external
+        override
+        onlyOwner
+    {
         advancedWarning = _newAdvancedWarning;
         emit LogAdvancedWarning(_newAdvancedWarning);
     }
 
     /// @notice market closing time must be no more than this many seconds in the future
     /// @param _newMaximumDuration the duration limit to set in seconds
-    function setMaximumDuration(uint32 _newMaximumDuration) external onlyOwner {
+    function setMaximumDuration(uint32 _newMaximumDuration)
+        external
+        override
+        onlyOwner
+    {
         maximumDuration = _newMaximumDuration;
         emit LogMaximumDuration(_newMaximumDuration);
     }
 
     /// @notice market closing time must be at least this many seconds after opening
     /// @param _newMinimumDuration the duration limit to set in seconds
-    function setMinimumDuration(uint32 _newMinimumDuration) external onlyOwner {
+    function setMinimumDuration(uint32 _newMinimumDuration)
+        external
+        override
+        onlyOwner
+    {
         minimumDuration = _newMinimumDuration;
         emit LogMinimumDuration(_newMinimumDuration);
     }
 
     // EDIT GOVERNORS
     /// @dev these can be done directly on the treasury, leaving here for user convenience
-    function addGovernor(address _newGovernor) external onlyOwner {
+    function addGovernor(address _newGovernor) external override onlyOwner {
         treasury.grantRole(GOVERNOR, _newGovernor);
     }
 
-    function removeGovernor(address _oldGovernor) external onlyOwner {
+    function removeGovernor(address _oldGovernor) external override onlyOwner {
         treasury.revokeRole(GOVERNOR, _oldGovernor);
     }
 
@@ -367,7 +366,11 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
 
     /// @notice markets are default hidden from the interface, this reveals them
     /// @param _market the market address to change approval for
-    function changeMarketApproval(address _market) external onlyGovernors {
+    function changeMarketApproval(address _market)
+        external
+        override
+        onlyGovernors
+    {
         require(_market != address(0), "Must set Address");
         // check it's an RC contract
         require(mappingOfMarkets[_market], "Not Market");
@@ -376,24 +379,33 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         emit LogMarketApproved(_market, isMarketApproved[_market]);
     }
 
-    function addArtist(address _newArtist) external onlyGovernors {
+    function addArtist(address _newArtist) external override onlyGovernors {
         treasury.grantRole(ARTIST, _newArtist);
     }
 
-    function removeArtist(address _oldArtist) external onlyGovernors {
+    function removeArtist(address _oldArtist) external override onlyGovernors {
         treasury.revokeRole(ARTIST, _oldArtist);
     }
 
-    function addAffiliate(address _newAffiliate) external onlyGovernors {
+    function addAffiliate(address _newAffiliate)
+        external
+        override
+        onlyGovernors
+    {
         treasury.grantRole(AFFILIATE, _newAffiliate);
     }
 
-    function removeAffiliate(address _oldAffiliate) external onlyGovernors {
+    function removeAffiliate(address _oldAffiliate)
+        external
+        override
+        onlyGovernors
+    {
         treasury.revokeRole(AFFILIATE, _oldAffiliate);
     }
 
     function addCardAffiliate(address _newCardAffiliate)
         external
+        override
         onlyGovernors
     {
         treasury.grantRole(CARD_AFFILIATE, _newCardAffiliate);
@@ -401,6 +413,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
 
     function removeCardAffiliate(address _oldCardAffiliate)
         external
+        override
         onlyGovernors
     {
         treasury.revokeRole(CARD_AFFILIATE, _oldCardAffiliate);
@@ -418,6 +431,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     /// @notice change the reference contract for the contract logic
     function setReferenceContractAddress(address _newAddress)
         external
+        override
         onlyUberOwner
     {
         require(_newAddress != address(0));
@@ -428,6 +442,28 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         referenceContractAddress = _newAddress;
         // increment version
         referenceContractVersion += 1;
+    }
+
+    /// @notice where the NFTs live
+    /// @param _newAddress the address to set
+    function setNftHubAddress(IRCNftHubL2 _newAddress)
+        external
+        override
+        onlyUberOwner
+    {
+        require(address(_newAddress) != address(0), "Must set Address");
+        nfthub = _newAddress;
+    }
+
+    /// @notice set the address of the orderbook contract
+    /// @param _newAddress the address to set
+    function setOrderbookAddress(IRCOrderbook _newAddress)
+        external
+        override
+        onlyUberOwner
+    {
+        require(address(_newAddress) != address(0), "Must set Address");
+        orderbook = _newAddress;
     }
 
     /*╔═════════════════════════════════╗
@@ -454,7 +490,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         address[] memory _cardAffiliateAddresses,
         string calldata _realitioQuestion,
         uint256 _sponsorship
-    ) external returns (address) {
+    ) external override returns (address) {
         address _creator = msgSender();
 
         // check nfthub has been set

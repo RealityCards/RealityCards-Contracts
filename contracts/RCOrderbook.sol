@@ -16,20 +16,23 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
       ║            VARIABLES            ║
       ╚═════════════════════════════════╝*/
 
-    /// @dev a record of a users single bid
-    struct Bid {
-        address market;
-        address next;
-        address prev;
-        uint64 token;
-        uint128 price;
-        uint64 timeHeldLimit;
-    }
+    /// @dev a record of a users single bid.
+    /// @dev now declared in the interface, left here for reference
+    // struct Bid {
+    //     address market;
+    //     address next;
+    //     address prev;
+    //     uint64 token;
+    //     uint128 price;
+    //     uint64 timeHeldLimit;
+    // }
+
     /// @dev maps a user address to an array of their bids
     mapping(address => Bid[]) public user;
     /// @dev index of a bid record in the user array, User|Market|Token->Index
     mapping(address => mapping(address => mapping(uint256 => uint256)))
-        public index;
+        public
+        override index;
 
     /// @dev record of market specific variables
     struct Market {
@@ -40,28 +43,26 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
     }
     /// @dev map a market address to a market record
     mapping(address => Market) public market;
-    /// @dev true if the address is a market
-    mapping(address => bool) public isMarket;
     /// @dev find the current owner of a token in a given market. Market -> Token -> Owner
-    mapping(address => mapping(uint256 => address)) public ownerOf;
+    mapping(address => mapping(uint256 => address)) public override ownerOf;
 
     /// @dev an array of closed markets, used to reduce user bid rates
-    address[] public closedMarkets;
+    address[] public override closedMarkets;
     /// @dev how far through the array a given user is, saves iterating the whole array every time.
-    mapping(address => uint256) public userClosedMarketIndex;
+    mapping(address => uint256) public override userClosedMarketIndex;
 
     ///// GOVERNANCE VARIABLES /////
     /// @dev the current treasury
-    IRCTreasury public treasury;
+    IRCTreasury public override treasury;
     /// @dev max number of searches to place an order in the book
     /// @dev current estimates place limit around 2000
-    uint256 public maxSearchIterations = 1000;
+    uint256 public override maxSearchIterations = 1000;
     /// @dev max number of records to delete in one transaction
-    uint256 public maxDeletions = 70;
+    uint256 public override maxDeletions = 70;
     /// @dev number of bids a user should clean when placing a new bid
-    uint256 public cleaningLoops = 2;
+    uint256 public override cleaningLoops = 2;
     /// @dev nonce emitted with orderbook insertions, for frontend sorting
-    uint256 public nonce;
+    uint256 public override nonce;
 
     /*╔═════════════════════════════════╗
       ║          Access Control         ║
@@ -172,7 +173,6 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
         uint256 _cardCount,
         uint256 _minIncrease
     ) external override onlyFactory {
-        isMarket[_market] = true;
         market[_market].tokenCount = SafeCast.toUint64(_cardCount);
         market[_market].minimumPriceIncreasePercent = SafeCast.toUint64(
             _minIncrease
@@ -225,7 +225,10 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
                 "Location too low"
             );
         }
-        require(bidExists(_prevUserAddress, _market, _card),"Invalid starting location");
+        require(
+            bidExists(_prevUserAddress, _market, _card),
+            "Invalid starting location"
+        );
         Bid storage _prevUser = user[_prevUserAddress][
             index[_prevUserAddress][_market][_card]
         ];
@@ -707,7 +710,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
     }
 
     /// @dev remove bids in closed markets, not user specific
-    function cleanWastePile() internal {
+    function cleanWastePile() public override {
         uint256 i = 0;
         while (i < cleaningLoops && user[address(this)].length > 0) {
             uint256 _pileHeight = user[address(this)].length - 1;
@@ -801,12 +804,12 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
     }
 
     /// @dev just to pass old tests, not needed otherwise
-    /// @dev to be deleted once tests updated
+    /// @dev but also useful to have so probably will stay
     function getBid(
         address _market,
         address _user,
         uint256 _card
-    ) external view returns (Bid memory) {
+    ) external view override returns (Bid memory) {
         if (bidExists(_user, _market, _card)) {
             Bid memory _bid = user[_user][index[_user][_market][_card]];
             return _bid;

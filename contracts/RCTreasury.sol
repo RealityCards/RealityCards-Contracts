@@ -23,13 +23,13 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
       ║             VARIABLES           ║
       ╚═════════════════════════════════╝*/
     /// @dev orderbook instance, to remove users bids on foreclosure
-    IRCOrderbook public orderbook;
+    IRCOrderbook public override orderbook;
     /// @dev token contract
     IERC20 public override erc20;
     /// @dev address of (as yet non existent) Bridge for withdrawals to mainnet
     address public override bridgeAddress;
     /// @dev the Factory so only the Factory can add new markets
-    IRCFactory public factory;
+    IRCFactory public override factory;
     /// @dev sum of all deposits
     uint256 public override totalDeposits;
     /// @dev the rental payments made in each market
@@ -37,11 +37,11 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     /// @dev sum of all market pots
     uint256 public override totalMarketPots;
     /// @dev rent taken and allocated to a particular market
-    uint256 public marketBalance;
+    uint256 public override marketBalance;
     /// @dev a quick check if a uesr is foreclosed
     mapping(address => bool) public override isForeclosed;
     /// @dev to keep track of the size of the rounding issue between rent collections
-    uint256 marketBalanceDiscrepancy;
+    uint256 public override marketBalanceDiscrepancy;
 
     /// @param deposit the users current deposit in wei
     /// @param rentalRate the daily cost of the cards the user current owns

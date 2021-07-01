@@ -1,7 +1,48 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.4;
 
+import "./IRCTreasury.sol";
+
 interface IRCOrderbook {
+    struct Bid {
+        address market;
+        address next;
+        address prev;
+        uint64 token;
+        uint128 price;
+        uint64 timeHeldLimit;
+    }
+
+    function index(
+        address _market,
+        address _user,
+        uint256 _token
+    ) external view returns (uint256);
+
+    function ownerOf(address, uint256) external view returns (address);
+
+    function closedMarkets(uint256) external view returns (address);
+
+    function userClosedMarketIndex(address) external view returns (uint256);
+
+    function treasury() external view returns (IRCTreasury);
+
+    function maxSearchIterations() external view returns (uint256);
+
+    function maxDeletions() external view returns (uint256);
+
+    function cleaningLoops() external view returns (uint256);
+
+    function nonce() external view returns (uint256);
+
+    function cleanWastePile() external;
+
+    function getBid(
+        address _market,
+        address _user,
+        uint256 _card
+    ) external view returns (Bid memory);
+
     function setTreasuryAddress(address _newTreasury) external;
 
     function addMarket(
