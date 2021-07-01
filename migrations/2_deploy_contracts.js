@@ -79,18 +79,18 @@ module.exports = async (deployer, network, accounts) => {
     factory = await RCFactory.deployed();
     await deployer.deploy(RCMarket);
     reference = await RCMarket.deployed();
-    await deployer.deploy(RCOrderbook, factory.address, treasury.address);
+    await deployer.deploy(RCOrderbook, treasury.address);
     orderbook = await RCOrderbook.deployed();
     await deployer.deploy(NftHubL2, factory.address, childChainManager);
     nftHubL2 = await NftHubL2.deployed();
     // tell treasury about factory & ARB, tell factory about nft hub and reference
-    await treasury.setFactoryAddress(factory.address, { gas: 100000 });
+    await treasury.setFactoryAddress(factory.address, { gas: 200000 });
     await factory.setReferenceContractAddress(reference.address, { gas: 100000 });
     await factory.setNftHubAddress(nftHubL2.address, { gas: 100000 });
     await factory.setRealitioAddress(realitio.address, { gas: 100000 });
     await factory.setOrderbookAddress(orderbook.address, { gas: 100000 });
     await treasury.setOrderbookAddress(orderbook.address, { gas: 100000 });
-    await treasury.toggleWhitelist({ gas: 100000 });
+    // await treasury.toggleWhitelist({ gas: 100000 });
 
     // print out some stuff to be picked up by the deploy script ready for the next stage
     console.log('Completed stage 1');
