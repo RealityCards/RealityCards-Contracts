@@ -598,23 +598,25 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
     {
         require(treasury.isForeclosed(_user), "User must be foreclosed");
         uint256 i = user[_user].length;
-        uint256 _limit = 0;
-        if (i > maxDeletions) {
-            _limit = i - maxDeletions;
-        }
-        address _market = user[_user][i - 1].market;
-        uint256 _card = user[_user][i - 1].token;
-
-        do {
-            i--;
-
-            // If the prev record isn't the market, this is only a bid (not owned) so we can delete
-            if (user[_user][i].prev != user[_user][i].market) {
-                _market = user[_user][i].market;
-                _card = user[_user][i].token;
-                _removeBidFromOrderbookIgnoreOwner(_user, _market, _card);
+        if (i != 0) {
+            uint256 _limit = 0;
+            if (i > maxDeletions) {
+                _limit = i - maxDeletions;
             }
-        } while (user[_user].length > _limit && i > 0);
+            address _market = user[_user][i - 1].market;
+            uint256 _card = user[_user][i - 1].token;
+
+            do {
+                i--;
+
+                // If the prev record isn't the market, this is only a bid (not owned) so we can delete
+                if (user[_user][i].prev != user[_user][i].market) {
+                    _market = user[_user][i].market;
+                    _card = user[_user][i].token;
+                    _removeBidFromOrderbookIgnoreOwner(_user, _market, _card);
+                }
+            } while (user[_user].length > _limit && i > 0);
+        }
         if (user[_user].length == 0) {
             treasury.resetUser(_user);
             _userForeclosed = false;
