@@ -3,16 +3,16 @@
 ###################
 #### Setup ########
 ###################
-START_TIME="1624881600"
-END_TIME="1625011200"
+START_TIME="1625215500"
+END_TIME="1625223600"
 SPONSORSHIP="0"
 ARTIST=""
-EVENT_NAME="Will Canada be rank 1 in the most vaccine doses given on June 30th?"
-ORACLE_QUESTION="Was Canada ranked highest for the most vaccine doses given (first dose) on June 30, 2021 according to https://ourworldindata.org/covid-vaccinations ?"
-SRC_NAME="vaxxed"
+EVENT_NAME="Will Durtok break the contracts again?"
+ORACLE_QUESTION="Will Durtok break the contracts again?"
+SRC_NAME="Durtok"
 CATEGORY="other"
-SLUG="vaxxed"
-IMAGE_FORMAT=".png"
+SLUG="Durtwat"
+IMAGE_FORMAT=".jpg"
 NUMBER_OF_CARDS="2"
 CARD0="Yes"
 CARD1="No"
@@ -94,7 +94,7 @@ do
 affiliate='CARD_AFFILIATE'$i
 AFILLIATE_ARRAY=$AFILLIATE_ARRAY'"'${!affiliate}'"'
 if [ "${!affiliate}" == "" ];then
-    AFILLIATE_ARRAY='["'$ZERO_ADDRESS'"]'
+    AFILLIATE_ARRAY='[]'
     echo WARNING: AFFILIATE ARRAY EMPTY
     break
 fi
