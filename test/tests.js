@@ -10,7 +10,7 @@ contract("RealityCardsTests", (accounts) => {
 
     beforeEach(async function () {
         await rc.setup(accounts);
-        ({ treasury, factory, orderbook, markets, proxyL2, erc20 } = rc.contracts);
+        ({ treasury, factory, orderbook, markets, proxyL2, erc20, realitio } = rc.contracts);
     });
     afterEach(async function () {
         await rc.cleanup();
@@ -448,6 +448,49 @@ contract("RealityCardsTests", (accounts) => {
     })
     describe("Orderbook tests ", () => {
         describe("Cleaning up tests", () => {
+            it.only("User foreclosed with zero bids ", async () => {
+                // In this test we end up with a user foreclosed without bids
+                markets.push(await rc.createMarket({ closeTime: time.duration.weeks(1), resolveTime: time.duration.weeks(1) }));
+                let bids = [];
+                bids[0] = {
+                    from: alice,
+                    price: 50,
+                    timeLimit: 86400,
+                    market: markets[1],
+                };
+                bids[1] = {
+                    from: bob,
+                    price: 40,
+                    timeLimit: 86400,
+                    market: markets[1],
+                };
+                await rc.populateBidArray(bids);
+
+                // make deposits and place bids
+                await Promise.all(bids.map(async (bid) => {
+                    await rc.deposit(10, bid.from);
+                    await rc.newRental(bid);
+                }));
+
+                await time.increase(time.duration.days(8))
+                await markets[1].lockMarket();
+                await realitio.setResult(markets[1].address, 0)
+                await markets[1].getWinnerFromOracle()
+
+                await markets[1].withdraw({ from: alice })
+                // Alice now only has her winnings - Not forelocsed
+                // Bob is foreclosed but still has bids
+
+                markets.push(await rc.createMarket({ closeTime: time.duration.weeks(1), resolveTime: time.duration.weeks(1) }));
+
+                await rc.deposit(10, frank);
+                await rc.newRental({ from: frank, market: markets[2] })
+                await rc.newRental({ from: alice, market: markets[2], outcome: 1 })
+
+                // the new rentals deleted old bids, bob is foreclosed without bids.
+                await expectRevert(rc.newRental({ from: bob, market: markets[2], price: 2 }), "Insufficient deposit")
+
+            })
             it("removeOldBids ", async () => {
                 markets.push(await rc.createMarket({ closeTime: time.duration.weeks(1), resolveTime: time.duration.weeks(1) }));
                 let bids = [];
@@ -493,19 +536,29 @@ contract("RealityCardsTests", (accounts) => {
 
                 await time.increase(time.duration.days(8))
                 await markets[1].lockMarket();
+                // await markets[1].setAmicableResolution(0, { from: admin })
+                await realitio.setResult(markets[1].address, 0)
+                await markets[1].getWinnerFromOracle()
+
+                await markets[1].withdraw({ from: alice })
+
                 markets.push(await rc.createMarket({ closeTime: time.duration.weeks(1), resolveTime: time.duration.weeks(1) }));
 
-                await markets[1].setAmicableResolution(0, { from: admin })
+                // await Promise.all(bids.map(async (bid) => {
+                //     await markets[1].withdraw({ from: bid.from })
+                // }));
 
-                await Promise.all(bids.map(async (bid) => {
-                    await markets[1].withdraw({ from: bid.from })
-                }));
-
-                await rc.newRental({ from: alice, market: markets[2] })
+                await rc.deposit(10, frank);
+                await rc.newRental({ from: frank, market: markets[2] })
                 await rc.newRental({ from: alice, market: markets[2], outcome: 1 })
                 await rc.newRental({ from: bob, market: markets[2], price: 2 })
-                await rc.newRental({ from: bob, market: markets[2], price: 3, outcome: 1 })
-
+                await rc.newRental({ from: bob, market: markets[2], price: 2, outcome: 1 })
+                await rc.newRental({ from: alice, market: markets[2], price: 3 })
+                await rc.newRental({ from: alice, market: markets[2], outcome: 1, price: 3 })
+                await rc.newRental({ from: bob, market: markets[2], price: 4 })
+                await rc.newRental({ from: bob, market: markets[2], price: 4, outcome: 1 })
+                await orderbook.removeOldBids(alice)
+                await markets[1].withdraw({ from: bob })
 
             })
         })
