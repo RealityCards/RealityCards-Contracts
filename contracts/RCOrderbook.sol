@@ -558,6 +558,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
         uint256 minimumTimeToOwnTo = _timeOwnershipChanged +
             market[_market].minimumRentalDuration;
         uint256 _newPrice;
+        uint256 _loopCounter = 0;
 
         // delete current owner
         do {
@@ -566,13 +567,16 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
                 _market,
                 _card
             );
+            _loopCounter++;
             // delete next bid if foreclosed
         } while (
             treasury.foreclosureTimeUser(
                 _head.next,
                 _newPrice,
                 _timeOwnershipChanged
-            ) < minimumTimeToOwnTo
+            ) <
+                minimumTimeToOwnTo &&
+                _loopCounter < maxDeletions
         );
 
         // the old owner is dead, long live the new owner
@@ -671,43 +675,58 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
     /// @notice this can reduce the users bidRate and chance to foreclose
     /// @param _user the address of the users bids to remove
     function removeOldBids(address _user) external override {
-        address _market = address(0);
-        uint256 _cardCount = 0;
-        uint256 _loopCounter = 0;
-        while (
-            userClosedMarketIndex[_user] < closedMarkets.length &&
-            _loopCounter + _cardCount < maxDeletions
-        ) {
-            _market = closedMarkets[userClosedMarketIndex[_user]];
-            _cardCount = market[_market].tokenCount;
-            for (uint256 i = market[_market].tokenCount; i != 0; ) {
-                i--;
-                if (bidExists(_user, _market, i)) {
-                    // reduce bidRate
-                    uint256 _price = user[_user][index[_user][_market][i]]
-                    .price;
-                    treasury.decreaseBidRate(_user, _price);
+        if (user[_user].length != 0) {
+            address _market = address(0);
+            uint256 _cardCount = 0;
+            uint256 _loopCounter = 0;
+            uint256 _subLoopCounter = 0;
+            while (
+                userClosedMarketIndex[_user] < closedMarkets.length &&
+                _loopCounter + _cardCount < maxDeletions
+            ) {
+                _market = closedMarkets[userClosedMarketIndex[_user]];
+                _cardCount = market[_market].tokenCount;
+                for (uint256 i = market[_market].tokenCount; i != 0; ) {
+                    i--;
+                    if (bidExists(_user, _market, i)) {
+                        // reduce bidRate
+                        uint256 _price = user[_user][index[_user][_market][i]]
+                        .price;
+                        treasury.decreaseBidRate(_user, _price);
 
-                    // preserve linked list
-                    address _tempPrev = user[_user][index[_user][_market][i]]
-                    .prev;
-                    address _tempNext = user[_user][index[_user][_market][i]]
-                    .next;
+                        // preserve linked list
+                        address _tempPrev = user[_user][
+                            index[_user][_market][i]
+                        ]
+                        .prev;
+                        address _tempNext = user[_user][
+                            index[_user][_market][i]
+                        ]
+                        .next;
 
-                    user[_tempNext][index[_tempNext][_market][i]]
-                    .prev = _tempPrev;
-                    user[_tempPrev][index[_tempPrev][_market][i]]
-                    .next = _tempNext;
+                        user[_tempNext][index[_tempNext][_market][i]]
+                        .prev = _tempPrev;
+                        user[_tempPrev][index[_tempPrev][_market][i]]
+                        .next = _tempNext;
 
-                    // delete bid
-                    user[_user].pop();
-                    index[_user][_market][i] = 0;
+                        // delete bid
+                        user[_user].pop();
+                        index[_user][_market][i] = 0;
 
-                    // count deletions
-                    _loopCounter++;
+                        // count deletions
+                        _loopCounter++;
+                    } else {
+                        // iterations cost gas also
+                        // after enough increment the loopCounter
+                        _subLoopCounter++;
+                        if (_subLoopCounter > 100) {
+                            _subLoopCounter = 0;
+                            _loopCounter++;
+                        }
+                    }
                 }
+                userClosedMarketIndex[_user]++;
             }
-            userClosedMarketIndex[_user]++;
         }
     }
 
