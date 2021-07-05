@@ -910,7 +910,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             // User rent collect and fetch the time the user foreclosed, 0 means they didn't foreclose yet
             uint256 _timeUserForeclosed = treasury.collectRentUser(
                 _user,
-                block.timestamp
+                _timeOfThisCollection
             );
 
             // Calculate the card timeLimitTimestamp
@@ -921,97 +921,48 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             bool _foreclosed = _timeUserForeclosed != 0;
             bool _limitHit = cardTimeLimit[_card] != 0 &&
                 _cardTimeLimitTimestamp < block.timestamp;
-            bool _marketLocked = marketLockingTime <= block.timestamp;
 
             // outputs
             bool _newOwner;
             uint256 _refundTime; // seconds of rent to refund the user
 
-            /* Permutations of the events: Foreclosure, Time limit and Market Locking
-            ┌───────────┬─┬─┬─┬─┬─┬─┬─┬─┐
-            │Case       │1│2│3│4│5│6│7│8│
-            ├───────────┼─┼─┼─┼─┼─┼─┼─┼─┤
-            │Foreclosure│0│0│0│0│1│1│1│1│
-            │Time Limit │0│0│1│1│0│0│1│1│
-            │Market Lock│0│1│0│1│0│1│0│1│
-            └───────────┴─┴─┴─┴─┴─┴─┴─┴─┘
+            /* Permutations of the events: Foreclosure and Time limit
+            ┌───────────┬─┬─┬─┬─┐
+            │Case       │1│2│3│4│
+            ├───────────┼─┼─┼─┼─┤
+            │Foreclosure│0│0│1│1│
+            │Time Limit │0│1│0│1│
+            └───────────┴─┴─┴─┴─┘
             */
 
-            if (!_foreclosed && !_limitHit && !_marketLocked) {
+            if (!_foreclosed && !_limitHit) {
                 // CASE 1
                 // didn't foreclose AND
-                // didn't hit time limit AND
-                // didn't lock market
+                // didn't hit time limit
                 // THEN simple rent collect, same owner
                 _timeOfThisCollection = _timeOfThisCollection;
                 _newOwner = false;
                 _refundTime = 0;
-            } else if (!_foreclosed && !_limitHit && _marketLocked) {
+            } else if (!_foreclosed && _limitHit) {
                 // CASE 2
                 // didn't foreclose AND
-                // didn't hit time limit AND
-                // did lock market
-                // THEN refund rent between locking and now
-                _timeOfThisCollection = marketLockingTime;
-                _newOwner = false;
-                _refundTime = block.timestamp - marketLockingTime;
-            } else if (!_foreclosed && _limitHit && !_marketLocked) {
-                // CASE 3
-                // didn't foreclose AND
-                // did hit time limit AND
-                // didn't lock market
+                // did hit time limit
                 // THEN refund rent between time limit and now
                 _timeOfThisCollection = _cardTimeLimitTimestamp;
                 _newOwner = true;
                 _refundTime = block.timestamp - _cardTimeLimitTimestamp;
-            } else if (!_foreclosed && _limitHit && _marketLocked) {
-                // CASE 4
-                // didn't foreclose AND
-                // did hit time limit AND
-                // did lock market
-                // THEN refund rent between the earliest event and now
-                if (_cardTimeLimitTimestamp < marketLockingTime) {
-                    // time limit hit before market locked
-                    _timeOfThisCollection = _cardTimeLimitTimestamp;
-                    _newOwner = true;
-                    _refundTime = block.timestamp - _cardTimeLimitTimestamp;
-                } else {
-                    // market locked before time limit hit
-                    _timeOfThisCollection = marketLockingTime;
-                    _newOwner = false;
-                    _refundTime = block.timestamp - marketLockingTime;
-                }
-            } else if (_foreclosed && !_limitHit && !_marketLocked) {
-                // CASE 5
+            } else if (_foreclosed && !_limitHit) {
+                // CASE 3
                 // did foreclose AND
-                // didn't hit time limit AND
-                // didn't lock market
+                // didn't hit time limit
                 // THEN rent OK, find new owner
                 _timeOfThisCollection = _timeUserForeclosed;
                 _newOwner = true;
                 _refundTime = 0;
-            } else if (_foreclosed && !_limitHit && _marketLocked) {
-                // CASE 6
+            } else if (_foreclosed && _limitHit) {
+                // CASE 4
                 // did foreclose AND
-                // didn't hit time limit AND
-                // did lock market
-                // THEN if foreclosed first rent ok, otherwise refund after locking
-                if (_timeUserForeclosed < marketLockingTime) {
-                    // user foreclosed before market locked
-                    _timeOfThisCollection = _timeUserForeclosed;
-                    _newOwner = true;
-                    _refundTime = 0;
-                } else {
-                    // market locked before user foreclosed
-                    _timeOfThisCollection = marketLockingTime;
-                    _newOwner = false;
-                    _refundTime = _timeUserForeclosed - marketLockingTime;
-                }
-            } else if (_foreclosed && _limitHit && !_marketLocked) {
-                // CASE 7
-                // did foreclose AND
-                // did hit time limit AND
-                // didn't lock market
+                // did hit time limit
                 // THEN if foreclosed first rent ok, otherwise refund after limit
                 if (_timeUserForeclosed < _cardTimeLimitTimestamp) {
                     // user foreclosed before time limit
@@ -1023,34 +974,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                     _timeOfThisCollection = _cardTimeLimitTimestamp;
                     _newOwner = true;
                     _refundTime = _timeUserForeclosed - _cardTimeLimitTimestamp;
-                }
-            } else {
-                // CASE 8
-                // did foreclose AND
-                // did hit time limit AND
-                // did lock market
-                // THEN (╯°益°)╯彡┻━┻
-                if (
-                    _timeUserForeclosed <= _cardTimeLimitTimestamp &&
-                    _timeUserForeclosed < marketLockingTime
-                ) {
-                    // user foreclosed first (or at same time as time limit)
-                    _timeOfThisCollection = _timeUserForeclosed;
-                    _newOwner = true;
-                    _refundTime = 0;
-                } else if (
-                    _cardTimeLimitTimestamp < _timeUserForeclosed &&
-                    _cardTimeLimitTimestamp < marketLockingTime
-                ) {
-                    // time limit hit first
-                    _timeOfThisCollection = _cardTimeLimitTimestamp;
-                    _newOwner = true;
-                    _refundTime = _timeUserForeclosed - _cardTimeLimitTimestamp;
-                } else {
-                    // market locked first
-                    _timeOfThisCollection = marketLockingTime;
-                    _newOwner = false;
-                    _refundTime = _timeUserForeclosed - marketLockingTime;
                 }
             }
             if (_refundTime != 0) {
