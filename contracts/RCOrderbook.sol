@@ -755,6 +755,9 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
                 Bid storage _currUser = user[_user][
                     index[_user][_market][_card]
                 ];
+
+                treasury.decreaseBidRate(_user, _currUser.price);
+
                 // extract from linked list
                 address _tempNext = _currUser.next;
                 address _tempPrev = _currUser.prev;
