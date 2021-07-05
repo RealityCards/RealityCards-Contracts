@@ -210,9 +210,9 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
         // each new bid can help clean up some junk
         cleanWastePile();
 
-        if (user[_user].length == 0 && closedMarkets.length > 0) {
+        if (user[_user].length == 0) {
             //users first bid, skip already closed markets
-            userClosedMarketIndex[_user] = closedMarkets.length - 1;
+            userClosedMarketIndex[_user] = closedMarkets.length;
         }
 
         address _market = msgSender();
