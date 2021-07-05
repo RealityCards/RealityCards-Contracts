@@ -818,6 +818,8 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         if (role == MARKET) {
             // markets should be added in a paused state
             marketPaused[account] = true;
+        } else if (role == WHITELIST) {
+            emit LogWhitelistUser(account, true);
         }
         AccessControl.grantRole(role, account);
     }
