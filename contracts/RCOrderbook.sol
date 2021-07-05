@@ -689,29 +689,35 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
                 for (uint256 i = market[_market].tokenCount; i != 0; ) {
                     i--;
                     if (bidExists(_user, _market, i)) {
+                        uint256 _index = index[_user][_market][i];
                         // reduce bidRate
-                        uint256 _price = user[_user][index[_user][_market][i]]
-                        .price;
+                        uint256 _price = user[_user][_index].price;
                         treasury.decreaseBidRate(_user, _price);
 
                         // preserve linked list
-                        address _tempPrev = user[_user][
-                            index[_user][_market][i]
-                        ]
-                        .prev;
-                        address _tempNext = user[_user][
-                            index[_user][_market][i]
-                        ]
-                        .next;
+                        address _tempPrev = user[_user][_index].prev;
+                        address _tempNext = user[_user][_index].next;
 
                         user[_tempNext][index[_tempNext][_market][i]]
                         .prev = _tempPrev;
                         user[_tempPrev][index[_tempPrev][_market][i]]
                         .next = _tempNext;
 
-                        // delete bid
+                        uint256 _lastRecord = user[_user].length - 1;
+                        // no point overwriting itself
+                        if (_index != _lastRecord) {
+                            // overwrite array element
+                            user[_user][_index] = user[_user][_lastRecord];
+                        }
                         user[_user].pop();
+
+                        // update the index to help find the record later
                         index[_user][_market][i] = 0;
+                        if (user[_user].length != 0 && _index != _lastRecord) {
+                            index[_user][user[_user][_index].market][
+                                user[_user][_index].token
+                            ] = _index;
+                        }
 
                         // count deletions
                         _loopCounter++;
