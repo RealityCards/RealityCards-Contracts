@@ -3,15 +3,15 @@
 ###################
 #### Setup ########
 ###################
-START_TIME="1625584800"
-END_TIME="1625594400"
+START_TIME="1625587200"
+END_TIME="1625648400"
 SPONSORSHIP="0"
 ARTIST=""
 EVENT_NAME="Heads or Tails?"
 ORACLE_QUESTION="Heads or Tails"
 SRC_NAME="testing"
 CATEGORY="other"
-SLUG="testing"
+SLUG="moarTesting"
 IMAGE_FORMAT=".png"
 NUMBER_OF_CARDS="2"
 CARD0="Heads"
