@@ -633,39 +633,44 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
         address _market = msgSender();
         closedMarkets.push(_market);
 
-        for (uint64 i = 0; i < market[_market].tokenCount; i++) {
-            // reduce owners rental rate
+        for (uint64 i = market[_market].tokenCount; i > 0; i--) {
             address _lastOwner = user[_market][index[_market][_market][i]].next;
-            uint256 _price = user[_lastOwner][index[_lastOwner][_market][i]]
-            .price;
-            treasury.updateRentalRate(
-                _lastOwner,
-                _market,
-                _price,
-                0,
-                block.timestamp
-            );
+            if (_lastOwner != _market) {
+                // reduce owners rental rate
+                uint256 _price = user[_lastOwner][index[_lastOwner][_market][i]]
+                .price;
+                treasury.updateRentalRate(
+                    _lastOwner,
+                    _market,
+                    _price,
+                    0,
+                    block.timestamp
+                );
 
-            // store last bid for later
-            address _lastBid = user[_market][index[_market][_market][i]].prev;
+                // store last bid for later
+                address _lastBid = user[_market][index[_market][_market][i]]
+                .prev;
 
-            // detach market from rest of list
-            user[_market][index[_market][_market][i]].prev = _market;
-            user[_market][index[_market][_market][i]].next = _market;
-            user[_lastOwner][index[_market][_lastOwner][i]].prev = address(
-                this
-            );
-            user[_lastBid][index[_market][_lastBid][i]].next = address(this);
+                // detach market from rest of list
+                user[_market][index[_market][_market][i]].prev = _market;
+                user[_market][index[_market][_market][i]].next = _market;
+                user[_lastOwner][index[_market][_lastOwner][i]].prev = address(
+                    this
+                );
+                user[_lastBid][index[_market][_lastBid][i]].next = address(
+                    this
+                );
 
-            // insert bids in the waste pile
-            Bid memory _newBid;
-            _newBid.market = _market;
-            _newBid.token = i;
-            _newBid.prev = _lastBid;
-            _newBid.next = _lastOwner;
-            _newBid.price = 0;
-            _newBid.timeHeldLimit = 0;
-            user[address(this)].push(_newBid);
+                // insert bids in the waste pile
+                Bid memory _newBid;
+                _newBid.market = _market;
+                _newBid.token = i;
+                _newBid.prev = _lastBid;
+                _newBid.next = _lastOwner;
+                _newBid.price = 0;
+                _newBid.timeHeldLimit = 0;
+                user[address(this)].push(_newBid);
+            }
         }
     }
 
