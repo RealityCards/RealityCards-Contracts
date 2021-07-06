@@ -654,12 +654,14 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
                 // detach market from rest of list
                 user[_market][index[_market][_market][i]].prev = _market;
                 user[_market][index[_market][_market][i]].next = _market;
-                user[_lastOwner][index[_market][_lastOwner][i]].prev = address(
+                user[_lastOwner][index[_lastOwner][_market][i]].prev = address(
                     this
                 );
-                user[_lastBid][index[_market][_lastBid][i]].next = address(
+                user[_lastBid][index[_lastBid][_market][i]].next = address(
                     this
                 );
+
+                index[address(this)][_market][i] = user[address(this)].length;
 
                 // insert bids in the waste pile
                 Bid memory _newBid;
@@ -689,7 +691,8 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
             ) {
                 _market = closedMarkets[userClosedMarketIndex[_user]];
                 _cardCount = market[_market].tokenCount;
-                for (uint256 i = market[_market].tokenCount; i != 0; ) {
+                uint256 i = _cardCount + 1;
+                do {
                     i--;
                     if (bidExists(_user, _market, i)) {
                         uint256 _index = index[_user][_market][i];
@@ -733,7 +736,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
                             _loopCounter++;
                         }
                     }
-                }
+                } while (i > 0);
                 userClosedMarketIndex[_user]++;
             }
         }
@@ -744,17 +747,14 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
         uint256 i = 0;
         while (i < cleaningLoops && user[address(this)].length > 0) {
             uint256 _pileHeight = user[address(this)].length - 1;
+            address _market = user[address(this)][_pileHeight].market;
+            uint256 _card = user[address(this)][_pileHeight].token;
+            address _user = user[address(this)][_pileHeight].next;
 
             if (user[address(this)][_pileHeight].next == address(this)) {
+                index[address(this)][_market][_card] = 0;
                 user[address(this)].pop();
             } else {
-                address _market = user[address(this)][_pileHeight].market;
-                uint256 _card = user[address(this)][_pileHeight].token;
-                address _user = user[address(this)][
-                    index[address(this)][_market][_card]
-                ]
-                .next;
-
                 Bid storage _currUser = user[_user][
                     index[_user][_market][_card]
                 ];
@@ -763,15 +763,13 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
 
                 // extract from linked list
                 address _tempNext = _currUser.next;
-                address _tempPrev = _currUser.prev;
                 user[_tempNext][index[_tempNext][_market][_card]]
-                .prev = _tempPrev;
-                user[_tempPrev][index[_tempPrev][_market][_card]]
-                .next = _tempNext;
+                .prev = address(this);
+                user[address(this)][_pileHeight].next = _tempNext;
 
                 // overwrite array element
                 uint256 _index = index[_user][_market][_card];
-                uint256 _lastRecord = user[_user].length - (1);
+                uint256 _lastRecord = user[_user].length - 1;
                 // no point overwriting itself
                 if (_index != _lastRecord) {
                     user[_user][_index] = user[_user][_lastRecord];
