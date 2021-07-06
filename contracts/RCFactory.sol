@@ -38,7 +38,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     ///// GOVERNANCE VARIABLES- OWNER /////
     /// @dev artist / winner / market creator / affiliate / card affiliate
     uint256[5] public potDistribution;
-    /// @dev minimum tokens that must be sent when creating market which forms iniital pot
+    /// @dev minimum tokens that must be sent when creating market which forms initial pot
     uint256 public override sponsorshipRequired;
     /// @dev adjust required price increase (in %)
     uint256 public override minimumPriceIncreasePercent;
@@ -51,7 +51,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     /// @dev if false, anyone can create markets
     bool public override marketCreationGovernorsOnly = true;
     /// @dev if false, anyone can be an affiliate
-    bool public override approvedAffilliatesOnly = true;
+    bool public override approvedAffiliatesOnly = true;
     /// @dev if false, anyone can be an artist
     bool public override approvedArtistsOnly = true;
     /// @dev the maximum number of rent collections to perform in a single transaction
@@ -206,7 +206,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     // Advanced Warning and Maximum Duration events emitted here. Nothing else need be emitted.
 
     /*┌────────────────────────────────────┐
-      │ CALLED WITHIN CONSTRUTOR - PUBLIC  │
+      │ CALLED WITHIN CONSTRUCTOR - PUBLIC │
       └────────────────────────────────────┘*/
 
     /// @notice update stakeholder payouts
@@ -288,7 +288,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     }
 
     /*┌──────────────────────────────────────────┐
-      │ NOT CALLED WITHIN CONSTRUTOR - EXTERNAL  │
+      │ NOT CALLED WITHIN CONSTRUCTOR - EXTERNAL │
       └──────────────────────────────────────────┘*/
 
     /// @notice whether or not only governors can create the market
@@ -303,7 +303,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
 
     /// @notice whether or not anyone can be an affiliate
     function changeApprovedAffilliatesOnly() external override onlyOwner {
-        approvedAffilliatesOnly = !approvedAffilliatesOnly;
+        approvedAffiliatesOnly = !approvedAffiliatesOnly;
     }
 
     /// @notice how many tokens must be sent in the createMarket tx which forms the initial pot
@@ -425,8 +425,8 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
       ║  ******** DANGER ZONE ********  ║
       ╚═════════════════════════════════╝*/
     /// @dev uber owner required for upgrades
-    /// @dev this is seperated so owner so can be set to multisig, or burn address to relinquish upgrade ability
-    /// @dev ... while maintaining governance over other governanace functions
+    /// @dev this is separated so owner so can be set to multisig, or burn address to relinquish upgrade ability
+    /// @dev ... while maintaining governance over other governance functions
 
     /// @notice change the reference contract for the contract logic
     function setReferenceContractAddress(address _newAddress)
@@ -525,7 +525,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
                 _cardAffiliateAddresses.length == _tokenURIs.length,
             "Card Affiliate Length Error"
         );
-        if (approvedAffilliatesOnly) {
+        if (approvedAffiliatesOnly) {
             require(
                 _affiliateAddress == address(0) ||
                     treasury.checkPermission(AFFILIATE, _affiliateAddress),

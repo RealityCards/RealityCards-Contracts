@@ -521,7 +521,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
         user[_tempNext][index[_tempNext][_market][_card]].prev = _tempPrev;
         user[_tempPrev][index[_tempPrev][_market][_card]].next = _tempNext;
 
-        // return next users price to check they're eligable later
+        // return next users price to check they're eligible later
         _newPrice = user[_tempNext][index[_tempNext][_market][_card]].price;
 
         // overwrite array element

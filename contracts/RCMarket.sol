@@ -64,7 +64,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     uint256 public override minimumPriceIncreasePercent;
     /// @dev minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
     uint256 public override minRentalDayDivisor;
-    /// @dev maximum number of times to calcualte rent in one transaction
+    /// @dev maximum number of times to calculate rent in one transaction
     uint256 public override maxRentIterations;
 
     // TIME
@@ -215,7 +215,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         minimumPriceIncreasePercent = factory.minimumPriceIncreasePercent();
         maxRentIterations = factory.maxRentIterations();
 
-        // initialiiize!
+        // Initialize!
         winningOutcome = MAX_UINT256; // default invalid
 
         // assign arguments to public variables
@@ -235,12 +235,12 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         cardAffiliateCut = _potDistribution[4];
         (realitio, arbitrator, timeout) = factory.getOracleSettings();
 
-        // reduce artist cut to zero if zero adddress set
+        // reduce artist cut to zero if zero address set
         if (_artistAddress == address(0)) {
             artistCut = 0;
         }
 
-        // reduce affiliate cut to zero if zero adddress set
+        // reduce affiliate cut to zero if zero address set
         if (_affiliateAddress == address(0)) {
             affiliateCut = 0;
         }
@@ -371,7 +371,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     }
 
     /// @notice transfer ERC 721 between users
-    /// @dev called externaly by Orderbook during contract open state
+    /// @dev called externally by Orderbook during contract open state
     function transferCard(
         address _from,
         address _to,
@@ -472,7 +472,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             _incrementState();
 
             for (uint256 i; i < numberOfCards; i++) {
-                // bring the cards back to the market so the winners get the satisfcation of claiming them
+                // bring the cards back to the market so the winners get the satisfaction of claiming them
                 _transferCard(ownerOf(i), address(this), i);
                 emit LogLongestOwner(i, longestOwner[i]);
             }

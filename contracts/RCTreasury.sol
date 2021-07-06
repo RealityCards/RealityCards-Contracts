@@ -175,7 +175,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     // min rental event emitted by market. Nothing else need be emitted.
 
     /*┌────────────────────────────────────┐
-      │ CALLED WITHIN CONSTRUTOR - PUBLIC  │
+      │ CALLED WITHIN CONSTRUCTOR - PUBLIC │
       └────────────────────────────────────┘*/
 
     /// @notice minimum rental duration (1 day divisor: i.e. 24 = 1 hour, 48 = 30 mins)
@@ -195,7 +195,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     }
 
     /*┌──────────────────────────────────────────┐
-      │ NOT CALLED WITHIN CONSTRUTOR - EXTERNAL  │
+      │ NOT CALLED WITHIN CONSTRUCTOR - EXTERNAL │
       └──────────────────────────────────────────┘*/
 
     /// @notice if true, cannot deposit, withdraw or rent any cards
@@ -263,8 +263,8 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
       ╚═════════════════════════════════╝*/
     /// @dev uber owner required for upgrades
     /// @dev deploying and setting a new factory is effectively an upgrade
-    /// @dev this is seperated so owner so can be set to multisig, or burn address to relinquish upgrade ability
-    /// @dev ... while maintaining governance over other governanace functions
+    /// @dev this is seperate so owner so can be set to multisig, or burn address to relinquish upgrade ability
+    /// @dev ... while maintaining governance over other governance functions
 
     function setFactoryAddress(address _newFactory)
         external
@@ -375,7 +375,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
             "Too soon"
         );
 
-        // stpe 1: collect rent on owned cards
+        // step 1: collect rent on owned cards
         collectRentUser(_msgSender, block.timestamp);
 
         // step 2: process withdrawal
@@ -504,7 +504,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         assessForeclosure(_user);
     }
 
-    /// @notice ability to add liqudity to the pot without being able to win (called by market sponsor function).
+    /// @notice ability to add liquidity to the pot without being able to win (called by market sponsor function).
     function sponsor(address _sponsor, uint256 _amount)
         external
         override
@@ -541,7 +541,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
       ║        MARKET HELPERS           ║
       ╚═════════════════════════════════╝*/
 
-    /// @notice provides the sum total of a users bids accross all markets (whether active or not)
+    /// @notice provides the sum total of a users bids across all markets (whether active or not)
     /// @param _user the user address to query
     function userTotalBids(address _user)
         external
@@ -648,7 +648,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
       ║      RENT CALC HELPERS          ║
       ╚═════════════════════════════════╝*/
 
-    /// @notice returns the rent due between the users last rent calcualtion and
+    /// @notice returns the rent due between the users last rent calculation and
     /// @notice ..the current block.timestamp for all cards a user owns
     /// @param _user the user to query
     /// @param _timeOfCollection calculate upto a given time
@@ -662,7 +662,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
                 (_timeOfCollection - user[_user].lastRentCalc)) / (1 days);
     }
 
-    /// @notice calcualtes the rent owed between the given timestamps
+    /// @notice calculates the rent owed between the given timestamps
     /// @param _time1 one of the timestamps
     /// @param _time2 the second timestamp
     /// @param _price the rental rate for this time period
@@ -749,14 +749,14 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
                 uint256 previousCollectionTime = user[_user].lastRentCalc;
 
                 /*
-            timeTheirDepsitLasted = timeSinceLastUpdate * (usersDeposit/rentOwed)
+            timeTheirDepositLasted = timeSinceLastUpdate * (usersDeposit/rentOwed)
                                   = (now - previousCollectionTime) * (usersDeposit/rentOwed)
             */
                 uint256 timeUsersDepositLasts = ((_timeToCollectTo -
                     previousCollectionTime) * uint256(user[_user].deposit)) /
                     rentOwedByUser;
                 /*
-            Users last collection time = previousCollectionTime + timeTheirDepsitLasted
+            Users last collection time = previousCollectionTime + timeTheirDepositLasted
             */
                 rentOwedByUser = uint256(user[_user].deposit);
                 newTimeLastCollectedOnForeclosure =
@@ -778,7 +778,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         }
     }
 
-    /// moving from the user deposit to the markets availiable balance
+    /// moving from the user deposit to the markets available balance
     function _increaseMarketBalance(uint256 rentCollected, address _user)
         internal
     {

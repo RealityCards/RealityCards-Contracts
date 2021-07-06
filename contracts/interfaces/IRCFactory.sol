@@ -54,7 +54,7 @@ interface IRCFactory {
 
     function marketCreationGovernorsOnly() external view returns (bool);
 
-    function approvedAffilliatesOnly() external view returns (bool);
+    function approvedAffiliatesOnly() external view returns (bool);
 
     function approvedArtistsOnly() external view returns (bool);
 
