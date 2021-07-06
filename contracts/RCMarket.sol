@@ -541,10 +541,11 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             _remainingPot =
                 ((totalRentCollected - rentCollectedPerCard[winningOutcome]) *
                     _remainingCut) /
-                (PER_MILLE);
-            _winningsToTransfer += rentCollectedPerUserPerCard[msgSender()][
-                winningOutcome
-            ];
+                PER_MILLE;
+            _winningsToTransfer +=
+                (rentCollectedPerUserPerCard[msgSender()][winningOutcome] *
+                    _remainingCut) /
+                PER_MILLE;
         } else {
             // calculate normal winnings, if any
             _remainingPot = (totalRentCollected * _remainingCut) / (PER_MILLE);
