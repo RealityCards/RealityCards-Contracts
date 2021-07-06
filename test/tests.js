@@ -448,6 +448,40 @@ contract("RealityCardsTests", (accounts) => {
     })
     describe("Orderbook tests ", () => {
         describe("Cleaning up tests", () => {
+            it("Market closing with active bids ", async () => {
+                // This tests that closeMarket leaves bids in a state that cleanWastePile can still cope with
+                markets.push(await rc.createMarket({ closeTime: time.duration.days(1), resolveTime: time.duration.days(1) }));
+                let bids = [];
+                bids[0] = {
+                    from: alice,
+                    price: 50,
+                    market: markets[1],
+                };
+                bids[1] = {
+                    from: bob,
+                    price: 40,
+                    market: markets[1],
+                };
+
+                await rc.populateBidArray(bids);
+
+                // make deposits and place bids
+                await Promise.all(bids.map(async (bid) => {
+                    await rc.deposit(1000, bid.from);
+                    await rc.newRental(bid);
+                    bid.outcome = 1;
+                    await rc.newRental(bid);
+                }));
+
+                await time.increase(time.duration.days(1))
+                await markets[1].lockMarket();
+
+                markets.push(await rc.createMarket({ closeTime: time.duration.days(1), resolveTime: time.duration.days(1) }));
+
+                await rc.newRental({ from: alice, market: markets[2], outcome: 1 })
+                await rc.newRental({ from: bob, market: markets[2], outcome: 1 })
+
+            })
             it("User foreclosed with zero bids ", async () => {
                 // In this test we end up with a user foreclosed without bids
                 // This test was added due to an error in removeOldBids that would cause an integer underflow
