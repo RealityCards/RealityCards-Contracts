@@ -117,5 +117,5 @@ interface IRCTreasury {
 
     function sponsor(address _sponsor, uint256 _amount) external;
 
-    function updateLastRentalTime(address) external returns (bool);
+    function updateLastRentalTime(address) external;
 }

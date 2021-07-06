@@ -530,13 +530,11 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         external
         override
         onlyRole(MARKET)
-        returns (bool)
     {
         user[_user].lastRentalTime = SafeCast.toUint64(block.timestamp);
         if (user[_user].lastRentCalc == 0) {
             user[_user].lastRentCalc = SafeCast.toUint64(block.timestamp);
         }
-        return true;
     }
 
     /*╔═════════════════════════════════╗
