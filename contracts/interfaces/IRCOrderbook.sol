@@ -8,7 +8,7 @@ interface IRCOrderbook {
         address market;
         address next;
         address prev;
-        uint64 token;
+        uint64 card;
         uint128 price;
         uint64 timeHeldLimit;
     }

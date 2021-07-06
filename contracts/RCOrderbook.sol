@@ -22,7 +22,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
     //     address market;
     //     address next;
     //     address prev;
-    //     uint64 token;
+    //     uint64 card;
     //     uint128 price;
     //     uint64 timeHeldLimit;
     // }
@@ -37,13 +37,13 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
     /// @dev record of market specific variables
     struct Market {
         uint64 mode;
-        uint64 tokenCount;
+        uint64 cardCount;
         uint64 minimumPriceIncreasePercent;
         uint64 minimumRentalDuration;
     }
     /// @dev map a market address to a market record
     mapping(address => Market) public market;
-    /// @dev find the current owner of a token in a given market. Market -> Token -> Owner
+    /// @dev find the current owner of a card in a given market. Market -> Card -> Owner
     mapping(address => mapping(uint256 => address)) public override ownerOf;
 
     /// @dev an array of closed markets, used to reduce user bid rates
@@ -181,7 +181,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
         uint256 _cardCount,
         uint256 _minIncrease
     ) external override onlyFactory {
-        market[_market].tokenCount = SafeCast.toUint64(_cardCount);
+        market[_market].cardCount = SafeCast.toUint64(_cardCount);
         market[_market].minimumPriceIncreasePercent = SafeCast.toUint64(
             _minIncrease
         );
@@ -192,7 +192,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
             // create new record for each card that becomes the head&tail of the linked list
             Bid memory _newBid;
             _newBid.market = _market;
-            _newBid.token = i;
+            _newBid.card = i;
             _newBid.prev = _market;
             _newBid.next = _market;
             _newBid.price = 0;
@@ -204,7 +204,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
 
     /// @notice adds or updates a bid in the orderbook
     /// @param _user the user placing the bid
-    /// @param _card the token to place the bid on
+    /// @param _card the card to place the bid on
     /// @param _price the price of the new bid
     /// @param _timeHeldLimit an optional time limit for the bid
     /// @param _prevUserAddress to help find where to insert the bid
@@ -332,7 +332,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
         // create new record
         Bid memory _newBid;
         _newBid.market = _market;
-        _newBid.token = SafeCast.toUint64(_card);
+        _newBid.card = SafeCast.toUint64(_card);
         _newBid.prev = _nextUser.prev;
         _newBid.next = _prevUser.next;
         _newBid.price = SafeCast.toUint128(_price);
@@ -537,7 +537,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
         index[_user][_market][_card] = 0;
         if (user[_user].length != 0 && _index != _lastRecord) {
             index[_user][user[_user][_index].market][
-                user[_user][_index].token
+                user[_user][_index].card
             ] = _index;
         }
 
@@ -549,7 +549,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
     }
 
     /// @notice find the next valid owner of a given card - onlyMarkets
-    /// @param _card the token to remove
+    /// @param _card the card to remove
     /// @param _timeOwnershipChanged the timestamp, used to backdate ownership changes
     function findNewOwner(uint256 _card, uint256 _timeOwnershipChanged)
         external
@@ -622,7 +622,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
                 // If the prev record isn't the market, this is only a bid (not owned) so we can delete
                 if (user[_user][i].prev != user[_user][i].market) {
                     address _market = user[_user][i].market;
-                    uint256 _card = user[_user][i].token;
+                    uint256 _card = user[_user][i].card;
                     _removeBidFromOrderbookIgnoreOwner(_user, _market, _card);
                 }
             } while (user[_user].length > _limit && i > 0);
@@ -641,7 +641,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
         address _market = msgSender();
         closedMarkets.push(_market);
 
-        for (uint64 i = market[_market].tokenCount; i > 0; i--) {
+        for (uint64 i = market[_market].cardCount; i > 0; i--) {
             address _lastOwner = user[_market][index[_market][_market][i]].next;
             if (_lastOwner != _market) {
                 // reduce owners rental rate
@@ -674,7 +674,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
                 // insert bids in the waste pile
                 Bid memory _newBid;
                 _newBid.market = _market;
-                _newBid.token = i;
+                _newBid.card = i;
                 _newBid.prev = _lastBid;
                 _newBid.next = _lastOwner;
                 _newBid.price = 0;
@@ -698,7 +698,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
                 _loopCounter + _cardCount < maxDeletions
             ) {
                 _market = closedMarkets[userClosedMarketIndex[_user]];
-                _cardCount = market[_market].tokenCount;
+                _cardCount = market[_market].cardCount;
                 uint256 i = _cardCount + 1;
                 do {
                     i--;
@@ -729,7 +729,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
                         index[_user][_market][i] = 0;
                         if (user[_user].length != 0 && _index != _lastRecord) {
                             index[_user][user[_user][_index].market][
-                                user[_user][_index].token
+                                user[_user][_index].card
                             ] = _index;
                         }
 
@@ -756,7 +756,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
         while (i < cleaningLoops && user[address(this)].length > 0) {
             uint256 _pileHeight = user[address(this)].length - 1;
             address _market = user[address(this)][_pileHeight].market;
-            uint256 _card = user[address(this)][_pileHeight].token;
+            uint256 _card = user[address(this)][_pileHeight].card;
             address _user = user[address(this)][_pileHeight].next;
 
             if (user[address(this)][_pileHeight].next == address(this)) {
@@ -788,7 +788,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
                 index[_user][_market][_card] = 0;
                 if (user[_user].length != 0 && _index != _lastRecord) {
                     index[_user][user[_user][_index].market][
-                        user[_user][_index].token
+                        user[_user][_index].card
                     ] = _index;
                 }
             }
@@ -819,7 +819,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
                 // check bid isn't index 0
                 if (
                     user[_user][0].market == _market &&
-                    user[_user][0].token == _card
+                    user[_user][0].card == _card
                 ) {
                     return true;
                 }
@@ -855,7 +855,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
         } else {
             Bid memory _newBid;
             _newBid.market = address(0);
-            _newBid.token = SafeCast.toUint64(_card);
+            _newBid.card = SafeCast.toUint64(_card);
             _newBid.prev = address(0);
             _newBid.next = address(0);
             _newBid.price = 0;
