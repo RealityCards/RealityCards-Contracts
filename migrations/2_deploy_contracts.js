@@ -94,16 +94,12 @@ module.exports = async (deployer, network, accounts) => {
 
     // print out some stuff to be picked up by the deploy script ready for the next stage
     console.log('Completed stage 1');
-    console.log('RCTreasuryAddress');
-    console.log(RCTreasury.address);
-    console.log('RCFactoryAddress');
-    console.log(RCFactory.address);
-    console.log('RCMarketAddress');
-    console.log(RCMarket.address);
-    console.log('RCOrderbookAddress');
-    console.log(RCOrderbook.address);
-    console.log('NFTHubL2Address');
-    console.log(nftHubL2.address);
+    console.log('RCTreasuryAddress  ', RCTreasury.address);
+    console.log('RCFactoryAddress   ', RCFactory.address);
+    console.log('RCMarketAddress    ', RCMarket.address);
+    console.log('RCOrderbookAddress ', RCOrderbook.address);
+    console.log('NFTHubL2Address    ', nftHubL2.address);
+    console.log('Realitio           ', realitio.address);
   } else if (
     network === 'teststage2' ||
     network === 'stage2' ||
