@@ -2,7 +2,7 @@ const realityCardsFactory = artifacts.require("RCFactory");
 const fs = require('fs');
 let myArgs = process.argv.slice(1, 9);
 
-const SRC = "spitaly" // put the event name in here (the folder it is stored in)
+const SRC = "EngVsDen" // put the event name in here (the folder it is stored in)
 // truffle exec addmarket.js --network xdai
 
 // first part of name should match the network name truffle uses
