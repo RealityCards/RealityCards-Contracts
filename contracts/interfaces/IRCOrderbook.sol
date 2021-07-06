@@ -51,12 +51,6 @@ interface IRCOrderbook {
         uint256 _minIncrease
     ) external;
 
-    function setLimits(
-        uint256 _deletionLimit,
-        uint256 _cleaningLimit,
-        uint256 _searchLimit
-    ) external;
-
     function addBidToOrderbook(
         address _user,
         uint256 _token,
@@ -104,4 +98,10 @@ interface IRCOrderbook {
         uint256 _token,
         uint256 _timeToReduce
     ) external;
+
+    function setDeletionLimit(uint256 _deletionLimit) external;
+
+    function setCleaningLimit(uint256 _cleaningLimit) external;
+
+    function setSearchLimit(uint256 _searchLimit) external;
 }

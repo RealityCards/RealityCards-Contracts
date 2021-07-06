@@ -146,20 +146,28 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
         treasury = IRCTreasury(_newTreasury);
     }
 
-    function setLimits(
-        uint256 _deletionLimit,
-        uint256 _cleaningLimit,
-        uint256 _searchLimit
-    ) external override onlyUberOwner {
-        if (_deletionLimit != 0) {
-            maxDeletions = _deletionLimit;
-        }
-        if (_cleaningLimit != 0) {
-            cleaningLoops = _cleaningLimit;
-        }
-        if (_searchLimit != 0) {
-            maxSearchIterations = _searchLimit;
-        }
+    function setDeletionLimit(uint256 _deletionLimit)
+        external
+        override
+        onlyUberOwner
+    {
+        maxDeletions = _deletionLimit;
+    }
+
+    function setCleaningLimit(uint256 _cleaningLimit)
+        external
+        override
+        onlyUberOwner
+    {
+        cleaningLoops = _cleaningLimit;
+    }
+
+    function setSearchLimit(uint256 _searchLimit)
+        external
+        override
+        onlyUberOwner
+    {
+        maxSearchIterations = _searchLimit;
     }
 
     /*╔═════════════════════════════════════╗
