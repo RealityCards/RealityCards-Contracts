@@ -482,26 +482,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
         onlyMarkets
     {
         address _market = msgSender();
-
-        // check if this is the owner
-        Bid storage _currUser = user[_user][index[_user][_market][_card]];
-        if (_currUser.prev == _market) {
-            // user is owner, deal with it
-            uint256 _price = user[_currUser.next][
-                index[_currUser.next][_market][_card]
-            ]
-            .price;
-            transferCard(_market, _card, _user, _currUser.next, _price);
-            treasury.updateRentalRate(
-                _user,
-                _currUser.next,
-                _currUser.price,
-                _price,
-                block.timestamp
-            );
-        }
-
-        // now remove the bid
+        assert(_user != ownerOf[_market][_card]);
         _removeBidFromOrderbookIgnoreOwner(_user, _market, _card);
     }
 
@@ -540,6 +521,8 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
                 user[_user][_index].card
             ] = _index;
         }
+
+        assert(!bidExists(_user, _market, _card));
 
         // If the market is closed we don't need to emit the event
         // A closed market will have an empty linked list and so point at itself
@@ -765,20 +748,17 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
                 index[address(this)][_market][_card] = 0;
                 user[address(this)].pop();
             } else {
-                Bid storage _currUser = user[_user][
-                    index[_user][_market][_card]
-                ];
+                uint256 _index = index[_user][_market][_card];
+                address _tempNext = user[_user][_index].next;
 
-                treasury.decreaseBidRate(_user, _currUser.price);
+                treasury.decreaseBidRate(_user, user[_user][_index].price);
 
                 // extract from linked list
-                address _tempNext = _currUser.next;
+                user[address(this)][_pileHeight].next = _tempNext;
                 user[_tempNext][index[_tempNext][_market][_card]]
                 .prev = address(this);
-                user[address(this)][_pileHeight].next = _tempNext;
 
                 // overwrite array element
-                uint256 _index = index[_user][_market][_card];
                 uint256 _lastRecord = user[_user].length - 1;
                 // no point overwriting itself
                 if (_index != _lastRecord) {
