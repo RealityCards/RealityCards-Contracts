@@ -640,8 +640,10 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
     function closeMarket() external override onlyMarkets {
         address _market = msgSender();
         closedMarkets.push(_market);
-
-        for (uint64 i = market[_market].cardCount; i > 0; i--) {
+        /// TODO: gas analysis, is uint64 cheaper than uint256+SafeCast?
+        uint64 i = market[_market].cardCount;
+        do {
+            i--;
             address _lastOwner = user[_market][index[_market][_market][i]].next;
             if (_lastOwner != _market) {
                 // reduce owners rental rate
@@ -681,7 +683,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
                 _newBid.timeHeldLimit = 0;
                 user[address(this)].push(_newBid);
             }
-        }
+        } while (i > 0);
     }
 
     /// @notice Remove bids in closed markets for a given user
