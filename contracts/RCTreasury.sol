@@ -458,6 +458,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         override
         balancedBooks
         onlyRole(MARKET)
+        returns (uint256)
     {
         require(!globalPause, "Rentals are disabled");
         if (marketBalance < _amount) {
@@ -468,6 +469,8 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         marketBalance -= _amount;
         marketPot[_market] += _amount;
         totalMarketPots += _amount;
+        /// @dev return the amount just incase it was adjusted
+        return _amount;
     }
 
     /// @notice a payout is equivalent to moving from market pot to user's deposit (the opposite of payRent)

@@ -1018,7 +1018,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     ) internal {
         uint256 _rentOwed = (cardPrice[_card] *
             (_timeOfCollection - timeLastCollected[_card])) / 1 days;
-        treasury.payRent(_rentOwed);
+        /// @dev get back the actual rent collected, it may be less than owed
+        uint256 _rentCollected = treasury.payRent(_rentOwed);
         uint256 _timeHeldToIncrement = (_timeOfCollection -
             timeLastCollected[_card]);
 
@@ -1029,10 +1030,10 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         }
         timeHeld[_card][_user] += _timeHeldToIncrement;
         totalTimeHeld[_card] += _timeHeldToIncrement;
-        rentCollectedPerUser[_user] += _rentOwed;
-        rentCollectedPerCard[_card] += _rentOwed;
-        rentCollectedPerUserPerCard[_user][_card] += _rentOwed;
-        totalRentCollected += _rentOwed;
+        rentCollectedPerUser[_user] += _rentCollected;
+        rentCollectedPerCard[_card] += _rentCollected;
+        rentCollectedPerUserPerCard[_user][_card] += _rentCollected;
+        totalRentCollected += _rentCollected;
         timeLastCollected[_card] = _timeOfCollection;
 
         // longest owner tracking
@@ -1040,7 +1041,12 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             longestTimeHeld[_card] = timeHeld[_card][_user];
             longestOwner[_card] = _user;
         }
-        emit LogRentCollection(_rentOwed, _timeHeldToIncrement, _card, _user);
+        emit LogRentCollection(
+            _rentCollected,
+            _timeHeldToIncrement,
+            _card,
+            _user
+        );
     }
 
     function _checkState(States currentState) internal view {
