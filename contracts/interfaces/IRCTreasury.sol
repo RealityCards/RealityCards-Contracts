@@ -109,7 +109,7 @@ interface IRCTreasury {
     function unPauseMarket(address _market) external;
 
     // only markets
-    function payRent(uint256) external;
+    function payRent(uint256) external returns (uint256);
 
     function payout(address, uint256) external returns (bool);
 

@@ -10,7 +10,7 @@ const teststage1_Factory = '0xe1Ab9305DA70b865d610116163A82E1fDF6cCcFD'; //testn
 const xdai_Factory = '0x5b7477AcFa49Cc71530A1119ddbC0d3c30ac8ffE'; //unaudited beta on xDai
 const dev_Factory = '0x76d22B0065Ada142207E2cDce12322FB3F8c0bAA'; //dev on Sokol
 // const matic_Factory = '0x67E63bd4ea7a1114A7C452D28f2305744fee4dC0' //beta on Matic
-const matic_Factory = '0x417B6E0Aaf6b87A63f2C8aC080eAed40A501E201' //dev on Matic
+const matic_Factory = '0xc94c11ec5A701628c7410abE92F4b49078f108E4' //dev on Matic
 
 
 module.exports = async () => {
