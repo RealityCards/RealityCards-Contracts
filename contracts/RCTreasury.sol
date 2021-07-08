@@ -312,6 +312,13 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         erc20.approve(_newBridge, type(uint256).max);
     }
 
+    /// @notice Disaster recovery, pulls all funds from the Treasury to the UberOwner
+    function globalExit() external onlyRole(UBER_OWNER) {
+        uint256 _balance = erc20.balanceOf(address(this));
+        /// @dev using msg.sender instead of msgSender as a precaution should Meta-Tx be compromised
+        erc20.safeTransfer(msg.sender, _balance);
+    }
+
     /*╔═════════════════════════════════╗
       ║ DEPOSIT AND WITHDRAW FUNCTIONS  ║
       ╚═════════════════════════════════╝*/
