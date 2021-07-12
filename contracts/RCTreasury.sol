@@ -601,13 +601,13 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
                 // the new owner has a more recent rent collection
 
                 uint256 _additionalRentOwed = rentOwedBetweenTimestmaps(
-                    block.timestamp,
+                    user[_newOwner].lastRentCalc,
                     _timeOwnershipChanged,
                     _newPrice
                 );
-                collectRentUser(_newOwner, block.timestamp);
 
                 // they have enough funds, just collect the extra
+                // we can be sure of this because it was checked they can cover the minimum rental
                 _increaseMarketBalance(_additionalRentOwed, _newOwner);
                 emit LogAdjustDeposit(_newOwner, _additionalRentOwed, false);
             } else {
