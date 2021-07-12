@@ -740,9 +740,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                 _collectRent(_card);
 
                 // check sufficient deposit
-                uint256 _userTotalBidRate = treasury.userTotalBids(_user) -
-                    (orderbook.getBidValue(_user, _card)) +
-                    _newPrice;
+                uint256 _userTotalBidRate = (treasury.userTotalBids(_user) -
+                    orderbook.getBidValue(_user, _card)) + _newPrice;
                 require(
                     treasury.userDeposit(_user) >=
                         _userTotalBidRate / minRentalDayDivisor,
