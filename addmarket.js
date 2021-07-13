@@ -17,13 +17,8 @@ module.exports = async () => {
   async function createMarket() {
     // create market
     let factory = await realityCardsFactory.at(factoryAddress);
-    if (artistAddress != "0x0000000000000000000000000000000000000000") {
-      console.log("Checking artist approval")
-      let approved = await factory.isArtistApproved();
-      if (!approved) {
-        await factory.changeArtistApproval(artistAddress)
-      }
-    }
+    await factory.addArtist(artistAddress)
+
     console.log("CREATING MARKET");
     console.log("ipfs hash ", ipfsHash);
     console.log("timestamps", timestamps);
