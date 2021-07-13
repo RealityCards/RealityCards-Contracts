@@ -46,6 +46,7 @@ module.exports = async () => {
 
 
   }
+  console.log("Starting Market Script");
   let factoryAddress, question
   try {
     const jsonString = fs.readFileSync('./events/' + SRC + '/config.json')
@@ -65,6 +66,7 @@ module.exports = async () => {
   }
   factoryAddress = eval(myArgs[4] + '_Factory')
 
+  console.log("Factory address ", factoryAddress);
   await createMarket();
   process.exit();
 };
