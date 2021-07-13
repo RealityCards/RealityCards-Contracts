@@ -684,7 +684,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
             ) {
                 _market = closedMarkets[userClosedMarketIndex[_user]];
                 _cardCount = market[_market].cardCount;
-                uint256 i = _cardCount + 1;
+                uint256 i = _cardCount;
                 do {
                     i--;
                     if (bidExists(_user, _market, i)) {
