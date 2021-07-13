@@ -145,7 +145,7 @@ module.exports = async (deployer, network, accounts) => {
     factory = await RCFactory.deployed();
     await deployer.deploy(RCMarket);
     reference = await RCMarket.deployed();
-    await deployer.deploy(RCOrderbook, factory.address, treasury.address);
+    await deployer.deploy(RCOrderbook, treasury.address);
     orderbook = await RCOrderbook.deployed();
     await deployer.deploy(NftHubL2, factory.address, childChainManager);
     nftHubL2 = await NftHubL2.deployed();
