@@ -16,13 +16,13 @@ interface IRCNftHubL2 {
         address,
         uint256,
         string calldata
-    ) external returns (bool);
+    ) external;
 
     function transferNft(
         address,
         address,
         uint256
-    ) external returns (bool);
+    ) external;
 
     function deposit(address user, bytes calldata depositData) external;
 

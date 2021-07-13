@@ -48,6 +48,17 @@ module.exports = class TestEnviroment {
             MAX_DELETIONS: 50,
             LOOP_LIMIT: 100,
             ACCOUNTS_OFFSET: 10,
+            AFFILIATE: web3.utils.soliditySha3("AFFILIATE"),
+            ARTIST: web3.utils.soliditySha3("ARTIST"),
+            CARD_AFFILIATE: web3.utils.soliditySha3("CARD_AFFILIATE"),
+            FACTORY: web3.utils.soliditySha3("FACTORY"),
+            GOVERNOR: web3.utils.soliditySha3("GOVERNOR"),
+            MARKET: web3.utils.soliditySha3("MARKET"),
+            ORDERBOOK: web3.utils.soliditySha3("ORDERBOOK"),
+            OWNER: web3.utils.soliditySha3("OWNER"),
+            TREASURY: web3.utils.soliditySha3("TREASURY"),
+            UBER_OWNER: web3.utils.soliditySha3("UBER_OWNER"),
+            WHITELIST: web3.utils.soliditySha3("WHITELIST"),
         }
         this.constants = Object.assign(
             {},
@@ -76,16 +87,16 @@ module.exports = class TestEnviroment {
         this.contracts.treasury = await RCTreasury.new(this.contracts.erc20.address);
         this.contracts.factory = await RCFactory.new(this.contracts.treasury.address, this.contracts.realitio.address, kleros);
         this.contracts.reference = await RCMarket.new();
-        this.contracts.orderbook = await RCOrderbook.new(this.contracts.factory.address, this.contracts.treasury.address);
+        this.contracts.orderbook = await RCOrderbook.new(this.contracts.treasury.address);
         // nft hubs 
         this.contracts.nftHubL2 = await NftHubL2.new(this.contracts.factory.address, dummyAddress);
         this.contracts.nftHubL1 = await NftHubL1.new();
         // tell treasury about factory, tell factory about nft hub and reference
         await this.contracts.treasury.setFactoryAddress(this.contracts.factory.address);
+        await this.contracts.treasury.setOrderbookAddress(this.contracts.orderbook.address);
+        await this.contracts.factory.setOrderbookAddress(this.contracts.orderbook.address);
         await this.contracts.factory.setReferenceContractAddress(this.contracts.reference.address);
         await this.contracts.factory.setNftHubAddress(this.contracts.nftHubL2.address);
-        await this.contracts.factory.setOrderbookAddress(this.contracts.orderbook.address);
-        await this.contracts.treasury.setOrderbookAddress(this.contracts.orderbook.address);
         await this.contracts.treasury.toggleWhitelist();
 
         // market creation, start off without any.
@@ -192,7 +203,7 @@ module.exports = class TestEnviroment {
     async checkOrderbook(expectedResult) {
         var defaults = {
             from: this.aliases.alice,
-            market: this.contracts.markets[0].address,
+            market: this.contracts.markets[0],
             next: this.contracts.markets[0].address,
             prev: this.contracts.markets[0].address,
             outcome: 0,
@@ -201,9 +212,14 @@ module.exports = class TestEnviroment {
         };
         expectedResult = this.setDefaults(expectedResult, defaults);
         expectedResult.price = web3.utils.toWei(expectedResult.price.toString(), "ether");
-        let index = await this.contracts.orderbook.index(expectedResult.market, expectedResult.from, expectedResult.outcome);
+        let exists = await this.contracts.orderbook.bidExists(expectedResult.from, expectedResult.market.address, expectedResult.outcome)
+        if (!exists) {
+            console.log("Bid %s in market %s by user %s doesn't exist", expectedResult.outcome, expectedResult.market.address, expectedResult.from)
+        }
+        assert.equal(exists, true, "checkOrderbook failed, bid doesn't exist")
+        let index = await this.contracts.orderbook.index(expectedResult.from, expectedResult.market.address, expectedResult.outcome);
         let bid = await this.contracts.orderbook.user(expectedResult.from, index);
-        assert.equal(bid[0], expectedResult.market, "Bid is for incorrect Market")
+        assert.equal(bid[0], expectedResult.market.address, "Bid is for incorrect Market")
         assert.equal(bid[1], expectedResult.next, "Next user in list is incorrect");
         assert.equal(bid[2], expectedResult.prev, "Prev user in list is incorrect");
         assert.equal(bid[3], expectedResult.outcome, "Bid is for incorrect Outcome");
@@ -230,20 +246,20 @@ module.exports = class TestEnviroment {
 
     populateBidArray(bids, options) {
         var defaults = {
-            market: this.contracts.markets[0].address,
+            market: this.contracts.markets[0],
             outcome: 0,
         };
         options = this.setDefaults(options, defaults);
 
         for (let index = 0; index < bids.length; index++) {
             if (index == 0) {
-                bids[index].prev = options.market
+                bids[index].prev = options.market.address
             } else {
                 bids[index].prev = bids[index - 1].from
             }
             bids[index].outcome = options.outcome;
             if (index == bids.length - 1) {
-                bids[index].next = options.market
+                bids[index].next = options.market.address
             } else {
                 bids[index].next = bids[index + 1].from
             }
@@ -270,6 +286,12 @@ module.exports = class TestEnviroment {
         bids.push(bid);
         bids = this.swapBids(bids, pos, (bids.length - 1));
         return bids;
+    }
+
+    accessControl(user, role) {
+        let roleHash = web3.utils.soliditySha3(role)
+        let errorMsg = "AccessControl: account " + user.toLowerCase() + " is missing role " + roleHash
+        return errorMsg
     }
 
     async cleanup() {

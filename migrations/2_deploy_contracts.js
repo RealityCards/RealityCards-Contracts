@@ -79,31 +79,27 @@ module.exports = async (deployer, network, accounts) => {
     factory = await RCFactory.deployed();
     await deployer.deploy(RCMarket);
     reference = await RCMarket.deployed();
-    await deployer.deploy(RCOrderbook, factory.address, treasury.address);
+    await deployer.deploy(RCOrderbook, treasury.address);
     orderbook = await RCOrderbook.deployed();
     await deployer.deploy(NftHubL2, factory.address, childChainManager);
     nftHubL2 = await NftHubL2.deployed();
     // tell treasury about factory & ARB, tell factory about nft hub and reference
-    await treasury.setFactoryAddress(factory.address);
-    await factory.setReferenceContractAddress(reference.address);
-    await factory.setNftHubAddress(nftHubL2.address);
-    await factory.setRealitioAddress(realitio.address);
-    await factory.setOrderbookAddress(orderbook.address);
-    await treasury.setOrderbookAddress(orderbook.address);
-    await treasury.toggleWhitelist();
+    await treasury.setFactoryAddress(factory.address, { gas: 200000 });
+    await factory.setReferenceContractAddress(reference.address, { gas: 100000 });
+    await factory.setNftHubAddress(nftHubL2.address, { gas: 100000 });
+    await factory.setRealitioAddress(realitio.address, { gas: 100000 });
+    await factory.setOrderbookAddress(orderbook.address, { gas: 100000 });
+    await treasury.setOrderbookAddress(orderbook.address, { gas: 100000 });
+    // await treasury.toggleWhitelist({ gas: 100000 });
 
     // print out some stuff to be picked up by the deploy script ready for the next stage
     console.log('Completed stage 1');
-    console.log('RCTreasuryAddress');
-    console.log(RCTreasury.address);
-    console.log('RCFactoryAddress');
-    console.log(RCFactory.address);
-    console.log('RCMarketAddress');
-    console.log(RCMarket.address);
-    console.log('RCOrderbookAddress');
-    console.log(RCOrderbook.address);
-    console.log('NFTHubL2Address');
-    console.log(nftHubL2.address);
+    console.log('RCTreasuryAddress  ', RCTreasury.address);
+    console.log('RCFactoryAddress   ', RCFactory.address);
+    console.log('RCMarketAddress    ', RCMarket.address);
+    console.log('RCOrderbookAddress ', RCOrderbook.address);
+    console.log('NFTHubL2Address    ', nftHubL2.address);
+    console.log('Realitio           ', realitio.address);
   } else if (
     network === 'teststage2' ||
     network === 'stage2' ||
@@ -149,7 +145,7 @@ module.exports = async (deployer, network, accounts) => {
     factory = await RCFactory.deployed();
     await deployer.deploy(RCMarket);
     reference = await RCMarket.deployed();
-    await deployer.deploy(RCOrderbook, factory.address, treasury.address);
+    await deployer.deploy(RCOrderbook, treasury.address);
     orderbook = await RCOrderbook.deployed();
     await deployer.deploy(NftHubL2, factory.address, childChainManager);
     nftHubL2 = await NftHubL2.deployed();
@@ -308,8 +304,7 @@ async function rent(options) {
   } catch (err) {
     console.log(
       err,
-      `on rent from account:${options.from}, market: ${
-        options.market.address
+      `on rent from account:${options.from}, market: ${options.market.address
       }, card: ${options.outcome}, price: ${web3.utils.fromWei(
         newPrice,
         'ether'
