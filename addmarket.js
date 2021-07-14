@@ -2,7 +2,7 @@ const realityCardsFactory = artifacts.require("RCFactory");
 const fs = require('fs');
 let myArgs = process.argv.slice(1, 9);
 
-const SRC = "testBTC" // put the event name in here (the folder it is stored in)
+const SRC = "Invalid" // put the event name in here (the folder it is stored in)
 // truffle exec addmarket.js --network matic
 
 // first part of name should match the network name truffle uses
@@ -17,7 +17,10 @@ module.exports = async () => {
   async function createMarket() {
     // create market
     let factory = await realityCardsFactory.at(factoryAddress);
-    await factory.addArtist(artistAddress)
+    console.log("Adding Artist");
+    if (artistAddress != '0x0000000000000000000000000000000000000000') {
+      await factory.addArtist(artistAddress)
+    }
 
     console.log("CREATING MARKET");
     console.log("ipfs hash ", ipfsHash);
