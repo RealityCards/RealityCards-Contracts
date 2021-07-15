@@ -40,6 +40,7 @@ var arbAddressMainnet = '0x4aa42145Aa6Ebf72e164C9bBC74fbD3788045016'; // may not
 var arbAddressXdai = '0x7301CFA0e1756B71869E93d4e4Dca5c7d0eb0AA6'; // may not be correct
 var kleros = '0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D'; //double check this
 const PoSDai = '0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063';
+const PoSUSDC = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
 const childChainManager = '0x56E14C4C1748a818a5564D33cF774c59EB3eDF59'; //double check this
 
 // Testnet addresses
@@ -68,7 +69,7 @@ module.exports = async (deployer, network, accounts) => {
     await deployer.deploy(RealitioMockup);
     realitio = await RealitioMockup.deployed();
     // deploy treasury, factory, reference market and nft hub
-    await deployer.deploy(RCTreasury, PoSDai);
+    await deployer.deploy(RCTreasury, PoSUSDC);
     treasury = await RCTreasury.deployed();
     await deployer.deploy(
       RCFactory,
