@@ -3,20 +3,21 @@
 ###################
 #### Setup ########
 ###################
-START_TIME="1625587200"
-END_TIME="1625648400"
+START_TIME="1626265800"
+END_TIME="1626289200"
 SPONSORSHIP="0"
 ARTIST=""
-EVENT_NAME="Heads or Tails?"
-ORACLE_QUESTION="Heads or Tails"
-SRC_NAME="testing"
-CATEGORY="other"
-SLUG="moarTesting"
+EVENT_NAME=""
+ORACLE_QUESTION=""
+SRC_NAME=""
+SLUG=""
+CATEGORY="Other"
+US_ALLOWED="true"
 IMAGE_FORMAT=".png"
-NUMBER_OF_CARDS="2"
-CARD0="Heads"
-CARD1="Tails"
-CARD2=""
+NUMBER_OF_CARDS="1"
+CARD0="Invalid"
+CARD1="Between \$1900 and \$2000"
+CARD2="Above \$2000"
 CARD3=""
 CARD4=""
 CARD5=""
@@ -37,6 +38,7 @@ mkdir -p events/$SRC_NAME
 eventJSON='{\n  "name": "'$EVENT_NAME'",'
 eventJSON=$eventJSON'\n  "slug": "'$SLUG'",'
 eventJSON=$eventJSON'\n  "category": "'$CATEGORY'",'
+eventJSON=$eventJSON'\n  "US_allowed": "'$US_ALLOWED'",'
 eventJSON=$eventJSON'\n  "cards": {'
 for ((i=0;i<$NUMBER_OF_CARDS;i++))
 do
