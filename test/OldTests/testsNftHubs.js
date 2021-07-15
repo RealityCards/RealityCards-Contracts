@@ -209,7 +209,7 @@ contract('TestNftHubs', (accounts) => {
 
   it('xdai nft hub check failures', async () => {
     await expectRevert(nftHubL2.addMarket(user0), "Not factory");
-    await expectRevert(nftHubL2.setFactoryAddress(user0, { from: user1 }), "Ownable: caller is not the owner");
+    await expectRevert(nftHubL2.setFactory(user0, { from: user1 }), "Not approved");
     await expectRevert(nftHubL2.mint(user0, 0, 'd'), "Not factory");
     await expectRevert(nftHubL2.transferNft(user0, user0, 9), "Not market");
   });
