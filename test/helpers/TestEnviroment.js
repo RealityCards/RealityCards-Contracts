@@ -349,4 +349,65 @@ module.exports = class TestEnviroment {
         }
         return i;
     }
+    async checkAllLists() {
+
+    }
+
+    async checkMarketLists(options) {
+        var defaults = {
+            market: this.contracts.markets[0]
+        };
+        options = this.setDefaults(options, defaults);
+        let numberOfCards = await options.market.numberOfCards();
+        let totalBidCount = 0;
+        let overalSuccess = true;
+        for (let i = 0; i < numberOfCards; i++) {
+            options.outcome = i
+            let { success, bidCount } = await this.checkCardLists(options);
+            totalBidCount += bidCount;
+            overalSuccess = success;
+        }
+        return { overalSuccess, totalBidCount }
+    }
+
+    async checkCardLists(options) {
+        var defaults = {
+            market: this.contracts.markets[0],
+            outcome: 0,
+        };
+        options = this.setDefaults(options, defaults);
+        options.market = options.market.address
+        let record = await this.contracts.orderbook.getBid(options.market, options.market, options.outcome);
+        let prevRecord = options.market;
+        let nextRecord = record[1];
+        let i = 0;
+        let success = true;
+        // check forwards
+        while (record[1] != options.market && success == true) {
+            record = await this.contracts.orderbook.getBid(options.market, record[1], options.outcome);
+            if (record[0] != options.market || prevRecord != record[2] || record[3] != options.outcome) {
+                console.log("Fail forwards test");
+                success = false;
+            }
+            prevRecord = nextRecord;
+            nextRecord = record[1];
+            i++;
+        }
+        record = await this.contracts.orderbook.getBid(options.market, options.market, options.outcome);
+        prevRecord = options.market;
+        nextRecord = record[2];
+        // check backwards
+        while (record[2] != options.market && success == true) {
+            record = await this.contracts.orderbook.getBid(options.market, record[2], options.outcome);
+            if (record[0] != options.market || prevRecord != record[1] || record[3] != options.outcome) {
+                console.log("Fail backwards test");
+                success = false;
+            }
+            prevRecord = nextRecord;
+            nextRecord = record[2];
+            i++;
+        }
+        let bidCount = i / 2;
+        return { success, bidCount };
+    }
 };

@@ -16,6 +16,12 @@ contract("RealityCardsTests", (accounts) => {
         await rc.cleanup();
     });
 
+    describe("Accounting tests", () => {
+        it("Post event payouts ", async () => {
+
+        })
+    })
+
     describe("Treasury tests ", () => {
         it("Ensure only factory can add markets", async () => {
             // prove Factory can create a market
@@ -448,6 +454,43 @@ contract("RealityCardsTests", (accounts) => {
     })
     describe("Orderbook tests ", () => {
         describe("Cleaning up tests", () => {
+            it.skip("Linked list checks ", async () => {
+                let numberOfCards = 22
+                markets.push(await rc.createMarket({ numberOfCards: numberOfCards, closeTime: time.duration.days(1), resolveTime: time.duration.days(1) }));
+                let bids = [];
+                bids[0] = {
+                    from: alice,
+                    price: 50,
+                    market: markets[1]
+                };
+                bids[1] = {
+                    from: bob,
+                    price: 40,
+                    market: markets[1]
+                };
+                bids[2] = {
+                    from: carol,
+                    price: 30,
+                    market: markets[1]
+                }
+                await rc.populateBidArray(bids, { market: markets[1], outcome: 0 });
+
+                // make deposits and place bids
+                await Promise.all(bids.map(async (bid) => {
+                    await rc.deposit(1000, bid.from);
+                    for (let i = 0; i < numberOfCards; i++) {
+                        bid.outcome = i;
+                        await rc.newRental(bid);
+                    }
+                }));
+
+                let { overalSuccess, totalBidCount } = await rc.checkMarketLists({ market: markets[1] });
+
+                console.log("success ", overalSuccess);
+                console.log("bidCount ", totalBidCount);
+
+
+            })
             it("Don't collect more additional rent than necessary", async () => {
                 let numberOfCards = 22
                 markets.push(await rc.createMarket({ numberOfCards: numberOfCards, closeTime: time.duration.days(1), resolveTime: time.duration.days(1) }));
