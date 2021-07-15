@@ -2,7 +2,7 @@ const realityCardsFactory = artifacts.require("RCFactory");
 const fs = require('fs');
 let myArgs = process.argv.slice(1, 9);
 
-const SRC = "Invalid" // put the event name in here (the folder it is stored in)
+const SRC = "testing" // put the event name in here (the folder it is stored in)
 // truffle exec addmarket.js --network matic
 
 // first part of name should match the network name truffle uses
@@ -10,7 +10,7 @@ const teststage1_Factory = '0xe1Ab9305DA70b865d610116163A82E1fDF6cCcFD'; //testn
 const xdai_Factory = '0x5b7477AcFa49Cc71530A1119ddbC0d3c30ac8ffE'; //unaudited beta on xDai
 const dev_Factory = '0x76d22B0065Ada142207E2cDce12322FB3F8c0bAA'; //dev on Sokol
 // const matic_Factory = '0xB1A5167030dE81c21cB6046E1C5326E0565B82c9' //dev on Matic
-const matic_Factory = '0x23178956066aA9cC27D15e40dD484DD492570035' //mastersync on Matic
+const matic_Factory = '0xc15941bF3701cE7bf7084A6864cf226eC956b12a' //mastersync on Matic
 
 
 module.exports = async () => {
