@@ -68,6 +68,8 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     /// @dev whitelist to only allow certain addresses to deposit
     mapping(address => bool) public isAllowed;
     bool public whitelistEnabled;
+    /// @dev allow markets to be restricted to a certain role
+    mapping(address => bytes32) public marketWhitelist;
 
     /*╔═════════════════════════════════╗
       ║             SAFETY              ║
@@ -253,6 +255,20 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
             for (uint256 index = 0; index < _users.length; index++) {
                 RCTreasury.revokeRole(WHITELIST, _users[index]);
             }
+        }
+    }
+
+    function marketWhitelistCheck(address _user)
+        external
+        view
+        override
+        returns (bool)
+    {
+        bytes32 requiredRole = marketWhitelist[msgSender()];
+        if (requiredRole == bytes32(0)) {
+            return true;
+        } else {
+            return hasRole(requiredRole, _user);
         }
     }
 

@@ -718,6 +718,10 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                     !treasury.globalPause(),
                 "Rentals are disabled"
             );
+            require(
+                treasury.marketWhitelistCheck(_user),
+                "Not approved for this market"
+            );
             bool _userStillForeclosed = treasury.isForeclosed(_user);
             if (_userStillForeclosed) {
                 _userStillForeclosed = orderbook.removeUserFromOrderbook(_user);
