@@ -25,7 +25,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     uint256 public constant PER_MILLE = 1000; // in MegaBip so (1000 = 100%)
     uint256 public override numberOfCards;
     uint256 public constant MAX_UINT256 = type(uint256).max;
-    uint256 public constant MIN_RENTAL_VALUE = 1 ether;
+    uint256 public constant MIN_RENTAL_VALUE = 1_000_000;
     States public override state;
     /// @dev type of event.
     Mode public override mode;
