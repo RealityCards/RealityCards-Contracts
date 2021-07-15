@@ -73,7 +73,8 @@ contract RCNftHubL2 is
         _initializeEIP712("RealityCardsNftHubL2", "1");
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _setupRole(DEPOSITOR_ROLE, childChainManager);
-        setFactory(_factoryAddress);
+        factory = IRCFactory(_factoryAddress);
+        treasury = factory.treasury();
     }
 
     /*╔═════════════════════════════════╗
