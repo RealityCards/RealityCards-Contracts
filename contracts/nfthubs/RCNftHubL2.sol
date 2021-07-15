@@ -8,6 +8,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "hardhat/console.sol";
 import "../interfaces/IRCMarket.sol";
+import "../interfaces/IRCTreasury.sol";
+import "../interfaces/IRCFactory.sol";
 import "../lib/NativeMetaTransaction.sol";
 import "../interfaces/IRCNftHubL2.sol";
 
@@ -32,9 +34,9 @@ contract RCNftHubL2 is
     mapping(uint256 => address) public override marketTracker;
 
     /// @dev governance variables
-    address public factoryAddress;
-
-    /// @dev matic mintable asset requirements
+    IRCFactory public factory;
+    IRCTreasury public treasury;
+    bytes32 public constant UBER_OWNER = keccak256("UBER_OWNER");
     bytes32 public constant DEPOSITOR_ROLE = keccak256("DEPOSITOR_ROLE");
     mapping(uint256 => bool) public withdrawnTokens;
     event TransferWithMetadata(
@@ -43,6 +45,18 @@ contract RCNftHubL2 is
         uint256 indexed tokenId,
         bytes metaData
     );
+
+    /*╔═════════════════════════════════╗
+      ║           MODIFIERS             ║
+      ╚═════════════════════════════════╝*/
+
+    modifier onlyUberOwner() {
+        require(
+            treasury.checkPermission(UBER_OWNER, msgSender()),
+            "Not approved"
+        );
+        _;
+    }
 
     /*╔═════════════════════════════════╗
       ║          CONSTRUCTOR            ║
@@ -59,7 +73,7 @@ contract RCNftHubL2 is
         _initializeEIP712("RealityCardsNftHubL2", "1");
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _setupRole(DEPOSITOR_ROLE, childChainManager);
-        setFactoryAddress(_factoryAddress);
+        setFactory(_factoryAddress);
     }
 
     /*╔═════════════════════════════════╗
@@ -68,7 +82,7 @@ contract RCNftHubL2 is
 
     /// @dev so only markets can change ownership
     function addMarket(address _newMarket) external override {
-        require(msgSender() == factoryAddress, "Not factory");
+        require(msgSender() == address(factory), "Not factory");
         isMarket[_newMarket] = true;
     }
 
@@ -77,9 +91,17 @@ contract RCNftHubL2 is
       ╚═════════════════════════════════╝*/
 
     /// @dev address of RC factory contract, so only factory can mint
-    function setFactoryAddress(address _newAddress) public onlyOwner {
+    function setFactory(address _newAddress) public onlyUberOwner {
         require(_newAddress != address(0), "Must set an address");
-        factoryAddress = _newAddress;
+        factory = IRCFactory(_newAddress);
+        treasury = factory.treasury();
+    }
+
+    function setTokenURI(uint256 _tokenId, string calldata _tokenURI)
+        external
+        onlyUberOwner
+    {
+        _setTokenURI(_tokenId, _tokenURI);
     }
 
     /*╔═════════════════════════════════╗
@@ -96,7 +118,7 @@ contract RCNftHubL2 is
             !withdrawnTokens[_tokenId],
             "ChildMintableERC721: TOKEN_EXISTS_ON_ROOT_CHAIN"
         );
-        require(msgSender() == factoryAddress, "Not factory");
+        require(msgSender() == address(factory), "Not factory");
         marketTracker[_tokenId] = _originalOwner;
         _mint(_originalOwner, _tokenId);
         _setTokenURI(_tokenId, _tokenURI);
@@ -186,7 +208,7 @@ contract RCNftHubL2 is
         super._beforeTokenTransfer(from, to, tokenId);
 
         if (
-            msgSender() != factoryAddress &&
+            msgSender() != address(factory) &&
             msgSender() != marketTracker[tokenId]
         ) {
             IRCMarket market = IRCMarket(marketTracker[tokenId]);
