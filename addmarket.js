@@ -1,38 +1,36 @@
-//require("dotenv").config();
+const realityCardsFactory = artifacts.require("RCFactory");
+const fs = require('fs');
+let myArgs = process.argv.slice(1, 9);
 
-var realityCardsFactory = artifacts.require("RCFactory");
-//var factoryAddress = '0xe1Ab9305DA70b865d610116163A82E1fDF6cCcFD'; //testnet on Sokol
-//var factoryAddress = '0x3b557a58E5c6c4Df3e3307F9c7f5ce46472d80F7'; //beta on xDai
-var factoryAddress = '0x76d22B0065Ada142207E2cDce12322FB3F8c0bAA'; //dev on Sokol
+const SRC = "testing" // put the event name in here (the folder it is stored in)
+// truffle exec addmarket.js --network matic
+
+// first part of name should match the network name truffle uses
+const teststage1_Factory = '0xe1Ab9305DA70b865d610116163A82E1fDF6cCcFD'; //testnet on Sokol
+const xdai_Factory = '0x5b7477AcFa49Cc71530A1119ddbC0d3c30ac8ffE'; //unaudited beta on xDai
+const dev_Factory = '0x76d22B0065Ada142207E2cDce12322FB3F8c0bAA'; //dev on Sokol
+// const matic_Factory = '0xB1A5167030dE81c21cB6046E1C5326E0565B82c9' //dev on Matic
+const matic_Factory = '0xc15941bF3701cE7bf7084A6864cf226eC956b12a' //mastersync on Matic
 
 
-// variables market specific
-var marketOpeningTime = 0;
-var marketLockingTime = 1616997600;
-var oracleResolutionTime = 1616997600;
-const sponsorship = 0;
-var ipfsHash = 'QmdWBMbrFY9LvMmEYmdntS1LNbxWu7vh7CMZyvv8PyKg8g';
-var question = 'What will the state of Starship SN11 be at the end of this week?';
-var artistAddress = "0x0000000000000000000000000000000000000000";
-var affiliateAddress = "0x0000000000000000000000000000000000000000";
-var cardAffiliateAddresses = ['0x0000000000000000000000000000000000000000', '0x0000000000000000000000000000000000000000'];
-
-// kovan overrides (*COMMENT OUT IF MAINNET*)
-// var marketLockingTime = 100; 
-// var oracleResolutionTime = 100; 
-
-var timestamps = [marketOpeningTime, marketLockingTime, oracleResolutionTime];
-var tokenURIs = [
-  'https://cdn.realitycards.io/nftmetadata/release/token0.json',
-  'https://cdn.realitycards.io/nftmetadata/release/token1.json',
-  'https://cdn.realitycards.io/nftmetadata/release/token2.json',
-];
-
-module.exports = function () {
+module.exports = async () => {
   async function createMarket() {
     // create market
     let factory = await realityCardsFactory.at(factoryAddress);
+    console.log("Adding Artist");
+    if (artistAddress != '0x0000000000000000000000000000000000000000') {
+      await factory.addArtist(artistAddress)
+    }
+
     console.log("CREATING MARKET");
+    console.log("ipfs hash ", ipfsHash);
+    console.log("timestamps", timestamps);
+    console.log("tokenURIs", tokenURIs);
+    console.log("artistAddress", artistAddress);
+    console.log("affiliateAddress", affiliateAddress);
+    console.log("cardAffiliateAddresses", cardAffiliateAddresses);
+    console.log("question", question);
+    console.log("sponsorship", sponsorship);
     var transaction = await factory.createMarket(
       0,
       ipfsHash,
@@ -42,13 +40,36 @@ module.exports = function () {
       affiliateAddress,
       cardAffiliateAddresses,
       question,
-      sponsorship,
+      sponsorship
     );
 
     var lastAddress = await factory.getMostRecentMarket.call(0);
     console.log("Market created at address: ", lastAddress);
     console.log("Block number: ", transaction.receipt.blockNumber);
-    process.exit();
+
+
   }
-  createMarket();
+  console.log("Starting Market Script");
+  let factoryAddress, question
+  try {
+    const jsonString = fs.readFileSync('./events/' + SRC + '/config.json')
+    const CONFIG = JSON.parse(jsonString)
+    timestamps = [CONFIG.start, CONFIG.end, CONFIG.end];
+    question = CONFIG.oracle
+    artistAddress = CONFIG.artist
+    affiliateAddress = CONFIG.affiliate
+    cardAffiliateAddresses = CONFIG.cardAffiliates
+    tokenURIs = CONFIG.tokenURIs
+    ipfsHash = CONFIG.ipfs
+    sponsorship = CONFIG.sponsorship
+
+  } catch (err) {
+    console.log(err)
+    return
+  }
+  factoryAddress = eval(myArgs[4] + '_Factory')
+
+  console.log("Factory address ", factoryAddress);
+  await createMarket();
+  process.exit();
 };

@@ -22,6 +22,8 @@ var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 var SelfDestructMockup = artifacts.require("./mockups/SelfDestructMockup.sol");
 var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
 const tokenMockup = artifacts.require("./mockups/tokenMockup.sol");
+// used where the address isn't important but can't be zero
+const dummyAddress = '0x0000000000000000000000000000000000000001';
 
 // arbitrator
 var kleros = '0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D';
@@ -48,7 +50,7 @@ contract('TestFundamentals', (accounts) => {
   andrewsAddress = accounts[9];
   // throws a tantrum if cardRecipients is not outside beforeEach for some reason
   var zeroAddress = '0x0000000000000000000000000000000000000000';
-  var cardRecipients = ['0x0000000000000000000000000000000000000000'];
+  var cardRecipients = [];
 
   beforeEach(async () => {
     var latestTime = await time.latest();
@@ -71,16 +73,14 @@ contract('TestFundamentals', (accounts) => {
     treasury = await RCTreasury.new(erc20.address);
     rcfactory = await RCFactory.new(treasury.address, realitio.address, kleros);
     rcreference = await RCMarket.new();
-    rcorderbook = await RCOrderbook.new(rcfactory.address, treasury.address);
+    rcorderbook = await RCOrderbook.new(treasury.address);
     // nft hubs
-    nftHubL2 = await NftHubL2.new(rcfactory.address, ZERO_ADDRESS);
+    nftHubL2 = await NftHubL2.new(rcfactory.address, dummyAddress);
     nftHubL1 = await NftHubL1.new();
     // tell treasury about factory, tell factory about nft hub and reference
     await treasury.setFactoryAddress(rcfactory.address);
     await rcfactory.setReferenceContractAddress(rcreference.address);
-    await rcfactory.setNftHubAddress(nftHubL2.address, 0);
-    await treasury.setNftHubAddress(nftHubL2.address);
-    await rcfactory.setOrderbookAddress(rcorderbook.address);
+    await rcfactory.setNftHubAddress(nftHubL2.address);
     await treasury.setOrderbookAddress(rcorderbook.address);
     await treasury.toggleWhitelist();
 
@@ -98,6 +98,7 @@ contract('TestFundamentals', (accounts) => {
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards = await RCMarket.at(marketAddress);
+    await rcfactory.changeMarketApproval(marketAddress);
   });
 
   async function createMarketWithArtistSet() {
@@ -108,9 +109,9 @@ contract('TestFundamentals', (accounts) => {
     var oracleResolutionTime = oneYearInTheFuture;
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = user8;
-    await rcfactory.changeArtistApproval(user8);
+    await rcfactory.addArtist(user8);
     var affiliateAddress = user7;
-    await rcfactory.changeAffiliateApproval(user7);
+    await rcfactory.addAffiliate(user7);
     var slug = 'y';
     await rcfactory.createMarket(
       0,
@@ -125,6 +126,7 @@ contract('TestFundamentals', (accounts) => {
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
+    await rcfactory.changeMarketApproval(marketAddress);
     return realitycards2;
   }
 
@@ -190,6 +192,12 @@ contract('TestFundamentals', (accounts) => {
   async function withdrawDeposit(amount, userx) {
     amount = web3.utils.toWei(amount.toString(), 'ether');
     await treasury.withdrawDeposit(amount, true, { from: userx });
+  }
+
+  function accessControl(user, role) {
+    let roleHash = web3.utils.soliditySha3(role)
+    let errorMsg = "AccessControl: account " + user.toLowerCase() + " is missing role " + roleHash
+    return errorMsg
   }
 
   //     // check that the contract initially owns the token
@@ -492,7 +500,7 @@ contract('TestFundamentals', (accounts) => {
   it('test exit- reduce rental time to one min', async () => {
     // this has been gimped due to removing card specific deposit, a lot of this likely makes no sense now
     // check function is owned to change limit
-    await expectRevert(treasury.setMinRental(12, { from: user1 }), "caller is not the owner");
+    await expectRevert(treasury.setMinRental(12, { from: user1 }), accessControl(user1, "OWNER"));
     // change to one min
     await treasury.setMinRental(1440);
     await depositDai(144, user0);
@@ -811,11 +819,11 @@ contract('TestFundamentals', (accounts) => {
     assert.equal(price, web3.utils.toWei('11', 'ether'));
     for (i = 1; i < 20; i++) {
       var price = await realitycards.cardPrice.call(i);
-      assert.equal(price, web3.utils.toWei('1', 'ether'));
+      assert.equal(price, web3.utils.toWei('1', 'picoether'));
     }
     // sum of all prices is 19 + 11 = 30
-    await expectRevert(realitycards.rentAllCards(web3.utils.toWei('25', 'ether')), "Prices too high");
-    realitycards.rentAllCards(web3.utils.toWei('30', 'ether'));
+    await expectRevert(realitycards.rentAllCards(web3.utils.toWei('25', 'picoether')), "Prices too high");
+    realitycards.rentAllCards(web3.utils.toWei('35', 'ether'));
     // withdraw
     await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000, user0);

@@ -1,34 +1,46 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.4;
 
-import "../interfaces/IRealitio.sol";
+import "./IRCNftHubL2.sol";
+import "./IRCTreasury.sol";
+import "./IRCFactory.sol";
+import "./IRealitio.sol";
+import "./IRCOrderbook.sol";
 
 interface IRCMarket {
-    enum States {CLOSED, OPEN, LOCKED, WITHDRAW}
+    enum States {
+        CLOSED,
+        OPEN,
+        LOCKED,
+        WITHDRAW
+    }
+    enum Mode {
+        CLASSIC,
+        WINNER_TAKES_ALL,
+        SAFE_MODE
+    }
 
-    function isMarket() external view returns (bool);
+    function upgradeCard(uint256 _card) external;
 
-    function sponsor(address _sponsor, uint256 _amount) external;
+    function getWinnerFromOracle() external;
 
-    function sponsor(uint256 _amount) external;
+    function setAmicableResolution(uint256 _winningOutcome) external;
 
-    function initialize(
-        uint256 _mode,
-        uint32[] calldata _timestamps,
-        uint256 _numberOfTokens,
-        uint256 _totalNftMintCount,
-        address _artistAddress,
-        address _affiliateAddress,
-        address[] calldata _cardAffiliateAddresses,
-        address _marketCreatorAddress,
-        string calldata _realitioQuestion
+    function lockMarket() external;
+
+    function claimCard(uint256 _card) external;
+
+    function rentAllCards(uint256 _maxSumOfPrices) external;
+
+    function newRental(
+        uint256 _newPrice,
+        uint256 _timeHeldLimit,
+        address _startingPosition,
+        uint256 _card
     ) external;
 
-    function tokenURI(uint256) external view returns (string memory);
-
-    function ownerOf(uint256 tokenId) external view returns (address);
-
-    function state() external view returns (States);
+    function updateTimeHeldLimit(uint256 _timeHeldLimit, uint256 _card)
+        external;
 
     function collectRentAllCards() external returns (bool);
 
@@ -36,7 +48,144 @@ interface IRCMarket {
 
     function exit(uint256) external;
 
-    function marketLockingTime() external returns (uint32);
+    function sponsor(address _sponsor, uint256 _amount) external;
+
+    function sponsor(uint256 _amount) external;
+
+    function circuitBreaker() external;
+
+    // payouts
+    function withdraw() external;
+
+    function payArtist() external;
+
+    function payMarketCreator() external;
+
+    function payAffiliate() external;
+
+    function payCardAffiliate(uint256) external;
+
+    // view functions
+    function nfthub() external view returns (IRCNftHubL2);
+
+    function treasury() external view returns (IRCTreasury);
+
+    function factory() external view returns (IRCFactory);
+
+    function orderbook() external view returns (IRCOrderbook);
+
+    function realitio() external view returns (IRealitio);
+
+    function mode() external view returns (Mode);
+
+    function isMarket() external view returns (bool);
+
+    function numberOfCards() external view returns (uint256);
+
+    function tokenURI(uint256) external view returns (string memory);
+
+    function ownerOf(uint256 tokenId) external view returns (address);
+
+    function state() external view returns (States);
+
+    // prices, deposits, rent
+
+    function cardPrice(uint256) external view returns (uint256);
+
+    function rentCollectedPerUser(address) external view returns (uint256);
+
+    function rentCollectedPerCard(uint256) external view returns (uint256);
+
+    function rentCollectedPerUserPerCard(address, uint256)
+        external
+        view
+        returns (uint256);
+
+    function totalRentCollected() external view returns (uint256);
+
+    function exitedTimestamp(address) external view returns (uint256);
+
+    //parameters
+
+    function minimumPriceIncreasePercent() external view returns (uint256);
+
+    function minRentalDayDivisor() external view returns (uint256);
+
+    function maxRentIterations() external view returns (uint256);
+
+    // time
+    function timeHeld(uint256, address) external view returns (uint256);
+
+    function totalTimeHeld(uint256) external view returns (uint256);
+
+    function timeLastCollected(uint256) external view returns (uint256);
+
+    function longestTimeHeld(uint256) external view returns (uint256);
+
+    function longestOwner(uint256) external view returns (address);
+
+    function cardTimeLimit(uint256) external view returns (uint256);
+
+    function marketOpeningTime() external view returns (uint32);
+
+    function marketLockingTime() external view returns (uint32);
+
+    function oracleResolutionTime() external view returns (uint32);
+
+    // payout settings
+    function winningOutcome() external view returns (uint256);
+
+    function userAlreadyWithdrawn(address) external view returns (bool);
+
+    function userAlreadyClaimed(uint256, address) external view returns (bool);
+
+    function artistAddress() external view returns (address);
+
+    function artistCut() external view returns (uint256);
+
+    function artistPaid() external view returns (bool);
+
+    function affiliateAddress() external view returns (address);
+
+    function affiliateCut() external view returns (uint256);
+
+    function affiliatePaid() external view returns (bool);
+
+    function winnerCut() external view returns (uint256);
+
+    function marketCreatorAddress() external view returns (address);
+
+    function creatorCut() external view returns (uint256);
+
+    function creatorPaid() external view returns (bool);
+
+    function cardAffiliateAddresses(uint256) external view returns (address);
+
+    function cardAffiliateCut() external view returns (uint256);
+
+    function cardAffiliatePaid(uint256) external view returns (bool);
+
+    // oracle
+
+    function questionId() external view returns (bytes32);
+
+    function arbitrator() external view returns (address);
+
+    function timeout() external view returns (uint32);
+
+    function isFinalized() external view returns (bool);
+
+    // setup
+    function initialize(
+        Mode _mode,
+        uint32[] calldata _timestamps,
+        uint256 _numberOfCards,
+        address _artistAddress,
+        address _affiliateAddress,
+        address[] calldata _cardAffiliateAddresses,
+        address _marketCreatorAddress,
+        string calldata _realitioQuestion
+    ) external;
 
     function transferCard(
         address _oldOwner,

@@ -28,6 +28,8 @@ var SelfDestructMockup = artifacts.require("./mockups/SelfDestructMockup.sol");
 var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
 var kleros = "0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D";
 const tokenMockup = artifacts.require("./mockups/tokenMockup.sol");
+// used where the address isn't important but can't be zero
+const dummyAddress = '0x0000000000000000000000000000000000000001';
 // an array of market instances
 var market = [];
 // an array of the addresses (just a more readable way of doing market[].address)
@@ -68,16 +70,14 @@ contract("TestTreasury", (accounts) => {
     treasury = await RCTreasury.new(erc20.address);
     rcfactory = await RCFactory.new(treasury.address);
     rcreference = await RCMarket.new();
-    rcorderbook = await RCOrderbook.new(rcfactory.address, treasury.address);
+    rcorderbook = await RCOrderbook.new(treasury.address);
     // nft hubs
-    nftHubL2 = await NftHubL2.new(rcfactory.address, ZERO_ADDRESS);
+    nftHubL2 = await NftHubL2.new(rcfactory.address, dummyAddress);
     nftHubL1 = await NftHubL1.new();
     // tell treasury about factory, tell factory about nft hub and reference
     await treasury.setFactoryAddress(rcfactory.address);
     await rcfactory.setReferenceContractAddress(rcreference.address);
-    await rcfactory.setNftHubAddress(nftHubL2.address, 0);
-    await treasury.setNftHubAddress(nftHubL2.address);
-    await rcfactory.setOrderbookAddress(rcorderbook.address);
+    await rcfactory.setNftHubAddress(nftHubL2.address);
     await treasury.setOrderbookAddress(rcorderbook.address);
     await treasury.toggleWhitelist();
     // mockups

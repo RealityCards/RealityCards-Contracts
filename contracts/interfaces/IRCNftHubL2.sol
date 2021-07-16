@@ -10,17 +10,19 @@ interface IRCNftHubL2 {
 
     function addMarket(address) external;
 
+    function totalSupply() external view returns (uint256 nftCount);
+
     function mint(
         address,
         uint256,
         string calldata
-    ) external returns (bool);
+    ) external;
 
     function transferNft(
         address,
         address,
         uint256
-    ) external returns (bool);
+    ) external;
 
     function deposit(address user, bytes calldata depositData) external;
 

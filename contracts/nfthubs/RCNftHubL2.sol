@@ -2,11 +2,14 @@
 pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "hardhat/console.sol";
 import "../interfaces/IRCMarket.sol";
+import "../interfaces/IRCTreasury.sol";
+import "../interfaces/IRCFactory.sol";
 import "../lib/NativeMetaTransaction.sol";
 import "../interfaces/IRCNftHubL2.sol";
 
@@ -14,7 +17,9 @@ import "../interfaces/IRCNftHubL2.sol";
 /// @author Andrew Stanger & Daniel Chilvers
 contract RCNftHubL2 is
     Ownable,
+    ERC721,
     ERC721URIStorage,
+    ERC721Enumerable,
     AccessControl,
     NativeMetaTransaction,
     IRCNftHubL2
@@ -29,12 +34,11 @@ contract RCNftHubL2 is
     mapping(uint256 => address) public override marketTracker;
 
     /// @dev governance variables
-    address public factoryAddress;
-
-    /// @dev matic mintable asset requirements
+    IRCFactory public factory;
+    IRCTreasury public treasury;
+    bytes32 public constant UBER_OWNER = keccak256("UBER_OWNER");
     bytes32 public constant DEPOSITOR_ROLE = keccak256("DEPOSITOR_ROLE");
     mapping(uint256 => bool) public withdrawnTokens;
-    event WithdrawnBatch(address indexed user, uint256[] tokenIds);
     event TransferWithMetadata(
         address indexed from,
         address indexed to,
@@ -43,17 +47,34 @@ contract RCNftHubL2 is
     );
 
     /*╔═════════════════════════════════╗
+      ║           MODIFIERS             ║
+      ╚═════════════════════════════════╝*/
+
+    modifier onlyUberOwner() {
+        require(
+            treasury.checkPermission(UBER_OWNER, msgSender()),
+            "Not approved"
+        );
+        _;
+    }
+
+    /*╔═════════════════════════════════╗
       ║          CONSTRUCTOR            ║
       ╚═════════════════════════════════╝*/
 
     constructor(address _factoryAddress, address childChainManager)
         ERC721("RealityCards", "RC")
     {
+        require(
+            childChainManager != address(0),
+            "Must add childChainManager address"
+        );
         // initialise MetaTransactions
         _initializeEIP712("RealityCardsNftHubL2", "1");
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _setupRole(DEPOSITOR_ROLE, childChainManager);
-        setFactoryAddress(_factoryAddress);
+        factory = IRCFactory(_factoryAddress);
+        treasury = factory.treasury();
     }
 
     /*╔═════════════════════════════════╗
@@ -62,7 +83,7 @@ contract RCNftHubL2 is
 
     /// @dev so only markets can change ownership
     function addMarket(address _newMarket) external override {
-        require(msgSender() == factoryAddress, "Not factory");
+        require(msgSender() == address(factory), "Not factory");
         isMarket[_newMarket] = true;
     }
 
@@ -71,9 +92,17 @@ contract RCNftHubL2 is
       ╚═════════════════════════════════╝*/
 
     /// @dev address of RC factory contract, so only factory can mint
-    function setFactoryAddress(address _newAddress) public onlyOwner {
+    function setFactory(address _newAddress) public onlyUberOwner {
         require(_newAddress != address(0), "Must set an address");
-        factoryAddress = _newAddress;
+        factory = IRCFactory(_newAddress);
+        treasury = factory.treasury();
+    }
+
+    function setTokenURI(uint256 _tokenId, string calldata _tokenURI)
+        external
+        onlyUberOwner
+    {
+        _setTokenURI(_tokenId, _tokenURI);
     }
 
     /*╔═════════════════════════════════╗
@@ -85,16 +114,15 @@ contract RCNftHubL2 is
         address _originalOwner,
         uint256 _tokenId,
         string calldata _tokenURI
-    ) external override returns (bool) {
+    ) external override {
         require(
             !withdrawnTokens[_tokenId],
             "ChildMintableERC721: TOKEN_EXISTS_ON_ROOT_CHAIN"
         );
-        require(msgSender() == factoryAddress, "Not factory");
+        require(msgSender() == address(factory), "Not factory");
+        marketTracker[_tokenId] = _originalOwner;
         _mint(_originalOwner, _tokenId);
         _setTokenURI(_tokenId, _tokenURI);
-        marketTracker[_tokenId] = _originalOwner;
-        return true;
     }
 
     // MARKET ONLY
@@ -102,30 +130,9 @@ contract RCNftHubL2 is
         address _currentOwner,
         address _newOwner,
         uint256 _tokenId
-    ) external override returns (bool) {
+    ) external override {
         require(isMarket[msgSender()], "Not market");
         _transfer(_currentOwner, _newOwner, _tokenId);
-        return true;
-    }
-
-    function ownerOf(uint256 tokenId)
-        public
-        view
-        virtual
-        override(ERC721, IRCNftHubL2)
-        returns (address)
-    {
-        return ERC721.ownerOf(tokenId);
-    }
-
-    function tokenURI(uint256 tokenId)
-        public
-        view
-        virtual
-        override(ERC721URIStorage, IRCNftHubL2)
-        returns (string memory)
-    {
-        return ERC721URIStorage.tokenURI(tokenId);
     }
 
     /*╔═════════════════════════════════╗
@@ -155,7 +162,6 @@ contract RCNftHubL2 is
     }
 
     function withdraw(uint256 tokenId) external override {
-        require(isMarket[msgSender()], "Not market");
         require(
             _msgSender() == ownerOf(tokenId),
             "ChildMintableERC721: INVALID_TOKEN_OWNER"
@@ -165,7 +171,6 @@ contract RCNftHubL2 is
     }
 
     function withdrawWithMetadata(uint256 tokenId) external override {
-        require(isMarket[msgSender()], "Not market");
         require(
             msgSender() == ownerOf(tokenId),
             "ChildMintableERC721: INVALID_TOKEN_OWNER"
@@ -192,11 +197,41 @@ contract RCNftHubL2 is
         return abi.encode(tokenURI(tokenId));
     }
 
+    /*╔═════════════════════════════════╗
+      ║           OVERRIDES             ║
+      ╚═════════════════════════════════╝*/
+    /// @dev ensures NFTs can only be moved when market is resolved
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 tokenId
+    ) internal virtual override(ERC721Enumerable, ERC721) {
+        super._beforeTokenTransfer(from, to, tokenId);
+
+        if (
+            msgSender() != address(factory) &&
+            msgSender() != marketTracker[tokenId]
+        ) {
+            IRCMarket market = IRCMarket(marketTracker[tokenId]);
+            require(
+                market.state() == IRCMarket.States.WITHDRAW,
+                "Incorrect state"
+            );
+        }
+    }
+
+    function _burn(uint256 _tokenId)
+        internal
+        override(ERC721, ERC721URIStorage)
+    {
+        super._burn(_tokenId);
+    }
+
     function supportsInterface(bytes4 interfaceId)
         public
         view
         virtual
-        override(AccessControl, ERC721)
+        override(AccessControl, ERC721, ERC721Enumerable)
         returns (bool)
     {
         return
@@ -204,34 +239,36 @@ contract RCNftHubL2 is
             super.supportsInterface(interfaceId);
     }
 
-    /*╔═════════════════════════════════╗
-      ║           OVERRIDES             ║
-      ╚═════════════════════════════════╝*/
-    /// @dev ensures NFTs can only be moved when market is resolved
-
-    function transferFrom(
-        address from,
-        address to,
-        uint256 tokenId
-    ) public override {
-        IRCMarket market = IRCMarket(marketTracker[tokenId]);
-        require(market.state() == IRCMarket.States.WITHDRAW, "Incorrect state");
-        require(ownerOf(tokenId) == msgSender(), "Not owner");
-        _transfer(from, to, tokenId);
+    function ownerOf(uint256 tokenId)
+        public
+        view
+        virtual
+        override(ERC721, IRCNftHubL2)
+        returns (address)
+    {
+        return ERC721.ownerOf(tokenId);
     }
 
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 tokenId,
-        bytes memory _data
-    ) public override {
-        IRCMarket market = IRCMarket(marketTracker[tokenId]);
-        require(market.state() == IRCMarket.States.WITHDRAW, "Incorrect state");
-        require(ownerOf(tokenId) == msgSender(), "Not owner");
-        _transfer(from, to, tokenId);
-        _data;
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        virtual
+        override(ERC721, ERC721URIStorage, IRCNftHubL2)
+        returns (string memory)
+    {
+        return ERC721URIStorage.tokenURI(tokenId);
     }
+
+    function totalSupply()
+        public
+        view
+        virtual
+        override(ERC721Enumerable, IRCNftHubL2)
+        returns (uint256)
+    {
+        return ERC721Enumerable.totalSupply();
+    }
+
     /*
          ▲  
         ▲ ▲ 

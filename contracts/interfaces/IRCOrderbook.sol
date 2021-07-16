@@ -1,21 +1,54 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.4;
 
-interface IRCOrderbook {
-    function changeUberOwner(address) external;
+import "./IRCTreasury.sol";
 
-    function setFactoryAddress(address) external;
+interface IRCOrderbook {
+    struct Bid {
+        address market;
+        address next;
+        address prev;
+        uint64 card;
+        uint128 price;
+        uint64 timeHeldLimit;
+    }
+
+    function index(
+        address _market,
+        address _user,
+        uint256 _token
+    ) external view returns (uint256);
+
+    function ownerOf(address, uint256) external view returns (address);
+
+    function closedMarkets(uint256) external view returns (address);
+
+    function userClosedMarketIndex(address) external view returns (uint256);
+
+    function treasury() external view returns (IRCTreasury);
+
+    function maxSearchIterations() external view returns (uint256);
+
+    function maxDeletions() external view returns (uint256);
+
+    function cleaningLoops() external view returns (uint256);
+
+    function nonce() external view returns (uint256);
+
+    function cleanWastePile() external;
+
+    function getBid(
+        address _market,
+        address _user,
+        uint256 _card
+    ) external view returns (Bid memory);
+
+    function setTreasuryAddress(address _newTreasury) external;
 
     function addMarket(
         address _market,
         uint256 _tokenCount,
         uint256 _minIncrease
-    ) external;
-
-    function setLimits(
-        uint256 _deletionLimit,
-        uint256 _cleaningLimit,
-        uint256 _searchLimit
     ) external;
 
     function addBidToOrderbook(
@@ -31,8 +64,7 @@ interface IRCOrderbook {
     function closeMarket() external;
 
     function findNewOwner(uint256 _token, uint256 _timeOwnershipChanged)
-        external
-        returns (address _newOwner);
+        external;
 
     function getBidValue(address _user, uint256 _token)
         external
@@ -46,7 +78,7 @@ interface IRCOrderbook {
     function bidExists(
         address _user,
         address _market,
-        uint256 _token
+        uint256 _card
     ) external view returns (bool);
 
     function setTimeHeldlimit(
@@ -66,4 +98,10 @@ interface IRCOrderbook {
         uint256 _token,
         uint256 _timeToReduce
     ) external;
+
+    function setDeletionLimit(uint256 _deletionLimit) external;
+
+    function setCleaningLimit(uint256 _cleaningLimit) external;
+
+    function setSearchLimit(uint256 _searchLimit) external;
 }

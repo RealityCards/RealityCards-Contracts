@@ -6,15 +6,21 @@ contract("RealityCardsTests", (accounts) => {
     const { admin, alice, bob, carol, dan, eve, frank, grace, harold, ivan } = rc.aliases;
     const { MAX_UINT256, ZERO_ADDRESS } = rc.constants;
     const { expectRevert, time, ether, balance } = rc.testHelpers;
-    const { ACCOUNTS_OFFSET } = rc.configs;
+    const { ACCOUNTS_OFFSET, FACTORY } = rc.configs;
 
     beforeEach(async function () {
         await rc.setup(accounts);
-        ({ treasury, factory, orderbook, markets, proxyL2, erc20 } = rc.contracts);
+        ({ treasury, factory, orderbook, markets, proxyL2, erc20, realitio } = rc.contracts);
     });
     afterEach(async function () {
         await rc.cleanup();
     });
+
+    describe("Accounting tests", () => {
+        it("Post event payouts ", async () => {
+
+        })
+    })
 
     describe("Treasury tests ", () => {
         it("Ensure only factory can add markets", async () => {
@@ -26,30 +32,29 @@ contract("RealityCardsTests", (accounts) => {
             // Assert this market now exists
             assert.equal(typeof markets[nextMarket] === "undefined", false);
             // Non-factory try and add a market
-            await expectRevert(treasury.addMarket(alice), "Not factory");
+            await expectRevert(treasury.grantRole("MARKET", alice), rc.accessControl(admin, "FACTORY"));
         });
 
         it("check that non markets cannot call market only functions on Treasury", async () => {
             // only testing invalid responses, valid responses checked in each functions own test
-            await expectRevert(treasury.payRent(admin), "Not authorised");
-            await expectRevert(treasury.payout(admin, 0), "Not authorised");
-            await expectRevert(treasury.sponsor(admin, 1), "Not authorised");
-            await expectRevert(treasury.updateLastRentalTime(admin), "Not authorised");
+            await expectRevert(treasury.payRent(admin), rc.accessControl(admin, "MARKET"));
+            await expectRevert(treasury.payout(admin, 0), rc.accessControl(admin, "MARKET"));
+            await expectRevert(treasury.sponsor(admin, 1), rc.accessControl(admin, "MARKET"));
+            await expectRevert(treasury.updateLastRentalTime(admin), rc.accessControl(admin, "MARKET"));
         });
 
         it("check that non owners cannot call owner only functions on Treasury", async () => {
             // only testing invalid responses, valid responses checked in each functions own test
-            await expectRevert(treasury.setMinRental(10, { from: alice }), "Ownable: caller is not the owner");
-            await expectRevert(treasury.setMaxContractBalance(10, { from: alice }), "Ownable: caller is not the owner");
-            await expectRevert(treasury.changeGlobalPause({ from: alice }), "Ownable: caller is not the owner");
-            await expectRevert(treasury.changePauseMarket(ZERO_ADDRESS, { from: alice }), "Ownable: caller is not the owner");
+            await expectRevert(treasury.setMinRental(10, { from: alice }), rc.accessControl(alice, "OWNER"));
+            await expectRevert(treasury.setMaxContractBalance(10, { from: alice }), rc.accessControl(alice, "OWNER"));
+            await expectRevert(treasury.changeGlobalPause({ from: alice }), rc.accessControl(alice, "OWNER"));
+            await expectRevert(treasury.changePauseMarket(markets[0].address, true, { from: alice }), rc.accessControl(alice, "OWNER"));
         });
 
         it("check that inferior owners cannot call uberOwner functions on Treasury", async () => {
             // only testing invalid responses, valid responses checked in each functions own test
-            await expectRevert(treasury.setFactoryAddress(markets[0].address, { from: alice }), "Extremely Verboten");
-            await expectRevert(treasury.changeUberOwner(user2, { from: alice }), "Extremely Verboten");
-            await expectRevert(treasury.setBridgeAddress(ZERO_ADDRESS, { from: alice }), "Extremely Verboten");
+            await expectRevert(treasury.setFactoryAddress(markets[0].address, { from: alice }), rc.accessControl(alice, "UBER_OWNER"));
+            await expectRevert(treasury.setBridgeAddress(ZERO_ADDRESS, { from: alice }), rc.accessControl(alice, "UBER_OWNER"));
         });
 
         it("test setMinRental", async () => {
@@ -103,11 +108,11 @@ contract("RealityCardsTests", (accounts) => {
             // check state of market
             var pauseMarketState = await treasury.marketPaused(markets[0].address);
             // change value
-            await treasury.changePauseMarket(markets[0].address);
+            await treasury.changePauseMarket(markets[0].address, !pauseMarketState);
             // check value
             assert.equal(await treasury.marketPaused(markets[0].address), !pauseMarketState);
             // change it back
-            await treasury.changePauseMarket(markets[0].address);
+            await treasury.changePauseMarket(markets[0].address, pauseMarketState);
             // check again
             assert.equal(await treasury.marketPaused(markets[0].address), pauseMarketState);
         });
@@ -118,25 +123,11 @@ contract("RealityCardsTests", (accounts) => {
             // set value
             await treasury.setFactoryAddress(user9);
             // check value
-            assert.equal(await treasury.factoryAddress(), user9);
+            assert.equal(await treasury.factory(), user9);
             // change the value
             await treasury.setFactoryAddress(user8);
             // check again
-            assert.equal(await treasury.factoryAddress(), user8);
-        });
-
-        it("test changeUberOwner", async () => {
-            // check for zero address
-            await expectRevert.unspecified(treasury.changeUberOwner(ZERO_ADDRESS));
-            // set value
-            await treasury.changeUberOwner(alice, { from: admin });
-            // check value
-            assert.equal(await treasury.uberOwner(), alice);
-            // change the value
-            await expectRevert(treasury.changeUberOwner(bob, { from: admin }), "Extremely Verboten");
-            await treasury.changeUberOwner(bob, { from: alice });
-            // check again
-            assert.equal(await treasury.uberOwner(), bob);
+            assert.equal(await treasury.factory(), user8);
         });
 
         it("test deposit", async () => {
@@ -193,6 +184,7 @@ contract("RealityCardsTests", (accounts) => {
             // withdrawing locally again, until the bridge is finished.
             await treasury.withdrawDeposit(ether("100"), true, { from: bob });
             // check we don't own the card or have any bids
+            await markets[0].collectRentAllCards();
             assert.equal((await markets[0].ownerOf(0)), markets[0].address);
             assert.equal((await treasury.userTotalBids(bob)), 0);
         });
@@ -220,7 +212,7 @@ contract("RealityCardsTests", (accounts) => {
             await rc.deposit(100, alice);
             await rc.newRental();
             // turn on market pause
-            await treasury.changePauseMarket(markets[0].address);
+            await treasury.changePauseMarket(markets[0].address, true);
             // we can still deposit
             await rc.deposit(144, alice);
             // we can't use that market
@@ -292,7 +284,7 @@ contract("RealityCardsTests", (accounts) => {
             assert.equal(totalRentals.toString(), ether("4").toString());
             // increase rent to 1439 (max 1440) then rent again, check it fails
             await rc.newRental({ price: 1435 });
-            await expectRevert(rc.newRental({ price: 5, outcome: 3 }), " Insufficient deposit");
+            await expectRevert(rc.newRental({ price: 5, outcome: 3 }), "Insufficient deposit");
             // someone bids even higher, I increase my bid above what I can afford, we all run out of deposit, should not return to me
             await rc.newRental({ price: 2000, from: bob });
             await time.increase(time.duration.weeks(1));
@@ -322,6 +314,7 @@ contract("RealityCardsTests", (accounts) => {
             assert.equal(totalRentals.toString(), ether("5").toString());
 
             await rc.withdrawDeposit(1000, alice);
+            await markets[0].collectRentAllCards();
             var owner = await markets[0].ownerOf.call(0);
             assert.notEqual(owner, alice);
         });
@@ -460,6 +453,230 @@ contract("RealityCardsTests", (accounts) => {
         })
     })
     describe("Orderbook tests ", () => {
+        describe("Cleaning up tests", () => {
+            it.skip("Linked list checks ", async () => {
+                let numberOfCards = 22
+                markets.push(await rc.createMarket({ numberOfCards: numberOfCards, closeTime: time.duration.days(1), resolveTime: time.duration.days(1) }));
+                let bids = [];
+                bids[0] = {
+                    from: alice,
+                    price: 50,
+                    market: markets[1]
+                };
+                bids[1] = {
+                    from: bob,
+                    price: 40,
+                    market: markets[1]
+                };
+                bids[2] = {
+                    from: carol,
+                    price: 30,
+                    market: markets[1]
+                }
+                await rc.populateBidArray(bids, { market: markets[1], outcome: 0 });
+
+                // make deposits and place bids
+                await Promise.all(bids.map(async (bid) => {
+                    await rc.deposit(1000, bid.from);
+                    for (let i = 0; i < numberOfCards; i++) {
+                        bid.outcome = i;
+                        await rc.newRental(bid);
+                    }
+                }));
+
+                let { overalSuccess, totalBidCount } = await rc.checkMarketLists({ market: markets[1] });
+
+                console.log("success ", overalSuccess);
+                console.log("bidCount ", totalBidCount);
+
+
+            })
+            it("Don't collect more additional rent than necessary", async () => {
+                let numberOfCards = 22
+                markets.push(await rc.createMarket({ numberOfCards: numberOfCards, closeTime: time.duration.days(1), resolveTime: time.duration.days(1) }));
+                let bids = [];
+                bids[0] = {
+                    from: alice,
+                    price: 50,
+                    market: markets[1]
+                };
+                bids[1] = {
+                    from: bob,
+                    price: 40,
+                    market: markets[1]
+                };
+
+                await rc.populateBidArray(bids, { market: markets[1], outcome: 0 });
+
+                // make deposits and place bids
+                await Promise.all(bids.map(async (bid) => {
+                    await rc.deposit(1000, bid.from);
+                    for (let i = 0; i < numberOfCards; i++) {
+                        bid.outcome = i;
+                        await rc.newRental(bid);
+                    }
+                }));
+
+                await time.increase(time.duration.hours(23))
+
+                await Promise.all(bids.map(async (bid) => {
+                    for (let i = 0; i < numberOfCards; i++) {
+                        bid.outcome = i;
+                        await rc.checkOrderbook(bid);
+                    }
+                }));
+
+                await time.increase(time.duration.hours(25))
+                // the market closed 24 hrs ago, don't collect too much rent on locking
+                // or else alices deposit will underflow in _increaseMarketBalance
+                await markets[1].lockMarket();
+
+            })
+            it("Market closing with active bids ", async () => {
+                // This tests that closeMarket leaves bids in a state that cleanWastePile can still cope with
+                markets.push(await rc.createMarket({ closeTime: time.duration.days(1), resolveTime: time.duration.days(1) }));
+                let bids = [];
+                bids[0] = {
+                    from: alice,
+                    price: 50,
+                    market: markets[1],
+                };
+                bids[1] = {
+                    from: bob,
+                    price: 40,
+                    market: markets[1],
+                };
+
+                await rc.populateBidArray(bids);
+
+                // make deposits and place bids
+                await Promise.all(bids.map(async (bid) => {
+                    await rc.deposit(1000, bid.from);
+                    await rc.newRental(bid);
+                    bid.outcome = 1;
+                    await rc.newRental(bid);
+                }));
+
+                await time.increase(time.duration.days(1))
+                await markets[1].lockMarket();
+
+                markets.push(await rc.createMarket({ closeTime: time.duration.days(1), resolveTime: time.duration.days(1) }));
+
+                await rc.newRental({ from: alice, market: markets[2], outcome: 1 })
+                await rc.newRental({ from: bob, market: markets[2], outcome: 1 })
+
+            })
+            it("User foreclosed with zero bids ", async () => {
+                // In this test we end up with a user foreclosed without bids
+                // This test was added due to an error in removeOldBids that would cause an integer underflow
+                markets.push(await rc.createMarket({ closeTime: time.duration.weeks(1), resolveTime: time.duration.weeks(1) }));
+                let bids = [];
+                bids[0] = {
+                    from: alice,
+                    price: 50,
+                    market: markets[1],
+                };
+                bids[1] = {
+                    from: bob,
+                    price: 40,
+                    market: markets[1],
+                };
+                await rc.populateBidArray(bids);
+
+                // make deposits and place bids
+                await Promise.all(bids.map(async (bid) => {
+                    await rc.deposit(10, bid.from);
+                    await rc.newRental(bid);
+                }));
+
+                await time.increase(time.duration.days(8))
+                await markets[1].lockMarket();
+                await realitio.setResult(markets[1].address, 0)
+                await markets[1].getWinnerFromOracle()
+
+                await markets[1].withdraw({ from: alice })
+                // Alice now only has her winnings - Not forelocsed
+                // Bob is foreclosed but still has bids
+
+                markets.push(await rc.createMarket({ closeTime: time.duration.weeks(1), resolveTime: time.duration.weeks(1) }));
+
+                await rc.deposit(10, frank);
+                await rc.deposit(10, alice); // otherwise alice can't cover minimum
+                await rc.newRental({ from: frank, market: markets[2] })
+                await rc.newRental({ from: alice, market: markets[2], outcome: 1 })
+
+                // the new rentals deleted old bids, bob is foreclosed without bids.
+                await expectRevert(rc.newRental({ from: bob, market: markets[2], price: 2 }), "Insufficient deposit")
+
+            })
+            it("removeOldBids ", async () => {
+                markets.push(await rc.createMarket({ closeTime: time.duration.weeks(1), resolveTime: time.duration.weeks(1) }));
+                let bids = [];
+                bids[0] = {
+                    from: alice,
+                    price: 50,
+                    timeLimit: 86400,
+                    market: markets[1],
+                };
+                bids[1] = {
+                    from: bob,
+                    price: 40,
+                    timeLimit: 86400,
+                    market: markets[1],
+                };
+                bids[2] = {
+                    from: carol,
+                    price: 30,
+                    timeLimit: 86400,
+                    market: markets[1],
+                };
+                bids[3] = {
+                    from: dan,
+                    price: 20,
+                    timeLimit: 86400,
+                    market: markets[1],
+                    outcome: 1
+                };
+                bids[4] = {
+                    from: eve,
+                    price: 10,
+                    timeLimit: 86400,
+                    market: markets[1],
+                    outcome: 1
+                };
+                await rc.populateBidArray(bids);
+
+                // make deposits and place bids
+                await Promise.all(bids.map(async (bid) => {
+                    await rc.deposit(10, bid.from);
+                    await rc.newRental(bid);
+                }));
+
+                await time.increase(time.duration.days(8))
+                await markets[1].lockMarket();
+                // await markets[1].setAmicableResolution(0, { from: admin })
+                await realitio.setResult(markets[1].address, 0)
+                await markets[1].getWinnerFromOracle()
+
+
+                markets.push(await rc.createMarket({ closeTime: time.duration.weeks(1), resolveTime: time.duration.weeks(1) }));
+
+                await Promise.all(bids.map(async (bid) => {
+                    await markets[1].withdraw({ from: bid.from })
+                }));
+
+                await rc.deposit(10, frank);
+                await rc.newRental({ from: frank, market: markets[2] })
+                await rc.newRental({ from: alice, market: markets[2], outcome: 1 })
+                await rc.newRental({ from: bob, market: markets[2], price: 2 })
+                await rc.newRental({ from: bob, market: markets[2], price: 2, outcome: 1 })
+                await rc.newRental({ from: alice, market: markets[2], price: 3 })
+                await rc.newRental({ from: alice, market: markets[2], outcome: 1, price: 3 })
+                await rc.newRental({ from: bob, market: markets[2], price: 4 })
+                await rc.newRental({ from: bob, market: markets[2], price: 4, outcome: 1 })
+                await orderbook.removeOldBids(alice)
+            })
+        })
         describe("Bid order tests ", () => {
             it(' Underbidders correctly placed in orderbook ', async () => {
                 let bids = [];

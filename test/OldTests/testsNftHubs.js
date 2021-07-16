@@ -22,6 +22,8 @@ var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 var SelfDestructMockup = artifacts.require("./mockups/SelfDestructMockup.sol");
 var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
 const tokenMockup = artifacts.require("./mockups/tokenMockup.sol");
+// used where the address isn't important but can't be zero
+const dummyAddress = '0x0000000000000000000000000000000000000001';
 
 // arbitrator
 var kleros = '0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D';
@@ -48,7 +50,7 @@ contract('TestNftHubs', (accounts) => {
   andrewsAddress = accounts[9];
   // throws a tantrum if cardRecipients is not outside beforeEach for some reason
   var zeroAddress = '0x0000000000000000000000000000000000000000';
-  var cardRecipients = ['0x0000000000000000000000000000000000000000'];
+  var cardRecipients = [];
 
   beforeEach(async () => {
     var latestTime = await time.latest();
@@ -71,16 +73,14 @@ contract('TestNftHubs', (accounts) => {
     treasury = await RCTreasury.new(erc20.address);
     rcfactory = await RCFactory.new(treasury.address, realitio.address, kleros);
     rcreference = await RCMarket.new();
-    rcorderbook = await RCOrderbook.new(rcfactory.address, treasury.address);
+    rcorderbook = await RCOrderbook.new(treasury.address);
     // nft hubs
-    nftHubL2 = await NftHubL2.new(rcfactory.address, ZERO_ADDRESS);
+    nftHubL2 = await NftHubL2.new(rcfactory.address, dummyAddress);
     nftHubL1 = await NftHubL1.new();
     // tell treasury about factory, tell factory about nft hub and reference
     await treasury.setFactoryAddress(rcfactory.address);
     await rcfactory.setReferenceContractAddress(rcreference.address);
-    await rcfactory.setNftHubAddress(nftHubL2.address, 0);
-    await treasury.setNftHubAddress(nftHubL2.address);
-    await rcfactory.setOrderbookAddress(rcorderbook.address);
+    await rcfactory.setNftHubAddress(nftHubL2.address);
     await treasury.setOrderbookAddress(rcorderbook.address);
     await treasury.toggleWhitelist();
 
@@ -98,6 +98,7 @@ contract('TestNftHubs', (accounts) => {
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards = await RCMarket.at(marketAddress);
+    await rcfactory.changeMarketApproval(marketAddress);
   });
 
   async function createMarketWithArtistSet() {
@@ -108,9 +109,9 @@ contract('TestNftHubs', (accounts) => {
     var oracleResolutionTime = oneYearInTheFuture;
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = user8;
-    await rcfactory.changeArtistApproval(user8);
+    await rcfactory.addArtist(user8);
     var affiliateAddress = user7;
-    await rcfactory.changeAffiliateApproval(user7);
+    await rcfactory.addAffiliate(user7);
     var slug = 'y';
     await rcfactory.createMarket(
       0,
@@ -125,6 +126,7 @@ contract('TestNftHubs', (accounts) => {
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
+    await rcfactory.changeMarketApproval(marketAddress);
     return realitycards2;
   }
 
@@ -206,7 +208,7 @@ contract('TestNftHubs', (accounts) => {
 
   it('xdai nft hub check failures', async () => {
     await expectRevert(nftHubL2.addMarket(user0), "Not factory");
-    await expectRevert(nftHubL2.setFactoryAddress(user0, { from: user1 }), "Ownable: caller is not the owner");
+    await expectRevert(nftHubL2.setFactory(user0, { from: user1 }), "Not approved");
     await expectRevert(nftHubL2.mint(user0, 0, 'd'), "Not factory");
     await expectRevert(nftHubL2.transferNft(user0, user0, 9), "Not market");
   });

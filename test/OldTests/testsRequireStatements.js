@@ -22,6 +22,8 @@ var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 var SelfDestructMockup = artifacts.require("./mockups/SelfDestructMockup.sol");
 var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
 const tokenMockup = artifacts.require("./mockups/tokenMockup.sol");
+// used where the address isn't important but can't be zero
+const dummyAddress = '0x0000000000000000000000000000000000000001';
 
 // arbitrator
 var kleros = '0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D';
@@ -48,7 +50,7 @@ contract('TestRequireStatements', (accounts) => {
   andrewsAddress = accounts[9];
   // throws a tantrum if cardRecipients is not outside beforeEach for some reason
   var zeroAddress = '0x0000000000000000000000000000000000000000';
-  var cardRecipients = ['0x0000000000000000000000000000000000000000'];
+  var cardRecipients = [];
 
   beforeEach(async () => {
     var latestTime = await time.latest();
@@ -71,16 +73,14 @@ contract('TestRequireStatements', (accounts) => {
     treasury = await RCTreasury.new(erc20.address);
     rcfactory = await RCFactory.new(treasury.address, realitio.address, kleros);
     rcreference = await RCMarket.new();
-    rcorderbook = await RCOrderbook.new(rcfactory.address, treasury.address);
+    rcorderbook = await RCOrderbook.new(treasury.address);
     // nft hubs
-    nftHubL2 = await NftHubL2.new(rcfactory.address, ZERO_ADDRESS);
+    nftHubL2 = await NftHubL2.new(rcfactory.address, dummyAddress);
     nftHubL1 = await NftHubL1.new();
     // tell treasury about factory, tell factory about nft hub and reference
     await treasury.setFactoryAddress(rcfactory.address);
     await rcfactory.setReferenceContractAddress(rcreference.address);
-    await rcfactory.setNftHubAddress(nftHubL2.address, 0);
-    await treasury.setNftHubAddress(nftHubL2.address);
-    await rcfactory.setOrderbookAddress(rcorderbook.address);
+    await rcfactory.setNftHubAddress(nftHubL2.address);
     await treasury.setOrderbookAddress(rcorderbook.address);
     await treasury.toggleWhitelist();
 
@@ -98,6 +98,7 @@ contract('TestRequireStatements', (accounts) => {
     );
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards = await RCMarket.at(marketAddress);
+    await rcfactory.changeMarketApproval(marketAddress);
   });
 
   async function createMarketCustomMode(mode) {
@@ -128,7 +129,7 @@ contract('TestRequireStatements', (accounts) => {
 
   async function createMarketCustomeTimestamps(marketOpeningTime, marketLockingTime, oracleResolutionTime) {
     var artistAddress = user8;
-    await rcfactory.changeArtistApproval(user8);
+    await rcfactory.addArtist(user8);
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     var timestamps = [marketOpeningTime, marketLockingTime, oracleResolutionTime];
     var slug = 'y';
@@ -150,7 +151,7 @@ contract('TestRequireStatements', (accounts) => {
 
   async function createMarketCustomeTimestamps2(marketOpeningTime, marketLockingTime, oracleResolutionTime) {
     var artistAddress = user8;
-    // await rcfactory.changeArtistApproval(user8);
+    // await rcfactory.addArtist(user8);
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     var timestamps = [marketOpeningTime, marketLockingTime, oracleResolutionTime];
     var slug = 'z';
@@ -240,8 +241,8 @@ contract('TestRequireStatements', (accounts) => {
     user = user0;
     await depositDai(1000, user0);
     // check newRental stuff
-    await expectRevert(realitycards.newRental(web3.utils.toWei('0.5', 'ether'), maxuint256, zeroAddress, 0, { from: user }), "Price below min");
-    await expectRevert(realitycards.newRental(web3.utils.toWei('1', 'ether'), maxuint256, zeroAddress, 23, { from: user }), "Card does not exist");
+    await expectRevert(realitycards.newRental(web3.utils.toWei('0.5', 'picoether'), maxuint256, zeroAddress, 0, { from: user }), "Price below min");
+    await expectRevert(realitycards.newRental(web3.utils.toWei('1', 'picoether'), maxuint256, zeroAddress, 23, { from: user }), "Card does not exist");
     // withdraw for next test
     await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000, user0);
@@ -286,18 +287,18 @@ contract('TestRequireStatements', (accounts) => {
     await time.increase(time.duration.years(1));
     await realitycards.lockMarket();
     // should fail cos LOCKED
-    await expectRevert(nftHubL2.transferFrom(user, user1, 2), "Incorrect state");
-    await expectRevert(nftHubL2.safeTransferFrom(user, user1, 2), "Incorrect state");
-    await expectRevert(nftHubL2.safeTransferFrom(user, user1, 2, web3.utils.asciiToHex("123456789")), "Incorrect state");
-    await realitio.setResult(2);
+    await expectRevert(nftHubL2.transferFrom(user, user1, 2), "ERC721: transfer caller is not owner nor approved");
+    await expectRevert(nftHubL2.safeTransferFrom(user, user1, 2), "ERC721: transfer caller is not owner nor approved");
+    await expectRevert(nftHubL2.safeTransferFrom(user, user1, 2, web3.utils.asciiToHex("123456789")), "ERC721: transfer caller is not owner nor approved");
+    await realitio.setResult(realitycards.address, 2);
     await realitycards.getWinnerFromOracle();
     // await realitycards.determineWinner();
     await realitycards.claimCard(2, { from: user });
     // these shoudl all fail cos wrong owner:
     var owner = await realitycards.ownerOf(2);
     assert.equal(owner, user);
-    await expectRevert(nftHubL2.transferFrom(user, user1, 2, { from: user1 }), "Not owner");
-    await expectRevert(nftHubL2.safeTransferFrom(user1, user1, 2, { from: user1 }), "Not owner");
+    await expectRevert(nftHubL2.transferFrom(user, user1, 2, { from: user1 }), "ERC721: transfer caller is not owner nor approved");
+    await expectRevert(nftHubL2.safeTransferFrom(user1, user1, 2, { from: user1 }), "ERC721: transfer caller is not owner nor approved");
     // these should not
     await nftHubL2.transferFrom(user, user1, 2, { from: user });
     await nftHubL2.safeTransferFrom(user1, user, 2, { from: user1 });
@@ -328,7 +329,7 @@ contract('TestRequireStatements', (accounts) => {
     await expectRevert(realitycards2.payMarketCreator(), "Incorrect state");
     await expectRevert(realitycards2.payCardAffiliate(8), "Incorrect state");
     // increment state
-    await realitio.setResult(1);
+    await realitio.setResult(realitycards.address, 1);
     await realitycards2.getWinnerFromOracle();
     // await realitycards2.determineWinner();
     var state = await realitycards2.state.call();
@@ -343,43 +344,46 @@ contract('TestRequireStatements', (accounts) => {
   });
 
   it('check oracleResolutionTime and marketLockingTime expected failures', async () => {
+    let now = await time.latest();
+    let oneDay = new BN('86400');
     // someone else deploys question to realitio
     var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
     var arbitrator = "0xA6EAd513D05347138184324392d8ceb24C116118";
-    var timeout = 86400;
+    var timeout = oneDay;
     var templateId = 2;
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     var slug = 'y';
     // resolution time before locking, expect failure
-    var oracleResolutionTime = 69419;
-    var marketLockingTime = 69420;
+    var oracleResolutionTime = now.add(new BN(69419));
+    var marketLockingTime = now.add(new BN(69420));
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
     await expectRevert(rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0), "Oracle resolution time error");
     // resolution time > 1 weeks after locking, expect failure
-    var oracleResolutionTime = 604810;
-    var marketLockingTime = 0;
-    var timestamps = [0, marketLockingTime, oracleResolutionTime];
+    var oracleResolutionTime = now.add(new BN(604910));
+    var marketLockingTime = now.add(new BN(100));
+    var timestamps = [now, marketLockingTime, oracleResolutionTime];
     await expectRevert(rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0), "Oracle resolution time error");
     // resolution time < 1 week  after locking, no failure
-    var oracleResolutionTime = 604790;
-    var marketLockingTime = 0;
-    var timestamps = [0, marketLockingTime, oracleResolutionTime];
+    var oracleResolutionTime = now.add(new BN(604790));
+    var marketLockingTime = now.add(new BN(100));
+    var timestamps = [now, marketLockingTime, oracleResolutionTime];
     var slug = 'z';
     await rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0);
     // same time, no failure
-    var oracleResolutionTime = 0;
-    var marketLockingTime = 0;
-    var timestamps = [0, marketLockingTime, oracleResolutionTime];
+    var oracleResolutionTime = now.add(new BN(100));
+    var marketLockingTime = now.add(new BN(100));
+    var timestamps = [now, marketLockingTime, oracleResolutionTime];
     var slug = 'a';
     await rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0);
   });
 
 
   it('test marketOpeningTime stuff', async () => {
+    let now = await time.latest();
     await depositDai(144, user0);
     // // check that state is 1 if marketopening time in the past
-    var realitycards2 = await createMarketCustomeTimestamps(100, 100, 100);
+    var realitycards2 = await createMarketCustomeTimestamps(100, now.add(new BN(101)), now.add(new BN(101)));
     var state = await realitycards2.state();
     assert.equal(state, 1);
     var latestTime = await time.latest();
@@ -388,6 +392,7 @@ contract('TestRequireStatements', (accounts) => {
     var oneMonthInTheFuture = oneMonth.add(latestTime);
     var oneYearInTheFuture = oneYear.add(latestTime);
     var realitycards3 = await createMarketCustomeTimestamps2(oneMonthInTheFuture, oneYearInTheFuture, oneYearInTheFuture);
+    await rcfactory.changeMarketApproval(realitycards3.address);
     // check that if in the future, state 0 originally
     // just use the default realitycards
     var state = await realitycards3.state();

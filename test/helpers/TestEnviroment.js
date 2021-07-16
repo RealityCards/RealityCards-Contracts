@@ -20,6 +20,8 @@ const DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
 const kleros = "0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D";
 const zeroAddress = "0x0000000000000000000000000000000000000000";
 const tokenMockup = artifacts.require("./mockups/tokenMockup.sol");
+// used where the address isn't important but can't be zero
+const dummyAddress = '0x0000000000000000000000000000000000000001';
 
 
 
@@ -46,6 +48,17 @@ module.exports = class TestEnviroment {
             MAX_DELETIONS: 50,
             LOOP_LIMIT: 100,
             ACCOUNTS_OFFSET: 10,
+            AFFILIATE: web3.utils.soliditySha3("AFFILIATE"),
+            ARTIST: web3.utils.soliditySha3("ARTIST"),
+            CARD_AFFILIATE: web3.utils.soliditySha3("CARD_AFFILIATE"),
+            FACTORY: web3.utils.soliditySha3("FACTORY"),
+            GOVERNOR: web3.utils.soliditySha3("GOVERNOR"),
+            MARKET: web3.utils.soliditySha3("MARKET"),
+            ORDERBOOK: web3.utils.soliditySha3("ORDERBOOK"),
+            OWNER: web3.utils.soliditySha3("OWNER"),
+            TREASURY: web3.utils.soliditySha3("TREASURY"),
+            UBER_OWNER: web3.utils.soliditySha3("UBER_OWNER"),
+            WHITELIST: web3.utils.soliditySha3("WHITELIST"),
         }
         this.constants = Object.assign(
             {},
@@ -74,17 +87,15 @@ module.exports = class TestEnviroment {
         this.contracts.treasury = await RCTreasury.new(this.contracts.erc20.address);
         this.contracts.factory = await RCFactory.new(this.contracts.treasury.address, this.contracts.realitio.address, kleros);
         this.contracts.reference = await RCMarket.new();
-        this.contracts.orderbook = await RCOrderbook.new(this.contracts.factory.address, this.contracts.treasury.address);
-        // nft hubs
-        this.contracts.nftHubL2 = await NftHubL2.new(this.contracts.factory.address, this.constants.ZERO_ADDRESS);
+        this.contracts.orderbook = await RCOrderbook.new(this.contracts.treasury.address);
+        // nft hubs 
+        this.contracts.nftHubL2 = await NftHubL2.new(this.contracts.factory.address, dummyAddress);
         this.contracts.nftHubL1 = await NftHubL1.new();
         // tell treasury about factory, tell factory about nft hub and reference
         await this.contracts.treasury.setFactoryAddress(this.contracts.factory.address);
-        await this.contracts.factory.setReferenceContractAddress(this.contracts.reference.address);
-        await this.contracts.factory.setNftHubAddress(this.contracts.nftHubL2.address, 0);
-        await this.contracts.treasury.setNftHubAddress(this.contracts.nftHubL2.address);
-        await this.contracts.factory.setOrderbookAddress(this.contracts.orderbook.address);
         await this.contracts.treasury.setOrderbookAddress(this.contracts.orderbook.address);
+        await this.contracts.factory.setReferenceContractAddress(this.contracts.reference.address);
+        await this.contracts.factory.setNftHubAddress(this.contracts.nftHubL2.address);
         await this.contracts.treasury.toggleWhitelist();
 
         // market creation, start off without any.
@@ -110,7 +121,7 @@ module.exports = class TestEnviroment {
             numberOfCards: 4,
             artistAddress: zeroAddress,
             affiliateAddress: zeroAddress,
-            cardAffiliate: [zeroAddress],
+            cardAffiliate: [],
             sponsorship: 0,
         };
         options = this.setDefaults(options, defaults);
@@ -133,7 +144,9 @@ module.exports = class TestEnviroment {
             question,
             options.sponsorship
         );
-        return RCMarket.at(await this.contracts.factory.getMostRecentMarket.call(0));
+        let newMarket = await this.contracts.factory.getMostRecentMarket.call(0)
+        await this.contracts.factory.changeMarketApproval(newMarket);
+        return RCMarket.at(newMarket);
     }
     async newRental(options) {
         var defaults = {
@@ -189,7 +202,7 @@ module.exports = class TestEnviroment {
     async checkOrderbook(expectedResult) {
         var defaults = {
             from: this.aliases.alice,
-            market: this.contracts.markets[0].address,
+            market: this.contracts.markets[0],
             next: this.contracts.markets[0].address,
             prev: this.contracts.markets[0].address,
             outcome: 0,
@@ -198,9 +211,14 @@ module.exports = class TestEnviroment {
         };
         expectedResult = this.setDefaults(expectedResult, defaults);
         expectedResult.price = web3.utils.toWei(expectedResult.price.toString(), "ether");
-        let index = await this.contracts.orderbook.index(expectedResult.market, expectedResult.from, expectedResult.outcome);
+        let exists = await this.contracts.orderbook.bidExists(expectedResult.from, expectedResult.market.address, expectedResult.outcome)
+        if (!exists) {
+            console.log("Bid %s in market %s by user %s doesn't exist", expectedResult.outcome, expectedResult.market.address, expectedResult.from)
+        }
+        assert.equal(exists, true, "checkOrderbook failed, bid doesn't exist")
+        let index = await this.contracts.orderbook.index(expectedResult.from, expectedResult.market.address, expectedResult.outcome);
         let bid = await this.contracts.orderbook.user(expectedResult.from, index);
-        assert.equal(bid[0], expectedResult.market, "Bid is for incorrect Market")
+        assert.equal(bid[0], expectedResult.market.address, "Bid is for incorrect Market")
         assert.equal(bid[1], expectedResult.next, "Next user in list is incorrect");
         assert.equal(bid[2], expectedResult.prev, "Prev user in list is incorrect");
         assert.equal(bid[3], expectedResult.outcome, "Bid is for incorrect Outcome");
@@ -227,20 +245,20 @@ module.exports = class TestEnviroment {
 
     populateBidArray(bids, options) {
         var defaults = {
-            market: this.contracts.markets[0].address,
+            market: this.contracts.markets[0],
             outcome: 0,
         };
         options = this.setDefaults(options, defaults);
 
         for (let index = 0; index < bids.length; index++) {
             if (index == 0) {
-                bids[index].prev = options.market
+                bids[index].prev = options.market.address
             } else {
                 bids[index].prev = bids[index - 1].from
             }
             bids[index].outcome = options.outcome;
             if (index == bids.length - 1) {
-                bids[index].next = options.market
+                bids[index].next = options.market.address
             } else {
                 bids[index].next = bids[index + 1].from
             }
@@ -267,6 +285,12 @@ module.exports = class TestEnviroment {
         bids.push(bid);
         bids = this.swapBids(bids, pos, (bids.length - 1));
         return bids;
+    }
+
+    accessControl(user, role) {
+        let roleHash = web3.utils.soliditySha3(role)
+        let errorMsg = "AccessControl: account " + user.toLowerCase() + " is missing role " + roleHash
+        return errorMsg
     }
 
     async cleanup() {
@@ -323,5 +347,66 @@ module.exports = class TestEnviroment {
             }
         }
         return i;
+    }
+    async checkAllLists() {
+
+    }
+
+    async checkMarketLists(options) {
+        var defaults = {
+            market: this.contracts.markets[0]
+        };
+        options = this.setDefaults(options, defaults);
+        let numberOfCards = await options.market.numberOfCards();
+        let totalBidCount = 0;
+        let overalSuccess = true;
+        for (let i = 0; i < numberOfCards; i++) {
+            options.outcome = i
+            let { success, bidCount } = await this.checkCardLists(options);
+            totalBidCount += bidCount;
+            overalSuccess = success;
+        }
+        return { overalSuccess, totalBidCount }
+    }
+
+    async checkCardLists(options) {
+        var defaults = {
+            market: this.contracts.markets[0],
+            outcome: 0,
+        };
+        options = this.setDefaults(options, defaults);
+        options.market = options.market.address
+        let record = await this.contracts.orderbook.getBid(options.market, options.market, options.outcome);
+        let prevRecord = options.market;
+        let nextRecord = record[1];
+        let i = 0;
+        let success = true;
+        // check forwards
+        while (record[1] != options.market && success == true) {
+            record = await this.contracts.orderbook.getBid(options.market, record[1], options.outcome);
+            if (record[0] != options.market || prevRecord != record[2] || record[3] != options.outcome) {
+                console.log("Fail forwards test");
+                success = false;
+            }
+            prevRecord = nextRecord;
+            nextRecord = record[1];
+            i++;
+        }
+        record = await this.contracts.orderbook.getBid(options.market, options.market, options.outcome);
+        prevRecord = options.market;
+        nextRecord = record[2];
+        // check backwards
+        while (record[2] != options.market && success == true) {
+            record = await this.contracts.orderbook.getBid(options.market, record[2], options.outcome);
+            if (record[0] != options.market || prevRecord != record[1] || record[3] != options.outcome) {
+                console.log("Fail backwards test");
+                success = false;
+            }
+            prevRecord = nextRecord;
+            nextRecord = record[2];
+            i++;
+        }
+        let bidCount = i / 2;
+        return { success, bidCount };
     }
 };
