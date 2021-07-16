@@ -94,7 +94,6 @@ module.exports = class TestEnviroment {
         // tell treasury about factory, tell factory about nft hub and reference
         await this.contracts.treasury.setFactoryAddress(this.contracts.factory.address);
         await this.contracts.treasury.setOrderbookAddress(this.contracts.orderbook.address);
-        await this.contracts.factory.setOrderbookAddress(this.contracts.orderbook.address);
         await this.contracts.factory.setReferenceContractAddress(this.contracts.reference.address);
         await this.contracts.factory.setNftHubAddress(this.contracts.nftHubL2.address);
         await this.contracts.treasury.toggleWhitelist();

@@ -306,6 +306,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         require(_newOrderbook != address(0), "Must set an address");
         revokeRole(ORDERBOOK, address(orderbook));
         orderbook = IRCOrderbook(_newOrderbook);
+        factory.setOrderbookAddress(orderbook);
         grantRole(ORDERBOOK, address(orderbook));
     }
 

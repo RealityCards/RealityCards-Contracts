@@ -89,7 +89,6 @@ module.exports = async (deployer, network, accounts) => {
     await factory.setReferenceContractAddress(reference.address, { gas: 100000 });
     await factory.setNftHubAddress(nftHubL2.address, { gas: 100000 });
     await factory.setRealitioAddress(realitio.address, { gas: 100000 });
-    await factory.setOrderbookAddress(orderbook.address, { gas: 100000 });
     await treasury.setOrderbookAddress(orderbook.address, { gas: 100000 });
     // await treasury.toggleWhitelist({ gas: 100000 });
 
@@ -156,7 +155,6 @@ module.exports = async (deployer, network, accounts) => {
     await treasury.setFactoryAddress(factory.address);
     await treasury.setOrderbookAddress(orderbook.address);
     await factory.setReferenceContractAddress(reference.address);
-    await factory.setOrderbookAddress(orderbook.address);
     await factory.setNftHubAddress(nftHubL2.address);
     // disable whitelist
     await treasury.toggleWhitelist();

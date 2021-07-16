@@ -456,14 +456,13 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     }
 
     /// @notice set the address of the orderbook contract
-    /// @param _newAddress the address to set
-    function setOrderbookAddress(IRCOrderbook _newAddress)
-        external
-        override
-        onlyUberOwner
-    {
-        require(address(_newAddress) != address(0), "Must set Address");
-        orderbook = _newAddress;
+    /// @param _newOrderbook the address to set
+    function setOrderbookAddress(IRCOrderbook _newOrderbook) external override {
+        require(
+            treasury.checkPermission(TREASURY, msgSender()),
+            "Not approved"
+        );
+        orderbook = _newOrderbook;
     }
 
     /*╔═════════════════════════════════╗
