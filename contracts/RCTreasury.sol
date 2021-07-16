@@ -76,7 +76,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
       ╚═════════════════════════════════╝*/
     /// @dev if true, cannot deposit, withdraw or rent any cards across all events
     bool public override globalPause;
-    /// @dev if true, cannot rent any cards for specific market
+    /// @dev if true, cannot rent, claim or upgrade any cards for specific market
     mapping(address => bool) public override marketPaused;
     /// @dev if true, owner has locked the market pause
     mapping(address => bool) public override lockMarketPaused;
