@@ -741,6 +741,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                 // do some cleaning up before we collect rent or check their bidRate
                 orderbook.removeOldBids(_user);
 
+                /// @dev ignore the return value and let the user post the bid for the sake of UX
                 _collectRent(_card);
 
                 // check sufficient deposit
@@ -823,6 +824,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         address _msgSender = msgSender();
 
         // collectRent first
+        /// @dev ignore the return value and let the user exit the bid for the sake of UX
         _collectRent(_card);
 
         if (ownerOf(_card) == _msgSender) {
