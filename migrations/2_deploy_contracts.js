@@ -89,7 +89,7 @@ module.exports = async (deployer, network, accounts) => {
     await factory.setReferenceContractAddress(reference.address, { gas: 100000 });
     await factory.setNftHubAddress(nftHubL2.address, { gas: 100000 });
     await factory.setRealitioAddress(realitio.address, { gas: 100000 });
-    await treasury.setOrderbookAddress(orderbook.address, { gas: 100000 });
+    await treasury.setOrderbookAddress(orderbook.address, { gas: 200000 });
     // await treasury.toggleWhitelist({ gas: 100000 });
 
     // print out some stuff to be picked up by the deploy script ready for the next stage
