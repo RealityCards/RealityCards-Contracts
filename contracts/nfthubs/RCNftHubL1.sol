@@ -65,6 +65,13 @@ contract RCNftHubL1 is
         _setTokenURI(tokenId, uri);
     }
 
+    function setTokenURI(uint256 _tokenId, string calldata _tokenURI)
+        external
+        onlyOwner
+    {
+        _setTokenURI(_tokenId, _tokenURI);
+    }
+
     function exists(uint256 tokenId) external view override returns (bool) {
         return _exists(tokenId);
     }

@@ -81,7 +81,6 @@ contract('TestRequireStatements', (accounts) => {
     await treasury.setFactoryAddress(rcfactory.address);
     await rcfactory.setReferenceContractAddress(rcreference.address);
     await rcfactory.setNftHubAddress(nftHubL2.address);
-    await rcfactory.setOrderbookAddress(rcorderbook.address);
     await treasury.setOrderbookAddress(rcorderbook.address);
     await treasury.toggleWhitelist();
 
@@ -242,8 +241,8 @@ contract('TestRequireStatements', (accounts) => {
     user = user0;
     await depositDai(1000, user0);
     // check newRental stuff
-    await expectRevert(realitycards.newRental(web3.utils.toWei('0.5', 'ether'), maxuint256, zeroAddress, 0, { from: user }), "Price below min");
-    await expectRevert(realitycards.newRental(web3.utils.toWei('1', 'ether'), maxuint256, zeroAddress, 23, { from: user }), "Card does not exist");
+    await expectRevert(realitycards.newRental(web3.utils.toWei('0.5', 'picoether'), maxuint256, zeroAddress, 0, { from: user }), "Price below min");
+    await expectRevert(realitycards.newRental(web3.utils.toWei('1', 'picoether'), maxuint256, zeroAddress, 23, { from: user }), "Card does not exist");
     // withdraw for next test
     await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000, user0);

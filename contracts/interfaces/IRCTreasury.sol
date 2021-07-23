@@ -65,6 +65,8 @@ interface IRCTreasury {
 
     function batchWhitelist(address[] calldata _users, bool add) external;
 
+    function marketWhitelistCheck(address _user) external returns (bool);
+
     function lockMarketPaused(address _market) external view returns (bool);
 
     function setBridgeAddress(address _newAddress) external;

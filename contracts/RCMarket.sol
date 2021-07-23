@@ -25,7 +25,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     uint256 public constant PER_MILLE = 1000; // in MegaBip so (1000 = 100%)
     uint256 public override numberOfCards;
     uint256 public constant MAX_UINT256 = type(uint256).max;
-    uint256 public constant MIN_RENTAL_VALUE = 1 ether;
+    uint256 public constant MIN_RENTAL_VALUE = 1_000_000;
     States public override state;
     /// @dev type of event.
     Mode public override mode;
@@ -718,6 +718,10 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                     !treasury.globalPause(),
                 "Rentals are disabled"
             );
+            require(
+                treasury.marketWhitelistCheck(_user),
+                "Not approved for this market"
+            );
             bool _userStillForeclosed = treasury.isForeclosed(_user);
             if (_userStillForeclosed) {
                 _userStillForeclosed = orderbook.removeUserFromOrderbook(_user);
@@ -737,6 +741,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                 // do some cleaning up before we collect rent or check their bidRate
                 orderbook.removeOldBids(_user);
 
+                /// @dev ignore the return value and let the user post the bid for the sake of UX
                 _collectRent(_card);
 
                 // check sufficient deposit
@@ -819,6 +824,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         address _msgSender = msgSender();
 
         // collectRent first
+        /// @dev ignore the return value and let the user exit the bid for the sake of UX
         _collectRent(_card);
 
         if (ownerOf(_card) == _msgSender) {

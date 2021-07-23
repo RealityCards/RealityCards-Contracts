@@ -68,13 +68,15 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     /// @dev whitelist to only allow certain addresses to deposit
     mapping(address => bool) public isAllowed;
     bool public whitelistEnabled;
+    /// @dev allow markets to be restricted to a certain role
+    mapping(address => bytes32) public marketWhitelist;
 
     /*╔═════════════════════════════════╗
       ║             SAFETY              ║
       ╚═════════════════════════════════╝*/
     /// @dev if true, cannot deposit, withdraw or rent any cards across all events
     bool public override globalPause;
-    /// @dev if true, cannot rent any cards for specific market
+    /// @dev if true, cannot rent, claim or upgrade any cards for specific market
     mapping(address => bool) public override marketPaused;
     /// @dev if true, owner has locked the market pause
     mapping(address => bool) public override lockMarketPaused;
@@ -256,6 +258,20 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         }
     }
 
+    function marketWhitelistCheck(address _user)
+        external
+        view
+        override
+        returns (bool)
+    {
+        bytes32 requiredRole = marketWhitelist[msgSender()];
+        if (requiredRole == bytes32(0)) {
+            return true;
+        } else {
+            return hasRole(requiredRole, _user);
+        }
+    }
+
     /*╔═════════════════════════════════╗
       ║     GOVERNANCE - UBER OWNER     ║
       ╠═════════════════════════════════╣
@@ -290,6 +306,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         require(_newOrderbook != address(0), "Must set an address");
         revokeRole(ORDERBOOK, address(orderbook));
         orderbook = IRCOrderbook(_newOrderbook);
+        factory.setOrderbookAddress(orderbook);
         grantRole(ORDERBOOK, address(orderbook));
     }
 

@@ -3,21 +3,22 @@
 ###################
 #### Setup ########
 ###################
-START_TIME="1625587200"
-END_TIME="1625648400"
+START_TIME="1626961500"
+END_TIME="1627560000"
 SPONSORSHIP="0"
 ARTIST=""
-EVENT_NAME="Heads or Tails?"
-ORACLE_QUESTION="Heads or Tails"
-SRC_NAME="testing"
-CATEGORY="other"
-SLUG="moarTesting"
-IMAGE_FORMAT=".png"
-NUMBER_OF_CARDS="2"
-CARD0="Heads"
-CARD1="Tails"
-CARD2=""
-CARD3=""
+EVENT_NAME="What is the airspeed velocity of an unladen swallow?"
+ORACLE_QUESTION="What is the airspeed velocity of an unladen swallow?"
+SRC_NAME="Swallow"
+SLUG="Swallow"
+CATEGORY="Other"
+US_ALLOWED="true"
+IMAGE_FORMAT=".jpg"
+NUMBER_OF_CARDS="4"
+CARD0="African Swallow"
+CARD1="European Swallow"
+CARD2="I don't know"
+CARD3="Those swallows are carrying coconuts!"
 CARD4=""
 CARD5=""
 CARD6=""
@@ -37,6 +38,7 @@ mkdir -p events/$SRC_NAME
 eventJSON='{\n  "name": "'$EVENT_NAME'",'
 eventJSON=$eventJSON'\n  "slug": "'$SLUG'",'
 eventJSON=$eventJSON'\n  "category": "'$CATEGORY'",'
+eventJSON=$eventJSON'\n  "US_allowed": "'$US_ALLOWED'",'
 eventJSON=$eventJSON'\n  "cards": {'
 for ((i=0;i<$NUMBER_OF_CARDS;i++))
 do
