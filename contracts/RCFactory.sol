@@ -34,6 +34,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     /// @dev these are not used for anything, just an easy way to get markets
     mapping(IRCMarket.Mode => address[]) public marketAddresses;
     mapping(address => bool) public mappingOfMarkets;
+    mapping(address => string) public ipfsHash;
 
     ///// GOVERNANCE VARIABLES- OWNER /////
     /// @dev artist / winner / market creator / affiliate / card affiliate
@@ -614,6 +615,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         // update internals
         marketAddresses[IRCMarket.Mode(_mode)].push(_newAddress);
         mappingOfMarkets[_newAddress] = true;
+        ipfsHash[_newAddress] = _ipfsHash;
 
         // initialize the market
         IRCMarket(_newAddress).initialize(
@@ -655,6 +657,43 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         )
     {
         return (realitio, arbitrator, timeout);
+    }
+
+    /// @notice Returns market addresses and ipfs hashes
+    /// @dev used for the UI backup mode
+    /// @param _mode return markets only in the given mode
+    /// @param _state return markets only in the given state
+    /// @param _results the number of results to return
+    function getMarketInfo(
+        IRCMarket.Mode _mode,
+        uint256 _state,
+        uint256 _results
+    )
+        external
+        view
+        returns (
+            address[] memory,
+            string[] memory,
+            uint256[] memory
+        )
+    {
+        uint256 _marketIndex = marketAddresses[_mode].length;
+        uint256 _resultNumber = 0;
+        address[] memory _marketAddresses = new address[](_results);
+        string[] memory _ipfsHashes = new string[](_results);
+        uint256[] memory _potSizes = new uint256[](_results);
+        while (_resultNumber < _results && _marketIndex > 1) {
+            _marketIndex--;
+            address _market = marketAddresses[_mode][_marketIndex];
+            if (IRCMarket(_market).state() == IRCMarket.States(_state)) {
+                _marketAddresses[_resultNumber] = _market;
+                _ipfsHashes[_resultNumber] = ipfsHash[_market];
+                _potSizes[_resultNumber] = IRCMarket(_market)
+                .totalRentCollected();
+                _resultNumber++;
+            }
+        }
+        return (_marketAddresses, _ipfsHashes, _potSizes);
     }
     /*
          ▲  
