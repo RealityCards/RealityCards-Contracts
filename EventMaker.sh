@@ -7,6 +7,7 @@ START_TIME="1626961500"
 END_TIME="1627560000"
 SPONSORSHIP="0"
 ARTIST=""
+ARTIST_LINK="http://www.mylink.com"
 EVENT_NAME="What is the airspeed velocity of an unladen swallow?"
 ORACLE_QUESTION="What is the airspeed velocity of an unladen swallow?"
 SRC_NAME="Swallow"
@@ -37,6 +38,11 @@ ZERO_ADDRESS="0x0000000000000000000000000000000000000000"
 mkdir -p events/$SRC_NAME
 eventJSON='{\n  "name": "'$EVENT_NAME'",'
 eventJSON=$eventJSON'\n  "slug": "'$SLUG'",'
+if [ "$ARTIST_LINK" == "" ];then
+    echo WARNING: ARTIST LINK NOT SET
+else
+eventJSON=$eventJSON'\n  "artistLink": "'$ARTIST_LINK'",'
+fi
 eventJSON=$eventJSON'\n  "category": "'$CATEGORY'",'
 eventJSON=$eventJSON'\n  "US_allowed": "'$US_ALLOWED'",'
 eventJSON=$eventJSON'\n  "cards": {'
