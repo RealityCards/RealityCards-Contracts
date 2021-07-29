@@ -18,6 +18,7 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
       ╚═════════════════════════════════╝*/
 
     IRCTreasury public override treasury;
+    IRCMarket public override market;
     bytes32 public constant MARKET = keccak256("MARKET");
     bytes32 public constant FACTORY = keccak256("FACTORY");
 
@@ -27,13 +28,13 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
         address prev;
         address market;
         uint256 card;
+        uint256 timeHeld;
     }
     mapping(address => Leaderboard[]) public leaderboard;
     mapping(address => mapping(address => mapping(uint256 => uint256))) leaderboardIndex;
     mapping(address => mapping(uint256 => uint256)) public leaderboardLength;
     mapping(address => uint256) public NFTsToAward;
-
-    mapping(uint256 => mapping(address => uint256)) public timeHeld;
+    mapping(address => uint256) public minimumTimeOnLeaderboard;
 
     /*╔═════════════════════════════════╗
       ║         CONSTRUCTOR             ║
@@ -82,21 +83,18 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
 
     /// @dev given a user and a card will determine if they need to be added
     /// @dev .. to the leaderboard and then call the appropriate functions.
-    function updateLeaderboard(address _user, uint256 _card)
-        external
-        override
-        onlyMarkets
-    {
+    function updateLeaderboard(
+        address _user,
+        uint256 _card,
+        uint256 _timeHeld
+    ) external override onlyMarkets {
         address _market = msgSender();
         if (leaderboardLength[_market][_card] < NFTsToAward[_market]) {
             // leaderboard isn't full, just add them
-            addToLeaderboard(_user, _market, _card);
+            addToLeaderboard(_user, _market, _card, _timeHeld);
         } else {
             address lastUserOnLeaderboard = leaderboard[_market][_card].prev;
-            uint256 minimumTimeOnLeaderboard = timeHeld[_card][
-                lastUserOnLeaderboard
-            ];
-            if (timeHeld[_card][_user] > minimumTimeOnLeaderboard) {
+            if (_timeHeld > minimumTimeOnLeaderboard[_market]) {
                 // user deserves to be on leaderboard
                 if (userIsOnLeaderboard(_user, _market, _card)) {
                     // user is already on the leaderboard, remove them first
@@ -110,7 +108,7 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
                     );
                 }
                 // now add them in the correct position
-                addToLeaderboard(_user, _market, _card);
+                addToLeaderboard(_user, _market, _card, _timeHeld);
             }
         }
     }
@@ -119,12 +117,16 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
     function addToLeaderboard(
         address _user,
         address _market,
-        uint256 _card
+        uint256 _card,
+        uint256 _timeHeld
     ) internal {
         Leaderboard memory _currRecord = leaderboard[_market][_card];
-        uint256 _userTimeHeld = timeHeld[_card][_user];
         address _nextUser = _currRecord.next;
-        while (_userTimeHeld < timeHeld[_card][_nextUser]) {
+        while (
+            _timeHeld <
+            leaderboard[_nextUser][leaderboardIndex[_nextUser][_market][_card]]
+            .timeHeld
+        ) {
             _currRecord = leaderboard[_nextUser][
                 leaderboardIndex[_nextUser][_market][_card]
             ];
@@ -139,6 +141,7 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
         _newRecord.card = _card;
         _newRecord.next = _nextUser;
         _newRecord.prev = _prevUser;
+        _newRecord.timeHeld = _timeHeld;
 
         // insert in linked list
         leaderboard[_nextUser][leaderboardIndex[_nextUser][_market][_card]]
@@ -150,6 +153,9 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
         //update the index to help find the record later
         leaderboardIndex[_user][_market][_card] = leaderboard[_user].length - 1;
 
+        if (_timeHeld < minimumTimeOnLeaderboard[_market]) {
+            minimumTimeOnLeaderboard[_market] = _timeHeld;
+        }
         leaderboardLength[_market][_card]++;
     }
 
@@ -192,6 +198,13 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
                 leaderboard[_user][_index].card
             ] = _index;
         }
+
+        address _endOfLeaderboard = leaderboard[_market][_card].prev;
+        minimumTimeOnLeaderboard[_market] = leaderboard[_endOfLeaderboard][
+            leaderboardIndex[_endOfLeaderboard][_market][_card]
+        ]
+        .timeHeld;
+
         leaderboardLength[_market][_card]--;
     }
 
@@ -215,7 +228,11 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
         return false;
     }
 
-    function claimNFT(address _user, uint256 _card) external onlyMarkets {
+    function claimNFT(address _user, uint256 _card)
+        external
+        override
+        onlyMarkets
+    {
         address _market = msgSender();
         require(
             userIsOnLeaderboard(_user, _market, _card),

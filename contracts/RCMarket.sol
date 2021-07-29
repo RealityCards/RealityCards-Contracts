@@ -1049,7 +1049,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             longestTimeHeld[_card] = timeHeld[_card][_user];
             longestOwner[_card] = _user;
         }
-        leaderboard.updateLeaderboard(_user, _card);
+        leaderboard.updateLeaderboard(_user, _card, timeHeld[_card][_user]);
         emit LogRentCollection(
             _rentCollected,
             _timeHeldToIncrement,
