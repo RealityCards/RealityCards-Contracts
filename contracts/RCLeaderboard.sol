@@ -92,27 +92,26 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
             // leaderboard isn't full, just add them
             addToLeaderboard(_user, _market, _card);
         } else {
-            // address lastUserOnLeaderboard = leaderboard[address(this)][_card]
-            // .prev;
-            // uint256 minimumTimeOnLeaderboard = timeHeld[_card][
-            //     lastUserOnLeaderboard
-            // ];
-            // if (timeHeld[_card][_user] > minimumTimeOnLeaderboard) {
-            //     // user deserves to be on leaderboard
-            //     if (userIsOnLeaderboard(_user, _market, _card)) {
-            //         // user is already on the leaderboard, remove them first
-            //         removeFromLeaderboard(_user, _market, _card);
-            //     } else {
-            //         // bump the last user off the leaderboard to make space
-            //         removeFromLeaderboard(
-            //             lastUserOnLeaderboard,
-            //             _market,
-            //             _card
-            //         );
-            //     }
-            //     // now add them in the correct position
-            //     addToLeaderboard(_user, _market, _card);
-            // }
+            address lastUserOnLeaderboard = leaderboard[_market][_card].prev;
+            uint256 minimumTimeOnLeaderboard = timeHeld[_card][
+                lastUserOnLeaderboard
+            ];
+            if (timeHeld[_card][_user] > minimumTimeOnLeaderboard) {
+                // user deserves to be on leaderboard
+                if (userIsOnLeaderboard(_user, _market, _card)) {
+                    // user is already on the leaderboard, remove them first
+                    removeFromLeaderboard(_user, _market, _card);
+                } else {
+                    // bump the last user off the leaderboard to make space
+                    removeFromLeaderboard(
+                        lastUserOnLeaderboard,
+                        _market,
+                        _card
+                    );
+                }
+                // now add them in the correct position
+                addToLeaderboard(_user, _market, _card);
+            }
         }
     }
 
