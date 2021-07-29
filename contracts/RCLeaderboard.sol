@@ -19,17 +19,19 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
 
     IRCTreasury public override treasury;
     bytes32 public constant MARKET = keccak256("MARKET");
+    bytes32 public constant FACTORY = keccak256("FACTORY");
 
     // Leaderboard tracking
     struct Leaderboard {
         address next;
         address prev;
+        address market;
         uint256 card;
     }
     mapping(address => Leaderboard[]) public leaderboard;
-    mapping(address => mapping(uint256 => uint256)) leaderboardIndex;
-    mapping(uint256 => uint256) public leaderboardLength;
-    uint256 public NFTsToAward;
+    mapping(address => mapping(address => mapping(uint256 => uint256))) leaderboardIndex;
+    mapping(address => mapping(uint256 => uint256)) public leaderboardLength;
+    mapping(address => uint256) public NFTsToAward;
 
     mapping(uint256 => mapping(address => uint256)) public timeHeld;
 
@@ -48,10 +50,35 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
         );
         _;
     }
+    modifier onlyFactory {
+        require(
+            treasury.checkPermission(FACTORY, msgSender()),
+            "Extremely Verboten"
+        );
+        _;
+    }
 
     /*╔═════════════════════════════════╗
       ║      Leaderboard Tracking       ║
       ╚═════════════════════════════════╝*/
+
+    /// @notice adds a new market to the leaderboard
+    function addMarket(
+        address _market,
+        uint256 _cardCount,
+        uint256 _NFTsToAward
+    ) external override onlyFactory {
+        NFTsToAward[_market] = _NFTsToAward;
+        for (uint64 i = 0; i < _cardCount; i++) {
+            // create new record for each card that becomes the head&tail of the linked list
+            Leaderboard memory _newRecord;
+            _newRecord.card = i;
+            _newRecord.next = _market;
+            _newRecord.prev = _market;
+            leaderboardIndex[_market][_market][i] = leaderboard[_market].length;
+            leaderboard[_market].push(_newRecord);
+        }
+    }
 
     /// @dev given a user and a card will determine if they need to be added
     /// @dev .. to the leaderboard and then call the appropriate functions.
@@ -60,42 +87,51 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
         override
         onlyMarkets
     {
-        if (leaderboardLength[_card] < NFTsToAward) {
+        address _market = msgSender();
+        if (leaderboardLength[_market][_card] < NFTsToAward[_market]) {
             // leaderboard isn't full, just add them
-            addToLeaderboard(_user, _card);
+            addToLeaderboard(_user, _market, _card);
         } else {
-            address lastUserOnLeaderboard = leaderboard[address(this)][_card]
-            .prev;
-            uint256 minimumTimeOnLeaderboard = timeHeld[_card][
-                lastUserOnLeaderboard
-            ];
-            if (timeHeld[_card][_user] > minimumTimeOnLeaderboard) {
-                // user deserves to be on leaderboard
-                if (userIsOnLeaderboard(_user, _card)) {
-                    // user is already on the leaderboard, remove them first
-                    removeFromLeaderboard(_user, _card);
-                } else {
-                    // bump the last user off the leaderboard to make space
-                    removeFromLeaderboard(lastUserOnLeaderboard, _card);
-                }
-                // now add them in the correct position
-                addToLeaderboard(_user, _card);
-            }
+            // address lastUserOnLeaderboard = leaderboard[address(this)][_card]
+            // .prev;
+            // uint256 minimumTimeOnLeaderboard = timeHeld[_card][
+            //     lastUserOnLeaderboard
+            // ];
+            // if (timeHeld[_card][_user] > minimumTimeOnLeaderboard) {
+            //     // user deserves to be on leaderboard
+            //     if (userIsOnLeaderboard(_user, _market, _card)) {
+            //         // user is already on the leaderboard, remove them first
+            //         removeFromLeaderboard(_user, _market, _card);
+            //     } else {
+            //         // bump the last user off the leaderboard to make space
+            //         removeFromLeaderboard(
+            //             lastUserOnLeaderboard,
+            //             _market,
+            //             _card
+            //         );
+            //     }
+            //     // now add them in the correct position
+            //     addToLeaderboard(_user, _market, _card);
+            // }
         }
     }
 
     /// @dev add a user to the leaderboard
-    function addToLeaderboard(address _user, uint256 _card) internal {
+    function addToLeaderboard(
+        address _user,
+        address _market,
+        uint256 _card
+    ) internal {
         Leaderboard memory _currRecord = leaderboard[address(this)][_card];
         uint256 _userTimeHeld = timeHeld[_card][_user];
         address _nextUser = _currRecord.next;
         while (_userTimeHeld < timeHeld[_card][_nextUser]) {
             _currRecord = leaderboard[_nextUser][
-                leaderboardIndex[_nextUser][_card]
+                leaderboardIndex[_nextUser][_market][_card]
             ];
         }
         address _prevUser = leaderboard[_nextUser][
-            leaderboardIndex[_nextUser][_card]
+            leaderboardIndex[_nextUser][_market][_card]
         ]
         .prev;
 
@@ -106,57 +142,69 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
         _newRecord.prev = _prevUser;
 
         // insert in linked list
-        leaderboard[_nextUser][leaderboardIndex[_nextUser][_card]].prev = _user;
-        leaderboard[_prevUser][leaderboardIndex[_prevUser][_card]].next = _user;
+        leaderboard[_nextUser][leaderboardIndex[_nextUser][_market][_card]]
+        .prev = _user;
+        leaderboard[_prevUser][leaderboardIndex[_prevUser][_market][_card]]
+        .next = _user;
         leaderboard[_user].push(_newRecord);
 
         //update the index to help find the record later
-        leaderboardIndex[_user][_card] = leaderboard[_user].length - 1;
+        leaderboardIndex[_user][_market][_card] = leaderboard[_user].length - 1;
 
-        leaderboardLength[_card]++;
+        leaderboardLength[_market][_card]++;
     }
 
     /// @dev remove a user from the leaderboard
-    function removeFromLeaderboard(address _user, uint256 _card) internal {
-        address _nextUser = leaderboard[_user][leaderboardIndex[_user][_card]]
+    function removeFromLeaderboard(
+        address _user,
+        address _market,
+        uint256 _card
+    ) internal {
+        address _nextUser = leaderboard[_user][
+            leaderboardIndex[_user][_market][_card]
+        ]
         .next;
-        address _prevUser = leaderboard[_user][leaderboardIndex[_user][_card]]
+        address _prevUser = leaderboard[_user][
+            leaderboardIndex[_user][_market][_card]
+        ]
         .prev;
 
         // unlink from list
-        leaderboard[_nextUser][leaderboardIndex[_nextUser][_card]]
+        leaderboard[_nextUser][leaderboardIndex[_nextUser][_market][_card]]
         .prev = _prevUser;
-        leaderboard[_prevUser][leaderboardIndex[_prevUser][_card]]
+        leaderboard[_prevUser][leaderboardIndex[_prevUser][_market][_card]]
         .next = _nextUser;
 
         // overwrite array element
-        uint256 _index = leaderboardIndex[_user][_card];
+        uint256 _index = leaderboardIndex[_user][_market][_card];
         uint256 _lastRecord = leaderboard[_user].length - 1;
         // no point overwriting itself
         if (_index != _lastRecord) {
-            leaderboard[_user][leaderboardIndex[_user][_card]] = leaderboard[
-                _user
-            ][_lastRecord];
+            leaderboard[_user][
+                leaderboardIndex[_user][_market][_card]
+            ] = leaderboard[_user][_lastRecord];
         }
         leaderboard[_user].pop();
 
         // update the index to help find the record later
-        leaderboardIndex[_user][_card] = 0;
+        leaderboardIndex[_user][_market][_card] = 0;
         if (leaderboard[_user].length != 0 && _index != _lastRecord) {
-            leaderboardIndex[_user][leaderboard[_user][_index].card] = _index;
+            leaderboardIndex[_user][leaderboard[_user][_index].market][
+                leaderboard[_user][_index].card
+            ] = _index;
         }
-        leaderboardLength[_card]--;
+        leaderboardLength[_market][_card]--;
     }
 
     /// @dev check if a user is on the leaderboard
-    function userIsOnLeaderboard(address _user, uint256 _card)
-        internal
-        view
-        returns (bool)
-    {
+    function userIsOnLeaderboard(
+        address _user,
+        address _market,
+        uint256 _card
+    ) internal view returns (bool) {
         if (leaderboard[_user].length != 0) {
             // user is on a leaderboard
-            if (leaderboardIndex[_user][_card] != 0) {
+            if (leaderboardIndex[_user][_market][_card] != 0) {
                 // user is on the leaderboard with this card
                 return true;
             } else {

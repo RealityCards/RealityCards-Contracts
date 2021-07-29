@@ -6,5 +6,11 @@ import "./IRCTreasury.sol";
 interface IRCLeaderboard {
     function treasury() external view returns (IRCTreasury);
 
+    function addMarket(
+        address _market,
+        uint256 _cardCount,
+        uint256 _minIncrease
+    ) external;
+
     function updateLeaderboard(address _user, uint256 _card) external;
 }
