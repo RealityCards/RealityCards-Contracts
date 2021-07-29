@@ -121,7 +121,7 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
         address _market,
         uint256 _card
     ) internal {
-        Leaderboard memory _currRecord = leaderboard[address(this)][_card];
+        Leaderboard memory _currRecord = leaderboard[_market][_card];
         uint256 _userTimeHeld = timeHeld[_card][_user];
         address _nextUser = _currRecord.next;
         while (_userTimeHeld < timeHeld[_card][_nextUser]) {
@@ -213,6 +213,15 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
             }
         }
         return false;
+    }
+
+    function claimNFT(address _user, uint256 _card) external onlyMarkets {
+        address _market = msgSender();
+        require(
+            userIsOnLeaderboard(_user, _market, _card),
+            "Not in leaderboard"
+        );
+        removeFromLeaderboard(_user, _market, _card);
     }
 
     /*
