@@ -132,6 +132,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         // artist // winner // creator // affiliate // card affiliates
         setPotDistribution(20, 0, 0, 20, 100); // 2% artist, 2% affiliate, 10% card affiliate
         setMinimumPriceIncreasePercent(10); // 10%
+        setNumberOfNFTsToAward(3);
         setNFTMintingLimit(60); // current gas limit (12.5m) allows for 60 NFTs to be minted
         setMaxRentIterations(35); // limit appears to be 41, set safe at 35 for now.
         // oracle
