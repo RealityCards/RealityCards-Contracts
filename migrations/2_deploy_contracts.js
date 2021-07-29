@@ -82,6 +82,8 @@ module.exports = async (deployer, network, accounts) => {
     reference = await RCMarket.deployed();
     await deployer.deploy(RCOrderbook, treasury.address);
     orderbook = await RCOrderbook.deployed();
+    await deployer.deploy(RCLeaderboard, treasury.address);
+    leaderboard = await RCLeaderboard.deployed();
     await deployer.deploy(NftHubL2, factory.address, childChainManager);
     nftHubL2 = await NftHubL2.deployed();
     // tell treasury about factory & ARB, tell factory about nft hub and reference
@@ -90,6 +92,7 @@ module.exports = async (deployer, network, accounts) => {
     await factory.setNftHubAddress(nftHubL2.address, { gas: 100000 });
     await factory.setRealitioAddress(realitio.address, { gas: 100000 });
     await treasury.setOrderbookAddress(orderbook.address, { gas: 200000 });
+    await treasury.setLeaderboardAddress(leaderboard.address, { gas: 200000 });
     // await treasury.toggleWhitelist({ gas: 100000 });
 
     // print out some stuff to be picked up by the deploy script ready for the next stage
@@ -147,6 +150,8 @@ module.exports = async (deployer, network, accounts) => {
     reference = await RCMarket.deployed();
     await deployer.deploy(RCOrderbook, treasury.address);
     orderbook = await RCOrderbook.deployed();
+    await deployer.deploy(RCLeaderboard, treasury.address);
+    leaderboard = await RCLeaderboard.deployed();
     await deployer.deploy(NftHubL2, factory.address, childChainManager);
     nftHubL2 = await NftHubL2.deployed();
     await deployer.deploy(NftHubL1);
@@ -154,6 +159,7 @@ module.exports = async (deployer, network, accounts) => {
     // tell treasury and factory about various things
     await treasury.setFactoryAddress(factory.address);
     await treasury.setOrderbookAddress(orderbook.address);
+    await treasury.setLeaderboardAddress(leaderboard.address);
     await factory.setReferenceContractAddress(reference.address);
     await factory.setNftHubAddress(nftHubL2.address);
     // disable whitelist

@@ -24,6 +24,8 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
       ╚═════════════════════════════════╝*/
     /// @dev orderbook instance, to remove users bids on foreclosure
     IRCOrderbook public override orderbook;
+    /// @dev leaderboard instance
+    IRCLeaderboard public override leaderboard;
     /// @dev token contract
     IERC20 public override erc20;
     /// @dev address of (as yet non existent) Bridge for withdrawals to mainnet
@@ -121,9 +123,9 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         /* setup AccessControl
 
                          UBER_OWNER
-            ┌───────────┬────┴─────┬────────────┐
-            │           │          │            │
-          OWNER      FACTORY    ORDERBOOK   TREASURY
+            ┌───────────┬────┴─────┬────────────┬─────────┐
+            │           │          │            │         │
+          OWNER      FACTORY    ORDERBOOK   TREASURY  LEADERBOARD
             │           │
          GOVERNOR     MARKET
             │
@@ -308,6 +310,16 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         orderbook = IRCOrderbook(_newOrderbook);
         factory.setOrderbookAddress(orderbook);
         grantRole(ORDERBOOK, address(orderbook));
+    }
+
+    function setLeaderboardAddress(address _newLeaderboard)
+        external
+        override
+        onlyRole(UBER_OWNER)
+    {
+        require(_newLeaderboard != address(0), "Must set an address");
+        leaderboard = IRCLeaderboard(_newLeaderboard);
+        factory.setLeaderboardAddress(leaderboard);
     }
 
     function setTokenAddress(address _newToken)

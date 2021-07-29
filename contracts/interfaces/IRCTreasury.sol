@@ -3,6 +3,7 @@ pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IRCOrderbook.sol";
+import "./IRCLeaderboard.sol";
 import "./IRCFactory.sol";
 
 interface IRCTreasury {
@@ -39,6 +40,8 @@ interface IRCTreasury {
 
     function orderbook() external view returns (IRCOrderbook);
 
+    function leaderboard() external view returns (IRCLeaderboard);
+
     function isForeclosed(address) external view returns (bool);
 
     function userTotalBids(address) external view returns (uint256);
@@ -72,6 +75,8 @@ interface IRCTreasury {
     function setBridgeAddress(address _newAddress) external;
 
     function setOrderbookAddress(address _newAddress) external;
+
+    function setLeaderboardAddress(address _newAddress) external;
 
     function setFactoryAddress(address _newFactory) external;
 

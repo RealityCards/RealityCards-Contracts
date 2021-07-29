@@ -23,6 +23,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     IRCTreasury public override treasury;
     IRCNftHubL2 public override nfthub;
     IRCOrderbook public override orderbook;
+    IRCLeaderboard public override leaderboard;
     IRealitio public override realitio;
 
     ///// CONTRACT ADDRESSES /////
@@ -464,6 +465,19 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
             "Not approved"
         );
         orderbook = _newOrderbook;
+    }
+
+    /// @notice set the address of the leaderboard contract
+    /// @param _newLeaderboard the address to set
+    function setLeaderboardAddress(IRCLeaderboard _newLeaderboard)
+        external
+        override
+    {
+        require(
+            treasury.checkPermission(TREASURY, msgSender()),
+            "Not approved"
+        );
+        leaderboard = _newLeaderboard;
     }
 
     /*╔═════════════════════════════════╗

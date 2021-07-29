@@ -6,6 +6,7 @@ import "./IRCTreasury.sol";
 import "./IRCMarket.sol";
 import "./IRCNftHubL2.sol";
 import "./IRCOrderbook.sol";
+import "./IRCLeaderboard.sol";
 
 interface IRCFactory {
     function createMarket(
@@ -27,6 +28,8 @@ interface IRCFactory {
     function treasury() external view returns (IRCTreasury);
 
     function orderbook() external view returns (IRCOrderbook);
+
+    function leaderboard() external view returns (IRCLeaderboard);
 
     function realitio() external view returns (IRealitio);
 
@@ -139,6 +142,8 @@ interface IRCFactory {
     function setReferenceContractAddress(address _newAddress) external;
 
     function setOrderbookAddress(IRCOrderbook _newAddress) external;
+
+    function setLeaderboardAddress(IRCLeaderboard _newAddress) external;
 
     function setNftHubAddress(IRCNftHubL2 _newAddress) external;
 }
