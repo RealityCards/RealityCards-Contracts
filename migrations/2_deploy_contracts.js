@@ -26,6 +26,7 @@ var RCTreasury = artifacts.require('./RCTreasury.sol');
 var RCFactory = artifacts.require('./RCFactory.sol');
 var RCMarket = artifacts.require('./RCMarket.sol');
 var RCOrderbook = artifacts.require('./RCOrderbook.sol');
+var RCLeaderboard = artifacts.require('./RCLeaderboard.sol');
 var NftHubL2 = artifacts.require('./nfthubs/RCNftHubL2.sol');
 var NftHubL1 = artifacts.require('./nfthubs/RCNftHubL1.sol');
 var RealitioMockup = artifacts.require('./mockups/RealitioMockup.sol');
