@@ -71,6 +71,8 @@ interface IRCFactory {
 
     function minimumPriceIncreasePercent() external view returns (uint256);
 
+    function NFTsToAward() external view returns (uint256);
+
     function isMarketApproved(address) external view returns (bool);
 
     function getOracleSettings()
@@ -111,6 +113,8 @@ interface IRCFactory {
     function setNFTMintingLimit(uint256 _mintLimit) external;
 
     function setMinimumPriceIncreasePercent(uint256 _percentIncrease) external;
+
+    function setNumberOfNFTsToAward(uint256 _NFTsToAward) external;
 
     function setPotDistribution(
         uint256 _artistCut,

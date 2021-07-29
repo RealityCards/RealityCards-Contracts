@@ -44,6 +44,8 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     uint256 public override sponsorshipRequired;
     /// @dev adjust required price increase (in %)
     uint256 public override minimumPriceIncreasePercent;
+    /// @dev The number of users that are allowed to mint an NFT
+    uint256 public override NFTsToAward;
     /// @dev market opening time must be at least this many seconds in the future
     uint32 public override advancedWarning;
     /// @dev market closing time must be no more than this many seconds in the future
@@ -249,6 +251,16 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         onlyOwner
     {
         minimumPriceIncreasePercent = _percentIncrease;
+    }
+
+    /// @notice how many NFTs will be awarded to the leaderboard
+    /// @param _NFTsToAward the number of NFTs to award
+    function setNumberOfNFTsToAward(uint256 _NFTsToAward)
+        public
+        override
+        onlyOwner
+    {
+        NFTsToAward = _NFTsToAward;
     }
 
     /// @notice A limit to the number of NFTs to mint per market
@@ -625,6 +637,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
             _tokenURIs.length,
             minimumPriceIncreasePercent
         );
+        leaderboard.addMarket(_newAddress, _tokenURIs.length, NFTsToAward);
 
         // update internals
         marketAddresses[IRCMarket.Mode(_mode)].push(_newAddress);
