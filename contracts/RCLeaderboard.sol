@@ -34,7 +34,6 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
     mapping(address => mapping(address => mapping(uint256 => uint256))) leaderboardIndex;
     mapping(address => mapping(uint256 => uint256)) public leaderboardLength;
     mapping(address => uint256) public NFTsToAward;
-    mapping(address => uint256) public minimumTimeOnLeaderboard;
 
     /*╔═════════════════════════════════╗
       ║         CONSTRUCTOR             ║
@@ -76,6 +75,7 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
             _newRecord.card = i;
             _newRecord.next = _market;
             _newRecord.prev = _market;
+            _newRecord.timeHeld = type(uint256).max;
             leaderboardIndex[_market][_market][i] = leaderboard[_market].length;
             leaderboard[_market].push(_newRecord);
         }
@@ -89,18 +89,32 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
         uint256 _timeHeld
     ) external override onlyMarkets {
         address _market = msgSender();
+        printLeaderboard(_market, _card);
         if (leaderboardLength[_market][_card] < NFTsToAward[_market]) {
             // leaderboard isn't full, just add them
             addToLeaderboard(_user, _market, _card, _timeHeld);
         } else {
-            address lastUserOnLeaderboard = leaderboard[_market][_card].prev;
-            if (_timeHeld > minimumTimeOnLeaderboard[_market]) {
+            console.log("LEADERBOARD FULL", leaderboardLength[_market][_card]);
+            address lastUserOnLeaderboard = leaderboard[_market][
+                leaderboardIndex[_market][_market][_card]
+            ]
+            .prev;
+            uint256 minimumTimeOnLeaderboard = leaderboard[
+                lastUserOnLeaderboard
+            ][leaderboardIndex[lastUserOnLeaderboard][_market][_card]]
+            .timeHeld;
+            if (_timeHeld > minimumTimeOnLeaderboard) {
                 // user deserves to be on leaderboard
                 if (userIsOnLeaderboard(_user, _market, _card)) {
                     // user is already on the leaderboard, remove them first
+                    console.log("Removing user already in leaderboard ", _user);
                     removeFromLeaderboard(_user, _market, _card);
                 } else {
                     // bump the last user off the leaderboard to make space
+                    console.log(
+                        "Bumping user off leaderboard ",
+                        lastUserOnLeaderboard
+                    );
                     removeFromLeaderboard(
                         lastUserOnLeaderboard,
                         _market,
@@ -108,6 +122,7 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
                     );
                 }
                 // now add them in the correct position
+                console.log("Adding user back to leaderboard ", _user);
                 addToLeaderboard(_user, _market, _card, _timeHeld);
             }
         }
@@ -120,16 +135,26 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
         uint256 _card,
         uint256 _timeHeld
     ) internal {
-        Leaderboard memory _currRecord = leaderboard[_market][_card];
+        Leaderboard memory _currRecord = leaderboard[_market][
+            leaderboardIndex[_market][_market][_card]
+        ];
         address _nextUser = _currRecord.next;
-        while (
-            _timeHeld <
-            leaderboard[_nextUser][leaderboardIndex[_nextUser][_market][_card]]
-            .timeHeld
-        ) {
-            _currRecord = leaderboard[_nextUser][
-                leaderboardIndex[_nextUser][_market][_card]
-            ];
+        if (_nextUser != _market) {
+            console.log("searching for position");
+            while (
+                _timeHeld >
+                leaderboard[_nextUser][
+                    leaderboardIndex[_nextUser][_market][_card]
+                ]
+                .timeHeld &&
+                _nextUser != _market
+            ) {
+                console.log("searhcing loop");
+                _currRecord = leaderboard[_nextUser][
+                    leaderboardIndex[_nextUser][_market][_card]
+                ];
+                _nextUser = _currRecord.next;
+            }
         }
         address _prevUser = leaderboard[_nextUser][
             leaderboardIndex[_nextUser][_market][_card]
@@ -153,9 +178,6 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
         //update the index to help find the record later
         leaderboardIndex[_user][_market][_card] = leaderboard[_user].length - 1;
 
-        if (_timeHeld < minimumTimeOnLeaderboard[_market]) {
-            minimumTimeOnLeaderboard[_market] = _timeHeld;
-        }
         leaderboardLength[_market][_card]++;
     }
 
@@ -165,14 +187,9 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
         address _market,
         uint256 _card
     ) internal {
-        address _nextUser = leaderboard[_user][
-            leaderboardIndex[_user][_market][_card]
-        ]
-        .next;
-        address _prevUser = leaderboard[_user][
-            leaderboardIndex[_user][_market][_card]
-        ]
-        .prev;
+        uint256 _index = leaderboardIndex[_user][_market][_card];
+        address _nextUser = leaderboard[_user][_index].next;
+        address _prevUser = leaderboard[_user][_index].prev;
 
         // unlink from list
         leaderboard[_nextUser][leaderboardIndex[_nextUser][_market][_card]]
@@ -181,13 +198,10 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
         .next = _nextUser;
 
         // overwrite array element
-        uint256 _index = leaderboardIndex[_user][_market][_card];
         uint256 _lastRecord = leaderboard[_user].length - 1;
         // no point overwriting itself
         if (_index != _lastRecord) {
-            leaderboard[_user][
-                leaderboardIndex[_user][_market][_card]
-            ] = leaderboard[_user][_lastRecord];
+            leaderboard[_user][_index] = leaderboard[_user][_lastRecord];
         }
         leaderboard[_user].pop();
 
@@ -198,12 +212,6 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
                 leaderboard[_user][_index].card
             ] = _index;
         }
-
-        address _endOfLeaderboard = leaderboard[_market][_card].prev;
-        minimumTimeOnLeaderboard[_market] = leaderboard[_endOfLeaderboard][
-            leaderboardIndex[_endOfLeaderboard][_market][_card]
-        ]
-        .timeHeld;
 
         leaderboardLength[_market][_card]--;
     }
@@ -239,6 +247,22 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
             "Not in leaderboard"
         );
         removeFromLeaderboard(_user, _market, _card);
+    }
+
+    function printLeaderboard(address _market, uint256 _card) public view {
+        Leaderboard memory _currRecord = leaderboard[_market][
+            leaderboardIndex[_market][_market][_card]
+        ];
+        address _nextUser = _currRecord.next;
+        console.log("Market address ", _market);
+        while (_nextUser != _market) {
+            console.log("Printing orderbook ", _nextUser);
+            _currRecord = leaderboard[_nextUser][
+                leaderboardIndex[_nextUser][_market][_card]
+            ];
+            _nextUser = _currRecord.next;
+        }
+        console.log(" done printing orderbook");
     }
 
     /*
