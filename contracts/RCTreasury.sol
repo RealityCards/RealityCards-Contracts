@@ -159,7 +159,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
       ╚═════════════════════════════════╝*/
 
     /// @notice check that funds haven't gone missing during this function call
-    modifier balancedBooks {
+    modifier balancedBooks() {
         _;
         // using >= not == in case anyone sends tokens direct to contract
         require(
@@ -617,7 +617,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
             if (_timeOwnershipChanged < user[_newOwner].lastRentCalc) {
                 // the new owner has a more recent rent collection
 
-                uint256 _additionalRentOwed = rentOwedBetweenTimestmaps(
+                uint256 _additionalRentOwed = rentOwedBetweenTimestamps(
                     user[_newOwner].lastRentCalc,
                     _timeOwnershipChanged,
                     _newPrice
@@ -695,7 +695,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     /// @param _price the rental rate for this time period
     /// @param _rent the rent due for this time period
     /// @dev the timestamps can be given in any order
-    function rentOwedBetweenTimestmaps(
+    function rentOwedBetweenTimestamps(
         uint256 _time1,
         uint256 _time2,
         uint256 _price
@@ -717,26 +717,55 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     ) external view override returns (uint256) {
         uint256 totalUserDailyRent = user[_user].rentalRate;
         if (totalUserDailyRent > 0) {
-            // timeLeftOfDeposit = deposit / (totalUserDailyRent / 1 day)
-            //                   = (deposit * 1day) / totalUserDailyRent
             uint256 timeLeftOfDeposit = (user[_user].deposit * 1 days) /
                 totalUserDailyRent;
 
             uint256 foreclosureTimeWithoutNewCard = user[_user].lastRentCalc +
                 timeLeftOfDeposit;
 
-            if (foreclosureTimeWithoutNewCard > _timeOfNewBid) {
+            if (
+                foreclosureTimeWithoutNewCard > _timeOfNewBid &&
+                _timeOfNewBid != 0
+            ) {
                 // calculate how long they can own the new card for
-                uint256 _rentAlreadyOwed = rentOwedBetweenTimestmaps(
+                uint256 _rentDifference = rentOwedBetweenTimestamps(
                     user[_user].lastRentCalc,
                     _timeOfNewBid,
                     totalUserDailyRent
                 );
-                uint256 _depositAtTimeOfNewBid = user[_user].deposit -
-                    _rentAlreadyOwed;
+                uint256 _depositAtTimeOfNewBid = 0;
+
+                if (user[_user].lastRentCalc < _timeOfNewBid) {
+                    // new bid is after user rent calculation
+                    _depositAtTimeOfNewBid =
+                        user[_user].deposit -
+                        _rentDifference;
+                } else {
+                    // new bid is before user rent calculation
+                    _depositAtTimeOfNewBid =
+                        user[_user].deposit +
+                        _rentDifference;
+                }
+
                 uint256 _timeLeftOfDepositWithNewBid = (_depositAtTimeOfNewBid *
                     1 days) / (totalUserDailyRent + _newBid);
-                return _timeOfNewBid + _timeLeftOfDepositWithNewBid;
+
+                uint256 _foreclosureTimeWithNewCard = _timeOfNewBid +
+                    _timeLeftOfDepositWithNewBid;
+                if (_foreclosureTimeWithNewCard > user[_user].lastRentCalc) {
+                    return _foreclosureTimeWithNewCard;
+                } else {
+                    // The user couldn't afford to own the new card up to their last
+                    // .. rent calculation, we can't rewind their rent calculation because
+                    // .. of gas limits (there could be many markets having taken rent).
+                    // Therefore unfortunately we can't give any ownership to this user as
+                    // .. this could mean getting caught in a loop we may not be able to
+                    // .. exit because of gas limits (there could be many users in this
+                    // .. situation and we can't leave any unaccounted for).
+                    // This means we return 0 to signify that the user can't afford this
+                    // .. new ownership.
+                    return 0;
+                }
             } else {
                 return user[_user].lastRentCalc + timeLeftOfDeposit;
             }
