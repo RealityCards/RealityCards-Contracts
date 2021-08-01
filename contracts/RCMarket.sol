@@ -702,7 +702,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         uint256 _timeHeldLimit,
         address _startingPosition,
         uint256 _card
-    ) public override autoUnlock() autoLock() {
+    ) public override autoUnlock autoLock {
         if (state == States.OPEN) {
             require(_newPrice >= MIN_RENTAL_VALUE, "Price below min");
             require(_card < numberOfCards, "Card does not exist");
