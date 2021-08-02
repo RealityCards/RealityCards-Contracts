@@ -302,10 +302,10 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
     /// @notice automatically locks market if appropriate
     modifier autoLock() {
-        _;
         if (marketLockingTime <= block.timestamp) {
             lockMarket();
         }
+        _;
     }
 
     /// @dev can only be called by Card owners
