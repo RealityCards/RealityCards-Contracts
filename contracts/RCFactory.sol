@@ -717,7 +717,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
                 _marketAddresses[_resultNumber] = _market;
                 _ipfsHashes[_resultNumber] = ipfsHash[_market];
                 _potSizes[_resultNumber] = IRCMarket(_market)
-                .totalRentCollected();
+                    .totalRentCollected();
                 _resultNumber++;
             }
         }
