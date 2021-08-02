@@ -4,6 +4,7 @@ pragma solidity 0.8.4;
 import "./IRCNftHubL2.sol";
 import "./IRCTreasury.sol";
 import "./IRCFactory.sol";
+import "./IRCLeaderboard.sol";
 import "./IRealitio.sol";
 import "./IRCOrderbook.sol";
 
@@ -71,6 +72,8 @@ interface IRCMarket {
     function treasury() external view returns (IRCTreasury);
 
     function factory() external view returns (IRCFactory);
+
+    function leaderboard() external view returns (IRCLeaderboard);
 
     function orderbook() external view returns (IRCOrderbook);
 

@@ -21,6 +21,7 @@ var RCMarket = artifacts.require("./RCMarket.sol");
 var NftHubL2 = artifacts.require("./nfthubs/RCNftHubL2.sol");
 var NftHubL1 = artifacts.require("./nfthubs/RCNftHubL1.sol");
 var RCOrderbook = artifacts.require('./RCOrderbook.sol');
+var RCLeaderboard = artifacts.require('./RCLeaderboard.sol');
 // mockups
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 
@@ -71,6 +72,7 @@ contract("TestTreasury", (accounts) => {
     rcfactory = await RCFactory.new(treasury.address);
     rcreference = await RCMarket.new();
     rcorderbook = await RCOrderbook.new(treasury.address);
+    rcleaderboard = await RCLeaderboard.new(treasury.address);
     // nft hubs
     nftHubL2 = await NftHubL2.new(rcfactory.address, dummyAddress);
     nftHubL1 = await NftHubL1.new();
@@ -79,6 +81,7 @@ contract("TestTreasury", (accounts) => {
     await rcfactory.setReferenceContractAddress(rcreference.address);
     await rcfactory.setNftHubAddress(nftHubL2.address);
     await treasury.setOrderbookAddress(rcorderbook.address);
+    await treasury.setLeaderboardAddress(rcleaderboard.address);
     await treasury.toggleWhitelist();
     // mockups
     realitio = await RealitioMockup.new();

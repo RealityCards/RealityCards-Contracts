@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "hardhat/console.sol";
 import "./interfaces/IRealitio.sol";
 import "./interfaces/IRCFactory.sol";
+import "./interfaces/IRCLeaderboard.sol";
 import "./interfaces/IRCTreasury.sol";
 import "./interfaces/IRCMarket.sol";
 import "./interfaces/IRCNftHubL2.sol";
@@ -40,6 +41,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     IRCFactory public override factory;
     IRCNftHubL2 public override nfthub;
     IRCOrderbook public override orderbook;
+    IRCLeaderboard public override leaderboard;
     IRealitio public override realitio;
 
     // PRICE, DEPOSITS, RENT
@@ -208,6 +210,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         treasury = factory.treasury();
         nfthub = factory.nfthub();
         orderbook = factory.orderbook();
+        leaderboard = factory.leaderboard();
 
         // get adjustable parameters from the factory/treasury
         uint256[5] memory _potDistribution = factory.getPotDistribution();
@@ -1046,6 +1049,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             longestTimeHeld[_card] = timeHeld[_card][_user];
             longestOwner[_card] = _user;
         }
+        leaderboard.updateLeaderboard(_user, _card, timeHeld[_card][_user]);
         emit LogRentCollection(
             _rentCollected,
             _timeHeldToIncrement,

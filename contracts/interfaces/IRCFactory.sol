@@ -6,6 +6,7 @@ import "./IRCTreasury.sol";
 import "./IRCMarket.sol";
 import "./IRCNftHubL2.sol";
 import "./IRCOrderbook.sol";
+import "./IRCLeaderboard.sol";
 
 interface IRCFactory {
     function createMarket(
@@ -27,6 +28,8 @@ interface IRCFactory {
     function treasury() external view returns (IRCTreasury);
 
     function orderbook() external view returns (IRCOrderbook);
+
+    function leaderboard() external view returns (IRCLeaderboard);
 
     function realitio() external view returns (IRealitio);
 
@@ -67,6 +70,8 @@ interface IRCFactory {
     function getPotDistribution() external view returns (uint256[5] memory);
 
     function minimumPriceIncreasePercent() external view returns (uint256);
+
+    function NFTsToAward() external view returns (uint256);
 
     function isMarketApproved(address) external view returns (bool);
 
@@ -109,6 +114,8 @@ interface IRCFactory {
 
     function setMinimumPriceIncreasePercent(uint256 _percentIncrease) external;
 
+    function setNumberOfNFTsToAward(uint256 _NFTsToAward) external;
+
     function setPotDistribution(
         uint256 _artistCut,
         uint256 _winnerCut,
@@ -139,6 +146,8 @@ interface IRCFactory {
     function setReferenceContractAddress(address _newAddress) external;
 
     function setOrderbookAddress(IRCOrderbook _newAddress) external;
+
+    function setLeaderboardAddress(IRCLeaderboard _newAddress) external;
 
     function setNftHubAddress(IRCNftHubL2 _newAddress) external;
 }
