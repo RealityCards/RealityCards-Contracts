@@ -9,7 +9,7 @@ contract("RealityCardsTests", (accounts) => {
 
     beforeEach(async function () {
         await rc.setup(accounts);
-        ({ treasury, factory, orderbook, markets, proxyL2, erc20, realitio } = rc.contracts);
+        ({ treasury, factory, orderbook, leaderboard, markets, proxyL2, erc20, realitio, nftHubL2 } = rc.contracts);
     });
     afterEach(async function () {
         await rc.cleanup();
@@ -472,6 +472,222 @@ contract("RealityCardsTests", (accounts) => {
             userRecord = await treasury.user(alice);
             console.log("user bid rate ", userRecord[2].toString());
             console.log(" is foreclosed ", await treasury.isForeclosed(alice));
+        })
+    })
+    describe("Leaderboard tests ", () => {
+        it("Add users to linked list ", async () => {
+            let bids = [];
+            bids[0] = {
+                from: alice,
+                price: 50,
+                timeLimit: 5000,
+            };
+            bids[1] = {
+                from: bob,
+                price: 40,
+                timeLimit: 4000,
+            };
+            bids[2] = {
+                from: carol,
+                price: 30,
+                timeLimit: 3000,
+            };
+            bids[3] = {
+                from: dan,
+                price: 20,
+                timeLimit: 2000,
+            };
+            bids[4] = {
+                from: eve,
+                price: 10,
+                timeLimit: 1000,
+            };
+
+            let totalTime = 0
+            // make deposits and place bids
+            await Promise.all(bids.map(async (bid) => {
+                await rc.deposit(1000, bid.from);
+                totalTime += bid.timeLimit
+                await rc.newRental(bid);
+            }));
+
+            await time.increase(time.duration.seconds(totalTime))
+            await markets[0].collectRentAllCards()
+            let leaderboardList = await leaderboard.printLeaderboard(markets[0].address, 0)
+            let NFTsToAward = await leaderboard.NFTsToAward(markets[0].address);
+
+            for (let i = 0; i < bids.length; i++) {
+                if (i < NFTsToAward) {
+                    assert.equal(bids[i].from, leaderboardList[i], "Incorrect owner")
+                }
+            }
+            assert.equal(leaderboardList.length, NFTsToAward, "Incorrect number of users on leaderboard")
+        })
+        it("Replace users in linked list ", async () => {
+            let bids = [];
+            bids[0] = {
+                from: alice,
+                price: 50,
+                timeLimit: 5000,
+            };
+            bids[1] = {
+                from: bob,
+                price: 40,
+                timeLimit: 4000,
+            };
+            bids[2] = {
+                from: carol,
+                price: 30,
+                timeLimit: 3000,
+            };
+            bids[3] = {
+                from: dan,
+                price: 20,
+                timeLimit: 2000,
+            };
+            bids[4] = {
+                from: eve,
+                price: 10,
+                timeLimit: 1000,
+            };
+
+            let totalTime = 0
+            // make deposits and place bids
+            await Promise.all(bids.map(async (bid) => {
+                await rc.deposit(1000, bid.from);
+                totalTime += bid.timeLimit
+                await rc.newRental(bid);
+            }));
+
+            await time.increase(time.duration.seconds(totalTime))
+            await markets[0].collectRentAllCards()
+            let leaderboardList = await leaderboard.printLeaderboard(markets[0].address, 0)
+            let NFTsToAward = await leaderboard.NFTsToAward(markets[0].address);
+
+            for (let i = 0; i < bids.length; i++) {
+                if (i < NFTsToAward) {
+                    assert.equal(bids[i].from, leaderboardList[i])
+                }
+            }
+            assert.equal(leaderboardList.length, NFTsToAward)
+
+            await rc.newRental({ from: eve, timeLimit: 5000 });
+            await time.increase(time.duration.seconds(5000))
+            await markets[0].collectRentAllCards()
+            leaderboardList = await leaderboard.printLeaderboard(markets[0].address, 0)
+            assert.equal(eve, leaderboardList[0], "Incorrect owner")
+            assert.equal(alice, leaderboardList[1], "Incorrect owner")
+            assert.equal(bob, leaderboardList[2], "Incorrect owner")
+            assert.equal(false, await leaderboard.userIsOnLeaderboard(carol, markets[0].address, 0), "User shouldn't be on leaderboard")
+        })
+        it("Claim NFTs from Leaderboard ", async () => {
+            let bids = [];
+            bids[0] = {
+                from: alice,
+                price: 50,
+                timeLimit: 5000,
+            };
+            bids[1] = {
+                from: bob,
+                price: 40,
+                timeLimit: 4000,
+            };
+            bids[2] = {
+                from: carol,
+                price: 30,
+                timeLimit: 3000,
+            };
+            bids[3] = {
+                from: dan,
+                price: 20,
+                timeLimit: 2000,
+            };
+            bids[4] = {
+                from: eve,
+                price: 10,
+                timeLimit: 1000,
+            };
+
+            let totalTime = 0
+            // make deposits and place bids
+            await Promise.all(bids.map(async (bid) => {
+                await rc.deposit(1000, bid.from);
+                totalTime += bid.timeLimit
+                await rc.newRental(bid);
+            }));
+
+            await time.increase(time.duration.seconds(totalTime))
+            await markets[0].collectRentAllCards()
+            await markets[0].setAmicableResolution(0)
+
+            let NFTCount = await nftHubL2.totalSupply()
+            await markets[0].claimCard(0, { from: alice })
+            let owner = await nftHubL2.ownerOf(0)
+            assert.equal(owner, alice, "Incorrect owner")
+
+            await markets[0].claimCard(0, { from: bob })
+            owner = await nftHubL2.ownerOf(NFTCount)
+            assert.equal(owner, bob, "Incorrect owner")
+
+            NFTCount++;
+            await markets[0].claimCard(0, { from: carol })
+            owner = await nftHubL2.ownerOf(NFTCount)
+            assert.equal(owner, carol, "Incorrect owner")
+
+            await expectRevert(markets[0].claimCard(0, { from: dan }), "Not in leaderboard")
+        })
+        it("New Market can mint NFTs after users have minted copies ", async () => {
+            let bids = [];
+            bids[0] = {
+                from: alice,
+                price: 50,
+                timeLimit: 5000,
+            };
+            bids[1] = {
+                from: bob,
+                price: 40,
+                timeLimit: 4000,
+            };
+            bids[2] = {
+                from: carol,
+                price: 30,
+                timeLimit: 3000,
+            };
+            bids[3] = {
+                from: dan,
+                price: 20,
+                timeLimit: 2000,
+            };
+            bids[4] = {
+                from: eve,
+                price: 10,
+                timeLimit: 1000,
+            };
+
+            let totalTime = 0
+            // make deposits and place bids
+            await Promise.all(bids.map(async (bid) => {
+                await rc.deposit(1000, bid.from);
+                totalTime += bid.timeLimit
+                await rc.newRental(bid);
+            }));
+
+            await time.increase(time.duration.seconds(totalTime))
+            await markets[0].collectRentAllCards()
+            await markets[0].setAmicableResolution(0)
+
+            await markets[0].claimCard(0, { from: alice })
+            await markets[0].claimCard(0, { from: bob })
+            await markets[0].claimCard(0, { from: carol })
+
+            let NFTCount = await nftHubL2.totalSupply()
+            markets.push(await rc.createMarket({ closeTime: time.duration.days(1), resolveTime: time.duration.days(1) }));
+
+            rc.newRental({ from: alice, market: markets[1] })
+            await time.increase(time.duration.seconds(10))
+            await markets[1].collectRentAllCards()
+            let owner = await nftHubL2.ownerOf(NFTCount)
+            assert.equal(owner, alice, "Incorrect owner")
         })
     })
     describe("Orderbook tests ", () => {
