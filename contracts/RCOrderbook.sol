@@ -521,12 +521,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
         }
 
         assert(!bidExists(_user, _market, _card));
-
-        // If the market is closed we don't need to emit the event
-        // A closed market will have an empty linked list and so point at itself
-        if (user[_market][index[_market][_market][_card]].next != _market) {
-            emit LogRemoveFromOrderbook(_user, _market, _card);
-        }
+        emit LogRemoveFromOrderbook(_user, _market, _card);
     }
 
     /// @notice find the next valid owner of a given card - onlyMarkets
