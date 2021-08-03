@@ -34,7 +34,7 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
     mapping(address => Leaderboard[]) public leaderboard;
     mapping(address => mapping(address => mapping(uint256 => uint256))) leaderboardIndex;
     mapping(address => mapping(uint256 => uint256)) public leaderboardLength;
-    mapping(address => uint256) public NFTsToAward;
+    mapping(address => uint256) public override NFTsToAward;
 
     /*╔═════════════════════════════════╗
       ║         CONSTRUCTOR             ║
@@ -140,7 +140,7 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
         ];
         address _nextUser = _currRecord.next;
         while (
-            _timeHeld >
+            _timeHeld <
             leaderboard[_nextUser][leaderboardIndex[_nextUser][_market][_card]]
                 .timeHeld &&
             _nextUser != _market
@@ -216,7 +216,7 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
         address _user,
         address _market,
         uint256 _card
-    ) internal view returns (bool) {
+    ) public view returns (bool) {
         if (leaderboard[_user].length != 0) {
             // user is on a leaderboard
             if (leaderboardIndex[_user][_market][_card] != 0) {
