@@ -1858,7 +1858,7 @@ contract("TestFullFlowValid", (accounts) => {
     await realitycards.claimCard(1, { from: user1 });
     await expectRevert(
       realitycards.claimCard(2, { from: user1 }),
-      "Not longest owner"
+      "Not in leaderboard"
     );
     await realitycards.claimCard(2, { from: user2 });
     await expectRevert(

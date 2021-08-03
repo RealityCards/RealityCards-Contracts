@@ -21,6 +21,8 @@ interface IRCFactory {
         uint256 _sponsorship
     ) external returns (address);
 
+    function mintCopyOfNFT(address _user, uint256 _tokenId) external;
+
     // view functions
 
     function nfthub() external view returns (IRCNftHubL2);
