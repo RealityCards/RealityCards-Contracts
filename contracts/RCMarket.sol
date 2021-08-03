@@ -470,7 +470,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         );
         // do a final rent collection before the contract is locked down
 
-        if (collectRentAllCards()) {
+        if (collectRentAllCards() && gasleft() > 5_000_000) {
             orderbook.closeMarket();
             _incrementState();
 
