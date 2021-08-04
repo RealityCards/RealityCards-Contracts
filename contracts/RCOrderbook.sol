@@ -45,6 +45,8 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
     mapping(address => Market) public market;
     /// @dev find the current owner of a card in a given market. Market -> Card -> Owner
     mapping(address => mapping(uint256 => address)) public override ownerOf;
+    mapping(address => mapping(uint256 => address)) public oldOwner;
+    mapping(address => mapping(uint256 => uint256)) public oldPrice;
 
     /// @dev an array of closed markets, used to reduce user bid rates
     address[] public override closedMarkets;
@@ -536,9 +538,17 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
         address _market = msgSender();
         // the market is the head of the list, the next bid is therefore the owner
         Bid storage _head = user[_market][index[_market][_market][_card]];
-        address _oldOwner = _head.next;
-        uint256 _oldPrice = user[_oldOwner][index[_oldOwner][_market][_card]]
-            .price;
+        address _oldOwner = address(0);
+        uint256 _oldPrice = 0;
+        if (oldOwner[_market][_card] != address(0)) {
+            _oldOwner = oldOwner[_market][_card];
+            _oldPrice = oldPrice[_market][_card];
+            oldOwner[_market][_card] = address(0);
+            oldPrice[_market][_card] = 0;
+        } else {
+            _oldOwner = ownerOf[_market][_card];
+            _oldPrice = user[_oldOwner][index[_oldOwner][_market][_card]].price;
+        }
         uint256 minimumTimeToOwnTo = _timeOwnershipChanged +
             market[_market].minimumRentalDuration;
         uint256 _newPrice;
@@ -563,16 +573,22 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
                 _loopCounter < maxDeletions
         );
 
-        // the old owner is dead, long live the new owner
-        _newOwner = user[_market][index[_market][_market][_card]].next;
-        treasury.updateRentalRate(
-            _oldOwner,
-            _newOwner,
-            _oldPrice,
-            _newPrice,
-            _timeOwnershipChanged
-        );
-        transferCard(_market, _card, _oldOwner, _newOwner, _newPrice);
+        if (_loopCounter != maxDeletions) {
+            // the old owner is dead, long live the new owner
+            _newOwner = user[_market][index[_market][_market][_card]].next;
+            treasury.updateRentalRate(
+                _oldOwner,
+                _newOwner,
+                _oldPrice,
+                _newPrice,
+                _timeOwnershipChanged
+            );
+            transferCard(_market, _card, _oldOwner, _newOwner, _newPrice);
+        } else {
+            // we hit the limit, save the old owner, we'll try again next time
+            oldOwner[_market][_card] = _oldOwner;
+            oldPrice[_market][_card] = _oldPrice;
+        }
     }
 
     /// @notice when a user has foreclosed we can freely delete their bids, however leave owned cards

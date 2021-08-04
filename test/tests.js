@@ -1160,6 +1160,64 @@ contract("RealityCardsTests", (accounts) => {
                     await rc.checkOrderbook(bid);
                 }));
             })
+            it("Find new owner, not finding a new owner ", async () => {
+                let numberOfDeletions = 3
+                await orderbook.setDeletionLimit(numberOfDeletions)
+                markets.push(await rc.createMarket({ closeTime: time.duration.days(2), resolveTime: time.duration.days(2) }));
+                let bids = [];
+                bids[0] = {
+                    from: alice,
+                    price: 50,
+                    market: markets[1],
+                };
+                bids[1] = {
+                    from: bob,
+                    price: 40,
+                    market: markets[1],
+                };
+                bids[2] = {
+                    from: carol,
+                    price: 30,
+                    market: markets[1],
+                };
+                bids[3] = {
+                    from: dan,
+                    price: 20,
+                    market: markets[1],
+                };
+                bids[4] = {
+                    from: eve,
+                    price: 10,
+                    market: markets[1],
+                };
+                // console.log("market ", markets[1].address)
+                // console.log("orderbook ", orderbook.address)
+                // console.log("treasury ", treasury.address)
+                // console.log("nfthub ", nftHubL2.address)
+                // console.log("alice ", alice)
+                // console.log("bob ", bob)
+                // console.log("carol ", carol)
+                // console.log("dan ", dan)
+                // console.log("eve ", eve)
+
+                // make deposits and place bids
+                await Promise.all(bids.map(async (bid) => {
+                    await rc.deposit(5, bid.from);
+                    await rc.newRental(bid);
+                    bid.outcome = 1
+                    await rc.newRental(bid);
+                }));
+
+                await time.increase(time.duration.days(1))
+
+                let owner = await markets[1].ownerOf(1)
+                await markets[1].collectRentAllCards();
+                owner = await markets[1].ownerOf(1)
+
+                await time.increase(time.duration.hours(1))
+                await markets[1].collectRentAllCards();
+
+            })
         })
         describe("Cleanup tests ", () => {
 
