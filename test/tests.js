@@ -804,49 +804,7 @@ contract("RealityCardsTests", (accounts) => {
                 await rc.newRental({ from: bob, market: markets[2], outcome: 1 })
 
             })
-            it("User foreclosed with zero bids ", async () => {
-                // In this test we end up with a user foreclosed without bids
-                // This test was added due to an error in removeOldBids that would cause an integer underflow
-                markets.push(await rc.createMarket({ closeTime: time.duration.weeks(1), resolveTime: time.duration.weeks(1) }));
-                let bids = [];
-                bids[0] = {
-                    from: alice,
-                    price: 50,
-                    market: markets[1],
-                };
-                bids[1] = {
-                    from: bob,
-                    price: 40,
-                    market: markets[1],
-                };
-                await rc.populateBidArray(bids);
 
-                // make deposits and place bids
-                await Promise.all(bids.map(async (bid) => {
-                    await rc.deposit(10, bid.from);
-                    await rc.newRental(bid);
-                }));
-
-                await time.increase(time.duration.days(8))
-                await markets[1].lockMarket();
-                await realitio.setResult(markets[1].address, 0)
-                await markets[1].getWinnerFromOracle()
-
-                await markets[1].withdraw({ from: alice })
-                // Alice now only has her winnings - Not forelocsed
-                // Bob is foreclosed but still has bids
-
-                markets.push(await rc.createMarket({ closeTime: time.duration.weeks(1), resolveTime: time.duration.weeks(1) }));
-
-                await rc.deposit(10, frank);
-                await rc.deposit(10, alice); // otherwise alice can't cover minimum
-                await rc.newRental({ from: frank, market: markets[2] })
-                await rc.newRental({ from: alice, market: markets[2], outcome: 1 })
-
-                // the new rentals deleted old bids, bob is foreclosed without bids.
-                await expectRevert(rc.newRental({ from: bob, market: markets[2], price: 2 }), "Insufficient deposit")
-
-            })
             it("removeOldBids ", async () => {
                 markets.push(await rc.createMarket({ closeTime: time.duration.weeks(1), resolveTime: time.duration.weeks(1) }));
                 let bids = [];
