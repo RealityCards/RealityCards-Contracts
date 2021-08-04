@@ -715,50 +715,51 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                 treasury.marketWhitelistCheck(_user),
                 "Not approved for this market"
             );
-            bool _userStillForeclosed = treasury.isForeclosed(_user);
-            if (_userStillForeclosed) {
-                _userStillForeclosed = orderbook.removeUserFromOrderbook(_user);
+
+            if (treasury.isForeclosed(_user)) {
+                orderbook.removeUserFromOrderbook(_user);
             }
-            if (!_userStillForeclosed) {
-                if (ownerOf(_card) == _user) {
-                    // the owner may only increase by more than X% or reduce their price
-                    uint256 _requiredPrice = (cardPrice[_card] *
-                        (minimumPriceIncreasePercent + 100)) / (100);
-                    require(
-                        _newPrice >= _requiredPrice ||
-                            _newPrice < cardPrice[_card],
-                        "Invalid price"
-                    );
-                }
-
-                // do some cleaning up before we collect rent or check their bidRate
-                orderbook.removeOldBids(_user);
-
-                /// @dev ignore the return value and let the user post the bid for the sake of UX
-                _collectRent(_card);
-
-                // check sufficient deposit
-                uint256 _userTotalBidRate = (treasury.userTotalBids(_user) -
-                    orderbook.getBidValue(_user, _card)) + _newPrice;
+            require(
+                !treasury.isForeclosed(_user),
+                "Can't rent while foreclosed"
+            );
+            if (ownerOf(_card) == _user) {
+                // the owner may only increase by more than X% or reduce their price
+                uint256 _requiredPrice = (cardPrice[_card] *
+                    (minimumPriceIncreasePercent + 100)) / (100);
                 require(
-                    treasury.userDeposit(_user) >=
-                        _userTotalBidRate / minRentalDayDivisor,
-                    "Insufficient deposit"
+                    _newPrice >= _requiredPrice || _newPrice < cardPrice[_card],
+                    "Invalid price"
                 );
-
-                _timeHeldLimit = _checkTimeHeldLimit(_timeHeldLimit);
-
-                // replaces _newBid and _updateBid
-                orderbook.addBidToOrderbook(
-                    _user,
-                    _card,
-                    _newPrice,
-                    _timeHeldLimit,
-                    _startingPosition
-                );
-
-                treasury.updateLastRentalTime(_user);
             }
+
+            // do some cleaning up before we collect rent or check their bidRate
+            orderbook.removeOldBids(_user);
+
+            /// @dev ignore the return value and let the user post the bid for the sake of UX
+            _collectRent(_card);
+
+            // check sufficient deposit
+            uint256 _userTotalBidRate = (treasury.userTotalBids(_user) -
+                orderbook.getBidValue(_user, _card)) + _newPrice;
+            require(
+                treasury.userDeposit(_user) >=
+                    _userTotalBidRate / minRentalDayDivisor,
+                "Insufficient deposit"
+            );
+
+            _timeHeldLimit = _checkTimeHeldLimit(_timeHeldLimit);
+
+            // replaces _newBid and _updateBid
+            orderbook.addBidToOrderbook(
+                _user,
+                _card,
+                _newPrice,
+                _timeHeldLimit,
+                _startingPosition
+            );
+
+            treasury.updateLastRentalTime(_user);
         }
     }
 

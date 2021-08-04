@@ -440,16 +440,10 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
             user[_msgSender].bidRate / (minRentalDayDivisor) >
             user[_msgSender].deposit
         ) {
-            bool foreclosureBefore = isForeclosed[_msgSender];
             // foreclose user, this is requred to remove them from the orderbook
             isForeclosed[_msgSender] = true;
-            // remove them from the orderbook, the return will state if they remain foreclosed
-            isForeclosed[_msgSender] = orderbook.removeUserFromOrderbook(
-                _msgSender
-            );
-            if (foreclosureBefore != isForeclosed[_msgSender]) {
-                emit LogUserForeclosed(_msgSender, isForeclosed[_msgSender]);
-            }
+            // remove them from the orderbook
+            orderbook.removeUserFromOrderbook(_msgSender);
         }
     }
 
@@ -687,12 +681,6 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         user[_user].bidRate -= SafeCast.toUint128(_price);
     }
 
-    /// @dev called when all a user's bids have been removed, disables foreclosure state
-    function resetUser(address _user) external override onlyRole(ORDERBOOK) {
-        isForeclosed[_user] = false;
-        emit LogUserForeclosed(_user, false);
-    }
-
     /*╔═════════════════════════════════╗
       ║      RENT CALC HELPERS          ║
       ╚═════════════════════════════════╝*/
@@ -866,14 +854,13 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     }
 
     /// @notice checks if the user should still be foreclosed
-    /// @dev only removes foreclosure
-    function assessForeclosure(address _user) internal {
-        if (
-            isForeclosed[_user] &&
-            user[_user].deposit > (user[_user].bidRate / minRentalDayDivisor)
-        ) {
+    function assessForeclosure(address _user) public override {
+        if (user[_user].deposit > (user[_user].bidRate / minRentalDayDivisor)) {
             isForeclosed[_user] = false;
             emit LogUserForeclosed(_user, false);
+        } else {
+            isForeclosed[_user] = true;
+            emit LogUserForeclosed(_user, true);
         }
     }
 

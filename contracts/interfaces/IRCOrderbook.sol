@@ -87,9 +87,7 @@ interface IRCOrderbook {
         uint256 _timeHeldLimit
     ) external;
 
-    function removeUserFromOrderbook(address _user)
-        external
-        returns (bool _userForeclosed);
+    function removeUserFromOrderbook(address _user) external;
 
     function removeOldBids(address _user) external;
 

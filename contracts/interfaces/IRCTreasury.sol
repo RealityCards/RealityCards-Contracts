@@ -23,6 +23,8 @@ interface IRCTreasury {
 
     function topupMarketBalance(uint256 _amount) external;
 
+    function assessForeclosure(address _user) external;
+
     // view functions
     function foreclosureTimeUser(
         address _user,
@@ -92,8 +94,6 @@ interface IRCTreasury {
     function increaseBidRate(address _user, uint256 _price) external;
 
     function decreaseBidRate(address _user, uint256 _price) external;
-
-    function resetUser(address _user) external;
 
     function updateRentalRate(
         address _oldOwner,
