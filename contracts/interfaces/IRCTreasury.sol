@@ -64,6 +64,8 @@ interface IRCTreasury {
 
     function globalPause() external view returns (bool);
 
+    function addMarket(address _market, bool paused) external;
+
     function marketPaused(address) external view returns (bool);
 
     function batchWhitelist(address[] calldata _users, bool add) external;

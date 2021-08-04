@@ -260,6 +260,10 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         }
     }
 
+    /// @notice Some markets may be restricted to certain roles,
+    /// @notice This function checks if the user has the role requried for a given market
+    /// @dev Used for the markets to check themselves
+    /// @param _user The user to check
     function marketWhitelistCheck(address _user)
         external
         view
@@ -580,6 +584,12 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
       ║        MARKET HELPERS           ║
       ╚═════════════════════════════════╝*/
 
+    function addMarket(address _market, bool _paused) external override {
+        require(hasRole(FACTORY, msgSender()), "Not Authorised");
+        marketPaused[_market] = _paused;
+        AccessControl.grantRole(MARKET, _market);
+    }
+
     /// @notice provides the sum total of a users bids across all markets (whether active or not)
     /// @param _user the user address to query
     function userTotalBids(address _user)
@@ -886,10 +896,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         public
         override(AccessControl, IRCTreasury)
     {
-        if (role == MARKET) {
-            // markets should be added in a paused state
-            marketPaused[account] = true;
-        } else if (role == WHITELIST) {
+        if (role == WHITELIST) {
             // need to emit old event until frontend catches up
             emit LogWhitelistUser(account, true);
         }

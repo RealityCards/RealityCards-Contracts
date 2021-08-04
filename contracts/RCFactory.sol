@@ -64,6 +64,8 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     address public override arbitrator;
     /// @dev the time allowed to dispute the oracle answer
     uint32 public override timeout;
+    /// @dev if true markets default to the paused state
+    bool public override marketPausedDefaultState;
 
     ///// GOVERNANCE VARIABLES- GOVERNORS /////
     /// @dev unapproved markets hidden from the interface
@@ -303,6 +305,14 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     /// @param _newTimeout the timeout to set in seconds, 86400 = 24hrs
     function setTimeout(uint32 _newTimeout) public override onlyOwner {
         timeout = _newTimeout;
+    }
+
+    function setMarketPausedDefaultState(bool _state)
+        public
+        override
+        onlyOwner
+    {
+        marketPausedDefaultState = _state;
     }
 
     /*┌──────────────────────────────────────────┐
@@ -634,7 +644,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
 
         // tell Treasury, Orderbook, and NFT hub about new market
         // before initialize as during initialize the market may call the treasury
-        treasury.grantRole(MARKET, _newAddress);
+        treasury.addMarket(_newAddress, marketPausedDefaultState);
         nfthub.addMarket(_newAddress);
         orderbook.addMarket(
             _newAddress,

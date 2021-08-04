@@ -77,6 +77,8 @@ interface IRCFactory {
 
     function isMarketApproved(address) external view returns (bool);
 
+    function marketPausedDefaultState() external view returns (bool);
+
     function getOracleSettings()
         external
         view
@@ -102,6 +104,8 @@ interface IRCFactory {
     function removeCardAffiliate(address _oldCardAffiliate) external;
 
     // only Owner
+    function setMarketPausedDefaultState(bool _state) external;
+
     function setTimeout(uint32 _newTimeout) external;
 
     function setMaxRentIterations(uint256 _rentLimit) external;
