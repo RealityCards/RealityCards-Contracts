@@ -321,23 +321,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
       ║     NFT HUB CONTRACT CALLS      ║
       ╚═════════════════════════════════╝*/
 
-    /// @notice send NFT to mainnet
-    /// @dev upgrades not possible if market paused
-    function upgradeCard(uint256 _card)
-        external
-        override
-        onlyTokenOwner(_card)
-    {
-        _checkState(States.WITHDRAW);
-        require(
-            !treasury.marketPaused(address(this)) && !treasury.globalPause(),
-            "Market is Paused"
-        );
-        uint256 _tokenId = _card + totalNftMintCount;
-        nfthub.withdrawWithMetadata(_tokenId);
-        emit LogNftUpgraded(_card, _tokenId);
-    }
-
     /// @notice gets the owner of the NFT via their Card Id
     function ownerOf(uint256 _cardId) public view override returns (address) {
         require(_cardId < numberOfCards, "Card does not exist");

@@ -21,8 +21,6 @@ interface IRCMarket {
         SAFE_MODE
     }
 
-    function upgradeCard(uint256 _card) external;
-
     function getWinnerFromOracle() external;
 
     function setAmicableResolution(uint256 _winningOutcome) external;
