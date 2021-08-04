@@ -58,7 +58,7 @@ interface IRCTreasury {
 
     function marketBalance() external view returns (uint256);
 
-    function marketBalanceDiscrepancy() external view returns (uint256);
+    function marketBalanceTopup() external view returns (uint256);
 
     function minRentalDayDivisor() external view returns (uint256);
 

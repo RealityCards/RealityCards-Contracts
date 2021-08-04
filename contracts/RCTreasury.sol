@@ -43,7 +43,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     /// @dev a quick check if a uesr is foreclosed
     mapping(address => bool) public override isForeclosed;
     /// @dev to keep track of the size of the rounding issue between rent collections
-    uint256 public override marketBalanceDiscrepancy;
+    uint256 public override marketBalanceTopup;
 
     /// @param deposit the users current deposit in wei
     /// @param rentalRate the daily cost of the cards the user current owns
@@ -455,11 +455,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         balancedBooks
     {
         erc20.safeTransferFrom(msgSender(), address(this), _amount);
-        if (_amount > marketBalanceDiscrepancy) {
-            marketBalanceDiscrepancy = 0;
-        } else {
-            marketBalanceDiscrepancy -= _amount;
-        }
+        marketBalanceTopup += _amount;
         marketBalance += _amount;
     }
 
@@ -496,7 +492,12 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     {
         require(!globalPause, "Rentals are disabled");
         if (marketBalance < _amount) {
-            marketBalanceDiscrepancy += _amount - marketBalance;
+            uint256 discrepancy = _amount - marketBalance;
+            if (discrepancy > marketBalanceTopup) {
+                marketBalanceTopup = 0;
+            } else {
+                marketBalanceTopup -= discrepancy;
+            }
             _amount = marketBalance;
         }
         address _market = msgSender();
