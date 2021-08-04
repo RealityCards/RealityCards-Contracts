@@ -470,7 +470,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         );
         // do a final rent collection before the contract is locked down
 
-        if (collectRentAllCards()) {
+        if (collectRentAllCards() && gasleft() > 5_000_000) {
             orderbook.closeMarket();
             _incrementState();
 
@@ -512,6 +512,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     }
 
     /// @notice the longest owner of each NFT gets to keep it
+    /// @notice users on the leaderboard can make a copy of it
     /// @dev LOCKED or WITHDRAW states are fine- does not need to wait for winner to be known
     /// @param _card the id of the card, the index
     function claimCard(uint256 _card) external override {
@@ -521,10 +522,16 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             !treasury.marketPaused(address(this)) && !treasury.globalPause(),
             "Market is Paused"
         );
-        require(!userAlreadyClaimed[_card][msgSender()], "Already claimed");
-        userAlreadyClaimed[_card][msgSender()] = true;
-        require(longestOwner[_card] == msgSender(), "Not longest owner");
-        _transferCard(ownerOf(_card), longestOwner[_card], _card);
+        address _user = msgSender();
+        require(!userAlreadyClaimed[_card][_user], "Already claimed");
+        userAlreadyClaimed[_card][_user] = true;
+        if (_user == longestOwner[_card]) {
+            _transferCard(ownerOf(_card), longestOwner[_card], _card);
+        } else {
+            leaderboard.claimNFT(_user, _card);
+            uint256 _tokenId = _card + totalNftMintCount;
+            factory.mintCopyOfNFT(_user, _tokenId);
+        }
     }
 
     /// @notice pays winnings

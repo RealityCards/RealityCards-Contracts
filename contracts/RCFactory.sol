@@ -73,6 +73,9 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
 
     ///// OTHER /////
     uint256 public constant PER_MILLE = 1000; // in MegaBip so (1000 = 100%)
+    /// @dev keep a copy of the tokenURIs, we can use these to mint copies for the leaderboard
+    /// @dev .. we can't always copy the original as it may have been burnt.
+    mapping(uint256 => string) tokenURIs;
 
     /*╔═════════════════════════════════╗
       ║          Access Control         ║
@@ -661,6 +664,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         // create the NFTs
         for (uint256 i = 0; i < _tokenURIs.length; i++) {
             nfthub.mint(_newAddress, nftHubMintCount, _tokenURIs[i]);
+            tokenURIs[nftHubMintCount] = _tokenURIs[i];
             nftHubMintCount++;
         }
 
@@ -722,6 +726,19 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
             }
         }
         return (_marketAddresses, _ipfsHashes, _potSizes);
+    }
+
+    /// @notice allows the market to mint a copy of the NFT for users on the leaderboard
+    /// @param _user the user to award the NFT to
+    /// @param _tokenId the tokenId to copy
+    function mintCopyOfNFT(address _user, uint256 _tokenId) external override {
+        require(mappingOfMarkets[msgSender()], "Not Market");
+        require(
+            nfthub.marketTracker(_tokenId) == msgSender(),
+            "Incorrect Market"
+        );
+        uint256 _newTokenId = nfthub.totalSupply();
+        nfthub.mint(_user, _newTokenId, tokenURIs[_tokenId]);
     }
     /*
          ▲  
