@@ -112,7 +112,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         uint32[] timestamps,
         uint256 totalNftMintCount
     );
-    event LogMarketApproved(address market, bool hidden);
+    event LogMarketApproved(address market, bool approved);
     event LogAdvancedWarning(uint256 _newAdvancedWarning);
     event LogMaximumDuration(uint256 _newMaximumDuration);
     event LogMinimumDuration(uint256 _newMinimumDuration);
