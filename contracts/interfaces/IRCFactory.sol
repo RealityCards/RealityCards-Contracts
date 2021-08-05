@@ -12,6 +12,7 @@ interface IRCFactory {
     function createMarket(
         uint32 _mode,
         string memory _ipfsHash,
+        string memory _slug,
         uint32[] memory _timestamps,
         string[] memory _tokenURIs,
         address _artistAddress,
@@ -26,6 +27,14 @@ interface IRCFactory {
     // view functions
 
     function nfthub() external view returns (IRCNftHubL2);
+
+    function ipfsHash(address) external view returns (string memory);
+
+    function slugToAddress(string memory) external view returns (address);
+
+    function addressToSlug(address) external view returns (string memory);
+
+    function marketInfoResults() external view returns (uint256);
 
     function treasury() external view returns (IRCTreasury);
 
@@ -147,6 +156,8 @@ interface IRCFactory {
     function addGovernor(address _newGovernor) external;
 
     function removeGovernor(address _oldGovernor) external;
+
+    function setMarketInfoResults(uint256 _results) external;
 
     // only UberOwner
     function setReferenceContractAddress(address _newAddress) external;

@@ -1064,6 +1064,39 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     }
 
     /*╔═════════════════════════════════╗
+      ║          BACKUP MODE            ║
+      ╚═════════════════════════════════╝*/
+
+    /// @dev quick and easy view function to get all market data relvant to the UI
+    function getMarketInfo()
+        external
+        view
+        returns (
+            States,
+            string memory,
+            uint256,
+            uint256,
+            address[] memory,
+            uint256[] memory
+        )
+    {
+        address[] memory _owners = new address[](numberOfCards);
+        uint256[] memory _prices = new uint256[](numberOfCards);
+        for (uint256 i; i < numberOfCards; i++) {
+            _owners[i] = ownerOf(i);
+            _prices[i] = cardPrice[i];
+        }
+        return (
+            state,
+            factory.ipfsHash(address(this)),
+            winningOutcome,
+            totalRentCollected,
+            _owners,
+            _prices
+        );
+    }
+
+    /*╔═════════════════════════════════╗
       ║        CIRCUIT BREAKER          ║
       ╚═════════════════════════════════╝*/
 

@@ -88,9 +88,11 @@ contract('TestRequireStatements', (accounts) => {
     await treasury.toggleWhitelist();
 
     // market creation
+    let slug = "slug"
     await rcfactory.createMarket(
       0,
       '0x0',
+      slug,
       timestamps,
       tokenURIs,
       artistAddress,
@@ -113,10 +115,12 @@ contract('TestRequireStatements', (accounts) => {
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
-    var slug = 'y';
+
+    let slug = "slug"
     await rcfactory.createMarket(
       mode,
       '0x0',
+      slug,
       timestamps,
       tokenURIs,
       artistAddress,
@@ -135,10 +139,12 @@ contract('TestRequireStatements', (accounts) => {
     await rcfactory.addArtist(user8);
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     var timestamps = [marketOpeningTime, marketLockingTime, oracleResolutionTime];
-    var slug = 'y';
+
+    let slug = "slug"
     await rcfactory.createMarket(
       0,
       '0x0',
+      slug,
       timestamps,
       tokenURIs,
       artistAddress,
@@ -157,10 +163,12 @@ contract('TestRequireStatements', (accounts) => {
     // await rcfactory.addArtist(user8);
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     var timestamps = [marketOpeningTime, marketLockingTime, oracleResolutionTime];
-    var slug = 'z';
+
+    let slug = "slug"
     await rcfactory.createMarket(
       0,
       '0x0',
+      slug,
       timestamps,
       tokenURIs,
       artistAddress,
@@ -356,29 +364,29 @@ contract('TestRequireStatements', (accounts) => {
     var templateId = 2;
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
-    var slug = 'y';
+
     // resolution time before locking, expect failure
     var oracleResolutionTime = now.add(new BN(69419));
     var marketLockingTime = now.add(new BN(69420));
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
-    await expectRevert(rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0), "Oracle resolution time error");
+    await expectRevert(rcfactory.createMarket(0, '0x0', "slug", timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0), "Oracle resolution time error");
     // resolution time > 1 weeks after locking, expect failure
     var oracleResolutionTime = now.add(new BN(604910));
     var marketLockingTime = now.add(new BN(100));
     var timestamps = [now, marketLockingTime, oracleResolutionTime];
-    await expectRevert(rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0), "Oracle resolution time error");
+    await expectRevert(rcfactory.createMarket(0, '0x0', "slug", timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0), "Oracle resolution time error");
     // resolution time < 1 week  after locking, no failure
     var oracleResolutionTime = now.add(new BN(604790));
     var marketLockingTime = now.add(new BN(100));
     var timestamps = [now, marketLockingTime, oracleResolutionTime];
-    var slug = 'z';
-    await rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0);
+
+    await rcfactory.createMarket(0, '0x0', "slug", timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0);
     // same time, no failure
     var oracleResolutionTime = now.add(new BN(100));
     var marketLockingTime = now.add(new BN(100));
     var timestamps = [now, marketLockingTime, oracleResolutionTime];
     var slug = 'a';
-    await rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0);
+    await rcfactory.createMarket(0, '0x0', "slug", timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0);
   });
 
 

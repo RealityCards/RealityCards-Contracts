@@ -113,6 +113,7 @@ contract("TestFullFlowValid", (accounts) => {
     await rcfactory.createMarket(
       0,
       "0x0",
+      "slug",
       timestamps,
       tokenURIs,
       artistAddress,
@@ -141,6 +142,7 @@ contract("TestFullFlowValid", (accounts) => {
     await rcfactory.createMarket(
       0,
       "0x0",
+      "slug",
       timestamps,
       tokenURIs,
       artistAddress,
@@ -168,6 +170,7 @@ contract("TestFullFlowValid", (accounts) => {
     await rcfactory.createMarket(
       mode,
       "0x0",
+      "slug",
       timestamps,
       tokenURIs,
       artistAddress,
@@ -222,6 +225,7 @@ contract("TestFullFlowValid", (accounts) => {
     await rcfactory.createMarket(
       0,
       "0x0",
+      "slug",
       timestamps,
       tokenURIs,
       artistAddress,
@@ -251,6 +255,7 @@ contract("TestFullFlowValid", (accounts) => {
     await rcfactory.createMarket(
       mode,
       "0x0",
+      "slug",
       timestamps,
       tokenURIs,
       artistAddress,
@@ -307,6 +312,7 @@ contract("TestFullFlowValid", (accounts) => {
     await rcfactory.createMarket(
       0,
       "0x0",
+      "slug",
       timestamps,
       tokenURIs,
       artistAddress,
@@ -368,6 +374,7 @@ contract("TestFullFlowValid", (accounts) => {
     await rcfactory.createMarket(
       0,
       "0x0",
+      "slug",
       timestamps,
       tokenURIs,
       artistAddress,

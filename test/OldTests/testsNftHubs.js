@@ -88,9 +88,11 @@ contract('TestNftHubs', (accounts) => {
     await treasury.toggleWhitelist();
 
     // market creation
+    let slug = "slug"
     await rcfactory.createMarket(
       0,
       '0x0',
+      slug,
       timestamps,
       tokenURIs,
       artistAddress,
@@ -115,10 +117,12 @@ contract('TestNftHubs', (accounts) => {
     await rcfactory.addArtist(user8);
     var affiliateAddress = user7;
     await rcfactory.addAffiliate(user7);
-    var slug = 'y';
+
+    let slug = "slug"
     await rcfactory.createMarket(
       0,
       '0x0',
+      slug,
       timestamps,
       tokenURIs,
       artistAddress,
@@ -142,10 +146,12 @@ contract('TestNftHubs', (accounts) => {
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
-    var slug = 'y';
+
+    let slug = "slug"
     await rcfactory.createMarket(
       mode,
       '0x0',
+      slug,
       timestamps,
       tokenURIs,
       artistAddress,
