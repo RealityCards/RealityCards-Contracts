@@ -217,6 +217,7 @@ async function createMarket(options) {
   var defaults = {
     mode: 0, // mode, 0 = classic, 1 = winner takes all, 2 = hot potato
     ipfs: 0x0, // ipfs hash
+    slug: "slug", // slug
     openTime: 0, // seconds delay before market opens
     closeTime: 31536000, // seconds delay from now before market closes - default 31536000 = 1 year
     resolveTime: 0, // seconds delay from close before market resolves
@@ -242,6 +243,7 @@ async function createMarket(options) {
     options.ipfs,
     timestamps,
     tokenURIs,
+    options.slug,
     options.artistAddress,
     options.affiliateAddress,
     options.cardAffiliate,
