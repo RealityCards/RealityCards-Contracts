@@ -54,7 +54,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     /// @dev adjust required price increase (in %)
     uint256 public override minimumPriceIncreasePercent;
     /// @dev The number of users that are allowed to mint an NFT
-    uint256 public override NFTsToAward;
+    uint256 public override nftsToAward;
     /// @dev market opening time must be at least this many seconds in the future
     uint32 public override advancedWarning;
     /// @dev market closing time must be no more than this many seconds in the future
@@ -86,7 +86,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     uint256 public constant PER_MILLE = 1000; // in MegaBip so (1000 = 100%)
     /// @dev keep a copy of the tokenURIs, we can use these to mint copies for the leaderboard
     /// @dev .. we can't always copy the original as it may have been burnt.
-    mapping(uint256 => string) tokenURIs;
+    mapping(address => mapping(uint256 => string)) tokenURIs;
 
     /*╔═════════════════════════════════╗
       ║          Access Control         ║
@@ -147,8 +147,8 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         setPotDistribution(20, 0, 0, 20, 100); // 2% artist, 2% affiliate, 10% card affiliate
         setMinimumPriceIncreasePercent(10); // 10%
         setNumberOfNFTsToAward(3);
-        setNFTMintingLimit(60); // safe limit tested and set at 60, can be adjusted later if gas limit changes
-        setMaxRentIterations(35); // safe limit tested and set at 35, can be adjusted later if gas limit changes
+        setNFTMintingLimit(300); // safe limit tested and set at 300, can be adjusted later if gas limit changes
+        setMaxRentIterations(80); // safe limit tested and set at 80, can be adjusted later if gas limit changes
         // oracle
         setArbitrator(_arbitratorAddress);
         setRealitioAddress(_realitioAddress);
@@ -216,6 +216,10 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         );
         _;
     }
+    modifier onlyMarkets() {
+        require(treasury.checkPermission(MARKET, msgSender()), "Not approved");
+        _;
+    }
 
     /*╔═════════════════════════════════╗
       ║       GOVERNANCE - OWNER        ║
@@ -269,13 +273,13 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     }
 
     /// @notice how many NFTs will be awarded to the leaderboard
-    /// @param _NFTsToAward the number of NFTs to award
-    function setNumberOfNFTsToAward(uint256 _NFTsToAward)
+    /// @param _nftsToAward the number of NFTs to award
+    function setNumberOfNFTsToAward(uint256 _nftsToAward)
         public
         override
         onlyOwner
     {
-        NFTsToAward = _NFTsToAward;
+        nftsToAward = _nftsToAward;
     }
 
     /// @notice A limit to the number of NFTs to mint per market
@@ -623,16 +627,10 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
             nfthub.totalSupply()
         );
 
-        // tell Treasury, Orderbook, and NFT hub about new market
+        // tell Treasury and NFT hub about new market
         // before initialize as during initialize the market may call the treasury
         treasury.addMarket(_newAddress, marketPausedDefaultState);
         nfthub.addMarket(_newAddress);
-        orderbook.addMarket(
-            _newAddress,
-            _tokenURIs.length,
-            minimumPriceIncreasePercent
-        );
-        leaderboard.addMarket(_newAddress, _tokenURIs.length, NFTsToAward);
 
         // update internals
         marketAddresses[IRCMarket.Mode(_mode)].push(_newAddress);
@@ -650,10 +648,14 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
             _affiliateAddress,
             _cardAffiliateAddresses,
             _creator,
-            _realitioQuestion
+            _realitioQuestion,
+            nftsToAward
         );
 
-        _mintMarketNFTs(_newAddress, _tokenURIs);
+        // store token URIs
+        for (uint256 i = 0; i < _tokenURIs.length; i++) {
+            tokenURIs[_newAddress][i] = _tokenURIs[i];
+        }
 
         // pay sponsorship, if applicable
         if (_sponsorship > 0) {
@@ -698,16 +700,10 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         );
     }
 
-    function _mintMarketNFTs(address _newAddress, string[] memory _tokenURIs)
-        internal
-    {
+    function mintMarketNFT(uint256 _card) external override onlyMarkets {
         uint256 nftHubMintCount = nfthub.totalSupply();
-        // create the NFTs
-        for (uint256 i = 0; i < _tokenURIs.length; i++) {
-            nfthub.mint(_newAddress, nftHubMintCount, _tokenURIs[i]);
-            tokenURIs[nftHubMintCount] = _tokenURIs[i];
-            nftHubMintCount++;
-        }
+        address _market = msgSender();
+        nfthub.mint(_market, nftHubMintCount, tokenURIs[_market][_card]);
     }
 
     /// @dev called by the market upon initialise
@@ -779,15 +775,12 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
 
     /// @notice allows the market to mint a copy of the NFT for users on the leaderboard
     /// @param _user the user to award the NFT to
-    /// @param _tokenId the tokenId to copy
-    function mintCopyOfNFT(address _user, uint256 _tokenId) external override {
-        require(mappingOfMarkets[msgSender()], "Not Market");
-        require(
-            nfthub.marketTracker(_tokenId) == msgSender(),
-            "Incorrect Market"
-        );
+    /// @param _cardId the tokenId to copy
+    function mintCopyOfNFT(address _user, uint256 _cardId) external override {
+        address _market = msgSender();
+        require(mappingOfMarkets[_market], "Not Market");
         uint256 _newTokenId = nfthub.totalSupply();
-        nfthub.mint(_user, _newTokenId, tokenURIs[_tokenId]);
+        nfthub.mint(_user, _newTokenId, tokenURIs[_market][_cardId]);
     }
     /*
          ▲  

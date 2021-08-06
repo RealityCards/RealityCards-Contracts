@@ -82,11 +82,13 @@ interface IRCFactory {
 
     function minimumPriceIncreasePercent() external view returns (uint256);
 
-    function NFTsToAward() external view returns (uint256);
+    function nftsToAward() external view returns (uint256);
 
     function isMarketApproved(address) external view returns (bool);
 
     function marketPausedDefaultState() external view returns (bool);
+
+    function mintMarketNFT(uint256 _card) external;
 
     function getOracleSettings()
         external

@@ -11,12 +11,6 @@ interface IRCLeaderboard {
 
     function NFTsToAward(address _market) external view returns (uint256);
 
-    function addMarket(
-        address _market,
-        uint256 _cardCount,
-        uint256 _minIncrease
-    ) external;
-
     function updateLeaderboard(
         address _user,
         uint256 _card,

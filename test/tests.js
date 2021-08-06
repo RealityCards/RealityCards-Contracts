@@ -406,27 +406,50 @@ contract("RealityCardsTests", (accounts) => {
         });
     })
     describe.skip("Limit tests ", () => {
+        it(' Max NFTs to mint ', async () => {
+            let success = true
+            let i = 30;
+            while (success == true) {
+                try {
+                    markets.push(await rc.createMarket({ numberOfCards: i }))
+                } catch (error) {
+
+                    console.log("Failed on ", i);
+                    success = false
+                }
+                i++
+
+                console.log("Creted a market with %s cards", i);
+            }
+        }).timeout(2000000)
         it(' Max search iterations ', async () => {
-            let maxSearchLimit = (await orderbook.MAX_SEARCH_ITERATIONS()).toNumber();
+            let maxSearchLimit = (await orderbook.maxSearchIterations()).toNumber();
+            maxSearchLimit--;
             let safeNumberOfUsers = accounts.slice(ACCOUNTS_OFFSET, (maxSearchLimit + ACCOUNTS_OFFSET));
             await Promise.all(safeNumberOfUsers.map(async (user) => {
+                await erc20.transfer(user, ether("100"), { from: user0 });
                 await rc.deposit(100, user)
                 await rc.newRental({ from: user })
             }));
             await rc.deposit(100, alice)
-            await expectRevert(rc.newRental({ from: alice }), "Position in orderbook not found");
-        })
+            let gas = await rc.newRental({ from: alice })
+            console.log("gas cost for %s iterations is %s ", maxSearchLimit, gas.receipt.gasUsed);
+            await expectRevert(rc.newRental({ from: alice }), "Position not found");
+        }).timeout(2000000)
         it(' Max rent calculations ', async () => {
             let extraBidsToPlace = 10;
             let maxRentCalcs = parseInt(await factory.maxRentIterations());
             let usersToForeclose = accounts.slice(ACCOUNTS_OFFSET, (maxRentCalcs + extraBidsToPlace + ACCOUNTS_OFFSET));
             await Promise.all(usersToForeclose.map(async (user) => {
-                await rc.deposit(1, user)
+                await erc20.transfer(user, ether("1"), { from: user0 });
+                await rc.deposit(0.1, user)
                 await rc.newRental({ from: user })
             }));
+            console.log("Bids placed");
             assert.equal(await rc.orderbookSize(), maxRentCalcs + extraBidsToPlace, "Incorrect number of bids placed");
             await time.increase(time.duration.days(usersToForeclose.length + 10));
-            await markets[0].collectRentAllCards();
+            let gas = await markets[0].collectRentAllCards();
+            console.log("gas used ", gas.receipt.gasUsed);
             assert.equal(await rc.orderbookSize(), extraBidsToPlace, "Incorrect number of bids removed");
             await markets[0].collectRentAllCards();
             assert.equal(await rc.orderbookSize(), 0, "Incorrect number of bids removed");

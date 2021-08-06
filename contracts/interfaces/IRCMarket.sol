@@ -83,6 +83,8 @@ interface IRCMarket {
 
     function numberOfCards() external view returns (uint256);
 
+    function nftsToAward() external view returns (uint256);
+
     function tokenURI(uint256) external view returns (string memory);
 
     function ownerOf(uint256 tokenId) external view returns (address);
@@ -185,7 +187,8 @@ interface IRCMarket {
         address _affiliateAddress,
         address[] calldata _cardAffiliateAddresses,
         address _marketCreatorAddress,
-        string calldata _realitioQuestion
+        string calldata _realitioQuestion,
+        uint256 _nftsToAward
     ) external;
 
     function transferCard(

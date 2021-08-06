@@ -182,13 +182,13 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
         address _market,
         uint256 _cardCount,
         uint256 _minIncrease
-    ) external override onlyFactory {
+    ) internal {
         market[_market].cardCount = SafeCast.toUint64(_cardCount);
         market[_market].minimumPriceIncreasePercent = SafeCast.toUint64(
             _minIncrease
         );
         market[_market].minimumRentalDuration = SafeCast.toUint64(
-            1 days / treasury.minRentalDayDivisor()
+            1 days / IRCMarket(_market).minRentalDayDivisor()
         );
         for (uint64 i = 0; i < _cardCount; i++) {
             // create new record for each card that becomes the head&tail of the linked list
@@ -217,6 +217,13 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
         uint256 _timeHeldLimit,
         address _prevUserAddress
     ) external override onlyMarkets {
+        address _market = msgSender();
+        if (!bidExists(_market, _market, _card)) {
+            uint256 _cardCount = IRCMarket(_market).numberOfCards();
+            uint256 _minIncrease = IRCMarket(_market)
+                .minimumPriceIncreasePercent();
+            addMarket(_market, _cardCount, _minIncrease);
+        }
         // each new bid can help clean up some junk
         cleanWastePile();
 
@@ -225,7 +232,6 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
             userClosedMarketIndex[_user] = closedMarkets.length;
         }
 
-        address _market = msgSender();
         if (_prevUserAddress == address(0)) {
             _prevUserAddress = _market;
         } else {
@@ -621,51 +627,56 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
     /// @dev too many bidders to reduce all bid rates also
     function closeMarket() external override onlyMarkets {
         address _market = msgSender();
-        closedMarkets.push(_market);
-        /// TODO: gas analysis, is uint64 cheaper than uint256+SafeCast?
-        uint64 i = market[_market].cardCount;
-        do {
-            i--;
-            address _lastOwner = user[_market][index[_market][_market][i]].next;
-            if (_lastOwner != _market) {
-                // reduce owners rental rate
-                uint256 _price = user[_lastOwner][index[_lastOwner][_market][i]]
-                    .price;
-                treasury.updateRentalRate(
-                    _lastOwner,
-                    _market,
-                    _price,
-                    0,
-                    block.timestamp
-                );
+        // check if the market was ever added to the orderbook
+        if (bidExists(_market, _market, 0)) {
+            closedMarkets.push(_market);
+            /// TODO: gas analysis, is uint64 cheaper than uint256+SafeCast?
+            uint64 i = market[_market].cardCount;
+            do {
+                i--;
+                address _lastOwner = user[_market][index[_market][_market][i]]
+                    .next;
+                if (_lastOwner != _market) {
+                    // reduce owners rental rate
+                    uint256 _price = user[_lastOwner][
+                        index[_lastOwner][_market][i]
+                    ].price;
+                    treasury.updateRentalRate(
+                        _lastOwner,
+                        _market,
+                        _price,
+                        0,
+                        block.timestamp
+                    );
 
-                // store last bid for later
-                address _lastBid = user[_market][index[_market][_market][i]]
-                    .prev;
+                    // store last bid for later
+                    address _lastBid = user[_market][index[_market][_market][i]]
+                        .prev;
 
-                // detach market from rest of list
-                user[_market][index[_market][_market][i]].prev = _market;
-                user[_market][index[_market][_market][i]].next = _market;
-                user[_lastOwner][index[_lastOwner][_market][i]].prev = address(
-                    this
-                );
-                user[_lastBid][index[_lastBid][_market][i]].next = address(
-                    this
-                );
+                    // detach market from rest of list
+                    user[_market][index[_market][_market][i]].prev = _market;
+                    user[_market][index[_market][_market][i]].next = _market;
+                    user[_lastOwner][index[_lastOwner][_market][i]]
+                        .prev = address(this);
+                    user[_lastBid][index[_lastBid][_market][i]].next = address(
+                        this
+                    );
 
-                index[address(this)][_market][i] = user[address(this)].length;
+                    index[address(this)][_market][i] = user[address(this)]
+                        .length;
 
-                // insert bids in the waste pile
-                Bid memory _newBid;
-                _newBid.market = _market;
-                _newBid.card = i;
-                _newBid.prev = _lastBid;
-                _newBid.next = _lastOwner;
-                _newBid.price = 0;
-                _newBid.timeHeldLimit = 0;
-                user[address(this)].push(_newBid);
-            }
-        } while (i > 0);
+                    // insert bids in the waste pile
+                    Bid memory _newBid;
+                    _newBid.market = _market;
+                    _newBid.card = i;
+                    _newBid.prev = _lastBid;
+                    _newBid.next = _lastOwner;
+                    _newBid.price = 0;
+                    _newBid.timeHeldLimit = 0;
+                    user[address(this)].push(_newBid);
+                }
+            } while (i > 0);
+        }
     }
 
     /// @notice Remove bids in closed markets for a given user

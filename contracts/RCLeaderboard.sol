@@ -66,19 +66,20 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
     /// @notice adds a new market to the leaderboard
     /// @param _market the address of the market to add
     /// @param _cardCount the number of cards in the market
-    /// @param _NFTsToAward how many users on the leaderboard can claim an NFT
+    /// @param _nftsToAward how many users on the leaderboard can claim an NFT
     function addMarket(
         address _market,
         uint256 _cardCount,
-        uint256 _NFTsToAward
-    ) external override onlyFactory {
-        NFTsToAward[_market] = _NFTsToAward;
+        uint256 _nftsToAward
+    ) internal {
+        NFTsToAward[_market] = _nftsToAward;
         for (uint64 i = 0; i < _cardCount; i++) {
             // create new record for each card that becomes the head&tail of the linked list
             Leaderboard memory _newRecord;
             _newRecord.card = i;
             _newRecord.next = _market;
             _newRecord.prev = _market;
+            _newRecord.market = _market;
             _newRecord.timeHeld = type(uint256).max;
             leaderboardIndex[_market][_market][i] = leaderboard[_market].length;
             leaderboard[_market].push(_newRecord);
@@ -95,6 +96,11 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
         uint256 _timeHeld
     ) external override onlyMarkets {
         address _market = msgSender();
+        if (!userIsOnLeaderboard(_market, _market, _card)) {
+            uint256 _cardCount = IRCMarket(_market).numberOfCards();
+            uint256 _nftsToAward = IRCMarket(_market).nftsToAward();
+            addMarket(_market, _cardCount, _nftsToAward);
+        }
         if (leaderboardLength[_market][_card] < NFTsToAward[_market]) {
             // leaderboard isn't full, just add them
             if (userIsOnLeaderboard(_user, _market, _card)) {

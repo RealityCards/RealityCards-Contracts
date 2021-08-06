@@ -45,12 +45,6 @@ interface IRCOrderbook {
 
     function setTreasuryAddress(address _newTreasury) external;
 
-    function addMarket(
-        address _market,
-        uint256 _tokenCount,
-        uint256 _minIncrease
-    ) external;
-
     function addBidToOrderbook(
         address _user,
         uint256 _token,

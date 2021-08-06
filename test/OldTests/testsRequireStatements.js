@@ -290,17 +290,18 @@ contract('TestRequireStatements', (accounts) => {
     await depositDai(144, user);
     await newRental(1, 2, user);
     var owner = await realitycards.ownerOf(2);
+    let tokenId = await realitycards.getTokenId(2);
     assert.equal(owner, user);
     // buidler giving me shit when I try and intercept revert message so just testing revert, in OPEN state
-    await expectRevert(nftHubL2.transferFrom(user, user1, 2), "Incorrect state");
-    await expectRevert(nftHubL2.safeTransferFrom(user, user1, 2), "Incorrect state");
-    await expectRevert(nftHubL2.safeTransferFrom(user, user1, 2, web3.utils.asciiToHex("123456789")), "Incorrect state");
+    await expectRevert(nftHubL2.transferFrom(user, user1, tokenId), "Incorrect state");
+    await expectRevert(nftHubL2.safeTransferFrom(user, user1, tokenId), "Incorrect state");
+    await expectRevert(nftHubL2.safeTransferFrom(user, user1, tokenId, web3.utils.asciiToHex("123456789")), "Incorrect state");
     await time.increase(time.duration.years(1));
     await realitycards.lockMarket();
     // should fail cos LOCKED
-    await expectRevert(nftHubL2.transferFrom(user, user1, 2), "ERC721: transfer caller is not owner nor approved");
-    await expectRevert(nftHubL2.safeTransferFrom(user, user1, 2), "ERC721: transfer caller is not owner nor approved");
-    await expectRevert(nftHubL2.safeTransferFrom(user, user1, 2, web3.utils.asciiToHex("123456789")), "ERC721: transfer caller is not owner nor approved");
+    await expectRevert(nftHubL2.transferFrom(user, user1, tokenId), "ERC721: transfer caller is not owner nor approved");
+    await expectRevert(nftHubL2.safeTransferFrom(user, user1, tokenId), "ERC721: transfer caller is not owner nor approved");
+    await expectRevert(nftHubL2.safeTransferFrom(user, user1, tokenId, web3.utils.asciiToHex("123456789")), "ERC721: transfer caller is not owner nor approved");
     await realitio.setResult(realitycards.address, 2);
     await realitycards.getWinnerFromOracle();
     // await realitycards.determineWinner();
@@ -308,11 +309,11 @@ contract('TestRequireStatements', (accounts) => {
     // these shoudl all fail cos wrong owner:
     var owner = await realitycards.ownerOf(2);
     assert.equal(owner, user);
-    await expectRevert(nftHubL2.transferFrom(user, user1, 2, { from: user1 }), "ERC721: transfer caller is not owner nor approved");
-    await expectRevert(nftHubL2.safeTransferFrom(user1, user1, 2, { from: user1 }), "ERC721: transfer caller is not owner nor approved");
+    await expectRevert(nftHubL2.transferFrom(user, user1, tokenId, { from: user1 }), "ERC721: transfer caller is not owner nor approved");
+    await expectRevert(nftHubL2.safeTransferFrom(user1, user1, tokenId, { from: user1 }), "ERC721: transfer caller is not owner nor approved");
     // these should not
-    await nftHubL2.transferFrom(user, user1, 2, { from: user });
-    await nftHubL2.safeTransferFrom(user1, user, 2, { from: user1 });
+    await nftHubL2.transferFrom(user, user1, tokenId, { from: user });
+    await nftHubL2.safeTransferFrom(user1, user, tokenId, { from: user1 });
   });
 
   it('make sure functions cant be called in the wrong state', async () => {
