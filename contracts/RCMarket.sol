@@ -25,7 +25,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @dev = how many outcomes/teams/NFTs etc
     uint256 public constant PER_MILLE = 1000; // in MegaBip so (1000 = 100%)
     uint256 public override numberOfCards;
-    uint256 public constant MAX_UINT256 = type(uint256).max;
     uint256 public constant MIN_RENTAL_VALUE = 24_000_000;
     States public override state;
     /// @dev type of event.
@@ -219,7 +218,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         maxRentIterations = factory.maxRentIterations();
 
         // Initialize!
-        winningOutcome = MAX_UINT256; // default invalid
+        winningOutcome = type(uint256).max; // default invalid
 
         // assign arguments to public variables
         numberOfCards = _numberOfCards;
