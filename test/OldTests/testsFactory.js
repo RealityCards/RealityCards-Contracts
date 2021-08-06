@@ -78,7 +78,7 @@ contract('TestFactory', (accounts) => {
     rcleaderboard = await RCLeaderboard.new(treasury.address);
     // nft hubs
     nftHubL2 = await NftHubL2.new(rcfactory.address, dummyAddress);
-    nftHubL1 = await NftHubL1.new();
+    nftHubL1 = await NftHubL1.new(dummyAddress);
     // tell treasury about factory, tell factory about nft hub and reference
     await treasury.setFactoryAddress(rcfactory.address);
     await rcfactory.setReferenceContractAddress(rcreference.address);

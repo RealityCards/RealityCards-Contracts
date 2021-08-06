@@ -92,7 +92,7 @@ module.exports = class TestEnviroment {
         this.contracts.leaderboard = await RCLeaderboard.new(this.contracts.treasury.address);
         // nft hubs 
         this.contracts.nftHubL2 = await NftHubL2.new(this.contracts.factory.address, dummyAddress);
-        this.contracts.nftHubL1 = await NftHubL1.new();
+        this.contracts.nftHubL1 = await NftHubL1.new(dummyAddress);
         // tell treasury about factory, tell factory about nft hub and reference
         await this.contracts.treasury.setFactoryAddress(this.contracts.factory.address);
         await this.contracts.treasury.setOrderbookAddress(this.contracts.orderbook.address);
