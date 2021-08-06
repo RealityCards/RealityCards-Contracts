@@ -1,6 +1,12 @@
 require("@nomiclabs/hardhat-truffle5");
 require("solidity-coverage");
 require("hardhat-gas-reporter");
+require("@nomiclabs/hardhat-etherscan");
+require("dotenv").config();
+
+const ETHERSCAN_KEY = process.env.ETHERSCAN_KEY;
+const POLYGON_KEY = process.env.POLYGON_KEY;
+const INFURA_KEY = process.env.INFURA_KEY;
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
@@ -35,5 +41,16 @@ module.exports = {
         count: 2000,
       }
     },
+    matic: {
+      url: `https://polygon-mainnet.infura.io/v3/${INFURA_KEY}`,
+      network_id: 137,
+      gas: 6000000,
+      gasPrice: 7500000000,
+      networkCheckTimeout: 1000000,
+      timeoutBlocks: 200
+    },
   },
+  etherscan: {
+    apiKey: POLYGON_KEY
+  }
 };
