@@ -7,6 +7,7 @@ require("dotenv").config();
 const ETHERSCAN_KEY = process.env.ETHERSCAN_KEY;
 const POLYGON_KEY = process.env.POLYGON_KEY;
 const INFURA_KEY = process.env.INFURA_KEY;
+const REPORT_GAS = process.env.REPORT_GAS;
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
@@ -26,7 +27,7 @@ module.exports = {
     ],
   },
   gasReporter: {
-    enabled: (process.env.REPORT_GAS) ? true : false
+    enabled: false
   },
   paths: {
     artifacts: "./artifactsBuidler",
