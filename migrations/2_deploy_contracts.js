@@ -43,7 +43,7 @@ var kleros = '0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D'; //double check this
 const PoSDai = '0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063';
 const PoSUSDC = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
 const childChainManager = '0x56E14C4C1748a818a5564D33cF774c59EB3eDF59'; //double check this
-
+const MintableERC721PredicateProxy = '0x932532aA4c0174b8453839A6E44eE09Cc615F2b7'
 // Testnet addresses
 var ambAddressSokol = '0xFe446bEF1DbF7AFE24E81e05BC8B271C1BA9a560';
 var ambAddressKovan = '0xFe446bEF1DbF7AFE24E81e05BC8B271C1BA9a560';
@@ -112,10 +112,11 @@ module.exports = async (deployer, network, accounts) => {
     console.log('Begin Stage 2');
     // mainnet
     // deploy mainnet nft hub
-    await deployer.deploy(NftHubL1);
+    await deployer.deploy(NftHubL1, MintableERC721PredicateProxy);
     nftHubL1 = await NftHubL1.deployed();
 
     console.log('Completed stage 2');
+    console.log("Layer 1 NFT hub ", nftHubL1.address);
   } else if (network === 'graphTesting') {
     /**************************************
      *                                     *
