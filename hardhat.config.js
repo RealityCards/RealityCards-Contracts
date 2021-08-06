@@ -33,6 +33,13 @@ module.exports = {
     tests: "./test",
   },
   networks: {
+    mainnet: {
+      url: `https://mainnet.infura.io/v3/${INFURA_KEY}`,
+      network_id: 1,
+      gas: 12000000,
+      gasPrice: 50000000000,
+      networkCheckTimeout: 12000,
+    },
     hardhat: {
       gas: 19000000,
       blockGasLimit: 19000000,
@@ -51,6 +58,6 @@ module.exports = {
     },
   },
   etherscan: {
-    apiKey: POLYGON_KEY
+    apiKey: ETHERSCAN_KEY
   }
 };
