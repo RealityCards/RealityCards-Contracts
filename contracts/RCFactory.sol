@@ -425,6 +425,10 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         emit LogMarketApproved(_market, isMarketApproved[_market]);
     }
 
+    /// @notice Grant the artist role to an address
+    /// @param _newArtist the address to grant the role of artist
+    /// @dev can be performed directly on the Treasury, used here to give
+    /// @dev .. an interim solution for non-tehnical governors via the block explorer
     function addArtist(address _newArtist) external override onlyGovernors {
         treasury.grantRole(ARTIST, _newArtist);
     }
@@ -705,14 +709,20 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         );
     }
 
+    /// @notice Called by the markets to mint the original NFTs
+    /// @param _card the card id to me minted
     function mintMarketNFT(uint256 _card) external override onlyMarkets {
         uint256 nftHubMintCount = nfthub.totalSupply();
         address _market = msgSender();
         nfthub.mint(_market, nftHubMintCount, tokenURIs[_market][_card]);
     }
 
+    /// @notice fetch the current oracle, arbitrator and timeout settings
     /// @dev called by the market upon initialise
     /// @dev not passed to initialise to avoid stack too deep error
+    /// @return Oracle Address
+    /// @return Arbitrator Address
+    /// @return Question timeout in seconds
     function getOracleSettings()
         external
         view
@@ -770,6 +780,9 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         return (_marketAddresses, _ipfsHashes, _slugs, _potSizes);
     }
 
+    /// @notice change how many results are returned from getMarketInfo
+    /// @dev would be better to pass this as a parameter in getMarketInfo
+    /// @dev .. however we are limited because of stack too deep errors
     function setMarketInfoResults(uint256 _results)
         external
         override
@@ -778,6 +791,10 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         marketInfoResults = _results;
     }
 
+    /// @notice Allow the owner to update a token URI.
+    /// @param _market the market address the token belongs to
+    /// @param _cardId the index 0 card id of the token to change
+    /// @param _newTokenURI the new URI to set
     function updateTokenURI(
         address _market,
         uint256 _cardId,
