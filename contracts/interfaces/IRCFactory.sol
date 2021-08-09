@@ -155,15 +155,11 @@ interface IRCFactory {
 
     function setSponsorshipRequired(uint256 _amount) external;
 
-    function setAdvancedWarning(uint32 _newAdvancedWarning) external;
-
-    function setMaximumDuration(uint32 _newMaximumDuration) external;
-
-    function setMinimumDuration(uint32 _newMinimumDuration) external;
-
-    function addGovernor(address _newGovernor) external;
-
-    function removeGovernor(address _oldGovernor) external;
+    function setMarketTimeRestrictions(
+        uint32 _newAdvancedWarning,
+        uint32 _newMinimumDuration,
+        uint32 _newMaximumDuration
+    ) external;
 
     function setMarketInfoResults(uint256 _results) external;
 

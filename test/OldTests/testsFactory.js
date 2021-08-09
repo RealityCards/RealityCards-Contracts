@@ -300,24 +300,24 @@ contract('TestFactory', (accounts) => {
     // await rcfactory.changeMarketCreationGovernorsOnly();
     await expectRevert(rcfactory.createMarket(0, '0x0', "slug", timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0, { from: user1 }), "Not approved");
     // add user1 to whitelist 
-    await rcfactory.addGovernor(user1);
+    await treasury.grantRole("GOVERNOR", user1);
     //try again, should work
     await rcfactory.createMarket(0, '0x0', "slug", timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0, { from: user1 });
     // remove them, should fail again
-    await rcfactory.removeGovernor(user1);
-    await expectRevert(rcfactory.removeGovernor(user1, { from: user1 }), "Not approved");
+    await treasury.revokeRole(web3.utils.soliditySha3("GOVERNOR"), user1);
+    await expectRevert(treasury.revokeRole(web3.utils.soliditySha3("GOVERNOR"), user1, { from: user1 }), "AccessControl: account 0x70997970c51812dc3a010c7d01b50e0d17dc79c8 is missing role 0x6270edb7c868f86fda4adedba75108201087268ea345934db8bad688e1feb91b");
     // disable whitelist, should work
     await rcfactory.changeMarketCreationGovernorsOnly();
     await rcfactory.createMarket(0, '0x0', "slug", timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0, { from: user1 });
     // re-enable whitelist, should not work again
     await rcfactory.changeMarketCreationGovernorsOnly();
-    await expectRevert(rcfactory.removeGovernor(user1, { from: user1 }), "Not approved");
+    await expectRevert(treasury.revokeRole(web3.utils.soliditySha3("GOVERNOR"), user1, { from: user1 }), "AccessControl: account 0x70997970c51812dc3a010c7d01b50e0d17dc79c8 is missing role 0x6270edb7c868f86fda4adedba75108201087268ea345934db8bad688e1feb91b");
   });
 
 
   it('test sponsor via market creation', async () => {
     await rcfactory.setSponsorshipRequired(ether('200'));
-    await rcfactory.addGovernor(user3);
+    await treasury.grantRole("GOVERNOR", user3);
     await expectRevert(createMarketWithArtistAndCardAffiliatesAndSponsorship(100, user3), "Insufficient sponsorship");
     // undo approvals from the above as they are done again in following function
     await rcfactory.addArtist(user8);
@@ -368,7 +368,7 @@ contract('TestFactory', (accounts) => {
     // atttempt to unhide it with someone not on the whitelist
     await expectRevert(rcfactory.changeMarketApproval(realitycards.address, { from: user1 }), "Not approved");
     // add user 1 and try again, check that its not hidden
-    await rcfactory.addGovernor(user1);
+    await treasury.grantRole("GOVERNOR", user1);
     await rcfactory.changeMarketApproval(realitycards.address, { from: user1 });
     hidden = await rcfactory.isMarketApproved.call(realitycards.address);
     assert.equal(hidden, true);
@@ -381,7 +381,7 @@ contract('TestFactory', (accounts) => {
 
 
   it('test advancedWarning', async () => {
-    await rcfactory.setAdvancedWarning(86400);
+    await rcfactory.setMarketTimeRestrictions(86400, 0, 0);
     var latestTime = await time.latest();
     var oneHour = new BN('3600');
     var oneYear = new BN('31104000');
@@ -405,7 +405,7 @@ contract('TestFactory', (accounts) => {
   });
 
   it('test setMaximumDuration', async () => {
-    await rcfactory.setMaximumDuration(604800); // one week
+    await rcfactory.setMarketTimeRestrictions(0, 0, 604800); // one week
     var latestTime = await time.latest();
     var twoWeeks = new BN('1210000');
     var twoWeeksInTheFuture = twoWeeks.add(latestTime);
@@ -450,13 +450,13 @@ contract('TestFactory', (accounts) => {
     await expectRevert(rcfactory.addArtist(user4, { from: user2 }), "Not approved");
     await expectRevert(rcfactory.addAffiliate(user4, { from: user2 }), "Not approved");
     await expectRevert(rcfactory.addCardAffiliate(user4, { from: user2 }), "Not approved");
-    await rcfactory.addGovernor(user2);
+    await treasury.grantRole("GOVERNOR", user2);
     // should be fine now
     await rcfactory.addArtist(user4, { from: user2 });
     await rcfactory.addAffiliate(user4, { from: user2 });
     await rcfactory.addCardAffiliate(user4, { from: user2 });
     // remove user 2 from whitelist and same errors 
-    await rcfactory.removeGovernor(user2);
+    await treasury.revokeRole(web3.utils.soliditySha3("GOVERNOR"), user2);
     await expectRevert(rcfactory.addArtist(user4, { from: user2 }), "Not approved");
     await expectRevert(rcfactory.addAffiliate(user4, { from: user2 }), "Not approved");
     await expectRevert(rcfactory.addCardAffiliate(user4, { from: user2 }), "Not approved");
