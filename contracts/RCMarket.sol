@@ -167,8 +167,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         uint256 cardAffiliateCut
     );
     event LogSettings(
-        uint256 indexed minRentalDayDivisor,
-        uint256 indexed minimumPriceIncreasePercent
+        uint256 minRentalDayDivisor,
+        uint256 minimumPriceIncreasePercent,
+        uint256 nftsToAward
     );
     event LogLongestOwner(uint256 cardId, address longestOwner);
     event LogQuestionPostedToOracle(
@@ -290,7 +291,11 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             affiliateCut,
             cardAffiliateCut
         );
-        emit LogSettings(minRentalDayDivisor, minimumPriceIncreasePercent);
+        emit LogSettings(
+            minRentalDayDivisor,
+            minimumPriceIncreasePercent,
+            nftsToAward
+        );
     }
 
     /*╔═════════════════════════════════╗
