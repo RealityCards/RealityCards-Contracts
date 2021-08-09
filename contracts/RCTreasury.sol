@@ -583,6 +583,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         require(hasRole(FACTORY, msgSender()), "Not Authorised");
         marketPaused[_market] = _paused;
         AccessControl.grantRole(MARKET, _market);
+        emit LogMarketPaused(_market, marketPaused[_market]);
     }
 
     /// @notice provides the sum total of a users bids across all markets (whether active or not)
