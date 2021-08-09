@@ -2,7 +2,6 @@
 pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "hardhat/console.sol";
 import "./interfaces/IRealitio.sol";
 import "./interfaces/IRCFactory.sol";
@@ -483,7 +482,10 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     function setWinner(uint256 _winningOutcome) internal {
         if (state == States.OPEN) {
             // change the locking time to allow lockMarket to lock
-            marketLockingTime = SafeCast.toUint32(block.timestamp);
+            /// @dev implementing our own SafeCast as this is the only place we need it
+            uint256 _blockTimestamp = uint32(block.timestamp);
+            require(_blockTimestamp <= type(uint32).max, "Overflow");
+            marketLockingTime = uint32(_blockTimestamp);
             lockMarket();
         }
         if (state == States.LOCKED) {
