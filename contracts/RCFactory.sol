@@ -125,6 +125,11 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     event LogAdvancedWarning(uint256 _newAdvancedWarning);
     event LogMaximumDuration(uint256 _newMaximumDuration);
     event LogMinimumDuration(uint256 _newMinimumDuration);
+    event LogMintNFTCopy(
+        uint256 _originalTokenId,
+        address _newOwner,
+        uint256 _newTokenId
+    );
 
     /*╔═════════════════════════════════╗
       ║          CONSTRUCTOR            ║
@@ -781,6 +786,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         require(mappingOfMarkets[_market], "Not Market");
         uint256 _newTokenId = nfthub.totalSupply();
         nfthub.mint(_user, _newTokenId, tokenURIs[_market][_cardId]);
+        emit LogMintNFTCopy(_cardId, _user, _newTokenId);
     }
     /*
          ▲  
