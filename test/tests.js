@@ -15,7 +15,7 @@ contract("RealityCardsTests", (accounts) => {
         await rc.cleanup();
     });
 
-    describe("Accounting tests", () => {
+    describe.skip("Accounting tests", () => {
         it("Post event payouts ", async () => {
 
         })
