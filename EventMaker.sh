@@ -3,21 +3,22 @@
 ###################
 #### Setup ########
 ###################
-START_TIME="1626265800"
-END_TIME="1626289200"
+START_TIME=""
+END_TIME=""
 SPONSORSHIP="0"
 ARTIST=""
+ARTIST_LINK=""
 EVENT_NAME=""
 ORACLE_QUESTION=""
 SRC_NAME=""
 SLUG=""
 CATEGORY="Other"
 US_ALLOWED="true"
-IMAGE_FORMAT=".png"
-NUMBER_OF_CARDS="1"
-CARD0="Invalid"
-CARD1="Between \$1900 and \$2000"
-CARD2="Above \$2000"
+IMAGE_FORMAT=".jpg"
+NUMBER_OF_CARDS=""
+CARD0=""
+CARD1=""
+CARD2=""
 CARD3=""
 CARD4=""
 CARD5=""
@@ -37,6 +38,11 @@ ZERO_ADDRESS="0x0000000000000000000000000000000000000000"
 mkdir -p events/$SRC_NAME
 eventJSON='{\n  "name": "'$EVENT_NAME'",'
 eventJSON=$eventJSON'\n  "slug": "'$SLUG'",'
+if [ "$ARTIST_LINK" == "" ];then
+    echo WARNING: ARTIST LINK NOT SET
+else
+eventJSON=$eventJSON'\n  "artistLink": "'$ARTIST_LINK'",'
+fi
 eventJSON=$eventJSON'\n  "category": "'$CATEGORY'",'
 eventJSON=$eventJSON'\n  "US_allowed": "'$US_ALLOWED'",'
 eventJSON=$eventJSON'\n  "cards": {'

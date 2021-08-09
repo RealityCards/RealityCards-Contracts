@@ -3,7 +3,6 @@ pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "hardhat/console.sol";
 import "../lib/NativeMetaTransaction.sol";
@@ -12,7 +11,6 @@ import "../interfaces/IRCNftHubL1.sol";
 /// @title Reality Cards NFT Hub- mainnet side
 /// @author Andrew Stanger & Daniel Chilvers
 contract RCNftHubL1 is
-    Ownable,
     ERC721URIStorage,
     AccessControl,
     NativeMetaTransaction,
@@ -28,11 +26,11 @@ contract RCNftHubL1 is
       ║          CONSTRUCTOR            ║
       ╚═════════════════════════════════╝*/
 
-    constructor() ERC721("RealityCards", "RC") {
+    constructor(address _predicate) ERC721("RealityCards", "RC") {
         // initialise MetaTransactions
         _initializeEIP712("RealityCardsNftHubL1", "1");
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
-        _setupRole(PREDICATE_ROLE, _msgSender());
+        _setupRole(PREDICATE_ROLE, _predicate);
     }
 
     /*╔═════════════════════════════════╗
@@ -67,7 +65,7 @@ contract RCNftHubL1 is
 
     function setTokenURI(uint256 _tokenId, string calldata _tokenURI)
         external
-        onlyOwner
+        onlyRole(DEFAULT_ADMIN_ROLE)
     {
         _setTokenURI(_tokenId, _tokenURI);
     }

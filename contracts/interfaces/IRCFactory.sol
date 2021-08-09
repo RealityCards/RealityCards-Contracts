@@ -6,11 +6,13 @@ import "./IRCTreasury.sol";
 import "./IRCMarket.sol";
 import "./IRCNftHubL2.sol";
 import "./IRCOrderbook.sol";
+import "./IRCLeaderboard.sol";
 
 interface IRCFactory {
     function createMarket(
         uint32 _mode,
         string memory _ipfsHash,
+        string memory _slug,
         uint32[] memory _timestamps,
         string[] memory _tokenURIs,
         address _artistAddress,
@@ -20,13 +22,25 @@ interface IRCFactory {
         uint256 _sponsorship
     ) external returns (address);
 
+    function mintCopyOfNFT(address _user, uint256 _tokenId) external;
+
     // view functions
 
     function nfthub() external view returns (IRCNftHubL2);
 
+    function ipfsHash(address) external view returns (string memory);
+
+    function slugToAddress(string memory) external view returns (address);
+
+    function addressToSlug(address) external view returns (string memory);
+
+    function marketInfoResults() external view returns (uint256);
+
     function treasury() external view returns (IRCTreasury);
 
     function orderbook() external view returns (IRCOrderbook);
+
+    function leaderboard() external view returns (IRCLeaderboard);
 
     function realitio() external view returns (IRealitio);
 
@@ -68,7 +82,13 @@ interface IRCFactory {
 
     function minimumPriceIncreasePercent() external view returns (uint256);
 
+    function nftsToAward() external view returns (uint256);
+
     function isMarketApproved(address) external view returns (bool);
+
+    function marketPausedDefaultState() external view returns (bool);
+
+    function mintMarketNFT(uint256 _card) external;
 
     function getOracleSettings()
         external
@@ -95,6 +115,8 @@ interface IRCFactory {
     function removeCardAffiliate(address _oldCardAffiliate) external;
 
     // only Owner
+    function setMarketPausedDefaultState(bool _state) external;
+
     function setTimeout(uint32 _newTimeout) external;
 
     function setMaxRentIterations(uint256 _rentLimit) external;
@@ -108,6 +130,14 @@ interface IRCFactory {
     function setNFTMintingLimit(uint256 _mintLimit) external;
 
     function setMinimumPriceIncreasePercent(uint256 _percentIncrease) external;
+
+    function setNumberOfNFTsToAward(uint256 _NFTsToAward) external;
+
+    function updateTokenURI(
+        address _market,
+        uint256 _cardId,
+        string calldata _newTokenURI
+    ) external;
 
     function setPotDistribution(
         uint256 _artistCut,
@@ -135,10 +165,14 @@ interface IRCFactory {
 
     function removeGovernor(address _oldGovernor) external;
 
+    function setMarketInfoResults(uint256 _results) external;
+
     // only UberOwner
     function setReferenceContractAddress(address _newAddress) external;
 
     function setOrderbookAddress(IRCOrderbook _newAddress) external;
+
+    function setLeaderboardAddress(IRCLeaderboard _newAddress) external;
 
     function setNftHubAddress(IRCNftHubL2 _newAddress) external;
 }

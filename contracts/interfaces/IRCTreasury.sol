@@ -3,6 +3,7 @@ pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IRCOrderbook.sol";
+import "./IRCLeaderboard.sol";
 import "./IRCFactory.sol";
 
 interface IRCTreasury {
@@ -22,6 +23,8 @@ interface IRCTreasury {
 
     function topupMarketBalance(uint256 _amount) external;
 
+    function assessForeclosure(address _user) external;
+
     // view functions
     function foreclosureTimeUser(
         address _user,
@@ -39,6 +42,8 @@ interface IRCTreasury {
 
     function orderbook() external view returns (IRCOrderbook);
 
+    function leaderboard() external view returns (IRCLeaderboard);
+
     function isForeclosed(address) external view returns (bool);
 
     function userTotalBids(address) external view returns (uint256);
@@ -53,13 +58,15 @@ interface IRCTreasury {
 
     function marketBalance() external view returns (uint256);
 
-    function marketBalanceDiscrepancy() external view returns (uint256);
+    function marketBalanceTopup() external view returns (uint256);
 
     function minRentalDayDivisor() external view returns (uint256);
 
     function maxContractBalance() external view returns (uint256);
 
     function globalPause() external view returns (bool);
+
+    function addMarket(address _market, bool paused) external;
 
     function marketPaused(address) external view returns (bool);
 
@@ -73,6 +80,8 @@ interface IRCTreasury {
 
     function setOrderbookAddress(address _newAddress) external;
 
+    function setLeaderboardAddress(address _newAddress) external;
+
     function setFactoryAddress(address _newFactory) external;
 
     function deposit(uint256 _amount, address _user) external returns (bool);
@@ -85,8 +94,6 @@ interface IRCTreasury {
     function increaseBidRate(address _user, uint256 _price) external;
 
     function decreaseBidRate(address _user, uint256 _price) external;
-
-    function resetUser(address _user) external;
 
     function updateRentalRate(
         address _oldOwner,

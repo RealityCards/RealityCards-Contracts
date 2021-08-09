@@ -23,6 +23,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     IRCTreasury public override treasury;
     IRCNftHubL2 public override nfthub;
     IRCOrderbook public override orderbook;
+    IRCLeaderboard public override leaderboard;
     IRealitio public override realitio;
 
     ///// CONTRACT ADDRESSES /////
@@ -35,6 +36,16 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     mapping(IRCMarket.Mode => address[]) public marketAddresses;
     mapping(address => bool) public mappingOfMarkets;
 
+    ////// BACKUP MODE //////
+    /// @dev should the Graph fail the UI needs a way to poll the contracts for market data
+
+    /// @dev the IPFS hash for each market
+    mapping(address => string) public override ipfsHash;
+    /// @dev the slug each market is hosted at
+    mapping(string => address) public override slugToAddress;
+    mapping(address => string) public override addressToSlug;
+    uint256 public override marketInfoResults;
+
     ///// GOVERNANCE VARIABLES- OWNER /////
     /// @dev artist / winner / market creator / affiliate / card affiliate
     uint256[5] public potDistribution;
@@ -42,6 +53,8 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     uint256 public override sponsorshipRequired;
     /// @dev adjust required price increase (in %)
     uint256 public override minimumPriceIncreasePercent;
+    /// @dev The number of users that are allowed to mint an NFT
+    uint256 public override nftsToAward;
     /// @dev market opening time must be at least this many seconds in the future
     uint32 public override advancedWarning;
     /// @dev market closing time must be no more than this many seconds in the future
@@ -60,6 +73,8 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     address public override arbitrator;
     /// @dev the time allowed to dispute the oracle answer
     uint32 public override timeout;
+    /// @dev if true markets default to the paused state
+    bool public override marketPausedDefaultState;
 
     ///// GOVERNANCE VARIABLES- GOVERNORS /////
     /// @dev unapproved markets hidden from the interface
@@ -69,6 +84,9 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
 
     ///// OTHER /////
     uint256 public constant PER_MILLE = 1000; // in MegaBip so (1000 = 100%)
+    /// @dev keep a copy of the tokenURIs, we can use these to mint copies for the leaderboard
+    /// @dev .. we can't always copy the original as it may have been burnt.
+    mapping(address => mapping(uint256 => string)) tokenURIs;
 
     /*╔═════════════════════════════════╗
       ║          Access Control         ║
@@ -103,10 +121,15 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         uint32[] timestamps,
         uint256 totalNftMintCount
     );
-    event LogMarketApproved(address market, bool hidden);
+    event LogMarketApproved(address market, bool approved);
     event LogAdvancedWarning(uint256 _newAdvancedWarning);
     event LogMaximumDuration(uint256 _newMaximumDuration);
     event LogMinimumDuration(uint256 _newMinimumDuration);
+    event LogMintNFTCopy(
+        uint256 _originalTokenId,
+        address _newOwner,
+        uint256 _newTokenId
+    );
 
     /*╔═════════════════════════════════╗
       ║          CONSTRUCTOR            ║
@@ -128,8 +151,9 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         // artist // winner // creator // affiliate // card affiliates
         setPotDistribution(20, 0, 0, 20, 100); // 2% artist, 2% affiliate, 10% card affiliate
         setMinimumPriceIncreasePercent(10); // 10%
-        setNFTMintingLimit(60); // current gas limit (12.5m) allows for 60 NFTs to be minted
-        setMaxRentIterations(35); // limit appears to be 41, set safe at 35 for now.
+        setNumberOfNFTsToAward(3);
+        setNFTMintingLimit(300); // safe limit tested and set at 300, can be adjusted later if gas limit changes
+        setMaxRentIterations(80); // safe limit tested and set at 80, can be adjusted later if gas limit changes
         // oracle
         setArbitrator(_arbitratorAddress);
         setRealitioAddress(_realitioAddress);
@@ -197,6 +221,10 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         );
         _;
     }
+    modifier onlyMarkets() {
+        require(treasury.checkPermission(MARKET, msgSender()), "Not approved");
+        _;
+    }
 
     /*╔═════════════════════════════════╗
       ║       GOVERNANCE - OWNER        ║
@@ -249,6 +277,16 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         minimumPriceIncreasePercent = _percentIncrease;
     }
 
+    /// @notice how many NFTs will be awarded to the leaderboard
+    /// @param _nftsToAward the number of NFTs to award
+    function setNumberOfNFTsToAward(uint256 _nftsToAward)
+        public
+        override
+        onlyOwner
+    {
+        nftsToAward = _nftsToAward;
+    }
+
     /// @notice A limit to the number of NFTs to mint per market
     /// @dev to avoid gas limits
     /// @param _mintLimit the limit to set
@@ -285,6 +323,14 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     /// @param _newTimeout the timeout to set in seconds, 86400 = 24hrs
     function setTimeout(uint32 _newTimeout) public override onlyOwner {
         timeout = _newTimeout;
+    }
+
+    function setMarketPausedDefaultState(bool _state)
+        public
+        override
+        onlyOwner
+    {
+        marketPausedDefaultState = _state;
     }
 
     /*┌──────────────────────────────────────────┐
@@ -379,6 +425,10 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         emit LogMarketApproved(_market, isMarketApproved[_market]);
     }
 
+    /// @notice Grant the artist role to an address
+    /// @param _newArtist the address to grant the role of artist
+    /// @dev can be performed directly on the Treasury, used here to give
+    /// @dev .. an interim solution for non-tehnical governors via the block explorer
     function addArtist(address _newArtist) external override onlyGovernors {
         treasury.grantRole(ARTIST, _newArtist);
     }
@@ -465,12 +515,27 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         orderbook = _newOrderbook;
     }
 
+    /// @notice set the address of the leaderboard contract
+    /// @param _newLeaderboard the address to set
+    function setLeaderboardAddress(IRCLeaderboard _newLeaderboard)
+        external
+        override
+    {
+        require(
+            treasury.checkPermission(TREASURY, msgSender()),
+            "Not approved"
+        );
+        leaderboard = _newLeaderboard;
+    }
+
     /*╔═════════════════════════════════╗
       ║         MARKET CREATION         ║
       ╚═════════════════════════════════╝*/
 
     /// @notice Creates a new market with the given parameters
     /// @param _mode 0 = normal, 1 = winner takes all, 2 = hot potato
+    /// @param _ipfsHash the IPFS location of the market metadata
+    /// @param _slug the URL subdomain in the UI
     /// @param _timestamps for market opening, locking, and oracle resolution
     /// @param _tokenURIs location of NFT metadata
     /// @param _artistAddress where to send artist's cut, if any
@@ -482,12 +547,13 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     function createMarket(
         uint32 _mode,
         string memory _ipfsHash,
+        string memory _slug,
         uint32[] memory _timestamps,
         string[] memory _tokenURIs,
         address _artistAddress,
         address _affiliateAddress,
         address[] memory _cardAffiliateAddresses,
-        string calldata _realitioQuestion,
+        string memory _realitioQuestion,
         uint256 _sponsorship
     ) external override returns (address) {
         address _creator = msgSender();
@@ -550,7 +616,65 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
                 "Not approved"
             );
         }
+        _checkTimestamps(_timestamps);
 
+        // create the market and emit the appropriate events
+        // two events to avoid stack too deep error
+        address _newAddress = Clones.clone(referenceContractAddress);
+        emit LogMarketCreated1(
+            _newAddress,
+            address(treasury),
+            address(nfthub),
+            referenceContractVersion
+        );
+        emit LogMarketCreated2(
+            _newAddress,
+            IRCMarket.Mode(_mode),
+            _tokenURIs,
+            _ipfsHash,
+            _timestamps,
+            nfthub.totalSupply()
+        );
+
+        // tell Treasury and NFT hub about new market
+        // before initialize as during initialize the market may call the treasury
+        treasury.addMarket(_newAddress, marketPausedDefaultState);
+        nfthub.addMarket(_newAddress);
+
+        // update internals
+        marketAddresses[IRCMarket.Mode(_mode)].push(_newAddress);
+        mappingOfMarkets[_newAddress] = true;
+        ipfsHash[_newAddress] = _ipfsHash;
+        slugToAddress[_slug] = _newAddress;
+        addressToSlug[_newAddress] = _slug;
+
+        // initialize the market
+        IRCMarket(_newAddress).initialize(
+            IRCMarket.Mode(_mode),
+            _timestamps,
+            _tokenURIs.length,
+            _artistAddress,
+            _affiliateAddress,
+            _cardAffiliateAddresses,
+            _creator,
+            _realitioQuestion,
+            nftsToAward
+        );
+
+        // store token URIs
+        for (uint256 i = 0; i < _tokenURIs.length; i++) {
+            tokenURIs[_newAddress][i] = _tokenURIs[i];
+        }
+
+        // pay sponsorship, if applicable
+        if (_sponsorship > 0) {
+            IRCMarket(_newAddress).sponsor(_creator, _sponsorship);
+        }
+
+        return _newAddress;
+    }
+
+    function _checkTimestamps(uint32[] memory _timestamps) internal view {
         // check timestamps
         require(_timestamps.length == 3, "Incorrect number of array elements");
         // check market opening time
@@ -583,67 +707,22 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
                 _timestamps[1] <= _timestamps[2],
             "Oracle resolution time error"
         );
-        // create the market and emit the appropriate events
-        // two events to avoid stack too deep error
-        address _newAddress = Clones.clone(referenceContractAddress);
-        emit LogMarketCreated1(
-            _newAddress,
-            address(treasury),
-            address(nfthub),
-            referenceContractVersion
-        );
-        emit LogMarketCreated2(
-            _newAddress,
-            IRCMarket.Mode(_mode),
-            _tokenURIs,
-            _ipfsHash,
-            _timestamps,
-            nfthub.totalSupply()
-        );
-
-        // tell Treasury, Orderbook, and NFT hub about new market
-        // before initialize as during initialize the market may call the treasury
-        treasury.grantRole(MARKET, _newAddress);
-        nfthub.addMarket(_newAddress);
-        orderbook.addMarket(
-            _newAddress,
-            _tokenURIs.length,
-            minimumPriceIncreasePercent
-        );
-
-        // update internals
-        marketAddresses[IRCMarket.Mode(_mode)].push(_newAddress);
-        mappingOfMarkets[_newAddress] = true;
-
-        // initialize the market
-        IRCMarket(_newAddress).initialize(
-            IRCMarket.Mode(_mode),
-            _timestamps,
-            _tokenURIs.length,
-            _artistAddress,
-            _affiliateAddress,
-            _cardAffiliateAddresses,
-            _creator,
-            _realitioQuestion
-        );
-
-        uint256 nftHubMintCount = nfthub.totalSupply();
-        // create the NFTs
-        for (uint256 i = 0; i < _tokenURIs.length; i++) {
-            nfthub.mint(_newAddress, nftHubMintCount, _tokenURIs[i]);
-            nftHubMintCount++;
-        }
-
-        // pay sponsorship, if applicable
-        if (_sponsorship > 0) {
-            IRCMarket(_newAddress).sponsor(_creator, _sponsorship);
-        }
-
-        return _newAddress;
     }
 
+    /// @notice Called by the markets to mint the original NFTs
+    /// @param _card the card id to me minted
+    function mintMarketNFT(uint256 _card) external override onlyMarkets {
+        uint256 nftHubMintCount = nfthub.totalSupply();
+        address _market = msgSender();
+        nfthub.mint(_market, nftHubMintCount, tokenURIs[_market][_card]);
+    }
+
+    /// @notice fetch the current oracle, arbitrator and timeout settings
     /// @dev called by the market upon initialise
     /// @dev not passed to initialise to avoid stack too deep error
+    /// @return Oracle Address
+    /// @return Arbitrator Address
+    /// @return Question timeout in seconds
     function getOracleSettings()
         external
         view
@@ -655,6 +734,103 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         )
     {
         return (realitio, arbitrator, timeout);
+    }
+
+    /// @notice Returns market addresses and ipfs hashes
+    /// @dev used for the UI backup mode
+    /// @param _mode return markets only in the given mode
+    /// @param _state return markets only in the given state
+    /// @param _skipResults the number of results to skip
+    function getMarketInfo(
+        IRCMarket.Mode _mode,
+        uint256 _state,
+        uint256 _skipResults
+    )
+        external
+        view
+        returns (
+            address[] memory,
+            string[] memory,
+            string[] memory,
+            uint256[] memory
+        )
+    {
+        uint256 _marketIndex = marketAddresses[_mode].length;
+        uint256 _resultNumber = 0;
+        address[] memory _marketAddresses = new address[](marketInfoResults);
+        string[] memory _ipfsHashes = new string[](marketInfoResults);
+        uint256[] memory _potSizes = new uint256[](marketInfoResults);
+        string[] memory _slugs = new string[](marketInfoResults);
+        while (_resultNumber < marketInfoResults && _marketIndex > 1) {
+            _marketIndex--;
+            address _market = marketAddresses[_mode][_marketIndex];
+            if (IRCMarket(_market).state() == IRCMarket.States(_state)) {
+                if (_resultNumber < _skipResults) {
+                    _resultNumber++;
+                } else {
+                    _marketAddresses[_resultNumber] = _market;
+                    _ipfsHashes[_resultNumber] = ipfsHash[_market];
+                    _slugs[_resultNumber] = addressToSlug[_market];
+                    _potSizes[_resultNumber] = IRCMarket(_market)
+                        .totalRentCollected();
+                    _resultNumber++;
+                }
+            }
+        }
+        return (_marketAddresses, _ipfsHashes, _slugs, _potSizes);
+    }
+
+    /// @notice change how many results are returned from getMarketInfo
+    /// @dev would be better to pass this as a parameter in getMarketInfo
+    /// @dev .. however we are limited because of stack too deep errors
+    function setMarketInfoResults(uint256 _results)
+        external
+        override
+        onlyOwner
+    {
+        marketInfoResults = _results;
+    }
+
+    /// @notice Allow the owner to update a token URI.
+    /// @param _market the market address the token belongs to
+    /// @param _cardId the index 0 card id of the token to change
+    /// @param _newTokenURI the new URI to set
+    function updateTokenURI(
+        address _market,
+        uint256 _cardId,
+        string calldata _newTokenURI
+    ) external override onlyOwner {
+        IRCMarket.Mode _mode = IRCMarket(_market).mode();
+        uint256 _numberOfCards = IRCMarket(_market).numberOfCards();
+        tokenURIs[_market][_cardId] = _newTokenURI;
+        string[] memory _tokenURIs = new string[](_numberOfCards);
+        for (uint256 i = 0; i < _tokenURIs.length; i++) {
+            _tokenURIs[i] = tokenURIs[_market][i];
+        }
+        uint32[] memory _timestamps = new uint32[](3);
+        _timestamps[0] = IRCMarket(_market).marketOpeningTime();
+        _timestamps[1] = IRCMarket(_market).marketLockingTime();
+        _timestamps[2] = IRCMarket(_market).oracleResolutionTime();
+
+        emit LogMarketCreated2(
+            _market,
+            IRCMarket.Mode(_mode),
+            _tokenURIs,
+            ipfsHash[_market],
+            _timestamps,
+            nfthub.totalSupply()
+        );
+    }
+
+    /// @notice allows the market to mint a copy of the NFT for users on the leaderboard
+    /// @param _user the user to award the NFT to
+    /// @param _cardId the tokenId to copy
+    function mintCopyOfNFT(address _user, uint256 _cardId) external override {
+        address _market = msgSender();
+        require(mappingOfMarkets[_market], "Not Market");
+        uint256 _newTokenId = nfthub.totalSupply();
+        nfthub.mint(_user, _newTokenId, tokenURIs[_market][_cardId]);
+        emit LogMintNFTCopy(_cardId, _user, _newTokenId);
     }
     /*
          ▲  

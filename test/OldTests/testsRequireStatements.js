@@ -16,6 +16,7 @@ var RCMarket = artifacts.require('./RCMarket.sol');
 var NftHubL2 = artifacts.require('./nfthubs/RCNftHubL2.sol');
 var NftHubL1 = artifacts.require('./nfthubs/RCNftHubL1.sol');
 var RCOrderbook = artifacts.require('./RCOrderbook.sol');
+var RCLeaderboard = artifacts.require('./RCLeaderboard.sol');
 // mockups
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 
@@ -74,20 +75,24 @@ contract('TestRequireStatements', (accounts) => {
     rcfactory = await RCFactory.new(treasury.address, realitio.address, kleros);
     rcreference = await RCMarket.new();
     rcorderbook = await RCOrderbook.new(treasury.address);
+    rcleaderboard = await RCLeaderboard.new(treasury.address);
     // nft hubs
     nftHubL2 = await NftHubL2.new(rcfactory.address, dummyAddress);
-    nftHubL1 = await NftHubL1.new();
+    nftHubL1 = await NftHubL1.new(dummyAddress);
     // tell treasury about factory, tell factory about nft hub and reference
     await treasury.setFactoryAddress(rcfactory.address);
     await rcfactory.setReferenceContractAddress(rcreference.address);
     await rcfactory.setNftHubAddress(nftHubL2.address);
     await treasury.setOrderbookAddress(rcorderbook.address);
+    await treasury.setLeaderboardAddress(rcleaderboard.address);
     await treasury.toggleWhitelist();
 
     // market creation
+    let slug = "slug"
     await rcfactory.createMarket(
       0,
       '0x0',
+      slug,
       timestamps,
       tokenURIs,
       artistAddress,
@@ -110,10 +115,12 @@ contract('TestRequireStatements', (accounts) => {
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
-    var slug = 'y';
+
+    let slug = "slug"
     await rcfactory.createMarket(
       mode,
       '0x0',
+      slug,
       timestamps,
       tokenURIs,
       artistAddress,
@@ -132,10 +139,12 @@ contract('TestRequireStatements', (accounts) => {
     await rcfactory.addArtist(user8);
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     var timestamps = [marketOpeningTime, marketLockingTime, oracleResolutionTime];
-    var slug = 'y';
+
+    let slug = "slug"
     await rcfactory.createMarket(
       0,
       '0x0',
+      slug,
       timestamps,
       tokenURIs,
       artistAddress,
@@ -154,10 +163,12 @@ contract('TestRequireStatements', (accounts) => {
     // await rcfactory.addArtist(user8);
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     var timestamps = [marketOpeningTime, marketLockingTime, oracleResolutionTime];
-    var slug = 'z';
+
+    let slug = "slug"
     await rcfactory.createMarket(
       0,
       '0x0',
+      slug,
       timestamps,
       tokenURIs,
       artistAddress,
@@ -242,7 +253,7 @@ contract('TestRequireStatements', (accounts) => {
     await depositDai(1000, user0);
     // check newRental stuff
     await expectRevert(realitycards.newRental(web3.utils.toWei('0.5', 'picoether'), maxuint256, zeroAddress, 0, { from: user }), "Price below min");
-    await expectRevert(realitycards.newRental(web3.utils.toWei('1', 'picoether'), maxuint256, zeroAddress, 23, { from: user }), "Card does not exist");
+    await expectRevert(realitycards.newRental(web3.utils.toWei('24', 'picoether'), maxuint256, zeroAddress, 23, { from: user }), "Card does not exist");
     // withdraw for next test
     await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000, user0);
@@ -279,17 +290,18 @@ contract('TestRequireStatements', (accounts) => {
     await depositDai(144, user);
     await newRental(1, 2, user);
     var owner = await realitycards.ownerOf(2);
+    let tokenId = await realitycards.getTokenId(2);
     assert.equal(owner, user);
     // buidler giving me shit when I try and intercept revert message so just testing revert, in OPEN state
-    await expectRevert(nftHubL2.transferFrom(user, user1, 2), "Incorrect state");
-    await expectRevert(nftHubL2.safeTransferFrom(user, user1, 2), "Incorrect state");
-    await expectRevert(nftHubL2.safeTransferFrom(user, user1, 2, web3.utils.asciiToHex("123456789")), "Incorrect state");
+    await expectRevert(nftHubL2.transferFrom(user, user1, tokenId), "Incorrect state");
+    await expectRevert(nftHubL2.safeTransferFrom(user, user1, tokenId), "Incorrect state");
+    await expectRevert(nftHubL2.safeTransferFrom(user, user1, tokenId, web3.utils.asciiToHex("123456789")), "Incorrect state");
     await time.increase(time.duration.years(1));
     await realitycards.lockMarket();
     // should fail cos LOCKED
-    await expectRevert(nftHubL2.transferFrom(user, user1, 2), "ERC721: transfer caller is not owner nor approved");
-    await expectRevert(nftHubL2.safeTransferFrom(user, user1, 2), "ERC721: transfer caller is not owner nor approved");
-    await expectRevert(nftHubL2.safeTransferFrom(user, user1, 2, web3.utils.asciiToHex("123456789")), "ERC721: transfer caller is not owner nor approved");
+    await expectRevert(nftHubL2.transferFrom(user, user1, tokenId), "ERC721: transfer caller is not owner nor approved");
+    await expectRevert(nftHubL2.safeTransferFrom(user, user1, tokenId), "ERC721: transfer caller is not owner nor approved");
+    await expectRevert(nftHubL2.safeTransferFrom(user, user1, tokenId, web3.utils.asciiToHex("123456789")), "ERC721: transfer caller is not owner nor approved");
     await realitio.setResult(realitycards.address, 2);
     await realitycards.getWinnerFromOracle();
     // await realitycards.determineWinner();
@@ -297,11 +309,11 @@ contract('TestRequireStatements', (accounts) => {
     // these shoudl all fail cos wrong owner:
     var owner = await realitycards.ownerOf(2);
     assert.equal(owner, user);
-    await expectRevert(nftHubL2.transferFrom(user, user1, 2, { from: user1 }), "ERC721: transfer caller is not owner nor approved");
-    await expectRevert(nftHubL2.safeTransferFrom(user1, user1, 2, { from: user1 }), "ERC721: transfer caller is not owner nor approved");
+    await expectRevert(nftHubL2.transferFrom(user, user1, tokenId, { from: user1 }), "ERC721: transfer caller is not owner nor approved");
+    await expectRevert(nftHubL2.safeTransferFrom(user1, user1, tokenId, { from: user1 }), "ERC721: transfer caller is not owner nor approved");
     // these should not
-    await nftHubL2.transferFrom(user, user1, 2, { from: user });
-    await nftHubL2.safeTransferFrom(user1, user, 2, { from: user1 });
+    await nftHubL2.transferFrom(user, user1, tokenId, { from: user });
+    await nftHubL2.safeTransferFrom(user1, user, tokenId, { from: user1 });
   });
 
   it('make sure functions cant be called in the wrong state', async () => {
@@ -353,29 +365,29 @@ contract('TestRequireStatements', (accounts) => {
     var templateId = 2;
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
-    var slug = 'y';
+
     // resolution time before locking, expect failure
     var oracleResolutionTime = now.add(new BN(69419));
     var marketLockingTime = now.add(new BN(69420));
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
-    await expectRevert(rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0), "Oracle resolution time error");
+    await expectRevert(rcfactory.createMarket(0, '0x0', "slug", timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0), "Oracle resolution time error");
     // resolution time > 1 weeks after locking, expect failure
     var oracleResolutionTime = now.add(new BN(604910));
     var marketLockingTime = now.add(new BN(100));
     var timestamps = [now, marketLockingTime, oracleResolutionTime];
-    await expectRevert(rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0), "Oracle resolution time error");
+    await expectRevert(rcfactory.createMarket(0, '0x0', "slug", timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0), "Oracle resolution time error");
     // resolution time < 1 week  after locking, no failure
     var oracleResolutionTime = now.add(new BN(604790));
     var marketLockingTime = now.add(new BN(100));
     var timestamps = [now, marketLockingTime, oracleResolutionTime];
-    var slug = 'z';
-    await rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0);
+
+    await rcfactory.createMarket(0, '0x0', "slug", timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0);
     // same time, no failure
     var oracleResolutionTime = now.add(new BN(100));
     var marketLockingTime = now.add(new BN(100));
     var timestamps = [now, marketLockingTime, oracleResolutionTime];
     var slug = 'a';
-    await rcfactory.createMarket(0, '0x0', timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0);
+    await rcfactory.createMarket(0, '0x0', "slug", timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0);
   });
 
 

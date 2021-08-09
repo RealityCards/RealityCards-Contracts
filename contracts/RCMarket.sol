@@ -2,10 +2,10 @@
 pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "hardhat/console.sol";
 import "./interfaces/IRealitio.sol";
 import "./interfaces/IRCFactory.sol";
+import "./interfaces/IRCLeaderboard.sol";
 import "./interfaces/IRCTreasury.sol";
 import "./interfaces/IRCMarket.sol";
 import "./interfaces/IRCNftHubL2.sol";
@@ -24,22 +24,22 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @dev = how many outcomes/teams/NFTs etc
     uint256 public constant PER_MILLE = 1000; // in MegaBip so (1000 = 100%)
     uint256 public override numberOfCards;
-    uint256 public constant MAX_UINT256 = type(uint256).max;
-    uint256 public constant MIN_RENTAL_VALUE = 1_000_000;
+    uint256 public constant MIN_RENTAL_VALUE = 24_000_000;
     States public override state;
     /// @dev type of event.
     Mode public override mode;
     /// @dev so the Factory can check it's a market
     bool public constant override isMarket = true;
-    /// @dev counts the total NFTs minted across all events at the time market created
-    /// @dev nft tokenId = card Id + totalNftMintCount
-    uint256 public totalNftMintCount;
+    /// @dev how many nfts to award to the leaderboard
+    uint256 public override nftsToAward;
+    uint256[] public tokenIds;
 
     // CONTRACT VARIABLES
     IRCTreasury public override treasury;
     IRCFactory public override factory;
     IRCNftHubL2 public override nfthub;
     IRCOrderbook public override orderbook;
+    IRCLeaderboard public override leaderboard;
     IRealitio public override realitio;
 
     // PRICE, DEPOSITS, RENT
@@ -151,10 +151,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         uint256 cardId
     );
     event LogSponsor(address indexed sponsor, uint256 indexed amount);
-    event LogNftUpgraded(
-        uint256 indexed currentTokenId,
-        uint256 indexed newTokenId
-    );
     event LogPayoutDetails(
         address indexed artistAddress,
         address marketCreatorAddress,
@@ -167,8 +163,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         uint256 cardAffiliateCut
     );
     event LogSettings(
-        uint256 indexed minRentalDayDivisor,
-        uint256 indexed minimumPriceIncreasePercent
+        uint256 minRentalDayDivisor,
+        uint256 minimumPriceIncreasePercent,
+        uint256 nftsToAward
     );
     event LogLongestOwner(uint256 cardId, address longestOwner);
     event LogQuestionPostedToOracle(
@@ -196,7 +193,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         address _affiliateAddress,
         address[] memory _cardAffiliateAddresses,
         address _marketCreatorAddress,
-        string calldata _realitioQuestion
+        string calldata _realitioQuestion,
+        uint256 _nftsToAward
     ) external override initializer {
         mode = Mode(_mode);
 
@@ -208,6 +206,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         treasury = factory.treasury();
         nfthub = factory.nfthub();
         orderbook = factory.orderbook();
+        leaderboard = factory.leaderboard();
 
         // get adjustable parameters from the factory/treasury
         uint256[5] memory _potDistribution = factory.getPotDistribution();
@@ -216,11 +215,11 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         maxRentIterations = factory.maxRentIterations();
 
         // Initialize!
-        winningOutcome = MAX_UINT256; // default invalid
+        winningOutcome = type(uint256).max; // default invalid
 
         // assign arguments to public variables
         numberOfCards = _numberOfCards;
-        totalNftMintCount = nfthub.totalSupply();
+        nftsToAward = _nftsToAward;
         marketOpeningTime = _timestamps[0];
         marketLockingTime = _timestamps[1];
         oracleResolutionTime = _timestamps[2];
@@ -234,6 +233,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         affiliateCut = _potDistribution[3];
         cardAffiliateCut = _potDistribution[4];
         (realitio, arbitrator, timeout) = factory.getOracleSettings();
+        for (uint256 i = 0; i < _numberOfCards; i++) {
+            tokenIds.push(type(uint256).max);
+        }
 
         // reduce artist cut to zero if zero address set
         if (_artistAddress == address(0)) {
@@ -285,7 +287,11 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             affiliateCut,
             cardAffiliateCut
         );
-        emit LogSettings(minRentalDayDivisor, minimumPriceIncreasePercent);
+        emit LogSettings(
+            minRentalDayDivisor,
+            minimumPriceIncreasePercent,
+            nftsToAward
+        );
     }
 
     /*╔═════════════════════════════════╗
@@ -302,10 +308,10 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
     /// @notice automatically locks market if appropriate
     modifier autoLock() {
-        _;
         if (marketLockingTime <= block.timestamp) {
             lockMarket();
         }
+        _;
     }
 
     /// @dev can only be called by Card owners
@@ -318,28 +324,15 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
       ║     NFT HUB CONTRACT CALLS      ║
       ╚═════════════════════════════════╝*/
 
-    /// @notice send NFT to mainnet
-    /// @dev upgrades not possible if market paused
-    function upgradeCard(uint256 _card)
-        external
-        override
-        onlyTokenOwner(_card)
-    {
-        _checkState(States.WITHDRAW);
-        require(
-            !treasury.marketPaused(address(this)) && !treasury.globalPause(),
-            "Market is Paused"
-        );
-        uint256 _tokenId = _card + totalNftMintCount;
-        nfthub.withdrawWithMetadata(_tokenId);
-        emit LogNftUpgraded(_card, _tokenId);
-    }
-
     /// @notice gets the owner of the NFT via their Card Id
     function ownerOf(uint256 _cardId) public view override returns (address) {
         require(_cardId < numberOfCards, "Card does not exist");
-        uint256 _tokenId = _cardId + totalNftMintCount;
-        return nfthub.ownerOf(_tokenId);
+        if (tokenExists(_cardId)) {
+            uint256 _tokenId = getTokenId(_cardId);
+            return nfthub.ownerOf(_tokenId);
+        } else {
+            return address(0);
+        }
     }
 
     /// @notice gets tokenURI via their Card Id
@@ -349,7 +342,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         override
         returns (string memory)
     {
-        uint256 _tokenId = _cardId + totalNftMintCount;
+        uint256 _tokenId = getTokenId(_cardId);
         return nfthub.tokenURI(_tokenId);
     }
 
@@ -364,7 +357,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             _from != address(0) && _to != address(0),
             "Cannot send to/from zero address"
         );
-        uint256 _tokenId = _cardId + totalNftMintCount;
+        uint256 _tokenId = getTokenId(_cardId);
 
         nfthub.transferNft(_from, _to, _tokenId);
         emit LogNewOwner(_cardId, _to);
@@ -467,13 +460,18 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         );
         // do a final rent collection before the contract is locked down
 
-        if (collectRentAllCards()) {
+        if (
+            collectRentAllCards() &&
+            gasleft() > (350_000 + (175_000 * numberOfCards))
+        ) {
             orderbook.closeMarket();
             _incrementState();
 
             for (uint256 i; i < numberOfCards; i++) {
-                // bring the cards back to the market so the winners get the satisfaction of claiming them
-                _transferCard(ownerOf(i), address(this), i);
+                if (tokenExists(i)) {
+                    // bring the cards back to the market so the winners get the satisfaction of claiming them
+                    _transferCard(ownerOf(i), address(this), i);
+                }
                 emit LogLongestOwner(i, longestOwner[i]);
             }
             emit LogContractLocked(true);
@@ -485,7 +483,10 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     function setWinner(uint256 _winningOutcome) internal {
         if (state == States.OPEN) {
             // change the locking time to allow lockMarket to lock
-            marketLockingTime = SafeCast.toUint32(block.timestamp);
+            /// @dev implementing our own SafeCast as this is the only place we need it
+            uint256 _blockTimestamp = uint32(block.timestamp);
+            require(_blockTimestamp <= type(uint32).max, "Overflow");
+            marketLockingTime = uint32(_blockTimestamp);
             lockMarket();
         }
         if (state == States.LOCKED) {
@@ -509,6 +510,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     }
 
     /// @notice the longest owner of each NFT gets to keep it
+    /// @notice users on the leaderboard can make a copy of it
     /// @dev LOCKED or WITHDRAW states are fine- does not need to wait for winner to be known
     /// @param _card the id of the card, the index
     function claimCard(uint256 _card) external override {
@@ -518,10 +520,15 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             !treasury.marketPaused(address(this)) && !treasury.globalPause(),
             "Market is Paused"
         );
-        require(!userAlreadyClaimed[_card][msgSender()], "Already claimed");
-        userAlreadyClaimed[_card][msgSender()] = true;
-        require(longestOwner[_card] == msgSender(), "Not longest owner");
-        _transferCard(ownerOf(_card), longestOwner[_card], _card);
+        address _user = msgSender();
+        require(!userAlreadyClaimed[_card][_user], "Already claimed");
+        userAlreadyClaimed[_card][_user] = true;
+        if (_user == longestOwner[_card]) {
+            _transferCard(ownerOf(_card), longestOwner[_card], _card);
+        } else {
+            leaderboard.claimNFT(_user, _card);
+            factory.mintCopyOfNFT(_user, _card);
+        }
     }
 
     /// @notice pays winnings
@@ -702,10 +709,14 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         uint256 _timeHeldLimit,
         address _startingPosition,
         uint256 _card
-    ) public override autoUnlock() autoLock() {
+    ) public override autoUnlock autoLock {
         if (state == States.OPEN) {
             require(_newPrice >= MIN_RENTAL_VALUE, "Price below min");
             require(_card < numberOfCards, "Card does not exist");
+            if (!tokenExists(_card)) {
+                tokenIds[_card] = nfthub.totalSupply();
+                factory.mintMarketNFT(_card);
+            }
 
             address _user = msgSender();
 
@@ -722,50 +733,51 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                 treasury.marketWhitelistCheck(_user),
                 "Not approved for this market"
             );
-            bool _userStillForeclosed = treasury.isForeclosed(_user);
-            if (_userStillForeclosed) {
-                _userStillForeclosed = orderbook.removeUserFromOrderbook(_user);
+
+            if (treasury.isForeclosed(_user)) {
+                orderbook.removeUserFromOrderbook(_user);
             }
-            if (!_userStillForeclosed) {
-                if (ownerOf(_card) == _user) {
-                    // the owner may only increase by more than X% or reduce their price
-                    uint256 _requiredPrice = (cardPrice[_card] *
-                        (minimumPriceIncreasePercent + 100)) / (100);
-                    require(
-                        _newPrice >= _requiredPrice ||
-                            _newPrice < cardPrice[_card],
-                        "Invalid price"
-                    );
-                }
-
-                // do some cleaning up before we collect rent or check their bidRate
-                orderbook.removeOldBids(_user);
-
-                /// @dev ignore the return value and let the user post the bid for the sake of UX
-                _collectRent(_card);
-
-                // check sufficient deposit
-                uint256 _userTotalBidRate = (treasury.userTotalBids(_user) -
-                    orderbook.getBidValue(_user, _card)) + _newPrice;
+            require(
+                !treasury.isForeclosed(_user),
+                "Can't rent while foreclosed"
+            );
+            if (ownerOf(_card) == _user) {
+                // the owner may only increase by more than X% or reduce their price
+                uint256 _requiredPrice = (cardPrice[_card] *
+                    (minimumPriceIncreasePercent + 100)) / (100);
                 require(
-                    treasury.userDeposit(_user) >=
-                        _userTotalBidRate / minRentalDayDivisor,
-                    "Insufficient deposit"
+                    _newPrice >= _requiredPrice || _newPrice < cardPrice[_card],
+                    "Invalid price"
                 );
-
-                _timeHeldLimit = _checkTimeHeldLimit(_timeHeldLimit);
-
-                // replaces _newBid and _updateBid
-                orderbook.addBidToOrderbook(
-                    _user,
-                    _card,
-                    _newPrice,
-                    _timeHeldLimit,
-                    _startingPosition
-                );
-
-                treasury.updateLastRentalTime(_user);
             }
+
+            // do some cleaning up before we collect rent or check their bidRate
+            orderbook.removeOldBids(_user);
+
+            /// @dev ignore the return value and let the user post the bid for the sake of UX
+            _collectRent(_card);
+
+            // check sufficient deposit
+            uint256 _userTotalBidRate = (treasury.userTotalBids(_user) -
+                orderbook.getBidValue(_user, _card)) + _newPrice;
+            require(
+                treasury.userDeposit(_user) >=
+                    _userTotalBidRate / minRentalDayDivisor,
+                "Insufficient deposit"
+            );
+
+            _timeHeldLimit = _checkTimeHeldLimit(_timeHeldLimit);
+
+            // replaces _newBid and _updateBid
+            orderbook.addBidToOrderbook(
+                _user,
+                _card,
+                _newPrice,
+                _timeHeldLimit,
+                _startingPosition
+            );
+
+            treasury.updateLastRentalTime(_user);
         }
     }
 
@@ -1046,6 +1058,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             longestTimeHeld[_card] = timeHeld[_card][_user];
             longestOwner[_card] = _user;
         }
+        leaderboard.updateLeaderboard(_user, _card, timeHeld[_card][_user]);
         emit LogRentCollection(
             _rentCollected,
             _timeHeldToIncrement,
@@ -1066,6 +1079,52 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     function _incrementState() internal {
         state = States(uint256(state) + 1);
         emit LogStateChange(uint256(state));
+    }
+
+    function getTokenId(uint256 _card)
+        public
+        view
+        override
+        returns (uint256 _tokenId)
+    {
+        return tokenIds[_card];
+    }
+
+    function tokenExists(uint256 _card) internal view returns (bool) {
+        return tokenIds[_card] != type(uint256).max;
+    }
+
+    /*╔═════════════════════════════════╗
+      ║          BACKUP MODE            ║
+      ╚═════════════════════════════════╝*/
+
+    /// @dev quick and easy view function to get all market data relvant to the UI
+    function getMarketInfo()
+        external
+        view
+        returns (
+            States,
+            string memory,
+            uint256,
+            uint256,
+            address[] memory,
+            uint256[] memory
+        )
+    {
+        address[] memory _owners = new address[](numberOfCards);
+        uint256[] memory _prices = new uint256[](numberOfCards);
+        for (uint256 i; i < numberOfCards; i++) {
+            _owners[i] = ownerOf(i);
+            _prices[i] = cardPrice[i];
+        }
+        return (
+            state,
+            factory.ipfsHash(address(this)),
+            winningOutcome,
+            totalRentCollected,
+            _owners,
+            _prices
+        );
     }
 
     /*╔═════════════════════════════════╗

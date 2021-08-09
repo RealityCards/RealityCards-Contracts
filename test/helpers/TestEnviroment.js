@@ -13,6 +13,7 @@ const RCMarket = artifacts.require("./RCMarket.sol");
 const NftHubL2 = artifacts.require("./nfthubs/RCNftHubL2.sol");
 const NftHubL1 = artifacts.require("./nfthubs/RCNftHubL1.sol");
 const RCOrderbook = artifacts.require('./RCOrderbook.sol');
+const RCLeaderboard = artifacts.require('./RCLeaderboard.sol');
 // mockups
 const RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 const SelfDestructMockup = artifacts.require("./mockups/SelfDestructMockup.sol");
@@ -88,12 +89,14 @@ module.exports = class TestEnviroment {
         this.contracts.factory = await RCFactory.new(this.contracts.treasury.address, this.contracts.realitio.address, kleros);
         this.contracts.reference = await RCMarket.new();
         this.contracts.orderbook = await RCOrderbook.new(this.contracts.treasury.address);
+        this.contracts.leaderboard = await RCLeaderboard.new(this.contracts.treasury.address);
         // nft hubs 
         this.contracts.nftHubL2 = await NftHubL2.new(this.contracts.factory.address, dummyAddress);
-        this.contracts.nftHubL1 = await NftHubL1.new();
+        this.contracts.nftHubL1 = await NftHubL1.new(dummyAddress);
         // tell treasury about factory, tell factory about nft hub and reference
         await this.contracts.treasury.setFactoryAddress(this.contracts.factory.address);
         await this.contracts.treasury.setOrderbookAddress(this.contracts.orderbook.address);
+        await this.contracts.treasury.setLeaderboardAddress(this.contracts.leaderboard.address);
         await this.contracts.factory.setReferenceContractAddress(this.contracts.reference.address);
         await this.contracts.factory.setNftHubAddress(this.contracts.nftHubL2.address);
         await this.contracts.treasury.toggleWhitelist();
@@ -113,6 +116,7 @@ module.exports = class TestEnviroment {
         // mode, 0 = classic, 1 = winner takes all, 2 = safe mode
         // timestamps are in seconds from now
         var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
+        let slug = 'my-Test-Slug'
         var defaults = {
             mode: 0,
             openTime: 0,
@@ -136,6 +140,7 @@ module.exports = class TestEnviroment {
         await this.contracts.factory.createMarket(
             options.mode,
             "0x0",
+            slug,
             timestamps,
             tokenURIs,
             options.artistAddress,

@@ -4,6 +4,7 @@ pragma solidity 0.8.4;
 import "./IRCNftHubL2.sol";
 import "./IRCTreasury.sol";
 import "./IRCFactory.sol";
+import "./IRCLeaderboard.sol";
 import "./IRealitio.sol";
 import "./IRCOrderbook.sol";
 
@@ -19,8 +20,6 @@ interface IRCMarket {
         WINNER_TAKES_ALL,
         SAFE_MODE
     }
-
-    function upgradeCard(uint256 _card) external;
 
     function getWinnerFromOracle() external;
 
@@ -72,6 +71,8 @@ interface IRCMarket {
 
     function factory() external view returns (IRCFactory);
 
+    function leaderboard() external view returns (IRCLeaderboard);
+
     function orderbook() external view returns (IRCOrderbook);
 
     function realitio() external view returns (IRealitio);
@@ -82,11 +83,15 @@ interface IRCMarket {
 
     function numberOfCards() external view returns (uint256);
 
+    function nftsToAward() external view returns (uint256);
+
     function tokenURI(uint256) external view returns (string memory);
 
     function ownerOf(uint256 tokenId) external view returns (address);
 
     function state() external view returns (States);
+
+    function getTokenId(uint256 _card) external view returns (uint256 _tokenId);
 
     // prices, deposits, rent
 
@@ -184,7 +189,8 @@ interface IRCMarket {
         address _affiliateAddress,
         address[] calldata _cardAffiliateAddresses,
         address _marketCreatorAddress,
-        string calldata _realitioQuestion
+        string calldata _realitioQuestion,
+        uint256 _nftsToAward
     ) external;
 
     function transferCard(

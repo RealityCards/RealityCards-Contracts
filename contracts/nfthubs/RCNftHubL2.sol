@@ -30,7 +30,7 @@ contract RCNftHubL2 is
 
     /// @dev so only markets can move NFTs
     mapping(address => bool) public isMarket;
-    /// @dev the market each NFT belongs to, so that it can only be moved in withdraw state
+    /// @dev the market each NFT belongs to
     mapping(uint256 => address) public override marketTracker;
 
     /// @dev governance variables
@@ -131,7 +131,7 @@ contract RCNftHubL2 is
         address _newOwner,
         uint256 _tokenId
     ) external override {
-        require(isMarket[msgSender()], "Not market");
+        require(marketTracker[_tokenId] == msgSender(), "Not market");
         _transfer(_currentOwner, _newOwner, _tokenId);
     }
 
