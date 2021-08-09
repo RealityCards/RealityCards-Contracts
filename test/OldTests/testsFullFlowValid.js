@@ -1694,7 +1694,7 @@ contract("TestFullFlowValid", (accounts) => {
     // 10% card specific affiliates
     await rcfactory.setPotDistribution(0, 0, 0, 0, 100);
     // add user3 to whitelist
-    await rcfactory.addGovernor(user3);
+    await treasury.grantRole("GOVERNOR", user3);
     var realitycards2 = await createMarketWithArtistAndCardAffiliatesAndSponsorship(
       200,
       user3

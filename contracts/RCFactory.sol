@@ -122,9 +122,11 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         uint256 totalNftMintCount
     );
     event LogMarketApproved(address market, bool approved);
-    event LogAdvancedWarning(uint256 _newAdvancedWarning);
-    event LogMaximumDuration(uint256 _newMaximumDuration);
-    event LogMinimumDuration(uint256 _newMinimumDuration);
+    event LogMarketTimeRestrictions(
+        uint256 _newAdvancedWarning,
+        uint256 _newMinimumDuration,
+        uint256 _newMaximumDuration
+    );
     event LogMintNFTCopy(
         uint256 _originalTokenId,
         address _newOwner,
@@ -364,45 +366,19 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
 
     /// @notice market opening time must be at least this many seconds in the future
     /// @param _newAdvancedWarning the warning time to set in seconds
-    function setAdvancedWarning(uint32 _newAdvancedWarning)
-        external
-        override
-        onlyOwner
-    {
+    function setMarketTimeRestrictions(
+        uint32 _newAdvancedWarning,
+        uint32 _newMinimumDuration,
+        uint32 _newMaximumDuration
+    ) external override onlyOwner {
         advancedWarning = _newAdvancedWarning;
-        emit LogAdvancedWarning(_newAdvancedWarning);
-    }
-
-    /// @notice market closing time must be no more than this many seconds in the future
-    /// @param _newMaximumDuration the duration limit to set in seconds
-    function setMaximumDuration(uint32 _newMaximumDuration)
-        external
-        override
-        onlyOwner
-    {
-        maximumDuration = _newMaximumDuration;
-        emit LogMaximumDuration(_newMaximumDuration);
-    }
-
-    /// @notice market closing time must be at least this many seconds after opening
-    /// @param _newMinimumDuration the duration limit to set in seconds
-    function setMinimumDuration(uint32 _newMinimumDuration)
-        external
-        override
-        onlyOwner
-    {
         minimumDuration = _newMinimumDuration;
-        emit LogMinimumDuration(_newMinimumDuration);
-    }
-
-    // EDIT GOVERNORS
-    /// @dev these can be done directly on the treasury, leaving here for user convenience
-    function addGovernor(address _newGovernor) external override onlyOwner {
-        treasury.grantRole(GOVERNOR, _newGovernor);
-    }
-
-    function removeGovernor(address _oldGovernor) external override onlyOwner {
-        treasury.revokeRole(GOVERNOR, _oldGovernor);
+        maximumDuration = _newMaximumDuration;
+        emit LogMarketTimeRestrictions(
+            _newAdvancedWarning,
+            _newMinimumDuration,
+            _newMaximumDuration
+        );
     }
 
     /*╔═════════════════════════════════╗

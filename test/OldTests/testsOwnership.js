@@ -239,13 +239,12 @@ contract('TestOwnership', (accounts) => {
   it('check onlyOwner is on relevant Factory functions', async () => {
     await expectRevert(rcfactory.setPotDistribution(0, 0, 0, 0, 0, { from: user1 }), 'Not approved');
     await expectRevert(treasury.setMinRental(7 * 24, { from: user1 }), accessControl(user1, "OWNER"));
-    await expectRevert(rcfactory.addGovernor(user0, { from: user1 }), 'Not approved');
+    await expectRevert(treasury.grantRole("GOVERNOR", user0, { from: user1 }), "AccessControl: account 0x70997970c51812dc3a010c7d01b50e0d17dc79c8 is missing role 0x6270edb7c868f86fda4adedba75108201087268ea345934db8bad688e1feb91b");
     await expectRevert(rcfactory.changeMarketCreationGovernorsOnly({ from: user1 }), 'Not approved');
     await expectRevert(rcfactory.setSponsorshipRequired(7 * 24, { from: user1 }), 'Not approved');
     await expectRevert(rcfactory.changeMarketApproval(user0, { from: user1 }), "Not approved");
     await expectRevert(rcfactory.setMinimumPriceIncreasePercent(4, { from: user1 }), 'Not approved');
-    await expectRevert(rcfactory.setAdvancedWarning(23, { from: user1 }), 'Not approved');
-    await expectRevert(rcfactory.setMaximumDuration(23, { from: user1 }), 'Not approved');
+    await expectRevert(rcfactory.setMarketTimeRestrictions(8, 10, 4, { from: user1 }), 'Not approved');
   });
 
 });
