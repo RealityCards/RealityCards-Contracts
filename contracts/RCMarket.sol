@@ -151,10 +151,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         uint256 cardId
     );
     event LogSponsor(address indexed sponsor, uint256 indexed amount);
-    event LogNftUpgraded(
-        uint256 indexed currentTokenId,
-        uint256 indexed newTokenId
-    );
     event LogPayoutDetails(
         address indexed artistAddress,
         address marketCreatorAddress,
