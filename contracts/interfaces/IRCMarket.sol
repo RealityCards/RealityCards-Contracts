@@ -91,6 +91,8 @@ interface IRCMarket {
 
     function state() external view returns (States);
 
+    function getTokenId(uint256 _card) external view returns (uint256 _tokenId);
+
     // prices, deposits, rent
 
     function cardPrice(uint256) external view returns (uint256);

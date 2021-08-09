@@ -133,6 +133,12 @@ interface IRCFactory {
 
     function setNumberOfNFTsToAward(uint256 _NFTsToAward) external;
 
+    function updateTokenURI(
+        address _market,
+        uint256 _cardId,
+        string calldata _newTokenURI
+    ) external;
+
     function setPotDistribution(
         uint256 _artistCut,
         uint256 _winnerCut,

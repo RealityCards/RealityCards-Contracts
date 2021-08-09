@@ -1081,7 +1081,12 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         emit LogStateChange(uint256(state));
     }
 
-    function getTokenId(uint256 _card) public view returns (uint256 _tokenId) {
+    function getTokenId(uint256 _card)
+        public
+        view
+        override
+        returns (uint256 _tokenId)
+    {
         return tokenIds[_card];
     }
 

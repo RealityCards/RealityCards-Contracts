@@ -778,6 +778,33 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         marketInfoResults = _results;
     }
 
+    function updateTokenURI(
+        address _market,
+        uint256 _cardId,
+        string calldata _newTokenURI
+    ) external override onlyOwner {
+        IRCMarket.Mode _mode = IRCMarket(_market).mode();
+        uint256 _numberOfCards = IRCMarket(_market).numberOfCards();
+        tokenURIs[_market][_cardId] = _newTokenURI;
+        string[] memory _tokenURIs = new string[](_numberOfCards);
+        for (uint256 i = 0; i < _tokenURIs.length; i++) {
+            _tokenURIs[i] = tokenURIs[_market][i];
+        }
+        uint32[] memory _timestamps = new uint32[](3);
+        _timestamps[0] = IRCMarket(_market).marketOpeningTime();
+        _timestamps[1] = IRCMarket(_market).marketLockingTime();
+        _timestamps[2] = IRCMarket(_market).oracleResolutionTime();
+
+        emit LogMarketCreated2(
+            _market,
+            IRCMarket.Mode(_mode),
+            _tokenURIs,
+            ipfsHash[_market],
+            _timestamps,
+            nfthub.totalSupply()
+        );
+    }
+
     /// @notice allows the market to mint a copy of the NFT for users on the leaderboard
     /// @param _user the user to award the NFT to
     /// @param _cardId the tokenId to copy
