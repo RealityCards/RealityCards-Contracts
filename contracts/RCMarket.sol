@@ -21,10 +21,10 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
       ╚═════════════════════════════════╝*/
 
     // CONTRACT SETUP
-    /// @dev = how many outcomes/teams/NFTs etc
     uint256 public constant PER_MILLE = 1000; // in MegaBip so (1000 = 100%)
+    uint256 public constant MIN_RENTAL_VALUE = 24_000_000; // 1mil Wei/hr
     uint256 public override numberOfCards;
-    uint256 public constant MIN_RENTAL_VALUE = 24_000_000;
+    /// @dev current market state, Closed -> Open -> Locked -> Withdraw
     States public override state;
     /// @dev type of event.
     Mode public override mode;
@@ -32,6 +32,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     bool public constant override isMarket = true;
     /// @dev how many nfts to award to the leaderboard
     uint256 public override nftsToAward;
+    /// @dev the unique token id for each card
     uint256[] public tokenIds;
 
     // CONTRACT VARIABLES
@@ -120,7 +121,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     // ORACLE VARIABLES
     bytes32 public override questionId;
     address public override arbitrator;
-    uint32 public override timeout;
+    uint32 public override timeout; // the time allowed for the answer to be corrected
 
     /*╔═════════════════════════════════╗
       ║             EVENTS              ║
@@ -347,7 +348,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     }
 
     /// @notice transfer ERC 721 between users
-    /// @dev called internally during contract open state
     function _transferCard(
         address _from,
         address _to,
@@ -364,7 +364,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     }
 
     /// @notice transfer ERC 721 between users
-    /// @dev called externally by Orderbook during contract open state
+    /// @dev called externally by Orderbook
     function transferCard(
         address _from,
         address _to,
@@ -400,7 +400,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                 questionHash,
                 arbitrator,
                 timeout,
-                msg.sender,
+                address(this),
                 nonce
             )
         );
@@ -458,8 +458,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             marketLockingTime <= block.timestamp,
             "Market has not finished"
         );
-        // do a final rent collection before the contract is locked down
 
+        // do a final rent collection before the contract is locked down
+        // make sure the rent collection finished and we have enough gas left
         if (
             collectRentAllCards() &&
             gasleft() > (350_000 + (175_000 * numberOfCards))
@@ -781,20 +782,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         }
     }
 
-    function _checkTimeHeldLimit(uint256 _timeHeldLimit)
-        internal
-        view
-        returns (uint256)
-    {
-        if (_timeHeldLimit == 0) {
-            return 0;
-        } else {
-            uint256 _minRentalTime = uint256(1 days) / minRentalDayDivisor;
-            require(_timeHeldLimit >= _minRentalTime, "Limit too low");
-            return _timeHeldLimit;
-        }
-    }
-
     /// @notice to change your timeHeldLimit without having to re-rent
     /// @param _timeHeldLimit an optional time limit to rent the card for
     /// @param _card the index of the card to update
@@ -829,7 +816,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @dev public because called by exitAll()
     /// @dev doesn't need to be current owner so user can prevent ownership returning to them
     /// @dev does not apply minimum rental duration, because it returns ownership to the next user
-    /// @dev doesn't revert if nonexistant bid because user might be trying to exitAll()
+    /// @dev doesn't revert if non-existant bid because user might be trying to exitAll()
     /// @param _card The card index to exit
     function exit(uint256 _card) public override {
         _checkState(States.OPEN);
@@ -857,14 +844,14 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         }
     }
 
-    /// @notice ability to add liqudity to the pot without being able to win.
+    /// @notice ability to add liquidity to the pot without being able to win.
     /// @dev called by user, sponsor is msgSender
     function sponsor(uint256 _amount) external override {
         address _creator = msgSender();
         _sponsor(_creator, _amount);
     }
 
-    /// @notice ability to add liqudity to the pot without being able to win.
+    /// @notice ability to add liquidity to the pot without being able to win.
     /// @dev called by Factory during market creation
     /// @param _sponsorAddress the msgSender of createMarket in the Factory
     function sponsor(address _sponsorAddress, uint256 _amount)
@@ -877,6 +864,12 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         }
         _sponsor(_sponsorAddress, _amount);
     }
+
+    /*╔═════════════════════════════════╗
+      ║         CORE FUNCTIONS          ║
+      ╠═════════════════════════════════╣
+      ║             INTERNAL            ║
+      ╚═════════════════════════════════╝*/
 
     /// @dev actually processes the sponsorship
     function _sponsor(address _sponsorAddress, uint256 _amount) internal {
@@ -899,11 +892,33 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         emit LogSponsor(_sponsorAddress, _amount);
     }
 
-    /*╔═════════════════════════════════╗
-      ║         CORE FUNCTIONS          ║
-      ╠═════════════════════════════════╣
-      ║             INTERNAL            ║
-      ╚═════════════════════════════════╝*/
+    function _checkTimeHeldLimit(uint256 _timeHeldLimit)
+        internal
+        view
+        returns (uint256)
+    {
+        if (_timeHeldLimit == 0) {
+            return 0;
+        } else {
+            uint256 _minRentalTime = uint256(1 days) / minRentalDayDivisor;
+            require(_timeHeldLimit >= _minRentalTime, "Limit too low");
+            return _timeHeldLimit;
+        }
+    }
+
+    /// @dev _collectRentAction goes back one owner at a time, this function repeatedly calls
+    /// @dev ... _collectRentAction until the backlog of next owners has been processed, or maxRentIterations hit
+    /// @param _card the card id to collect rent for
+    /// @return true if the rent collection was completed, (ownership updated to the current time)
+    function _collectRent(uint256 _card) internal returns (bool) {
+        uint32 counter = 0;
+        bool shouldContinue = true;
+        while (counter < maxRentIterations && shouldContinue) {
+            shouldContinue = _collectRentAction(_card);
+            counter++;
+        }
+        return !shouldContinue;
+    }
 
     /// @notice collects rent for a specific card
     /// @dev also calculates and updates how long the current user has held the card for
@@ -1013,20 +1028,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         return false;
     }
 
-    /// @dev _collectRentAction goes back one owner at a time, this function repeatedly calls
-    /// @dev ... _collectRentAction until the backlog of next owners has been processed, or maxRentIterations hit
-    /// @param _card the card id to collect rent for
-    /// @return true if the rent collection was completed, (ownership updated to the current time)
-    function _collectRent(uint256 _card) internal returns (bool) {
-        uint32 counter = 0;
-        bool shouldContinue = true;
-        while (counter < maxRentIterations && shouldContinue) {
-            shouldContinue = _collectRentAction(_card);
-            counter++;
-        }
-        return !shouldContinue;
-    }
-
     /// @dev processes actual rent collection and updates the state
     function _processRentCollection(
         address _user,
@@ -1098,7 +1099,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
       ║          BACKUP MODE            ║
       ╚═════════════════════════════════╝*/
 
-    /// @dev quick and easy view function to get all market data relvant to the UI
+    /// @dev quick and easy view function to get all market data relevant to the UI
     function getMarketInfo()
         external
         view

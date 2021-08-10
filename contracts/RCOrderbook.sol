@@ -45,9 +45,9 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
     mapping(address => Market) public market;
     /// @dev find the current owner of a card in a given market. Market -> Card -> Owner
     mapping(address => mapping(uint256 => address)) public override ownerOf;
+    /// @dev store the oldOwner and oldPrice in the event we can't find a new owner
     mapping(address => mapping(uint256 => address)) public oldOwner;
     mapping(address => mapping(uint256 => uint256)) public oldPrice;
-
     /// @dev an array of closed markets, used to reduce user bid rates
     address[] public override closedMarkets;
     /// @dev how far through the array a given user is, saves iterating the whole array every time.
@@ -57,7 +57,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
     /// @dev the current treasury
     IRCTreasury public override treasury;
     /// @dev max number of searches to place an order in the book
-    /// @dev current estimates place limit around 2000
+    /// @dev current estimates place limit around 2000 but 1000 is sufficient
     uint256 public override maxSearchIterations = 1000;
     /// @dev max number of records to delete in one transaction
     uint256 public override maxDeletions = 70;
@@ -120,7 +120,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
         uint256 indexed tokenId,
         address market
     );
-    /// @dev emitted when an order is removed from an active market
+    /// @dev emitted when an order is removed from the orderbook
     event LogRemoveFromOrderbook(
         address indexed owner,
         address indexed market,

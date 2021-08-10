@@ -2,15 +2,13 @@
 pragma solidity 0.8.4;
 
 import "hardhat/console.sol";
-import "./interfaces/IRealitio.sol";
-import "./interfaces/IRCFactory.sol";
 import "./interfaces/IRCLeaderboard.sol";
 import "./interfaces/IRCTreasury.sol";
 import "./interfaces/IRCMarket.sol";
 import "./lib/NativeMetaTransaction.sol";
 
-/// @title Reality Cards Market
-/// @author Andrew Stanger & Daniel Chilvers
+/// @title Reality Cards Leaderboard
+/// @author Daniel Chilvers
 /// @notice If you have found a bug, please contact andrew@realitycards.io- no hack pls!!
 contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
     /*╔═════════════════════════════════╗
@@ -96,11 +94,15 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
         uint256 _timeHeld
     ) external override onlyMarkets {
         address _market = msgSender();
+
+        // check if the market has been initialised
         if (!userIsOnLeaderboard(_market, _market, _card)) {
             uint256 _cardCount = IRCMarket(_market).numberOfCards();
             uint256 _nftsToAward = IRCMarket(_market).nftsToAward();
             addMarket(_market, _cardCount, _nftsToAward);
         }
+
+        // is the leaderboard full yet?
         if (leaderboardLength[_market][_card] < NFTsToAward[_market]) {
             // leaderboard isn't full, just add them
             if (userIsOnLeaderboard(_user, _market, _card)) {
@@ -109,12 +111,15 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
             }
             addToLeaderboard(_user, _market, _card, _timeHeld);
         } else {
+            // leaderboard is full
             address lastUserOnLeaderboard = leaderboard[_market][
                 leaderboardIndex[_market][_market][_card]
             ].prev;
             uint256 minimumTimeOnLeaderboard = leaderboard[
                 lastUserOnLeaderboard
             ][leaderboardIndex[lastUserOnLeaderboard][_market][_card]].timeHeld;
+
+            // does this user deserve to be on the leaderboard?
             if (_timeHeld > minimumTimeOnLeaderboard) {
                 // user deserves to be on leaderboard
                 if (userIsOnLeaderboard(_user, _market, _card)) {
@@ -145,6 +150,8 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
             leaderboardIndex[_market][_market][_card]
         ];
         address _nextUser = _currRecord.next;
+        // find the correct position
+        // TODO would it be better on average to search the leaderboard from the bottom?
         while (
             _timeHeld <
             leaderboard[_nextUser][leaderboardIndex[_nextUser][_market][_card]]
@@ -217,7 +224,10 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
         leaderboardLength[_market][_card]--;
     }
 
-    /// @dev check if a user is on the leaderboard
+    /// @notice check if a user is on the leaderboard
+    /// @param _user the user address to check
+    /// @param _market the market address to check
+    /// @param _card the cardId to check
     function userIsOnLeaderboard(
         address _user,
         address _market,
@@ -241,6 +251,7 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
     }
 
     /// @notice check if a user is on the leaderboard so they can claim an NFT
+    // TODO the longest owner will never get deleted because they can't call claimNFT
     function claimNFT(address _user, uint256 _card)
         external
         override
