@@ -214,7 +214,8 @@ contract RCNftHubL2 is
         ) {
             IRCMarket market = IRCMarket(marketTracker[tokenId]);
             require(
-                market.state() == IRCMarket.States.WITHDRAW,
+                market.state() == IRCMarket.States.WITHDRAW ||
+                    market.state() == IRCMarket.States.LOCKED,
                 "Incorrect state"
             );
         }
