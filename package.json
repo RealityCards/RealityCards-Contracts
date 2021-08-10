@@ -24,6 +24,7 @@
     "@truffle/hdwallet-provider": "^1.4.1",
     "acorn": "^8.2.4",
     "dotenv": "^10.0.0",
+    "hardhat-tracer": "^1.0.0-alpha.6",
     "minimist": "^1.2.5",
     "openzeppelin-solidity": "^4.1.0",
     "sha3": "^2.1.4",
