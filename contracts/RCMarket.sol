@@ -332,7 +332,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             uint256 _tokenId = getTokenId(_cardId);
             return nfthub.ownerOf(_tokenId);
         } else {
-            return address(0);
+            return address(this);
         }
     }
 
