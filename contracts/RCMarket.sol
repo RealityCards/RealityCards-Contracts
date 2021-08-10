@@ -656,11 +656,13 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     function collectRentAllCards() public override returns (bool) {
         _checkState(States.OPEN);
         bool _success = true;
+        uint256 _counter = 0;
         for (uint256 i = 0; i < numberOfCards; i++) {
             if (ownerOf(i) != address(this)) {
-                _success = _collectRent(i);
+                (_success, _counter) = _collectRent(i, _counter);
             }
-            if (!_success) {
+            /// @dev limit tested to 50, unable to make adjustable due to market size limit
+            if (!_success || _counter >= 50) {
                 return false;
             }
         }
@@ -756,7 +758,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             orderbook.removeOldBids(_user);
 
             /// @dev ignore the return value and let the user post the bid for the sake of UX
-            _collectRent(_card);
+            _collectRent(_card, 0);
 
             // check sufficient deposit
             uint256 _userTotalBidRate = (treasury.userTotalBids(_user) -
@@ -791,8 +793,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     {
         _checkState(States.OPEN);
         address _user = msgSender();
-
-        if (_collectRent(_card)) {
+        bool rentCollected;
+        (rentCollected, ) = _collectRent(_card, 0);
+        if (rentCollected) {
             _timeHeldLimit = _checkTimeHeldLimit(_timeHeldLimit);
 
             orderbook.setTimeHeldlimit(_user, _card, _timeHeldLimit);
@@ -824,7 +827,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
         // collectRent first
         /// @dev ignore the return value and let the user exit the bid for the sake of UX
-        _collectRent(_card);
+        _collectRent(_card, 0);
 
         if (ownerOf(_card) == _msgSender) {
             // block frontrunning attack
@@ -910,14 +913,16 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @dev ... _collectRentAction until the backlog of next owners has been processed, or maxRentIterations hit
     /// @param _card the card id to collect rent for
     /// @return true if the rent collection was completed, (ownership updated to the current time)
-    function _collectRent(uint256 _card) internal returns (bool) {
-        uint32 counter = 0;
+    function _collectRent(uint256 _card, uint256 _counter)
+        internal
+        returns (bool, uint256)
+    {
         bool shouldContinue = true;
-        while (counter < maxRentIterations && shouldContinue) {
+        while (_counter < maxRentIterations && shouldContinue) {
             shouldContinue = _collectRentAction(_card);
-            counter++;
+            _counter++;
         }
-        return !shouldContinue;
+        return (!shouldContinue, _counter);
     }
 
     /// @notice collects rent for a specific card
