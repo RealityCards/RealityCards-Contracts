@@ -242,9 +242,9 @@ async function createMarket(options) {
   await factory.createMarket(
     options.mode,
     options.ipfs,
+    options.slug,
     timestamps,
     tokenURIs,
-    options.slug,
     options.artistAddress,
     options.affiliateAddress,
     options.cardAffiliate,
