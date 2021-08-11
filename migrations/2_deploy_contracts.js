@@ -156,7 +156,7 @@ module.exports = async (deployer, network, accounts) => {
     leaderboard = await RCLeaderboard.deployed();
     await deployer.deploy(NftHubL2, factory.address, childChainManager);
     nftHubL2 = await NftHubL2.deployed();
-    await deployer.deploy(NftHubL1);
+    await deployer.deploy(NftHubL1, MintableERC721PredicateProxy);
     nftHubL1 = await NftHubL1.deployed();
     // tell treasury and factory about various things
     await treasury.setFactoryAddress(factory.address);
