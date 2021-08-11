@@ -130,6 +130,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         address _newOwner,
         uint256 _newTokenId
     );
+    event LogMintNFT(uint256 _cardId, uint256 _tokenId);
 
     /*╔═════════════════════════════════╗
       ║          CONSTRUCTOR            ║
@@ -818,6 +819,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         uint256 nftHubMintCount = nfthub.totalSupply();
         address _market = msgSender();
         nfthub.mint(_market, nftHubMintCount, tokenURIs[_market][_card]);
+        emit LogMintNFT(_card, nftHubMintCount);
     }
 
     /// @notice allows the market to mint a copy of the NFT for users on the leaderboard
