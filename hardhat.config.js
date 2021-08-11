@@ -45,7 +45,7 @@ module.exports = {
     hardhat: {
       gas: 19000000,
       blockGasLimit: 19000000,
-      gasPrice: 1,
+      gasPrice: "auto",
       accounts: {
         count: 2000,
       }
