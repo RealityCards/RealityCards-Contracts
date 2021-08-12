@@ -638,7 +638,7 @@ contract('TestOrderbook', (accounts) => {
     // withdraw deposit of 9, will it switch to 0
     await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000, user9);
-    await realitycards.collectRentAllCards();
+    await realitycards.collectRent(0);
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner, user5);
     var price = await realitycards.cardPrice.call(0);
@@ -653,7 +653,7 @@ contract('TestOrderbook', (accounts) => {
     await withdrawDeposit(1000, user0);
     await withdrawDeposit(1000, user3);
     await withdrawDeposit(1000, user4);
-    await realitycards.collectRentAllCards();
+    await realitycards.collectRent(0);
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner, user1);
     var price = await realitycards.cardPrice.call(0);

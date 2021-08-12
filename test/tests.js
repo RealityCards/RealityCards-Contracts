@@ -183,7 +183,7 @@ contract("RealityCardsTests", (accounts) => {
             // withdrawing locally again, until the bridge is finished.
             await treasury.withdrawDeposit(ether("100"), true, { from: bob });
             // check we don't own the card or have any bids
-            await markets[0].collectRentAllCards();
+            await markets[0].collectRent(0);
             assert.equal((await markets[0].ownerOf(0)), markets[0].address);
             assert.equal((await treasury.userTotalBids(bob)), 0);
         });
@@ -287,7 +287,7 @@ contract("RealityCardsTests", (accounts) => {
             // someone bids even higher, I increase my bid above what I can afford, we all run out of deposit, should not return to me
             await rc.newRental({ price: 2000, from: bob });
             await time.increase(time.duration.weeks(1));
-            await markets[0].collectRentAllCards();
+            await markets[0].collectRent(0);
             // check owned by contract
             var owner = await markets[0].ownerOf.call(0);
             assert.equal(owner, markets[0].address);
@@ -313,7 +313,7 @@ contract("RealityCardsTests", (accounts) => {
             assert.equal(totalRentals.toString(), ether("5").toString());
 
             await rc.withdrawDeposit(1000, alice);
-            await markets[0].collectRentAllCards();
+            await markets[0].collectRent(0);
             var owner = await markets[0].ownerOf.call(0);
             assert.notEqual(owner, alice);
         });
@@ -339,7 +339,7 @@ contract("RealityCardsTests", (accounts) => {
             //pay some rent
             const tx1 = await rc.newRental({ market: markets[1], price: bid, from: bob });
             await time.increase(time.duration.days(1));
-            const tx2 = await markets[1].collectRentAllCards();
+            const tx2 = await markets[1].collectRent(0);
             let rentDue = await rc.rentDue(tx1, tx2, bid)
 
             // check the values have all been correcly adjusted
@@ -451,7 +451,7 @@ contract("RealityCardsTests", (accounts) => {
             let gas = await markets[0].collectRentAllCards();
             console.log("gas used ", gas.receipt.gasUsed);
             assert.equal(await rc.orderbookSize(), extraBidsToPlace, "Incorrect number of bids removed");
-            await markets[0].collectRentAllCards();
+            await markets[0].collectRent(0);
             assert.equal(await rc.orderbookSize(), 0, "Incorrect number of bids removed");
         })
         it(' Foreclosed user max deletions (owner) ', async () => {
@@ -535,7 +535,7 @@ contract("RealityCardsTests", (accounts) => {
             }));
 
             await time.increase(time.duration.seconds(totalTime))
-            await markets[0].collectRentAllCards()
+            await markets[0].collectRent(0)
             let leaderboardList = await leaderboard.printLeaderboard(markets[0].address, 0)
             let NFTsToAward = await leaderboard.NFTsToAward(markets[0].address);
 
@@ -583,7 +583,7 @@ contract("RealityCardsTests", (accounts) => {
             }));
 
             await time.increase(time.duration.seconds(totalTime))
-            await markets[0].collectRentAllCards()
+            await markets[0].collectRent(0)
             let leaderboardList = await leaderboard.printLeaderboard(markets[0].address, 0)
             let NFTsToAward = await leaderboard.NFTsToAward(markets[0].address);
 
@@ -596,7 +596,7 @@ contract("RealityCardsTests", (accounts) => {
 
             await rc.newRental({ from: eve, timeLimit: 5000 });
             await time.increase(time.duration.seconds(5000))
-            await markets[0].collectRentAllCards()
+            await markets[0].collectRent(0)
             leaderboardList = await leaderboard.printLeaderboard(markets[0].address, 0)
             assert.equal(eve, leaderboardList[0], "Incorrect owner")
             assert.equal(alice, leaderboardList[1], "Incorrect owner")
@@ -640,7 +640,7 @@ contract("RealityCardsTests", (accounts) => {
             }));
 
             await time.increase(time.duration.seconds(totalTime))
-            await markets[0].collectRentAllCards()
+            await markets[0].collectRent(0)
             await markets[0].setAmicableResolution(0)
 
             let NFTCount = await nftHubL2.totalSupply()
@@ -696,7 +696,7 @@ contract("RealityCardsTests", (accounts) => {
             }));
 
             await time.increase(time.duration.seconds(totalTime))
-            await markets[0].collectRentAllCards()
+            await markets[0].collectRent(0)
             await markets[0].setAmicableResolution(0)
 
             await markets[0].claimCard(0, { from: alice })
@@ -708,7 +708,7 @@ contract("RealityCardsTests", (accounts) => {
 
             rc.newRental({ from: alice, market: markets[1] })
             await time.increase(time.duration.seconds(10))
-            await markets[1].collectRentAllCards()
+            await markets[1].collectRent(0)
             let owner = await nftHubL2.ownerOf(NFTCount)
             assert.equal(owner, alice, "Incorrect owner")
         })
@@ -1234,11 +1234,13 @@ contract("RealityCardsTests", (accounts) => {
                 await time.increase(time.duration.days(1))
 
                 let owner = await markets[1].ownerOf(1)
-                await markets[1].collectRentAllCards();
+                await markets[1].collectRent(0);
+                await markets[1].collectRent(1);
                 owner = await markets[1].ownerOf(1)
 
                 await time.increase(time.duration.hours(1))
-                await markets[1].collectRentAllCards();
+                await markets[1].collectRent(0);
+                await markets[1].collectRent(1);
 
             })
         })
@@ -1490,7 +1492,7 @@ contract("RealityCardsTests", (accounts) => {
                 // withdraw deposit of 9, will it switch to 0
                 await time.increase(time.duration.minutes(10));
                 await withdrawDeposit(1000, user9);
-                await realitycards.collectRentAllCards();
+                await realitycards.collectRent(0);
                 var owner = await realitycards.ownerOf.call(0);
                 assert.equal(owner, user5);
                 var price = await realitycards.cardPrice.call(0);
@@ -1505,7 +1507,7 @@ contract("RealityCardsTests", (accounts) => {
                 await withdrawDeposit(1000, user0);
                 await withdrawDeposit(1000, user3);
                 await withdrawDeposit(1000, user4);
-                await realitycards.collectRentAllCards();
+                await realitycards.collectRent(0);
                 var owner = await realitycards.ownerOf.call(0);
                 assert.equal(owner, user1);
                 var price = await realitycards.cardPrice.call(0);

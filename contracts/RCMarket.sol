@@ -460,9 +460,11 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         );
 
         // do a final rent collection before the contract is locked down
-        // make sure the rent collection finished and we have enough gas left
+        for (uint256 i = 0; i < numberOfCards; i++) {
+            _collectRent(i, 0);
+        }
         if (
-            collectRentAllCards() &&
+            /*collectRentAllCards() &&*/
             gasleft() > (350_000 + (175_000 * numberOfCards))
         ) {
             orderbook.closeMarket();
@@ -651,22 +653,15 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
     /// @dev basically functions that have _checkState(States.OPEN) on first line
 
-    /// @notice collects rent for all cards
-    /// @dev cannot be external because it is called within the lockMarket function, therefore public
-    function collectRentAllCards() public override returns (bool) {
+    /// @notice collects rent a specifc card
+    function collectRent(uint256 _cardId) public override returns (bool) {
         _checkState(States.OPEN);
-        bool _success = true;
-        uint256 _counter = 0;
-        for (uint256 i = 0; i < numberOfCards; i++) {
-            if (ownerOf(i) != address(this)) {
-                (_success, _counter) = _collectRent(i, _counter);
-            }
-            /// @dev limit tested to 50, unable to make adjustable due to market size limit
-            if (!_success || _counter >= 50) {
-                return false;
-            }
+        bool _success;
+        (_success, ) = _collectRent(_cardId, 0);
+        if (_success) {
+            return true;
         }
-        return true;
+        return false;
     }
 
     /// @notice rent every Card at the minimum price

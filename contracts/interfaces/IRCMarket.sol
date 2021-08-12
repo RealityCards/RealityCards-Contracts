@@ -41,7 +41,7 @@ interface IRCMarket {
     function updateTimeHeldLimit(uint256 _timeHeldLimit, uint256 _card)
         external;
 
-    function collectRentAllCards() external returns (bool);
+    function collectRent(uint256 _cardId) external returns (bool);
 
     function exitAll() external;
 

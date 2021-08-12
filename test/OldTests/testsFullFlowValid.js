@@ -2002,18 +2002,21 @@ contract("TestFullFlowValid", (accounts) => {
     await time.increase(time.duration.weeks(2));
     await time.increase(time.duration.hours(1));
 
-    const txTimestamp = await getTimestamp(realitycards.collectRentAllCards());
+    const txTimestamp0 = await getTimestamp(realitycards.collectRent(0));
+    const txTimestamp1 = await getTimestamp(realitycards.collectRent(1));
+    const txTimestamp2 = await getTimestamp(realitycards.collectRent(2));
+
 
     // user0
     const userRecord6 = await treasury.user.call(user0)
-    assert.equal(txTimestamp.toString(), userRecord6[3].toString())
+    assert.equal(txTimestamp0.toString(), userRecord6[3].toString())
     assert.equal(user1, await realitycards.ownerOf(2))
-    assert.equal(txTimestamp.toString(), (await realitycards.timeLastCollected.call(2)).toString())
+    assert.equal(txTimestamp2.toString(), (await realitycards.timeLastCollected.call(2)).toString())
 
     // user1
     const userRecord7 = await treasury.user.call(user1)
-    assert.equal(txTimestamp.toString(), userRecord7[3].toString())
-    assert.equal(txTimestamp.toString(), (await realitycards.timeLastCollected.call(2)).toString())
+    assert.equal(txTimestamp2.toString(), userRecord7[3].toString())
+    assert.equal(txTimestamp2.toString(), (await realitycards.timeLastCollected.call(2)).toString())
 
     const currentTimestamp = (await web3.eth.getBlock("latest")).timestamp;
     const testCurTimestamp = (await web3.eth.getBlock("latest")).timestamp;
