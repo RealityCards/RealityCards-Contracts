@@ -340,15 +340,15 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     }
 
     /// @notice gets tokenURI via their Card Id
-    function tokenURI(uint256 _cardId)
-        external
-        view
-        override
-        returns (string memory)
-    {
-        uint256 _tokenId = getTokenId(_cardId);
-        return nfthub.tokenURI(_tokenId);
-    }
+    // function tokenURI(uint256 _cardId)
+    //     external
+    //     view
+    //     override
+    //     returns (string memory)
+    // {
+    //     uint256 _tokenId = getTokenId(_cardId);
+    //     return nfthub.tokenURI(_tokenId);
+    // }
 
     /// @notice transfer ERC 721 between users
     function _transferCard(
@@ -441,6 +441,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
     /// @dev admin override of the oracle
     function setAmicableResolution(uint256 _winningOutcome) external override {
+        console.log("gas ", gasleft());
         require(
             treasury.checkPermission(keccak256("OWNER"), msgSender()),
             "Not authorised"
@@ -466,13 +467,11 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         bool totalAccountingComplete = false;
         uint256 rentIterationCounter = 0;
         // do a final rent collection before the contract is locked down
-        for (
-            uint256 _cardId = cardAccountingIndex;
-            _cardId < numberOfCards;
-            _cardId++
+        while (
+            cardAccountingIndex < numberOfCards && !totalAccountingComplete
         ) {
             (cardAccountingComplete, rentIterationCounter) = _collectRent(
-                _cardId,
+                cardAccountingIndex,
                 rentIterationCounter
             );
             if (cardAccountingComplete) {
@@ -481,6 +480,10 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             }
             if (cardAccountingIndex == numberOfCards) {
                 totalAccountingComplete = true;
+                break;
+            }
+            if (rentIterationCounter >= maxRentIterations) {
+                break;
             }
         }
         if (totalAccountingComplete) {
@@ -611,56 +614,56 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @dev [hangover from when ether was native currency, keeping in case we return to this]
 
     /// @notice pay artist
-    function payArtist() external override {
-        _checkState(States.WITHDRAW);
-        require(!artistPaid, "Artist already paid");
-        artistPaid = true;
-        _processStakeholderPayment(artistCut, artistAddress);
-    }
+    // function payArtist() external override {
+    //     _checkState(States.WITHDRAW);
+    //     require(!artistPaid, "Artist already paid");
+    //     artistPaid = true;
+    //     _processStakeholderPayment(artistCut, artistAddress);
+    // }
 
-    /// @notice pay market creator
-    function payMarketCreator() external override {
-        _checkState(States.WITHDRAW);
-        require(totalTimeHeld[winningOutcome] > 0, "No winner");
-        require(!creatorPaid, "Creator already paid");
-        creatorPaid = true;
-        _processStakeholderPayment(creatorCut, marketCreatorAddress);
-    }
+    // /// @notice pay market creator
+    // function payMarketCreator() external override {
+    //     _checkState(States.WITHDRAW);
+    //     require(totalTimeHeld[winningOutcome] > 0, "No winner");
+    //     require(!creatorPaid, "Creator already paid");
+    //     creatorPaid = true;
+    //     _processStakeholderPayment(creatorCut, marketCreatorAddress);
+    // }
 
-    /// @notice pay affiliate
-    function payAffiliate() external override {
-        _checkState(States.WITHDRAW);
-        require(!affiliatePaid, "Affiliate already paid");
-        affiliatePaid = true;
-        _processStakeholderPayment(affiliateCut, affiliateAddress);
-    }
+    // /// @notice pay affiliate
+    // function payAffiliate() external override {
+    //     _checkState(States.WITHDRAW);
+    //     require(!affiliatePaid, "Affiliate already paid");
+    //     affiliatePaid = true;
+    //     _processStakeholderPayment(affiliateCut, affiliateAddress);
+    // }
 
-    /// @notice pay card affiliate
-    /// @dev does not call _processStakeholderPayment because it works differently
-    function payCardAffiliate(uint256 _card) external override {
-        _checkState(States.WITHDRAW);
-        require(!cardAffiliatePaid[_card], "Card affiliate already paid");
-        cardAffiliatePaid[_card] = true;
-        uint256 _cardAffiliatePayment = (rentCollectedPerCard[_card] *
-            cardAffiliateCut) / (PER_MILLE);
-        if (_cardAffiliatePayment > 0) {
-            _payout(cardAffiliateAddresses[_card], _cardAffiliatePayment);
-            emit LogStakeholderPaid(
-                cardAffiliateAddresses[_card],
-                _cardAffiliatePayment
-            );
-        }
-    }
+    // /// @notice pay card affiliate
+    // /// @dev does not call _processStakeholderPayment because it works differently
+    // function payCardAffiliate(uint256 _card) external override {
+    //     _checkState(States.WITHDRAW);
+    //     require(!cardAffiliatePaid[_card], "Card affiliate already paid");
+    //     cardAffiliatePaid[_card] = true;
+    //     uint256 _cardAffiliatePayment = (rentCollectedPerCard[_card] *
+    //         cardAffiliateCut) / (PER_MILLE);
+    //     if (_cardAffiliatePayment > 0) {
+    //         _payout(cardAffiliateAddresses[_card], _cardAffiliatePayment);
+    //         emit LogStakeholderPaid(
+    //             cardAffiliateAddresses[_card],
+    //             _cardAffiliatePayment
+    //         );
+    //     }
+    // }
 
-    function _processStakeholderPayment(uint256 _cut, address _recipient)
-        internal
-    {
-        if (_cut > 0) {
-            uint256 _payment = (totalRentCollected * _cut) / (PER_MILLE);
-            _payout(_recipient, _payment);
-            emit LogStakeholderPaid(_recipient, _payment);
-        }
-    }
+    // function _processStakeholderPayment(uint256 _cut, address _recipient)
+    //     internal
+    // {
+    //     if (_cut > 0) {
+    //         uint256 _payment = (totalRentCollected * _cut) / (PER_MILLE);
+    //         _payout(_recipient, _payment);
+    //         emit LogStakeholderPaid(_recipient, _payment);
+    //     }
+    // }
 
     /*╔═════════════════════════════════╗
       ║         CORE FUNCTIONS          ║

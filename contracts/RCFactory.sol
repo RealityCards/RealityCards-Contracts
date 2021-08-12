@@ -153,7 +153,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         setMinimumPriceIncreasePercent(10); // 10%
         setNumberOfNFTsToAward(3);
         setNFTMintingLimit(40); // safe limit tested and set at 40, can be adjusted later if gas limit changes
-        setMaxRentIterations(80); // safe limit tested and set at 80, can be adjusted later if gas limit changes
+        setMaxRentIterations(50); // safe limit tested and set at 80, can be adjusted later if gas limit changes
         // oracle
         setArbitrator(_arbitratorAddress);
         setRealitioAddress(_realitioAddress);

@@ -20,7 +20,48 @@ contract("RealityCardsTests", (accounts) => {
 
         })
     })
+    describe("Market tests ", () => {
+        it.only("Lock a market with many cards ", async () => {
+            let cardsToMake = 100;
+            await factory.setNFTMintingLimit(cardsToMake);
+            markets.push(await rc.createMarket({ numberOfCards: cardsToMake }))
 
+            await rc.deposit(100, alice)
+            for (let i = 0; i < cardsToMake; i++) {
+                await rc.newRental({ market: markets[1], outcome: i })
+            }
+
+            await time.increase(time.duration.days(1))
+
+            await markets[1].collectRent(0);
+
+            let state = await markets[1].state();
+            console.log("state ", state.toString())
+
+            let cards = await markets[1].numberOfCards();
+            console.log("cards ", cards.toString())
+
+            await markets[1].setAmicableResolution(0)
+
+            state = await markets[1].state();
+            console.log("state ", state.toString())
+
+            await markets[1].lockMarket()
+
+            state = await markets[1].state();
+            console.log("state ", state.toString())
+
+            await markets[1].lockMarket()
+
+            state = await markets[1].state();
+            console.log("state ", state.toString())
+
+            await markets[1].lockMarket()
+
+            state = await markets[1].state();
+            console.log("state ", state.toString())
+        });
+    })
     describe("Treasury tests ", () => {
         it("Ensure only factory can add markets", async () => {
             // prove Factory can create a market
