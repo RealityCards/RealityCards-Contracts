@@ -117,6 +117,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     address[] public override cardAffiliateAddresses;
     uint256 public override cardAffiliateCut;
     mapping(uint256 => bool) public override cardAffiliatePaid;
+    /// @dev keeps track of which card is next to complete the
+    /// @dev .. accounting for when locking the market
+    uint256 public cardAccountingIndex;
 
     // ORACLE VARIABLES
     bytes32 public override questionId;
@@ -459,14 +462,28 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             "Market has not finished"
         );
 
+        bool cardAccountingComplete = false;
+        bool totalAccountingComplete = false;
+        uint256 rentIterationCounter = 0;
         // do a final rent collection before the contract is locked down
-        for (uint256 i = 0; i < numberOfCards; i++) {
-            _collectRent(i, 0);
-        }
-        if (
-            /*collectRentAllCards() &&*/
-            gasleft() > (350_000 + (175_000 * numberOfCards))
+        for (
+            uint256 _cardId = cardAccountingIndex;
+            _cardId < numberOfCards;
+            _cardId++
         ) {
+            (cardAccountingComplete, rentIterationCounter) = _collectRent(
+                _cardId,
+                rentIterationCounter
+            );
+            if (cardAccountingComplete) {
+                cardAccountingComplete = false;
+                cardAccountingIndex++;
+            }
+            if (cardAccountingIndex == numberOfCards) {
+                totalAccountingComplete = true;
+            }
+        }
+        if (totalAccountingComplete) {
             orderbook.closeMarket();
             _incrementState();
 
