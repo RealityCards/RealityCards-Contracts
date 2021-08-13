@@ -68,19 +68,20 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @dev maximum number of times to calculate rent in one transaction
     uint256 public override maxRentIterations;
 
-    // TIME
-    /// @dev how many seconds each user has held each card for, for determining winnings
-    mapping(uint256 => mapping(address => uint256)) public override timeHeld;
-    /// @dev sums all the timeHelds for each. Used when paying out. Should always increment at the same time as timeHeld
-    mapping(uint256 => uint256) public override totalTimeHeld;
-    /// @dev used to determine the rent due. Rent is due for the period (now - timeLastCollected), at which point timeLastCollected is set to now.
-    mapping(uint256 => uint256) public override timeLastCollected;
-    /// @dev to track the max timeheld of each card (for giving NFT to winner)
-    mapping(uint256 => uint256) public override longestTimeHeld;
-    /// @dev to track who has owned it the most (for giving NFT to winner)
-    mapping(uint256 => address) public override longestOwner;
-    /// @dev to track the card timeHeldLimit for the current owner
-    mapping(uint256 => uint256) public override cardTimeLimit;
+    struct Card {
+        // Time
+        /// @dev how many seconds each user has held each card for, for determining winnings
+        mapping(address => uint256) timeHeld;
+        /// @dev sums all the timeHelds for each. Used when paying out. Should always increment at the same time as timeHeld
+        uint256 totalTimeHeld;
+        /// @dev used to determine the rent due. Rent is due for the period (now - timeLastCollected), at which point timeLastCollected is set to now.
+        uint256 timeLastCollected;
+        /// @dev to track who has owned it the most (for giving NFT to winner)
+        address longestOwner;
+        /// @dev to track the card timeHeldLimit for the current owner
+        uint256 cardTimeLimit;
+    }
+    mapping(uint256 => Card) public card;
 
     // TIMESTAMPS
     /// @dev when the market opens
@@ -381,7 +382,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         if (_to != _from) {
             _transferCard(_from, _to, _cardId);
         }
-        cardTimeLimit[_cardId] = _timeLimit;
+        card[_cardId].cardTimeLimit = _timeLimit;
         cardPrice[_cardId] = _price;
     }
 
@@ -442,7 +443,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
     /// @dev admin override of the oracle
     function setAmicableResolution(uint256 _winningOutcome) external override {
-        console.log("gas ", gasleft());
         require(
             treasury.checkPermission(keccak256("OWNER"), msgSender()),
             "Not authorised"
@@ -487,7 +487,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             }
         }
         // check the accounting is complete but only continue if we haven't used much gas so far
-        if (accountingComplete && rentIterationCounter < 20) {
+        if (accountingComplete && rentIterationCounter < 25) {
             // and that the orderbook has shut the market
             if (orderbook.closeMarket()) {
                 // now lock the market
@@ -498,7 +498,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                         // bring the cards back to the market so the winners get the satisfaction of claiming them
                         _transferCard(ownerOf(i), address(this), i);
                     }
-                    emit LogLongestOwner(i, longestOwner[i]);
+                    emit LogLongestOwner(i, card[i].longestOwner);
                 }
                 emit LogContractLocked(true);
             }
@@ -529,7 +529,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         _checkState(States.WITHDRAW);
         require(!userAlreadyWithdrawn[msgSender()], "Already withdrawn");
         userAlreadyWithdrawn[msgSender()] = true;
-        if (totalTimeHeld[winningOutcome] > 0) {
+        if (card[winningOutcome].totalTimeHeld > 0) {
             _payoutWinnings();
         } else {
             _returnRent();
@@ -550,8 +550,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         address _user = msgSender();
         require(!userAlreadyClaimed[_card][_user], "Already claimed");
         userAlreadyClaimed[_card][_user] = true;
-        if (_user == longestOwner[_card]) {
-            _transferCard(ownerOf(_card), longestOwner[_card], _card);
+        if (_user == card[_card].longestOwner) {
+            _transferCard(ownerOf(_card), card[_card].longestOwner, _card);
         } else {
             leaderboard.claimNFT(_user, _card);
             factory.mintCopyOfNFT(_user, _card);
@@ -564,7 +564,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         uint256 _remainingCut = ((((uint256(PER_MILLE) - artistCut) -
             affiliateCut) - cardAffiliateCut) - winnerCut) - creatorCut;
         // calculate longest owner's extra winnings, if relevant
-        if (longestOwner[winningOutcome] == msgSender() && winnerCut > 0) {
+        if (card[winningOutcome].longestOwner == msgSender() && winnerCut > 0) {
             _winningsToTransfer =
                 (totalRentCollected * winnerCut) /
                 (PER_MILLE);
@@ -584,11 +584,11 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             // calculate normal winnings, if any
             _remainingPot = (totalRentCollected * _remainingCut) / (PER_MILLE);
         }
-        uint256 _winnersTimeHeld = timeHeld[winningOutcome][msgSender()];
+        uint256 _winnersTimeHeld = card[winningOutcome].timeHeld[msgSender()];
         uint256 _numerator = _remainingPot * _winnersTimeHeld;
         _winningsToTransfer =
             _winningsToTransfer +
-            (_numerator / totalTimeHeld[winningOutcome]);
+            (_numerator / card[winningOutcome].totalTimeHeld);
         require(_winningsToTransfer > 0, "Not a winner");
         _payout(msgSender(), _winningsToTransfer);
         emit LogWinningsPaid(msgSender(), _winningsToTransfer);
@@ -628,7 +628,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @notice pay market creator
     function payMarketCreator() external override {
         _checkState(States.WITHDRAW);
-        require(totalTimeHeld[winningOutcome] > 0, "No winner");
+        require(card[winningOutcome].totalTimeHeld > 0, "No winner");
         require(!creatorPaid, "Creator already paid");
         creatorPaid = true;
         _processStakeholderPayment(creatorCut, marketCreatorAddress);
@@ -820,7 +820,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             orderbook.setTimeHeldlimit(_user, _card, _timeHeldLimit);
 
             if (ownerOf(_card) == _user) {
-                cardTimeLimit[_card] = _timeHeldLimit;
+                card[_card].cardTimeLimit = _timeHeldLimit;
             }
 
             emit LogUpdateTimeHeldLimit(_user, _timeHeldLimit, _card);
@@ -962,7 +962,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         // AND if the last collection was in the past (ie, don't do 2+ rent collections in the same block)
         if (
             _user != address(this) &&
-            timeLastCollected[_card] < _timeOfThisCollection
+            card[_card].timeLastCollected < _timeOfThisCollection
         ) {
             // User rent collect and fetch the time the user foreclosed, 0 means they didn't foreclose yet
             uint256 _timeUserForeclosed = treasury.collectRentUser(
@@ -971,12 +971,12 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             );
 
             // Calculate the card timeLimitTimestamp
-            uint256 _cardTimeLimitTimestamp = timeLastCollected[_card] +
-                cardTimeLimit[_card];
+            uint256 _cardTimeLimitTimestamp = card[_card].timeLastCollected +
+                card[_card].cardTimeLimit;
 
             // input bools
             bool _foreclosed = _timeUserForeclosed != 0;
-            bool _limitHit = cardTimeLimit[_card] != 0 &&
+            bool _limitHit = card[_card].cardTimeLimit != 0 &&
                 _cardTimeLimitTimestamp < block.timestamp;
 
             // outputs
@@ -1047,7 +1047,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         } else {
             // timeLastCollected is updated regardless of whether the card is owned, so that the clock starts ticking
             // ... when the first owner buys it, because this function is run before ownership changes upon calling newRental
-            timeLastCollected[_card] = _timeOfThisCollection;
+            card[_card].timeLastCollected = _timeOfThisCollection;
         }
         return false;
     }
@@ -1059,31 +1059,37 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         uint256 _timeOfCollection
     ) internal {
         uint256 _rentOwed = (cardPrice[_card] *
-            (_timeOfCollection - timeLastCollected[_card])) / 1 days;
+            (_timeOfCollection - card[_card].timeLastCollected)) / 1 days;
         /// @dev get back the actual rent collected, it may be less than owed
         uint256 _rentCollected = treasury.payRent(_rentOwed);
         uint256 _timeHeldToIncrement = (_timeOfCollection -
-            timeLastCollected[_card]);
+            card[_card].timeLastCollected);
 
         // if the user has a timeLimit, adjust it as necessary
-        if (cardTimeLimit[_card] != 0) {
+        if (card[_card].cardTimeLimit != 0) {
             orderbook.reduceTimeHeldLimit(_user, _card, _timeHeldToIncrement);
-            cardTimeLimit[_card] -= _timeHeldToIncrement;
+            card[_card].cardTimeLimit -= _timeHeldToIncrement;
         }
-        timeHeld[_card][_user] += _timeHeldToIncrement;
-        totalTimeHeld[_card] += _timeHeldToIncrement;
+        card[_card].timeHeld[_user] += _timeHeldToIncrement;
+        card[_card].totalTimeHeld += _timeHeldToIncrement;
         rentCollectedPerUser[_user] += _rentCollected;
         rentCollectedPerCard[_card] += _rentCollected;
         rentCollectedPerUserPerCard[_user][_card] += _rentCollected;
         totalRentCollected += _rentCollected;
-        timeLastCollected[_card] = _timeOfCollection;
+        card[_card].timeLastCollected = _timeOfCollection;
 
         // longest owner tracking
-        if (timeHeld[_card][_user] > longestTimeHeld[_card]) {
-            longestTimeHeld[_card] = timeHeld[_card][_user];
-            longestOwner[_card] = _user;
+        if (
+            card[_card].timeHeld[_user] >
+            card[_card].timeHeld[card[_card].longestOwner]
+        ) {
+            card[_card].longestOwner = _user;
         }
-        leaderboard.updateLeaderboard(_user, _card, timeHeld[_card][_user]);
+        leaderboard.updateLeaderboard(
+            _user,
+            _card,
+            card[_card].timeHeld[_user]
+        );
         emit LogRentCollection(
             _rentCollected,
             _timeHeldToIncrement,
@@ -1117,6 +1123,33 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
     function tokenExists(uint256 _card) internal view returns (bool) {
         return tokenIds[_card] != type(uint256).max;
+    }
+
+    function timeHeld(uint256 _card, address _user)
+        external
+        view
+        override
+        returns (uint256)
+    {
+        return card[_card].timeHeld[_user];
+    }
+
+    function timeLastCollected(uint256 _card)
+        external
+        view
+        override
+        returns (uint256)
+    {
+        return card[_card].timeLastCollected;
+    }
+
+    function longestOwner(uint256 _card)
+        external
+        view
+        override
+        returns (address)
+    {
+        return card[_card].longestOwner;
     }
 
     /*╔═════════════════════════════════╗

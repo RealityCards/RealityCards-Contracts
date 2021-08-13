@@ -622,26 +622,26 @@ contract('TestFundamentals', (accounts) => {
     // await newRental(web3.utils.toWei('1', 'ether'),2,web3.utils.toWei('10', 'ether'),user0 ); 
     await time.increase(time.duration.days(1));
     await realitycards.collectRent(2);
-    var maxTimeHeld = await realitycards.longestTimeHeld(2);
-    var maxTimeHeldShouldBe = time.duration.days(1);
-    var difference = Math.abs(maxTimeHeld.toString() - maxTimeHeldShouldBe.toString());
-    assert.isBelow(difference / maxTimeHeld, 0.0001);
     var longestOwner = await realitycards.longestOwner(2);
     var longestOwnerShouldBe = user0;
     assert.equal(longestOwner, longestOwnerShouldBe);
+    var maxTimeHeld = await realitycards.timeHeld(2, longestOwner);
+    var maxTimeHeldShouldBe = time.duration.days(1);
+    var difference = Math.abs(maxTimeHeld.toString() - maxTimeHeldShouldBe.toString());
+    assert.isBelow(difference / maxTimeHeld, 0.0001);
     // try again new owner
     await depositDai(10, user1);
     await newRental(2, 2, user1);
     // await newRental(web3.utils.toWei('2', 'ether'),2,web3.utils.toWei('10', 'ether'),user1 ); 
     await time.increase(time.duration.days(2));
     await realitycards.collectRent(2);
-    var maxTimeHeld = await realitycards.longestTimeHeld(2);
-    var maxTimeHeldShouldBe = time.duration.days(2);
-    var difference = Math.abs(maxTimeHeld.toString() - maxTimeHeldShouldBe.toString());
-    assert.isBelow(difference / maxTimeHeld, 0.0001);
     var longestOwner = await realitycards.longestOwner(2);
     var longestOwnerShouldBe = user1;
     assert.equal(longestOwner, longestOwnerShouldBe);
+    var maxTimeHeld = await realitycards.timeHeld(2, longestOwner);
+    var maxTimeHeldShouldBe = time.duration.days(2);
+    var difference = Math.abs(maxTimeHeld.toString() - maxTimeHeldShouldBe.toString());
+    assert.isBelow(difference / maxTimeHeld, 0.0001);
   });
 
   it('test exit but then can rent again', async () => {

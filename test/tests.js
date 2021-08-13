@@ -21,12 +21,12 @@ contract("RealityCardsTests", (accounts) => {
         })
     })
     describe("Market tests ", () => {
-        it.only("Lock a market with many cards ", async () => {
+        it.skip("Lock a market with many cards ", async () => {
             let cardsToMake = 100;
             await factory.setNFTMintingLimit(cardsToMake);
             markets.push(await rc.createMarket({ numberOfCards: cardsToMake }))
 
-            await rc.deposit(100, alice)
+            await rc.deposit(1000, alice)
             for (let i = 0; i < cardsToMake; i++) {
                 await rc.newRental({ market: markets[1], outcome: i })
             }
@@ -56,6 +56,12 @@ contract("RealityCardsTests", (accounts) => {
             state = await markets[1].state();
             console.log("state ", state.toString())
 
+            await markets[1].lockMarket()
+
+            state = await markets[1].state();
+            console.log("state ", state.toString())
+
+            console.log("FINAL LOCKING")
             await markets[1].lockMarket()
 
             state = await markets[1].state();

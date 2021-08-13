@@ -119,17 +119,14 @@ interface IRCMarket {
     function maxRentIterations() external view returns (uint256);
 
     // time
-    function timeHeld(uint256, address) external view returns (uint256);
+    function timeHeld(uint256 _card, address _user)
+        external
+        view
+        returns (uint256);
 
-    function totalTimeHeld(uint256) external view returns (uint256);
+    function timeLastCollected(uint256 _card) external view returns (uint256);
 
-    function timeLastCollected(uint256) external view returns (uint256);
-
-    function longestTimeHeld(uint256) external view returns (uint256);
-
-    function longestOwner(uint256) external view returns (address);
-
-    function cardTimeLimit(uint256) external view returns (uint256);
+    function longestOwner(uint256 _card) external view returns (address);
 
     function marketOpeningTime() external view returns (uint32);
 
