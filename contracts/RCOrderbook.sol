@@ -684,6 +684,9 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
                     _newBid.price = 0;
                     _newBid.timeHeldLimit = 0;
                     user[address(this)].push(_newBid);
+
+                    // remove the market record
+                    user[_market].pop();
                 }
             } while (
                 i > 0 &&
