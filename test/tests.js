@@ -60,7 +60,7 @@ contract("RealityCardsTests", (accounts) => {
 
             state = await markets[1].state();
             console.log("state ", state.toString())
-        });
+        }).timeout(200000);
     })
     describe("Treasury tests ", () => {
         it("Ensure only factory can add markets", async () => {
