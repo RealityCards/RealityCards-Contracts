@@ -56,13 +56,13 @@ interface IRCMarket {
     // payouts
     function withdraw() external;
 
-    // function payArtist() external;
+    function payArtist() external;
 
-    // function payMarketCreator() external;
+    function payMarketCreator() external;
 
-    // function payAffiliate() external;
+    function payAffiliate() external;
 
-    // function payCardAffiliate(uint256) external;
+    function payCardAffiliate(uint256) external;
 
     // view functions
     function nfthub() external view returns (IRCNftHubL2);

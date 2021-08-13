@@ -64,7 +64,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
     /// @dev number of bids a user should clean when placing a new bid
     uint256 public override cleaningLoops = 2;
     /// @dev max number of market records to put into the waste pile in one go
-    uint256 public override marketCloseLimit = 50;
+    uint256 public override marketCloseLimit = 70;
     /// @dev nonce emitted with orderbook insertions, for frontend sorting
     uint256 public override nonce;
 
@@ -640,8 +640,13 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
         // check if the market was ever added to the orderbook
         if (bidExists(_market, _market, 0)) {
             closedMarkets.push(_market);
-            uint256 i = user[_market].length;
-            uint256 initialRecordCount = user[_market].length;
+            uint256 i = user[_market].length; // start on the last record so we can easily pop()
+            uint256 _limit = 0;
+            if (marketCloseLimit < user[_market].length) {
+                _limit = user[_market].length - marketCloseLimit;
+            } else {
+                _limit = 0;
+            }
             do {
                 i--;
                 address _lastOwner = user[_market][index[_market][_market][i]]
@@ -684,14 +689,10 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
                     _newBid.price = 0;
                     _newBid.timeHeldLimit = 0;
                     user[address(this)].push(_newBid);
-
-                    // remove the market record
-                    user[_market].pop();
                 }
-            } while (
-                i > 0 &&
-                    initialRecordCount + marketCloseLimit > user[_market].length
-            );
+                // remove the market record
+                user[_market].pop();
+            } while (i > _limit);
         }
         if (user[_market].length == 0) {
             return true;

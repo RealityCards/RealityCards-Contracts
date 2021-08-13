@@ -120,6 +120,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @dev keeps track of which card is next to complete the
     /// @dev .. accounting for when locking the market
     uint256 public cardAccountingIndex;
+    bool public accountingComplete;
 
     // ORACLE VARIABLES
     bytes32 public override questionId;
@@ -466,12 +467,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         );
 
         bool cardAccountingComplete = false;
-        bool totalAccountingComplete = false;
         uint256 rentIterationCounter = 0;
         // do a final rent collection before the contract is locked down
-        while (
-            cardAccountingIndex < numberOfCards && !totalAccountingComplete
-        ) {
+        while (cardAccountingIndex < numberOfCards && !accountingComplete) {
             (cardAccountingComplete, rentIterationCounter) = _collectRent(
                 cardAccountingIndex,
                 rentIterationCounter
@@ -481,15 +479,15 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                 cardAccountingIndex++;
             }
             if (cardAccountingIndex == numberOfCards) {
-                totalAccountingComplete = true;
+                accountingComplete = true;
                 break;
             }
             if (rentIterationCounter >= maxRentIterations) {
                 break;
             }
         }
-        // check the accounting is complete
-        if (totalAccountingComplete) {
+        // check the accounting is complete but only continue if we haven't used much gas so far
+        if (accountingComplete && rentIterationCounter < 20) {
             // and that the orderbook has shut the market
             if (orderbook.closeMarket()) {
                 // now lock the market
@@ -620,56 +618,56 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @dev [hangover from when ether was native currency, keeping in case we return to this]
 
     /// @notice pay artist
-    // function payArtist() external override {
-    //     _checkState(States.WITHDRAW);
-    //     require(!artistPaid, "Artist already paid");
-    //     artistPaid = true;
-    //     _processStakeholderPayment(artistCut, artistAddress);
-    // }
+    function payArtist() external override {
+        _checkState(States.WITHDRAW);
+        require(!artistPaid, "Artist already paid");
+        artistPaid = true;
+        _processStakeholderPayment(artistCut, artistAddress);
+    }
 
-    // /// @notice pay market creator
-    // function payMarketCreator() external override {
-    //     _checkState(States.WITHDRAW);
-    //     require(totalTimeHeld[winningOutcome] > 0, "No winner");
-    //     require(!creatorPaid, "Creator already paid");
-    //     creatorPaid = true;
-    //     _processStakeholderPayment(creatorCut, marketCreatorAddress);
-    // }
+    /// @notice pay market creator
+    function payMarketCreator() external override {
+        _checkState(States.WITHDRAW);
+        require(totalTimeHeld[winningOutcome] > 0, "No winner");
+        require(!creatorPaid, "Creator already paid");
+        creatorPaid = true;
+        _processStakeholderPayment(creatorCut, marketCreatorAddress);
+    }
 
-    // /// @notice pay affiliate
-    // function payAffiliate() external override {
-    //     _checkState(States.WITHDRAW);
-    //     require(!affiliatePaid, "Affiliate already paid");
-    //     affiliatePaid = true;
-    //     _processStakeholderPayment(affiliateCut, affiliateAddress);
-    // }
+    /// @notice pay affiliate
+    function payAffiliate() external override {
+        _checkState(States.WITHDRAW);
+        require(!affiliatePaid, "Affiliate already paid");
+        affiliatePaid = true;
+        _processStakeholderPayment(affiliateCut, affiliateAddress);
+    }
 
-    // /// @notice pay card affiliate
-    // /// @dev does not call _processStakeholderPayment because it works differently
-    // function payCardAffiliate(uint256 _card) external override {
-    //     _checkState(States.WITHDRAW);
-    //     require(!cardAffiliatePaid[_card], "Card affiliate already paid");
-    //     cardAffiliatePaid[_card] = true;
-    //     uint256 _cardAffiliatePayment = (rentCollectedPerCard[_card] *
-    //         cardAffiliateCut) / (PER_MILLE);
-    //     if (_cardAffiliatePayment > 0) {
-    //         _payout(cardAffiliateAddresses[_card], _cardAffiliatePayment);
-    //         emit LogStakeholderPaid(
-    //             cardAffiliateAddresses[_card],
-    //             _cardAffiliatePayment
-    //         );
-    //     }
-    // }
+    /// @notice pay card affiliate
+    /// @dev does not call _processStakeholderPayment because it works differently
+    function payCardAffiliate(uint256 _card) external override {
+        _checkState(States.WITHDRAW);
+        require(!cardAffiliatePaid[_card], "Card affiliate already paid");
+        cardAffiliatePaid[_card] = true;
+        uint256 _cardAffiliatePayment = (rentCollectedPerCard[_card] *
+            cardAffiliateCut) / (PER_MILLE);
+        if (_cardAffiliatePayment > 0) {
+            _payout(cardAffiliateAddresses[_card], _cardAffiliatePayment);
+            emit LogStakeholderPaid(
+                cardAffiliateAddresses[_card],
+                _cardAffiliatePayment
+            );
+        }
+    }
 
-    // function _processStakeholderPayment(uint256 _cut, address _recipient)
-    //     internal
-    // {
-    //     if (_cut > 0) {
-    //         uint256 _payment = (totalRentCollected * _cut) / (PER_MILLE);
-    //         _payout(_recipient, _payment);
-    //         emit LogStakeholderPaid(_recipient, _payment);
-    //     }
-    // }
+    function _processStakeholderPayment(uint256 _cut, address _recipient)
+        internal
+    {
+        if (_cut > 0) {
+            uint256 _payment = (totalRentCollected * _cut) / (PER_MILLE);
+            _payout(_recipient, _payment);
+            emit LogStakeholderPaid(_recipient, _payment);
+        }
+    }
 
     /*╔═════════════════════════════════╗
       ║         CORE FUNCTIONS          ║
