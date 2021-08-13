@@ -453,7 +453,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
       ║  MARKET RESOLUTION FUNCTIONS    ║
       ╚═════════════════════════════════╝*/
 
-    /// @notice checks whether the competition has ended, if so moves to LOCKED state
+    /// @notice Checks whether the competition has ended, if so moves to LOCKED state
+    /// @notice May require multiple calls as all accounting must be completed before
+    /// @notice the market can lock.
     /// @dev can be called by anyone
     /// @dev public because called within autoLock modifier & setWinner
     function lockMarket() public override {
@@ -486,18 +488,22 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                 break;
             }
         }
+        // check the accounting is complete
         if (totalAccountingComplete) {
-            orderbook.closeMarket();
-            _incrementState();
+            // and that the orderbook has shut the market
+            if (orderbook.closeMarket()) {
+                // now lock the market
+                _incrementState();
 
-            for (uint256 i; i < numberOfCards; i++) {
-                if (tokenExists(i)) {
-                    // bring the cards back to the market so the winners get the satisfaction of claiming them
-                    _transferCard(ownerOf(i), address(this), i);
+                for (uint256 i; i < numberOfCards; i++) {
+                    if (tokenExists(i)) {
+                        // bring the cards back to the market so the winners get the satisfaction of claiming them
+                        _transferCard(ownerOf(i), address(this), i);
+                    }
+                    emit LogLongestOwner(i, longestOwner[i]);
                 }
-                emit LogLongestOwner(i, longestOwner[i]);
+                emit LogContractLocked(true);
             }
-            emit LogContractLocked(true);
         }
     }
 
