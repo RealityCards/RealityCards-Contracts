@@ -886,7 +886,8 @@ contract('TestFundamentals', (accounts) => {
     await realitycards.collectRent(0);
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner, user4);
-    var price = await realitycards.cardPrice.call(0);
+    let card = await realitycards.card(0);
+    price = card.cardPrice
     assert.equal(price, web3.utils.toWei('10', 'ether'));
     var bid = await rcorderbook.getBid.call(realitycards.address, user4, 0);
     assert.equal(bid[2], realitycards.address);
@@ -894,7 +895,8 @@ contract('TestFundamentals', (accounts) => {
     await realitycards.exit(0, { from: user4 });
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner, user1);
-    var price = await realitycards.cardPrice.call(0);
+    card = await realitycards.card(0);
+    price = card.cardPrice
     assert.equal(price, web3.utils.toWei('9', 'ether'));
   });
 

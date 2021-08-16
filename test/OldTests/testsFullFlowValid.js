@@ -2107,16 +2107,19 @@ contract("TestFullFlowValid", (accounts) => {
         price: secondcardPrice,
       },
     ]);
+    card = await realitycards.card(0);
     assert.equal(
-      (await realitycards.rentCollectedPerCard(0)).toString(),
+      (card.rentCollectedPerCard.toString()),
       28 * 10 ** 18
     );
+    card = await realitycards.card(1);
     assert.equal(
-      (await realitycards.rentCollectedPerCard(1)).toString(),
+      (card.rentCollectedPerCard.toString()),
       56 * 10 ** 18
     );
+    card = await realitycards.card(2);
     assert.equal(
-      (await realitycards.rentCollectedPerCard(2)).toString(),
+      (card.rentCollectedPerCard.toString()),
       rentCollectedByToken2.toString()
     );
 

@@ -946,7 +946,8 @@ contract('TestFullFlowInvalid', (accounts) => {
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
     assert.isBelow(difference / deposit, 0.00001);
     // token 2, collected = 63
-    var collected = await realitycards2.rentCollectedPerCard.call(1);
+    let card = await realitycards.card(1);
+    var collected = card.rentCollectedPerCard;
     var deposit = await treasury.userDeposit.call(user7);
     var depositShouldBe = ether('63').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());

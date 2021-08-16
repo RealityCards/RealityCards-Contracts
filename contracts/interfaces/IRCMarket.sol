@@ -85,8 +85,6 @@ interface IRCMarket {
 
     function nftsToAward() external view returns (uint256);
 
-    // function tokenURI(uint256) external view returns (string memory);
-
     function ownerOf(uint256 tokenId) external view returns (address);
 
     function state() external view returns (States);
@@ -95,11 +93,7 @@ interface IRCMarket {
 
     // prices, deposits, rent
 
-    function cardPrice(uint256) external view returns (uint256);
-
     function rentCollectedPerUser(address) external view returns (uint256);
-
-    function rentCollectedPerCard(uint256) external view returns (uint256);
 
     function rentCollectedPerUserPerCard(address, uint256)
         external
@@ -139,8 +133,6 @@ interface IRCMarket {
 
     function userAlreadyWithdrawn(address) external view returns (bool);
 
-    function userAlreadyClaimed(uint256, address) external view returns (bool);
-
     function artistAddress() external view returns (address);
 
     function artistCut() external view returns (uint256);
@@ -164,8 +156,6 @@ interface IRCMarket {
     function cardAffiliateAddresses(uint256) external view returns (address);
 
     function cardAffiliateCut() external view returns (uint256);
-
-    function cardAffiliatePaid(uint256) external view returns (bool);
 
     // oracle
 
