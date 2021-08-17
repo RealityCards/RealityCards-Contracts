@@ -569,8 +569,11 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         override
         onlyRole(MARKET)
     {
+        // update the last rental time
         user[_user].lastRentalTime = SafeCast.toUint64(block.timestamp);
+        // check if this is their first rental (no previous rental calculation)
         if (user[_user].lastRentCalc == 0) {
+            // we need to start their clock ticking, update their last rental calculation time
             user[_user].lastRentCalc = SafeCast.toUint64(block.timestamp);
         }
     }
