@@ -119,13 +119,16 @@ interface IRCFactory {
 
     function setTimeout(uint32 _newTimeout) external;
 
-    function setMaxRentIterations(uint256 _rentLimit) external;
+    function setMaxRentIterations(uint256 _rentLimit, uint256 _rentLimitLocking)
+        external;
 
     function setArbitrator(address _newAddress) external;
 
     function setRealitioAddress(address _newAddress) external;
 
     function maxRentIterations() external view returns (uint256);
+
+    function maxRentIterationsToLockMarket() external view returns (uint256);
 
     function setNFTMintingLimit(uint256 _mintLimit) external;
 

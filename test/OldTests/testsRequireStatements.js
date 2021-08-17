@@ -306,7 +306,7 @@ contract('TestRequireStatements', (accounts) => {
     await realitycards.getWinnerFromOracle();
     // await realitycards.determineWinner();
     await realitycards.claimCard(2, { from: user });
-    // these shoudl all fail cos wrong owner:
+    // these should all fail cos wrong owner:
     var owner = await realitycards.ownerOf(2);
     assert.equal(owner, user);
     await expectRevert(nftHubL2.transferFrom(user, user1, tokenId, { from: user1 }), "ERC721: transfer caller is not owner nor approved");
@@ -333,7 +333,7 @@ contract('TestRequireStatements', (accounts) => {
     var state = await realitycards2.state.call();
     assert.equal(2, state);
     // currently in state 'LOCKED' the following should all fail 
-    await expectRevert(realitycards2.collectRentAllCards(), "Incorrect state");
+    await expectRevert(realitycards2.collectRent(0), "Incorrect state");
     await expectRevert(realitycards2.newRental(0, maxuint256, zeroAddress, 0), "Incorrect state");
     await expectRevert(realitycards2.exit(0), "Incorrect state");
     await expectRevert(realitycards2.sponsor(user0, 3), "Incorrect state");
@@ -348,7 +348,7 @@ contract('TestRequireStatements', (accounts) => {
     assert.equal(3, state);
     // currently in state 'WITHDRAW' the following should all fail 
     await expectRevert(realitycards2.lockMarket(), "Incorrect state");
-    await expectRevert(realitycards2.collectRentAllCards(), "Incorrect state");
+    await expectRevert(realitycards2.collectRent(0), "Incorrect state");
     await expectRevert(realitycards2.newRental(0, maxuint256, zeroAddress, 0), "Incorrect state");
     await expectRevert(realitycards2.exit(0), "Incorrect state");
     await erc20.approve(treasury.address, ether('3')) // we aren't testing erc20 here

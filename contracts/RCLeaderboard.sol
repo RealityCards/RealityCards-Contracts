@@ -34,6 +34,15 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
     mapping(address => mapping(uint256 => uint256)) public leaderboardLength;
     mapping(address => uint256) public override NFTsToAward;
 
+    /// @dev emitted every time an order is added to the orderbook
+    event LogAddToLeaderboard(address _user, address _market, uint256 _card);
+    /// @dev emitted when an order is removed from the orderbook
+    event LogRemoveFromLeaderboard(
+        address _user,
+        address _market,
+        uint256 _card
+    );
+
     /*╔═════════════════════════════════╗
       ║         CONSTRUCTOR             ║
       ╚═════════════════════════════════╝*/
@@ -110,6 +119,7 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
                 removeFromLeaderboard(_user, _market, _card);
             }
             addToLeaderboard(_user, _market, _card, _timeHeld);
+            emit LogAddToLeaderboard(_user, _market, _card);
         } else {
             // leaderboard is full
             address lastUserOnLeaderboard = leaderboard[_market][
@@ -132,9 +142,15 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
                         _market,
                         _card
                     );
+                    emit LogRemoveFromLeaderboard(
+                        lastUserOnLeaderboard,
+                        _market,
+                        _card
+                    );
                 }
                 // now add them in the correct position
                 addToLeaderboard(_user, _market, _card, _timeHeld);
+                emit LogAddToLeaderboard(_user, _market, _card);
             }
         }
     }

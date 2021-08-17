@@ -42,8 +42,8 @@ module.exports = {
       networkCheckTimeout: 12000,
     },
     hardhat: {
-      gas: 19000000,
-      blockGasLimit: 19000000,
+      gas: 20000000,
+      blockGasLimit: 20000000,
       gasPrice: "auto",
       accounts: {
         count: 2000,

@@ -67,6 +67,8 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     bool public override approvedArtistsOnly = true;
     /// @dev the maximum number of rent collections to perform in a single transaction
     uint256 public override maxRentIterations;
+    /// @dev the maximum number of rent collections to have performed before locking the market
+    uint256 public override maxRentIterationsToLockMarket;
     /// @dev the address of the arbitrator
     address public override arbitrator;
     /// @dev the time allowed to dispute the oracle answer
@@ -153,7 +155,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         setMinimumPriceIncreasePercent(10); // 10%
         setNumberOfNFTsToAward(3);
         setNFTMintingLimit(40); // safe limit tested and set at 40, can be adjusted later if gas limit changes
-        setMaxRentIterations(80); // safe limit tested and set at 80, can be adjusted later if gas limit changes
+        setMaxRentIterations(50, 25); // safe limit tested and set at 80, can be adjusted later if gas limit changes
         // oracle
         setArbitrator(_arbitratorAddress);
         setRealitioAddress(_realitioAddress);
@@ -360,12 +362,13 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     /// @notice A limit to the number of rent collections per transaction
     /// @dev to avoid gas limits
     /// @param _rentLimit the limit to set
-    function setMaxRentIterations(uint256 _rentLimit)
+    function setMaxRentIterations(uint256 _rentLimit, uint256 _rentLimitLocking)
         public
         override
         onlyOwner
     {
         maxRentIterations = _rentLimit;
+        maxRentIterationsToLockMarket = _rentLimitLocking;
     }
 
     /// @notice set the address of the reality.eth contracts

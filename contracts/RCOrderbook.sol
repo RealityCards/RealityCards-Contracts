@@ -63,6 +63,8 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
     uint256 public override maxDeletions = 70;
     /// @dev number of bids a user should clean when placing a new bid
     uint256 public override cleaningLoops = 2;
+    /// @dev max number of market records to put into the waste pile in one go
+    uint256 public override marketCloseLimit = 70;
     /// @dev nonce emitted with orderbook insertions, for frontend sorting
     uint256 public override nonce;
 
@@ -170,6 +172,14 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
         onlyUberOwner
     {
         maxSearchIterations = _searchLimit;
+    }
+
+    function setMarketCloseLimit(uint256 _marketCloseLimit)
+        external
+        override
+        onlyUberOwner
+    {
+        marketCloseLimit = _marketCloseLimit;
     }
 
     /*╔═════════════════════════════════════╗
@@ -625,13 +635,18 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
 
     /// @notice reduces the rentalRates of the card owners when a market closes
     /// @dev too many bidders to reduce all bid rates also
-    function closeMarket() external override onlyMarkets {
+    function closeMarket() external override onlyMarkets returns (bool) {
         address _market = msgSender();
         // check if the market was ever added to the orderbook
         if (bidExists(_market, _market, 0)) {
             closedMarkets.push(_market);
-            /// TODO: gas analysis, is uint64 cheaper than uint256+SafeCast?
-            uint64 i = market[_market].cardCount;
+            uint256 i = user[_market].length; // start on the last record so we can easily pop()
+            uint256 _limit = 0;
+            if (marketCloseLimit < user[_market].length) {
+                _limit = user[_market].length - marketCloseLimit;
+            } else {
+                _limit = 0;
+            }
             do {
                 i--;
                 address _lastOwner = user[_market][index[_market][_market][i]]
@@ -668,14 +683,21 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
                     // insert bids in the waste pile
                     Bid memory _newBid;
                     _newBid.market = _market;
-                    _newBid.card = i;
+                    _newBid.card = SafeCast.toUint64(i);
                     _newBid.prev = _lastBid;
                     _newBid.next = _lastOwner;
                     _newBid.price = 0;
                     _newBid.timeHeldLimit = 0;
                     user[address(this)].push(_newBid);
                 }
-            } while (i > 0);
+                // remove the market record
+                user[_market].pop();
+            } while (i > _limit);
+        }
+        if (user[_market].length == 0) {
+            return true;
+        } else {
+            return false;
         }
     }
 
