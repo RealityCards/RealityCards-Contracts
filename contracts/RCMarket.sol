@@ -796,7 +796,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                 "Insufficient deposit"
             );
 
-            _timeHeldLimit = _checkTimeHeldLimit(_timeHeldLimit);
+            _checkTimeHeldLimit(_timeHeldLimit);
 
             orderbook.addBidToOrderbook(
                 _user,
@@ -822,7 +822,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         bool rentCollected;
         (rentCollected, ) = _collectRent(_card, 0);
         if (rentCollected) {
-            _timeHeldLimit = _checkTimeHeldLimit(_timeHeldLimit);
+            _checkTimeHeldLimit(_timeHeldLimit);
 
             orderbook.setTimeHeldlimit(_user, _card, _timeHeldLimit);
 
@@ -921,17 +921,10 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         emit LogSponsor(_sponsorAddress, _amount);
     }
 
-    function _checkTimeHeldLimit(uint256 _timeHeldLimit)
-        internal
-        view
-        returns (uint256)
-    {
-        if (_timeHeldLimit == 0) {
-            return 0;
-        } else {
+    function _checkTimeHeldLimit(uint256 _timeHeldLimit) internal view {
+        if (_timeHeldLimit != 0) {
             uint256 _minRentalTime = uint256(1 days) / minRentalDayDivisor;
             require(_timeHeldLimit >= _minRentalTime, "Limit too low");
-            return _timeHeldLimit;
         }
     }
 
