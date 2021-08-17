@@ -110,10 +110,6 @@ interface IRCFactory {
 
     function removeAffiliate(address _oldAffiliate) external;
 
-    function addCardAffiliate(address _newCardAffiliate) external;
-
-    function removeCardAffiliate(address _oldCardAffiliate) external;
-
     // only Owner
     function setMarketPausedDefaultState(bool _state) external;
 

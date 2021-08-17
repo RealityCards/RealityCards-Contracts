@@ -32,7 +32,6 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     /// @dev market addresses, mode // address
     /// @dev these are not used for anything, just an easy way to get markets
     mapping(IRCMarket.Mode => address[]) public marketAddresses;
-    mapping(address => bool) public mappingOfMarkets;
 
     ////// BACKUP MODE //////
     /// @dev should the Graph fail the UI needs a way to poll the contracts for market data
@@ -94,11 +93,9 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     bytes32 public constant UBER_OWNER = keccak256("UBER_OWNER");
     bytes32 public constant OWNER = keccak256("OWNER");
     bytes32 public constant GOVERNOR = keccak256("GOVERNOR");
-    bytes32 public constant FACTORY = keccak256("FACTORY");
     bytes32 public constant MARKET = keccak256("MARKET");
     bytes32 public constant TREASURY = keccak256("TREASURY");
     bytes32 public constant ORDERBOOK = keccak256("ORDERBOOK");
-    bytes32 public constant WHITELIST = keccak256("WHITELIST");
     bytes32 public constant ARTIST = keccak256("ARTIST");
     bytes32 public constant AFFILIATE = keccak256("AFFILIATE");
     bytes32 public constant CARD_AFFILIATE = keccak256("CARD_AFFILIATE");
@@ -503,7 +500,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     {
         require(_market != address(0), "Must set Address");
         // check it's an RC contract
-        require(mappingOfMarkets[_market], "Not Market");
+        require(treasury.checkPermission(MARKET, _market), "Not Market");
         isMarketApproved[_market] = !isMarketApproved[_market];
         // governors shouldn't have the ability to pause a market, only un-pause.
         // .. if a governor accidentally approves a market they should seek
@@ -550,26 +547,6 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         onlyGovernors
     {
         treasury.revokeRole(AFFILIATE, _oldAffiliate);
-    }
-
-    /// @notice Grant the cardAffiliate role to an address
-    /// @param _newCardAffiliate the address to grant the role of cardAffiliate
-    function addCardAffiliate(address _newCardAffiliate)
-        external
-        override
-        onlyGovernors
-    {
-        treasury.grantRole(CARD_AFFILIATE, _newCardAffiliate);
-    }
-
-    /// @notice Remove the cardAffiliate role from an address
-    /// @param _oldCardAffiliate the address to revoke the role of cardAffiliate
-    function removeCardAffiliate(address _oldCardAffiliate)
-        external
-        override
-        onlyGovernors
-    {
-        treasury.revokeRole(CARD_AFFILIATE, _oldCardAffiliate);
     }
 
     /*╔═════════════════════════════════╗
@@ -750,7 +727,6 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
 
         // update internals
         marketAddresses[IRCMarket.Mode(_mode)].push(_newAddress);
-        mappingOfMarkets[_newAddress] = true;
         ipfsHash[_newAddress] = _ipfsHash;
         slugToAddress[_slug] = _newAddress;
         addressToSlug[_newAddress] = _slug;
@@ -828,9 +804,12 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     /// @notice allows the market to mint a copy of the NFT for users on the leaderboard
     /// @param _user the user to award the NFT to
     /// @param _cardId the tokenId to copy
-    function mintCopyOfNFT(address _user, uint256 _cardId) external override {
+    function mintCopyOfNFT(address _user, uint256 _cardId)
+        external
+        override
+        onlyMarkets
+    {
         address _market = msgSender();
-        require(mappingOfMarkets[_market], "Not Market");
         uint256 _newTokenId = nfthub.totalSupply();
         nfthub.mint(_user, _newTokenId, tokenURIs[_market][_cardId]);
         emit LogMintNFTCopy(_cardId, _user, _newTokenId);

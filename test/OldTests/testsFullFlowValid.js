@@ -214,11 +214,11 @@ contract("TestFullFlowValid", (accounts) => {
       user0,
       user0,
     ];
-    await rcfactory.addCardAffiliate(user5);
-    await rcfactory.addCardAffiliate(user6);
-    await rcfactory.addCardAffiliate(user7);
-    await rcfactory.addCardAffiliate(user8);
-    await rcfactory.addCardAffiliate(user0);
+    await treasury.grantRole("CARD_AFFILIATE", user5);
+    await treasury.grantRole("CARD_AFFILIATE", user6);
+    await treasury.grantRole("CARD_AFFILIATE", user7);
+    await treasury.grantRole("CARD_AFFILIATE", user8);
+    await treasury.grantRole("CARD_AFFILIATE", user0);
     var artistAddress = "0x0000000000000000000000000000000000000000";
     var affiliateAddress = "0x0000000000000000000000000000000000000000";
     var slug = "y";
@@ -301,13 +301,13 @@ contract("TestFullFlowValid", (accounts) => {
       user0,
       user0,
     ];
-    await rcfactory.addCardAffiliate(user5);
-    await rcfactory.addCardAffiliate(user6);
-    await rcfactory.addCardAffiliate(user7);
-    await rcfactory.addCardAffiliate(user8);
-    await rcfactory.addCardAffiliate(user0);
-    await rcfactory.addAffiliate(user7);
-    await rcfactory.addArtist(user8);
+    await treasury.grantRole("ARTIST", user8);
+    await treasury.grantRole("AFFILIATE", user7);
+    await treasury.grantRole("CARD_AFFILIATE", user5);
+    await treasury.grantRole("CARD_AFFILIATE", user6);
+    await treasury.grantRole("CARD_AFFILIATE", user7);
+    await treasury.grantRole("CARD_AFFILIATE", user8);
+    await treasury.grantRole("CARD_AFFILIATE", user0);
     var slug = "y";
     await rcfactory.createMarket(
       0,
@@ -363,13 +363,13 @@ contract("TestFullFlowValid", (accounts) => {
       user0,
       user0,
     ];
-    await rcfactory.addCardAffiliate(user5);
-    await rcfactory.addCardAffiliate(user6);
-    await rcfactory.addCardAffiliate(user7);
-    await rcfactory.addCardAffiliate(user8);
-    await rcfactory.addCardAffiliate(user0);
-    await rcfactory.addAffiliate(user7);
-    await rcfactory.addArtist(user8);
+    await treasury.grantRole("ARTIST", user8);
+    await treasury.grantRole("AFFILIATE", user7);
+    await treasury.grantRole("CARD_AFFILIATE", user5);
+    await treasury.grantRole("CARD_AFFILIATE", user6);
+    await treasury.grantRole("CARD_AFFILIATE", user7);
+    await treasury.grantRole("CARD_AFFILIATE", user8);
+    await treasury.grantRole("CARD_AFFILIATE", user0);
     await erc20.approve(treasury.address, ether('200'), { from: user })
     await rcfactory.createMarket(
       0,
