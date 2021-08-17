@@ -456,7 +456,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     function lockMarket() public override {
         _checkState(States.OPEN);
         require(
-            marketLockingTime <= block.timestamp,
+            uint256(marketLockingTime) <= block.timestamp,
             "Market has not finished"
         );
 
@@ -1126,6 +1126,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         override
         returns (uint256 _tokenId)
     {
+        require(tokenExists(_card));
         return tokenIds[_card];
     }
 
