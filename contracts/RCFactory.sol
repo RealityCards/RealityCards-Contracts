@@ -83,8 +83,9 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
 
     ///// OTHER /////
     uint256 public constant PER_MILLE = 1000; // in MegaBip so (1000 = 100%)
-    /// @dev keep a copy of the tokenURIs, we can use these to mint copies for the leaderboard
-    /// @dev .. we can't always copy the original as it may have been burnt.
+    /// @dev store the tokenURIs for when we need to mint them
+    /// @dev we may want the original and the copies to have slightly different metadata
+    /// @dev so we append the metadata for the copies to the end of this array
     mapping(address => mapping(uint256 => string)) tokenURIs;
 
     /*╔═════════════════════════════════╗
@@ -447,14 +448,17 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     /// @param _market the market address the token belongs to
     /// @param _cardId the index 0 card id of the token to change
     /// @param _newTokenURI the new URI to set
+    /// @param _newCopyTokenURI the new URI to set for the copy
     function updateTokenURI(
         address _market,
         uint256 _cardId,
-        string calldata _newTokenURI
+        string calldata _newTokenURI,
+        string calldata _newCopyTokenURI
     ) external override onlyOwner {
         IRCMarket.Mode _mode = IRCMarket(_market).mode();
         uint256 _numberOfCards = IRCMarket(_market).numberOfCards();
         tokenURIs[_market][_cardId] = _newTokenURI;
+        tokenURIs[_market][(_cardId + _numberOfCards)] = _newCopyTokenURI;
         string[] memory _tokenURIs = new string[](_numberOfCards);
         for (uint256 i = 0; i < _tokenURIs.length; i++) {
             _tokenURIs[i] = tokenURIs[_market][i];
@@ -620,7 +624,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     /// @param _ipfsHash the IPFS location of the market metadata
     /// @param _slug the URL subdomain in the UI
     /// @param _timestamps for market opening, locking, and oracle resolution
-    /// @param _tokenURIs location of NFT metadata
+    /// @param _tokenURIs location of NFT metadata, originals followed by copies
     /// @param _artistAddress where to send artist's cut, if any
     /// @param _affiliateAddress where to send affiliates cut, if any
     /// @param _cardAffiliateAddresses where to send card specific affiliates cut, if any
@@ -652,8 +656,11 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         treasury.checkSponsorship(_creator, _sponsorship);
 
         // check the number of NFTs to mint is within limits
+        /// @dev we want different tokenURIs for originals and copies
+        /// @dev ..the copies are appended to the end of the array
+        /// @dev ..so half the array length if the number of tokens.
         require(
-            _tokenURIs.length <= nftMintingLimit,
+            (_tokenURIs.length / 2) <= nftMintingLimit,
             "Too many tokens to mint"
         );
 
@@ -670,7 +677,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         // affiliate
         require(
             _cardAffiliateAddresses.length == 0 ||
-                _cardAffiliateAddresses.length == _tokenURIs.length,
+                _cardAffiliateAddresses.length == (_tokenURIs.length / 2),
             "Card Affiliate Length Error"
         );
         if (approvedAffiliatesOnly) {
@@ -735,7 +742,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         IRCMarket(_newAddress).initialize(
             IRCMarket.Mode(_mode),
             _timestamps,
-            _tokenURIs.length,
+            (_tokenURIs.length / 2),
             _artistAddress,
             _affiliateAddress,
             _cardAffiliateAddresses,
@@ -811,7 +818,12 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     {
         address _market = msgSender();
         uint256 _newTokenId = nfthub.totalSupply();
-        nfthub.mint(_user, _newTokenId, tokenURIs[_market][_cardId]);
+        uint256 _numberOfCards = IRCMarket(_market).numberOfCards();
+        nfthub.mint(
+            _user,
+            _newTokenId,
+            tokenURIs[_market][(_cardId + _numberOfCards)]
+        );
         emit LogMintNFTCopy(_cardId, _user, _newTokenId);
     }
 

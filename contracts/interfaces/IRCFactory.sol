@@ -135,7 +135,8 @@ interface IRCFactory {
     function updateTokenURI(
         address _market,
         uint256 _cardId,
-        string calldata _newTokenURI
+        string calldata _newTokenURI,
+        string calldata _newCopyTokenURI
     ) external;
 
     function setPotDistribution(
