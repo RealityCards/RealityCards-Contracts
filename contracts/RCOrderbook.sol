@@ -508,9 +508,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
         address _market,
         uint256 _card
     ) internal returns (uint256 _newPrice) {
-        // update rates
         Bid storage _currUser = user[_user][index[_user][_market][_card]];
-        treasury.decreaseBidRate(_user, _currUser.price);
 
         // extract from linked list
         address _tempNext = _currUser.next;
@@ -520,6 +518,9 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
 
         // return next users price to check they're eligible later
         _newPrice = user[_tempNext][index[_tempNext][_market][_card]].price;
+
+        // update rate
+        treasury.decreaseBidRate(_user, _currUser.price);
 
         // overwrite array element
         uint256 _index = index[_user][_market][_card];
@@ -652,17 +653,9 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
                 address _lastOwner = user[_market][index[_market][_market][i]]
                     .next;
                 if (_lastOwner != _market) {
-                    // reduce owners rental rate
                     uint256 _price = user[_lastOwner][
                         index[_lastOwner][_market][i]
                     ].price;
-                    treasury.updateRentalRate(
-                        _lastOwner,
-                        _market,
-                        _price,
-                        0,
-                        block.timestamp
-                    );
 
                     // store last bid for later
                     address _lastBid = user[_market][index[_market][_market][i]]
@@ -689,6 +682,15 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
                     _newBid.price = 0;
                     _newBid.timeHeldLimit = 0;
                     user[address(this)].push(_newBid);
+
+                    // reduce owners rental rate
+                    treasury.updateRentalRate(
+                        _lastOwner,
+                        _market,
+                        _price,
+                        0,
+                        block.timestamp
+                    );
                 }
                 // remove the market record
                 user[_market].pop();
@@ -723,7 +725,6 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
                         uint256 _index = index[_user][_market][i];
                         // reduce bidRate
                         uint256 _price = user[_user][_index].price;
-                        treasury.decreaseBidRate(_user, _price);
 
                         // preserve linked list
                         address _tempPrev = user[_user][_index].prev;
@@ -750,6 +751,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
                             ] = _index;
                         }
 
+                        treasury.decreaseBidRate(_user, _price);
                         // count deletions
                         _loopCounter++;
                     } else {

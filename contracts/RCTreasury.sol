@@ -245,7 +245,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     /// @param _users an array of users to add or remove
     /// @param add true to add the users
     function batchWhitelist(address[] calldata _users, bool add)
-        public
+        external
         override
         onlyRole(GOVERNOR)
     {
@@ -312,8 +312,8 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         require(_newOrderbook != address(0), "Must set an address");
         revokeRole(ORDERBOOK, address(orderbook));
         orderbook = IRCOrderbook(_newOrderbook);
-        factory.setOrderbookAddress(orderbook);
         grantRole(ORDERBOOK, address(orderbook));
+        factory.setOrderbookAddress(orderbook);
     }
 
     function setLeaderboardAddress(address _newLeaderboard)
@@ -336,7 +336,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     }
 
     function setBridgeAddress(address _newBridge)
-        public
+        external
         override
         onlyRole(UBER_OWNER)
     {
@@ -362,7 +362,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     /// @param _user the user to credit the deposit to
     /// @param _amount the amount to deposit, must be approved
     function deposit(uint256 _amount, address _user)
-        public
+        external
         override
         balancedBooks
         returns (bool)
@@ -871,7 +871,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
 
     /// @dev can't be called hasRole also because AccessControl.hasRole isn't virtual
     function checkPermission(bytes32 role, address account)
-        public
+        external
         view
         override
         returns (bool)

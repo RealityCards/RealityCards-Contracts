@@ -387,11 +387,12 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     /// @notice set how long reality.eth waits for disputes before finalising
     /// @param _newTimeout the timeout to set in seconds, 86400 = 24hrs
     function setTimeout(uint32 _newTimeout) public override onlyOwner {
+        // event is emitted from the Oracle when the question is asked
         timeout = _newTimeout;
     }
 
     function setMarketPausedDefaultState(bool _state)
-        public
+        external
         override
         onlyOwner
     {
@@ -487,6 +488,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         override
         onlyOwner
     {
+        // no event needed, only used for the backup view mode
         marketInfoResults = _results;
     }
 

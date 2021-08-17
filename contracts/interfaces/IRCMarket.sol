@@ -91,6 +91,10 @@ interface IRCMarket {
 
     function getTokenId(uint256 _card) external view returns (uint256 _tokenId);
 
+    function cardAccountingIndex() external view returns (uint256);
+
+    function accountingComplete() external view returns (bool);
+
     // prices, deposits, rent
 
     function rentCollectedPerUser(address) external view returns (uint256);

@@ -29,6 +29,9 @@ contract EIP712Base is Initializable {
         internal
         initializer
     {
+        cachedChainId = getChainId();
+        cachedName = name;
+        cachedVersion = version;
         _setDomainSeperator(name, version);
     }
 
