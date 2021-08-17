@@ -58,6 +58,7 @@ contract("TestFullFlowValid", (accounts) => {
     "x",
     "x",
   ]; // 20 tokens
+  tokenURIs = tokenURIs.concat(tokenURIs) // double the length of the array for the copies of the NFTs to mint
   var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
   var maxuint256 = 4294967295;
 
@@ -214,11 +215,11 @@ contract("TestFullFlowValid", (accounts) => {
       user0,
       user0,
     ];
-    await rcfactory.addCardAffiliate(user5);
-    await rcfactory.addCardAffiliate(user6);
-    await rcfactory.addCardAffiliate(user7);
-    await rcfactory.addCardAffiliate(user8);
-    await rcfactory.addCardAffiliate(user0);
+    await treasury.grantRole("CARD_AFFILIATE", user5);
+    await treasury.grantRole("CARD_AFFILIATE", user6);
+    await treasury.grantRole("CARD_AFFILIATE", user7);
+    await treasury.grantRole("CARD_AFFILIATE", user8);
+    await treasury.grantRole("CARD_AFFILIATE", user0);
     var artistAddress = "0x0000000000000000000000000000000000000000";
     var affiliateAddress = "0x0000000000000000000000000000000000000000";
     var slug = "y";
@@ -301,13 +302,13 @@ contract("TestFullFlowValid", (accounts) => {
       user0,
       user0,
     ];
-    await rcfactory.addCardAffiliate(user5);
-    await rcfactory.addCardAffiliate(user6);
-    await rcfactory.addCardAffiliate(user7);
-    await rcfactory.addCardAffiliate(user8);
-    await rcfactory.addCardAffiliate(user0);
-    await rcfactory.addAffiliate(user7);
-    await rcfactory.addArtist(user8);
+    await treasury.grantRole("ARTIST", user8);
+    await treasury.grantRole("AFFILIATE", user7);
+    await treasury.grantRole("CARD_AFFILIATE", user5);
+    await treasury.grantRole("CARD_AFFILIATE", user6);
+    await treasury.grantRole("CARD_AFFILIATE", user7);
+    await treasury.grantRole("CARD_AFFILIATE", user8);
+    await treasury.grantRole("CARD_AFFILIATE", user0);
     var slug = "y";
     await rcfactory.createMarket(
       0,
@@ -363,13 +364,13 @@ contract("TestFullFlowValid", (accounts) => {
       user0,
       user0,
     ];
-    await rcfactory.addCardAffiliate(user5);
-    await rcfactory.addCardAffiliate(user6);
-    await rcfactory.addCardAffiliate(user7);
-    await rcfactory.addCardAffiliate(user8);
-    await rcfactory.addCardAffiliate(user0);
-    await rcfactory.addAffiliate(user7);
-    await rcfactory.addArtist(user8);
+    await treasury.grantRole("ARTIST", user8);
+    await treasury.grantRole("AFFILIATE", user7);
+    await treasury.grantRole("CARD_AFFILIATE", user5);
+    await treasury.grantRole("CARD_AFFILIATE", user6);
+    await treasury.grantRole("CARD_AFFILIATE", user7);
+    await treasury.grantRole("CARD_AFFILIATE", user8);
+    await treasury.grantRole("CARD_AFFILIATE", user0);
     await erc20.approve(treasury.address, ether('200'), { from: user })
     await rcfactory.createMarket(
       0,

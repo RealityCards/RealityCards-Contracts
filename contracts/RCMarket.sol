@@ -22,7 +22,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
     // CONTRACT SETUP
     uint256 public constant PER_MILLE = 1000; // in MegaBip so (1000 = 100%)
-    uint256 public constant MIN_RENTAL_VALUE = 24_000_000; // 1mil Wei/hr
+    /// @dev minimum rental value per day, setting to 24mil means 1 USDC/hour
+    uint256 public constant MIN_RENTAL_VALUE = 24_000_000;
+    /// @dev the number of cards in this market
     uint256 public override numberOfCards;
     /// @dev current market state, Closed -> Open -> Locked -> Withdraw
     States public override state;
@@ -67,7 +69,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     uint256 public maxRentIterationsToLockMarket;
 
     struct Card {
-        // Time
         /// @dev how many seconds each user has held each card for, for determining winnings
         mapping(address => uint256) timeHeld;
         /// @dev sums all the timeHelds for each. Used when paying out. Should always increment at the same time as timeHeld
@@ -84,6 +85,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         uint256 rentCollectedPerCard;
         /// @dev prevent users claiming twice
         mapping(address => bool) userAlreadyClaimed; // cardID // user // bool
+        /// @dev has this card affiliate been paid
         bool cardAffiliatePaid;
     }
     mapping(uint256 => Card) public card;
@@ -98,6 +100,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     uint32 public override oracleResolutionTime;
 
     // PAYOUT VARIABLES
+    /// @dev the winning card if known, otherwise type(uint256).max
     uint256 public override winningOutcome;
     /// @dev prevent users withdrawing twice
     mapping(address => bool) public override userAlreadyWithdrawn;
@@ -121,6 +124,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @dev keeps track of which card is next to complete the
     /// @dev .. accounting for when locking the market
     uint256 public cardAccountingIndex;
+    /// @dev has the market locking accounting been completed yet
     bool public accountingComplete;
 
     // ORACLE VARIABLES
@@ -446,7 +450,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
     /// @notice Checks whether the competition has ended, if so moves to LOCKED state
     /// @notice May require multiple calls as all accounting must be completed before
-    /// @notice the market can lock.
+    /// @notice the market should be locked.
     /// @dev can be called by anyone
     /// @dev public because called within autoLock modifier & setWinner
     function lockMarket() public override {
@@ -477,11 +481,12 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             }
         }
         // check the accounting is complete but only continue if we haven't used much gas so far
+        /// @dev using gasleft() would be nice, but it causes problems with tx gas estimations
         if (
             accountingComplete &&
             rentIterationCounter < maxRentIterationsToLockMarket
         ) {
-            // and that the orderbook has shut the market
+            // and check that the orderbook has shut the market
             if (orderbook.closeMarket()) {
                 // now lock the market
                 _incrementState();
@@ -716,7 +721,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     }
 
     /// @notice to rent a Card
-    /// @dev no event: it is emitted in _updateBid, _setNewOwner or _placeInList as appropriate
     /// @param _newPrice the price to rent the card for
     /// @param _timeHeldLimit an optional time limit to rent the card for
     /// @param _startingPosition where to start looking to insert the bid into the orderbook
@@ -727,9 +731,13 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         address _startingPosition,
         uint256 _card
     ) public override autoUnlock autoLock {
+        // if the market isn't open then don't do anything else, not reverting
+        // .. will allow autoLock to process the accounting to lock the market
         if (state == States.OPEN) {
             require(_newPrice >= MIN_RENTAL_VALUE, "Price below min");
             require(_card < numberOfCards, "Card does not exist");
+
+            // if the NFT hasn't been minted, we should probably do that
             if (!tokenExists(_card)) {
                 tokenIds[_card] = nfthub.totalSupply();
                 factory.mintMarketNFT(_card);
@@ -737,6 +745,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
             address _user = msgSender();
 
+            // prevent re-renting, this limits (but doesn't eliminate) a frontrunning attack
             require(
                 exitedTimestamp[_user] != block.timestamp,
                 "Cannot lose and re-rent in same block"
@@ -746,11 +755,14 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                     !treasury.globalPause(),
                 "Rentals are disabled"
             );
+            // restrict certain markets to specific whitelists
             require(
                 treasury.marketWhitelistCheck(_user),
                 "Not approved for this market"
             );
 
+            // if the user is foreclosed then delete some old bids
+            // .. this could remove their foreclosure
             if (treasury.isForeclosed(_user)) {
                 orderbook.removeUserFromOrderbook(_user);
             }
@@ -784,9 +796,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                 "Insufficient deposit"
             );
 
-            _timeHeldLimit = _checkTimeHeldLimit(_timeHeldLimit);
+            _checkTimeHeldLimit(_timeHeldLimit);
 
-            // replaces _newBid and _updateBid
             orderbook.addBidToOrderbook(
                 _user,
                 _card,
@@ -811,7 +822,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         bool rentCollected;
         (rentCollected, ) = _collectRent(_card, 0);
         if (rentCollected) {
-            _timeHeldLimit = _checkTimeHeldLimit(_timeHeldLimit);
+            _checkTimeHeldLimit(_timeHeldLimit);
 
             orderbook.setTimeHeldlimit(_user, _card, _timeHeldLimit);
 
@@ -910,17 +921,10 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         emit LogSponsor(_sponsorAddress, _amount);
     }
 
-    function _checkTimeHeldLimit(uint256 _timeHeldLimit)
-        internal
-        view
-        returns (uint256)
-    {
-        if (_timeHeldLimit == 0) {
-            return 0;
-        } else {
+    function _checkTimeHeldLimit(uint256 _timeHeldLimit) internal view {
+        if (_timeHeldLimit != 0) {
             uint256 _minRentalTime = uint256(1 days) / minRentalDayDivisor;
             require(_timeHeldLimit >= _minRentalTime, "Limit too low");
-            return _timeHeldLimit;
         }
     }
 
@@ -1066,13 +1070,17 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             orderbook.reduceTimeHeldLimit(_user, _card, _timeHeldToIncrement);
             card[_card].cardTimeLimit -= _timeHeldToIncrement;
         }
+
+        // update time
         card[_card].timeHeld[_user] += _timeHeldToIncrement;
         card[_card].totalTimeHeld += _timeHeldToIncrement;
-        rentCollectedPerUser[_user] += _rentCollected;
+        card[_card].timeLastCollected = _timeOfCollection;
+
+        // update amounts
         card[_card].rentCollectedPerCard += _rentCollected;
         rentCollectedPerUserPerCard[_user][_card] += _rentCollected;
+        rentCollectedPerUser[_user] += _rentCollected;
         totalRentCollected += _rentCollected;
-        card[_card].timeLastCollected = _timeOfCollection;
 
         // longest owner tracking
         if (
@@ -1081,6 +1089,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         ) {
             card[_card].longestOwner = _user;
         }
+
         leaderboard.updateLeaderboard(
             _user,
             _card,
@@ -1108,6 +1117,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         emit LogStateChange(uint256(state));
     }
 
+    /// @notice returns the tokenId (the unique NFT index) given the cardId (the market specific index)
+    /// @param _card the market specific index of the card
+    /// @return _tokenId the unique NFT index
     function getTokenId(uint256 _card)
         public
         view
@@ -1117,10 +1129,18 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         return tokenIds[_card];
     }
 
+    /*╔═════════════════════════════════╗
+      ║       VIEW FUNCTIONS            ║
+      ╚═════════════════════════════════╝*/
+
+    /// @notice Check if the NFT has been minted yet
+    /// @param _card the market specific index of the card
+    /// @return true if the NFT has been minted
     function tokenExists(uint256 _card) internal view returns (bool) {
         return tokenIds[_card] != type(uint256).max;
     }
 
+    /// @dev a simple getter for the time a user has held a given card
     function timeHeld(uint256 _card, address _user)
         external
         view
@@ -1130,6 +1150,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         return card[_card].timeHeld[_user];
     }
 
+    /// @dev a simple getter for the time a card last had rent collected
     function timeLastCollected(uint256 _card)
         external
         view
@@ -1139,6 +1160,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         return card[_card].timeLastCollected;
     }
 
+    /// @dev a simple getter for the longest owner of a card
     function longestOwner(uint256 _card)
         external
         view
@@ -1151,6 +1173,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /*╔═════════════════════════════════╗
       ║          BACKUP MODE            ║
       ╚═════════════════════════════════╝*/
+    /// @dev in the event of failures in the UI we need a simple reliable way to poll
+    /// @dev ..the contracts for relevant info, this view function helps facilitate this.
 
     /// @dev quick and easy view function to get all market data relevant to the UI
     function getMarketInfo()

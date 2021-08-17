@@ -238,6 +238,8 @@ async function createMarket(options) {
   for (i = 0; i < options.numberOfCards; i++) {
     tokenURIs.push('x');
   }
+  // double the length of the array for the copies to be minted
+  tokenURIs = tokenURIs.concat(tokenURIs)
 
   await factory.createMarket(
     options.mode,
@@ -294,7 +296,8 @@ async function rent(options) {
     if (options.price) {
       newPrice = web3.utils.toWei(options.price.toString(), 'ether');
     } else {
-      const currentPrice = await options.market.cardPrice(options.outcome);
+      let card = await options.market.card(options.outcome);
+      const currentPrice = card.cardPrice;
       const currentPriceBN = new BN(currentPrice);
       newPrice = currentPriceBN.add(currentPriceBN.div(new BN('10')));
       if (!newPrice.isZero()) {
