@@ -23,7 +23,7 @@ contract("RealityCardsTests", (accounts) => {
     describe("Market tests ", () => {
         it.skip("Lock a market with many cards ", async () => {
             let cardsToMake = 100;
-            await factory.setNFTMintingLimit(cardsToMake);
+            await factory.setCardLimit(cardsToMake);
             markets.push(await rc.createMarket({ numberOfCards: cardsToMake }))
 
             await rc.deposit(1000, alice)

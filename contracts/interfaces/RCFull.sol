@@ -71,7 +71,7 @@ interface IRCFactory {
 
     function timeout() external view returns (uint32);
 
-    function nftMintingLimit() external view returns (uint256);
+    function cardLimit() external view returns (uint256);
 
     function getPotDistribution() external view returns (uint256[5] memory);
 
@@ -121,7 +121,7 @@ interface IRCFactory {
 
     function maxRentIterationsToLockMarket() external view returns (uint256);
 
-    function setNFTMintingLimit(uint256 _mintLimit) external;
+    function setCardLimit(uint256 _cardLimit) external;
 
     function setMinimumPriceIncreasePercent(uint256 _percentIncrease) external;
 
