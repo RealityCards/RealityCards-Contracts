@@ -22,6 +22,9 @@ module.exports = async () => {
       await factory.addArtist(artistAddress)
     }
 
+    // for now deuplicate the original tokenURIs for the copies
+    tokenURIs = tokenURIs.concat(tokenURIs);
+
     console.log("CREATING MARKET");
     console.log("ipfs hash ", ipfsHash);
     console.log("timestamps", timestamps);
