@@ -452,8 +452,8 @@ contract("RealityCardsTests", (accounts) => {
             assert.equal(await markets[0].ownerOf(1), markets[0].address)
         });
     })
-    describe("Limit tests ", () => {
-        it.only(' Max NFTs to mint ', async () => {
+    describe.skip("Limit tests ", () => {
+        it(' Max NFTs to mint ', async () => {
             let success = true
             let i = 120;
             await rc.deposit(1000, alice)
