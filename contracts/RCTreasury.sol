@@ -40,7 +40,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     uint256 public override totalMarketPots;
     /// @dev rent taken and allocated to a particular market
     uint256 public override marketBalance;
-    /// @dev a quick check if a uesr is foreclosed
+    /// @dev a quick check if a user is foreclosed
     mapping(address => bool) public override isForeclosed;
     /// @dev to keep track of the size of the rounding issue between rent collections
     uint256 public override marketBalanceTopup;
@@ -68,6 +68,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     /// @dev max deposit balance, to minimise funds at risk
     uint256 public override maxContractBalance;
     /// @dev whitelist to only allow certain addresses to deposit
+    /// @dev intended for beta use only, will be disabled after launch
     mapping(address => bool) public isAllowed;
     bool public whitelistEnabled;
     /// @dev allow markets to be restricted to a certain role
@@ -80,7 +81,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     bool public override globalPause;
     /// @dev if true, cannot rent, claim or upgrade any cards for specific market
     mapping(address => bool) public override marketPaused;
-    /// @dev if true, owner has locked the market pause
+    /// @dev if true, owner has locked the market pause (Governors are locked out)
     mapping(address => bool) public override lockMarketPaused;
 
     /*╔═════════════════════════════════╗
@@ -189,6 +190,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     }
 
     /// @notice set max deposit balance, to minimise funds at risk
+    /// @dev this is only a soft check, it is possible to exceed this limit
     /// @param _newBalanceLimit the max balance to set in wei
     function setMaxContractBalance(uint256 _newBalanceLimit)
         public
@@ -358,7 +360,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
 
     /// @notice deposit tokens into RealityCards
     /// @dev it is passed the user instead of using msg.sender because might be called
-    /// @dev ... via contract (newRental) or Layer1->Layer2 bot
+    /// @dev ... via contract or Layer1->Layer2 bot
     /// @param _user the user to credit the deposit to
     /// @param _amount the amount to deposit, must be approved
     function deposit(uint256 _amount, address _user)

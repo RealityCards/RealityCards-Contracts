@@ -96,7 +96,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @dev when the market locks
     uint32 public override marketLockingTime;
     /// @dev when the question can be answered on realitio
-    /// @dev only needed for circuit breaker
     uint32 public override oracleResolutionTime;
 
     // PAYOUT VARIABLES

@@ -206,6 +206,7 @@ module.exports = async (deployer, network, accounts) => {
     console.log('treasury.address: ', treasury.address);
     console.log('factory.address: ', factory.address);
     console.log('orderbook.address: ', orderbook.address);
+    console.log('leaderboard.address: ', leaderboard.address);
   } else {
     console.log('No deploy script for this network');
   }

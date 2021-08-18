@@ -75,7 +75,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     /// @dev if true markets default to the paused state
     bool public override marketPausedDefaultState;
     /// @dev a limit to the number of NFTs to mint per market
-    uint256 public override nftMintingLimit;
+    uint256 public override cardLimit;
 
     ///// GOVERNANCE VARIABLES- GOVERNORS /////
     /// @dev unapproved markets hidden from the interface
@@ -153,8 +153,8 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         setPotDistribution(20, 0, 0, 20, 100); // 2% artist, 2% affiliate, 10% card affiliate
         setMinimumPriceIncreasePercent(10); // 10%
         setNumberOfNFTsToAward(3);
-        setNFTMintingLimit(40); // safe limit tested and set at 40, can be adjusted later if gas limit changes
-        setMaxRentIterations(50, 25); // safe limit tested and set at 80, can be adjusted later if gas limit changes
+        setCardLimit(40); // safe limit tested and set at 40, can be adjusted later if gas limit changes
+        setMaxRentIterations(50, 25); // safe limit tested and set at 50 & 25, can be adjusted later if gas limit changes
         // oracle
         setArbitrator(_arbitratorAddress);
         setRealitioAddress(_realitioAddress);
@@ -353,9 +353,9 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
 
     /// @notice A limit to the number of NFTs to mint per market
     /// @dev to avoid gas limits
-    /// @param _mintLimit the limit to set
-    function setNFTMintingLimit(uint256 _mintLimit) public override onlyOwner {
-        nftMintingLimit = _mintLimit;
+    /// @param _cardLimit the limit to set
+    function setCardLimit(uint256 _cardLimit) public override onlyOwner {
+        cardLimit = _cardLimit;
     }
 
     /// @notice A limit to the number of rent collections per transaction
@@ -662,7 +662,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         /// @dev ..the copies are appended to the end of the array
         /// @dev ..so half the array length if the number of tokens.
         require(
-            (_tokenURIs.length / 2) <= nftMintingLimit,
+            (_tokenURIs.length / 2) <= cardLimit,
             "Too many tokens to mint"
         );
 
