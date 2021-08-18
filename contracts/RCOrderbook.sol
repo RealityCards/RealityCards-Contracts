@@ -717,6 +717,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
                 _loopCounter + _cardCount < maxDeletions
             ) {
                 _market = closedMarkets[userClosedMarketIndex[_user]];
+                // Just do the whole market at once
                 _cardCount = market[_market].cardCount;
                 uint256 i = _cardCount;
                 do {
