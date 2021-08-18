@@ -35,6 +35,7 @@ contract('TestFullFlowInvalid', (accounts) => {
 
   var realitycards;
   var tokenURIs = ['x', 'x', 'x', 'uri', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x']; // 20 tokens
+  tokenURIs = tokenURIs.concat(tokenURIs) // double the length of the array for the copies of the NFTs to mint
   var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
   var maxuint256 = 4294967295;
 
@@ -174,11 +175,11 @@ contract('TestFullFlowInvalid', (accounts) => {
     var oracleResolutionTime = oneYearInTheFuture;
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var cardRecipients = [user5, user6, user7, user8, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0];
-    await rcfactory.addCardAffiliate(user5);
-    await rcfactory.addCardAffiliate(user6);
-    await rcfactory.addCardAffiliate(user7);
-    await rcfactory.addCardAffiliate(user8);
-    await rcfactory.addCardAffiliate(user0);
+    await treasury.grantRole("CARD_AFFILIATE", user5);
+    await treasury.grantRole("CARD_AFFILIATE", user6);
+    await treasury.grantRole("CARD_AFFILIATE", user7);
+    await treasury.grantRole("CARD_AFFILIATE", user8);
+    await treasury.grantRole("CARD_AFFILIATE", user0);
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
 
@@ -242,13 +243,13 @@ contract('TestFullFlowInvalid', (accounts) => {
     var artistAddress = user8;
     var affiliateAddress = user7;
     var cardRecipients = [user5, user6, user7, user8, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0];
-    await rcfactory.addCardAffiliate(user5);
-    await rcfactory.addCardAffiliate(user6);
-    await rcfactory.addCardAffiliate(user7);
-    await rcfactory.addCardAffiliate(user8);
-    await rcfactory.addCardAffiliate(user0);
-    await rcfactory.addAffiliate(user7);
-    await rcfactory.addArtist(user8);
+    await treasury.grantRole("ARTIST", user8);
+    await treasury.grantRole("AFFILIATE", user7);
+    await treasury.grantRole("CARD_AFFILIATE", user5);
+    await treasury.grantRole("CARD_AFFILIATE", user6);
+    await treasury.grantRole("CARD_AFFILIATE", user7);
+    await treasury.grantRole("CARD_AFFILIATE", user8);
+    await treasury.grantRole("CARD_AFFILIATE", user0);
 
     let slug = "slug"
     await rcfactory.createMarket(
@@ -946,7 +947,8 @@ contract('TestFullFlowInvalid', (accounts) => {
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());
     assert.isBelow(difference / deposit, 0.00001);
     // token 2, collected = 63
-    var collected = await realitycards2.rentCollectedPerCard.call(1);
+    let card = await realitycards.card(1);
+    var collected = card.rentCollectedPerCard;
     var deposit = await treasury.userDeposit.call(user7);
     var depositShouldBe = ether('63').div(new BN('10'));
     var difference = Math.abs(deposit.toString() - depositShouldBe.toString());

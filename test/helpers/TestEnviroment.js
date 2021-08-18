@@ -137,6 +137,8 @@ module.exports = class TestEnviroment {
         for (let i = 0; i < options.numberOfCards; i++) {
             tokenURIs.push("x");
         }
+        // double the length of the array for the copies of the NFTs to mint
+        tokenURIs = tokenURIs.concat(tokenURIs)
         await this.contracts.factory.createMarket(
             options.mode,
             "0x0",

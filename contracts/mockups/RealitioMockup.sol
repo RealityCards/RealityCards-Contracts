@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity 0.8.4;
+pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "hardhat/console.sol";
@@ -126,7 +126,7 @@ contract RealitioMockup is Ownable {
         returns (string memory)
     {
         uint256 _length = bytes(questions[marketQuestion[_market]].question)
-        .length;
+            .length;
         string memory _question = new string(_length);
         _question = questions[marketQuestion[_market]].question;
         return _question;

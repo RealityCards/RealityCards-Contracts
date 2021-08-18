@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity 0.8.4;
+pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
@@ -92,7 +92,7 @@ contract RCNftHubL2 is
       ╚═════════════════════════════════╝*/
 
     /// @dev address of RC factory contract, so only factory can mint
-    function setFactory(address _newAddress) public onlyUberOwner {
+    function setFactory(address _newAddress) external onlyUberOwner {
         require(_newAddress != address(0), "Must set an address");
         factory = IRCFactory(_newAddress);
         treasury = factory.treasury();
@@ -154,7 +154,7 @@ contract RCNftHubL2 is
         } else {
             uint256[] memory tokenIds = abi.decode(depositData, (uint256[]));
             uint256 length = tokenIds.length;
-            for (uint256 i; i < length; i++) {
+            for (uint256 i = 0; i < length; i++) {
                 withdrawnTokens[tokenIds[i]] = false;
                 _mint(user, tokenIds[i]);
             }
@@ -214,7 +214,8 @@ contract RCNftHubL2 is
         ) {
             IRCMarket market = IRCMarket(marketTracker[tokenId]);
             require(
-                market.state() == IRCMarket.States.WITHDRAW,
+                market.state() == IRCMarket.States.WITHDRAW ||
+                    market.state() == IRCMarket.States.LOCKED,
                 "Incorrect state"
             );
         }

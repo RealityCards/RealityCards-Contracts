@@ -156,7 +156,7 @@ module.exports = async (deployer, network, accounts) => {
     leaderboard = await RCLeaderboard.deployed();
     await deployer.deploy(NftHubL2, factory.address, childChainManager);
     nftHubL2 = await NftHubL2.deployed();
-    await deployer.deploy(NftHubL1);
+    await deployer.deploy(NftHubL1, MintableERC721PredicateProxy);
     nftHubL1 = await NftHubL1.deployed();
     // tell treasury and factory about various things
     await treasury.setFactoryAddress(factory.address);
@@ -238,13 +238,15 @@ async function createMarket(options) {
   for (i = 0; i < options.numberOfCards; i++) {
     tokenURIs.push('x');
   }
+  // double the length of the array for the copies to be minted
+  tokenURIs = tokenURIs.concat(tokenURIs)
 
   await factory.createMarket(
     options.mode,
     options.ipfs,
+    options.slug,
     timestamps,
     tokenURIs,
-    options.slug,
     options.artistAddress,
     options.affiliateAddress,
     options.cardAffiliate,
@@ -294,7 +296,8 @@ async function rent(options) {
     if (options.price) {
       newPrice = web3.utils.toWei(options.price.toString(), 'ether');
     } else {
-      const currentPrice = await options.market.cardPrice(options.outcome);
+      let card = await options.market.card(options.outcome);
+      const currentPrice = card.cardPrice;
       const currentPriceBN = new BN(currentPrice);
       newPrice = currentPriceBN.add(currentPriceBN.div(new BN('10')));
       if (!newPrice.isZero()) {

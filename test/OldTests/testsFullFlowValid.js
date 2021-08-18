@@ -58,6 +58,7 @@ contract("TestFullFlowValid", (accounts) => {
     "x",
     "x",
   ]; // 20 tokens
+  tokenURIs = tokenURIs.concat(tokenURIs) // double the length of the array for the copies of the NFTs to mint
   var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
   var maxuint256 = 4294967295;
 
@@ -214,11 +215,11 @@ contract("TestFullFlowValid", (accounts) => {
       user0,
       user0,
     ];
-    await rcfactory.addCardAffiliate(user5);
-    await rcfactory.addCardAffiliate(user6);
-    await rcfactory.addCardAffiliate(user7);
-    await rcfactory.addCardAffiliate(user8);
-    await rcfactory.addCardAffiliate(user0);
+    await treasury.grantRole("CARD_AFFILIATE", user5);
+    await treasury.grantRole("CARD_AFFILIATE", user6);
+    await treasury.grantRole("CARD_AFFILIATE", user7);
+    await treasury.grantRole("CARD_AFFILIATE", user8);
+    await treasury.grantRole("CARD_AFFILIATE", user0);
     var artistAddress = "0x0000000000000000000000000000000000000000";
     var affiliateAddress = "0x0000000000000000000000000000000000000000";
     var slug = "y";
@@ -301,13 +302,13 @@ contract("TestFullFlowValid", (accounts) => {
       user0,
       user0,
     ];
-    await rcfactory.addCardAffiliate(user5);
-    await rcfactory.addCardAffiliate(user6);
-    await rcfactory.addCardAffiliate(user7);
-    await rcfactory.addCardAffiliate(user8);
-    await rcfactory.addCardAffiliate(user0);
-    await rcfactory.addAffiliate(user7);
-    await rcfactory.addArtist(user8);
+    await treasury.grantRole("ARTIST", user8);
+    await treasury.grantRole("AFFILIATE", user7);
+    await treasury.grantRole("CARD_AFFILIATE", user5);
+    await treasury.grantRole("CARD_AFFILIATE", user6);
+    await treasury.grantRole("CARD_AFFILIATE", user7);
+    await treasury.grantRole("CARD_AFFILIATE", user8);
+    await treasury.grantRole("CARD_AFFILIATE", user0);
     var slug = "y";
     await rcfactory.createMarket(
       0,
@@ -363,13 +364,13 @@ contract("TestFullFlowValid", (accounts) => {
       user0,
       user0,
     ];
-    await rcfactory.addCardAffiliate(user5);
-    await rcfactory.addCardAffiliate(user6);
-    await rcfactory.addCardAffiliate(user7);
-    await rcfactory.addCardAffiliate(user8);
-    await rcfactory.addCardAffiliate(user0);
-    await rcfactory.addAffiliate(user7);
-    await rcfactory.addArtist(user8);
+    await treasury.grantRole("ARTIST", user8);
+    await treasury.grantRole("AFFILIATE", user7);
+    await treasury.grantRole("CARD_AFFILIATE", user5);
+    await treasury.grantRole("CARD_AFFILIATE", user6);
+    await treasury.grantRole("CARD_AFFILIATE", user7);
+    await treasury.grantRole("CARD_AFFILIATE", user8);
+    await treasury.grantRole("CARD_AFFILIATE", user0);
     await erc20.approve(treasury.address, ether('200'), { from: user })
     await rcfactory.createMarket(
       0,
@@ -2002,18 +2003,21 @@ contract("TestFullFlowValid", (accounts) => {
     await time.increase(time.duration.weeks(2));
     await time.increase(time.duration.hours(1));
 
-    const txTimestamp = await getTimestamp(realitycards.collectRentAllCards());
+    const txTimestamp0 = await getTimestamp(realitycards.collectRent(0));
+    const txTimestamp1 = await getTimestamp(realitycards.collectRent(1));
+    const txTimestamp2 = await getTimestamp(realitycards.collectRent(2));
+
 
     // user0
     const userRecord6 = await treasury.user.call(user0)
-    assert.equal(txTimestamp.toString(), userRecord6[3].toString())
+    assert.equal(txTimestamp0.toString(), userRecord6[3].toString())
     assert.equal(user1, await realitycards.ownerOf(2))
-    assert.equal(txTimestamp.toString(), (await realitycards.timeLastCollected.call(2)).toString())
+    assert.equal(txTimestamp2.toString(), (await realitycards.timeLastCollected.call(2)).toString())
 
     // user1
     const userRecord7 = await treasury.user.call(user1)
-    assert.equal(txTimestamp.toString(), userRecord7[3].toString())
-    assert.equal(txTimestamp.toString(), (await realitycards.timeLastCollected.call(2)).toString())
+    assert.equal(txTimestamp2.toString(), userRecord7[3].toString())
+    assert.equal(txTimestamp2.toString(), (await realitycards.timeLastCollected.call(2)).toString())
 
     const currentTimestamp = (await web3.eth.getBlock("latest")).timestamp;
     const testCurTimestamp = (await web3.eth.getBlock("latest")).timestamp;
@@ -2104,16 +2108,19 @@ contract("TestFullFlowValid", (accounts) => {
         price: secondcardPrice,
       },
     ]);
+    card = await realitycards.card(0);
     assert.equal(
-      (await realitycards.rentCollectedPerCard(0)).toString(),
+      (card.rentCollectedPerCard.toString()),
       28 * 10 ** 18
     );
+    card = await realitycards.card(1);
     assert.equal(
-      (await realitycards.rentCollectedPerCard(1)).toString(),
+      (card.rentCollectedPerCard.toString()),
       56 * 10 ** 18
     );
+    card = await realitycards.card(2);
     assert.equal(
-      (await realitycards.rentCollectedPerCard(2)).toString(),
+      (card.rentCollectedPerCard.toString()),
       rentCollectedByToken2.toString()
     );
 

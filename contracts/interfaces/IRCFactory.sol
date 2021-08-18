@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity 0.8.4;
+pragma solidity 0.8.7;
 
 import "./IRealitio.sol";
 import "./IRCTreasury.sol";
@@ -110,22 +110,21 @@ interface IRCFactory {
 
     function removeAffiliate(address _oldAffiliate) external;
 
-    function addCardAffiliate(address _newCardAffiliate) external;
-
-    function removeCardAffiliate(address _oldCardAffiliate) external;
-
     // only Owner
     function setMarketPausedDefaultState(bool _state) external;
 
     function setTimeout(uint32 _newTimeout) external;
 
-    function setMaxRentIterations(uint256 _rentLimit) external;
+    function setMaxRentIterations(uint256 _rentLimit, uint256 _rentLimitLocking)
+        external;
 
     function setArbitrator(address _newAddress) external;
 
     function setRealitioAddress(address _newAddress) external;
 
     function maxRentIterations() external view returns (uint256);
+
+    function maxRentIterationsToLockMarket() external view returns (uint256);
 
     function setNFTMintingLimit(uint256 _mintLimit) external;
 
@@ -136,7 +135,8 @@ interface IRCFactory {
     function updateTokenURI(
         address _market,
         uint256 _cardId,
-        string calldata _newTokenURI
+        string calldata _newTokenURI,
+        string calldata _newCopyTokenURI
     ) external;
 
     function setPotDistribution(
