@@ -452,21 +452,51 @@ contract("RealityCardsTests", (accounts) => {
             assert.equal(await markets[0].ownerOf(1), markets[0].address)
         });
     })
-    describe.skip("Limit tests ", () => {
-        it(' Max NFTs to mint ', async () => {
+    describe("Limit tests ", () => {
+        it.only(' Max NFTs to mint ', async () => {
             let success = true
-            let i = 30;
+            let i = 120;
+            await rc.deposit(1000, alice)
+            dance:
             while (success == true) {
                 try {
-                    markets.push(await rc.createMarket({ numberOfCards: i }))
+                    await factory.setCardLimit(i)
+                    markets.push(await rc.createMarket({ numberOfCards: i, closeTime: 7000, resolveTime: 7000 }))
                 } catch (error) {
-
                     console.log("Failed on ", i);
                     success = false
+                    break dance;
                 }
-                i++
+                console.log("Created a market with %s cards", i);
+                for (let j = 0; j < i; j++) {
+                    try {
+                        await rc.newRental({ market: markets[markets.length - 1], from: alice, outcome: j })
+                    } catch (error) {
+                        console.log("Failed renting card %s in market %s", j, (markets.length - 1));
+                        success = false
+                        break dance;
+                    }
+                }
 
-                console.log("Creted a market with %s cards", i);
+                await time.increase(time.duration.hours(1));
+
+                for (let j = 0; j < i; j++) {
+                    markets[markets.length - 1].collectRent(j)
+                }
+
+                await time.increase(time.duration.hours(1));
+                let locked = false;
+                let lockCounter = 0;
+                while (!locked) {
+                    await markets[markets.length - 1].lockMarket()
+                    let state = await markets[markets.length - 1].state()
+                    locked = state == 2;
+                    lockCounter++;
+                }
+
+                console.log("Market locked after %s attempts", lockCounter);
+
+                i++
             }
         }).timeout(2000000)
         it(' Max search iterations ', async () => {
