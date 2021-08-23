@@ -821,12 +821,13 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         address _market = msgSender();
         uint256 _newTokenId = nfthub.totalSupply();
         uint256 _numberOfCards = IRCMarket(_market).numberOfCards();
+        uint256 _originalTokenID = IRCMarket(_market).getTokenId(_cardId);
         nfthub.mint(
             _user,
             _newTokenId,
             tokenURIs[_market][(_cardId + _numberOfCards)]
         );
-        emit LogMintNFTCopy(_cardId, _user, _newTokenId);
+        emit LogMintNFTCopy(_originalTokenID, _user, _newTokenId);
     }
 
     /*
