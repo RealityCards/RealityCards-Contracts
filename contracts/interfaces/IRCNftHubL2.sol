@@ -8,8 +8,6 @@ interface IRCNftHubL2 {
 
     function tokenURI(uint256) external view returns (string memory);
 
-    function addMarket(address) external;
-
     function totalSupply() external view returns (uint256 nftCount);
 
     function mint(

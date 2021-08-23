@@ -729,10 +729,9 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
             nfthub.totalSupply()
         );
 
-        // tell Treasury and NFT hub about new market
+        // tell Treasury about new market
         // before initialize as during initialize the market may call the treasury
         treasury.addMarket(_newAddress, marketPausedDefaultState);
-        nfthub.addMarket(_newAddress);
 
         // update internals
         marketAddresses[IRCMarket.Mode(_mode)].push(_newAddress);

@@ -28,8 +28,6 @@ contract RCNftHubL2 is
       ║           VARIABLES             ║
       ╚═════════════════════════════════╝*/
 
-    /// @dev so only markets can move NFTs
-    mapping(address => bool) public isMarket;
     /// @dev the market each NFT belongs to
     mapping(uint256 => address) public override marketTracker;
 
@@ -75,16 +73,6 @@ contract RCNftHubL2 is
         _setupRole(DEPOSITOR_ROLE, childChainManager);
         factory = IRCFactory(_factoryAddress);
         treasury = factory.treasury();
-    }
-
-    /*╔═════════════════════════════════╗
-      ║          ADD MARKETS            ║
-      ╚═════════════════════════════════╝*/
-
-    /// @dev so only markets can change ownership
-    function addMarket(address _newMarket) external override {
-        require(msgSender() == address(factory), "Not factory");
-        isMarket[_newMarket] = true;
     }
 
     /*╔═════════════════════════════════╗
