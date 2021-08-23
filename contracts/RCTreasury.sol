@@ -124,9 +124,9 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         /* setup AccessControl
 
                          UBER_OWNER
-            ┌───────────┬────┴─────┬────────────┬─────────┐
-            │           │          │            │         │
-          OWNER      FACTORY    ORDERBOOK   TREASURY  LEADERBOARD
+            ┌───────────┬────┴─────┬────────────┐
+            │           │          │            │ 
+          OWNER      FACTORY    ORDERBOOK   TREASURY 
             │           │
          GOVERNOR     MARKET
             │
