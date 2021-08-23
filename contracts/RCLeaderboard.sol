@@ -58,13 +58,6 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
         );
         _;
     }
-    modifier onlyFactory() {
-        require(
-            treasury.checkPermission(FACTORY, msgSender()),
-            "Extremely Verboten"
-        );
-        _;
-    }
 
     /*╔═════════════════════════════════╗
       ║      Leaderboard Tracking       ║

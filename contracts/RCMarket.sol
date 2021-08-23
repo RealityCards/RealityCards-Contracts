@@ -324,12 +324,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         _;
     }
 
-    /// @dev can only be called by Card owners
-    modifier onlyTokenOwner(uint256 _token) {
-        require(msgSender() == ownerOf(_token), "Not owner");
-        _;
-    }
-
     /*╔═════════════════════════════════╗
       ║     NFT HUB CONTRACT CALLS      ║
       ╚═════════════════════════════════╝*/

@@ -101,14 +101,6 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
         _;
     }
 
-    modifier onlyFactory() {
-        require(
-            treasury.checkPermission(FACTORY, msgSender()),
-            "Extremely Verboten"
-        );
-        _;
-    }
-
     /*╔═════════════════════════════════╗
       ║            EVENTS               ║
       ╚═════════════════════════════════╝*/
