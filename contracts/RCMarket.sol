@@ -1131,6 +1131,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @param _card the market specific index of the card
     /// @return true if the NFT has been minted
     function tokenExists(uint256 _card) internal view returns (bool) {
+        if (_card >= numberOfCards) return false;
         return tokenIds[_card] != type(uint256).max;
     }
 
