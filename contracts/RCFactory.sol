@@ -446,6 +446,9 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     }
 
     /// @notice Allow the owner to update a token URI.
+    /// @notice only updates for tokens not yet minted
+    /// @dev after calling this existing token URIs should be changed on
+    /// @dev .. the NFT hubs using setTokenURI()
     /// @param _market the market address the token belongs to
     /// @param _cardId the index 0 card id of the token to change
     /// @param _newTokenURI the new URI to set
@@ -455,7 +458,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         uint256 _cardId,
         string calldata _newTokenURI,
         string calldata _newCopyTokenURI
-    ) external override onlyOwner {
+    ) external override onlyUberOwner {
         IRCMarket.Mode _mode = IRCMarket(_market).mode();
         uint256 _numberOfCards = IRCMarket(_market).numberOfCards();
         tokenURIs[_market][_cardId] = _newTokenURI;
