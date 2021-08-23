@@ -502,9 +502,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         if (state == States.OPEN) {
             // change the locking time to allow lockMarket to lock
             /// @dev implementing our own SafeCast as this is the only place we need it
-            uint256 _blockTimestamp = uint32(block.timestamp);
-            require(_blockTimestamp <= type(uint32).max, "Overflow");
-            marketLockingTime = uint32(_blockTimestamp);
+            require(block.timestamp <= type(uint32).max, "Overflow");
+            marketLockingTime = uint32(block.timestamp);
             lockMarket();
         }
         if (state == States.LOCKED) {
