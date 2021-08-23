@@ -132,11 +132,11 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
             │
          WHITELIST | ARTIST | AFFILIATE | CARD_AFFILIATE
         */
-        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
-        _setupRole(UBER_OWNER, _msgSender());
-        _setupRole(OWNER, _msgSender());
-        _setupRole(GOVERNOR, _msgSender());
-        _setupRole(WHITELIST, _msgSender());
+        _setupRole(DEFAULT_ADMIN_ROLE, msgSender());
+        _setupRole(UBER_OWNER, msgSender());
+        _setupRole(OWNER, msgSender());
+        _setupRole(GOVERNOR, msgSender());
+        _setupRole(WHITELIST, msgSender());
         _setupRole(TREASURY, address(this));
         _setRoleAdmin(UBER_OWNER, UBER_OWNER);
         _setRoleAdmin(OWNER, UBER_OWNER);

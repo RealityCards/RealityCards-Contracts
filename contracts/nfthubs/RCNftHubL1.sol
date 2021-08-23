@@ -30,7 +30,7 @@ contract RCNftHubL1 is
     constructor(address _predicate) ERC721("RealityCards", "RC") {
         // initialise MetaTransactions
         _initializeEIP712("RealityCardsNftHubL1", "1");
-        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
+        _setupRole(DEFAULT_ADMIN_ROLE, msgSender());
         _setupRole(PREDICATE_ROLE, _predicate);
     }
 

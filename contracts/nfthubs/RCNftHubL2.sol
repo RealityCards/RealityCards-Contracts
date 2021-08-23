@@ -69,7 +69,7 @@ contract RCNftHubL2 is
         );
         // initialise MetaTransactions
         _initializeEIP712("RealityCardsNftHubL2", "1");
-        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
+        _setupRole(DEFAULT_ADMIN_ROLE, msgSender());
         _setupRole(DEPOSITOR_ROLE, childChainManager);
         factory = IRCFactory(_factoryAddress);
         treasury = factory.treasury();
@@ -151,7 +151,7 @@ contract RCNftHubL2 is
 
     function withdraw(uint256 tokenId) external override {
         require(
-            _msgSender() == ownerOf(tokenId),
+            msgSender() == ownerOf(tokenId),
             "ChildMintableERC721: INVALID_TOKEN_OWNER"
         );
         withdrawnTokens[tokenId] = true;
