@@ -641,7 +641,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
       ╚═════════════════════════════════╝*/
 
     /// @notice Creates a new market with the given parameters
-    /// @param _mode 0 = normal, 1 = winner takes all
+    /// @param _mode 0 = normal, 1 = winner takes all, 2 = Safe mode
     /// @param _ipfsHash the IPFS location of the market metadata
     /// @param _slug the URL subdomain in the UI
     /// @param _timestamps for market opening, locking, and oracle resolution
