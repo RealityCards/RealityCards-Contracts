@@ -1630,4 +1630,20 @@ contract("RealityCardsTests", (accounts) => {
         })
 
     });
+    describe.only("Factory tests", () => {
+        it("Backup view function", async () => {
+            let expectedResults = 10
+
+            for (let i = 0; i < (expectedResults * 2); i++) {
+                markets.push(await rc.createMarket({ slug: "marketnumber " + markets.length }))
+            }
+            await time.increase(time.duration.hours(1))
+            let results = await factory.getMarketInfo(0, 1, 30, 0)
+
+            console.log("number of results ", expectedResults);
+            console.log("number of markets ", markets.length);
+            console.log("Results ", results);
+
+        })
+    })
 })

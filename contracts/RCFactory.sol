@@ -40,8 +40,6 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     /// @dev the slug each market is hosted at
     mapping(string => address) public override slugToAddress;
     mapping(address => string) public override addressToSlug;
-    /// @dev the number of results to return in the backup view function
-    uint256 public override marketInfoResults;
 
     ///// GOVERNANCE VARIABLES- OWNER /////
     /// @dev artist / winner / market creator / affiliate / card affiliate
@@ -224,10 +222,12 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     /// @dev used for the UI backup mode
     /// @param _mode return markets only in the given mode
     /// @param _state return markets only in the given state
+    /// @param _results the number of results to return
     /// @param _skipResults the number of results to skip
     function getMarketInfo(
         IRCMarket.Mode _mode,
         uint256 _state,
+        uint256 _results,
         uint256 _skipResults
     )
         external
@@ -239,27 +239,54 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
             uint256[] memory
         )
     {
+        // start at the end of the marketAddresses array so the most recent market is first
         uint256 _marketIndex = marketAddresses[_mode].length;
-        uint256 _resultNumber = 0;
-        address[] memory _marketAddresses = new address[](marketInfoResults);
-        string[] memory _ipfsHashes = new string[](marketInfoResults);
-        uint256[] memory _potSizes = new uint256[](marketInfoResults);
-        string[] memory _slugs = new string[](marketInfoResults);
-        while (_resultNumber < marketInfoResults && _marketIndex > 1) {
+        if (_marketIndex < _results) {
+            // if we haven't created enough markets yet there's no need to return empty results
+            _results = _marketIndex;
+        }
+        uint256 _resultNumber = 0; // counts the valid results we've found
+        uint256 _index = 0; // counts how many markets we have checked (valid or invalid)
+        address[] memory _marketAddresses = new address[](_results); // store the addreses of valid markets
+        while (_resultNumber < _results && _marketIndex > 1) {
             _marketIndex--;
             address _market = marketAddresses[_mode][_marketIndex];
             if (IRCMarket(_market).state() == IRCMarket.States(_state)) {
-                if (_resultNumber < _skipResults) {
-                    _resultNumber++;
+                // we found an appropriate market
+                if (_index < _skipResults) {
+                    // we need to skip it however
+                    _index++;
                 } else {
+                    // we can use this one, add the address and increment
                     _marketAddresses[_resultNumber] = _market;
-                    _ipfsHashes[_resultNumber] = ipfsHash[_market];
-                    _slugs[_resultNumber] = addressToSlug[_market];
-                    _potSizes[_resultNumber] = IRCMarket(_market)
-                        .totalRentCollected();
                     _resultNumber++;
+                    _index++;
                 }
             }
+        }
+        return _getMarketInfo(_marketAddresses);
+    }
+
+    /// @notice Assmebles all the Slugs, IPFS hashes and PotSizes for the markets given
+    /// @dev seperated from getMarketInfo to avoid Stack too deep
+    function _getMarketInfo(address[] memory _marketAddresses)
+        internal
+        view
+        returns (
+            address[] memory,
+            string[] memory,
+            string[] memory,
+            uint256[] memory
+        )
+    {
+        string[] memory _ipfsHashes = new string[](_marketAddresses.length);
+        uint256[] memory _potSizes = new uint256[](_marketAddresses.length);
+        string[] memory _slugs = new string[](_marketAddresses.length);
+        for (uint256 i = 0; i < _marketAddresses.length; i++) {
+            if (_marketAddresses[i] == address(0)) break;
+            _ipfsHashes[i] = ipfsHash[_marketAddresses[i]];
+            _slugs[i] = addressToSlug[_marketAddresses[i]];
+            _potSizes[i] = IRCMarket(_marketAddresses[i]).totalRentCollected();
         }
         return (_marketAddresses, _ipfsHashes, _slugs, _potSizes);
     }
@@ -482,18 +509,6 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
             _timestamps,
             nfthub.totalSupply()
         );
-    }
-
-    /// @notice change how many results are returned from getMarketInfo
-    /// @dev would be better to pass this as a parameter in getMarketInfo
-    /// @dev .. however we are limited because of stack too deep errors
-    function setMarketInfoResults(uint256 _results)
-        external
-        override
-        onlyOwner
-    {
-        // no event needed, only used for the backup view mode
-        marketInfoResults = _results;
     }
 
     /*╔═════════════════════════════════╗

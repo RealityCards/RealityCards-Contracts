@@ -34,8 +34,6 @@ interface IRCFactory {
 
     function addressToSlug(address) external view returns (string memory);
 
-    function marketInfoResults() external view returns (uint256);
-
     function treasury() external view returns (IRCTreasury);
 
     function orderbook() external view returns (IRCOrderbook);
@@ -160,8 +158,6 @@ interface IRCFactory {
         uint32 _newMinimumDuration,
         uint32 _newMaximumDuration
     ) external;
-
-    function setMarketInfoResults(uint256 _results) external;
 
     // only UberOwner
     function setReferenceContractAddress(address _newAddress) external;
