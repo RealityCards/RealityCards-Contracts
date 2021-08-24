@@ -26,6 +26,16 @@ interface IRCFactory {
 
     // view functions
 
+    function getMarketSettings()
+        external
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            bool
+        );
+
     function nfthub() external view returns (IRCNftHubL2);
 
     function ipfsHash(address) external view returns (string memory);
@@ -109,6 +119,8 @@ interface IRCFactory {
     function removeAffiliate(address _oldAffiliate) external;
 
     // only Owner
+    function setLimitNFTsToWinners(bool _limitEnabled) external;
+
     function setMarketPausedDefaultState(bool _state) external;
 
     function setTimeout(uint32 _newTimeout) external;

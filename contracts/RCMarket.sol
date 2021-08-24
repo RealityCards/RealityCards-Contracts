@@ -125,6 +125,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     uint256 public override cardAccountingIndex;
     /// @dev has the market locking accounting been completed yet
     bool public override accountingComplete;
+    /// @dev if true then copies of the NFT can only be minted for the winning outcome.
+    bool limitNFTsToWinners;
 
     // ORACLE VARIABLES
     bytes32 public override questionId;
@@ -220,9 +222,12 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         // get adjustable parameters from the factory/treasury
         uint256[5] memory _potDistribution = factory.getPotDistribution();
         minRentalDayDivisor = treasury.minRentalDayDivisor();
-        minimumPriceIncreasePercent = factory.minimumPriceIncreasePercent();
-        maxRentIterations = factory.maxRentIterations();
-        maxRentIterationsToLockMarket = factory.maxRentIterationsToLockMarket();
+        (
+            minimumPriceIncreasePercent,
+            maxRentIterations,
+            maxRentIterationsToLockMarket,
+            limitNFTsToWinners
+        ) = factory.getMarketSettings();
 
         // Initialize!
         winningOutcome = type(uint256).max; // default invalid
@@ -543,6 +548,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         if (_user == card[_card].longestOwner) {
             _transferCard(ownerOf(_card), card[_card].longestOwner, _card);
         } else {
+            if (limitNFTsToWinners) {
+                require(_card == winningOutcome, "Not winning outcome");
+            }
             leaderboard.claimNFT(_user, _card);
             factory.mintCopyOfNFT(_user, _card);
         }

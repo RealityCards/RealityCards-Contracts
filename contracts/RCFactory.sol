@@ -74,6 +74,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     bool public override marketPausedDefaultState;
     /// @dev a limit to the number of NFTs to mint per market
     uint256 public override cardLimit;
+    bool public limitNFTsToWinners;
 
     ///// GOVERNANCE VARIABLES- GOVERNORS /////
     /// @dev unapproved markets hidden from the interface
@@ -157,6 +158,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         setArbitrator(_arbitratorAddress);
         setRealitioAddress(_realitioAddress);
         setTimeout(86400); // 24 hours
+        limitNFTsToWinners = false;
     }
 
     /*╔═════════════════════════════════╗
@@ -425,6 +427,14 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         onlyOwner
     {
         marketPausedDefaultState = _state;
+    }
+
+    function setLimitNFTsToWinners(bool _limitEnabled)
+        public
+        override
+        onlyOwner
+    {
+        limitNFTsToWinners = _limitEnabled;
     }
 
     /*┌──────────────────────────────────────────┐
@@ -816,6 +826,25 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
             _timestamps[1] + (1 weeks) > _timestamps[2] &&
                 _timestamps[1] <= _timestamps[2],
             "Oracle resolution time error"
+        );
+    }
+
+    function getMarketSettings()
+        external
+        view
+        override
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            bool
+        )
+    {
+        return (
+            minimumPriceIncreasePercent,
+            maxRentIterations,
+            maxRentIterationsToLockMarket,
+            limitNFTsToWinners
         );
     }
 
