@@ -1630,7 +1630,7 @@ contract("RealityCardsTests", (accounts) => {
         })
 
     });
-    describe.only("Factory tests", () => {
+    describe.skip("Factory tests", () => {
         it("Backup view function", async () => {
             let expectedResults = 10
 
