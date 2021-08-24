@@ -174,6 +174,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         override
         returns (address)
     {
+        if (marketAddresses[_mode].length == 0) return address(0);
         return marketAddresses[_mode][marketAddresses[_mode].length - (1)];
     }
 
