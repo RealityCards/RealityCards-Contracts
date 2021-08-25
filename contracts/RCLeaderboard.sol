@@ -34,9 +34,9 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
     mapping(address => mapping(uint256 => uint256)) public leaderboardLength;
     mapping(address => uint256) public override NFTsToAward;
 
-    /// @dev emitted every time an order is added to the orderbook
+    /// @dev emitted every time a user is added to the leaderboard
     event LogAddToLeaderboard(address _user, address _market, uint256 _card);
-    /// @dev emitted when an order is removed from the orderbook
+    /// @dev emitted every time a user is removed from the leaderboard
     event LogRemoveFromLeaderboard(
         address _user,
         address _market,
