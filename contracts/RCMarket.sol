@@ -693,13 +693,17 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         _checkState(States.OPEN);
         // check that not being front run
         uint256 _actualSumOfPrices = 0;
+        address _user = msgSender();
         for (uint256 i = 0; i < numberOfCards; i++) {
-            _actualSumOfPrices += minPriceIncreaseCalc(card[i].cardPrice);
+            if (ownerOf(i) != _user) {
+                _actualSumOfPrices += minPriceIncreaseCalc(card[i].cardPrice);
+            }
         }
+
         require(_actualSumOfPrices <= _maxSumOfPrices, "Prices too high");
 
         for (uint256 i = 0; i < numberOfCards; i++) {
-            if (ownerOf(i) != msgSender()) {
+            if (ownerOf(i) != _user) {
                 uint256 _newPrice = minPriceIncreaseCalc(card[i].cardPrice);
                 newRental(_newPrice, 0, address(0), i);
             }
