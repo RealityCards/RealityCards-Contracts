@@ -466,8 +466,10 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         sponsorshipRequired = _amount;
     }
 
-    /// @notice market opening time must be at least this many seconds in the future
+    /// @notice To set the market time restrictions, market opening and min/max duration.
     /// @param _newAdvancedWarning the warning time to set in seconds
+    /// @param _newMinimumDuration the minimum market duration
+    /// @param _newMaximumDuration the maximum market duration
     function setMarketTimeRestrictions(
         uint32 _newAdvancedWarning,
         uint32 _newMinimumDuration,
