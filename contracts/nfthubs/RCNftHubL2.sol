@@ -123,6 +123,12 @@ contract RCNftHubL2 is
         _transfer(_currentOwner, _newOwner, _tokenId);
     }
 
+    /// @notice to burn the NFT
+    function burn(uint256 _tokenId) external {
+        _isApprovedOrOwner(msgSender(), _tokenId);
+        _burn(_tokenId);
+    }
+
     /*╔═════════════════════════════════╗
       ║        MATIC MINTABLE           ║
       ╚═════════════════════════════════╝*/
