@@ -696,10 +696,8 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         /// @dev we want different tokenURIs for originals and copies
         /// @dev ..the copies are appended to the end of the array
         /// @dev ..so half the array length if the number of tokens.
-        require(
-            (_tokenURIs.length / 2) <= cardLimit,
-            "Too many tokens to mint"
-        );
+        require(_tokenURIs.length <= cardLimit * 2, "Too many tokens to mint");
+        require(_tokenURIs.length % 2 == 0, "TokenURI Length Error");
 
         // check stakeholder addresses
         // artist
@@ -714,7 +712,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         // affiliate
         require(
             _cardAffiliateAddresses.length == 0 ||
-                _cardAffiliateAddresses.length == (_tokenURIs.length / 2),
+                _cardAffiliateAddresses.length * 2 == _tokenURIs.length,
             "Card Affiliate Length Error"
         );
         if (approvedAffiliatesOnly) {
