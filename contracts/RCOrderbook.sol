@@ -562,6 +562,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
             market[_market].minimumRentalDuration;
         uint256 _newPrice;
         uint256 _loopCounter = 0;
+        bool validOwnerFound = false;
 
         // delete current owner
         do {
@@ -572,17 +573,16 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
             );
             _loopCounter++;
             // delete next bid if foreclosed
-        } while (
-            treasury.foreclosureTimeUser(
-                _head.next,
-                _newPrice,
-                _timeOwnershipChanged
-            ) <
-                minimumTimeToOwnTo &&
-                _loopCounter < maxDeletions
-        );
+            validOwnerFound =
+                treasury.foreclosureTimeUser(
+                    _head.next,
+                    _newPrice,
+                    _timeOwnershipChanged
+                ) >
+                minimumTimeToOwnTo;
+        } while (!validOwnerFound && _loopCounter < maxDeletions);
 
-        if (_loopCounter != maxDeletions) {
+        if (validOwnerFound) {
             // the old owner is dead, long live the new owner
             _newOwner = user[_market][index[_market][_market][_card]].next;
             treasury.updateRentalRate(
