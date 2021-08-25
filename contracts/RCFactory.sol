@@ -682,7 +682,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         require(address(nfthub) != address(0), "Nfthub not set");
         require(
             address(referenceContractAddress) != address(0),
-            "Nfthub not set"
+            "Reference not set"
         );
 
         // check sponsorship
