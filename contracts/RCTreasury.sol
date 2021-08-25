@@ -237,6 +237,9 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     /*╔═════════════════════════════════╗
       ║      WHITELIST FUNCTIONS        ║
       ╚═════════════════════════════════╝*/
+    // There are 2 whitelist functionalities here,
+    // 1. a whitelist for users to enter the system, restrict deposits.
+    // 2. a market specific whitelist, restrict rentals on certain markets to certain users.
 
     /// @notice if true, users must be on the whitelist to deposit
     function toggleWhitelist() external override onlyRole(OWNER) {
@@ -260,6 +263,17 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
                 RCTreasury.revokeRole(WHITELIST, _users[index]);
             }
         }
+    }
+
+    /// @notice to implement (or remove) a market specific whitelist
+    /// @param _market the market to affect
+    /// @param _role the role required for this market
+    /// @dev it'd be nice to pass the role as a string but then we couldn't reset this
+    function updateMarketWhitelist(address _market, bytes32 _role)
+        external
+        onlyRole(GOVERNOR)
+    {
+        marketWhitelist[_market] = _role;
     }
 
     /// @notice Some markets may be restricted to certain roles,
