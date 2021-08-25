@@ -694,22 +694,13 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         // check that not being front run
         uint256 _actualSumOfPrices = 0;
         for (uint256 i = 0; i < numberOfCards; i++) {
-            if (card[i].cardPrice == 0) {
-                _actualSumOfPrices += MIN_RENTAL_VALUE;
-            } else {
-                _actualSumOfPrices += minPriceIncreaseCalc(card[i].cardPrice);
-            }
+            _actualSumOfPrices += minPriceIncreaseCalc(card[i].cardPrice);
         }
         require(_actualSumOfPrices <= _maxSumOfPrices, "Prices too high");
 
         for (uint256 i = 0; i < numberOfCards; i++) {
             if (ownerOf(i) != msgSender()) {
-                uint256 _newPrice;
-                if (card[i].cardPrice > 0) {
-                    _newPrice = minPriceIncreaseCalc(card[i].cardPrice);
-                } else {
-                    _newPrice = MIN_RENTAL_VALUE;
-                }
+                uint256 _newPrice = minPriceIncreaseCalc(card[i].cardPrice);
                 newRental(_newPrice, 0, address(0), i);
             }
         }
@@ -1130,7 +1121,11 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         view
         returns (uint256 _newPrice)
     {
-        _newPrice = (_oldPrice * (minimumPriceIncreasePercent + 100)) / 100;
+        if (_oldPrice == 0) {
+            return MIN_RENTAL_VALUE;
+        } else {
+            return (_oldPrice * (minimumPriceIncreasePercent + 100)) / 100;
+        }
     }
 
     /*╔═════════════════════════════════╗
