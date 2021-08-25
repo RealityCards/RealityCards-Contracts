@@ -911,6 +911,16 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         AccessControl.grantRole(role, account);
     }
 
+    function checkRole(string memory role, address account)
+        external
+        view
+        override
+        returns (bool)
+    {
+        bytes32 _role = keccak256(abi.encodePacked(role));
+        return hasRole(_role, account);
+    }
+
     function revokeRole(string memory role, address account) external override {
         bytes32 _role = keccak256(abi.encodePacked(role));
         RCTreasury.revokeRole(_role, account);

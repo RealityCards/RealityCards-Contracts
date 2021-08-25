@@ -32,6 +32,11 @@ interface IRCTreasury {
         uint256 _timeOfNewBid
     ) external view returns (uint256);
 
+    function checkRole(string memory role, address account)
+        external
+        view
+        returns (bool);
+
     function bridgeAddress() external view returns (address);
 
     function checkPermission(bytes32, address) external view returns (bool);
