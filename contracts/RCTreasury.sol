@@ -287,7 +287,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
       ╚═════════════════════════════════╝*/
     /// @dev uber owner required for upgrades
     /// @dev deploying and setting a new factory is effectively an upgrade
-    /// @dev this is seperate so owner so can be set to multisig, or burn address to relinquish upgrade ability
+    /// @dev this is separate so owner so can be set to multisig, or burn address to relinquish upgrade ability
     /// @dev ... while maintaining governance over other governance functions
 
     function setFactoryAddress(address _newFactory)
@@ -506,7 +506,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         marketBalance -= _amount;
         marketPot[_market] += _amount;
         totalMarketPots += _amount;
-        /// @dev return the amount just incase it was adjusted
+        /// @dev return the amount just in case it was adjusted
         return _amount;
     }
 
