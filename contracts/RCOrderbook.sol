@@ -370,7 +370,6 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
         treasury.increaseBidRate(_user, _price);
         if (user[_user][index[_user][_market][_card]].prev == _market) {
             address _oldOwner = user[_user][index[_user][_market][_card]].next;
-            transferCard(_market, _card, _oldOwner, _user, _price);
             treasury.updateRentalRate(
                 _oldOwner,
                 _user,
@@ -378,6 +377,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
                 _price,
                 block.timestamp
             );
+            transferCard(_market, _card, _oldOwner, _user, _price);
         }
     }
 
@@ -438,7 +438,6 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
         treasury.decreaseBidRate(_user, _price);
         if (_wasOwner && _currUser.prev == _market) {
             // if owner before and after, update the price difference
-            transferCard(_market, _card, _user, _user, _currUser.price);
             treasury.updateRentalRate(
                 _user,
                 _user,
@@ -446,6 +445,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
                 _currUser.price,
                 block.timestamp
             );
+            transferCard(_market, _card, _user, _user, _currUser.price);
         } else if (_wasOwner && _currUser.prev != _market) {
             // if owner before and not after, remove the old price
             address _newOwner = user[_market][index[_market][_market][_card]]
