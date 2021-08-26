@@ -396,13 +396,14 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         if (whitelistEnabled) {
             require(hasRole(WHITELIST, _user), "Not in whitelist");
         }
-        erc20.safeTransferFrom(msgSender(), address(this), _amount);
 
         // do some cleaning up, it might help cancel their foreclosure
         orderbook.removeOldBids(_user);
 
         user[_user].deposit += SafeCast.toUint128(_amount);
         totalDeposits += _amount;
+
+        erc20.safeTransferFrom(msgSender(), address(this), _amount);
         emit LogAdjustDeposit(_user, _amount, true);
 
         // this deposit could cancel the users foreclosure
@@ -470,9 +471,9 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         override
         balancedBooks
     {
-        erc20.safeTransferFrom(msgSender(), address(this), _amount);
         marketBalanceTopup += _amount;
         marketBalance += _amount;
+        erc20.safeTransferFrom(msgSender(), address(this), _amount);
     }
 
     /*╔═════════════════════════════════╗
@@ -572,9 +573,9 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
             erc20.allowance(_sponsor, address(this)) >= _amount,
             "Not approved to send this amount"
         );
-        erc20.safeTransferFrom(_sponsor, address(this), _amount);
         marketPot[_msgSender] += _amount;
         totalMarketPots += _amount;
+        erc20.safeTransferFrom(_sponsor, address(this), _amount);
     }
 
     /// @notice tracks when the user last rented- so they cannot rent and immediately withdraw,
