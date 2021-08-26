@@ -561,8 +561,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         uint256 _winningsToTransfer = 0;
         uint256 _remainingCut = ((((uint256(PER_MILLE) - artistCut) -
             affiliateCut) - cardAffiliateCut) - winnerCut) - creatorCut;
+        address _msgSender = msgSender();
         // calculate longest owner's extra winnings, if relevant
-        if (card[winningOutcome].longestOwner == msgSender() && winnerCut > 0) {
+        if (card[winningOutcome].longestOwner == _msgSender && winnerCut > 0) {
             _winningsToTransfer =
                 (totalRentCollected * winnerCut) /
                 (PER_MILLE);
@@ -576,21 +577,20 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                     _remainingCut) /
                 PER_MILLE;
             _winningsToTransfer +=
-                (rentCollectedPerUserPerCard[msgSender()][winningOutcome] *
+                (rentCollectedPerUserPerCard[_msgSender][winningOutcome] *
                     _remainingCut) /
                 PER_MILLE;
         } else {
             // calculate normal winnings, if any
             _remainingPot = (totalRentCollected * _remainingCut) / (PER_MILLE);
         }
-        uint256 _winnersTimeHeld = card[winningOutcome].timeHeld[msgSender()];
+        uint256 _winnersTimeHeld = card[winningOutcome].timeHeld[_msgSender];
         uint256 _numerator = _remainingPot * _winnersTimeHeld;
-        _winningsToTransfer =
-            _winningsToTransfer +
-            (_numerator / card[winningOutcome].totalTimeHeld);
+        _winningsToTransfer += (_numerator /
+            card[winningOutcome].totalTimeHeld);
         require(_winningsToTransfer > 0, "Not a winner");
-        _payout(msgSender(), _winningsToTransfer);
-        emit LogWinningsPaid(msgSender(), _winningsToTransfer);
+        _payout(_msgSender, _winningsToTransfer);
+        emit LogWinningsPaid(_msgSender, _winningsToTransfer);
     }
 
     /// @notice returns all funds to users in case of invalid outcome
