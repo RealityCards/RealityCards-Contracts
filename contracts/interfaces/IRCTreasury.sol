@@ -37,6 +37,8 @@ interface IRCTreasury {
         view
         returns (bool);
 
+    function uberOwnerCheckTime() external view returns (uint256);
+
     function bridgeAddress() external view returns (address);
 
     function checkPermission(bytes32, address) external view returns (bool);
@@ -88,6 +90,8 @@ interface IRCTreasury {
     function setLeaderboardAddress(address _newAddress) external;
 
     function setFactoryAddress(address _newFactory) external;
+
+    function uberOwnerTest() external;
 
     function deposit(uint256 _amount, address _user) external returns (bool);
 

@@ -73,6 +73,9 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     bool public whitelistEnabled;
     /// @dev allow markets to be restricted to a certain role
     mapping(address => bytes32) public marketWhitelist;
+    /// @dev to test if the uberOwner multisig all still have access they
+    /// @dev .. will periodically be asked to update this variable.
+    uint256 public override uberOwnerCheckTime;
 
     /*╔═════════════════════════════════╗
       ║             SAFETY              ║
@@ -303,6 +306,12 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     /// @dev deploying and setting a new factory is effectively an upgrade
     /// @dev this is separate so owner so can be set to multisig, or burn address to relinquish upgrade ability
     /// @dev ... while maintaining governance over other governance functions
+
+    /// @notice Simply updates a variable with the current block.timestamp used
+    /// @notice .. to check the uberOwner multisig controllers all still have access.
+    function uberOwnerTest() external override onlyRole(UBER_OWNER) {
+        uberOwnerCheckTime = block.timestamp;
+    }
 
     function setFactoryAddress(address _newFactory)
         external
