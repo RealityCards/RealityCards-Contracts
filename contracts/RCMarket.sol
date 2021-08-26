@@ -1209,22 +1209,6 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         );
     }
 
-    /*╔═════════════════════════════════╗
-      ║        CIRCUIT BREAKER          ║
-      ╚═════════════════════════════════╝*/
-
-    /// @dev in case Oracle never resolves for any reason
-    /// @dev does not set a winner so same as invalid outcome
-    /// @dev market does not need to be locked, just in case lockMarket bugs out
-    function circuitBreaker() external override {
-        require(
-            block.timestamp > (uint256(oracleResolutionTime) + (12 weeks)),
-            "Too early"
-        );
-        state = States.WITHDRAW;
-        orderbook.closeMarket();
-        emit LogStateChange(uint256(state));
-    }
     /*
          ▲  
         ▲ ▲ 
