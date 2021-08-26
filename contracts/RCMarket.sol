@@ -515,7 +515,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             // get the winner. This will revert if answer is not resolved.
             winningOutcome = _winningOutcome;
             _incrementState();
-            emit LogWinnerKnown(winningOutcome);
+            emit LogWinnerKnown(_winningOutcome);
         }
     }
 
