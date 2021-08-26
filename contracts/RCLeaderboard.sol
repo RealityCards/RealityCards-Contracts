@@ -17,7 +17,6 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
 
     // Contracts and Permissions
     IRCTreasury public override treasury;
-    IRCMarket public override market;
     bytes32 public constant UBER_OWNER = keccak256("UBER_OWNER");
     bytes32 public constant MARKET = keccak256("MARKET");
     bytes32 public constant FACTORY = keccak256("FACTORY");

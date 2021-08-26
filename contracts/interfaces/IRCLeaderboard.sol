@@ -7,8 +7,6 @@ import "./IRCMarket.sol";
 interface IRCLeaderboard {
     function treasury() external view returns (IRCTreasury);
 
-    function market() external view returns (IRCMarket);
-
     function NFTsToAward(address _market) external view returns (uint256);
 
     function setTreasuryAddress(address _newTreasury) external;
