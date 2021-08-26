@@ -1048,10 +1048,10 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         uint256 _card,
         uint256 _timeOfCollection
     ) internal {
-        uint256 _rentOwed = (card[_card].cardPrice *
-            (_timeOfCollection - card[_card].timeLastCollected)) / 1 days;
         uint256 _timeHeldToIncrement = (_timeOfCollection -
             card[_card].timeLastCollected);
+        uint256 _rentOwed = (card[_card].cardPrice * _timeHeldToIncrement) /
+            1 days;
 
         // if the user has a timeLimit, adjust it as necessary
         if (card[_card].cardTimeLimit != 0) {
