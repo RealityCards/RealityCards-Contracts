@@ -457,7 +457,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     }
 
     /// @notice whether or not anyone can be an affiliate
-    function changeApprovedAffilliatesOnly() external override onlyOwner {
+    function changeApprovedAffiliatesOnly() external override onlyOwner {
         approvedAffiliatesOnly = !approvedAffiliatesOnly;
     }
 
