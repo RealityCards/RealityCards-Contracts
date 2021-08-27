@@ -17,7 +17,7 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
 
     // Contracts and Permissions
     IRCTreasury public override treasury;
-    IRCMarket public override market;
+    bytes32 public constant UBER_OWNER = keccak256("UBER_OWNER");
     bytes32 public constant MARKET = keccak256("MARKET");
     bytes32 public constant FACTORY = keccak256("FACTORY");
 
@@ -34,9 +34,9 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
     mapping(address => mapping(uint256 => uint256)) public leaderboardLength;
     mapping(address => uint256) public override NFTsToAward;
 
-    /// @dev emitted every time an order is added to the orderbook
+    /// @dev emitted every time a user is added to the leaderboard
     event LogAddToLeaderboard(address _user, address _market, uint256 _card);
-    /// @dev emitted when an order is removed from the orderbook
+    /// @dev emitted every time a user is removed from the leaderboard
     event LogRemoveFromLeaderboard(
         address _user,
         address _market,
@@ -58,12 +58,18 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
         );
         _;
     }
-    modifier onlyFactory() {
+
+    /*╔═════════════════════════════════╗
+      ║         GOVERNANCE              ║
+      ╚═════════════════════════════════╝*/
+
+    function setTreasuryAddress(address _newTreasury) external override {
         require(
-            treasury.checkPermission(FACTORY, msgSender()),
+            treasury.checkPermission(UBER_OWNER, msgSender()),
             "Extremely Verboten"
         );
-        _;
+        require(_newTreasury != address(0));
+        treasury = IRCTreasury(_newTreasury);
     }
 
     /*╔═════════════════════════════════╗
@@ -313,6 +319,12 @@ contract RCLeaderboard is NativeMetaTransaction, IRCLeaderboard {
     }
 
     /*
+██████╗ ███████╗ █████╗ ██╗     ██╗████████╗██╗   ██╗ ██████╗ █████╗ ██████╗ ██████╗ ███████╗
+██╔══██╗██╔════╝██╔══██╗██║     ██║╚══██╔══╝╚██╗ ██╔╝██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔════╝
+██████╔╝█████╗  ███████║██║     ██║   ██║    ╚████╔╝ ██║     ███████║██████╔╝██║  ██║███████╗
+██╔══██╗██╔══╝  ██╔══██║██║     ██║   ██║     ╚██╔╝  ██║     ██╔══██║██╔══██╗██║  ██║╚════██║
+██║  ██║███████╗██║  ██║███████╗██║   ██║      ██║   ╚██████╗██║  ██║██║  ██║██████╔╝███████║
+╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝   ╚═╝      ╚═╝    ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚══════╝ 
          ▲  
         ▲ ▲ 
               */

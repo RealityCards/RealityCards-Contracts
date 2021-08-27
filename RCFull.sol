@@ -146,7 +146,7 @@ interface IRCFactory {
 
     function changeApprovedArtistsOnly() external;
 
-    function changeApprovedAffilliatesOnly() external;
+    function changeApprovedAffiliatesOnly() external;
 
     function setSponsorshipRequired(uint256 _amount) external;
 

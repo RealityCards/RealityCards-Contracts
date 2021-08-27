@@ -51,8 +51,6 @@ interface IRCMarket {
 
     function sponsor(uint256 _amount) external;
 
-    function circuitBreaker() external;
-
     // payouts
     function withdraw() external;
 

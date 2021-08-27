@@ -116,8 +116,8 @@ module.exports = class TestEnviroment {
         // mode, 0 = classic, 1 = winner takes all, 2 = safe mode
         // timestamps are in seconds from now
         var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
-        let slug = 'my-Test-Slug'
         var defaults = {
+            slug: 'my-Test-Slug',
             mode: 0,
             openTime: 0,
             closeTime: 31536000,
@@ -142,7 +142,7 @@ module.exports = class TestEnviroment {
         await this.contracts.factory.createMarket(
             options.mode,
             "0x0",
-            slug,
+            options.slug,
             timestamps,
             tokenURIs,
             options.artistAddress,

@@ -81,6 +81,15 @@ contract("RealityCardsTests", (accounts) => {
             await expectRevert(treasury.grantRole("MARKET", alice), rc.accessControl(admin, "FACTORY"));
         });
 
+        it("Market specific whitelist ", async () => {
+            await rc.deposit(10, alice);
+            await rc.deposit(10, bob);
+            await treasury.grantRole("TEST_WHITELIST", alice)
+            await treasury.updateMarketWhitelist(markets[markets.length - 1].address, web3.utils.soliditySha3("TEST_WHITELIST"))
+            await rc.newRental({ from: alice }); // new rental works
+            expectRevert(rc.newRental({ from: bob }), "Not approved for this market")
+        });
+
         it("check that non markets cannot call market only functions on Treasury", async () => {
             // only testing invalid responses, valid responses checked in each functions own test
             await expectRevert(treasury.payRent(admin), rc.accessControl(admin, "MARKET"));
@@ -1630,4 +1639,20 @@ contract("RealityCardsTests", (accounts) => {
         })
 
     });
+    describe.skip("Factory tests", () => {
+        it("Backup view function", async () => {
+            let expectedResults = 10
+
+            for (let i = 0; i < (expectedResults * 2); i++) {
+                markets.push(await rc.createMarket({ slug: "marketnumber " + markets.length }))
+            }
+            await time.increase(time.duration.hours(1))
+            let results = await factory.getMarketInfo(0, 1, 30, 0)
+
+            console.log("number of results ", expectedResults);
+            console.log("number of markets ", markets.length);
+            console.log("Results ", results);
+
+        })
+    })
 })

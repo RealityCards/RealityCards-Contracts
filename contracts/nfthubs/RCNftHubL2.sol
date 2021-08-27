@@ -28,8 +28,6 @@ contract RCNftHubL2 is
       ║           VARIABLES             ║
       ╚═════════════════════════════════╝*/
 
-    /// @dev so only markets can move NFTs
-    mapping(address => bool) public isMarket;
     /// @dev the market each NFT belongs to
     mapping(uint256 => address) public override marketTracker;
 
@@ -71,20 +69,10 @@ contract RCNftHubL2 is
         );
         // initialise MetaTransactions
         _initializeEIP712("RealityCardsNftHubL2", "1");
-        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
+        _setupRole(DEFAULT_ADMIN_ROLE, msgSender());
         _setupRole(DEPOSITOR_ROLE, childChainManager);
         factory = IRCFactory(_factoryAddress);
         treasury = factory.treasury();
-    }
-
-    /*╔═════════════════════════════════╗
-      ║          ADD MARKETS            ║
-      ╚═════════════════════════════════╝*/
-
-    /// @dev so only markets can change ownership
-    function addMarket(address _newMarket) external override {
-        require(msgSender() == address(factory), "Not factory");
-        isMarket[_newMarket] = true;
     }
 
     /*╔═════════════════════════════════╗
@@ -135,6 +123,12 @@ contract RCNftHubL2 is
         _transfer(_currentOwner, _newOwner, _tokenId);
     }
 
+    /// @notice to burn the NFT
+    function burn(uint256 _tokenId) external {
+        _isApprovedOrOwner(msgSender(), _tokenId);
+        _burn(_tokenId);
+    }
+
     /*╔═════════════════════════════════╗
       ║        MATIC MINTABLE           ║
       ╚═════════════════════════════════╝*/
@@ -163,7 +157,7 @@ contract RCNftHubL2 is
 
     function withdraw(uint256 tokenId) external override {
         require(
-            _msgSender() == ownerOf(tokenId),
+            _isApprovedOrOwner(msgSender(), tokenId),
             "ChildMintableERC721: INVALID_TOKEN_OWNER"
         );
         withdrawnTokens[tokenId] = true;
@@ -172,7 +166,7 @@ contract RCNftHubL2 is
 
     function withdrawWithMetadata(uint256 tokenId) external override {
         require(
-            msgSender() == ownerOf(tokenId),
+            _isApprovedOrOwner(msgSender(), tokenId),
             "ChildMintableERC721: INVALID_TOKEN_OWNER"
         );
         withdrawnTokens[tokenId] = true;
@@ -271,6 +265,12 @@ contract RCNftHubL2 is
     }
 
     /*
+██████╗ ███████╗ █████╗ ██╗     ██╗████████╗██╗   ██╗ ██████╗ █████╗ ██████╗ ██████╗ ███████╗
+██╔══██╗██╔════╝██╔══██╗██║     ██║╚══██╔══╝╚██╗ ██╔╝██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔════╝
+██████╔╝█████╗  ███████║██║     ██║   ██║    ╚████╔╝ ██║     ███████║██████╔╝██║  ██║███████╗
+██╔══██╗██╔══╝  ██╔══██║██║     ██║   ██║     ╚██╔╝  ██║     ██╔══██║██╔══██╗██║  ██║╚════██║
+██║  ██║███████╗██║  ██║███████╗██║   ██║      ██║   ╚██████╗██║  ██║██║  ██║██████╔╝███████║
+╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝   ╚═╝      ╚═╝    ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚══════╝ 
          ▲  
         ▲ ▲ 
               */

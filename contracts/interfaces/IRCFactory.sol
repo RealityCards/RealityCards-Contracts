@@ -26,6 +26,16 @@ interface IRCFactory {
 
     // view functions
 
+    function getMarketSettings()
+        external
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            bool
+        );
+
     function nfthub() external view returns (IRCNftHubL2);
 
     function ipfsHash(address) external view returns (string memory);
@@ -33,8 +43,6 @@ interface IRCFactory {
     function slugToAddress(string memory) external view returns (address);
 
     function addressToSlug(address) external view returns (string memory);
-
-    function marketInfoResults() external view returns (uint256);
 
     function treasury() external view returns (IRCTreasury);
 
@@ -111,6 +119,8 @@ interface IRCFactory {
     function removeAffiliate(address _oldAffiliate) external;
 
     // only Owner
+    function setLimitNFTsToWinners(bool _limitEnabled) external;
+
     function setMarketPausedDefaultState(bool _state) external;
 
     function setTimeout(uint32 _newTimeout) external;
@@ -151,7 +161,7 @@ interface IRCFactory {
 
     function changeApprovedArtistsOnly() external;
 
-    function changeApprovedAffilliatesOnly() external;
+    function changeApprovedAffiliatesOnly() external;
 
     function setSponsorshipRequired(uint256 _amount) external;
 
@@ -160,8 +170,6 @@ interface IRCFactory {
         uint32 _newMinimumDuration,
         uint32 _newMaximumDuration
     ) external;
-
-    function setMarketInfoResults(uint256 _results) external;
 
     // only UberOwner
     function setReferenceContractAddress(address _newAddress) external;
