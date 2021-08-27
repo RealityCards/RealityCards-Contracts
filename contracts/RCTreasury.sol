@@ -114,7 +114,6 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     );
     event LogMarketPaused(address market, bool paused);
     event LogGlobalPause(bool paused);
-    event LogWhitelistUser(address user, bool allowed);
 
     /*╔═════════════════════════════════╗
       ║           CONSTRUCTOR           ║
@@ -936,10 +935,6 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         public
         override(AccessControl, IRCTreasury)
     {
-        if (role == WHITELIST) {
-            // need to emit old event until frontend catches up
-            emit LogWhitelistUser(account, true);
-        }
         AccessControl.grantRole(role, account);
     }
 
@@ -976,10 +971,6 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         public
         override(AccessControl, IRCTreasury)
     {
-        if (role == WHITELIST) {
-            // need to emit old event until frontend catches up
-            emit LogWhitelistUser(account, false);
-        }
         AccessControl.revokeRole(role, account);
     }
 
