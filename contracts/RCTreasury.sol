@@ -114,6 +114,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     );
     event LogMarketPaused(address market, bool paused);
     event LogGlobalPause(bool paused);
+    event LogMarketWhitelist(address _market, bytes32 role);
 
     /*╔═════════════════════════════════╗
       ║           CONSTRUCTOR           ║
@@ -277,6 +278,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         onlyRole(GOVERNOR)
     {
         marketWhitelist[_market] = _role;
+        emit LogMarketWhitelist(_market, _role);
     }
 
     /// @notice Some markets may be restricted to certain roles,
