@@ -678,7 +678,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
     /// @dev basically functions that have _checkState(States.OPEN) on first line
 
-    /// @notice collects rent a specifc card
+    /// @notice collects rent a specific card
     function collectRent(uint256 _cardId) external override returns (bool) {
         _checkState(States.OPEN);
         bool _success;

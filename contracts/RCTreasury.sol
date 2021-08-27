@@ -620,7 +620,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
       ║        MARKET HELPERS           ║
       ╚═════════════════════════════════╝*/
 
-    /// @notice Allows the factory to add a new market to AcessControl
+    /// @notice Allows the factory to add a new market to AccessControl
     /// @dev Also controls the default paused state
     /// @param _market The market address to add
     /// @param _paused If the market should be paused or not
@@ -693,7 +693,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
             } else {
                 // the new owner has an old rent collection, do they own anything else?
                 if (user[_newOwner].rentalRate != 0) {
-                    // rent collect upto ownership change time
+                    // rent collect up-to ownership change time
                     collectRentUser(_newOwner, _timeOwnershipChanged);
                 } else {
                     // first card owned, set start time
@@ -841,7 +841,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     /// @notice IF the user doesn't have enough deposit, returns foreclosure time
     /// @notice ..otherwise returns zero
     /// @param _user the user to query
-    /// @param _timeToCollectTo the timestamp to collect rent upto
+    /// @param _timeToCollectTo the timestamp to collect rent up-to
     /// @return newTimeLastCollectedOnForeclosure the time the user foreclosed if they foreclosed in this calculation
     function collectRentUser(address _user, uint256 _timeToCollectTo)
         public
