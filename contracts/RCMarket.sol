@@ -460,23 +460,23 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             "Market has not finished"
         );
 
-        bool cardAccountingComplete = false;
-        uint256 rentIterationCounter = 0;
+        bool _cardAccountingComplete = false;
+        uint256 _rentIterationCounter = 0;
         // do a final rent collection before the contract is locked down
         while (cardAccountingIndex < numberOfCards && !accountingComplete) {
-            (cardAccountingComplete, rentIterationCounter) = _collectRent(
+            (_cardAccountingComplete, _rentIterationCounter) = _collectRent(
                 cardAccountingIndex,
-                rentIterationCounter
+                _rentIterationCounter
             );
-            if (cardAccountingComplete) {
-                cardAccountingComplete = false;
+            if (_cardAccountingComplete) {
+                _cardAccountingComplete = false;
                 cardAccountingIndex++;
             }
             if (cardAccountingIndex == numberOfCards) {
                 accountingComplete = true;
                 break;
             }
-            if (rentIterationCounter >= maxRentIterations) {
+            if (_rentIterationCounter >= maxRentIterations) {
                 break;
             }
         }
@@ -484,7 +484,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         /// @dev using gasleft() would be nice, but it causes problems with tx gas estimations
         if (
             accountingComplete &&
-            rentIterationCounter < maxRentIterationsToLockMarket
+            _rentIterationCounter < maxRentIterationsToLockMarket
         ) {
             // and check that the orderbook has shut the market
             if (orderbook.closeMarket()) {
