@@ -249,7 +249,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         }
         uint256 _resultNumber = 0; // counts the valid results we've found
         uint256 _index = 0; // counts how many markets we have checked (valid or invalid)
-        address[] memory _marketAddresses = new address[](_results); // store the addreses of valid markets
+        address[] memory _marketAddresses = new address[](_results); // store the addresses of valid markets
         while (_resultNumber < _results && _marketIndex > 1) {
             _marketIndex--;
             address _market = marketAddresses[_mode][_marketIndex];
@@ -269,8 +269,8 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         return _getMarketInfo(_marketAddresses);
     }
 
-    /// @notice Assmebles all the Slugs, IPFS hashes and PotSizes for the markets given
-    /// @dev seperated from getMarketInfo to avoid Stack too deep
+    /// @notice Assembles all the Slugs, IPFS hashes and PotSizes for the markets given
+    /// @dev separated from getMarketInfo to avoid Stack too deep
     function _getMarketInfo(address[] memory _marketAddresses)
         internal
         view
@@ -421,14 +421,19 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         timeout = _newTimeout;
     }
 
+    /// @notice To set is markets should default to paused or not
+    /// @param _state The default state for all new markets
     function setMarketPausedDefaultState(bool _state)
         external
         override
         onlyOwner
     {
+        /// @dev the event is emitted when a market is created
         marketPausedDefaultState = _state;
     }
 
+    /// @notice To limit NFT copies to the winning outcome only
+    /// @param _limitEnabled Set to True to limit to the winning outcome only
     function setLimitNFTsToWinners(bool _limitEnabled)
         public
         override
@@ -470,6 +475,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     /// @param _newAdvancedWarning the warning time to set in seconds
     /// @param _newMinimumDuration the minimum market duration
     /// @param _newMaximumDuration the maximum market duration
+    /// @dev might be nicer to have these separate but takes up too much space
     function setMarketTimeRestrictions(
         uint32 _newAdvancedWarning,
         uint32 _newMinimumDuration,
@@ -503,6 +509,8 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         uint256 _numberOfCards = IRCMarket(_market).numberOfCards();
         tokenURIs[_market][_cardId] = _newTokenURI;
         tokenURIs[_market][(_cardId + _numberOfCards)] = _newCopyTokenURI;
+
+        // assemble the rest of the data so we can reuse the event
         string[] memory _tokenURIs = new string[](_numberOfCards);
         for (uint256 i = 0; i < _tokenURIs.length; i++) {
             _tokenURIs[i] = tokenURIs[_market][i];
@@ -552,7 +560,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
       ╚═════════════════════════════════╝*/
     /// @dev the following functions could all be performed directly on the treasury
     /// @dev .. they are here as an interim solution to give governors an easy way
-    /// @dev .. to change all their parameters via the block explorer.
+    /// @dev .. to change (almost) all their parameters via the block explorer.
 
     /// @notice Grant the artist role to an address
     /// @param _newArtist the address to grant the role of artist
@@ -651,6 +659,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     /*╔═════════════════════════════════╗
       ║         MARKET CREATION         ║
       ╚═════════════════════════════════╝*/
+    // The factory contract has one job, this is it!
 
     /// @notice Creates a new market with the given parameters
     /// @param _mode 0 = normal, 1 = winner takes all, 2 = Safe mode
@@ -695,7 +704,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         // check the number of NFTs to mint is within limits
         /// @dev we want different tokenURIs for originals and copies
         /// @dev ..the copies are appended to the end of the array
-        /// @dev ..so half the array length if the number of tokens.
+        /// @dev ..so half the array length is the number of tokens.
         require(_tokenURIs.length <= cardLimit * 2, "Too many tokens to mint");
         require(_tokenURIs.length % 2 == 0, "TokenURI Length Error");
 
@@ -833,6 +842,9 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         );
     }
 
+    /// @notice To get adjustable market settings
+    /// @dev The market calls this after creation, we can't send much else to initialize
+    /// @dev putting in a single function reduces the number of calls required.
     function getMarketSettings()
         external
         view
