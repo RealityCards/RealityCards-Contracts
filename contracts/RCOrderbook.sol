@@ -220,7 +220,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
         address _prevUserAddress
     ) external override onlyMarkets {
         address _market = msgSender();
-        if (!bidExists(_market, _market, _card)) {
+        if (user[_market].length == 0) {
             uint256 _cardCount = IRCMarket(_market).numberOfCards();
             uint256 _minIncrease = IRCMarket(_market)
                 .minimumPriceIncreasePercent();
@@ -631,7 +631,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
     function closeMarket() external override onlyMarkets returns (bool) {
         address _market = msgSender();
         // check if the market was ever added to the orderbook
-        if (bidExists(_market, _market, 0)) {
+        if (user[_market].length != 0) {
             closedMarkets.push(_market);
             uint256 i = user[_market].length; // start on the last record so we can easily pop()
             uint256 _limit = 0;
