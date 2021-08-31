@@ -175,11 +175,11 @@ contract('TestFullFlowInvalid', (accounts) => {
     var oracleResolutionTime = oneYearInTheFuture;
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var cardRecipients = [user5, user6, user7, user8, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0];
-    await treasury.grantRole("CARD_AFFILIATE", user5);
-    await treasury.grantRole("CARD_AFFILIATE", user6);
-    await treasury.grantRole("CARD_AFFILIATE", user7);
-    await treasury.grantRole("CARD_AFFILIATE", user8);
-    await treasury.grantRole("CARD_AFFILIATE", user0);
+    await treasury.grantRoleString("CARD_AFFILIATE", user5);
+    await treasury.grantRoleString("CARD_AFFILIATE", user6);
+    await treasury.grantRoleString("CARD_AFFILIATE", user7);
+    await treasury.grantRoleString("CARD_AFFILIATE", user8);
+    await treasury.grantRoleString("CARD_AFFILIATE", user0);
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
 
@@ -243,13 +243,13 @@ contract('TestFullFlowInvalid', (accounts) => {
     var artistAddress = user8;
     var affiliateAddress = user7;
     var cardRecipients = [user5, user6, user7, user8, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0];
-    await treasury.grantRole("ARTIST", user8);
-    await treasury.grantRole("AFFILIATE", user7);
-    await treasury.grantRole("CARD_AFFILIATE", user5);
-    await treasury.grantRole("CARD_AFFILIATE", user6);
-    await treasury.grantRole("CARD_AFFILIATE", user7);
-    await treasury.grantRole("CARD_AFFILIATE", user8);
-    await treasury.grantRole("CARD_AFFILIATE", user0);
+    await treasury.grantRoleString("ARTIST", user8);
+    await treasury.grantRoleString("AFFILIATE", user7);
+    await treasury.grantRoleString("CARD_AFFILIATE", user5);
+    await treasury.grantRoleString("CARD_AFFILIATE", user6);
+    await treasury.grantRoleString("CARD_AFFILIATE", user7);
+    await treasury.grantRoleString("CARD_AFFILIATE", user8);
+    await treasury.grantRoleString("CARD_AFFILIATE", user0);
 
     let slug = "slug"
     await rcfactory.createMarket(

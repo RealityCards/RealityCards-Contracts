@@ -9,11 +9,11 @@ import "./IRCFactory.sol";
 interface IRCTreasury {
     function setTokenAddress(address _newToken) external;
 
-    function grantRole(string memory role, address account) external;
+    function grantRoleString(string memory role, address account) external;
 
     function grantRole(bytes32, address) external;
 
-    function revokeRole(string memory role, address account) external;
+    function revokeRoleString(string memory role, address account) external;
 
     function revokeRole(bytes32, address) external;
 

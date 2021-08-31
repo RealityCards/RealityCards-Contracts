@@ -932,7 +932,11 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     /// @param role the role to grant, this is a string and will be converted to bytes32
     /// @param account the account to grant the role to
     /// @dev Not necessary but makes granting roles easier
-    function grantRole(string memory role, address account) external override {
+    /// @dev not called grantRole as overloading a string and bytes32 causes issues with tools like remix
+    function grantRoleString(string memory role, address account)
+        external
+        override
+    {
         bytes32 _role = keccak256(abi.encodePacked(role));
         RCTreasury.grantRole(_role, account);
     }
@@ -968,7 +972,11 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     /// @param role the role to revoke, this is a string and will be converted to bytes32
     /// @param account the account to revoke the role from
     /// @dev Not necessary but makes revoking roles easier
-    function revokeRole(string memory role, address account) external override {
+    /// @dev not called revokeRole as overloading a string and bytes32 causes issues with tools like remix
+    function revokeRoleString(string memory role, address account)
+        external
+        override
+    {
         bytes32 _role = keccak256(abi.encodePacked(role));
         RCTreasury.revokeRole(_role, account);
     }

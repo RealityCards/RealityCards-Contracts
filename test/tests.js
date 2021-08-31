@@ -78,13 +78,13 @@ contract("RealityCardsTests", (accounts) => {
             // Assert this market now exists
             assert.equal(typeof markets[nextMarket] === "undefined", false);
             // Non-factory try and add a market
-            await expectRevert(treasury.grantRole("MARKET", alice), rc.accessControl(admin, "FACTORY"));
+            await expectRevert(treasury.grantRoleString("MARKET", alice), rc.accessControl(admin, "FACTORY"));
         });
 
         it("Market specific whitelist ", async () => {
             await rc.deposit(10, alice);
             await rc.deposit(10, bob);
-            await treasury.grantRole("TEST_WHITELIST", alice)
+            await treasury.grantRoleString("TEST_WHITELIST", alice)
             await treasury.updateMarketWhitelist(markets[markets.length - 1].address, web3.utils.soliditySha3("TEST_WHITELIST"))
             await rc.newRental({ from: alice }); // new rental works
             expectRevert(rc.newRental({ from: bob }), "Not approved for this market")
