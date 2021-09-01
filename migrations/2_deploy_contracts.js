@@ -240,7 +240,7 @@ async function createMarket(options) {
     tokenURIs.push('x');
   }
   // double the length of the array for the copies to be minted
-  tokenURIs = tokenURIs.concat(tokenURIs)
+  tokenURIs = tokenURIs.concat(tokenURIs.concat(tokenURIs.concat(tokenURIs.concat(tokenURIs))))
 
   await factory.createMarket(
     options.mode,

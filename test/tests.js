@@ -464,7 +464,7 @@ contract("RealityCardsTests", (accounts) => {
     describe.skip("Limit tests ", () => {
         it(' Max NFTs to mint ', async () => {
             let success = true
-            let i = 120;
+            let i = 45;
             await rc.deposit(1000, alice)
             dance:
             while (success == true) {
@@ -1639,8 +1639,42 @@ contract("RealityCardsTests", (accounts) => {
         })
 
     });
-    describe.skip("Factory tests", () => {
-        it("Backup view function", async () => {
+    describe("Factory tests", () => {
+        it("Token URIs updated for winners, losers, originals and copies", async () => {
+            await rc.deposit(100, alice)
+            await rc.deposit(100, bob)
+            markets.push(await rc.createMarket({ closeTime: 600, resolveTime: 600, numberOfCards: 2 }))
+            await rc.newRental({ market: markets[1], from: alice });
+            await rc.newRental({ market: markets[1], from: alice, outcome: 1 });
+            await time.increase(500)
+            await markets[1].exit(0, { from: alice })
+            await markets[1].exit(1, { from: alice })
+            await rc.newRental({ market: markets[1], from: bob });
+            await rc.newRental({ market: markets[1], from: bob, outcome: 1 });
+            await time.increase(200)
+            let OriginalWinnerID = await markets[1].getTokenId(0)
+            let OriginalLoserID = await markets[1].getTokenId(1)
+            let OriginalNeutralURI = await nftHubL2.tokenURI(OriginalWinnerID)
+
+            await markets[1].lockMarket();
+            await markets[1].setAmicableResolution(0)
+            await markets[1].claimCard(0, { from: alice })
+            await markets[1].claimCard(1, { from: alice })
+            await markets[1].claimCard(0, { from: bob })
+            await markets[1].claimCard(1, { from: bob })
+            let OriginalWinnerURI = await nftHubL2.tokenURI(OriginalWinnerID)
+            let OriginalLoserURI = await nftHubL2.tokenURI(OriginalLoserID)
+            let PrintWinnerURI = await nftHubL2.tokenURI(2)
+            let PrintLoserURI = await nftHubL2.tokenURI(3)
+
+            assert.equal(OriginalWinnerURI, "Original-Winning 12345678909876543210123456789")
+            assert.equal(OriginalNeutralURI, "Original-Neutral 12345678909876543210123456789")
+            assert.equal(OriginalLoserURI, "Original-Losing  12345678909876543210123456789")
+            assert.equal(PrintWinnerURI, "Print-Winning    12345678909876543210123456789")
+            assert.equal(PrintLoserURI, "Print-Losing     12345678909876543210123456789")
+
+        })
+        it.skip("Backup view function", async () => {
             let expectedResults = 10
 
             for (let i = 0; i < (expectedResults * 2); i++) {

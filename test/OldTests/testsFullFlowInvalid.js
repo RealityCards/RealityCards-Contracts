@@ -35,7 +35,8 @@ contract('TestFullFlowInvalid', (accounts) => {
 
   var realitycards;
   var tokenURIs = ['x', 'x', 'x', 'uri', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x']; // 20 tokens
-  tokenURIs = tokenURIs.concat(tokenURIs) // double the length of the array for the copies of the NFTs to mint
+  // lengthen the array 5x, for the originals, copies, winners, undecided and losers
+  tokenURIs = tokenURIs.concat(tokenURIs.concat(tokenURIs.concat(tokenURIs.concat(tokenURIs))))
   var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
   var maxuint256 = 4294967295;
 
@@ -115,9 +116,9 @@ contract('TestFullFlowInvalid', (accounts) => {
     var oracleResolutionTime = oneYearInTheFuture;
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = user8;
-    await rcfactory.addArtist(user8);
     var affiliateAddress = user7;
-    await rcfactory.addAffiliate(user7);
+    await treasury.grantRoleString("ARTIST", artistAddress)
+    await treasury.grantRoleString("AFFILIATE", affiliateAddress)
 
     let slug = "slug"
     await rcfactory.createMarket(
@@ -211,8 +212,8 @@ contract('TestFullFlowInvalid', (accounts) => {
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = user8;
     var affiliateAddress = user7;
-    await rcfactory.addAffiliate(user7);
-    await rcfactory.addArtist(user8);
+    await treasury.grantRoleString("ARTIST", artistAddress)
+    await treasury.grantRoleString("AFFILIATE", affiliateAddress)
 
     let slug = "slug"
     await rcfactory.createMarket(
