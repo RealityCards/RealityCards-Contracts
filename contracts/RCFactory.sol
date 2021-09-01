@@ -567,7 +567,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
       ╚═════════════════════════════════╝*/
     /// @dev the following functions could all be performed directly on the treasury
     /// @dev .. they are here as an interim solution to give governors an easy way
-    /// @dev .. to change (almost) all their parameters via the block explorer.
+    /// @dev .. to change their most common parameters via the block explorer.
 
     /// @notice Grant the artist role to an address
     /// @param _newArtist the address to grant the role of artist
@@ -579,26 +579,6 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     /// @param _oldArtist the address to revoke the role of artist
     function removeArtist(address _oldArtist) external override onlyGovernors {
         treasury.revokeRole(ARTIST, _oldArtist);
-    }
-
-    /// @notice Grant the affiliate role to an address
-    /// @param _newAffiliate the address to grant the role of affiliate
-    function addAffiliate(address _newAffiliate)
-        external
-        override
-        onlyGovernors
-    {
-        treasury.grantRole(AFFILIATE, _newAffiliate);
-    }
-
-    /// @notice Remove the affiliate role from an address
-    /// @param _oldAffiliate the address to revoke the role of affiliate
-    function removeAffiliate(address _oldAffiliate)
-        external
-        override
-        onlyGovernors
-    {
-        treasury.revokeRole(AFFILIATE, _oldAffiliate);
     }
 
     /*╔═════════════════════════════════╗
@@ -661,6 +641,17 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
             "Not approved"
         );
         leaderboard = _newLeaderboard;
+    }
+
+    /// @notice set the address of the treasury contract
+    /// @param _newTreasury the address to set
+    function setTreasuryAddress(IRCTreasury _newTreasury)
+        external
+        override
+        onlyUberOwner
+    {
+        require(address(_newTreasury) != address(0), "Must set Address");
+        treasury = _newTreasury;
     }
 
     /*╔═════════════════════════════════╗

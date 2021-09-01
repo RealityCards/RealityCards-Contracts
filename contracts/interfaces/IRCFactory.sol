@@ -114,10 +114,6 @@ interface IRCFactory {
 
     function removeArtist(address _oldArtist) external;
 
-    function addAffiliate(address _newAffiliate) external;
-
-    function removeAffiliate(address _oldAffiliate) external;
-
     // only Owner
     function setLimitNFTsToWinners(bool _limitEnabled) external;
 
@@ -179,4 +175,6 @@ interface IRCFactory {
     function setLeaderboardAddress(IRCLeaderboard _newAddress) external;
 
     function setNftHubAddress(IRCNftHubL2 _newAddress) external;
+
+    function setTreasuryAddress(IRCTreasury _newTreasury) external;
 }
