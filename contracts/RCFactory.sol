@@ -91,7 +91,14 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     uint256 public constant PER_MILLE = 1000; // in MegaBip so (1000 = 100%)
     /// @dev store the tokenURIs for when we need to mint them
     /// @dev we may want the original and the copies to have slightly different metadata
-    /// @dev so we append the metadata for the copies to the end of this array
+    /// @dev We also want to apply traits to the winning and losing outcomes
+    /// @dev this means we need 5 different tokenURIs per card:
+    /// @dev Original Neutral - Used during the market runtime, not a winner but not a loser
+    /// @dev Original Winner - Applied to the winning outcome
+    /// @dev Original Loser - Applied to the losing outcomes
+    /// @dev Print Winner - Applied to copies of the winning outcome
+    /// @dev Print Loser - Applied to copies of the losing outcomes
+    /// @dev Print neutral is not required as you can't print before the result is known
     mapping(address => mapping(uint256 => string)) tokenURIs;
 
     /*╔═════════════════════════════════╗
@@ -410,14 +417,14 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     /// @notice set the address of the reality.eth contracts
     /// @param _newAddress the address to set
     function setRealitioAddress(address _newAddress) public override onlyOwner {
-        require(_newAddress != address(0), "Must set an address");
+        require(_newAddress != address(0), "Must set address");
         realitio = IRealitio(_newAddress);
     }
 
     /// @notice address of the arbitrator, in case of continued disputes on reality.eth
     /// @param _newAddress the address to set
     function setArbitrator(address _newAddress) public override onlyOwner {
-        require(_newAddress != address(0), "Must set an address");
+        require(_newAddress != address(0), "Must set address");
         arbitrator = _newAddress;
     }
 
@@ -504,21 +511,22 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     /// @dev .. the NFT hubs using setTokenURI()
     /// @param _market the market address the token belongs to
     /// @param _cardId the index 0 card id of the token to change
-    /// @param _newTokenURI the new URI to set
-    /// @param _newCopyTokenURI the new URI to set for the copy
+    /// @param _newTokenURIs the new URIs to set
     function updateTokenURI(
         address _market,
         uint256 _cardId,
-        string calldata _newTokenURI,
-        string calldata _newCopyTokenURI
+        string[] calldata _newTokenURIs
     ) external override onlyUberOwner {
         IRCMarket.Mode _mode = IRCMarket(_market).mode();
         uint256 _numberOfCards = IRCMarket(_market).numberOfCards();
-        tokenURIs[_market][_cardId] = _newTokenURI;
-        tokenURIs[_market][(_cardId + _numberOfCards)] = _newCopyTokenURI;
+        tokenURIs[_market][_cardId] = _newTokenURIs[0];
+        tokenURIs[_market][(_cardId + _numberOfCards)] = _newTokenURIs[1];
+        tokenURIs[_market][(_cardId + (_numberOfCards * 2))] = _newTokenURIs[2];
+        tokenURIs[_market][(_cardId + (_numberOfCards * 3))] = _newTokenURIs[3];
+        tokenURIs[_market][(_cardId + (_numberOfCards * 4))] = _newTokenURIs[4];
 
         // assemble the rest of the data so we can reuse the event
-        string[] memory _tokenURIs = new string[](_numberOfCards);
+        string[] memory _tokenURIs = new string[](_numberOfCards * 5);
         for (uint256 i = 0; i < _tokenURIs.length; i++) {
             _tokenURIs[i] = tokenURIs[_market][i];
         }
@@ -560,25 +568,6 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         treasury.unPauseMarket(_market);
         // the market will however be hidden from the UI in the meantime
         emit LogMarketApproved(_market, isMarketApproved[_market]);
-    }
-
-    /*╔═════════════════════════════════╗
-      ║   GOVERNANCE - Role management  ║
-      ╚═════════════════════════════════╝*/
-    /// @dev the following functions could all be performed directly on the treasury
-    /// @dev .. they are here as an interim solution to give governors an easy way
-    /// @dev .. to change their most common parameters via the block explorer.
-
-    /// @notice Grant the artist role to an address
-    /// @param _newArtist the address to grant the role of artist
-    function addArtist(address _newArtist) external override onlyGovernors {
-        treasury.grantRole(ARTIST, _newArtist);
-    }
-
-    /// @notice Remove the artist role from an address
-    /// @param _oldArtist the address to revoke the role of artist
-    function removeArtist(address _oldArtist) external override onlyGovernors {
-        treasury.revokeRole(ARTIST, _oldArtist);
     }
 
     /*╔═════════════════════════════════╗
@@ -664,7 +653,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
     /// @param _ipfsHash the IPFS location of the market metadata
     /// @param _slug the URL subdomain in the UI
     /// @param _timestamps for market opening, locking, and oracle resolution
-    /// @param _tokenURIs location of NFT metadata, originals followed by copies
+    /// @param _tokenURIs location of NFT metadata, 5 versions for originals, copies, winners and losers
     /// @param _artistAddress where to send artist's cut, if any
     /// @param _affiliateAddress where to send affiliates cut, if any
     /// @param _cardAffiliateAddresses where to send card specific affiliates cut, if any
@@ -703,8 +692,8 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         /// @dev we want different tokenURIs for originals and copies
         /// @dev ..the copies are appended to the end of the array
         /// @dev ..so half the array length is the number of tokens.
-        require(_tokenURIs.length <= cardLimit * 2, "Too many tokens to mint");
-        require(_tokenURIs.length % 2 == 0, "TokenURI Length Error");
+        require(_tokenURIs.length <= cardLimit * 5, "Hit mint limit");
+        require(_tokenURIs.length % 5 == 0, "TokenURI Length Error");
 
         // check stakeholder addresses
         // artist
@@ -719,7 +708,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         // affiliate
         require(
             _cardAffiliateAddresses.length == 0 ||
-                _cardAffiliateAddresses.length * 2 == _tokenURIs.length,
+                _cardAffiliateAddresses.length * 5 == _tokenURIs.length,
             "Card Affiliate Length Error"
         );
         if (approvedAffiliatesOnly) {
@@ -783,7 +772,7 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
         IRCMarket(_newAddress).initialize(
             IRCMarket.Mode(_mode),
             _timestamps,
-            (_tokenURIs.length / 2),
+            (_tokenURIs.length / 5),
             _artistAddress,
             _affiliateAddress,
             _cardAffiliateAddresses,
@@ -873,22 +862,46 @@ contract RCFactory is NativeMetaTransaction, IRCFactory {
 
     /// @notice allows the market to mint a copy of the NFT for users on the leaderboard
     /// @param _user the user to award the NFT to
-    /// @param _cardId the tokenId to copy
-    function mintCopyOfNFT(address _user, uint256 _cardId)
-        external
-        override
-        onlyMarkets
-    {
+    /// @param _cardId the non-unique cardId to copy
+    /// @param _tokenId the unique NFT tokenId
+    /// @param _winner true if this was a winning outcome
+    function mintCopyOfNFT(
+        address _user,
+        uint256 _cardId,
+        uint256 _tokenId,
+        bool _winner
+    ) external override onlyMarkets {
         address _market = msgSender();
         uint256 _newTokenId = nfthub.totalSupply();
         uint256 _numberOfCards = IRCMarket(_market).numberOfCards();
-        uint256 _originalTokenID = IRCMarket(_market).getTokenId(_cardId);
-        nfthub.mint(
-            _user,
-            _newTokenId,
-            tokenURIs[_market][(_cardId + _numberOfCards)]
-        );
-        emit LogMintNFTCopy(_originalTokenID, _user, _newTokenId);
+        uint256 _tokenURIIndex;
+        if (_winner) {
+            _tokenURIIndex = _cardId + (_numberOfCards * 3);
+        } else {
+            _tokenURIIndex = _cardId + (_numberOfCards * 4);
+        }
+        nfthub.mint(_user, _newTokenId, tokenURIs[_market][_tokenURIIndex]);
+        emit LogMintNFTCopy(_tokenId, _user, _newTokenId);
+    }
+
+    /// @notice At the end of the market updates the tokenURI to apply the Winning/Losing traits
+    /// @param _cardId the non unique cardId (used to find the tokenURI)
+    /// @param _tokenId the unique NFT id
+    /// @param _winner true if this was a winning outcome
+    function updateTokenOutcome(
+        uint256 _cardId,
+        uint256 _tokenId,
+        bool _winner
+    ) external override onlyMarkets {
+        address _market = msgSender();
+        uint256 _numberOfCards = IRCMarket(_market).numberOfCards();
+        uint256 _tokenURIIndex;
+        if (_winner) {
+            _tokenURIIndex = _cardId + _numberOfCards;
+        } else {
+            _tokenURIIndex = _cardId + (_numberOfCards * 2);
+        }
+        nfthub.setTokenURI(_tokenId, tokenURIs[_market][_tokenURIIndex]);
     }
 
     /*

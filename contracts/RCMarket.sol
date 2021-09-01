@@ -545,23 +545,25 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @dev LOCKED or WITHDRAW states are fine- does not need to wait for winner to be known
     /// @param _card the id of the card, the index
     function claimCard(uint256 _card) external override {
-        _checkNotState(States.CLOSED);
-        _checkNotState(States.OPEN);
+        _checkState(States.WITHDRAW);
         require(
             !treasury.marketPaused(address(this)) && !treasury.globalPause(),
             "Market is Paused"
         );
         address _user = msgSender();
+        uint256 _tokenId = getTokenId(_card);
+        bool _winner = _card == winningOutcome; // invalid outcome defaults to losing
         require(!card[_card].userAlreadyClaimed[_user], "Already claimed");
         card[_card].userAlreadyClaimed[_user] = true;
         if (_user == card[_card].longestOwner) {
+            factory.updateTokenOutcome(_card, _tokenId, _winner);
             _transferCard(ownerOf(_card), card[_card].longestOwner, _card);
         } else {
             if (limitNFTsToWinners) {
-                require(_card == winningOutcome, "Not winning outcome");
+                require(_winner, "Not winning outcome");
             }
             leaderboard.claimNFT(_user, _card);
-            factory.mintCopyOfNFT(_user, _card);
+            factory.mintCopyOfNFT(_user, _card, _tokenId, _winner);
         }
     }
 
