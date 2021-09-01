@@ -22,7 +22,18 @@ interface IRCFactory {
         uint256 _sponsorship
     ) external returns (address);
 
-    function mintCopyOfNFT(address _user, uint256 _tokenId) external;
+    function mintCopyOfNFT(
+        address _user,
+        uint256 _cardId,
+        uint256 _tokenId,
+        bool _winner
+    ) external;
+
+    function updateTokenOutcome(
+        uint256 _cardId,
+        uint256 _tokenId,
+        bool _winner
+    ) external;
 
     // view functions
 
@@ -110,10 +121,6 @@ interface IRCFactory {
     // only Governors
     function changeMarketApproval(address _market) external;
 
-    function addArtist(address _newArtist) external;
-
-    function removeArtist(address _oldArtist) external;
-
     // only Owner
     function setLimitNFTsToWinners(bool _limitEnabled) external;
 
@@ -141,8 +148,7 @@ interface IRCFactory {
     function updateTokenURI(
         address _market,
         uint256 _cardId,
-        string calldata _newTokenURI,
-        string calldata _newCopyTokenURI
+        string[] calldata _newTokenURIs
     ) external;
 
     function setPotDistribution(

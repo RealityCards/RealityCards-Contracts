@@ -95,8 +95,14 @@ contract RCNftHubL2 is
 
     function setTokenURI(uint256 _tokenId, string calldata _tokenURI)
         external
-        onlyUberOwner
+        override
     {
+        address _msgSender = msgSender();
+        require(
+            _msgSender == address(factory) ||
+                hasRole(DEFAULT_ADMIN_ROLE, _msgSender),
+            "Not Authorised"
+        );
         _setTokenURI(_tokenId, _tokenURI);
     }
 

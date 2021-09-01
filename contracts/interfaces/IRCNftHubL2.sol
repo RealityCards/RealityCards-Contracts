@@ -27,4 +27,6 @@ interface IRCNftHubL2 {
     function withdraw(uint256 tokenId) external;
 
     function withdrawWithMetadata(uint256 tokenId) external;
+
+    function setTokenURI(uint256 _tokenId, string calldata _tokenURI) external;
 }

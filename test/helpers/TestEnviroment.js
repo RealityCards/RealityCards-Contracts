@@ -133,12 +133,20 @@ module.exports = class TestEnviroment {
         var closeTime = new BN(options.closeTime).add(await time.latest());
         var resolveTime = new BN(options.resolveTime).add(await time.latest());
         var timestamps = [options.openTime, closeTime, resolveTime];
-        var tokenURIs = [];
-        for (let i = 0; i < options.numberOfCards; i++) {
-            tokenURIs.push("x");
+        // example token URIs padded to be the same length as the IPFS CID
+        const tokenURIText = [
+            "Original-Neutral 12345678909876543210123456789",
+            "Original-Winning 12345678909876543210123456789",
+            "Original-Losing  12345678909876543210123456789",
+            "Print-Winning    12345678909876543210123456789",
+            "Print-Losing     12345678909876543210123456789"
+        ]
+        let tokenURIs = [];
+        for (let j = 0; j < 5; j++) {
+            for (let i = 0; i < options.numberOfCards; i++) {
+                tokenURIs.push(tokenURIText[j]);
+            }
         }
-        // double the length of the array for the copies of the NFTs to mint
-        tokenURIs = tokenURIs.concat(tokenURIs)
         await this.contracts.factory.createMarket(
             options.mode,
             "0x0",

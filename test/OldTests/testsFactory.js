@@ -35,7 +35,8 @@ contract('TestFactory', (accounts) => {
 
   var realitycards;
   var tokenURIs = ['x', 'x', 'x', 'uri', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x']; // 20 tokens
-  tokenURIs = tokenURIs.concat(tokenURIs) // double the length of the array for the copies of the NFTs to mint
+  // lengthen the array 5x, for the originals, copies, winners, undecided and losers
+  tokenURIs = tokenURIs.concat(tokenURIs.concat(tokenURIs.concat(tokenURIs.concat(tokenURIs))))
   var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
   var maxuint256 = 4294967295;
 
@@ -427,39 +428,6 @@ contract('TestFactory', (accounts) => {
     var oracleResolutionTime = twoDaysInTheFuture.add(twoDays);
     var timestamps = [twoDaysInTheFuture, marketLockingTime, oracleResolutionTime];
     rcfactory.createMarket(0, '0x0', "slug", timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0);
-  });
-
-
-  it('test addArtist, addAffiliate, addCardAffiliate', async () => {
-    let now = await time.latest();
-    let oneDay = new BN('86400');
-    var timestamps = [now, now.add(oneDay), now.add(oneDay)];
-    var artistAddress = user2;
-    var affiliateAddress = user2;
-    var cardRecipients = ['0x0000000000000000000000000000000000000000', user6, user7, user8, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user2];
-    // locking time two weeks should fail
-    await expectRevert(rcfactory.createMarket(0, '0x0', "slug", timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0), "Artist not approved");
-    await treasury.grantRoleString("ARTIST", user2);
-    await expectRevert(rcfactory.createMarket(0, '0x0', "slug", timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0), "Affiliate not approved");
-    await treasury.grantRoleString("AFFILIATE", user2);
-    await expectRevert(rcfactory.createMarket(0, '0x0', "slug", timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0), "Card affiliate not approved");
-    await treasury.grantRoleString("CARD_AFFILIATE", user0);
-    await treasury.grantRoleString("CARD_AFFILIATE", user6);
-    await treasury.grantRoleString("CARD_AFFILIATE", user7);
-    await treasury.grantRoleString("CARD_AFFILIATE", user8);
-    await treasury.grantRoleString("CARD_AFFILIATE", user2);
-    await rcfactory.createMarket(0, '0x0', "slug", timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0);
-    // check that not owner cant make changes
-    await expectRevert(rcfactory.addArtist(user4, { from: user2 }), "Not approved");
-    await expectRevert(rcfactory.addAffiliate(user4, { from: user2 }), "Not approved");
-    await treasury.grantRoleString("GOVERNOR", user2);
-    // should be fine now
-    await rcfactory.addArtist(user4, { from: user2 });
-    await rcfactory.addAffiliate(user4, { from: user2 });
-    // remove user 2 from whitelist and same errors 
-    await treasury.revokeRole(web3.utils.soliditySha3("GOVERNOR"), user2);
-    await expectRevert(rcfactory.addArtist(user4, { from: user2 }), "Not approved");
-    await expectRevert(rcfactory.addAffiliate(user4, { from: user2 }), "Not approved");
   });
 
   it('test getAllMarkets', async () => {
