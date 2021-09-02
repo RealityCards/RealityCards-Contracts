@@ -35,6 +35,8 @@ contract RCNftHubL2 is
       ║           VARIABLES             ║
       ╚═════════════════════════════════╝*/
 
+    uint256 public override mintCount;
+
     /// @dev the market each NFT belongs to
     mapping(uint256 => address) public override marketTracker;
 
@@ -122,6 +124,7 @@ contract RCNftHubL2 is
         );
         require(msgSender() == address(factory), "Not factory");
         marketTracker[_tokenId] = _originalOwner;
+        mintCount++;
         _mint(_originalOwner, _tokenId);
         _setTokenURI(_tokenId, _tokenURI);
     }
@@ -274,7 +277,10 @@ contract RCNftHubL2 is
         override(ERC721Enumerable, IRCNftHubL2)
         returns (uint256)
     {
-        return ERC721Enumerable.totalSupply();
+        /// @dev for our purposes the NFTs minted is more useful than the NFTs in circulation
+        /// @dev overriding totalSupply (which can decrement) with mintCount which only increases
+        /// @dev always giving a fresh tokenId to mint to.
+        return mintCount;
     }
 
     /*
