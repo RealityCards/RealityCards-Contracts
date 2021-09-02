@@ -1,4 +1,3 @@
-const { ERC1820 } = require('@openzeppelin/test-helpers/src/makeInterfaceId');
 const TestEnviroment = require('./helpers/TestEnviroment');
 
 contract("RealityCardsTests", (accounts) => {
@@ -10,18 +9,65 @@ contract("RealityCardsTests", (accounts) => {
 
     beforeEach(async function () {
         await rc.setup(accounts);
-        ({ treasury, factory, orderbook, markets, proxyL2, erc20, realitio } = rc.contracts);
+        ({ treasury, factory, orderbook, leaderboard, markets, proxyL2, erc20, realitio, nftHubL2 } = rc.contracts);
     });
     afterEach(async function () {
         await rc.cleanup();
     });
 
-    describe("Accounting tests", () => {
+    describe.skip("Accounting tests", () => {
         it("Post event payouts ", async () => {
 
         })
     })
+    describe("Market tests ", () => {
+        it.skip("Lock a market with many cards ", async () => {
+            let cardsToMake = 100;
+            await factory.setCardLimit(cardsToMake);
+            markets.push(await rc.createMarket({ numberOfCards: cardsToMake }))
 
+            await rc.deposit(1000, alice)
+            for (let i = 0; i < cardsToMake; i++) {
+                await rc.newRental({ market: markets[1], outcome: i })
+            }
+
+            await time.increase(time.duration.days(1))
+
+            await markets[1].collectRent(0);
+
+            let state = await markets[1].state();
+            console.log("state ", state.toString())
+
+            let cards = await markets[1].numberOfCards();
+            console.log("cards ", cards.toString())
+
+            await markets[1].setAmicableResolution(0)
+
+            state = await markets[1].state();
+            console.log("state ", state.toString())
+
+            await markets[1].lockMarket()
+
+            state = await markets[1].state();
+            console.log("state ", state.toString())
+
+            await markets[1].lockMarket()
+
+            state = await markets[1].state();
+            console.log("state ", state.toString())
+
+            await markets[1].lockMarket()
+
+            state = await markets[1].state();
+            console.log("state ", state.toString())
+
+            console.log("FINAL LOCKING")
+            await markets[1].lockMarket()
+
+            state = await markets[1].state();
+            console.log("state ", state.toString())
+        }).timeout(200000);
+    })
     describe("Treasury tests ", () => {
         it("Ensure only factory can add markets", async () => {
             // prove Factory can create a market
@@ -32,7 +78,16 @@ contract("RealityCardsTests", (accounts) => {
             // Assert this market now exists
             assert.equal(typeof markets[nextMarket] === "undefined", false);
             // Non-factory try and add a market
-            await expectRevert(treasury.grantRole("MARKET", alice), rc.accessControl(admin, "FACTORY"));
+            await expectRevert(treasury.grantRoleString("MARKET", alice), rc.accessControl(admin, "FACTORY"));
+        });
+
+        it("Market specific whitelist ", async () => {
+            await rc.deposit(10, alice);
+            await rc.deposit(10, bob);
+            await treasury.grantRoleString("TEST_WHITELIST", alice)
+            await treasury.updateMarketWhitelist(markets[markets.length - 1].address, web3.utils.soliditySha3("TEST_WHITELIST"))
+            await rc.newRental({ from: alice }); // new rental works
+            expectRevert(rc.newRental({ from: bob }), "Not approved for this market")
         });
 
         it("check that non markets cannot call market only functions on Treasury", async () => {
@@ -184,7 +239,7 @@ contract("RealityCardsTests", (accounts) => {
             // withdrawing locally again, until the bridge is finished.
             await treasury.withdrawDeposit(ether("100"), true, { from: bob });
             // check we don't own the card or have any bids
-            await markets[0].collectRentAllCards();
+            await markets[0].collectRent(0);
             assert.equal((await markets[0].ownerOf(0)), markets[0].address);
             assert.equal((await treasury.userTotalBids(bob)), 0);
         });
@@ -288,7 +343,7 @@ contract("RealityCardsTests", (accounts) => {
             // someone bids even higher, I increase my bid above what I can afford, we all run out of deposit, should not return to me
             await rc.newRental({ price: 2000, from: bob });
             await time.increase(time.duration.weeks(1));
-            await markets[0].collectRentAllCards();
+            await markets[0].collectRent(0);
             // check owned by contract
             var owner = await markets[0].ownerOf.call(0);
             assert.equal(owner, markets[0].address);
@@ -314,7 +369,7 @@ contract("RealityCardsTests", (accounts) => {
             assert.equal(totalRentals.toString(), ether("5").toString());
 
             await rc.withdrawDeposit(1000, alice);
-            await markets[0].collectRentAllCards();
+            await markets[0].collectRent(0);
             var owner = await markets[0].ownerOf.call(0);
             assert.notEqual(owner, alice);
         });
@@ -340,7 +395,7 @@ contract("RealityCardsTests", (accounts) => {
             //pay some rent
             const tx1 = await rc.newRental({ market: markets[1], price: bid, from: bob });
             await time.increase(time.duration.days(1));
-            const tx2 = await markets[1].collectRentAllCards();
+            const tx2 = await markets[1].collectRent(0);
             let rentDue = await rc.rentDue(tx1, tx2, bid)
 
             // check the values have all been correcly adjusted
@@ -382,31 +437,107 @@ contract("RealityCardsTests", (accounts) => {
             assert.equal((await treasury.totalDeposits()).toString(), ether('200').toString());
 
         });
+
+        it("User gains ownership before last rent calculation", async () => {
+            // setup, Alice owns outcome 0 and is underbidder on outcome 1
+            await rc.deposit(5, alice)
+            await rc.deposit(40, bob)
+            await rc.newRental({ from: alice })
+            await rc.newRental({ from: alice, outcome: 1, price: 10 })
+            await rc.newRental({ from: bob, outcome: 1, price: 20 })
+
+            await time.increase(time.duration.days(3))
+            // bob has now foreclosed
+
+            let timestamp = await time.latest()
+            await treasury.collectRentUser(alice, timestamp)
+            // alice has paid rent on outcome 0, but ownership of outcome 1
+            // .. hasn't been given to her yet, so she hasn't foreclosed
+
+            await time.increase(time.duration.hours(40))
+            await markets[0].exit(1, { from: bob })
+            // bob should be able to exit, ownership should skip Alice as she can't afford it
+
+            assert.equal(await markets[0].ownerOf(1), markets[0].address)
+        });
     })
     describe.skip("Limit tests ", () => {
+        it(' Max NFTs to mint ', async () => {
+            let success = true
+            let i = 45;
+            await rc.deposit(1000, alice)
+            dance:
+            while (success == true) {
+                try {
+                    await factory.setCardLimit(i)
+                    markets.push(await rc.createMarket({ numberOfCards: i, closeTime: 7000, resolveTime: 7000 }))
+                } catch (error) {
+                    console.log("Failed on ", i);
+                    success = false
+                    break dance;
+                }
+                console.log("Created a market with %s cards", i);
+                for (let j = 0; j < i; j++) {
+                    try {
+                        await rc.newRental({ market: markets[markets.length - 1], from: alice, outcome: j })
+                    } catch (error) {
+                        console.log("Failed renting card %s in market %s", j, (markets.length - 1));
+                        success = false
+                        break dance;
+                    }
+                }
+
+                await time.increase(time.duration.hours(1));
+
+                for (let j = 0; j < i; j++) {
+                    markets[markets.length - 1].collectRent(j)
+                }
+
+                await time.increase(time.duration.hours(1));
+                let locked = false;
+                let lockCounter = 0;
+                while (!locked) {
+                    await markets[markets.length - 1].lockMarket()
+                    let state = await markets[markets.length - 1].state()
+                    locked = state == 2;
+                    lockCounter++;
+                }
+
+                console.log("Market locked after %s attempts", lockCounter);
+
+                i++
+            }
+        }).timeout(2000000)
         it(' Max search iterations ', async () => {
-            let maxSearchLimit = (await orderbook.MAX_SEARCH_ITERATIONS()).toNumber();
+            let maxSearchLimit = (await orderbook.maxSearchIterations()).toNumber();
+            maxSearchLimit--;
             let safeNumberOfUsers = accounts.slice(ACCOUNTS_OFFSET, (maxSearchLimit + ACCOUNTS_OFFSET));
             await Promise.all(safeNumberOfUsers.map(async (user) => {
+                await erc20.transfer(user, ether("100"), { from: user0 });
                 await rc.deposit(100, user)
                 await rc.newRental({ from: user })
             }));
             await rc.deposit(100, alice)
-            await expectRevert(rc.newRental({ from: alice }), "Position in orderbook not found");
-        })
+            let gas = await rc.newRental({ from: alice })
+            console.log("gas cost for %s iterations is %s ", maxSearchLimit, gas.receipt.gasUsed);
+            await expectRevert(rc.newRental({ from: alice }), "Position not found");
+        }).timeout(2000000)
         it(' Max rent calculations ', async () => {
             let extraBidsToPlace = 10;
             let maxRentCalcs = parseInt(await factory.maxRentIterations());
             let usersToForeclose = accounts.slice(ACCOUNTS_OFFSET, (maxRentCalcs + extraBidsToPlace + ACCOUNTS_OFFSET));
             await Promise.all(usersToForeclose.map(async (user) => {
-                await rc.deposit(1, user)
+                await erc20.transfer(user, ether("1"), { from: user0 });
+                await rc.deposit(0.1, user)
                 await rc.newRental({ from: user })
             }));
+            console.log("Bids placed");
             assert.equal(await rc.orderbookSize(), maxRentCalcs + extraBidsToPlace, "Incorrect number of bids placed");
             await time.increase(time.duration.days(usersToForeclose.length + 10));
-            await markets[0].collectRentAllCards();
+            let gas = await markets[0].collectRentAllCards();
+            console.log("gas used ", gas.receipt.gasUsed);
             assert.equal(await rc.orderbookSize(), extraBidsToPlace, "Incorrect number of bids removed");
-            await markets[0].collectRentAllCards();
+            await markets[0].collectRent(0);
             assert.equal(await rc.orderbookSize(), 0, "Incorrect number of bids removed");
         })
         it(' Foreclosed user max deletions (owner) ', async () => {
@@ -450,6 +581,222 @@ contract("RealityCardsTests", (accounts) => {
             userRecord = await treasury.user(alice);
             console.log("user bid rate ", userRecord[2].toString());
             console.log(" is foreclosed ", await treasury.isForeclosed(alice));
+        })
+    })
+    describe("Leaderboard tests ", () => {
+        it("Add users to linked list ", async () => {
+            let bids = [];
+            bids[0] = {
+                from: alice,
+                price: 50,
+                timeLimit: 5000,
+            };
+            bids[1] = {
+                from: bob,
+                price: 40,
+                timeLimit: 4000,
+            };
+            bids[2] = {
+                from: carol,
+                price: 30,
+                timeLimit: 3000,
+            };
+            bids[3] = {
+                from: dan,
+                price: 20,
+                timeLimit: 2000,
+            };
+            bids[4] = {
+                from: eve,
+                price: 10,
+                timeLimit: 1000,
+            };
+
+            let totalTime = 0
+            // make deposits and place bids
+            await Promise.all(bids.map(async (bid) => {
+                await rc.deposit(1000, bid.from);
+                totalTime += bid.timeLimit
+                await rc.newRental(bid);
+            }));
+
+            await time.increase(time.duration.seconds(totalTime))
+            await markets[0].collectRent(0)
+            let leaderboardList = await leaderboard.printLeaderboard(markets[0].address, 0)
+            let NFTsToAward = await leaderboard.NFTsToAward(markets[0].address);
+
+            for (let i = 0; i < bids.length; i++) {
+                if (i < NFTsToAward) {
+                    assert.equal(bids[i].from, leaderboardList[i], "Incorrect owner")
+                }
+            }
+            assert.equal(leaderboardList.length, NFTsToAward, "Incorrect number of users on leaderboard")
+        })
+        it("Replace users in linked list ", async () => {
+            let bids = [];
+            bids[0] = {
+                from: alice,
+                price: 50,
+                timeLimit: 5000,
+            };
+            bids[1] = {
+                from: bob,
+                price: 40,
+                timeLimit: 4000,
+            };
+            bids[2] = {
+                from: carol,
+                price: 30,
+                timeLimit: 3000,
+            };
+            bids[3] = {
+                from: dan,
+                price: 20,
+                timeLimit: 2000,
+            };
+            bids[4] = {
+                from: eve,
+                price: 10,
+                timeLimit: 1000,
+            };
+
+            let totalTime = 0
+            // make deposits and place bids
+            await Promise.all(bids.map(async (bid) => {
+                await rc.deposit(1000, bid.from);
+                totalTime += bid.timeLimit
+                await rc.newRental(bid);
+            }));
+
+            await time.increase(time.duration.seconds(totalTime))
+            await markets[0].collectRent(0)
+            let leaderboardList = await leaderboard.printLeaderboard(markets[0].address, 0)
+            let NFTsToAward = await leaderboard.NFTsToAward(markets[0].address);
+
+            for (let i = 0; i < bids.length; i++) {
+                if (i < NFTsToAward) {
+                    assert.equal(bids[i].from, leaderboardList[i])
+                }
+            }
+            assert.equal(leaderboardList.length, NFTsToAward)
+
+            await rc.newRental({ from: eve, timeLimit: 5000 });
+            await time.increase(time.duration.seconds(5000))
+            await markets[0].collectRent(0)
+            leaderboardList = await leaderboard.printLeaderboard(markets[0].address, 0)
+            assert.equal(eve, leaderboardList[0], "Incorrect owner")
+            assert.equal(alice, leaderboardList[1], "Incorrect owner")
+            assert.equal(bob, leaderboardList[2], "Incorrect owner")
+            assert.equal(false, await leaderboard.userIsOnLeaderboard(carol, markets[0].address, 0), "User shouldn't be on leaderboard")
+        })
+        it("Claim NFTs from Leaderboard ", async () => {
+            let bids = [];
+            bids[0] = {
+                from: alice,
+                price: 50,
+                timeLimit: 5000,
+            };
+            bids[1] = {
+                from: bob,
+                price: 40,
+                timeLimit: 4000,
+            };
+            bids[2] = {
+                from: carol,
+                price: 30,
+                timeLimit: 3000,
+            };
+            bids[3] = {
+                from: dan,
+                price: 20,
+                timeLimit: 2000,
+            };
+            bids[4] = {
+                from: eve,
+                price: 10,
+                timeLimit: 1000,
+            };
+
+            let totalTime = 0
+            // make deposits and place bids
+            await Promise.all(bids.map(async (bid) => {
+                await rc.deposit(1000, bid.from);
+                totalTime += bid.timeLimit
+                await rc.newRental(bid);
+            }));
+
+            await time.increase(time.duration.seconds(totalTime))
+            await markets[0].collectRent(0)
+            await markets[0].setAmicableResolution(0)
+
+            let NFTCount = await nftHubL2.totalSupply()
+            await markets[0].claimCard(0, { from: alice })
+            let owner = await nftHubL2.ownerOf(0)
+            assert.equal(owner, alice, "Incorrect owner")
+
+            await markets[0].claimCard(0, { from: bob })
+            owner = await nftHubL2.ownerOf(NFTCount)
+            assert.equal(owner, bob, "Incorrect owner")
+
+            NFTCount++;
+            await markets[0].claimCard(0, { from: carol })
+            owner = await nftHubL2.ownerOf(NFTCount)
+            assert.equal(owner, carol, "Incorrect owner")
+
+            await expectRevert(markets[0].claimCard(0, { from: dan }), "Not in leaderboard")
+        })
+        it("New Market can mint NFTs after users have minted copies ", async () => {
+            let bids = [];
+            bids[0] = {
+                from: alice,
+                price: 50,
+                timeLimit: 5000,
+            };
+            bids[1] = {
+                from: bob,
+                price: 40,
+                timeLimit: 4000,
+            };
+            bids[2] = {
+                from: carol,
+                price: 30,
+                timeLimit: 3000,
+            };
+            bids[3] = {
+                from: dan,
+                price: 20,
+                timeLimit: 2000,
+            };
+            bids[4] = {
+                from: eve,
+                price: 10,
+                timeLimit: 1000,
+            };
+
+            let totalTime = 0
+            // make deposits and place bids
+            await Promise.all(bids.map(async (bid) => {
+                await rc.deposit(1000, bid.from);
+                totalTime += bid.timeLimit
+                await rc.newRental(bid);
+            }));
+
+            await time.increase(time.duration.seconds(totalTime))
+            await markets[0].collectRent(0)
+            await markets[0].setAmicableResolution(0)
+
+            await markets[0].claimCard(0, { from: alice })
+            await markets[0].claimCard(0, { from: bob })
+            await markets[0].claimCard(0, { from: carol })
+
+            let NFTCount = await nftHubL2.totalSupply()
+            markets.push(await rc.createMarket({ closeTime: time.duration.days(1), resolveTime: time.duration.days(1) }));
+
+            rc.newRental({ from: alice, market: markets[1] })
+            await time.increase(time.duration.seconds(10))
+            await markets[1].collectRent(0)
+            let owner = await nftHubL2.ownerOf(NFTCount)
+            assert.equal(owner, alice, "Incorrect owner")
         })
     })
     describe("Orderbook tests ", () => {
@@ -566,49 +913,7 @@ contract("RealityCardsTests", (accounts) => {
                 await rc.newRental({ from: bob, market: markets[2], outcome: 1 })
 
             })
-            it("User foreclosed with zero bids ", async () => {
-                // In this test we end up with a user foreclosed without bids
-                // This test was added due to an error in removeOldBids that would cause an integer underflow
-                markets.push(await rc.createMarket({ closeTime: time.duration.weeks(1), resolveTime: time.duration.weeks(1) }));
-                let bids = [];
-                bids[0] = {
-                    from: alice,
-                    price: 50,
-                    market: markets[1],
-                };
-                bids[1] = {
-                    from: bob,
-                    price: 40,
-                    market: markets[1],
-                };
-                await rc.populateBidArray(bids);
 
-                // make deposits and place bids
-                await Promise.all(bids.map(async (bid) => {
-                    await rc.deposit(10, bid.from);
-                    await rc.newRental(bid);
-                }));
-
-                await time.increase(time.duration.days(8))
-                await markets[1].lockMarket();
-                await realitio.setResult(markets[1].address, 0)
-                await markets[1].getWinnerFromOracle()
-
-                await markets[1].withdraw({ from: alice })
-                // Alice now only has her winnings - Not forelocsed
-                // Bob is foreclosed but still has bids
-
-                markets.push(await rc.createMarket({ closeTime: time.duration.weeks(1), resolveTime: time.duration.weeks(1) }));
-
-                await rc.deposit(10, frank);
-                await rc.deposit(10, alice); // otherwise alice can't cover minimum
-                await rc.newRental({ from: frank, market: markets[2] })
-                await rc.newRental({ from: alice, market: markets[2], outcome: 1 })
-
-                // the new rentals deleted old bids, bob is foreclosed without bids.
-                await expectRevert(rc.newRental({ from: bob, market: markets[2], price: 2 }), "Insufficient deposit")
-
-            })
             it("removeOldBids ", async () => {
                 markets.push(await rc.createMarket({ closeTime: time.duration.weeks(1), resolveTime: time.duration.weeks(1) }));
                 let bids = [];
@@ -964,6 +1269,66 @@ contract("RealityCardsTests", (accounts) => {
                     await rc.checkOrderbook(bid);
                 }));
             })
+            it("Find new owner, not finding a new owner ", async () => {
+                let numberOfDeletions = 3
+                await orderbook.setDeletionLimit(numberOfDeletions)
+                markets.push(await rc.createMarket({ closeTime: time.duration.days(2), resolveTime: time.duration.days(2) }));
+                let bids = [];
+                bids[0] = {
+                    from: alice,
+                    price: 50,
+                    market: markets[1],
+                };
+                bids[1] = {
+                    from: bob,
+                    price: 40,
+                    market: markets[1],
+                };
+                bids[2] = {
+                    from: carol,
+                    price: 30,
+                    market: markets[1],
+                };
+                bids[3] = {
+                    from: dan,
+                    price: 20,
+                    market: markets[1],
+                };
+                bids[4] = {
+                    from: eve,
+                    price: 10,
+                    market: markets[1],
+                };
+                // console.log("market ", markets[1].address)
+                // console.log("orderbook ", orderbook.address)
+                // console.log("treasury ", treasury.address)
+                // console.log("nfthub ", nftHubL2.address)
+                // console.log("alice ", alice)
+                // console.log("bob ", bob)
+                // console.log("carol ", carol)
+                // console.log("dan ", dan)
+                // console.log("eve ", eve)
+
+                // make deposits and place bids
+                await Promise.all(bids.map(async (bid) => {
+                    await rc.deposit(5, bid.from);
+                    await rc.newRental(bid);
+                    bid.outcome = 1
+                    await rc.newRental(bid);
+                }));
+
+                await time.increase(time.duration.days(1))
+
+                let owner = await markets[1].ownerOf(1)
+                await markets[1].collectRent(0);
+                await markets[1].collectRent(1);
+                owner = await markets[1].ownerOf(1)
+
+                await time.increase(time.duration.hours(1))
+                await markets[1].collectRent(0);
+                await markets[1].collectRent(1);
+
+            })
         })
         describe("Cleanup tests ", () => {
 
@@ -1213,7 +1578,7 @@ contract("RealityCardsTests", (accounts) => {
                 // withdraw deposit of 9, will it switch to 0
                 await time.increase(time.duration.minutes(10));
                 await withdrawDeposit(1000, user9);
-                await realitycards.collectRentAllCards();
+                await realitycards.collectRent(0);
                 var owner = await realitycards.ownerOf.call(0);
                 assert.equal(owner, user5);
                 var price = await realitycards.cardPrice.call(0);
@@ -1228,7 +1593,7 @@ contract("RealityCardsTests", (accounts) => {
                 await withdrawDeposit(1000, user0);
                 await withdrawDeposit(1000, user3);
                 await withdrawDeposit(1000, user4);
-                await realitycards.collectRentAllCards();
+                await realitycards.collectRent(0);
                 var owner = await realitycards.ownerOf.call(0);
                 assert.equal(owner, user1);
                 var price = await realitycards.cardPrice.call(0);
@@ -1274,4 +1639,54 @@ contract("RealityCardsTests", (accounts) => {
         })
 
     });
+    describe("Factory tests", () => {
+        it("Token URIs updated for winners, losers, originals and copies", async () => {
+            await rc.deposit(100, alice)
+            await rc.deposit(100, bob)
+            markets.push(await rc.createMarket({ closeTime: 600, resolveTime: 600, numberOfCards: 2 }))
+            await rc.newRental({ market: markets[1], from: alice });
+            await rc.newRental({ market: markets[1], from: alice, outcome: 1 });
+            await time.increase(500)
+            await markets[1].exit(0, { from: alice })
+            await markets[1].exit(1, { from: alice })
+            await rc.newRental({ market: markets[1], from: bob });
+            await rc.newRental({ market: markets[1], from: bob, outcome: 1 });
+            await time.increase(200)
+            let OriginalWinnerID = await markets[1].getTokenId(0)
+            let OriginalLoserID = await markets[1].getTokenId(1)
+            let OriginalNeutralURI = await nftHubL2.tokenURI(OriginalWinnerID)
+
+            await markets[1].lockMarket();
+            await markets[1].setAmicableResolution(0)
+            await markets[1].claimCard(0, { from: alice })
+            await markets[1].claimCard(1, { from: alice })
+            await markets[1].claimCard(0, { from: bob })
+            await markets[1].claimCard(1, { from: bob })
+            let OriginalWinnerURI = await nftHubL2.tokenURI(OriginalWinnerID)
+            let OriginalLoserURI = await nftHubL2.tokenURI(OriginalLoserID)
+            let PrintWinnerURI = await nftHubL2.tokenURI(2)
+            let PrintLoserURI = await nftHubL2.tokenURI(3)
+
+            assert.equal(OriginalWinnerURI, "Original-Winning 12345678909876543210123456789")
+            assert.equal(OriginalNeutralURI, "Original-Neutral 12345678909876543210123456789")
+            assert.equal(OriginalLoserURI, "Original-Losing  12345678909876543210123456789")
+            assert.equal(PrintWinnerURI, "Print-Winning    12345678909876543210123456789")
+            assert.equal(PrintLoserURI, "Print-Losing     12345678909876543210123456789")
+
+        })
+        it.skip("Backup view function", async () => {
+            let expectedResults = 10
+
+            for (let i = 0; i < (expectedResults * 2); i++) {
+                markets.push(await rc.createMarket({ slug: "marketnumber " + markets.length }))
+            }
+            await time.increase(time.duration.hours(1))
+            let results = await factory.getMarketInfo(0, 1, 30, 0)
+
+            console.log("number of results ", expectedResults);
+            console.log("number of markets ", markets.length);
+            console.log("Results ", results);
+
+        })
+    })
 })

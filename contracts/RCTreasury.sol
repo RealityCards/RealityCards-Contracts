@@ -1,6 +1,13 @@
-// SPDX-License-Identifier: AGPL-3.0
-pragma solidity 0.8.4;
-
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity 0.8.7;
+/*
+██████╗ ███████╗ █████╗ ██╗     ██╗████████╗██╗   ██╗ ██████╗ █████╗ ██████╗ ██████╗ ███████╗
+██╔══██╗██╔════╝██╔══██╗██║     ██║╚══██╔══╝╚██╗ ██╔╝██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔════╝
+██████╔╝█████╗  ███████║██║     ██║   ██║    ╚████╔╝ ██║     ███████║██████╔╝██║  ██║███████╗
+██╔══██╗██╔══╝  ██╔══██║██║     ██║   ██║     ╚██╔╝  ██║     ██╔══██║██╔══██╗██║  ██║╚════██║
+██║  ██║███████╗██║  ██║███████╗██║   ██║      ██║   ╚██████╗██║  ██║██║  ██║██████╔╝███████║
+╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝   ╚═╝      ╚═╝    ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚══════╝ 
+*/
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -24,12 +31,14 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
       ╚═════════════════════════════════╝*/
     /// @dev orderbook instance, to remove users bids on foreclosure
     IRCOrderbook public override orderbook;
+    /// @dev leaderboard instance
+    IRCLeaderboard public override leaderboard;
     /// @dev token contract
     IERC20 public override erc20;
-    /// @dev address of (as yet non existent) Bridge for withdrawals to mainnet
-    address public override bridgeAddress;
     /// @dev the Factory so only the Factory can add new markets
     IRCFactory public override factory;
+    /// @dev address of (as yet non existent) Bridge for withdrawals to mainnet
+    address public override bridgeAddress;
     /// @dev sum of all deposits
     uint256 public override totalDeposits;
     /// @dev the rental payments made in each market
@@ -38,10 +47,10 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     uint256 public override totalMarketPots;
     /// @dev rent taken and allocated to a particular market
     uint256 public override marketBalance;
-    /// @dev a quick check if a uesr is foreclosed
+    /// @dev a quick check if a user is foreclosed
     mapping(address => bool) public override isForeclosed;
     /// @dev to keep track of the size of the rounding issue between rent collections
-    uint256 public override marketBalanceDiscrepancy;
+    uint256 public override marketBalanceTopup;
 
     /// @param deposit the users current deposit in wei
     /// @param rentalRate the daily cost of the cards the user current owns
@@ -66,10 +75,14 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     /// @dev max deposit balance, to minimise funds at risk
     uint256 public override maxContractBalance;
     /// @dev whitelist to only allow certain addresses to deposit
+    /// @dev intended for beta use only, will be disabled after launch
     mapping(address => bool) public isAllowed;
     bool public whitelistEnabled;
     /// @dev allow markets to be restricted to a certain role
     mapping(address => bytes32) public marketWhitelist;
+    /// @dev to test if the uberOwner multisig all still have access they
+    /// @dev .. will periodically be asked to update this variable.
+    uint256 public override uberOwnerCheckTime;
 
     /*╔═════════════════════════════════╗
       ║             SAFETY              ║
@@ -78,7 +91,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     bool public override globalPause;
     /// @dev if true, cannot rent, claim or upgrade any cards for specific market
     mapping(address => bool) public override marketPaused;
-    /// @dev if true, owner has locked the market pause
+    /// @dev if true, owner has locked the market pause (Governors are locked out)
     mapping(address => bool) public override lockMarketPaused;
 
     /*╔═════════════════════════════════╗
@@ -108,7 +121,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     );
     event LogMarketPaused(address market, bool paused);
     event LogGlobalPause(bool paused);
-    event LogWhitelistUser(address user, bool allowed);
+    event LogMarketWhitelist(address _market, bytes32 role);
 
     /*╔═════════════════════════════════╗
       ║           CONSTRUCTOR           ║
@@ -122,18 +135,18 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
 
                          UBER_OWNER
             ┌───────────┬────┴─────┬────────────┐
-            │           │          │            │
-          OWNER      FACTORY    ORDERBOOK   TREASURY
+            │           │          │            │ 
+          OWNER      FACTORY    ORDERBOOK   TREASURY 
             │           │
          GOVERNOR     MARKET
             │
          WHITELIST | ARTIST | AFFILIATE | CARD_AFFILIATE
         */
-        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
-        _setupRole(UBER_OWNER, _msgSender());
-        _setupRole(OWNER, _msgSender());
-        _setupRole(GOVERNOR, _msgSender());
-        _setupRole(WHITELIST, _msgSender());
+        _setupRole(DEFAULT_ADMIN_ROLE, msgSender());
+        _setupRole(UBER_OWNER, msgSender());
+        _setupRole(OWNER, msgSender());
+        _setupRole(GOVERNOR, msgSender());
+        _setupRole(WHITELIST, msgSender());
         _setupRole(TREASURY, address(this));
         _setRoleAdmin(UBER_OWNER, UBER_OWNER);
         _setRoleAdmin(OWNER, UBER_OWNER);
@@ -159,9 +172,9 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
       ╚═════════════════════════════════╝*/
 
     /// @notice check that funds haven't gone missing during this function call
-    modifier balancedBooks {
+    modifier balancedBooks() {
         _;
-        // using >= not == in case anyone sends tokens direct to contract
+        /// @dev using >= not == in case anyone sends tokens direct to contract
         require(
             erc20.balanceOf(address(this)) >=
                 totalDeposits + marketBalance + totalMarketPots,
@@ -187,6 +200,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     }
 
     /// @notice set max deposit balance, to minimise funds at risk
+    /// @dev this is only a soft check, it is possible to exceed this limit
     /// @param _newBalanceLimit the max balance to set in wei
     function setMaxContractBalance(uint256 _newBalanceLimit)
         public
@@ -207,6 +221,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     }
 
     /// @notice if true, cannot make a new rental, or claim the NFT for a specific market
+    /// @param _market The
     function changePauseMarket(address _market, bool _paused)
         external
         override
@@ -233,6 +248,9 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     /*╔═════════════════════════════════╗
       ║      WHITELIST FUNCTIONS        ║
       ╚═════════════════════════════════╝*/
+    // There are 2 whitelist functionalities here,
+    // 1. a whitelist for users to enter the system, restrict deposits.
+    // 2. a market specific whitelist, restrict rentals on certain markets to certain users.
 
     /// @notice if true, users must be on the whitelist to deposit
     function toggleWhitelist() external override onlyRole(OWNER) {
@@ -243,7 +261,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     /// @param _users an array of users to add or remove
     /// @param add true to add the users
     function batchWhitelist(address[] calldata _users, bool add)
-        public
+        external
         override
         onlyRole(GOVERNOR)
     {
@@ -258,6 +276,22 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         }
     }
 
+    /// @notice to implement (or remove) a market specific whitelist
+    /// @param _market the market to affect
+    /// @param _role the role required for this market
+    /// @dev it'd be nice to pass the role as a string but then we couldn't reset this
+    function updateMarketWhitelist(address _market, bytes32 _role)
+        external
+        onlyRole(GOVERNOR)
+    {
+        marketWhitelist[_market] = _role;
+        emit LogMarketWhitelist(_market, _role);
+    }
+
+    /// @notice Some markets may be restricted to certain roles,
+    /// @notice This function checks if the user has the role required for a given market
+    /// @dev Used for the markets to check themselves
+    /// @param _user The user to check
     function marketWhitelistCheck(address _user)
         external
         view
@@ -279,8 +313,14 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
       ╚═════════════════════════════════╝*/
     /// @dev uber owner required for upgrades
     /// @dev deploying and setting a new factory is effectively an upgrade
-    /// @dev this is seperate so owner so can be set to multisig, or burn address to relinquish upgrade ability
+    /// @dev this is separate so owner so can be set to multisig, or burn address to relinquish upgrade ability
     /// @dev ... while maintaining governance over other governance functions
+
+    /// @notice Simply updates a variable with the current block.timestamp used
+    /// @notice .. to check the uberOwner multisig controllers all still have access.
+    function uberOwnerTest() external override onlyRole(UBER_OWNER) {
+        uberOwnerCheckTime = block.timestamp;
+    }
 
     function setFactoryAddress(address _newFactory)
         external
@@ -298,6 +338,8 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         grantRole(GOVERNOR, address(factory));
     }
 
+    /// @notice To set the orderbook address
+    /// @dev changing this while markets are active could prove disastrous
     function setOrderbookAddress(address _newOrderbook)
         external
         override
@@ -306,10 +348,25 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         require(_newOrderbook != address(0), "Must set an address");
         revokeRole(ORDERBOOK, address(orderbook));
         orderbook = IRCOrderbook(_newOrderbook);
-        factory.setOrderbookAddress(orderbook);
         grantRole(ORDERBOOK, address(orderbook));
+        factory.setOrderbookAddress(orderbook);
     }
 
+    /// @notice To set the leaderboard address
+    /// @dev The treasury doesn't need the leaderboard, just setting
+    /// @dev .. here to keep the setters in the same place.
+    function setLeaderboardAddress(address _newLeaderboard)
+        external
+        override
+        onlyRole(UBER_OWNER)
+    {
+        require(_newLeaderboard != address(0), "Must set an address");
+        leaderboard = IRCLeaderboard(_newLeaderboard);
+        factory.setLeaderboardAddress(leaderboard);
+    }
+
+    /// @notice To change the ERC20 token.
+    /// @dev changing this while tokens have been deposited could prove disastrous
     function setTokenAddress(address _newToken)
         public
         override
@@ -319,8 +376,9 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         erc20 = IERC20(_newToken);
     }
 
+    /// @notice To set the bridge address and approve token transfers
     function setBridgeAddress(address _newBridge)
-        public
+        external
         override
         onlyRole(UBER_OWNER)
     {
@@ -342,11 +400,11 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
 
     /// @notice deposit tokens into RealityCards
     /// @dev it is passed the user instead of using msg.sender because might be called
-    /// @dev ... via contract (newRental) or Layer1->Layer2 bot
+    /// @dev ... via contract or Layer1->Layer2 bot
     /// @param _user the user to credit the deposit to
     /// @param _amount the amount to deposit, must be approved
     function deposit(uint256 _amount, address _user)
-        public
+        external
         override
         balancedBooks
         returns (bool)
@@ -364,13 +422,14 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         if (whitelistEnabled) {
             require(hasRole(WHITELIST, _user), "Not in whitelist");
         }
-        erc20.safeTransferFrom(msgSender(), address(this), _amount);
 
         // do some cleaning up, it might help cancel their foreclosure
         orderbook.removeOldBids(_user);
 
         user[_user].deposit += SafeCast.toUint128(_amount);
         totalDeposits += _amount;
+
+        erc20.safeTransferFrom(msgSender(), address(this), _amount);
         emit LogAdjustDeposit(_user, _amount, true);
 
         // this deposit could cancel the users foreclosure
@@ -424,39 +483,31 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
             user[_msgSender].bidRate / (minRentalDayDivisor) >
             user[_msgSender].deposit
         ) {
-            bool foreclosureBefore = isForeclosed[_msgSender];
             // foreclose user, this is requred to remove them from the orderbook
             isForeclosed[_msgSender] = true;
-            // remove them from the orderbook, the return will state if they remain foreclosed
-            isForeclosed[_msgSender] = orderbook.removeUserFromOrderbook(
-                _msgSender
-            );
-            if (foreclosureBefore != isForeclosed[_msgSender]) {
-                emit LogUserForeclosed(_msgSender, isForeclosed[_msgSender]);
-            }
+            // remove them from the orderbook
+            orderbook.removeUserFromOrderbook(_msgSender);
         }
     }
 
     /// @notice to increase the market balance
-    /// @dev not strictly required but prevents markets being shortchanged due to rounding issues
+    /// @dev not strictly required but prevents markets being short-changed due to rounding issues
     function topupMarketBalance(uint256 _amount)
         external
         override
         balancedBooks
     {
-        erc20.safeTransferFrom(msgSender(), address(this), _amount);
-        if (_amount > marketBalanceDiscrepancy) {
-            marketBalanceDiscrepancy = 0;
-        } else {
-            marketBalanceDiscrepancy -= _amount;
-        }
+        marketBalanceTopup += _amount;
         marketBalance += _amount;
+        erc20.safeTransferFrom(msgSender(), address(this), _amount);
     }
 
     /*╔═════════════════════════════════╗
       ║         ERC20 helpers           ║
       ╚═════════════════════════════════╝*/
 
+    /// @notice allow and balance check
+    /// @dev used for the Factory to check before spending too much gas
     function checkSponsorship(address sender, uint256 _amount)
         external
         view
@@ -486,14 +537,19 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     {
         require(!globalPause, "Rentals are disabled");
         if (marketBalance < _amount) {
-            marketBalanceDiscrepancy += _amount - marketBalance;
+            uint256 discrepancy = _amount - marketBalance;
+            if (discrepancy > marketBalanceTopup) {
+                marketBalanceTopup = 0;
+            } else {
+                marketBalanceTopup -= discrepancy;
+            }
             _amount = marketBalance;
         }
         address _market = msgSender();
         marketBalance -= _amount;
         marketPot[_market] += _amount;
         totalMarketPots += _amount;
-        /// @dev return the amount just incase it was adjusted
+        /// @dev return the amount just in case it was adjusted
         return _amount;
     }
 
@@ -539,15 +595,15 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         onlyRole(MARKET)
     {
         require(!globalPause, "Global Pause is Enabled");
-        address _msgSender = msgSender();
-        require(!lockMarketPaused[_msgSender], "Market is paused");
+        address _market = msgSender();
+        require(!lockMarketPaused[_market], "Market is paused");
         require(
             erc20.allowance(_sponsor, address(this)) >= _amount,
             "Not approved to send this amount"
         );
-        erc20.safeTransferFrom(_sponsor, address(this), _amount);
-        marketPot[_msgSender] += _amount;
+        marketPot[_market] += _amount;
         totalMarketPots += _amount;
+        erc20.safeTransferFrom(_sponsor, address(this), _amount);
     }
 
     /// @notice tracks when the user last rented- so they cannot rent and immediately withdraw,
@@ -558,8 +614,11 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         override
         onlyRole(MARKET)
     {
+        // update the last rental time
         user[_user].lastRentalTime = SafeCast.toUint64(block.timestamp);
+        // check if this is their first rental (no previous rental calculation)
         if (user[_user].lastRentCalc == 0) {
+            // we need to start their clock ticking, update their last rental calculation time
             user[_user].lastRentCalc = SafeCast.toUint64(block.timestamp);
         }
     }
@@ -567,6 +626,17 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     /*╔═════════════════════════════════╗
       ║        MARKET HELPERS           ║
       ╚═════════════════════════════════╝*/
+
+    /// @notice Allows the factory to add a new market to AccessControl
+    /// @dev Also controls the default paused state
+    /// @param _market The market address to add
+    /// @param _paused If the market should be paused or not
+    function addMarket(address _market, bool _paused) external override {
+        require(hasRole(FACTORY, msgSender()), "Not Authorised");
+        marketPaused[_market] = _paused;
+        AccessControl.grantRole(MARKET, _market);
+        emit LogMarketPaused(_market, marketPaused[_market]);
+    }
 
     /// @notice provides the sum total of a users bids across all markets (whether active or not)
     /// @param _user the user address to query
@@ -617,7 +687,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
             if (_timeOwnershipChanged < user[_newOwner].lastRentCalc) {
                 // the new owner has a more recent rent collection
 
-                uint256 _additionalRentOwed = rentOwedBetweenTimestmaps(
+                uint256 _additionalRentOwed = rentOwedBetweenTimestamps(
                     user[_newOwner].lastRentCalc,
                     _timeOwnershipChanged,
                     _newPrice
@@ -630,7 +700,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
             } else {
                 // the new owner has an old rent collection, do they own anything else?
                 if (user[_newOwner].rentalRate != 0) {
-                    // rent collect upto ownership change time
+                    // rent collect up-to ownership change time
                     collectRentUser(_newOwner, _timeOwnershipChanged);
                 } else {
                     // first card owned, set start time
@@ -665,12 +735,6 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         user[_user].bidRate -= SafeCast.toUint128(_price);
     }
 
-    /// @dev called when all a user's bids have been removed, disables foreclosure state
-    function resetUser(address _user) external override onlyRole(ORDERBOOK) {
-        isForeclosed[_user] = false;
-        emit LogUserForeclosed(_user, false);
-    }
-
     /*╔═════════════════════════════════╗
       ║      RENT CALC HELPERS          ║
       ╚═════════════════════════════════╝*/
@@ -678,7 +742,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     /// @notice returns the rent due between the users last rent calculation and
     /// @notice ..the current block.timestamp for all cards a user owns
     /// @param _user the user to query
-    /// @param _timeOfCollection calculate upto a given time
+    /// @param _timeOfCollection calculate up to a given time
     function rentOwedUser(address _user, uint256 _timeOfCollection)
         internal
         view
@@ -693,9 +757,9 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     /// @param _time1 one of the timestamps
     /// @param _time2 the second timestamp
     /// @param _price the rental rate for this time period
-    /// @param _rent the rent due for this time period
+    /// @return _rent the rent due for this time period
     /// @dev the timestamps can be given in any order
-    function rentOwedBetweenTimestmaps(
+    function rentOwedBetweenTimestamps(
         uint256 _time1,
         uint256 _time2,
         uint256 _price
@@ -717,26 +781,55 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     ) external view override returns (uint256) {
         uint256 totalUserDailyRent = user[_user].rentalRate;
         if (totalUserDailyRent > 0) {
-            // timeLeftOfDeposit = deposit / (totalUserDailyRent / 1 day)
-            //                   = (deposit * 1day) / totalUserDailyRent
             uint256 timeLeftOfDeposit = (user[_user].deposit * 1 days) /
                 totalUserDailyRent;
 
             uint256 foreclosureTimeWithoutNewCard = user[_user].lastRentCalc +
                 timeLeftOfDeposit;
 
-            if (foreclosureTimeWithoutNewCard > _timeOfNewBid) {
+            if (
+                foreclosureTimeWithoutNewCard > _timeOfNewBid &&
+                _timeOfNewBid != 0
+            ) {
                 // calculate how long they can own the new card for
-                uint256 _rentAlreadyOwed = rentOwedBetweenTimestmaps(
+                uint256 _rentDifference = rentOwedBetweenTimestamps(
                     user[_user].lastRentCalc,
                     _timeOfNewBid,
                     totalUserDailyRent
                 );
-                uint256 _depositAtTimeOfNewBid = user[_user].deposit -
-                    _rentAlreadyOwed;
+                uint256 _depositAtTimeOfNewBid = 0;
+
+                if (user[_user].lastRentCalc < _timeOfNewBid) {
+                    // new bid is after user rent calculation
+                    _depositAtTimeOfNewBid =
+                        user[_user].deposit -
+                        _rentDifference;
+                } else {
+                    // new bid is before user rent calculation
+                    _depositAtTimeOfNewBid =
+                        user[_user].deposit +
+                        _rentDifference;
+                }
+
                 uint256 _timeLeftOfDepositWithNewBid = (_depositAtTimeOfNewBid *
                     1 days) / (totalUserDailyRent + _newBid);
-                return _timeOfNewBid + _timeLeftOfDepositWithNewBid;
+
+                uint256 _foreclosureTimeWithNewCard = _timeOfNewBid +
+                    _timeLeftOfDepositWithNewBid;
+                if (_foreclosureTimeWithNewCard > user[_user].lastRentCalc) {
+                    return _foreclosureTimeWithNewCard;
+                } else {
+                    // The user couldn't afford to own the new card up to their last
+                    // .. rent calculation, we can't rewind their rent calculation because
+                    // .. of gas limits (there could be many markets having taken rent).
+                    // Therefore unfortunately we can't give any ownership to this user as
+                    // .. this could mean getting caught in a loop we may not be able to
+                    // .. exit because of gas limits (there could be many users in this
+                    // .. situation and we can't leave any unaccounted for).
+                    // This means we return 0 to signify that the user can't afford this
+                    // .. new ownership.
+                    return 0;
+                }
             } else {
                 return user[_user].lastRentCalc + timeLeftOfDeposit;
             }
@@ -755,7 +848,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     /// @notice IF the user doesn't have enough deposit, returns foreclosure time
     /// @notice ..otherwise returns zero
     /// @param _user the user to query
-    /// @param _timeToCollectTo the timestamp to collect rent upto
+    /// @param _timeToCollectTo the timestamp to collect rent up-to
     /// @return newTimeLastCollectedOnForeclosure the time the user foreclosed if they foreclosed in this calculation
     function collectRentUser(address _user, uint256 _timeToCollectTo)
         public
@@ -815,20 +908,19 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
     }
 
     /// @notice checks if the user should still be foreclosed
-    /// @dev only removes foreclosure
-    function assessForeclosure(address _user) internal {
-        if (
-            isForeclosed[_user] &&
-            user[_user].deposit > (user[_user].bidRate / minRentalDayDivisor)
-        ) {
+    function assessForeclosure(address _user) public override {
+        if (user[_user].deposit > (user[_user].bidRate / minRentalDayDivisor)) {
             isForeclosed[_user] = false;
             emit LogUserForeclosed(_user, false);
+        } else {
+            isForeclosed[_user] = true;
+            emit LogUserForeclosed(_user, true);
         }
     }
 
     /// @dev can't be called hasRole also because AccessControl.hasRole isn't virtual
     function checkPermission(bytes32 role, address account)
-        public
+        external
         view
         override
         returns (bool)
@@ -836,38 +928,66 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
         return AccessControl.hasRole(role, account);
     }
 
-    function grantRole(string memory role, address account) external override {
+    /// @notice To grant a role (string) to an address
+    /// @param role the role to grant, this is a string and will be converted to bytes32
+    /// @param account the account to grant the role to
+    /// @dev Not necessary but makes granting roles easier
+    /// @dev not called grantRole as overloading a string and bytes32 causes issues with tools like remix
+    function grantRoleString(string memory role, address account)
+        external
+        override
+    {
         bytes32 _role = keccak256(abi.encodePacked(role));
         RCTreasury.grantRole(_role, account);
     }
 
+    /// @notice To grant a role (bytes32) to an address
+    /// @param role the role to grant
+    /// @param account the account to grant the role to
     function grantRole(bytes32 role, address account)
         public
         override(AccessControl, IRCTreasury)
     {
-        if (role == MARKET) {
-            // markets should be added in a paused state
-            marketPaused[account] = true;
-        } else if (role == WHITELIST) {
-            // need to emit old event until frontend catches up
-            emit LogWhitelistUser(account, true);
-        }
         AccessControl.grantRole(role, account);
     }
 
-    function revokeRole(string memory role, address account) external override {
+    /// @notice To check is a particular account has a certain role
+    /// @param role The role (string) to query about
+    /// @param account the address which may have this role
+    /// @return Bool, True if the account has role
+    /// @dev needed because we can't override hasRole (it's not virtual) and
+    /// @dev .. without this the contract wouldn't fully implement the interface
+    /// @dev Similar to checkPermissions except using string instead of bytes32
+    function checkRole(string memory role, address account)
+        external
+        view
+        override
+        returns (bool)
+    {
+        bytes32 _role = keccak256(abi.encodePacked(role));
+        return hasRole(_role, account);
+    }
+
+    /// @notice To revoke a role (string) from an address
+    /// @param role the role to revoke, this is a string and will be converted to bytes32
+    /// @param account the account to revoke the role from
+    /// @dev Not necessary but makes revoking roles easier
+    /// @dev not called revokeRole as overloading a string and bytes32 causes issues with tools like remix
+    function revokeRoleString(string memory role, address account)
+        external
+        override
+    {
         bytes32 _role = keccak256(abi.encodePacked(role));
         RCTreasury.revokeRole(_role, account);
     }
 
+    /// @notice To revoke a role (bytes32) from an address
+    /// @param role the role to revoke
+    /// @param account the account to revoke the role from
     function revokeRole(bytes32 role, address account)
         public
         override(AccessControl, IRCTreasury)
     {
-        if (role == WHITELIST) {
-            // need to emit old event until frontend catches up
-            emit LogWhitelistUser(account, false);
-        }
         AccessControl.revokeRole(role, account);
     }
 

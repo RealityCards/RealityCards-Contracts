@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: AGPL-3.0
-pragma solidity 0.8.4;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity 0.8.7;
 
 interface IRCNftHubL1 {
     function mint(address user, uint256 tokenId) external;

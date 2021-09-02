@@ -1,9 +1,10 @@
-// SPDX-License-Identifier: AGPL-3.0
-pragma solidity 0.8.4;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity 0.8.7;
 
 import "./IRCNftHubL2.sol";
 import "./IRCTreasury.sol";
 import "./IRCFactory.sol";
+import "./IRCLeaderboard.sol";
 import "./IRealitio.sol";
 import "./IRCOrderbook.sol";
 
@@ -19,8 +20,6 @@ interface IRCMarket {
         WINNER_TAKES_ALL,
         SAFE_MODE
     }
-
-    function upgradeCard(uint256 _card) external;
 
     function getWinnerFromOracle() external;
 
@@ -42,7 +41,7 @@ interface IRCMarket {
     function updateTimeHeldLimit(uint256 _timeHeldLimit, uint256 _card)
         external;
 
-    function collectRentAllCards() external returns (bool);
+    function collectRent(uint256 _cardId) external returns (bool);
 
     function exitAll() external;
 
@@ -51,8 +50,6 @@ interface IRCMarket {
     function sponsor(address _sponsor, uint256 _amount) external;
 
     function sponsor(uint256 _amount) external;
-
-    function circuitBreaker() external;
 
     // payouts
     function withdraw() external;
@@ -72,6 +69,8 @@ interface IRCMarket {
 
     function factory() external view returns (IRCFactory);
 
+    function leaderboard() external view returns (IRCLeaderboard);
+
     function orderbook() external view returns (IRCOrderbook);
 
     function realitio() external view returns (IRealitio);
@@ -82,19 +81,21 @@ interface IRCMarket {
 
     function numberOfCards() external view returns (uint256);
 
-    function tokenURI(uint256) external view returns (string memory);
+    function nftsToAward() external view returns (uint256);
 
     function ownerOf(uint256 tokenId) external view returns (address);
 
     function state() external view returns (States);
 
+    function getTokenId(uint256 _card) external view returns (uint256 _tokenId);
+
+    function cardAccountingIndex() external view returns (uint256);
+
+    function accountingComplete() external view returns (bool);
+
     // prices, deposits, rent
 
-    function cardPrice(uint256) external view returns (uint256);
-
     function rentCollectedPerUser(address) external view returns (uint256);
-
-    function rentCollectedPerCard(uint256) external view returns (uint256);
 
     function rentCollectedPerUserPerCard(address, uint256)
         external
@@ -114,17 +115,14 @@ interface IRCMarket {
     function maxRentIterations() external view returns (uint256);
 
     // time
-    function timeHeld(uint256, address) external view returns (uint256);
+    function timeHeld(uint256 _card, address _user)
+        external
+        view
+        returns (uint256);
 
-    function totalTimeHeld(uint256) external view returns (uint256);
+    function timeLastCollected(uint256 _card) external view returns (uint256);
 
-    function timeLastCollected(uint256) external view returns (uint256);
-
-    function longestTimeHeld(uint256) external view returns (uint256);
-
-    function longestOwner(uint256) external view returns (address);
-
-    function cardTimeLimit(uint256) external view returns (uint256);
+    function longestOwner(uint256 _card) external view returns (address);
 
     function marketOpeningTime() external view returns (uint32);
 
@@ -136,8 +134,6 @@ interface IRCMarket {
     function winningOutcome() external view returns (uint256);
 
     function userAlreadyWithdrawn(address) external view returns (bool);
-
-    function userAlreadyClaimed(uint256, address) external view returns (bool);
 
     function artistAddress() external view returns (address);
 
@@ -163,8 +159,6 @@ interface IRCMarket {
 
     function cardAffiliateCut() external view returns (uint256);
 
-    function cardAffiliatePaid(uint256) external view returns (bool);
-
     // oracle
 
     function questionId() external view returns (bytes32);
@@ -184,7 +178,8 @@ interface IRCMarket {
         address _affiliateAddress,
         address[] calldata _cardAffiliateAddresses,
         address _marketCreatorAddress,
-        string calldata _realitioQuestion
+        string calldata _realitioQuestion,
+        uint256 _nftsToAward
     ) external;
 
     function transferCard(

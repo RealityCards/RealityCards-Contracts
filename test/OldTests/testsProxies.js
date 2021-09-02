@@ -16,6 +16,7 @@ var RCMarket = artifacts.require('./RCMarket.sol');
 var NftHubL2 = artifacts.require('./nfthubs/RCNftHubL2.sol');
 var NftHubL1 = artifacts.require('./nfthubs/RCNftHubL1.sol');
 var RCOrderbook = artifacts.require('./RCOrderbook.sol');
+var RCLeaderboard = artifacts.require('./RCLeaderboard.sol');
 // mockups
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 
@@ -74,20 +75,24 @@ contract('TestProxies', (accounts) => {
     rcfactory = await RCFactory.new(treasury.address, realitio.address, kleros);
     rcreference = await RCMarket.new();
     rcorderbook = await RCOrderbook.new(treasury.address);
+    rcleaderboard = await RCLeaderboard.new(treasury.address);
     // nft hubs
     nftHubL2 = await NftHubL2.new(rcfactory.address, dummyAddress);
-    nftHubL1 = await NftHubL1.new();
+    nftHubL1 = await NftHubL1.new(dummyAddress);
     // tell treasury about factory, tell factory about nft hub and reference
     await treasury.setFactoryAddress(rcfactory.address);
     await rcfactory.setReferenceContractAddress(rcreference.address);
     await rcfactory.setNftHubAddress(nftHubL2.address);
     await treasury.setOrderbookAddress(rcorderbook.address);
+    await treasury.setLeaderboardAddress(rcleaderboard.address);
     await treasury.toggleWhitelist();
 
     // market creation
+    let slug = "slug"
     await rcfactory.createMarket(
       0,
       '0x0',
+      slug,
       timestamps,
       tokenURIs,
       artistAddress,
@@ -109,13 +114,15 @@ contract('TestProxies', (accounts) => {
     var oracleResolutionTime = oneYearInTheFuture;
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = user8;
-    await rcfactory.addArtist(user8);
     var affiliateAddress = user7;
-    await rcfactory.addAffiliate(user7);
-    var slug = 'y';
+    await treasury.grantRoleString("ARTIST", artistAddress)
+    await treasury.grantRoleString("AFFILIATE", affiliateAddress)
+
+    let slug = "slug"
     await rcfactory.createMarket(
       0,
       '0x0',
+      slug,
       timestamps,
       tokenURIs,
       artistAddress,
@@ -139,10 +146,11 @@ contract('TestProxies', (accounts) => {
     var artistAddress = user8;
     var affiliateAddress = user7;
     // artist and affiliate already approved from createMarketWithArtistSet
-    var slug = 'z';
+    let slug = "slug"
     await rcfactory.createMarket(
       0,
       '0x0',
+      slug,
       timestamps,
       tokenURIs,
       artistAddress,
@@ -165,10 +173,12 @@ contract('TestProxies', (accounts) => {
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
-    var slug = 'y';
+
+    let slug = "slug"
     await rcfactory.createMarket(
       mode,
       '0x0',
+      slug,
       timestamps,
       tokenURIs,
       artistAddress,

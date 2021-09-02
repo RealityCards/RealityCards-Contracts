@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: AGPL-3.0
-pragma solidity 0.8.4;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity 0.8.7;
 
 /// @title Realit.io contract interface
 interface IRealitio {

@@ -26,6 +26,7 @@ var RCTreasury = artifacts.require('./RCTreasury.sol');
 var RCFactory = artifacts.require('./RCFactory.sol');
 var RCMarket = artifacts.require('./RCMarket.sol');
 var RCOrderbook = artifacts.require('./RCOrderbook.sol');
+var RCLeaderboard = artifacts.require('./RCLeaderboard.sol');
 var NftHubL2 = artifacts.require('./nfthubs/RCNftHubL2.sol');
 var NftHubL1 = artifacts.require('./nfthubs/RCNftHubL1.sol');
 var RealitioMockup = artifacts.require('./mockups/RealitioMockup.sol');
@@ -41,8 +42,8 @@ var arbAddressXdai = '0x7301CFA0e1756B71869E93d4e4Dca5c7d0eb0AA6'; // may not be
 var kleros = '0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D'; //double check this
 const PoSDai = '0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063';
 const PoSUSDC = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
-const childChainManager = '0x56E14C4C1748a818a5564D33cF774c59EB3eDF59'; //double check this
-
+const childChainManager = '0xA6FA4fB5f76172d178d61B04b0ecd319C5d1C0aa'; //double check this
+const MintableERC721PredicateProxy = '0x932532aA4c0174b8453839A6E44eE09Cc615F2b7'
 // Testnet addresses
 var ambAddressSokol = '0xFe446bEF1DbF7AFE24E81e05BC8B271C1BA9a560';
 var ambAddressKovan = '0xFe446bEF1DbF7AFE24E81e05BC8B271C1BA9a560';
@@ -82,6 +83,8 @@ module.exports = async (deployer, network, accounts) => {
     reference = await RCMarket.deployed();
     await deployer.deploy(RCOrderbook, treasury.address);
     orderbook = await RCOrderbook.deployed();
+    await deployer.deploy(RCLeaderboard, treasury.address);
+    leaderboard = await RCLeaderboard.deployed();
     await deployer.deploy(NftHubL2, factory.address, childChainManager);
     nftHubL2 = await NftHubL2.deployed();
     // tell treasury about factory & ARB, tell factory about nft hub and reference
@@ -90,6 +93,7 @@ module.exports = async (deployer, network, accounts) => {
     await factory.setNftHubAddress(nftHubL2.address, { gas: 100000 });
     await factory.setRealitioAddress(realitio.address, { gas: 100000 });
     await treasury.setOrderbookAddress(orderbook.address, { gas: 200000 });
+    await treasury.setLeaderboardAddress(leaderboard.address, { gas: 200000 });
     // await treasury.toggleWhitelist({ gas: 100000 });
 
     // print out some stuff to be picked up by the deploy script ready for the next stage
@@ -108,10 +112,11 @@ module.exports = async (deployer, network, accounts) => {
     console.log('Begin Stage 2');
     // mainnet
     // deploy mainnet nft hub
-    await deployer.deploy(NftHubL1);
+    await deployer.deploy(NftHubL1, MintableERC721PredicateProxy);
     nftHubL1 = await NftHubL1.deployed();
 
     console.log('Completed stage 2');
+    console.log("Layer 1 NFT hub ", nftHubL1.address);
   } else if (network === 'graphTesting') {
     /**************************************
      *                                     *
@@ -147,13 +152,16 @@ module.exports = async (deployer, network, accounts) => {
     reference = await RCMarket.deployed();
     await deployer.deploy(RCOrderbook, treasury.address);
     orderbook = await RCOrderbook.deployed();
+    await deployer.deploy(RCLeaderboard, treasury.address);
+    leaderboard = await RCLeaderboard.deployed();
     await deployer.deploy(NftHubL2, factory.address, childChainManager);
     nftHubL2 = await NftHubL2.deployed();
-    await deployer.deploy(NftHubL1);
+    await deployer.deploy(NftHubL1, MintableERC721PredicateProxy);
     nftHubL1 = await NftHubL1.deployed();
     // tell treasury and factory about various things
     await treasury.setFactoryAddress(factory.address);
     await treasury.setOrderbookAddress(orderbook.address);
+    await treasury.setLeaderboardAddress(leaderboard.address);
     await factory.setReferenceContractAddress(reference.address);
     await factory.setNftHubAddress(nftHubL2.address);
     // disable whitelist
@@ -198,6 +206,7 @@ module.exports = async (deployer, network, accounts) => {
     console.log('treasury.address: ', treasury.address);
     console.log('factory.address: ', factory.address);
     console.log('orderbook.address: ', orderbook.address);
+    console.log('leaderboard.address: ', leaderboard.address);
   } else {
     console.log('No deploy script for this network');
   }
@@ -210,6 +219,7 @@ async function createMarket(options) {
   var defaults = {
     mode: 0, // mode, 0 = classic, 1 = winner takes all, 2 = hot potato
     ipfs: 0x0, // ipfs hash
+    slug: "slug", // slug
     openTime: 0, // seconds delay before market opens
     closeTime: 31536000, // seconds delay from now before market closes - default 31536000 = 1 year
     resolveTime: 0, // seconds delay from close before market resolves
@@ -229,10 +239,13 @@ async function createMarket(options) {
   for (i = 0; i < options.numberOfCards; i++) {
     tokenURIs.push('x');
   }
+  // double the length of the array for the copies to be minted
+  tokenURIs = tokenURIs.concat(tokenURIs.concat(tokenURIs.concat(tokenURIs.concat(tokenURIs))))
 
   await factory.createMarket(
     options.mode,
     options.ipfs,
+    options.slug,
     timestamps,
     tokenURIs,
     options.artistAddress,
@@ -284,7 +297,8 @@ async function rent(options) {
     if (options.price) {
       newPrice = web3.utils.toWei(options.price.toString(), 'ether');
     } else {
-      const currentPrice = await options.market.cardPrice(options.outcome);
+      let card = await options.market.card(options.outcome);
+      const currentPrice = card.cardPrice;
       const currentPriceBN = new BN(currentPrice);
       newPrice = currentPriceBN.add(currentPriceBN.div(new BN('10')));
       if (!newPrice.isZero()) {

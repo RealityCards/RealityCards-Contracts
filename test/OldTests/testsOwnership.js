@@ -16,6 +16,7 @@ var RCMarket = artifacts.require('./RCMarket.sol');
 var NftHubL2 = artifacts.require('./nfthubs/RCNftHubL2.sol');
 var NftHubL1 = artifacts.require('./nfthubs/RCNftHubL1.sol');
 var RCOrderbook = artifacts.require('./RCOrderbook.sol');
+var RCLeaderboard = artifacts.require('./RCLeaderboard.sol');
 // mockups
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 
@@ -34,6 +35,8 @@ contract('TestOwnership', (accounts) => {
 
   var realitycards;
   var tokenURIs = ['x', 'x', 'x', 'uri', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x']; // 20 tokens
+  // lengthen the array 5x, for the originals, copies, winners, undecided and losers
+  tokenURIs = tokenURIs.concat(tokenURIs.concat(tokenURIs.concat(tokenURIs.concat(tokenURIs))))
   var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
   var maxuint256 = 4294967295;
 
@@ -74,20 +77,24 @@ contract('TestOwnership', (accounts) => {
     rcfactory = await RCFactory.new(treasury.address, realitio.address, kleros);
     rcreference = await RCMarket.new();
     rcorderbook = await RCOrderbook.new(treasury.address);
+    rcleaderboard = await RCLeaderboard.new(treasury.address);
     // nft hubs
     nftHubL2 = await NftHubL2.new(rcfactory.address, dummyAddress);
-    nftHubL1 = await NftHubL1.new();
+    nftHubL1 = await NftHubL1.new(dummyAddress);
     // tell treasury about factory, tell factory about nft hub and reference
     await treasury.setFactoryAddress(rcfactory.address);
     await rcfactory.setReferenceContractAddress(rcreference.address);
     await rcfactory.setNftHubAddress(nftHubL2.address);
     await treasury.setOrderbookAddress(rcorderbook.address);
+    await treasury.setLeaderboardAddress(rcleaderboard.address);
     await treasury.toggleWhitelist();
 
     // market creation
+    let slug = "slug"
     await rcfactory.createMarket(
       0,
       '0x0',
+      slug,
       timestamps,
       tokenURIs,
       artistAddress,
@@ -110,10 +117,12 @@ contract('TestOwnership', (accounts) => {
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
-    var slug = 'y';
+
+    let slug = "slug"
     await rcfactory.createMarket(
       mode,
       '0x0',
+      slug,
       timestamps,
       tokenURIs,
       artistAddress,
@@ -144,10 +153,12 @@ contract('TestOwnership', (accounts) => {
     await rcfactory.addCardAffiliate(user0);
     await rcfactory.addAffiliate(user7);
     await rcfactory.addArtist(user8);
-    var slug = 'y';
+
+    let slug = "slug"
     await rcfactory.createMarket(
       0,
       '0x0',
+      slug,
       timestamps,
       tokenURIs,
       artistAddress,
@@ -230,13 +241,12 @@ contract('TestOwnership', (accounts) => {
   it('check onlyOwner is on relevant Factory functions', async () => {
     await expectRevert(rcfactory.setPotDistribution(0, 0, 0, 0, 0, { from: user1 }), 'Not approved');
     await expectRevert(treasury.setMinRental(7 * 24, { from: user1 }), accessControl(user1, "OWNER"));
-    await expectRevert(rcfactory.addGovernor(user0, { from: user1 }), 'Not approved');
+    await expectRevert(treasury.grantRoleString("GOVERNOR", user0, { from: user1 }), "AccessControl: account 0x70997970c51812dc3a010c7d01b50e0d17dc79c8 is missing role 0x6270edb7c868f86fda4adedba75108201087268ea345934db8bad688e1feb91b");
     await expectRevert(rcfactory.changeMarketCreationGovernorsOnly({ from: user1 }), 'Not approved');
     await expectRevert(rcfactory.setSponsorshipRequired(7 * 24, { from: user1 }), 'Not approved');
     await expectRevert(rcfactory.changeMarketApproval(user0, { from: user1 }), "Not approved");
     await expectRevert(rcfactory.setMinimumPriceIncreasePercent(4, { from: user1 }), 'Not approved');
-    await expectRevert(rcfactory.setAdvancedWarning(23, { from: user1 }), 'Not approved');
-    await expectRevert(rcfactory.setMaximumDuration(23, { from: user1 }), 'Not approved');
+    await expectRevert(rcfactory.setMarketTimeRestrictions(8, 10, 4, { from: user1 }), 'Not approved');
   });
 
 });

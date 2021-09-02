@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: AGPL-3.0
-pragma solidity 0.8.4;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity 0.8.7;
 
 import {EIP712Base} from "./EIP712Base.sol";
 
@@ -35,12 +35,11 @@ contract NativeMetaTransaction is EIP712Base {
         bytes32 sigS,
         uint8 sigV
     ) public payable returns (bytes memory) {
-        MetaTransaction memory metaTx =
-            MetaTransaction({
-                nonce: nonces[userAddress],
-                from: userAddress,
-                functionSignature: functionSignature
-            });
+        MetaTransaction memory metaTx = MetaTransaction({
+            nonce: nonces[userAddress],
+            from: userAddress,
+            functionSignature: functionSignature
+        });
 
         require(
             verify(userAddress, metaTx, sigR, sigS, sigV),
@@ -57,10 +56,9 @@ contract NativeMetaTransaction is EIP712Base {
         );
 
         // Append userAddress and relayer address at the end to extract it from calling context
-        (bool success, bytes memory returnData) =
-            address(this).call(
-                abi.encodePacked(functionSignature, userAddress)
-            );
+        (bool success, bytes memory returnData) = address(this).call(
+            abi.encodePacked(functionSignature, userAddress)
+        );
         require(success, "Function call not successful");
 
         return returnData;

@@ -19,6 +19,7 @@ var RCMarket = artifacts.require("./RCMarket.sol");
 var NftHubL2 = artifacts.require("./nfthubs/RCNftHubL2.sol");
 var NftHubL1 = artifacts.require("./nfthubs/RCNftHubL1.sol");
 var RCOrderbook = artifacts.require("./RCOrderbook.sol");
+var RCLeaderboard = artifacts.require("./RCLeaderboard.sol");
 // mockups
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 var SelfDestructMockup = artifacts.require("./mockups/SelfDestructMockup.sol");
@@ -57,6 +58,8 @@ contract("TestFullFlowValid", (accounts) => {
     "x",
     "x",
   ]; // 20 tokens
+  // lengthen the array 5x, for the originals, copies, winners, undecided and losers
+  tokenURIs = tokenURIs.concat(tokenURIs.concat(tokenURIs.concat(tokenURIs.concat(tokenURIs))))
   var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
   var maxuint256 = 4294967295;
 
@@ -97,19 +100,22 @@ contract("TestFullFlowValid", (accounts) => {
     rcfactory = await RCFactory.new(treasury.address, realitio.address, kleros);
     rcreference = await RCMarket.new();
     rcorderbook = await RCOrderbook.new(treasury.address);
+    rcleaderboard = await RCLeaderboard.new(treasury.address);
     // nft hubs
     nftHubL2 = await NftHubL2.new(rcfactory.address, dummyAddress);
-    nftHubL1 = await NftHubL1.new();
+    nftHubL1 = await NftHubL1.new(dummyAddress);
     // tell treasury about factory, tell factory about nft hub and reference
     await treasury.setFactoryAddress(rcfactory.address);
     await rcfactory.setReferenceContractAddress(rcreference.address);
     await rcfactory.setNftHubAddress(nftHubL2.address);
     await treasury.setOrderbookAddress(rcorderbook.address);
+    await treasury.setLeaderboardAddress(rcleaderboard.address);
     await treasury.toggleWhitelist();
     // market creation
     await rcfactory.createMarket(
       0,
       "0x0",
+      "slug",
       timestamps,
       tokenURIs,
       artistAddress,
@@ -131,13 +137,14 @@ contract("TestFullFlowValid", (accounts) => {
     var oracleResolutionTime = oneYearInTheFuture;
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = user8;
-    await rcfactory.addArtist(user8);
     var affiliateAddress = user7;
-    await rcfactory.addAffiliate(user7);
+    await treasury.grantRoleString("ARTIST", artistAddress)
+    await treasury.grantRoleString("AFFILIATE", affiliateAddress)
     var slug = "y";
     await rcfactory.createMarket(
       0,
       "0x0",
+      "slug",
       timestamps,
       tokenURIs,
       artistAddress,
@@ -165,6 +172,7 @@ contract("TestFullFlowValid", (accounts) => {
     await rcfactory.createMarket(
       mode,
       "0x0",
+      "slug",
       timestamps,
       tokenURIs,
       artistAddress,
@@ -208,17 +216,18 @@ contract("TestFullFlowValid", (accounts) => {
       user0,
       user0,
     ];
-    await rcfactory.addCardAffiliate(user5);
-    await rcfactory.addCardAffiliate(user6);
-    await rcfactory.addCardAffiliate(user7);
-    await rcfactory.addCardAffiliate(user8);
-    await rcfactory.addCardAffiliate(user0);
+    await treasury.grantRoleString("CARD_AFFILIATE", user5);
+    await treasury.grantRoleString("CARD_AFFILIATE", user6);
+    await treasury.grantRoleString("CARD_AFFILIATE", user7);
+    await treasury.grantRoleString("CARD_AFFILIATE", user8);
+    await treasury.grantRoleString("CARD_AFFILIATE", user0);
     var artistAddress = "0x0000000000000000000000000000000000000000";
     var affiliateAddress = "0x0000000000000000000000000000000000000000";
     var slug = "y";
     await rcfactory.createMarket(
       0,
       "0x0",
+      "slug",
       timestamps,
       tokenURIs,
       artistAddress,
@@ -242,12 +251,13 @@ contract("TestFullFlowValid", (accounts) => {
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = user8;
     var affiliateAddress = user7;
-    await rcfactory.addAffiliate(user7);
-    await rcfactory.addArtist(user8);
+    await treasury.grantRoleString("ARTIST", artistAddress)
+    await treasury.grantRoleString("AFFILIATE", affiliateAddress)
     var slug = "y";
     await rcfactory.createMarket(
       mode,
       "0x0",
+      "slug",
       timestamps,
       tokenURIs,
       artistAddress,
@@ -293,17 +303,18 @@ contract("TestFullFlowValid", (accounts) => {
       user0,
       user0,
     ];
-    await rcfactory.addCardAffiliate(user5);
-    await rcfactory.addCardAffiliate(user6);
-    await rcfactory.addCardAffiliate(user7);
-    await rcfactory.addCardAffiliate(user8);
-    await rcfactory.addCardAffiliate(user0);
-    await rcfactory.addAffiliate(user7);
-    await rcfactory.addArtist(user8);
+    await treasury.grantRoleString("ARTIST", user8);
+    await treasury.grantRoleString("AFFILIATE", user7);
+    await treasury.grantRoleString("CARD_AFFILIATE", user5);
+    await treasury.grantRoleString("CARD_AFFILIATE", user6);
+    await treasury.grantRoleString("CARD_AFFILIATE", user7);
+    await treasury.grantRoleString("CARD_AFFILIATE", user8);
+    await treasury.grantRoleString("CARD_AFFILIATE", user0);
     var slug = "y";
     await rcfactory.createMarket(
       0,
       "0x0",
+      "slug",
       timestamps,
       tokenURIs,
       artistAddress,
@@ -354,17 +365,18 @@ contract("TestFullFlowValid", (accounts) => {
       user0,
       user0,
     ];
-    await rcfactory.addCardAffiliate(user5);
-    await rcfactory.addCardAffiliate(user6);
-    await rcfactory.addCardAffiliate(user7);
-    await rcfactory.addCardAffiliate(user8);
-    await rcfactory.addCardAffiliate(user0);
-    await rcfactory.addAffiliate(user7);
-    await rcfactory.addArtist(user8);
+    await treasury.grantRoleString("ARTIST", user8);
+    await treasury.grantRoleString("AFFILIATE", user7);
+    await treasury.grantRoleString("CARD_AFFILIATE", user5);
+    await treasury.grantRoleString("CARD_AFFILIATE", user6);
+    await treasury.grantRoleString("CARD_AFFILIATE", user7);
+    await treasury.grantRoleString("CARD_AFFILIATE", user8);
+    await treasury.grantRoleString("CARD_AFFILIATE", user0);
     await erc20.approve(treasury.address, ether('200'), { from: user })
     await rcfactory.createMarket(
       0,
       "0x0",
+      "slug",
       timestamps,
       tokenURIs,
       artistAddress,
@@ -1684,7 +1696,7 @@ contract("TestFullFlowValid", (accounts) => {
     // 10% card specific affiliates
     await rcfactory.setPotDistribution(0, 0, 0, 0, 100);
     // add user3 to whitelist
-    await rcfactory.addGovernor(user3);
+    await treasury.grantRoleString("GOVERNOR", user3);
     var realitycards2 = await createMarketWithArtistAndCardAffiliatesAndSponsorship(
       200,
       user3
@@ -1731,147 +1743,6 @@ contract("TestFullFlowValid", (accounts) => {
     await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000, user0);
     await withdrawDeposit(1000, user1);
-  });
-
-  it("test circuitBreaker", async () => {
-    /////// SETUP //////
-    await depositDai(1000, user0);
-    await depositDai(1000, user1);
-    await depositDai(1000, user2);
-    // rent losing teams
-    await newRental(1, 0, user0); // collected 28
-    await newRental(2, 1, user1); // collected 56
-    // rent winning team
-    await newRental(1, 2, user0); // collected 7
-    await time.increase(time.duration.weeks(1));
-    await newRental(2, 2, user1); // collected 14
-    await time.increase(time.duration.weeks(1));
-    await newRental(3, 2, user2); // collected 42
-    await time.increase(time.duration.weeks(2));
-    // exit all, progress time so marketLockingTime in the past
-    await realitycards.exitAll({ from: user0 });
-    await realitycards.exitAll({ from: user1 });
-    await realitycards.exitAll({ from: user2 });
-    await time.increase(time.duration.years(1));
-    // winner 1:
-    // totalRentCollected = 147,
-    // total days = 28
-    // user 0 owned for 7 days
-    // user 1 owned for 7 days
-    // user 2 owned for 14 days
-    ////////////////////////
-    await realitycards.lockMarket();
-    await time.increase(time.duration.weeks(24));
-    await realitycards.circuitBreaker();
-    ////////////////////////
-    // total deposits = 139, check:
-    var totalRentCollected = await realitycards.totalRentCollected.call();
-    var totalRentCollectedShouldBe = web3.utils.toWei("147", "ether");
-    var difference = Math.abs(
-      totalRentCollected.toString() - totalRentCollectedShouldBe.toString()
-    );
-    assert.isBelow(difference / totalRentCollected, 0.00001);
-    //check user0 winnings
-    var depositBefore = await treasury.userDeposit.call(user0);
-    await withdraw(user0);
-    var depositAfter = await treasury.userDeposit.call(user0);
-    var winningsSentToUser = depositAfter - depositBefore;
-    var winningsShouldBe = ether("35");
-    var difference = Math.abs(
-      winningsSentToUser.toString() - winningsShouldBe.toString()
-    );
-    assert.isBelow(difference / winningsSentToUser, 0.00001);
-    //check user0 cant withdraw again
-    await expectRevert(withdraw(user0), "Already withdrawn");
-    //check user1 winnings
-    var depositBefore = await treasury.userDeposit.call(user1);
-    await withdraw(user1);
-    var depositAfter = await treasury.userDeposit.call(user1);
-    var winningsSentToUser = depositAfter - depositBefore;
-    var winningsShouldBe = ether("70");
-    var difference = Math.abs(
-      winningsSentToUser.toString() - winningsShouldBe.toString()
-    );
-    assert.isBelow(difference / winningsSentToUser, 0.00001);
-    //check user2 winnings
-    var depositBefore = await treasury.userDeposit.call(user2);
-    await withdraw(user2);
-    var depositAfter = await treasury.userDeposit.call(user2);
-    var winningsSentToUser = depositAfter - depositBefore;
-    var winningsShouldBe = ether("42");
-    var difference = Math.abs(
-      winningsSentToUser.toString() - winningsShouldBe.toString()
-    );
-    assert.isBelow(difference / winningsSentToUser, 0.00001);
-    // check random user can't withdraw
-    await expectRevert(realitycards.withdraw({ from: user6 }), "Paid no rent");
-    // check market pot is empty
-    var marketPot = await treasury.marketPot.call(realitycards.address);
-    assert.isBelow(Math.abs(marketPot.toString()), 10);
-    // withdraw for next test
-    await time.increase(time.duration.minutes(10));
-    await withdrawDeposit(1000, user0);
-    await withdrawDeposit(1000, user1);
-    await withdrawDeposit(1000, user2);
-  });
-
-  it("test circuitBreaker less than 3 months", async () => {
-    /////// SETUP //////
-    await depositDai(1000, user0);
-    await newRental(1, 0, user0); // collected 28
-    await time.increase(time.duration.weeks(3));
-    // exit all, progress time so marketLockingTime in the past
-    await realitycards.exitAll({ from: user0 });
-    await time.increase(time.duration.years(1));
-    await realitycards.lockMarket();
-    await expectRevert(realitycards.circuitBreaker(), "Too early");
-    await time.increase(time.duration.weeks(13));
-    await realitycards.circuitBreaker();
-    // withdraw for next test
-    await time.increase(time.duration.minutes(10));
-    await withdrawDeposit(1000, user0);
-  });
-
-  it("test NFT allocation after event- circuit breaker", async () => {
-    await depositDai(1000, user0);
-    await depositDai(1000, user1);
-    await depositDai(1000, user2);
-    await newRental(1, 0, user0);
-    await newRental(1, 1, user1);
-    await newRental(1, 2, user2);
-    await time.increase(time.duration.weeks(1));
-    await newRental(2, 0, user1); //user 1 winner
-    await time.increase(time.duration.weeks(2));
-    // exit all, progress time so marketLockingTime in the past
-    await realitycards.exitAll({ from: user0 });
-    await realitycards.exitAll({ from: user1 });
-    await realitycards.exitAll({ from: user2 });
-    await time.increase(time.duration.years(1));
-    ////////////////////////
-    await realitycards.lockMarket();
-    await time.increase(time.duration.weeks(12));
-    await realitycards.circuitBreaker();
-    await realitycards.claimCard(0, { from: user1 });
-    await realitycards.claimCard(1, { from: user1 });
-    await expectRevert(
-      realitycards.claimCard(2, { from: user1 }),
-      "Not longest owner"
-    );
-    await realitycards.claimCard(2, { from: user2 });
-    await expectRevert(
-      realitycards.claimCard(2, { from: user2 }),
-      "Already claimed"
-    );
-    var owner = await realitycards.ownerOf(0);
-    assert.equal(owner, user1);
-    var owner = await realitycards.ownerOf(1);
-    assert.equal(owner, user1);
-    var owner = await realitycards.ownerOf(2);
-    assert.equal(owner, user2);
-    await time.increase(time.duration.minutes(10));
-    await withdrawDeposit(1000, user0);
-    await withdrawDeposit(1000, user1);
-    await withdrawDeposit(1000, user2);
   });
 
   it("test NFT allocation after event- winner", async () => {
@@ -1992,18 +1863,21 @@ contract("TestFullFlowValid", (accounts) => {
     await time.increase(time.duration.weeks(2));
     await time.increase(time.duration.hours(1));
 
-    const txTimestamp = await getTimestamp(realitycards.collectRentAllCards());
+    const txTimestamp0 = await getTimestamp(realitycards.collectRent(0));
+    const txTimestamp1 = await getTimestamp(realitycards.collectRent(1));
+    const txTimestamp2 = await getTimestamp(realitycards.collectRent(2));
+
 
     // user0
     const userRecord6 = await treasury.user.call(user0)
-    assert.equal(txTimestamp.toString(), userRecord6[3].toString())
+    assert.equal(txTimestamp0.toString(), userRecord6[3].toString())
     assert.equal(user1, await realitycards.ownerOf(2))
-    assert.equal(txTimestamp.toString(), (await realitycards.timeLastCollected.call(2)).toString())
+    assert.equal(txTimestamp2.toString(), (await realitycards.timeLastCollected.call(2)).toString())
 
     // user1
     const userRecord7 = await treasury.user.call(user1)
-    assert.equal(txTimestamp.toString(), userRecord7[3].toString())
-    assert.equal(txTimestamp.toString(), (await realitycards.timeLastCollected.call(2)).toString())
+    assert.equal(txTimestamp2.toString(), userRecord7[3].toString())
+    assert.equal(txTimestamp2.toString(), (await realitycards.timeLastCollected.call(2)).toString())
 
     const currentTimestamp = (await web3.eth.getBlock("latest")).timestamp;
     const testCurTimestamp = (await web3.eth.getBlock("latest")).timestamp;
@@ -2094,16 +1968,19 @@ contract("TestFullFlowValid", (accounts) => {
         price: secondcardPrice,
       },
     ]);
+    card = await realitycards.card(0);
     assert.equal(
-      (await realitycards.rentCollectedPerCard(0)).toString(),
+      (card.rentCollectedPerCard.toString()),
       28 * 10 ** 18
     );
+    card = await realitycards.card(1);
     assert.equal(
-      (await realitycards.rentCollectedPerCard(1)).toString(),
+      (card.rentCollectedPerCard.toString()),
       56 * 10 ** 18
     );
+    card = await realitycards.card(2);
     assert.equal(
-      (await realitycards.rentCollectedPerCard(2)).toString(),
+      (card.rentCollectedPerCard.toString()),
       rentCollectedByToken2.toString()
     );
 

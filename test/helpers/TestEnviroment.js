@@ -13,6 +13,7 @@ const RCMarket = artifacts.require("./RCMarket.sol");
 const NftHubL2 = artifacts.require("./nfthubs/RCNftHubL2.sol");
 const NftHubL1 = artifacts.require("./nfthubs/RCNftHubL1.sol");
 const RCOrderbook = artifacts.require('./RCOrderbook.sol');
+const RCLeaderboard = artifacts.require('./RCLeaderboard.sol');
 // mockups
 const RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 const SelfDestructMockup = artifacts.require("./mockups/SelfDestructMockup.sol");
@@ -88,12 +89,14 @@ module.exports = class TestEnviroment {
         this.contracts.factory = await RCFactory.new(this.contracts.treasury.address, this.contracts.realitio.address, kleros);
         this.contracts.reference = await RCMarket.new();
         this.contracts.orderbook = await RCOrderbook.new(this.contracts.treasury.address);
+        this.contracts.leaderboard = await RCLeaderboard.new(this.contracts.treasury.address);
         // nft hubs 
         this.contracts.nftHubL2 = await NftHubL2.new(this.contracts.factory.address, dummyAddress);
-        this.contracts.nftHubL1 = await NftHubL1.new();
+        this.contracts.nftHubL1 = await NftHubL1.new(dummyAddress);
         // tell treasury about factory, tell factory about nft hub and reference
         await this.contracts.treasury.setFactoryAddress(this.contracts.factory.address);
         await this.contracts.treasury.setOrderbookAddress(this.contracts.orderbook.address);
+        await this.contracts.treasury.setLeaderboardAddress(this.contracts.leaderboard.address);
         await this.contracts.factory.setReferenceContractAddress(this.contracts.reference.address);
         await this.contracts.factory.setNftHubAddress(this.contracts.nftHubL2.address);
         await this.contracts.treasury.toggleWhitelist();
@@ -114,6 +117,7 @@ module.exports = class TestEnviroment {
         // timestamps are in seconds from now
         var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
         var defaults = {
+            slug: 'my-Test-Slug',
             mode: 0,
             openTime: 0,
             closeTime: 31536000,
@@ -129,13 +133,24 @@ module.exports = class TestEnviroment {
         var closeTime = new BN(options.closeTime).add(await time.latest());
         var resolveTime = new BN(options.resolveTime).add(await time.latest());
         var timestamps = [options.openTime, closeTime, resolveTime];
-        var tokenURIs = [];
-        for (let i = 0; i < options.numberOfCards; i++) {
-            tokenURIs.push("x");
+        // example token URIs padded to be the same length as the IPFS CID
+        const tokenURIText = [
+            "Original-Neutral 12345678909876543210123456789",
+            "Original-Winning 12345678909876543210123456789",
+            "Original-Losing  12345678909876543210123456789",
+            "Print-Winning    12345678909876543210123456789",
+            "Print-Losing     12345678909876543210123456789"
+        ]
+        let tokenURIs = [];
+        for (let j = 0; j < 5; j++) {
+            for (let i = 0; i < options.numberOfCards; i++) {
+                tokenURIs.push(tokenURIText[j]);
+            }
         }
         await this.contracts.factory.createMarket(
             options.mode,
             "0x0",
+            options.slug,
             timestamps,
             tokenURIs,
             options.artistAddress,

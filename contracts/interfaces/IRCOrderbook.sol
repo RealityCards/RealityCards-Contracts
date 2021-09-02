@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: AGPL-3.0
-pragma solidity 0.8.4;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity 0.8.7;
 
 import "./IRCTreasury.sol";
 
@@ -33,6 +33,8 @@ interface IRCOrderbook {
 
     function cleaningLoops() external view returns (uint256);
 
+    function marketCloseLimit() external view returns (uint256);
+
     function nonce() external view returns (uint256);
 
     function cleanWastePile() external;
@@ -45,12 +47,6 @@ interface IRCOrderbook {
 
     function setTreasuryAddress(address _newTreasury) external;
 
-    function addMarket(
-        address _market,
-        uint256 _tokenCount,
-        uint256 _minIncrease
-    ) external;
-
     function addBidToOrderbook(
         address _user,
         uint256 _token,
@@ -61,7 +57,7 @@ interface IRCOrderbook {
 
     function removeBidFromOrderbook(address _user, uint256 _token) external;
 
-    function closeMarket() external;
+    function closeMarket() external returns (bool);
 
     function findNewOwner(uint256 _token, uint256 _timeOwnershipChanged)
         external;
@@ -87,9 +83,7 @@ interface IRCOrderbook {
         uint256 _timeHeldLimit
     ) external;
 
-    function removeUserFromOrderbook(address _user)
-        external
-        returns (bool _userForeclosed);
+    function removeUserFromOrderbook(address _user) external;
 
     function removeOldBids(address _user) external;
 
@@ -104,4 +98,6 @@ interface IRCOrderbook {
     function setCleaningLimit(uint256 _cleaningLimit) external;
 
     function setSearchLimit(uint256 _searchLimit) external;
+
+    function setMarketCloseLimit(uint256 _marketCloseLimit) external;
 }

@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: AGPL-3.0
-pragma solidity 0.8.4;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
@@ -29,6 +29,9 @@ contract EIP712Base is Initializable {
         internal
         initializer
     {
+        cachedChainId = getChainId();
+        cachedName = name;
+        cachedVersion = version;
         _setDomainSeperator(name, version);
     }
 

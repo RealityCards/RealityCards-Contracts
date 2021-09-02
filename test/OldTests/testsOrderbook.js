@@ -16,6 +16,7 @@ var RCMarket = artifacts.require('./RCMarket.sol');
 var NftHubL2 = artifacts.require('./nfthubs/RCNftHubL2.sol');
 var NftHubL1 = artifacts.require('./nfthubs/RCNftHubL1.sol');
 var RCOrderbook = artifacts.require('./RCOrderbook.sol');
+var RCLeaderboard = artifacts.require('./RCLeaderboard.sol');
 // mockups
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 
@@ -34,6 +35,8 @@ contract('TestOrderbook', (accounts) => {
 
   var realitycards;
   var tokenURIs = ['x', 'x', 'x', 'uri', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x']; // 20 tokens
+  // lengthen the array 5x, for the originals, copies, winners, undecided and losers
+  tokenURIs = tokenURIs.concat(tokenURIs.concat(tokenURIs.concat(tokenURIs.concat(tokenURIs))))
   var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
   var maxuint256 = 4294967295;
 
@@ -74,20 +77,24 @@ contract('TestOrderbook', (accounts) => {
     rcfactory = await RCFactory.new(treasury.address, realitio.address, kleros);
     rcreference = await RCMarket.new();
     rcorderbook = await RCOrderbook.new(treasury.address);
+    rcleaderboard = await RCLeaderboard.new(treasury.address);
     // nft hubs
     nftHubL2 = await NftHubL2.new(rcfactory.address, dummyAddress);
-    nftHubL1 = await NftHubL1.new();
+    nftHubL1 = await NftHubL1.new(dummyAddress);
     // tell treasury about factory, tell factory about nft hub and reference
     await treasury.setFactoryAddress(rcfactory.address);
     await rcfactory.setReferenceContractAddress(rcreference.address);
     await rcfactory.setNftHubAddress(nftHubL2.address);
     await treasury.setOrderbookAddress(rcorderbook.address);
+    await treasury.setLeaderboardAddress(rcleaderboard.address);
     await treasury.toggleWhitelist();
 
     // market creation
+    let slug = "slug"
     await rcfactory.createMarket(
       0,
       '0x0',
+      slug,
       timestamps,
       tokenURIs,
       artistAddress,
@@ -112,10 +119,12 @@ contract('TestOrderbook', (accounts) => {
     await rcfactory.addArtist(user8);
     var affiliateAddress = user7;
     await rcfactory.addAffiliate(user7);
-    var slug = 'y';
+
+    let slug = "slug"
     await rcfactory.createMarket(
       0,
       '0x0',
+      slug,
       timestamps,
       tokenURIs,
       artistAddress,
@@ -138,10 +147,12 @@ contract('TestOrderbook', (accounts) => {
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
-    var slug = 'y';
+
+    let slug = "slug"
     await rcfactory.createMarket(
       mode,
       '0x0',
+      slug,
       timestamps,
       tokenURIs,
       artistAddress,
@@ -172,10 +183,12 @@ contract('TestOrderbook', (accounts) => {
     await rcfactory.changeCardAffiliateApproval(user0);
     await rcfactory.addAffiliate(user7);
     await rcfactory.addArtist(user8);
-    var slug = 'y';
+
+    let slug = "slug"
     await rcfactory.createMarket(
       0,
       '0x0',
+      slug,
       timestamps,
       tokenURIs,
       artistAddress,
@@ -194,10 +207,12 @@ contract('TestOrderbook', (accounts) => {
     await rcfactory.addArtist(user8);
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
     var timestamps = [marketOpeningTime, marketLockingTime, oracleResolutionTime];
-    var slug = 'y';
+
+    let slug = "slug"
     await rcfactory.createMarket(
       0,
       '0x0',
+      slug,
       timestamps,
       tokenURIs,
       artistAddress,
@@ -425,7 +440,8 @@ contract('TestOrderbook', (accounts) => {
     await newRentalWithStartingPosition(4.8, 0, user7, user14); // 12, 4.8
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner, user9);
-    var price = await realitycards.cardPrice.call(0);
+    let card = await realitycards.card(0);
+    price = card.cardPrice
     assert.equal(price, web3.utils.toWei('50', 'ether'));
     // check position and price
     // position 0
@@ -505,7 +521,8 @@ contract('TestOrderbook', (accounts) => {
     await newRentalCustomTimeLimit(60, 1, 0, user9);
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner, user9);
-    var price = await realitycards.cardPrice.call(0);
+    card = await realitycards.card(0);
+    price = card.cardPrice
     assert.equal(price.toString(), web3.utils.toWei('60', 'ether'));
     // await rcorderbook.printOrderbook(realitycards.address, 0);
     // console.log("0", user0);
@@ -535,7 +552,8 @@ contract('TestOrderbook', (accounts) => {
     await newRentalCustomTimeLimit(15, 2, 0, user5);
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner, user5);
-    var price = await realitycards.cardPrice.call(0);
+    card = await realitycards.card(0);
+    price = card.cardPrice
     assert.equal(price.toString(), web3.utils.toWei('15', 'ether'));
     var bid = await rcorderbook.getBid.call(realitycards.address, user5, 0);
     assert.equal(bid[4], web3.utils.toWei('15', 'ether'));
@@ -546,7 +564,8 @@ contract('TestOrderbook', (accounts) => {
     await newRentalCustomTimeLimit(10.5, 0.5, 0, user5);
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner, user0);
-    var price = await realitycards.cardPrice.call(0);
+    card = await realitycards.card(0);
+    price = card.cardPrice
     assert.equal(price, web3.utils.toWei('10', 'ether'));
     var bid = await rcorderbook.getBid.call(realitycards.address, user5, 0);
     assert.equal(bid[4], web3.utils.toWei('10', 'ether'));
@@ -557,7 +576,8 @@ contract('TestOrderbook', (accounts) => {
     await newRentalCustomTimeLimit(100, 0.5, 0, user7);
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner, user7);
-    var price = await realitycards.cardPrice.call(0);
+    card = await realitycards.card(0);
+    price = card.cardPrice
     assert.equal(price, web3.utils.toWei('100', 'ether'));
     var bid = await rcorderbook.getBid.call(realitycards.address, user7, 0);
     assert.equal(bid[4], web3.utils.toWei('100', 'ether'));
@@ -572,7 +592,8 @@ contract('TestOrderbook', (accounts) => {
     await newRentalCustomTimeLimit(20, 2, 0, user8);
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner, user7);
-    var price = await realitycards.cardPrice.call(0);
+    card = await realitycards.card(0);
+    price = card.cardPrice
     assert.equal(price, web3.utils.toWei('100', 'ether'));
     var bid = await rcorderbook.getBid.call(realitycards.address, user8, 0);
     assert.equal(bid[4], web3.utils.toWei('20', 'ether'));
@@ -625,10 +646,11 @@ contract('TestOrderbook', (accounts) => {
     // withdraw deposit of 9, will it switch to 0
     await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000, user9);
-    await realitycards.collectRentAllCards();
+    await realitycards.collectRent(0);
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner, user5);
-    var price = await realitycards.cardPrice.call(0);
+    let card = await realitycards.card(0);
+    price = card.cardPrice
     assert.equal(price, web3.utils.toWei('20', 'ether'));
     var bid = await rcorderbook.getBid.call(realitycards.address, user5, 0);
     assert.equal(bid[2], realitycards.address);
@@ -640,10 +662,11 @@ contract('TestOrderbook', (accounts) => {
     await withdrawDeposit(1000, user0);
     await withdrawDeposit(1000, user3);
     await withdrawDeposit(1000, user4);
-    await realitycards.collectRentAllCards();
+    await realitycards.collectRent(0);
     var owner = await realitycards.ownerOf.call(0);
     assert.equal(owner, user1);
-    var price = await realitycards.cardPrice.call(0);
+    card = await realitycards.card(0);
+    price = card.cardPrice
     assert.equal(price, web3.utils.toWei('9', 'ether'));
     var bid = await rcorderbook.getBid.call(realitycards.address, user1, 0);
     assert.equal(bid[2], realitycards.address);

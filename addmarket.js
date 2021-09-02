@@ -2,7 +2,7 @@ const realityCardsFactory = artifacts.require("RCFactory");
 const fs = require('fs');
 let myArgs = process.argv.slice(1, 9);
 
-const SRC = "" // put the event name in here (the folder it is stored in)
+const SRC = "test" // put the event name in here (the folder it is stored in)
 // truffle exec addmarket.js --network matic
 
 // first part of name should match the network name truffle uses
@@ -11,7 +11,7 @@ const xdai_Factory = '0x5b7477AcFa49Cc71530A1119ddbC0d3c30ac8ffE'; //unaudited b
 const dev_Factory = '0x76d22B0065Ada142207E2cDce12322FB3F8c0bAA'; //dev on Sokol
 // const matic_Factory = '0x3d3dCb7f0d05B3297DCBa42D6732373D95355f7c' //dev on Matic
 // const matic_Factory = '0xc15941bF3701cE7bf7084A6864cf226eC956b12a' //mastersync on Matic
-const matic_Factory = '0xeD287646774e7678AeAD6421dB1c201c61068434' // Beta on Matic
+const matic_Factory = '0xda872a9e5252855F7Bc4f3D7e81eB245C9f07A64' // Beta on Matic
 
 module.exports = async () => {
   async function createMarket() {
@@ -21,6 +21,9 @@ module.exports = async () => {
     if (artistAddress != '0x0000000000000000000000000000000000000000') {
       await factory.addArtist(artistAddress)
     }
+
+    // for now duplicate the original tokenURIs for the copies
+    tokenURIs = tokenURIs.concat(tokenURIs.concat(tokenURIs.concat(tokenURIs.concat(tokenURIs))));
 
     console.log("CREATING MARKET");
     console.log("ipfs hash ", ipfsHash);
@@ -34,6 +37,7 @@ module.exports = async () => {
     var transaction = await factory.createMarket(
       0,
       ipfsHash,
+      slug,
       timestamps,
       tokenURIs,
       artistAddress,
@@ -62,6 +66,7 @@ module.exports = async () => {
     tokenURIs = CONFIG.tokenURIs
     ipfsHash = CONFIG.ipfs
     sponsorship = CONFIG.sponsorship
+    slug = CONFIG.slug
 
   } catch (err) {
     console.log(err)

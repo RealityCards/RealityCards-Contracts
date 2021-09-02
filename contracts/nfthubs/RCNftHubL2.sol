@@ -1,6 +1,13 @@
-// SPDX-License-Identifier: AGPL-3.0
-pragma solidity 0.8.4;
-
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity 0.8.7;
+/*
+██████╗ ███████╗ █████╗ ██╗     ██╗████████╗██╗   ██╗ ██████╗ █████╗ ██████╗ ██████╗ ███████╗
+██╔══██╗██╔════╝██╔══██╗██║     ██║╚══██╔══╝╚██╗ ██╔╝██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔════╝
+██████╔╝█████╗  ███████║██║     ██║   ██║    ╚████╔╝ ██║     ███████║██████╔╝██║  ██║███████╗
+██╔══██╗██╔══╝  ██╔══██║██║     ██║   ██║     ╚██╔╝  ██║     ██╔══██║██╔══██╗██║  ██║╚════██║
+██║  ██║███████╗██║  ██║███████╗██║   ██║      ██║   ╚██████╗██║  ██║██║  ██║██████╔╝███████║
+╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝   ╚═╝      ╚═╝    ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚══════╝ 
+*/
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
@@ -28,9 +35,9 @@ contract RCNftHubL2 is
       ║           VARIABLES             ║
       ╚═════════════════════════════════╝*/
 
-    /// @dev so only markets can move NFTs
-    mapping(address => bool) public isMarket;
-    /// @dev the market each NFT belongs to, so that it can only be moved in withdraw state
+    uint256 public override mintCount;
+
+    /// @dev the market each NFT belongs to
     mapping(uint256 => address) public override marketTracker;
 
     /// @dev governance variables
@@ -71,20 +78,10 @@ contract RCNftHubL2 is
         );
         // initialise MetaTransactions
         _initializeEIP712("RealityCardsNftHubL2", "1");
-        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
+        _setupRole(DEFAULT_ADMIN_ROLE, msgSender());
         _setupRole(DEPOSITOR_ROLE, childChainManager);
         factory = IRCFactory(_factoryAddress);
         treasury = factory.treasury();
-    }
-
-    /*╔═════════════════════════════════╗
-      ║          ADD MARKETS            ║
-      ╚═════════════════════════════════╝*/
-
-    /// @dev so only markets can change ownership
-    function addMarket(address _newMarket) external override {
-        require(msgSender() == address(factory), "Not factory");
-        isMarket[_newMarket] = true;
     }
 
     /*╔═════════════════════════════════╗
@@ -92,7 +89,7 @@ contract RCNftHubL2 is
       ╚═════════════════════════════════╝*/
 
     /// @dev address of RC factory contract, so only factory can mint
-    function setFactory(address _newAddress) public onlyUberOwner {
+    function setFactory(address _newAddress) external onlyUberOwner {
         require(_newAddress != address(0), "Must set an address");
         factory = IRCFactory(_newAddress);
         treasury = factory.treasury();
@@ -100,8 +97,14 @@ contract RCNftHubL2 is
 
     function setTokenURI(uint256 _tokenId, string calldata _tokenURI)
         external
-        onlyUberOwner
+        override
     {
+        address _msgSender = msgSender();
+        require(
+            _msgSender == address(factory) ||
+                hasRole(DEFAULT_ADMIN_ROLE, _msgSender),
+            "Not Authorised"
+        );
         _setTokenURI(_tokenId, _tokenURI);
     }
 
@@ -121,6 +124,7 @@ contract RCNftHubL2 is
         );
         require(msgSender() == address(factory), "Not factory");
         marketTracker[_tokenId] = _originalOwner;
+        mintCount++;
         _mint(_originalOwner, _tokenId);
         _setTokenURI(_tokenId, _tokenURI);
     }
@@ -131,8 +135,14 @@ contract RCNftHubL2 is
         address _newOwner,
         uint256 _tokenId
     ) external override {
-        require(isMarket[msgSender()], "Not market");
+        require(marketTracker[_tokenId] == msgSender(), "Not market");
         _transfer(_currentOwner, _newOwner, _tokenId);
+    }
+
+    /// @notice to burn the NFT
+    function burn(uint256 _tokenId) external {
+        _isApprovedOrOwner(msgSender(), _tokenId);
+        _burn(_tokenId);
     }
 
     /*╔═════════════════════════════════╗
@@ -154,7 +164,7 @@ contract RCNftHubL2 is
         } else {
             uint256[] memory tokenIds = abi.decode(depositData, (uint256[]));
             uint256 length = tokenIds.length;
-            for (uint256 i; i < length; i++) {
+            for (uint256 i = 0; i < length; i++) {
                 withdrawnTokens[tokenIds[i]] = false;
                 _mint(user, tokenIds[i]);
             }
@@ -163,7 +173,7 @@ contract RCNftHubL2 is
 
     function withdraw(uint256 tokenId) external override {
         require(
-            _msgSender() == ownerOf(tokenId),
+            _isApprovedOrOwner(msgSender(), tokenId),
             "ChildMintableERC721: INVALID_TOKEN_OWNER"
         );
         withdrawnTokens[tokenId] = true;
@@ -172,7 +182,7 @@ contract RCNftHubL2 is
 
     function withdrawWithMetadata(uint256 tokenId) external override {
         require(
-            msgSender() == ownerOf(tokenId),
+            _isApprovedOrOwner(msgSender(), tokenId),
             "ChildMintableERC721: INVALID_TOKEN_OWNER"
         );
         withdrawnTokens[tokenId] = true;
@@ -214,7 +224,8 @@ contract RCNftHubL2 is
         ) {
             IRCMarket market = IRCMarket(marketTracker[tokenId]);
             require(
-                market.state() == IRCMarket.States.WITHDRAW,
+                market.state() == IRCMarket.States.WITHDRAW ||
+                    market.state() == IRCMarket.States.LOCKED,
                 "Incorrect state"
             );
         }
@@ -266,7 +277,10 @@ contract RCNftHubL2 is
         override(ERC721Enumerable, IRCNftHubL2)
         returns (uint256)
     {
-        return ERC721Enumerable.totalSupply();
+        /// @dev for our purposes the NFTs minted is more useful than the NFTs in circulation
+        /// @dev overriding totalSupply (which can decrement) with mintCount which only increases
+        /// @dev always giving a fresh tokenId to mint to.
+        return mintCount;
     }
 
     /*
