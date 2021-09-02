@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.7;
 
 import "./IRCNftHubL2.sol";
@@ -50,8 +50,6 @@ interface IRCMarket {
     function sponsor(address _sponsor, uint256 _amount) external;
 
     function sponsor(uint256 _amount) external;
-
-    function circuitBreaker() external;
 
     // payouts
     function withdraw() external;

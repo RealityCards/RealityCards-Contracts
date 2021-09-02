@@ -35,7 +35,8 @@ contract('TestFullFlowInvalid', (accounts) => {
 
   var realitycards;
   var tokenURIs = ['x', 'x', 'x', 'uri', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x']; // 20 tokens
-  tokenURIs = tokenURIs.concat(tokenURIs) // double the length of the array for the copies of the NFTs to mint
+  // lengthen the array 5x, for the originals, copies, winners, undecided and losers
+  tokenURIs = tokenURIs.concat(tokenURIs.concat(tokenURIs.concat(tokenURIs.concat(tokenURIs))))
   var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
   var maxuint256 = 4294967295;
 
@@ -115,9 +116,9 @@ contract('TestFullFlowInvalid', (accounts) => {
     var oracleResolutionTime = oneYearInTheFuture;
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = user8;
-    await rcfactory.addArtist(user8);
     var affiliateAddress = user7;
-    await rcfactory.addAffiliate(user7);
+    await treasury.grantRoleString("ARTIST", artistAddress)
+    await treasury.grantRoleString("AFFILIATE", affiliateAddress)
 
     let slug = "slug"
     await rcfactory.createMarket(
@@ -175,11 +176,11 @@ contract('TestFullFlowInvalid', (accounts) => {
     var oracleResolutionTime = oneYearInTheFuture;
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var cardRecipients = [user5, user6, user7, user8, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0];
-    await treasury.grantRole("CARD_AFFILIATE", user5);
-    await treasury.grantRole("CARD_AFFILIATE", user6);
-    await treasury.grantRole("CARD_AFFILIATE", user7);
-    await treasury.grantRole("CARD_AFFILIATE", user8);
-    await treasury.grantRole("CARD_AFFILIATE", user0);
+    await treasury.grantRoleString("CARD_AFFILIATE", user5);
+    await treasury.grantRoleString("CARD_AFFILIATE", user6);
+    await treasury.grantRoleString("CARD_AFFILIATE", user7);
+    await treasury.grantRoleString("CARD_AFFILIATE", user8);
+    await treasury.grantRoleString("CARD_AFFILIATE", user0);
     var artistAddress = '0x0000000000000000000000000000000000000000';
     var affiliateAddress = '0x0000000000000000000000000000000000000000';
 
@@ -211,8 +212,8 @@ contract('TestFullFlowInvalid', (accounts) => {
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
     var artistAddress = user8;
     var affiliateAddress = user7;
-    await rcfactory.addAffiliate(user7);
-    await rcfactory.addArtist(user8);
+    await treasury.grantRoleString("ARTIST", artistAddress)
+    await treasury.grantRoleString("AFFILIATE", affiliateAddress)
 
     let slug = "slug"
     await rcfactory.createMarket(
@@ -243,13 +244,13 @@ contract('TestFullFlowInvalid', (accounts) => {
     var artistAddress = user8;
     var affiliateAddress = user7;
     var cardRecipients = [user5, user6, user7, user8, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0, user0];
-    await treasury.grantRole("ARTIST", user8);
-    await treasury.grantRole("AFFILIATE", user7);
-    await treasury.grantRole("CARD_AFFILIATE", user5);
-    await treasury.grantRole("CARD_AFFILIATE", user6);
-    await treasury.grantRole("CARD_AFFILIATE", user7);
-    await treasury.grantRole("CARD_AFFILIATE", user8);
-    await treasury.grantRole("CARD_AFFILIATE", user0);
+    await treasury.grantRoleString("ARTIST", user8);
+    await treasury.grantRoleString("AFFILIATE", user7);
+    await treasury.grantRoleString("CARD_AFFILIATE", user5);
+    await treasury.grantRoleString("CARD_AFFILIATE", user6);
+    await treasury.grantRoleString("CARD_AFFILIATE", user7);
+    await treasury.grantRoleString("CARD_AFFILIATE", user8);
+    await treasury.grantRoleString("CARD_AFFILIATE", user0);
 
     let slug = "slug"
     await rcfactory.createMarket(

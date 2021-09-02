@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.7;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -9,11 +9,11 @@ import "./IRCFactory.sol";
 interface IRCTreasury {
     function setTokenAddress(address _newToken) external;
 
-    function grantRole(string memory role, address account) external;
+    function grantRoleString(string memory role, address account) external;
 
     function grantRole(bytes32, address) external;
 
-    function revokeRole(string memory role, address account) external;
+    function revokeRoleString(string memory role, address account) external;
 
     function revokeRole(bytes32, address) external;
 
@@ -31,6 +31,13 @@ interface IRCTreasury {
         uint256 _newBid,
         uint256 _timeOfNewBid
     ) external view returns (uint256);
+
+    function checkRole(string memory role, address account)
+        external
+        view
+        returns (bool);
+
+    function uberOwnerCheckTime() external view returns (uint256);
 
     function bridgeAddress() external view returns (address);
 
@@ -83,6 +90,8 @@ interface IRCTreasury {
     function setLeaderboardAddress(address _newAddress) external;
 
     function setFactoryAddress(address _newFactory) external;
+
+    function uberOwnerTest() external;
 
     function deposit(uint256 _amount, address _user) external returns (bool);
 

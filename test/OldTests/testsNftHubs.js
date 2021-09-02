@@ -35,7 +35,8 @@ contract('TestNftHubs', (accounts) => {
 
   var realitycards;
   var tokenURIs = ['x', 'x', 'x', 'uri', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x']; // 20 tokens
-  tokenURIs = tokenURIs.concat(tokenURIs) // double the length of the array for the copies of the NFTs to mint
+  // lengthen the array 5x, for the originals, copies, winners, undecided and losers
+  tokenURIs = tokenURIs.concat(tokenURIs.concat(tokenURIs.concat(tokenURIs.concat(tokenURIs))))
   var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
   var maxuint256 = 4294967295;
 
@@ -217,7 +218,6 @@ contract('TestNftHubs', (accounts) => {
   }
 
   it('xdai nft hub check failures', async () => {
-    await expectRevert(nftHubL2.addMarket(user0), "Not factory");
     await expectRevert(nftHubL2.setFactory(user0, { from: user1 }), "Not approved");
     await expectRevert(nftHubL2.mint(user0, 0, 'd'), "Not factory");
     await expectRevert(nftHubL2.transferNft(user0, user0, 9), "Not market");

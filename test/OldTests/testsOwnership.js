@@ -35,7 +35,8 @@ contract('TestOwnership', (accounts) => {
 
   var realitycards;
   var tokenURIs = ['x', 'x', 'x', 'uri', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x']; // 20 tokens
-  tokenURIs = tokenURIs.concat(tokenURIs) // double the length of the array for the copies of the NFTs to mint
+  // lengthen the array 5x, for the originals, copies, winners, undecided and losers
+  tokenURIs = tokenURIs.concat(tokenURIs.concat(tokenURIs.concat(tokenURIs.concat(tokenURIs))))
   var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
   var maxuint256 = 4294967295;
 
@@ -240,7 +241,7 @@ contract('TestOwnership', (accounts) => {
   it('check onlyOwner is on relevant Factory functions', async () => {
     await expectRevert(rcfactory.setPotDistribution(0, 0, 0, 0, 0, { from: user1 }), 'Not approved');
     await expectRevert(treasury.setMinRental(7 * 24, { from: user1 }), accessControl(user1, "OWNER"));
-    await expectRevert(treasury.grantRole("GOVERNOR", user0, { from: user1 }), "AccessControl: account 0x70997970c51812dc3a010c7d01b50e0d17dc79c8 is missing role 0x6270edb7c868f86fda4adedba75108201087268ea345934db8bad688e1feb91b");
+    await expectRevert(treasury.grantRoleString("GOVERNOR", user0, { from: user1 }), "AccessControl: account 0x70997970c51812dc3a010c7d01b50e0d17dc79c8 is missing role 0x6270edb7c868f86fda4adedba75108201087268ea345934db8bad688e1feb91b");
     await expectRevert(rcfactory.changeMarketCreationGovernorsOnly({ from: user1 }), 'Not approved');
     await expectRevert(rcfactory.setSponsorshipRequired(7 * 24, { from: user1 }), 'Not approved');
     await expectRevert(rcfactory.changeMarketApproval(user0, { from: user1 }), "Not approved");

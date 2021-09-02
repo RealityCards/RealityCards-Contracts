@@ -1,9 +1,17 @@
-// SPDX-License-Identifier: AGPL-3.0
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.7;
-
+/*
+██████╗ ███████╗ █████╗ ██╗     ██╗████████╗██╗   ██╗ ██████╗ █████╗ ██████╗ ██████╗ ███████╗
+██╔══██╗██╔════╝██╔══██╗██║     ██║╚══██╔══╝╚██╗ ██╔╝██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔════╝
+██████╔╝█████╗  ███████║██║     ██║   ██║    ╚████╔╝ ██║     ███████║██████╔╝██║  ██║███████╗
+██╔══██╗██╔══╝  ██╔══██║██║     ██║   ██║     ╚██╔╝  ██║     ██╔══██║██╔══██╗██║  ██║╚════██║
+██║  ██║███████╗██║  ██║███████╗██║   ██║      ██║   ╚██████╗██║  ██║██║  ██║██████╔╝███████║
+╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝   ╚═╝      ╚═╝    ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚══════╝ 
+*/
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/access/Ownable.sol"; // for OpenSea
 import "hardhat/console.sol";
 import "../lib/NativeMetaTransaction.sol";
 import "../interfaces/IRCNftHubL1.sol";
@@ -29,7 +37,7 @@ contract RCNftHubL1 is
     constructor(address _predicate) ERC721("RealityCards", "RC") {
         // initialise MetaTransactions
         _initializeEIP712("RealityCardsNftHubL1", "1");
-        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
+        _setupRole(DEFAULT_ADMIN_ROLE, msgSender());
         _setupRole(PREDICATE_ROLE, _predicate);
     }
 
@@ -85,6 +93,12 @@ contract RCNftHubL1 is
             interfaceId == type(IRCNftHubL1).interfaceId ||
             super.supportsInterface(interfaceId);
     }
+
+    function burn(uint256 _tokenId) external {
+        _isApprovedOrOwner(msgSender(), _tokenId);
+        _burn(_tokenId);
+    }
+
     /*
          ▲  
         ▲ ▲ 

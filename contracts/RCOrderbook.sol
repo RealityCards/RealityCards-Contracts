@@ -1,6 +1,13 @@
-// SPDX-License-Identifier: AGPL-3.0
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.7;
-
+/*
+██████╗ ███████╗ █████╗ ██╗     ██╗████████╗██╗   ██╗ ██████╗ █████╗ ██████╗ ██████╗ ███████╗
+██╔══██╗██╔════╝██╔══██╗██║     ██║╚══██╔══╝╚██╗ ██╔╝██╔════╝██╔══██╗██╔══██╗██╔══██╗██╔════╝
+██████╔╝█████╗  ███████║██║     ██║   ██║    ╚████╔╝ ██║     ███████║██████╔╝██║  ██║███████╗
+██╔══██╗██╔══╝  ██╔══██║██║     ██║   ██║     ╚██╔╝  ██║     ██╔══██║██╔══██╗██║  ██║╚════██║
+██║  ██║███████╗██║  ██║███████╗██║   ██║      ██║   ╚██████╗██║  ██║██║  ██║██████╔╝███████║
+╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝   ╚═╝      ╚═╝    ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚══════╝ 
+*/
 import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "hardhat/console.sol";
 import "./lib/NativeMetaTransaction.sol";
@@ -96,14 +103,6 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
     modifier onlyUberOwner() {
         require(
             treasury.checkPermission(UBER_OWNER, msgSender()),
-            "Extremely Verboten"
-        );
-        _;
-    }
-
-    modifier onlyFactory() {
-        require(
-            treasury.checkPermission(FACTORY, msgSender()),
             "Extremely Verboten"
         );
         _;
@@ -228,7 +227,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
         address _prevUserAddress
     ) external override onlyMarkets {
         address _market = msgSender();
-        if (!bidExists(_market, _market, _card)) {
+        if (user[_market].length == 0) {
             uint256 _cardCount = IRCMarket(_market).numberOfCards();
             uint256 _minIncrease = IRCMarket(_market)
                 .minimumPriceIncreasePercent();
@@ -378,7 +377,6 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
         treasury.increaseBidRate(_user, _price);
         if (user[_user][index[_user][_market][_card]].prev == _market) {
             address _oldOwner = user[_user][index[_user][_market][_card]].next;
-            transferCard(_market, _card, _oldOwner, _user, _price);
             treasury.updateRentalRate(
                 _oldOwner,
                 _user,
@@ -386,6 +384,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
                 _price,
                 block.timestamp
             );
+            transferCard(_market, _card, _oldOwner, _user, _price);
         }
     }
 
@@ -446,7 +445,6 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
         treasury.decreaseBidRate(_user, _price);
         if (_wasOwner && _currUser.prev == _market) {
             // if owner before and after, update the price difference
-            transferCard(_market, _card, _user, _user, _currUser.price);
             treasury.updateRentalRate(
                 _user,
                 _user,
@@ -454,6 +452,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
                 _currUser.price,
                 block.timestamp
             );
+            transferCard(_market, _card, _user, _user, _currUser.price);
         } else if (_wasOwner && _currUser.prev != _market) {
             // if owner before and not after, remove the old price
             address _newOwner = user[_market][index[_market][_market][_card]]
@@ -570,6 +569,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
             market[_market].minimumRentalDuration;
         uint256 _newPrice;
         uint256 _loopCounter = 0;
+        bool validOwnerFound = false;
 
         // delete current owner
         do {
@@ -580,17 +580,16 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
             );
             _loopCounter++;
             // delete next bid if foreclosed
-        } while (
-            treasury.foreclosureTimeUser(
-                _head.next,
-                _newPrice,
-                _timeOwnershipChanged
-            ) <
-                minimumTimeToOwnTo &&
-                _loopCounter < maxDeletions
-        );
+            validOwnerFound =
+                treasury.foreclosureTimeUser(
+                    _head.next,
+                    _newPrice,
+                    _timeOwnershipChanged
+                ) >
+                minimumTimeToOwnTo;
+        } while (!validOwnerFound && _loopCounter < maxDeletions);
 
-        if (_loopCounter != maxDeletions) {
+        if (validOwnerFound) {
             // the old owner is dead, long live the new owner
             _newOwner = user[_market][index[_market][_market][_card]].next;
             treasury.updateRentalRate(
@@ -639,7 +638,7 @@ contract RCOrderbook is NativeMetaTransaction, IRCOrderbook {
     function closeMarket() external override onlyMarkets returns (bool) {
         address _market = msgSender();
         // check if the market was ever added to the orderbook
-        if (bidExists(_market, _market, 0)) {
+        if (user[_market].length != 0) {
             closedMarkets.push(_market);
             uint256 i = user[_market].length; // start on the last record so we can easily pop()
             uint256 _limit = 0;

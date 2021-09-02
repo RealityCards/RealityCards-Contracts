@@ -78,7 +78,16 @@ contract("RealityCardsTests", (accounts) => {
             // Assert this market now exists
             assert.equal(typeof markets[nextMarket] === "undefined", false);
             // Non-factory try and add a market
-            await expectRevert(treasury.grantRole("MARKET", alice), rc.accessControl(admin, "FACTORY"));
+            await expectRevert(treasury.grantRoleString("MARKET", alice), rc.accessControl(admin, "FACTORY"));
+        });
+
+        it("Market specific whitelist ", async () => {
+            await rc.deposit(10, alice);
+            await rc.deposit(10, bob);
+            await treasury.grantRoleString("TEST_WHITELIST", alice)
+            await treasury.updateMarketWhitelist(markets[markets.length - 1].address, web3.utils.soliditySha3("TEST_WHITELIST"))
+            await rc.newRental({ from: alice }); // new rental works
+            expectRevert(rc.newRental({ from: bob }), "Not approved for this market")
         });
 
         it("check that non markets cannot call market only functions on Treasury", async () => {
@@ -455,18 +464,48 @@ contract("RealityCardsTests", (accounts) => {
     describe.skip("Limit tests ", () => {
         it(' Max NFTs to mint ', async () => {
             let success = true
-            let i = 30;
+            let i = 45;
+            await rc.deposit(1000, alice)
+            dance:
             while (success == true) {
                 try {
-                    markets.push(await rc.createMarket({ numberOfCards: i }))
+                    await factory.setCardLimit(i)
+                    markets.push(await rc.createMarket({ numberOfCards: i, closeTime: 7000, resolveTime: 7000 }))
                 } catch (error) {
-
                     console.log("Failed on ", i);
                     success = false
+                    break dance;
                 }
-                i++
+                console.log("Created a market with %s cards", i);
+                for (let j = 0; j < i; j++) {
+                    try {
+                        await rc.newRental({ market: markets[markets.length - 1], from: alice, outcome: j })
+                    } catch (error) {
+                        console.log("Failed renting card %s in market %s", j, (markets.length - 1));
+                        success = false
+                        break dance;
+                    }
+                }
 
-                console.log("Creted a market with %s cards", i);
+                await time.increase(time.duration.hours(1));
+
+                for (let j = 0; j < i; j++) {
+                    markets[markets.length - 1].collectRent(j)
+                }
+
+                await time.increase(time.duration.hours(1));
+                let locked = false;
+                let lockCounter = 0;
+                while (!locked) {
+                    await markets[markets.length - 1].lockMarket()
+                    let state = await markets[markets.length - 1].state()
+                    locked = state == 2;
+                    lockCounter++;
+                }
+
+                console.log("Market locked after %s attempts", lockCounter);
+
+                i++
             }
         }).timeout(2000000)
         it(' Max search iterations ', async () => {
@@ -1600,4 +1639,54 @@ contract("RealityCardsTests", (accounts) => {
         })
 
     });
+    describe("Factory tests", () => {
+        it("Token URIs updated for winners, losers, originals and copies", async () => {
+            await rc.deposit(100, alice)
+            await rc.deposit(100, bob)
+            markets.push(await rc.createMarket({ closeTime: 600, resolveTime: 600, numberOfCards: 2 }))
+            await rc.newRental({ market: markets[1], from: alice });
+            await rc.newRental({ market: markets[1], from: alice, outcome: 1 });
+            await time.increase(500)
+            await markets[1].exit(0, { from: alice })
+            await markets[1].exit(1, { from: alice })
+            await rc.newRental({ market: markets[1], from: bob });
+            await rc.newRental({ market: markets[1], from: bob, outcome: 1 });
+            await time.increase(200)
+            let OriginalWinnerID = await markets[1].getTokenId(0)
+            let OriginalLoserID = await markets[1].getTokenId(1)
+            let OriginalNeutralURI = await nftHubL2.tokenURI(OriginalWinnerID)
+
+            await markets[1].lockMarket();
+            await markets[1].setAmicableResolution(0)
+            await markets[1].claimCard(0, { from: alice })
+            await markets[1].claimCard(1, { from: alice })
+            await markets[1].claimCard(0, { from: bob })
+            await markets[1].claimCard(1, { from: bob })
+            let OriginalWinnerURI = await nftHubL2.tokenURI(OriginalWinnerID)
+            let OriginalLoserURI = await nftHubL2.tokenURI(OriginalLoserID)
+            let PrintWinnerURI = await nftHubL2.tokenURI(2)
+            let PrintLoserURI = await nftHubL2.tokenURI(3)
+
+            assert.equal(OriginalWinnerURI, "Original-Winning 12345678909876543210123456789")
+            assert.equal(OriginalNeutralURI, "Original-Neutral 12345678909876543210123456789")
+            assert.equal(OriginalLoserURI, "Original-Losing  12345678909876543210123456789")
+            assert.equal(PrintWinnerURI, "Print-Winning    12345678909876543210123456789")
+            assert.equal(PrintLoserURI, "Print-Losing     12345678909876543210123456789")
+
+        })
+        it.skip("Backup view function", async () => {
+            let expectedResults = 10
+
+            for (let i = 0; i < (expectedResults * 2); i++) {
+                markets.push(await rc.createMarket({ slug: "marketnumber " + markets.length }))
+            }
+            await time.increase(time.duration.hours(1))
+            let results = await factory.getMarketInfo(0, 1, 30, 0)
+
+            console.log("number of results ", expectedResults);
+            console.log("number of markets ", markets.length);
+            console.log("Results ", results);
+
+        })
+    })
 })

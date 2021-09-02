@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.7;
 
 // Just a handy file to copy/paste into remix
@@ -146,7 +146,7 @@ interface IRCFactory {
 
     function changeApprovedArtistsOnly() external;
 
-    function changeApprovedAffilliatesOnly() external;
+    function changeApprovedAffiliatesOnly() external;
 
     function setSponsorshipRequired(uint256 _amount) external;
 
