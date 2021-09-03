@@ -197,6 +197,12 @@ module.exports = async (deployer, network, accounts) => {
       exit
     );
 
+    await nftHubL1.grantRole(
+      '0x12ff340d0cd9c652c747ca35727e68c547d0f0bfa7758d2e77f75acef481b4f2',
+      accounts[0]
+    );
+    await nftHubL1.mint(accounts[0], 1);
+
     /**************************************
      *                                     *
      *    END LOCAL TESTING SETUP HERE     *
