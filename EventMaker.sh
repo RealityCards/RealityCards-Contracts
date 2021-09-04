@@ -30,8 +30,8 @@ CARD_AFFILIATE2=""
 CARD_AFFILIATE3=""
 CARD_AFFILIATE4=""
 CDN="https://cdn.realitycards.io/"
-IMAGES="images/"
-NFT="nftmetadata/"
+IMAGES="V1/"
+NFT="V1/"
 ZERO_ADDRESS="0x0000000000000000000000000000000000000000"
 ##################
 
@@ -172,6 +172,7 @@ fi
 
 CONFIG='{\n  "start": "'${START_TIME}'",'
 CONFIG=$CONFIG'\n  "end": "'${END_TIME}'",'
+CONFIG=$CONFIG'\n  "slug": "'$SLUG'",'
 CONFIG=$CONFIG'\n  "oracle": "'${ORACLE_QUESTION}'",'
 CONFIG=$CONFIG'\n  "ipfs": "'${ipfs_hash}'",'
 CONFIG=$CONFIG'\n  "artist": "'${ARTIST}'",'
