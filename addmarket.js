@@ -1,4 +1,5 @@
 const realityCardsFactory = artifacts.require("RCFactory");
+const realityCardsTreasury = artifacts.require("RCTreasury");
 const fs = require('fs');
 let myArgs = process.argv.slice(1, 9);
 
@@ -18,9 +19,18 @@ module.exports = async () => {
   async function createMarket() {
     // create market
     let factory = await realityCardsFactory.at(factoryAddress);
-    console.log("Adding Artist");
     if (artistAddress != '0x0000000000000000000000000000000000000000') {
-      await factory.addArtist(artistAddress)
+      console.log("Checking Artist");
+      const ARTIST = '0x6bdd6eec7bc953f67e3ae90ab8ab4bd466543d6dbd19cb8d62eed396b8427a05'
+      let treasuryAddress = await factory.treasury()
+      let treasury = await realityCardsTreasury.at(treasuryAddress)
+      let isArtist = await treasury.hasRole(ARTIST, artistAddress)
+      if (!isArtist) {
+        console.log("Adding Artist")
+        await treasury.grantRole(ARTIST, artistAddress)
+      } else {
+        console.log("Artist already approved")
+      }
     }
 
     // for now duplicate the original tokenURIs for the copies
@@ -28,6 +38,7 @@ module.exports = async () => {
 
     console.log("CREATING MARKET");
     console.log("ipfs hash ", ipfsHash);
+    console.log("slug ", slug)
     console.log("timestamps", timestamps);
     console.log("tokenURIs", tokenURIs);
     console.log("artistAddress", artistAddress);
