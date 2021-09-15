@@ -13,7 +13,7 @@ const dev_Factory = '0x76d22B0065Ada142207E2cDce12322FB3F8c0bAA'; //dev on Sokol
 // const matic_Factory = '0x3d3dCb7f0d05B3297DCBa42D6732373D95355f7c' //dev on Matic
 // const matic_Factory = '0xc15941bF3701cE7bf7084A6864cf226eC956b12a' //mastersync on Matic
 // const matic_Factory = '0xda872a9e5252855F7Bc4f3D7e81eB245C9f07A64' // Beta on Matic
-const matic_Factory = '0xfac7000F7903A318D00b84B5715A394a1C757c97' // V1 
+const matic_Factory = '0xFAc70001831b8608AB4616c9FeEaf20EEA1018d5' // V1.1
 
 module.exports = async () => {
   async function createMarket() {
