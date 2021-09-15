@@ -10,11 +10,12 @@ ARTIST=""
 ARTIST_LINK=""
 EVENT_NAME=""
 ORACLE_QUESTION=""
+DESCRIPTION=''
 SRC_NAME=""
 SLUG=""
 CATEGORY="Other"
 US_ALLOWED="true"
-IMAGE_FORMAT=".jpg"
+IMAGE_FORMAT=".png"
 NUMBER_OF_CARDS=""
 CARD0=""
 CARD1=""
@@ -35,6 +36,11 @@ NFT="V1/"
 ZERO_ADDRESS="0x0000000000000000000000000000000000000000"
 ##################
 
+# remove quotation marks (replace with apostophies)
+DESCRIPTION=${DESCRIPTION//\"/\'}
+# remove newlines
+DESCRIPTION=${DESCRIPTION//$'\n'/}
+
 mkdir -p events/$SRC_NAME
 eventJSON='{\n  "name": "'$EVENT_NAME'",'
 eventJSON=$eventJSON'\n  "slug": "'$SLUG'",'
@@ -45,6 +51,7 @@ eventJSON=$eventJSON'\n  "artistLink": "'$ARTIST_LINK'",'
 fi
 eventJSON=$eventJSON'\n  "category": "'$CATEGORY'",'
 eventJSON=$eventJSON'\n  "US_allowed": "'$US_ALLOWED'",'
+eventJSON=$eventJSON'\n  "description": "'$DESCRIPTION'",'
 eventJSON=$eventJSON'\n  "cards": {'
 for ((i=0;i<$NUMBER_OF_CARDS;i++))
 do
