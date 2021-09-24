@@ -139,8 +139,9 @@ if [ $i -lt "$(($NUMBER_OF_CARDS-1))" ]
 done
 ORACLE_QUESTION=$ORACLE_QUESTION${CATEGORY}'␟en_US'
 
-NOW=$(date)
 EPOCH=$(TZ=UTC date "+%s")
+START_DATE=$(TZ=UTC date --date "Jan 1, 1970 00:00:00 +0000 + ${START_TIME} seconds")
+END_DATE=$(TZ=UTC date --date "Jan 1, 1970 00:00:00 +0000 + ${END_TIME} seconds")
 if [ $END_TIME -lt $START_TIME ];then
     echo WARNING: ENDING BEFORE STARTING
 fi
@@ -149,14 +150,14 @@ if [ $START_TIME -lt $EPOCH ]; then
 else
     OFFSET=$((START_TIME - EPOCH))
     if [ $OFFSET -lt 120 ];then
-        echo STARTING IN $OFFSET SECONDS 
+        echo STARTING IN $OFFSET SECONDS on ${START_DATE} UTC
     else
         OFFSET=$(( OFFSET / 60 ))
         if [ $OFFSET -lt 120 ];then
-            echo STARTING IN $OFFSET MINUTES 
+            echo STARTING IN $OFFSET MINUTES on ${START_DATE} UTC
         else
             OFFSET=$(( OFFSET / 60 ))
-            echo STARTING IN $OFFSET HOURS 
+            echo STARTING IN $OFFSET HOURS on ${START_DATE} UTC
         fi
     fi
 fi
@@ -165,14 +166,14 @@ if [ $END_TIME -lt $EPOCH ]; then
 else
     OFFSET=$((END_TIME - EPOCH))
     if [ $OFFSET -lt 120 ];then
-        echo ENDING IN $OFFSET SECONDS 
+        echo ENDING IN $OFFSET SECONDS on ${END_DATE} UTC
     else
         OFFSET=$(( OFFSET / 60 ))
         if [ $OFFSET -lt 120 ];then
-            echo ENDING IN $OFFSET MINUTES 
+            echo ENDING IN $OFFSET MINUTES on ${END_DATE} UTC
         else
             OFFSET=$(( OFFSET / 60 ))
-            echo ENDING IN $OFFSET HOURS 
+            echo ENDING IN $OFFSET HOURS on ${END_DATE} UTC
         fi
     fi
 fi
