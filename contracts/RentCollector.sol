@@ -14,6 +14,7 @@ import "./interfaces/IRCTreasury.sol";
 import "./interfaces/IRCMarket.sol";
 import "./interfaces/IRCOrderbook.sol";
 import "./interfaces/IRCFactory.sol";
+import "./interfaces/ITimeKeeper.sol";
 
 /// @title Reality Cards, Rent Collector
 /// @author Daniel Chilvers
@@ -23,10 +24,17 @@ contract RentCollector is AccessControl {
     IRCTreasury public treasury;
     IRCOrderbook public orderbook;
     uint256 marketCount;
+    ITimeKeeper public timeKeeper;
 
     constructor() {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         marketCount = 10;
+    }
+
+    // we need a timestamp for the view functions
+    function setTimekeeper(address _timeKeeper) external {
+        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender));
+        timeKeeper = ITimeKeeper(_timeKeeper);
     }
 
     function setContracts(address _factory) external {
@@ -65,8 +73,52 @@ contract RentCollector is AccessControl {
         }
     }
 
+    function timekeeperTime() external view returns (uint256) {
+        return timeKeeper.latestTimestamp();
+    }
+
+    function expectedForeclosureTime(address _marketAddress, uint256 _card)
+        external
+        view
+        returns (uint256)
+    {
+        IRCMarket _market = IRCMarket(_marketAddress);
+        address _owner = _market.ownerOf(_card);
+        return treasury.foreclosureTimeUser(_owner, 0, 0);
+    }
+
+    function cardTimeLastCollected(address _marketAddress, uint256 _card)
+        public
+        view
+        returns (uint256)
+    {
+        IRCMarket _market = IRCMarket(_marketAddress);
+        uint256 timeLastCollected = _market.timeLastCollected(_card);
+        return timeLastCollected;
+    }
+
+    function cardTimeLimitTimestamp(address _marketAddress, uint256 _card)
+        external
+        view
+        returns (uint256)
+    {
+        IRCMarket _market = IRCMarket(_marketAddress);
+        address _owner = _market.ownerOf(_card);
+        uint256 timeLastCollected = cardTimeLastCollected(
+            _marketAddress,
+            _card
+        );
+        IRCOrderbook.Bid memory bid = orderbook.getBid(
+            address(_market),
+            _owner,
+            _card
+        );
+        return timeLastCollected + bid.timeHeldLimit;
+    }
+
     function hasCardExpired() external view returns (bool) {
         address[] memory markets = new address[](marketCount);
+        uint256 latestTime = timeKeeper.latestTimestamp();
         (markets, , , ) = factory.getMarketInfo(
             IRCMarket.Mode(0),
             1,
@@ -91,7 +143,7 @@ contract RentCollector is AccessControl {
                     0,
                     0
                 );
-                if (foreclosureTime < block.timestamp) {
+                if (foreclosureTime < latestTime) {
                     return true;
                 }
                 // has card hit time limit?
@@ -103,7 +155,7 @@ contract RentCollector is AccessControl {
                 );
                 uint256 timeLimitTimestamp = timeLastCollected +
                     bid.timeHeldLimit;
-                if (timeLimitTimestamp < block.timestamp) {
+                if (timeLimitTimestamp < latestTime) {
                     return true;
                 }
             }
