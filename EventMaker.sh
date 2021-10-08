@@ -80,7 +80,9 @@ cardJSON='{\n  "name": "'${!card}'",'
 cardJSON=$cardJSON'\n  "description": "This token represents a stake in the outcome '"'"$EVENT_NAME"'"
 cardJSON=$cardJSON' at Reality Cards, the planet'"'"'s first NFT-based prediction market",'
 cardJSON=$cardJSON'\n  "image": "'$CDN$IMAGES$SRC_NAME'/'${!card// /-}$IMAGE_FORMAT'",'
-cardJSON=$cardJSON'\n  "affiliation": "Reality Cards"'
+cardJSON=$cardJSON'\n  "image-350x350": "'$CDN$IMAGES$SRC_NAME'/'${!card// /-}'-350x350'$IMAGE_FORMAT'",'
+cardJSON=$cardJSON'\n  "affiliation": "Reality Cards",'
+cardJSON=$cardJSON'\n  "external_url": "https://beta.realitycards.io/cards/'$SLUG'/'$i'"'
 cardJSON=$cardJSON'\n}'
 
 # save locally 
