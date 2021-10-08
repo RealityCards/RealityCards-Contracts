@@ -3,22 +3,22 @@
 ###################
 #### Setup ########
 ###################
-START_TIME=""
-END_TIME=""
+START_TIME="1633691595"
+END_TIME="1633961595"
 SPONSORSHIP="0"
 ARTIST=""
 ARTIST_LINK=""
-EVENT_NAME=""
-ORACLE_QUESTION=""
+EVENT_NAME="My test event"
+ORACLE_QUESTION="some oracle question"
 DESCRIPTION=''
-SRC_NAME=""
-SLUG=""
+SRC_NAME="testEvent"
+SLUG="testEvent"
 CATEGORY="Other"
 US_ALLOWED="true"
 IMAGE_FORMAT=".png"
-NUMBER_OF_CARDS=""
-CARD0=""
-CARD1=""
+NUMBER_OF_CARDS="2"
+CARD0="Yes"
+CARD1="No"
 CARD2=""
 CARD3=""
 CARD4=""
@@ -71,7 +71,7 @@ eventJSON=$eventJSON'\n}'
 
 echo -e "$eventJSON" > events/$SRC_NAME/event.json
 
-# now make the token.json files
+## now make the token.json files ##
 
 for ((i=0;i<$NUMBER_OF_CARDS;i++))
 do
@@ -83,7 +83,27 @@ cardJSON=$cardJSON'\n  "image": "'$CDN$IMAGES$SRC_NAME'/'${!card// /-}$IMAGE_FOR
 cardJSON=$cardJSON'\n  "affiliation": "Reality Cards"'
 cardJSON=$cardJSON'\n}'
 
+# save locally 
 echo -e "$cardJSON" > events/$SRC_NAME/token$i.json
+done
+
+# save to IPFS
+TOKEN_URIS='['
+for ((i=0;i<$NUMBER_OF_CARDS;i++))
+do
+
+ipfscommand=$(curl -s -F file=@events/$SRC_NAME/token$i.json "https://api.thegraph.com/ipfs/api/v0/add")
+temp=${ipfscommand##*Hash}
+ipfs_hash=${temp:3:46}
+
+TOKEN_URIS=$TOKEN_URIS'"ipfs://'$ipfs_hash'"'
+
+if [ $i -lt "$(($NUMBER_OF_CARDS-1))" ]
+    then
+        TOKEN_URIS=$TOKEN_URIS','
+    else
+        TOKEN_URIS=$TOKEN_URIS']'
+    fi
 done
 
 ### BUILD THE CONFIG JSON ###
@@ -120,21 +140,17 @@ if [ $i -lt "$(($NUMBER_OF_CARDS-1))" ];then
     fi
 done
 
-#build oracle question and token URIs (both based on card numbers)
+#build oracle question 
 ORACLE_QUESTION=$ORACLE_QUESTION'␟'
-TOKEN_URIS='['
 for ((i=0;i<$NUMBER_OF_CARDS;i++))
 do
 card='CARD'$i
 ORACLE_QUESTION=$ORACLE_QUESTION'\"'${!card}'\"'
-TOKEN_URIS=$TOKEN_URIS'"'$CDN$NFT$SRC_NAME'/token'$i'.json"'
 if [ $i -lt "$(($NUMBER_OF_CARDS-1))" ]
     then
         ORACLE_QUESTION=$ORACLE_QUESTION','
-        TOKEN_URIS=$TOKEN_URIS','
     else
         ORACLE_QUESTION=$ORACLE_QUESTION'␟'
-        TOKEN_URIS=$TOKEN_URIS']'
     fi
 done
 ORACLE_QUESTION=$ORACLE_QUESTION${CATEGORY}'␟en_US'
