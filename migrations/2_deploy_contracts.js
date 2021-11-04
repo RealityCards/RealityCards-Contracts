@@ -27,9 +27,9 @@ var RCFactory = artifacts.require('./RCFactory.sol');
 var RCMarket = artifacts.require('./RCMarket.sol');
 var RCOrderbook = artifacts.require('./RCOrderbook.sol');
 var RCLeaderboard = artifacts.require('./RCLeaderboard.sol');
+var RCAchievements = artifacts.require('./nfthubs/RCAchievements.sol');
 var NftHubL2 = artifacts.require('./nfthubs/RCNftHubL2.sol');
 var NftHubL1 = artifacts.require('./nfthubs/RCNftHubL1.sol');
-var RCAchievements = artifacts.require('./nfthubs/RCAchievements.sol');
 var RealitioMockup = artifacts.require('./mockups/RealitioMockup.sol');
 var tokenMockup = artifacts.require('./mockups/tokenMockup.sol');
 
@@ -89,6 +89,8 @@ module.exports = async (deployer, network, accounts) => {
     leaderboard = await RCLeaderboard.deployed();
     await deployer.deploy(NftHubL2, factory.address, childChainManager);
     nftHubL2 = await NftHubL2.deployed();
+    await deployer.deploy(RCAchievements, childChainManager);
+    achievements = await RCAchievements.deployed();
     // tell treasury about factory & ARB, tell factory about nft hub and reference
     await treasury.setFactoryAddress(factory.address, { gas: 200000 });
     await factory.setReferenceContractAddress(reference.address, {
@@ -107,6 +109,7 @@ module.exports = async (deployer, network, accounts) => {
     console.log('RCMarketAddress    ', RCMarket.address);
     console.log('RCOrderbookAddress ', RCOrderbook.address);
     console.log('NFTHubL2Address    ', nftHubL2.address);
+    console.log('RCAchievements     ', achievements.address);
     console.log('Realitio           ', realitio.address);
   } else if (
     network === 'teststage2' ||
