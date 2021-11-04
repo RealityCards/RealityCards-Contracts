@@ -24,6 +24,8 @@ CARD3=""
 CARD4=""
 CARD5=""
 CARD6=""
+GIVEAWAY_TYPE=""
+GIVEAWAY_TEXT=""
 AFFILIATE=""
 CARD_AFFILIATE0=""
 CARD_AFFILIATE1=""
@@ -47,7 +49,7 @@ eventJSON=$eventJSON'\n  "slug": "'$SLUG'",'
 if [ "$ARTIST_LINK" == "" ];then
     echo WARNING: ARTIST LINK NOT SET
 else
-eventJSON=$eventJSON'\n  "artistLink": "'$ARTIST_LINK'",'
+    eventJSON=$eventJSON'\n  "artistLink": "'$ARTIST_LINK'",'
 fi
 eventJSON=$eventJSON'\n  "category": "'$CATEGORY'",'
 eventJSON=$eventJSON'\n  "US_allowed": "'$US_ALLOWED'",'
@@ -66,7 +68,18 @@ do
         eventJSON=$eventJSON'\n    }'
     fi
 done
+if [ "$GIVEAWAY_TEXT" == "" ];then
+    if [ "$GIVEAWAY_TYPE" == "" ];then
+        echo NO GIVEAWAY TYPE SET
 eventJSON=$eventJSON'\n  }'
+    fi
+else
+eventJSON=$eventJSON'\n  },'
+    eventJSON=$eventJSON'\n  "giveaway": {'
+    eventJSON=$eventJSON'\n  "type": "'$GIVEAWAY_TYPE'",'
+    eventJSON=$eventJSON'\n  "text": "'$GIVEAWAY_TEXT'"'
+    eventJSON=$eventJSON'\n  }'
+fi
 eventJSON=$eventJSON'\n}'
 
 echo -e "$eventJSON" > events/$SRC_NAME/event.json
