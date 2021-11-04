@@ -60,7 +60,7 @@ contract RCAchievements is
         string imageURI,
         string requirements
     );
-    event achievementAwarded(address user, uint256 achievementIndex);
+    event achievementAwarded(address user, uint256 achievementIndex, uint256 tokenId);
     event userEligableForAchievement(address user, uint256 achievementIndex);
 
     /*╔═════════════════════════════════╗
@@ -112,7 +112,7 @@ contract RCAchievements is
     function awardAchievement(address user, uint256 achievementIndex) public {
         _mint(user, mintCount);
         _setTokenURI(mintCount, achievementArray[achievementIndex].imageURI);
-        emit achievementAwarded(user, achievementIndex);
+        emit achievementAwarded(user, achievementIndex, mintCount);
     }
 
     function allowAchievement(address user, uint256 achievementIndex) public {
