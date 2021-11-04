@@ -7,11 +7,11 @@ const { BN, time } = require('@openzeppelin/test-helpers');
 const { ZERO_ADDRESS } = require('@openzeppelin/test-helpers/src/constants');
 
 const argv = require('minimist')(process.argv.slice(2), {
-  string: ['ipfs_hash'],
+  string: ['ipfs_hash']
 });
 
 const argvMigration = require('minimist')(process.argv.slice(2), {
-  string: ['migration'],
+  string: ['migration']
 });
 const migration = argvMigration['migration'];
 let runMigration = null;
@@ -29,6 +29,7 @@ var RCOrderbook = artifacts.require('./RCOrderbook.sol');
 var RCLeaderboard = artifacts.require('./RCLeaderboard.sol');
 var NftHubL2 = artifacts.require('./nfthubs/RCNftHubL2.sol');
 var NftHubL1 = artifacts.require('./nfthubs/RCNftHubL1.sol');
+var RCAchievements = artifacts.require('./nfthubs/RCAchievements.sol');
 var RealitioMockup = artifacts.require('./mockups/RealitioMockup.sol');
 var tokenMockup = artifacts.require('./mockups/tokenMockup.sol');
 
@@ -91,7 +92,7 @@ module.exports = async (deployer, network, accounts) => {
     // tell treasury about factory & ARB, tell factory about nft hub and reference
     await treasury.setFactoryAddress(factory.address, { gas: 200000 });
     await factory.setReferenceContractAddress(reference.address, {
-      gas: 100000,
+      gas: 100000
     });
     await factory.setNftHubAddress(nftHubL2.address, { gas: 100000 });
     await factory.setRealitioAddress(realitio.address, { gas: 100000 });
@@ -161,6 +162,8 @@ module.exports = async (deployer, network, accounts) => {
     nftHubL2 = await NftHubL2.deployed();
     await deployer.deploy(NftHubL1, MintableERC721PredicateProxy);
     nftHubL1 = await NftHubL1.deployed();
+    await deployer.deploy(RCAchievements, childChainManager);
+    achievements = await RCAchievements.deployed();
     // tell treasury and factory about various things
     await treasury.setFactoryAddress(factory.address);
     await treasury.setOrderbookAddress(orderbook.address);
@@ -172,7 +175,7 @@ module.exports = async (deployer, network, accounts) => {
     // fund accounts
     for (let index = 0; index < 101; index++) {
       await erc20.transfer(accounts[index], '1000000000000000000000', {
-        from: accounts[0],
+        from: accounts[0]
       });
     }
     //whitelist accounts
@@ -191,6 +194,7 @@ module.exports = async (deployer, network, accounts) => {
       market,
       factory,
       treasury,
+      achievements,
       ipfsHashes,
       time,
       createMarket,
@@ -218,6 +222,7 @@ module.exports = async (deployer, network, accounts) => {
     console.log('factory.address: ', factory.address);
     console.log('orderbook.address: ', orderbook.address);
     console.log('leaderboard.address: ', leaderboard.address);
+    console.log('achievements.address: ', achievements.address);
   } else {
     console.log('No deploy script for this network');
   }
@@ -238,7 +243,7 @@ async function createMarket(options) {
     artistAddress: ZERO_ADDRESS,
     affiliateAddress: ZERO_ADDRESS,
     cardAffiliate: [], // remember this is an array
-    sponsorship: 0,
+    sponsorship: 0
   };
   options = setDefaults(options, defaults);
   // assemble arrays
@@ -284,7 +289,7 @@ async function createMarket(options) {
 async function closeMarket(options) {
   var defaults = {
     market: market[0],
-    winningOutcome: 0,
+    winningOutcome: 0
   };
   options = setDefaults(options, defaults);
 
@@ -309,7 +314,7 @@ async function rent(options) {
     outcome: 0,
     from: 0x00,
     timeLimit: 0,
-    startingPosition: ZERO_ADDRESS,
+    startingPosition: ZERO_ADDRESS
   };
   options = setDefaults(options, defaults);
 
@@ -359,7 +364,7 @@ async function exit(options) {
   var defaults = {
     market: market[0],
     outcome: 0,
-    from: 0x00,
+    from: 0x00
   };
   options = setDefaults(options, defaults);
 
@@ -370,16 +375,16 @@ async function sponsor(options) {
   var defaults = {
     market: market[0],
     amount: 0,
-    from: 0x00,
+    from: 0x00
   };
   options = setDefaults(options, defaults);
 
   var amount = web3.utils.toWei(options.amount.toString(), 'ether');
   await erc20.approve(treasury.address, amount, {
-    from: options.from,
+    from: options.from
   });
   await options.market.sponsor(options.from, amount, {
-    from: options.from,
+    from: options.from
   });
 }
 
