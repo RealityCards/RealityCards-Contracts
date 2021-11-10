@@ -18,6 +18,7 @@
   "license": "ISC",
   "dependencies": {
     "@babel/core": "^7.15.0",
+    "@chainlink/contracts": "^0.2.2",
     "@codechecks/client": "^0.1.11",
     "@openzeppelin/contracts": "^4.3.0",
     "@truffle/contract": "^4.3.30",
