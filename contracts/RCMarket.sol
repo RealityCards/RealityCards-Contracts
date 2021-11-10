@@ -95,7 +95,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         /// @dev has this card affiliate been paid
         bool cardAffiliatePaid;
     }
-    mapping(uint256 => Card) public card;
+    mapping(uint256 => Card) public override card;
 
     // TIMESTAMPS
     /// @dev when the market opens
