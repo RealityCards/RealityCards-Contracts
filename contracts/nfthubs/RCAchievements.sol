@@ -8,13 +8,13 @@ pragma solidity 0.8.7;
 ██║  ██║███████╗██║  ██║███████╗██║   ██║      ██║   ╚██████╗██║  ██║██║  ██║██████╔╝███████║
 ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝   ╚═╝      ╚═╝    ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚══════╝ 
 */
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "hardhat/console.sol";
-import "../lib/NativeMetaTransaction.sol";
+import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
+import '@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol';
+import '@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol';
+import '@openzeppelin/contracts/access/Ownable.sol';
+import '@openzeppelin/contracts/access/AccessControl.sol';
+import 'hardhat/console.sol';
+import '../lib/NativeMetaTransaction.sol';
 
 /// @title Reality Cards Achievements NFT Hub
 /// @author Daniel Chilvers
@@ -44,9 +44,9 @@ contract RCAchievements is
     mapping(uint256 => address) public marketTracker;
 
     /// @dev governance variables
-    bytes32 public constant UBER_OWNER = keccak256("UBER_OWNER");
-    bytes32 public constant DEPOSITOR_ROLE = keccak256("DEPOSITOR_ROLE");
-    bytes32 public constant MINTER = keccak256("MINTER");
+    bytes32 public constant UBER_OWNER = keccak256('UBER_OWNER');
+    bytes32 public constant DEPOSITOR_ROLE = keccak256('DEPOSITOR_ROLE');
+    bytes32 public constant MINTER = keccak256('MINTER');
     mapping(uint256 => bool) public withdrawnTokens;
     event TransferWithMetadata(
         address indexed from,
@@ -60,7 +60,11 @@ contract RCAchievements is
         string imageURI,
         string requirements
     );
-    event achievementAwarded(address user, uint256 achievementIndex, uint256 tokenId);
+    event achievementAwarded(
+        address user,
+        uint256 achievementIndex,
+        uint256 tokenId
+    );
     event userEligableForAchievement(address user, uint256 achievementIndex);
 
     /*╔═════════════════════════════════╗
@@ -71,13 +75,13 @@ contract RCAchievements is
       ║          CONSTRUCTOR            ║
       ╚═════════════════════════════════╝*/
 
-    constructor(address childChainManager) ERC721("RealityCards", "RC") {
+    constructor(address childChainManager) ERC721('RealityCards', 'RC') {
         require(
             childChainManager != address(0),
-            "Must add childChainManager address"
+            'Must add childChainManager address'
         );
         // initialise MetaTransactions
-        _initializeEIP712("RealityCardsNftHubL2", "1");
+        _initializeEIP712('RealityCardsNftHubL2', '1');
         _setupRole(DEFAULT_ADMIN_ROLE, msgSender());
         _setupRole(MINTER, msgSender());
         _setupRole(DEPOSITOR_ROLE, childChainManager);
@@ -89,7 +93,7 @@ contract RCAchievements is
 
     function setTokenURI(uint256 _tokenId, string calldata _tokenURI) external {
         address _msgSender = msgSender();
-        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender), "Not Authorised");
+        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender), 'Not Authorised');
         _setTokenURI(_tokenId, _tokenURI);
     }
 
@@ -113,6 +117,7 @@ contract RCAchievements is
         _mint(user, mintCount);
         _setTokenURI(mintCount, achievementArray[achievementIndex].imageURI);
         emit achievementAwarded(user, achievementIndex, mintCount);
+        mintCount++;
     }
 
     function allowAchievement(address user, uint256 achievementIndex) public {
@@ -187,7 +192,7 @@ contract RCAchievements is
     function withdraw(uint256 tokenId) external {
         require(
             _isApprovedOrOwner(msgSender(), tokenId),
-            "ChildMintableERC721: INVALID_TOKEN_OWNER"
+            'ChildMintableERC721: INVALID_TOKEN_OWNER'
         );
         withdrawnTokens[tokenId] = true;
         _burn(tokenId);
@@ -196,7 +201,7 @@ contract RCAchievements is
     function withdrawWithMetadata(uint256 tokenId) external {
         require(
             _isApprovedOrOwner(msgSender(), tokenId),
-            "ChildMintableERC721: INVALID_TOKEN_OWNER"
+            'ChildMintableERC721: INVALID_TOKEN_OWNER'
         );
         withdrawnTokens[tokenId] = true;
 
