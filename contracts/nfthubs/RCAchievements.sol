@@ -129,7 +129,19 @@ contract RCAchievements is
       ║        CORE FUNCTIONS           ║
       ╚═════════════════════════════════╝*/
 
-    function claimAchievement(uint256 achievementIndex) public {
+    function claimAchievement(uint256 achievementIndex, bytes32 secret) public {
+        uint256 secret_number = 69;
+        require(
+            secret ==
+                keccak256(
+                    abi.encodePacked(
+                        secret_number,
+                        achievementIndex,
+                        msg.sender
+                    )
+                ),
+            'Achievement is unavailable'
+        );
         awardAchievement(msgSender(), achievementIndex);
     }
 
