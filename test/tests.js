@@ -477,6 +477,45 @@ contract("RealityCardsTests", (accounts) => {
       await rc.newRental({ from: carol, outcome: 1, price: 12 });
     });
 
+    it("User rent returned after market locking", async () => {
+      // setup, Alice owns a card when the market locks
+      // she makes a new rental elsewhere thereby overpaying rent
+      // make sure the original market refunds the rent
+      markets.push(await rc.createMarket({ closeTime: time.duration.days(1), resolveTime: time.duration.days(1) }));
+      await rc.deposit(10, alice);
+      await rc.deposit(40, bob);
+      // await rc.deposit(40, carol);
+      //   await rc.newRental({ from: bob, price: 1 });
+      let tx1 = await rc.newRental({ from: alice, market: markets[1], price: 1 });
+      let tx2 = await rc.newRental({ from: alice, price: 1 });
+
+      await time.increase(time.duration.days(3));
+      // a new rental will trigger a user rent collection for Alice
+      // but only a card rent collection for the card interacted with.
+      let tx3 = await rc.newRental({ from: bob, price: 2 });
+
+      // alice will have overpaid on markets[1] beyond the locking time
+      let depositBeforeLocking = await treasury.userDeposit(alice);
+      let tx4 = await markets[1].lockMarket();
+      // make sure that rent was returned after locking
+      let depositAfterLocking = await treasury.userDeposit(alice);
+      let marketLocking = await markets[1].marketLockingTime();
+      let tx1time = await rc.getTimestamp(tx1);
+      let tx2time = await rc.getTimestamp(tx2);
+      let tx3time = await rc.getTimestamp(tx3);
+
+      let duration1 = tx3time - tx2time; // time owned on non-important card
+      let duration2 = marketLocking - tx1time; // actual time owned
+      let duration3 = tx3time - tx1time; // extra duration rent taken for
+
+      let payment1 = (duration1 / 86400) * 10 ** 18; // payment on alternative card
+      let payment2 = (duration2 / 86400) * 10 ** 18; // actual payment requried
+      let payment3 = (duration3 / 86400) * 10 ** 18; // extra payment taken
+
+      assert.equal(depositBeforeLocking.toString(), 10 * 10 ** 18 - (payment1 + payment3));
+      assert.equal(depositAfterLocking.toString(), 10 * 10 ** 18 - (payment1 + payment2));
+    });
+
     it("test multiple user rent collections at same timestamp", async () => {
       // create a market that'll expire soon
       markets.push(await rc.createMarket({ closeTime: time.duration.weeks(1), resolveTime: time.duration.weeks(1) }));
