@@ -108,6 +108,18 @@ esac
     cardJSON=$cardJSON'\n  "image": "'$CDN$IMAGES$SRC_NAME'/'${!card// /-}$IMAGE_FORMAT'",'
     cardJSON=$cardJSON'\n  "affiliation": "Reality Cards",'
     cardJSON=$cardJSON'\n  "cardType": "'$cardType'",'
+    cardJSON=$cardJSON'\n  "attributes": [ '
+    cardJSON=$cardJSON'\n    {'
+    cardJSON=$cardJSON'\n      "display_type": "date",'
+    cardJSON=$cardJSON'\n      "trait_type": "Event Start",'
+    cardJSON=$cardJSON'\n      "value": '$START_TIME
+    cardJSON=$cardJSON'\n    },'
+    cardJSON=$cardJSON'\n    {'
+    cardJSON=$cardJSON'\n      "display_type": "date",'
+    cardJSON=$cardJSON'\n      "trait_type": "Event End",'
+    cardJSON=$cardJSON'\n      "value": '$END_TIME
+    cardJSON=$cardJSON'\n    }'
+    cardJSON=$cardJSON'\n  ],'
     cardJSON=$cardJSON'\n  "external_url": "https://beta.realitycards.io/cards/'$SLUG'/'$i'"'
     cardJSON=$cardJSON'\n}'
 
