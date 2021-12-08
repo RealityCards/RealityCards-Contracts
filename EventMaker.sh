@@ -3,22 +3,22 @@
 ###################
 #### Setup ########
 ###################
-START_TIME="1638969467"
-END_TIME="1638969467"
+START_TIME=""
+END_TIME=""
 SPONSORSHIP="0"
 ARTIST=""
 ARTIST_LINK=""
-EVENT_NAME="My test event"
-ORACLE_QUESTION="My test question"
-DESCRIPTION='some description here'
-SRC_NAME="testMultiple"
-SLUG="testMultiple"
+EVENT_NAME=""
+ORACLE_QUESTION=""
+DESCRIPTION=''
+SRC_NAME=""
+SLUG=""
 CATEGORY="Other"
 US_ALLOWED="true"
 IMAGE_FORMAT=".png"
-NUMBER_OF_CARDS="2"
-CARD0="card 0"
-CARD1="card 1"
+NUMBER_OF_CARDS=""
+CARD0=""
+CARD1=""
 CARD2=""
 CARD3=""
 CARD4=""
