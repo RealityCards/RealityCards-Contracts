@@ -124,14 +124,14 @@ esac
     cardJSON=$cardJSON'\n}'
 
     # save locally 
-    echo -e "$cardJSON" > events/$SRC_NAME/token$i$cardType.json
+    echo -e "$cardJSON" > events/$SRC_NAME/token$i-$cardType.json
     done
 
     # save to IPFS
     for ((i=0;i<$NUMBER_OF_CARDS;i++))
     do
 
-        ipfscommand=$(curl -s -F file=@events/$SRC_NAME/token$i$cardType.json "https://api.thegraph.com/ipfs/api/v0/add")
+        ipfscommand=$(curl -s -F file=@events/$SRC_NAME/token$i-$cardType.json "https://api.thegraph.com/ipfs/api/v0/add")
         temp=${ipfscommand##*Hash}
         ipfs_hash=${temp:3:46}
 
