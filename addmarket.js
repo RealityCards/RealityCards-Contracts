@@ -33,9 +33,6 @@ module.exports = async () => {
       }
     }
 
-    // for now duplicate the original tokenURIs for the copies
-    tokenURIs = tokenURIs.concat(tokenURIs.concat(tokenURIs.concat(tokenURIs.concat(tokenURIs))));
-
     console.log("CREATING MARKET");
     console.log("ipfs hash ", ipfsHash);
     console.log("slug ", slug);

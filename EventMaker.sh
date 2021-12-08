@@ -3,22 +3,22 @@
 ###################
 #### Setup ########
 ###################
-START_TIME=""
-END_TIME=""
+START_TIME="1638969467"
+END_TIME="1638969467"
 SPONSORSHIP="0"
 ARTIST=""
 ARTIST_LINK=""
-EVENT_NAME=""
-ORACLE_QUESTION=""
-DESCRIPTION=''
-SRC_NAME=""
-SLUG=""
+EVENT_NAME="My test event"
+ORACLE_QUESTION="My test question"
+DESCRIPTION='some description here'
+SRC_NAME="testMultiple"
+SLUG="testMultiple"
 CATEGORY="Other"
 US_ALLOWED="true"
 IMAGE_FORMAT=".png"
-NUMBER_OF_CARDS=""
-CARD0=""
-CARD1=""
+NUMBER_OF_CARDS="2"
+CARD0="card 0"
+CARD1="card 1"
 CARD2=""
 CARD3=""
 CARD4=""
@@ -85,40 +85,57 @@ eventJSON=$eventJSON'\n}'
 echo -e "$eventJSON" > events/$SRC_NAME/event.json
 
 ## now make the token.json files ##
-
-for ((i=0;i<$NUMBER_OF_CARDS;i++))
-do
-card='CARD'$i
-cardJSON='{\n  "name": "'${!card}'",'
-cardJSON=$cardJSON'\n  "description": "This token represents a stake in the outcome '"'"$EVENT_NAME"'"
-cardJSON=$cardJSON' at Reality Cards, the planet'"'"'s first NFT-based prediction market",'
-cardJSON=$cardJSON'\n  "image": "'$CDN$IMAGES$SRC_NAME'/'${!card// /-}$IMAGE_FORMAT'",'
-cardJSON=$cardJSON'\n  "image-350x350": "'$CDN$IMAGES$SRC_NAME'/'${!card// /-}'-350x350'$IMAGE_FORMAT'",'
-cardJSON=$cardJSON'\n  "affiliation": "Reality Cards",'
-cardJSON=$cardJSON'\n  "external_url": "https://beta.realitycards.io/cards/'$SLUG'/'$i'"'
-cardJSON=$cardJSON'\n}'
-
-# save locally 
-echo -e "$cardJSON" > events/$SRC_NAME/token$i.json
-done
-
-# save to IPFS
 TOKEN_URIS='['
-for ((i=0;i<$NUMBER_OF_CARDS;i++))
+
+for ((j=0;j<5;j++))
 do
 
-ipfscommand=$(curl -s -F file=@events/$SRC_NAME/token$i.json "https://api.thegraph.com/ipfs/api/v0/add")
-temp=${ipfscommand##*Hash}
-ipfs_hash=${temp:3:46}
+case "$j" in
+0) cardType="OG-Neutral" ;;
+1) cardType="OG-Winner" ;;
+2) cardType="OG-Loser" ;;
+3) cardType="Print-Winner" ;;
+4) cardType="Print-Loser" ;;
+esac
 
-TOKEN_URIS=$TOKEN_URIS'"ipfs://'$ipfs_hash'"'
 
-if [ $i -lt "$(($NUMBER_OF_CARDS-1))" ]
-    then
-        TOKEN_URIS=$TOKEN_URIS','
-    else
-        TOKEN_URIS=$TOKEN_URIS']'
-    fi
+    for ((i=0;i<$NUMBER_OF_CARDS;i++))
+    do
+    card='CARD'$i
+    cardJSON='{\n  "name": "'${!card}'",'
+    cardJSON=$cardJSON'\n  "description": "This token represents a stake in the outcome '"'"$EVENT_NAME"'"
+    cardJSON=$cardJSON' at Reality Cards, the planet'"'"'s first NFT-based prediction market",'
+    cardJSON=$cardJSON'\n  "image": "'$CDN$IMAGES$SRC_NAME'/'${!card// /-}$IMAGE_FORMAT'",'
+    cardJSON=$cardJSON'\n  "affiliation": "Reality Cards",'
+    cardJSON=$cardJSON'\n  "cardType": "'$cardType'",'
+    cardJSON=$cardJSON'\n  "external_url": "https://beta.realitycards.io/cards/'$SLUG'/'$i'"'
+    cardJSON=$cardJSON'\n}'
+
+    # save locally 
+    echo -e "$cardJSON" > events/$SRC_NAME/token$i$cardType.json
+    done
+
+    # save to IPFS
+    for ((i=0;i<$NUMBER_OF_CARDS;i++))
+    do
+
+        ipfscommand=$(curl -s -F file=@events/$SRC_NAME/token$i$cardType.json "https://api.thegraph.com/ipfs/api/v0/add")
+        temp=${ipfscommand##*Hash}
+        ipfs_hash=${temp:3:46}
+
+        TOKEN_URIS=$TOKEN_URIS'"ipfs://'$ipfs_hash'"'
+        if [ $j -lt 4 ]
+        then
+            TOKEN_URIS=$TOKEN_URIS','
+        else
+            if [ $i -lt "$(($NUMBER_OF_CARDS-1))" ]
+                then
+                    TOKEN_URIS=$TOKEN_URIS','
+                else
+                    TOKEN_URIS=$TOKEN_URIS']'
+            fi
+        fi
+    done
 done
 
 ### BUILD THE CONFIG JSON ###
