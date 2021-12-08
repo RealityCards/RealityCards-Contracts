@@ -8,22 +8,24 @@ pragma solidity 0.8.7;
 ██║  ██║███████╗██║  ██║███████╗██║   ██║      ██║   ╚██████╗██║  ██║██║  ██║██████╔╝███████║
 ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝   ╚═╝      ╚═╝    ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚══════╝ 
 */
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import "hardhat/console.sol";
 import "../lib/NativeMetaTransaction.sol";
 
 /// @title Reality Cards Achievements NFT Hub
 /// @author Daniel Chilvers
 contract RCAchievements is
-    Ownable,
-    ERC721,
-    ERC721URIStorage,
-    ERC721Enumerable,
-    AccessControl,
+    ERC721Upgradeable,
+    ERC721EnumerableUpgradeable,
+    ERC721URIStorageUpgradeable,
+    OwnableUpgradeable,
+    AccessControlUpgradeable,
+    UUPSUpgradeable,
     NativeMetaTransaction
 {
     /*╔═════════════════════════════════╗
@@ -71,13 +73,14 @@ contract RCAchievements is
       ║          CONSTRUCTOR            ║
       ╚═════════════════════════════════╝*/
 
-    constructor(address childChainManager) ERC721("RealityCards", "RC") {
+    function initialize(address childChainManager) public initializer {
         require(
             childChainManager != address(0),
             "Must add childChainManager address"
         );
         // initialise MetaTransactions
         _initializeEIP712("RealityCardsNftHubL2", "1");
+        __ERC721_init("RealityCardsAchievements", "RC-A");
         _setupRole(DEFAULT_ADMIN_ROLE, msgSender());
         _setupRole(MINTER, msgSender());
         _setupRole(DEPOSITOR_ROLE, childChainManager);
@@ -228,7 +231,11 @@ contract RCAchievements is
         address from,
         address to,
         uint256 tokenId
-    ) internal virtual override(ERC721Enumerable, ERC721) {
+    )
+        internal
+        virtual
+        override(ERC721EnumerableUpgradeable, ERC721Upgradeable)
+    {
         super._beforeTokenTransfer(from, to, tokenId);
 
         // put token movement restricions in here
@@ -236,7 +243,7 @@ contract RCAchievements is
 
     function _burn(uint256 _tokenId)
         internal
-        override(ERC721, ERC721URIStorage)
+        override(ERC721Upgradeable, ERC721URIStorageUpgradeable)
     {
         super._burn(_tokenId);
     }
@@ -245,7 +252,11 @@ contract RCAchievements is
         public
         view
         virtual
-        override(AccessControl, ERC721, ERC721Enumerable)
+        override(
+            AccessControlUpgradeable,
+            ERC721Upgradeable,
+            ERC721EnumerableUpgradeable
+        )
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
@@ -255,27 +266,27 @@ contract RCAchievements is
         public
         view
         virtual
-        override(ERC721)
+        override(ERC721Upgradeable)
         returns (address)
     {
-        return ERC721.ownerOf(tokenId);
+        return ERC721Upgradeable.ownerOf(tokenId);
     }
 
     function tokenURI(uint256 tokenId)
         public
         view
         virtual
-        override(ERC721, ERC721URIStorage)
+        override(ERC721Upgradeable, ERC721URIStorageUpgradeable)
         returns (string memory)
     {
-        return ERC721URIStorage.tokenURI(tokenId);
+        return ERC721URIStorageUpgradeable.tokenURI(tokenId);
     }
 
     function totalSupply()
         public
         view
         virtual
-        override(ERC721Enumerable)
+        override(ERC721EnumerableUpgradeable)
         returns (uint256)
     {
         /// @dev for our purposes the NFTs minted is more useful than the NFTs in circulation
@@ -283,6 +294,8 @@ contract RCAchievements is
         /// @dev always giving a fresh tokenId to mint to.
         return mintCount;
     }
+
+    function _authorizeUpgrade(address) internal override onlyOwner {}
 
     /*
          ▲  
