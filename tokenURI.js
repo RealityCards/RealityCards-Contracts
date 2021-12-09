@@ -60,6 +60,7 @@ module.exports = async () => {
     // }
     // console.log("Aproved Markets ", approvedMarkets, approvedMarkets.length);
 
+    // for speed just use the cached list here
     approvedMarkets = [
       "0x91Fa0D3d0Dc27D19Dd7C3abC0eD35682951Bf947",
       "0x2b6fc19Bf843FdE5157016573Aa4e5ed78c77D8b",
