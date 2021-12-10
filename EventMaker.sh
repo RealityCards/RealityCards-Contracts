@@ -6,7 +6,8 @@
 START_TIME=""
 END_TIME=""
 SPONSORSHIP="0"
-ARTIST=""
+ARTIST_NAME=""
+ARTIST_ADDRESS=""
 ARTIST_LINK=""
 EVENT_NAME=""
 ORACLE_QUESTION=""
@@ -50,6 +51,11 @@ if [ "$ARTIST_LINK" == "" ];then
     echo WARNING: ARTIST LINK NOT SET
 else
     eventJSON=$eventJSON'\n  "artistLink": "'$ARTIST_LINK'",'
+fi
+if [ "$ARTIST_NAME" == "" ];then
+    echo WARNING: ARTIST NAME NOT SET
+else
+    eventJSON=$eventJSON'\n  "artistName": "'$ARTIST_NAME'",'
 fi
 eventJSON=$eventJSON'\n  "category": "'$CATEGORY'",'
 eventJSON=$eventJSON'\n  "US_allowed": "'$US_ALLOWED'",'
@@ -158,8 +164,8 @@ temp=${ipfscommand##*Hash}
 ipfs_hash=${temp:3:46}
 
 # check for zero addresses
-if [ "$ARTIST" == "" ];then
-    ARTIST=$ZERO_ADDRESS
+if [ "$ARTIST_ADDRESS" == "" ];then
+    ARTIST_ADDRESS=$ZERO_ADDRESS
     echo WARNING: ARTIST ADDRESS NOT SET
 fi
 if [ "$AFILLIATE" == "" ];then
