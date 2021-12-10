@@ -3,22 +3,24 @@
 ###################
 #### Setup ########
 ###################
-START_TIME=""
-END_TIME=""
+START_TIME="1639155600"
+END_TIME="1639958400"
 SPONSORSHIP="0"
-ARTIST=""
-ARTIST_LINK=""
-EVENT_NAME=""
-ORACLE_QUESTION=""
-DESCRIPTION=''
-SRC_NAME=""
-SLUG=""
-CATEGORY="Other"
+ARTIST_NAME=""
+ARTIST_ADDRESS="0x7cD7Dbffc9d43332565cE3E155e9F4C17720dead"
+ARTIST_LINK="https://twitter.com/cr24ti7e"
+EVENT_NAME="How much will 'Spider-Man: No Way Home' Gross in it's opening weekend?"
+ORACLE_QUESTION="How much will 'Spider-Man: No Way Home' Gross in it's opening weekend in the US Domestic market according to BoxOfficeMojo?"
+DESCRIPTION='<p>How much will &apos;Spider-Man: No Way Home&apos; Gross in it&apos;s opening weekend in the US Domestic market according to BoxOfficeMojo?</p>
+<p>Source: <a href="https://www.boxofficemojo.com/title/tt10872600/?ref_=bo_gr_ti" rel="noopener noreferrer" target="_blank">BoxOfficeMojo.com</a></p>'
+SRC_NAME="SpiderMan-NoWayHome"
+SLUG="SpiderMan-NoWayHome"
+CATEGORY="Movies"
 US_ALLOWED="true"
 IMAGE_FORMAT=".png"
-NUMBER_OF_CARDS=""
-CARD0=""
-CARD1=""
+NUMBER_OF_CARDS="2"
+CARD0="Less than \$150m"
+CARD1="\$150m or more"
 CARD2=""
 CARD3=""
 CARD4=""
@@ -50,6 +52,11 @@ if [ "$ARTIST_LINK" == "" ];then
     echo WARNING: ARTIST LINK NOT SET
 else
     eventJSON=$eventJSON'\n  "artistLink": "'$ARTIST_LINK'",'
+fi
+if [ "$ARTIST_NAME" == "" ];then
+    echo WARNING: ARTIST LINK NOT SET
+else
+    eventJSON=$eventJSON'\n  "artistName": "'$ARTIST_NAME'",'
 fi
 eventJSON=$eventJSON'\n  "category": "'$CATEGORY'",'
 eventJSON=$eventJSON'\n  "US_allowed": "'$US_ALLOWED'",'
@@ -91,11 +98,11 @@ for ((j=0;j<5;j++))
 do
 
 case "$j" in
-0) cardType="OG-Neutral" ;;
-1) cardType="OG-Winner" ;;
-2) cardType="OG-Loser" ;;
-3) cardType="Print-Winner" ;;
-4) cardType="Print-Loser" ;;
+0) cardType="OG-Neutral" imageSuffix="" ;;
+1) cardType="OG-Winner" imageSuffix=".winner" ;;
+2) cardType="OG-Loser" imageSuffix=".loser" ;;
+3) cardType="Print-Winner" imageSuffix=".winningPrint" ;;
+4) cardType="Print-Loser" imageSuffix=".losingPrint" ;;
 esac
 
 
@@ -105,7 +112,7 @@ esac
     cardJSON='{\n  "name": "'${!card}'",'
     cardJSON=$cardJSON'\n  "description": "This token represents a stake in the outcome '"'"$EVENT_NAME"'"
     cardJSON=$cardJSON' at Reality Cards, the planet'"'"'s first NFT-based prediction market",'
-    cardJSON=$cardJSON'\n  "image": "'$CDN$IMAGES$SRC_NAME'/'${!card// /-}$IMAGE_FORMAT'",'
+    cardJSON=$cardJSON'\n  "image": "'$CDN$IMAGES$SRC_NAME'/'${!card// /-}$imageSuffix$IMAGE_FORMAT'",'
     cardJSON=$cardJSON'\n  "affiliation": "Reality Cards",'
     cardJSON=$cardJSON'\n  "cardType": "'$cardType'",'
     cardJSON=$cardJSON'\n  "attributes": [ '
@@ -243,7 +250,7 @@ CONFIG=$CONFIG'\n  "end": "'${END_TIME}'",'
 CONFIG=$CONFIG'\n  "slug": "'$SLUG'",'
 CONFIG=$CONFIG'\n  "oracle": "'${ORACLE_QUESTION}'",'
 CONFIG=$CONFIG'\n  "ipfs": "'${ipfs_hash}'",'
-CONFIG=$CONFIG'\n  "artist": "'${ARTIST}'",'
+CONFIG=$CONFIG'\n  "artist": "'${ARTIST_ADDRESS}'",'
 CONFIG=$CONFIG'\n  "sponsorship": "'${SPONSORSHIP}'",'
 CONFIG=$CONFIG'\n  "tokenURIs": '${TOKEN_URIS}','
 CONFIG=$CONFIG'\n  "affiliate": "'${AFILLIATE}'",'
