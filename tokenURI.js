@@ -24,6 +24,7 @@ module.exports = async () => {
   console.log("Factory address ", factoryAddress);
   let approvedMarkets = await fetchApprovedMarkets();
   // let approvedMarkets = ["0x0D4A3fe83ba38468bD9b0c15a7fC85E94108F43f"]; // for quick testing only use 1 market
+  let oldJsons = [];
 
   for (let i = 0; i < approvedMarkets.length; i++) {
     const market = await RCMarket.at(approvedMarkets[i]);
@@ -34,6 +35,8 @@ module.exports = async () => {
       const card = j;
       const tokenID = await market.tokenIds(card);
       let json = await fetchJSON(tokenID);
+      console.log("added token ", tokenID.toString());
+      oldJsons.push({ json: json, tokenID: tokenID.toString() });
       json = await generateNewJSON(market, card, json);
       console.log("final json", json);
       const ipfsHash = await pinToIPFS(json);
@@ -42,6 +45,10 @@ module.exports = async () => {
       await updateURI(tokenID, ipfsHash);
     }
   }
+  fs.writeFileSync("output/jsonsBackup.json", JSON.stringify(oldJsons), (err) => {
+    if (err) throw err;
+    console.log("written json to file");
+  });
 
   console.log("All done, bye bye");
   process.exit();
@@ -53,7 +60,7 @@ module.exports = async () => {
     for (let i = 0; i < markets.length; i++) {
       const element = markets[i];
       console.log("Checking market ", element);
-      if ((await factory.isMarketApproved(element)) && isMarketLocked(element)) {
+      if ((await factory.isMarketApproved(element)) && (await isMarketLocked(element))) {
         approvedMarkets.push(element);
       }
     }
