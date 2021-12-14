@@ -97,11 +97,11 @@ for ((j=0;j<5;j++))
 do
 
 case "$j" in
-0) cardType="OG-Neutral" ;;
-1) cardType="OG-Winner" ;;
-2) cardType="OG-Loser" ;;
-3) cardType="Print-Winner" ;;
-4) cardType="Print-Loser" ;;
+0) cardType="OG-Neutral" suffix="";;
+1) cardType="OG-Winner" suffix=".winner";;
+2) cardType="OG-Loser" suffix=".loser";;
+3) cardType="Print-Winner" suffix=".winningPrint";;
+4) cardType="Print-Loser" suffix=".losingPrint";;
 esac
 
 
@@ -111,7 +111,7 @@ esac
     cardJSON='{\n  "name": "'${!card}'",'
     cardJSON=$cardJSON'\n  "description": "This token represents a stake in the outcome '"'"$EVENT_NAME"'"
     cardJSON=$cardJSON' at Reality Cards, the planet'"'"'s first NFT-based prediction market",'
-    cardJSON=$cardJSON'\n  "image": "'$CDN$IMAGES$SRC_NAME'/'${!card// /-}$IMAGE_FORMAT'",'
+    cardJSON=$cardJSON'\n  "image": "'$CDN$IMAGES$SRC_NAME'/'${!card// /-}$suffix$IMAGE_FORMAT'",'
     cardJSON=$cardJSON'\n  "affiliation": "Reality Cards",'
     cardJSON=$cardJSON'\n  "cardType": "'$cardType'",'
     cardJSON=$cardJSON'\n  "attributes": [ '
