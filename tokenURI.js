@@ -22,9 +22,21 @@ module.exports = async () => {
   let nftHub = await RCNFTHub.at(nftHubAddress);
 
   console.log("Factory address ", factoryAddress);
-  let approvedMarkets = await fetchApprovedMarkets();
-  // let approvedMarkets = ["0x0D4A3fe83ba38468bD9b0c15a7fC85E94108F43f"]; // for quick testing only use 1 market
-  let oldJsons = [];
+
+  // let temptoken = [108];
+  // let images = ["https://cdn.realitycards.io/V1/ChristiesXOpenSea/Tom-Sachs.loser"];
+  // for (let i = 0; i < temptoken.length; i++) {
+  //   const element = temptoken[i];
+
+  //   let json = await fetchJSON(element);
+
+  //   json.image = images[i] + ".png";
+
+  //   await updateURI(element, await pinToIPFS(json));
+  // }
+
+  // let approvedMarkets = await fetchApprovedMarkets();
+  let approvedMarkets = ["0xC50276e4A0AD0AB88D9bABe89E332C2E6A0B2260", "0x15E45E0BCC0A33eD5F498B490070A3fF491A7B87"]; // for quick testing only use 1 market
 
   for (let i = 0; i < approvedMarkets.length; i++) {
     const market = await RCMarket.at(approvedMarkets[i]);
@@ -35,20 +47,16 @@ module.exports = async () => {
       const card = j;
       const tokenID = await market.tokenIds(card);
       let json = await fetchJSON(tokenID);
-      console.log("added token ", tokenID.toString());
-      oldJsons.push({ json: json, tokenID: tokenID.toString() });
+      console.log("fetched token ", tokenID.toString());
       json = await generateNewJSON(market, card, json);
       console.log("final json", json);
       const ipfsHash = await pinToIPFS(json);
       console.log(" final ipfs hash:", ipfsHash, ":");
 
       await updateURI(tokenID, ipfsHash);
+      console.log("Updated token ", tokenID.toString());
     }
   }
-  fs.writeFileSync("output/jsonsBackup.json", JSON.stringify(oldJsons), (err) => {
-    if (err) throw err;
-    console.log("written json to file");
-  });
 
   console.log("All done, bye bye");
   process.exit();
@@ -94,7 +102,13 @@ module.exports = async () => {
     } else {
       suffix = ".loser";
     }
-    newJSON.image = oldJSON.image.slice(0, oldJSON.image.length - 4) + suffix + oldJSON.image.slice(-4);
+    let imageType;
+    if (oldJSON.image.slice(-4) == ".jpg") {
+      imageType = ".png";
+    } else {
+      imageType = oldJSON.image.slice(-4);
+    }
+    newJSON.image = oldJSON.image.slice(0, oldJSON.image.length - 4) + suffix + imageType;
 
     // attributes
     newJSON.attributes = [
