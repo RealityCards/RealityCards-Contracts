@@ -3,24 +3,24 @@
 ###################
 #### Setup ########
 ###################
-START_TIME="1639155600"
-END_TIME="1639958400"
+START_TIME=""
+END_TIME="1641772800"
 SPONSORSHIP="0"
-ARTIST_NAME=""
-ARTIST_ADDRESS="0x7cD7Dbffc9d43332565cE3E155e9F4C17720dead"
-ARTIST_LINK="https://twitter.com/cr24ti7e"
-EVENT_NAME="How much will 'Spider-Man: No Way Home' Gross in it's opening weekend?"
-ORACLE_QUESTION="How much will 'Spider-Man: No Way Home' Gross in it's opening weekend in the US Domestic market according to BoxOfficeMojo?"
-DESCRIPTION='<p>How much will &apos;Spider-Man: No Way Home&apos; Gross in it&apos;s opening weekend in the US Domestic market according to BoxOfficeMojo?</p>
-<p>Source: <a href="https://www.boxofficemojo.com/title/tt10872600/?ref_=bo_gr_ti" rel="noopener noreferrer" target="_blank">BoxOfficeMojo.com</a></p>'
-SRC_NAME="SpiderMan-NoWayHome"
-SLUG="SpiderMan-NoWayHome"
-CATEGORY="Movies"
+ARTIST_NAME="SP"
+ARTIST_ADDRESS="0x7f0cEE1044269A8b3D809438Ffd77baCA4d72103"
+ARTIST_LINK="https://twitter.com/ttyl5h"
+EVENT_NAME="What will the price of MANA be at the end of Sunday, 9th Jan?"
+ORACLE_QUESTION="What will the price of MANA be at the end of Sunday, 9th Jan?"
+DESCRIPTION='<p>What will the price of MANA be in USD on Sunday, 9th January 2022 23:59 UTC?</p>
+<p>Source: <a href="https://coinmarketcap.com/currencies/decentraland/" rel="noopener noreferrer" target="_blank">CoinMarketCap.com</a></p>'
+SRC_NAME="MANA"
+SLUG="MANA"
+CATEGORY="Cryptocurrency"
 US_ALLOWED="true"
 IMAGE_FORMAT=".png"
 NUMBER_OF_CARDS="2"
-CARD0="Less than \$150m"
-CARD1="\$150m or more"
+CARD0="Below \$"
+CARD1="\$ or above"
 CARD2=""
 CARD3=""
 CARD4=""
