@@ -471,10 +471,16 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         uint256 _rentIterationCounter = 0;
         // do a final rent collection before the contract is locked down
         while (cardAccountingIndex < numberOfCards && !accountingComplete) {
-            (_cardAccountingComplete, _rentIterationCounter) = _collectRent(
-                cardAccountingIndex,
-                _rentIterationCounter
-            );
+            while (
+                _rentIterationCounter < maxRentIterations &&
+                !_cardAccountingComplete
+            ) {
+                _cardAccountingComplete = !_collectRentAction(
+                    cardAccountingIndex
+                );
+                _rentIterationCounter++;
+            }
+
             if (_cardAccountingComplete) {
                 _cardAccountingComplete = false;
                 cardAccountingIndex++;
@@ -939,9 +945,14 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         returns (bool, uint256)
     {
         bool shouldContinue = true;
-        while (_counter < maxRentIterations && shouldContinue) {
-            shouldContinue = _collectRentAction(_card);
-            _counter++;
+        if (marketLockingTime <= block.timestamp) {
+            lockMarket();
+            shouldContinue = false;
+        } else {
+            while (_counter < maxRentIterations && shouldContinue) {
+                shouldContinue = _collectRentAction(_card);
+                _counter++;
+            }
         }
         return (!shouldContinue, _counter);
     }
