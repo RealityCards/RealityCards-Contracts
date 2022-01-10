@@ -1,3 +1,4 @@
+const { assert } = require("hardhat");
 const TestEnviroment = require("./helpers/TestEnviroment");
 
 contract("RealityCardsTests", (accounts) => {
@@ -477,10 +478,10 @@ contract("RealityCardsTests", (accounts) => {
       await rc.newRental({ from: carol, outcome: 1, price: 12 });
     });
 
-    it("User rent returned after market locking", async () => {
-      // setup, Alice owns a card when the market locks
-      // she makes a new rental elsewhere thereby overpaying rent
-      // make sure the original market refunds the rent
+    it("User should be refunded all rent paid after market locking", async () => {
+      // setup, Alice owns a card in a market that is beyond the locking time
+      // her rental rate is still high so rent collections from other markets will still collect
+      // she should still get refunded when the market locks.
       markets.push(await rc.createMarket({ closeTime: time.duration.days(1), resolveTime: time.duration.days(1) }));
       await rc.deposit(10, alice);
       await rc.deposit(40, bob);
@@ -489,31 +490,71 @@ contract("RealityCardsTests", (accounts) => {
       let tx1 = await rc.newRental({ from: alice, market: markets[1], price: 1 });
       let tx2 = await rc.newRental({ from: alice, price: 1 });
 
-      await time.increase(time.duration.days(3));
-      // a new rental will trigger a user rent collection for Alice
-      // but only a card rent collection for the card interacted with.
+      await time.increase(time.duration.days(2));
+      // One market is beyond locking time, but not locked, rent collections will cause overpayments
+      let tx4 = await markets[1].collectRent(0);
+      await time.increase(time.duration.days(1));
+      // await markets[1].collectRent(0);
+      // await time.increase(time.duration.days(1));
+      // await markets[1].collectRent(0);
+
       let tx3 = await rc.newRental({ from: bob, price: 2 });
 
       // alice will have overpaid on markets[1] beyond the locking time
       let depositBeforeLocking = await treasury.userDeposit(alice);
-      let tx4 = await markets[1].lockMarket();
+      await expectRevert.unspecified(markets[1].lockMarket());
       // make sure that rent was returned after locking
       let depositAfterLocking = await treasury.userDeposit(alice);
       let marketLocking = await markets[1].marketLockingTime();
       let tx1time = await rc.getTimestamp(tx1);
       let tx2time = await rc.getTimestamp(tx2);
       let tx3time = await rc.getTimestamp(tx3);
+      let tx4time = await rc.getTimestamp(tx4);
 
       let duration1 = tx3time - tx2time; // time owned on non-important card
       let duration2 = marketLocking - tx1time; // actual time owned
-      let duration3 = tx3time - tx1time; // extra duration rent taken for
+      let duration3 = tx3time - marketLocking; // extra duration rent taken for
 
       let payment1 = (duration1 / 86400) * 10 ** 18; // payment on alternative card
       let payment2 = (duration2 / 86400) * 10 ** 18; // actual payment requried
-      let payment3 = (duration3 / 86400) * 10 ** 18; // extra payment taken
+      let payment3 = ((duration3 - duration2) / 86400) * 10 ** 18; // extra payment taken
 
-      assert.equal(depositBeforeLocking.toString(), 10 * 10 ** 18 - (payment1 + payment3));
+      // assert.equal(depositBeforeLocking.toString(), 10 * 10 ** 18 - (payment1 + payment2 + payment3));
       assert.equal(depositAfterLocking.toString(), 10 * 10 ** 18 - (payment1 + payment2));
+    });
+
+    it("User rent returned after market locking", async () => {
+      // setup, Alice owns a card when the market locks
+      // she makes a new rental elsewhere thereby overpaying rent
+      // make sure the original market refunds the rent
+      markets.push(await rc.createMarket({ closeTime: time.duration.days(1), resolveTime: time.duration.days(1) }));
+      let deposit = 100;
+      await rc.deposit(deposit, alice);
+
+      let tx1 = await rc.newRental({ from: alice, market: markets[1], price: 1 });
+
+      await time.increase(time.duration.days(3));
+      let tx2 = await markets[1].collectRent(0);
+
+      let state = await markets[1].state();
+      assert.equal(state, 2);
+
+      // make sure that rent was returned after locking
+      let depositAfterLocking = await treasury.userDeposit(alice);
+      let marketLocking = await markets[1].marketLockingTime();
+      let tx1time = await rc.getTimestamp(tx1);
+      let tx2time = await rc.getTimestamp(tx2);
+
+      let duration1 = tx2time - tx1time; // amount of time paid for
+      let duration2 = tx2time - marketLocking; // extra time paid for
+
+      let payment1 = (duration1 * 10 ** 18) / 86400; // amount paid
+      let payment2 = (duration2 * 10 ** 18) / 86400; // amount refunded
+
+      console.log("I calc paid   as ", payment1);
+      console.log("I calc refund as ", payment2);
+
+      assert.equal(depositAfterLocking.toString(), deposit * 10 ** 18 - (payment1 - payment2));
     });
 
     it("test multiple user rent collections at same timestamp", async () => {
