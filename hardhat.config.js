@@ -2,7 +2,7 @@ require("@nomiclabs/hardhat-truffle5");
 require("solidity-coverage");
 require("hardhat-gas-reporter");
 require("hardhat-tracer");
-// require("@nomiclabs/hardhat-etherscan");
+require("@nomiclabs/hardhat-etherscan");
 require("dotenv").config();
 
 const ETHERSCAN_KEY = process.env.ETHERSCAN_KEY;
@@ -60,6 +60,6 @@ module.exports = {
     },
   },
   etherscan: {
-    apiKey: ETHERSCAN_KEY,
+    apiKey: POLYGON_KEY,
   },
 };
