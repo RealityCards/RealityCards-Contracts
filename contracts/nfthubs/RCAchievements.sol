@@ -63,7 +63,11 @@ contract RCAchievements is
         string imageURI,
         string requirements
     );
-    event achievementAwarded(address user, uint256 achievementIndex);
+    event achievementAwarded(
+        address user,
+        uint256 achievementIndex,
+        uint256 tokenID
+    );
     event userEligableForAchievement(address user, uint256 achievementIndex);
 
     /*╔═════════════════════════════════╗
@@ -122,7 +126,7 @@ contract RCAchievements is
         require(hasRole(MINTER, msgSender()), "Not Authorised");
         _mint(user, mintCount);
         _setTokenURI(mintCount, achievementArray[achievementIndex].imageURI);
-        emit achievementAwarded(user, achievementIndex);
+        emit achievementAwarded(user, achievementIndex, mintCount);
         mintCount++;
     }
 
@@ -155,7 +159,7 @@ contract RCAchievements is
         );
         _mint(user, mintCount);
         _setTokenURI(mintCount, achievementArray[achievementIndex].imageURI);
-        emit achievementAwarded(user, achievementIndex);
+        emit achievementAwarded(user, achievementIndex, mintCount);
         mintCount++;
     }
 
