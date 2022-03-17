@@ -13,7 +13,6 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721Enumer
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "hardhat/console.sol";
 import "../lib/NativeMetaTransaction.sol";
 
@@ -25,7 +24,6 @@ contract RCAchievements is
     ERC721URIStorageUpgradeable,
     OwnableUpgradeable,
     AccessControlUpgradeable,
-    UUPSUpgradeable,
     NativeMetaTransaction
 {
     /*╔═════════════════════════════════╗
@@ -49,7 +47,7 @@ contract RCAchievements is
     /// @dev governance variables
     bytes32 public constant UBER_OWNER = keccak256("UBER_OWNER");
     bytes32 public constant DEPOSITOR_ROLE = keccak256("DEPOSITOR_ROLE");
-    bytes32 public constant MINTER = keccak256("MINTER");
+    bytes32 public constant MINTER = keccak256("MINTER"); // 0xf0887ba65ee2024ea881d91b74c2450ef19e1557f03bed3ea9f16b037cbe2dc9
     mapping(uint256 => bool) public withdrawnTokens;
     event TransferWithMetadata(
         address indexed from,
@@ -325,8 +323,6 @@ contract RCAchievements is
         /// @dev always giving a fresh tokenId to mint to.
         return mintCount;
     }
-
-    function _authorizeUpgrade(address) internal override onlyOwner {}
 
     /*
          ▲  
