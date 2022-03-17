@@ -13,7 +13,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721Enumer
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "hardhat/console.sol";
 import "../lib/NativeMetaTransaction.sol";
 
@@ -41,6 +41,7 @@ contract RCAchievements is
     Achievement[] public achievementArray;
     mapping(address => uint256[]) public userAchievements;
     mapping(address => mapping(uint256 => bool)) userEligable;
+    uint256 private splidgesSecret;
 
     /// @dev the market each NFT belongs to
     mapping(uint256 => address) public marketTracker;
@@ -79,7 +80,7 @@ contract RCAchievements is
             "Must add childChainManager address"
         );
         // initialise MetaTransactions
-        _initializeEIP712("RealityCardsNftHubL2", "1");
+        _initializeEIP712("RealityCardsAchievements", "1");
         __ERC721_init("RealityCardsAchievements", "RC-A");
         _setupRole(DEFAULT_ADMIN_ROLE, msgSender());
         _setupRole(MINTER, msgSender());
@@ -96,11 +97,13 @@ contract RCAchievements is
         _setTokenURI(_tokenId, _tokenURI);
     }
 
+    /// @notice Add a new achievment to the list of possible achievements
     function addAchievement(
         string memory _name,
         string memory _imageURI,
         string memory _requirements
     ) external {
+        require(hasRole(MINTER, msgSender()), "Not Authorised");
         achievementArray.push(
             Achievement({
                 name: _name,
@@ -112,23 +115,48 @@ contract RCAchievements is
         emit newAchievement(achievementIndex, _name, _imageURI, _requirements);
     }
 
+    /// @notice Give a particular user an achievement
+    /// @param user the user to award the achievement to
+    /// @param achievementIndex the index of the achievement in the achievementArray to award
     function awardAchievement(address user, uint256 achievementIndex) public {
+        require(hasRole(MINTER, msgSender()), "Not Authorised");
         _mint(user, mintCount);
         _setTokenURI(mintCount, achievementArray[achievementIndex].imageURI);
         emit achievementAwarded(user, achievementIndex);
+        mintCount++;
     }
 
-    function allowAchievement(address user, uint256 achievementIndex) public {
-        userEligable[user][achievementIndex] = true;
-        emit userEligableForAchievement(user, achievementIndex);
+    function setSecret(uint256 _input) external {
+        require(hasRole(DEFAULT_ADMIN_ROLE, msgSender()), "Not Authorised");
+        // TODO some manipulation to _input that isn't comitted to github
+        splidgesSecret = _input;
+    }
+
+    function readSecret() internal view returns (uint256) {
+        uint256 _secret = splidgesSecret;
+        // TODO some manipulation to _secret that isn't comitted to github
+        return _secret;
     }
 
     /*╔═════════════════════════════════╗
       ║        CORE FUNCTIONS           ║
       ╚═════════════════════════════════╝*/
 
-    function claimAchievement(uint256 achievementIndex) public {
-        awardAchievement(msgSender(), achievementIndex);
+    /// @notice Claim an achievement
+    function claimAchievement(uint256 achievementIndex, bytes32 secret) public {
+        uint256 secret_number = readSecret();
+        address user = msgSender();
+        require(
+            secret ==
+                keccak256(
+                    abi.encodePacked(secret_number, achievementIndex, user)
+                ),
+            "Achievement is unavailable"
+        );
+        _mint(user, mintCount);
+        _setTokenURI(mintCount, achievementArray[achievementIndex].imageURI);
+        emit achievementAwarded(user, achievementIndex);
+        mintCount++;
     }
 
     function viewAchievement(uint256 achievementIndex)
@@ -226,7 +254,6 @@ contract RCAchievements is
     /*╔═════════════════════════════════╗
       ║           OVERRIDES             ║
       ╚═════════════════════════════════╝*/
-    /// @dev ensures NFTs can only be moved when market is resolved
     function _beforeTokenTransfer(
         address from,
         address to,
