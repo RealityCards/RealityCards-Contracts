@@ -5,6 +5,7 @@ var myArgs = process.argv.slice(6, 9);
 const _ = require("underscore");
 const { BN, time } = require("@openzeppelin/test-helpers");
 const { ZERO_ADDRESS } = require("@openzeppelin/test-helpers/src/constants");
+const { deployProxy, upgradeProxy } = require("@openzeppelin/truffle-upgrades");
 
 const argv = require("minimist")(process.argv.slice(2), {
   string: ["ipfs_hash"],
@@ -78,8 +79,10 @@ module.exports = async (deployer, network, accounts) => {
     leaderboard = await RCLeaderboard.deployed();
     await deployer.deploy(NftHubL2, factory.address, childChainManager);
     nftHubL2 = await NftHubL2.deployed();
-    await deployer.deploy(RCAchievements, childChainManager);
-    achievements = await RCAchievements.deployed();
+
+    const achievements = await deployProxy(RCAchievements, [childChainManager], { deployer });
+    // const achievements = await upgradeProxy("0x81Fca7E9c8080f769F062C2d699724C551b94e7E", RCAchievements, { deployer });
+
     // tell treasury about factory & ARB, tell factory about nft hub and reference
     await treasury.setFactoryAddress(factory.address, { gas: 200000 });
     await factory.setReferenceContractAddress(reference.address, {
