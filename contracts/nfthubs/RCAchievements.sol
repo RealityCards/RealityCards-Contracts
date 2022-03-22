@@ -49,6 +49,7 @@ contract RCAchievements is
     bytes32 public constant DEPOSITOR_ROLE = keccak256("DEPOSITOR_ROLE");
     bytes32 public constant MINTER = keccak256("MINTER"); // 0xf0887ba65ee2024ea881d91b74c2450ef19e1557f03bed3ea9f16b037cbe2dc9
     mapping(uint256 => bool) public withdrawnTokens;
+    mapping(address => mapping(uint256 => bool)) public alreadyClaimed;
     event TransferWithMetadata(
         address indexed from,
         address indexed to,
@@ -124,6 +125,7 @@ contract RCAchievements is
         require(hasRole(MINTER, msgSender()), "Not Authorised");
         _mint(user, mintCount);
         _setTokenURI(mintCount, achievementArray[achievementIndex].imageURI);
+        alreadyClaimed[user][achievementIndex] = true;
         emit achievementAwarded(user, achievementIndex, mintCount);
         mintCount++;
     }
@@ -155,8 +157,13 @@ contract RCAchievements is
                 ),
             "Achievement is unavailable"
         );
+        require(
+            alreadyClaimed[user][achievementIndex] == false,
+            "Achievement already claimed"
+        );
         _mint(user, mintCount);
         _setTokenURI(mintCount, achievementArray[achievementIndex].imageURI);
+        alreadyClaimed[user][achievementIndex] = true;
         emit achievementAwarded(user, achievementIndex, mintCount);
         mintCount++;
     }
