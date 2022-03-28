@@ -340,7 +340,7 @@ async function rent(options) {
   if (!options.price) {
     let card = await options.market.card(options.outcome);
     const currentPrice = new BN(card.cardPrice);
-    const higherPrice = currentPriceBN.add(currentPrice.div(new BN('10')));
+    const higherPrice = currentPrice.add(currentPrice.div(new BN('10')));
     if (!higherPrice.isZero()) {
       newPrice = higherPrice.toString();
     }
