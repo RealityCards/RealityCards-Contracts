@@ -7,6 +7,7 @@ events/
 .solcover.js
 coverage.json
 contracts/artifacts/
+output/
 
 # buidler
 artifactsBuidler/

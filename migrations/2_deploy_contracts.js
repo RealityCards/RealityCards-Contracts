@@ -5,6 +5,7 @@ var myArgs = process.argv.slice(6, 9);
 const _ = require('underscore');
 const { BN, time } = require('@openzeppelin/test-helpers');
 const { ZERO_ADDRESS } = require('@openzeppelin/test-helpers/src/constants');
+const { deployProxy, upgradeProxy } = require('@openzeppelin/truffle-upgrades');
 
 const argv = require('minimist')(process.argv.slice(2), {
   string: ['ipfs_hash'],
@@ -27,6 +28,7 @@ var RCFactory = artifacts.require('./RCFactory.sol');
 var RCMarket = artifacts.require('./RCMarket.sol');
 var RCOrderbook = artifacts.require('./RCOrderbook.sol');
 var RCLeaderboard = artifacts.require('./RCLeaderboard.sol');
+var RCAchievements = artifacts.require('./nfthubs/RCAchievements.sol');
 var NftHubL2 = artifacts.require('./nfthubs/RCNftHubL2.sol');
 var NftHubL1 = artifacts.require('./nfthubs/RCNftHubL1.sol');
 var RealitioMockup = artifacts.require('./mockups/RealitioMockup.sol');
@@ -88,6 +90,15 @@ module.exports = async (deployer, network, accounts) => {
     leaderboard = await RCLeaderboard.deployed();
     await deployer.deploy(NftHubL2, factory.address, childChainManager);
     nftHubL2 = await NftHubL2.deployed();
+
+    const achievements = await deployProxy(
+      RCAchievements,
+      [childChainManager],
+      { deployer }
+    );
+    console.log(achievements);
+    // const achievements = await upgradeProxy("0x81Fca7E9c8080f769F062C2d699724C551b94e7E", RCAchievements, { deployer });
+
     // tell treasury about factory & ARB, tell factory about nft hub and reference
     await treasury.setFactoryAddress(factory.address, { gas: 200000 });
     await factory.setReferenceContractAddress(reference.address, {
@@ -106,6 +117,7 @@ module.exports = async (deployer, network, accounts) => {
     console.log('RCMarketAddress    ', RCMarket.address);
     console.log('RCOrderbookAddress ', RCOrderbook.address);
     console.log('NFTHubL2Address    ', nftHubL2.address);
+    console.log('RCAchievements     ', achievements.address);
     console.log('Realitio           ', realitio.address);
   } else if (
     network === 'teststage2' ||
@@ -161,6 +173,11 @@ module.exports = async (deployer, network, accounts) => {
     nftHubL2 = await NftHubL2.deployed();
     await deployer.deploy(NftHubL1, MintableERC721PredicateProxy);
     nftHubL1 = await NftHubL1.deployed();
+    const achievements = await deployProxy(
+      RCAchievements,
+      [childChainManager],
+      { deployer }
+    );
     // tell treasury and factory about various things
     await treasury.setFactoryAddress(factory.address);
     await treasury.setOrderbookAddress(orderbook.address);
@@ -191,6 +208,7 @@ module.exports = async (deployer, network, accounts) => {
       market,
       factory,
       treasury,
+      achievements,
       ipfsHashes,
       time,
       createMarket,

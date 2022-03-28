@@ -1,7 +1,8 @@
 require("@nomiclabs/hardhat-truffle5");
 require("solidity-coverage");
 require("hardhat-gas-reporter");
-// require("@nomiclabs/hardhat-etherscan");
+require("hardhat-tracer");
+require("@nomiclabs/hardhat-etherscan");
 require("dotenv").config();
 
 const ETHERSCAN_KEY = process.env.ETHERSCAN_KEY;
@@ -27,7 +28,7 @@ module.exports = {
     ],
   },
   gasReporter: {
-    enabled: false
+    enabled: false,
   },
   paths: {
     artifacts: "./artifactsBuidler",
@@ -47,7 +48,7 @@ module.exports = {
       gasPrice: "auto",
       accounts: {
         count: 2000,
-      }
+      },
     },
     matic: {
       url: `https://polygon-mainnet.infura.io/v3/${INFURA_KEY}`,
@@ -55,10 +56,10 @@ module.exports = {
       gas: 6000000,
       gasPrice: 7500000000,
       networkCheckTimeout: 1000000,
-      timeoutBlocks: 200
+      timeoutBlocks: 200,
     },
   },
   etherscan: {
-    apiKey: ETHERSCAN_KEY
-  }
+    apiKey: POLYGON_KEY,
+  },
 };

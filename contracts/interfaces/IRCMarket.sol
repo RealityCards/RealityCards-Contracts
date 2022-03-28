@@ -93,6 +93,19 @@ interface IRCMarket {
 
     function accountingComplete() external view returns (bool);
 
+    function card(uint256)
+        external
+        view
+        returns (
+            uint256 totalTimeheld,
+            uint256 timeLastCollected,
+            address longestOwner,
+            uint256 cardTimeLimit,
+            uint256 cardPrice,
+            uint256 rentCollectedPerCard,
+            bool cardAffiliatePaid
+        );
+
     // prices, deposits, rent
 
     function rentCollectedPerUser(address) external view returns (uint256);
