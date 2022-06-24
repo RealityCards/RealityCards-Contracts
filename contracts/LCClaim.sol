@@ -43,6 +43,12 @@ contract LCClaim is NativeMetaTransaction {
     /// @dev creation time
     uint32 public createdAt;
 
+    /*╔═════════════════════════════════╗
+      ║             EVENTS              ║
+      ╚═════════════════════════════════╝*/
+
+    event LogUserClaimed(uint256 indexed amount, address indexed user);
+
     constructor(address _tokenAddress, address _marketAddress) {
         require(_tokenAddress != address(0), 'Must set token address');
         require(_marketAddress != address(0), 'Must set market address');
@@ -79,6 +85,8 @@ contract LCClaim is NativeMetaTransaction {
 
         tokensClaimed[msgSender()] = true;
         erc20.safeTransfer(msgSender(), tokensPerSecond * timeHeld);
+
+        emit LogUserClaimed(tokensPerSecond * timeHeld, msgSender());
     }
 
     function timeoutWithdraw() external {
