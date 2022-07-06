@@ -8,10 +8,10 @@ pragma solidity 0.8.7;
 ███████╗██║  ██║╚██████╔╝██║ ╚████║╚██████╗██║  ██║╚██████╗██║  ██║██║  ██║██████╔╝███████║
 ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚══════╝
  */
-import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
-import './interfaces/IRCMarket.sol';
-import './lib/NativeMetaTransaction.sol';
-import 'hardhat/console.sol';
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "./interfaces/IRCMarket.sol";
+import "./lib/NativeMetaTransaction.sol";
+import "hardhat/console.sol";
 
 /// @title Launch Cards Claim Tokens
 /// @author Konstantin Degtiarenko
@@ -50,11 +50,12 @@ contract LCClaim is NativeMetaTransaction {
     event LogUserClaimed(uint256 indexed amount, address indexed user);
 
     constructor(address _tokenAddress, address _marketAddress) {
-        require(_tokenAddress != address(0), 'Must set token address');
-        require(_marketAddress != address(0), 'Must set market address');
+        require(_tokenAddress != address(0), "Must set token address");
+        require(_marketAddress != address(0), "Must set market address");
+        market = IRCMarket(_marketAddress);
+        require(market.isMarket(), "Market address invalid");
 
         erc20 = IERC20(_tokenAddress);
-        market = IRCMarket(_marketAddress);
         owner = msgSender();
         createdAt = uint32(block.timestamp);
     }
@@ -62,7 +63,7 @@ contract LCClaim is NativeMetaTransaction {
     function setDistribution() external {
         require(
             IRCMarket.States.CLOSED == market.state(),
-            'Market already started'
+            "Market already started"
         );
 
         tokensPerSecond =
@@ -71,17 +72,17 @@ contract LCClaim is NativeMetaTransaction {
     }
 
     function claim() external {
-        require(!claimFinished, 'Claim period is finished');
-        require(!tokensClaimed[msgSender()], 'Already claimed');
+        require(!claimFinished, "Claim period is finished");
+        require(!tokensClaimed[msgSender()], "Already claimed");
         require(
             IRCMarket.States.WITHDRAW == market.state(),
-            'Market is not finished'
+            "Market is not finished"
         );
         uint256 timeHeld = market.timeHeld(
             market.winningOutcome(),
             msgSender()
         );
-        require(timeHeld > 0, 'Address did not participate');
+        require(timeHeld > 0, "Address did not participate");
 
         tokensClaimed[msgSender()] = true;
         erc20.safeTransfer(msgSender(), tokensPerSecond * timeHeld);
@@ -90,10 +91,10 @@ contract LCClaim is NativeMetaTransaction {
     }
 
     function timeoutWithdraw() external {
-        require(msgSender() == owner, 'Only owner');
+        require(msgSender() == owner, "Only owner");
         require(
             block.timestamp > createdAt + timeoutPeriod,
-            'Timeout period is not finished'
+            "Timeout period is not finished"
         );
         claimFinished = true;
         erc20.safeTransfer(owner, erc20.balanceOf(address(this)));
