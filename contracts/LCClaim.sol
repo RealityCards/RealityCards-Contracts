@@ -73,6 +73,7 @@ contract LCClaim is NativeMetaTransaction {
     }
 
     function claim() external {
+        require(tokensPerSecond != 0, "Distribution not set");
         require(!claimFinished, "Claim period is finished");
         require(!tokensClaimed[msgSender()], "Already claimed");
         require(
