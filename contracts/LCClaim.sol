@@ -62,8 +62,9 @@ contract LCClaim is NativeMetaTransaction {
 
     function setDistribution() external {
         require(
-            IRCMarket.States.CLOSED == market.state(),
-            "Market already started"
+            market.state() == IRCMarket.States.CLOSED ||
+                market.state() == IRCMarket.States.OPEN,
+            "Market already ended"
         );
 
         tokensPerSecond =
