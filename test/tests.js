@@ -211,11 +211,15 @@ contract("RealityCardsTests", (accounts) => {
       // let some time pass
       await time.increase(time.duration.minutes(10));
       // withdraw some deposit locally (getting a receipt again)
-      txReceipt = await treasury.withdrawDeposit(ether("5"), true, { from: alice });
+      txReceipt = await treasury.withdrawDeposit(ether("5"), true, {
+        from: alice,
+      });
       // withdraw the rest via the bridge (getting a receipt again)
       // txReceipt = await treasury.withdrawDeposit(ether("5"), false, { from: alice });
       // withdrawing locally again, until the bridge is finished.
-      txReceipt = await treasury.withdrawDeposit(ether("5"), true, { from: alice });
+      txReceipt = await treasury.withdrawDeposit(ether("5"), true, {
+        from: alice,
+      });
       // check the balance is correct (minus gas cost)
       const currentBalance = await erc20.balanceOf(alice);
       assert.equal(startBalance.toString(), currentBalance.toString());
@@ -349,7 +353,12 @@ contract("RealityCardsTests", (accounts) => {
 
     it("test withdraw deposit after market close", async () => {
       // create a market that'll expire soon
-      markets.push(await rc.createMarket({ closeTime: time.duration.weeks(1), resolveTime: time.duration.weeks(1) }));
+      markets.push(
+        await rc.createMarket({
+          closeTime: time.duration.weeks(1),
+          resolveTime: time.duration.weeks(1),
+        })
+      );
       await rc.deposit(100, alice);
       await rc.newRental({ market: markets[1] });
       await time.increase(time.duration.weeks(1));
@@ -391,7 +400,11 @@ contract("RealityCardsTests", (accounts) => {
       assert.equal((await treasury.totalDeposits()).toString(), ether((deposit * 2).toString()).toString());
 
       //pay some rent
-      const tx1 = await rc.newRental({ market: markets[1], price: bid, from: bob });
+      const tx1 = await rc.newRental({
+        market: markets[1],
+        price: bid,
+        from: bob,
+      });
       await time.increase(time.duration.days(1));
       const tx2 = await markets[1].collectRent(0);
       let rentDue = await rc.rentDue(tx1, tx2, bid);
@@ -411,7 +424,12 @@ contract("RealityCardsTests", (accounts) => {
     it("check payout", async () => {
       // global pause tested in it's own test
       // depsoit some dai and confirm all values
-      markets.push(await rc.createMarket({ closeTime: time.duration.days(3), resolveTime: time.duration.days(3) }));
+      markets.push(
+        await rc.createMarket({
+          closeTime: time.duration.days(3),
+          resolveTime: time.duration.days(3),
+        })
+      );
       await rc.deposit(100, alice);
       await rc.deposit(100, bob);
       assert.equal((await treasury.userDeposit(alice)).toString(), ether("100").toString());
@@ -421,8 +439,18 @@ contract("RealityCardsTests", (accounts) => {
       assert.equal((await treasury.totalDeposits()).toString(), ether("200").toString());
 
       // rent seperate cards
-      await rc.newRental({ from: alice, price: 50, market: markets[1], outcome: 0 });
-      await rc.newRental({ from: bob, price: 50, market: markets[1], outcome: 1 });
+      await rc.newRental({
+        from: alice,
+        price: 50,
+        market: markets[1],
+        outcome: 0,
+      });
+      await rc.newRental({
+        from: bob,
+        price: 50,
+        market: markets[1],
+        outcome: 1,
+      });
       // make the market expire
       await time.increase(time.duration.days(3));
       await markets[1].lockMarket();
@@ -482,7 +510,12 @@ contract("RealityCardsTests", (accounts) => {
       // setup, Alice owns a card in a market that is beyond the locking time
       // her rental rate is still high so rent collections from other markets will still collect
       // she should still get refunded when the market locks.
-      markets.push(await rc.createMarket({ closeTime: time.duration.days(1), resolveTime: time.duration.days(1) }));
+      markets.push(
+        await rc.createMarket({
+          closeTime: time.duration.days(1),
+          resolveTime: time.duration.days(1),
+        })
+      );
       await rc.deposit(10, alice);
       await rc.deposit(40, bob);
       // await rc.deposit(40, carol);
@@ -527,7 +560,12 @@ contract("RealityCardsTests", (accounts) => {
       // setup, Alice owns a card when the market locks
       // she makes a new rental elsewhere thereby overpaying rent
       // make sure the original market refunds the rent
-      markets.push(await rc.createMarket({ closeTime: time.duration.days(1), resolveTime: time.duration.days(1) }));
+      markets.push(
+        await rc.createMarket({
+          closeTime: time.duration.days(1),
+          resolveTime: time.duration.days(1),
+        })
+      );
       let deposit = 100;
       await rc.deposit(deposit, alice);
 
@@ -559,7 +597,12 @@ contract("RealityCardsTests", (accounts) => {
 
     it("test multiple user rent collections at same timestamp", async () => {
       // create a market that'll expire soon
-      markets.push(await rc.createMarket({ closeTime: time.duration.weeks(1), resolveTime: time.duration.weeks(1) }));
+      markets.push(
+        await rc.createMarket({
+          closeTime: time.duration.weeks(1),
+          resolveTime: time.duration.weeks(1),
+        })
+      );
       await rc.deposit(1, alice);
       await rc.newRental({ market: markets[1] });
       await rc.newRental({ market: markets[1], outcome: 1 });
@@ -597,7 +640,13 @@ contract("RealityCardsTests", (accounts) => {
       dance: while (success == true) {
         try {
           await factory.setCardLimit(i);
-          markets.push(await rc.createMarket({ numberOfCards: i, closeTime: 7000, resolveTime: 7000 }));
+          markets.push(
+            await rc.createMarket({
+              numberOfCards: i,
+              closeTime: 7000,
+              resolveTime: 7000,
+            })
+          );
         } catch (error) {
           console.log("Failed on ", i);
           success = false;
@@ -606,7 +655,11 @@ contract("RealityCardsTests", (accounts) => {
         console.log("Created a market with %s cards", i);
         for (let j = 0; j < i; j++) {
           try {
-            await rc.newRental({ market: markets[markets.length - 1], from: alice, outcome: j });
+            await rc.newRental({
+              market: markets[markets.length - 1],
+              from: alice,
+              outcome: j,
+            });
           } catch (error) {
             console.log("Failed renting card %s in market %s", j, markets.length - 1);
             success = false;
@@ -929,7 +982,12 @@ contract("RealityCardsTests", (accounts) => {
       await markets[0].claimCard(0, { from: carol });
 
       let NFTCount = await nftHubL2.totalSupply();
-      markets.push(await rc.createMarket({ closeTime: time.duration.days(1), resolveTime: time.duration.days(1) }));
+      markets.push(
+        await rc.createMarket({
+          closeTime: time.duration.days(1),
+          resolveTime: time.duration.days(1),
+        })
+      );
 
       rc.newRental({ from: alice, market: markets[1] });
       await time.increase(time.duration.seconds(10));
@@ -942,7 +1000,13 @@ contract("RealityCardsTests", (accounts) => {
     describe("Cleaning up tests", () => {
       it.skip("Linked list checks ", async () => {
         let numberOfCards = 22;
-        markets.push(await rc.createMarket({ numberOfCards: numberOfCards, closeTime: time.duration.days(1), resolveTime: time.duration.days(1) }));
+        markets.push(
+          await rc.createMarket({
+            numberOfCards: numberOfCards,
+            closeTime: time.duration.days(1),
+            resolveTime: time.duration.days(1),
+          })
+        );
         let bids = [];
         bids[0] = {
           from: alice,
@@ -972,14 +1036,22 @@ contract("RealityCardsTests", (accounts) => {
           })
         );
 
-        let { overalSuccess, totalBidCount } = await rc.checkMarketLists({ market: markets[1] });
+        let { overalSuccess, totalBidCount } = await rc.checkMarketLists({
+          market: markets[1],
+        });
 
         console.log("success ", overalSuccess);
         console.log("bidCount ", totalBidCount);
       });
       it("Don't collect more additional rent than necessary", async () => {
         let numberOfCards = 22;
-        markets.push(await rc.createMarket({ numberOfCards: numberOfCards, closeTime: time.duration.days(1), resolveTime: time.duration.days(1) }));
+        markets.push(
+          await rc.createMarket({
+            numberOfCards: numberOfCards,
+            closeTime: time.duration.days(1),
+            resolveTime: time.duration.days(1),
+          })
+        );
         let bids = [];
         bids[0] = {
           from: alice,
@@ -1023,7 +1095,12 @@ contract("RealityCardsTests", (accounts) => {
       });
       it("Market closing with active bids ", async () => {
         // This tests that closeMarket leaves bids in a state that cleanWastePile can still cope with
-        markets.push(await rc.createMarket({ closeTime: time.duration.days(1), resolveTime: time.duration.days(1) }));
+        markets.push(
+          await rc.createMarket({
+            closeTime: time.duration.days(1),
+            resolveTime: time.duration.days(1),
+          })
+        );
         let bids = [];
         bids[0] = {
           from: alice,
@@ -1051,14 +1128,24 @@ contract("RealityCardsTests", (accounts) => {
         await time.increase(time.duration.days(1));
         await markets[1].lockMarket();
 
-        markets.push(await rc.createMarket({ closeTime: time.duration.days(1), resolveTime: time.duration.days(1) }));
+        markets.push(
+          await rc.createMarket({
+            closeTime: time.duration.days(1),
+            resolveTime: time.duration.days(1),
+          })
+        );
 
         await rc.newRental({ from: alice, market: markets[2], outcome: 1 });
         await rc.newRental({ from: bob, market: markets[2], outcome: 1 });
       });
 
       it("removeOldBids ", async () => {
-        markets.push(await rc.createMarket({ closeTime: time.duration.weeks(1), resolveTime: time.duration.weeks(1) }));
+        markets.push(
+          await rc.createMarket({
+            closeTime: time.duration.weeks(1),
+            resolveTime: time.duration.weeks(1),
+          })
+        );
         let bids = [];
         bids[0] = {
           from: alice,
@@ -1108,7 +1195,12 @@ contract("RealityCardsTests", (accounts) => {
         await realitio.setResult(markets[1].address, 0);
         await markets[1].getWinnerFromOracle();
 
-        markets.push(await rc.createMarket({ closeTime: time.duration.weeks(1), resolveTime: time.duration.weeks(1) }));
+        markets.push(
+          await rc.createMarket({
+            closeTime: time.duration.weeks(1),
+            resolveTime: time.duration.weeks(1),
+          })
+        );
 
         await Promise.all(
           bids.map(async (bid) => {
@@ -1120,11 +1212,26 @@ contract("RealityCardsTests", (accounts) => {
         await rc.newRental({ from: frank, market: markets[2] });
         await rc.newRental({ from: alice, market: markets[2], outcome: 1 });
         await rc.newRental({ from: bob, market: markets[2], price: 2 });
-        await rc.newRental({ from: bob, market: markets[2], price: 2, outcome: 1 });
+        await rc.newRental({
+          from: bob,
+          market: markets[2],
+          price: 2,
+          outcome: 1,
+        });
         await rc.newRental({ from: alice, market: markets[2], price: 3 });
-        await rc.newRental({ from: alice, market: markets[2], outcome: 1, price: 3 });
+        await rc.newRental({
+          from: alice,
+          market: markets[2],
+          outcome: 1,
+          price: 3,
+        });
         await rc.newRental({ from: bob, market: markets[2], price: 4 });
-        await rc.newRental({ from: bob, market: markets[2], price: 4, outcome: 1 });
+        await rc.newRental({
+          from: bob,
+          market: markets[2],
+          price: 4,
+          outcome: 1,
+        });
         await orderbook.removeOldBids(alice);
       });
     });
@@ -1450,7 +1557,12 @@ contract("RealityCardsTests", (accounts) => {
       it("Find new owner, not finding a new owner ", async () => {
         let numberOfDeletions = 3;
         await orderbook.setDeletionLimit(numberOfDeletions);
-        markets.push(await rc.createMarket({ closeTime: time.duration.days(2), resolveTime: time.duration.days(2) }));
+        markets.push(
+          await rc.createMarket({
+            closeTime: time.duration.days(2),
+            resolveTime: time.duration.days(2),
+          })
+        );
         let bids = [];
         bids[0] = {
           from: alice,
@@ -1819,7 +1931,13 @@ contract("RealityCardsTests", (accounts) => {
     it("Token URIs updated for winners, losers, originals and copies", async () => {
       await rc.deposit(100, alice);
       await rc.deposit(100, bob);
-      markets.push(await rc.createMarket({ closeTime: 600, resolveTime: 600, numberOfCards: 2 }));
+      markets.push(
+        await rc.createMarket({
+          closeTime: 600,
+          resolveTime: 600,
+          numberOfCards: 2,
+        })
+      );
       await rc.newRental({ market: markets[1], from: alice });
       await rc.newRental({ market: markets[1], from: alice, outcome: 1 });
       await time.increase(500);
@@ -1861,6 +1979,83 @@ contract("RealityCardsTests", (accounts) => {
       console.log("number of results ", expectedResults);
       console.log("number of markets ", markets.length);
       console.log("Results ", results);
+    });
+  });
+  describe("Token Claim tests", () => {
+    it("should calculate tokensPerSecond", async () => {
+      const openTime = await time.latest();
+
+      markets.push(
+        await rc.createMarket({
+          openTime: openTime.toNumber() + 1000,
+          closeTime: 2000,
+          resolveTime: 2000,
+        })
+      );
+
+      const claimContract = await rc.deployLCClaim(erc20.address, markets[1].address);
+
+      await claimContract.setDistribution();
+      const tokensPerSecond = await claimContract.tokensPerSecond();
+      assert.equal(tokensPerSecond.toString(), ether("10").toString());
+    });
+    it("should distribute tokens correctly", async () => {
+      const openTime = await time.latest();
+
+      markets.push(
+        await rc.createMarket({
+          openTime: openTime.toNumber() + 1000,
+          closeTime: 2000,
+          resolveTime: 2000,
+        })
+      );
+
+      const claimContract = await rc.deployLCClaim(erc20.address, markets[1].address);
+
+      await claimContract.setDistribution();
+      await time.increase(time.duration.seconds(1000));
+      await rc.deposit(100, bob);
+      await rc.deposit(100, alice);
+      await rc.newRental({
+        market: markets[1],
+        from: bob,
+      });
+      await time.increase(time.duration.seconds(100));
+      await rc.newRental({
+        market: markets[1],
+        from: alice,
+        price: 2,
+      });
+      await time.increase(time.duration.seconds(3000));
+      await markets[1].setAmicableResolution(0);
+      const bobBalanceBefore = await erc20.balanceOf(bob);
+      const aliceBalanceBefore = await erc20.balanceOf(alice);
+      await claimContract.claim({ from: bob });
+      await claimContract.claim({ from: alice });
+      const bobBalanceAfter = await erc20.balanceOf(bob);
+      const aliceBalanceAfter = await erc20.balanceOf(alice);
+      const tokensPerSecond = await claimContract.tokensPerSecond();
+      const bobsTimeHeld = await markets[1].timeHeld(0, bob);
+      const alicesTimeHeld = await markets[1].timeHeld(0, alice);
+
+      assert.equal(aliceBalanceAfter.sub(aliceBalanceBefore).toString(), tokensPerSecond.mul(alicesTimeHeld).toString());
+      assert.equal(bobBalanceAfter.sub(bobBalanceBefore).toString(), tokensPerSecond.mul(bobsTimeHeld).toString());
+      await expectRevert(claimContract.claim({ from: bob }), "Already claimed");
+
+      await time.increase(time.duration.seconds(2419200));
+      await claimContract.timeoutWithdraw();
+    });
+    it("should return tokens to owner after timeout", async () => {
+      markets.push(await rc.createMarket());
+
+      const claimContract = await rc.deployLCClaim(erc20.address, markets[1].address);
+      const balanceBefore = await erc20.balanceOf(admin);
+
+      await time.increase(time.duration.seconds(2419200));
+      await claimContract.timeoutWithdraw();
+      const balanceAfter = await erc20.balanceOf(admin);
+
+      assert.equal(balanceAfter.sub(balanceBefore).toString(), ether("10000").toString());
     });
   });
 });
