@@ -323,9 +323,12 @@ function setDefaults(options, defaults) {
   return _.defaults({}, _.clone(options), defaults);
 }
 
-async function deployClaimContract(token, market) {
-  await deployer.deploy(LCCLaim, token, market);
-  return await LCCLaim.deployed();
+async function deployClaimContract(amount, market) {
+  await deployer.deploy(LCCLaim, erc20.address, market);
+  const claimContract = await LCCLaim.deployed();
+  await erc20.transfer(claimContract.address, amount);
+  claimContract.setDistribution();
+  return claimContract;
 }
 
 async function rent(options) {
