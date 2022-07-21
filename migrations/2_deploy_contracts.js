@@ -29,6 +29,7 @@ var RCMarket = artifacts.require('./RCMarket.sol');
 var RCOrderbook = artifacts.require('./RCOrderbook.sol');
 var RCLeaderboard = artifacts.require('./RCLeaderboard.sol');
 var RCAchievements = artifacts.require('./nfthubs/RCAchievements.sol');
+var LCCLaim = artifacts.require('./LCCLaim.sol');
 var NftHubL2 = artifacts.require('./nfthubs/RCNftHubL2.sol');
 var NftHubL1 = artifacts.require('./nfthubs/RCNftHubL1.sol');
 var RealitioMockup = artifacts.require('./mockups/RealitioMockup.sol');
@@ -216,7 +217,8 @@ module.exports = async (deployer, network, accounts) => {
       depositDai,
       rent,
       exit,
-      sponsor
+      sponsor,
+      deployClaimContract
     );
 
     //grant PREDICATE_ROLE to account 0 and minting test toket to L1Hub
@@ -319,6 +321,11 @@ async function depositDai(amount, user) {
 
 function setDefaults(options, defaults) {
   return _.defaults({}, _.clone(options), defaults);
+}
+
+async function deployClaimContract(token, market) {
+  await deployer.deploy(LCCLaim, token, market);
+  return await LCCLaim.deployed();
 }
 
 async function rent(options) {
