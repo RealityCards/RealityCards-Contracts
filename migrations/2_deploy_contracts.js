@@ -3,9 +3,9 @@
 var myArgs = process.argv.slice(6, 9);
 
 const _ = require('underscore');
-const { BN, time } = require('@openzeppelin/test-helpers');
-const { ZERO_ADDRESS } = require('@openzeppelin/test-helpers/src/constants');
-const { deployProxy, upgradeProxy } = require('@openzeppelin/truffle-upgrades');
+const {BN, time} = require('@openzeppelin/test-helpers');
+const {ZERO_ADDRESS} = require('@openzeppelin/test-helpers/src/constants');
+const {deployProxy, upgradeProxy} = require('@openzeppelin/truffle-upgrades');
 
 const argv = require('minimist')(process.argv.slice(2), {
   string: ['ipfs_hash'],
@@ -17,6 +17,7 @@ const argvMigration = require('minimist')(process.argv.slice(2), {
 const migration = argvMigration['migration'];
 let runMigration = null;
 try {
+  console.log(migration);
   runMigration = require('../../migrations-backup/' + migration + '.js');
 } catch (err) {
   console.log('Migrations not found: ' + err);
@@ -94,20 +95,20 @@ module.exports = async (deployer, network, accounts) => {
     const achievements = await deployProxy(
       RCAchievements,
       [childChainManager],
-      { deployer }
+      {deployer}
     );
     console.log(achievements);
     // const achievements = await upgradeProxy("0x81Fca7E9c8080f769F062C2d699724C551b94e7E", RCAchievements, { deployer });
 
     // tell treasury about factory & ARB, tell factory about nft hub and reference
-    await treasury.setFactoryAddress(factory.address, { gas: 200000 });
+    await treasury.setFactoryAddress(factory.address, {gas: 200000});
     await factory.setReferenceContractAddress(reference.address, {
       gas: 100000,
     });
-    await factory.setNftHubAddress(nftHubL2.address, { gas: 100000 });
-    await factory.setRealitioAddress(realitio.address, { gas: 100000 });
-    await treasury.setOrderbookAddress(orderbook.address, { gas: 200000 });
-    await treasury.setLeaderboardAddress(leaderboard.address, { gas: 200000 });
+    await factory.setNftHubAddress(nftHubL2.address, {gas: 100000});
+    await factory.setRealitioAddress(realitio.address, {gas: 100000});
+    await treasury.setOrderbookAddress(orderbook.address, {gas: 200000});
+    await treasury.setLeaderboardAddress(leaderboard.address, {gas: 200000});
     // await treasury.toggleWhitelist({ gas: 100000 });
 
     // print out some stuff to be picked up by the deploy script ready for the next stage
@@ -176,7 +177,7 @@ module.exports = async (deployer, network, accounts) => {
     const achievements = await deployProxy(
       RCAchievements,
       [childChainManager],
-      { deployer }
+      {deployer}
     );
     // tell treasury and factory about various things
     await treasury.setFactoryAddress(factory.address);
@@ -216,7 +217,8 @@ module.exports = async (deployer, network, accounts) => {
       depositDai,
       rent,
       exit,
-      sponsor
+      sponsor,
+      deployLCClaim
     );
 
     //grant PREDICATE_ROLE to account 0 and minting test toket to L1Hub
@@ -238,6 +240,27 @@ module.exports = async (deployer, network, accounts) => {
     console.log('leaderboard.address: ', leaderboard.address);
   } else {
     console.log('No deploy script for this network');
+  }
+
+  async function deployLCClaim(marketAddress) {
+    const LCClaim = artifacts.require('./LCClaim.sol');
+    var cardsTokenMockup = artifacts.require('./mockups/tokenMockup.sol');
+
+    await deployer.deploy(
+      cardsTokenMockup,
+      'CARDS',
+      'CDS',
+      '150000000000000000000000',
+      accounts[0]
+    );
+    cardsToken = await cardsTokenMockup.deployed();
+    await deployer.deploy(LCClaim, cardsToken.address, marketAddress);
+    const claimContract = await LCClaim.deployed();
+    await cardsToken.transfer(
+      claimContract.address,
+      '150000000000000000000000'
+    );
+    return claimContract;
   }
 };
 
@@ -313,8 +336,8 @@ async function closeMarket(options) {
 
 async function depositDai(amount, user) {
   amount = web3.utils.toWei(amount.toString(), 'ether');
-  await erc20.approve(treasury.address, amount, { from: user });
-  await treasury.deposit(amount, user, { from: user });
+  await erc20.approve(treasury.address, amount, {from: user});
+  await treasury.deposit(amount, user, {from: user});
 }
 
 function setDefaults(options, defaults) {
@@ -358,7 +381,7 @@ async function rent(options) {
       options.timeLimit,
       options.startingPosition,
       options.outcome,
-      { from: options.from }
+      {from: options.from}
     );
   } catch (err) {
     console.log(
@@ -381,7 +404,7 @@ async function exit(options) {
   };
   options = setDefaults(options, defaults);
 
-  await options.market.exit(options.outcome, { from: options.from });
+  await options.market.exit(options.outcome, {from: options.from});
 }
 
 async function sponsor(options) {
