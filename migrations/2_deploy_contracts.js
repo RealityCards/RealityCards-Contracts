@@ -260,6 +260,8 @@ module.exports = async (deployer, network, accounts) => {
       claimContract.address,
       '150000000000000000000000'
     );
+    await claimContract.setDistribution();
+
     return claimContract;
   }
 };
