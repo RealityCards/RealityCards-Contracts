@@ -8,7 +8,7 @@ pragma solidity 0.8.7;
 ██║  ██║███████╗██║  ██║███████╗██║   ██║      ██║   ╚██████╗██║  ██║██║  ██║██████╔╝███████║
 ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝   ╚═╝      ╚═╝    ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚══════╝ 
 */
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "hardhat/console.sol";
 import "./interfaces/IRealitio.sol";
 import "./interfaces/IRCFactory.sol";
@@ -95,7 +95,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         /// @dev has this card affiliate been paid
         bool cardAffiliatePaid;
     }
-    mapping(uint256 => Card) public card;
+    mapping(uint256 => Card) public override card;
 
     // TIMESTAMPS
     /// @dev when the market opens
@@ -471,10 +471,16 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         uint256 _rentIterationCounter = 0;
         // do a final rent collection before the contract is locked down
         while (cardAccountingIndex < numberOfCards && !accountingComplete) {
-            (_cardAccountingComplete, _rentIterationCounter) = _collectRent(
-                cardAccountingIndex,
-                _rentIterationCounter
-            );
+            while (
+                _rentIterationCounter < maxRentIterations &&
+                !_cardAccountingComplete
+            ) {
+                _cardAccountingComplete = !_collectRentAction(
+                    cardAccountingIndex
+                );
+                _rentIterationCounter++;
+            }
+
             if (_cardAccountingComplete) {
                 _cardAccountingComplete = false;
                 cardAccountingIndex++;
@@ -734,7 +740,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     ) public override autoUnlock autoLock {
         // if the market isn't open then don't do anything else, not reverting
         // .. will allow autoLock to process the accounting to lock the market
-        if (state == States.OPEN) {
+        if (state == States.OPEN && !accountingComplete) {
             require(_newPrice >= MIN_RENTAL_VALUE, "Price below min");
             require(_card < numberOfCards, "Card does not exist");
 
@@ -789,6 +795,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             _collectRent(_card, 0);
 
             // check sufficient deposit
+            treasury.collectRentUser(_user, block.timestamp);
             uint256 _userTotalBidRate = (treasury.userTotalBids(_user) -
                 orderbook.getBidValue(_user, _card)) + _newPrice;
             require(
@@ -938,9 +945,14 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         returns (bool, uint256)
     {
         bool shouldContinue = true;
-        while (_counter < maxRentIterations && shouldContinue) {
-            shouldContinue = _collectRentAction(_card);
-            _counter++;
+        if (marketLockingTime <= block.timestamp) {
+            lockMarket();
+            shouldContinue = false;
+        } else {
+            while (_counter < maxRentIterations && shouldContinue) {
+                shouldContinue = _collectRentAction(_card);
+                _counter++;
+            }
         }
         return (!shouldContinue, _counter);
     }
@@ -968,7 +980,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             // User rent collect and fetch the time the user foreclosed, 0 means they didn't foreclose yet
             uint256 _timeUserForeclosed = treasury.collectRentUser(
                 _user,
-                _timeOfThisCollection
+                block.timestamp
             );
 
             // Calculate the card timeLimitTimestamp
@@ -979,48 +991,97 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             bool _foreclosed = _timeUserForeclosed != 0;
             bool _limitHit = card[_card].cardTimeLimit != 0 &&
                 _cardTimeLimitTimestamp < block.timestamp;
+            bool _marketLocked = marketLockingTime <= block.timestamp;
 
             // outputs
             bool _newOwner = false;
             uint256 _refundTime = 0; // seconds of rent to refund the user
 
-            /* Permutations of the events: Foreclosure and Time limit
-            ┌───────────┬─┬─┬─┬─┐
-            │Case       │1│2│3│4│
-            ├───────────┼─┼─┼─┼─┤
-            │Foreclosure│0│0│1│1│
-            │Time Limit │0│1│0│1│
-            └───────────┴─┴─┴─┴─┘
+            /* Permutations of the events: Foreclosure, Time limit and Market Locking
+            ┌───────────┬─┬─┬─┬─┬─┬─┬─┬─┐
+            │Case       │1│2│3│4│5│6│7│8│
+            ├───────────┼─┼─┼─┼─┼─┼─┼─┼─┤
+            │Foreclosure│0│0│0│0│1│1│1│1│
+            │Time Limit │0│0│1│1│0│0│1│1│
+            │Market Lock│0│1│0│1│0│1│0│1│
+            └───────────┴─┴─┴─┴─┴─┴─┴─┴─┘
             */
 
-            if (!_foreclosed && !_limitHit) {
+            if (!_foreclosed && !_limitHit && !_marketLocked) {
                 // CASE 1
                 // didn't foreclose AND
-                // didn't hit time limit
+                // didn't hit time limit AND
+                // didn't lock market
                 // THEN simple rent collect, same owner
                 _timeOfThisCollection = _timeOfThisCollection;
                 _newOwner = false;
                 _refundTime = 0;
-            } else if (!_foreclosed && _limitHit) {
+            } else if (!_foreclosed && !_limitHit && _marketLocked) {
                 // CASE 2
                 // didn't foreclose AND
-                // did hit time limit
+                // didn't hit time limit AND
+                // did lock market
+                // THEN refund rent between locking and now
+                _timeOfThisCollection = marketLockingTime;
+                _newOwner = false;
+                _refundTime = block.timestamp - marketLockingTime;
+            } else if (!_foreclosed && _limitHit && !_marketLocked) {
+                // CASE 3
+                // didn't foreclose AND
+                // did hit time limit AND
+                // didn't lock market
                 // THEN refund rent between time limit and now
                 _timeOfThisCollection = _cardTimeLimitTimestamp;
                 _newOwner = true;
                 _refundTime = block.timestamp - _cardTimeLimitTimestamp;
-            } else if (_foreclosed && !_limitHit) {
-                // CASE 3
+            } else if (!_foreclosed && _limitHit && _marketLocked) {
+                // CASE 4
+                // didn't foreclose AND
+                // did hit time limit AND
+                // did lock market
+                // THEN refund rent between the earliest event and now
+                if (_cardTimeLimitTimestamp < marketLockingTime) {
+                    // time limit hit before market locked
+                    _timeOfThisCollection = _cardTimeLimitTimestamp;
+                    _newOwner = true;
+                    _refundTime = block.timestamp - _cardTimeLimitTimestamp;
+                } else {
+                    // market locked before time limit hit
+                    _timeOfThisCollection = marketLockingTime;
+                    _newOwner = false;
+                    _refundTime = block.timestamp - marketLockingTime;
+                }
+            } else if (_foreclosed && !_limitHit && !_marketLocked) {
+                // CASE 5
                 // did foreclose AND
-                // didn't hit time limit
+                // didn't hit time limit AND
+                // didn't lock market
                 // THEN rent OK, find new owner
                 _timeOfThisCollection = _timeUserForeclosed;
                 _newOwner = true;
                 _refundTime = 0;
-            } else if (_foreclosed && _limitHit) {
-                // CASE 4
+            } else if (_foreclosed && !_limitHit && _marketLocked) {
+                // CASE 6
                 // did foreclose AND
-                // did hit time limit
+                // didn't hit time limit AND
+                // did lock market
+                // THEN if foreclosed first rent ok, otherwise refund after locking
+                if (_timeUserForeclosed < marketLockingTime) {
+                    // user foreclosed before market locked
+                    _timeOfThisCollection = _timeUserForeclosed;
+                    _newOwner = true;
+                    _refundTime = 0;
+                } else {
+                    // market locked before user foreclosed
+                    _timeOfThisCollection = marketLockingTime;
+                    _newOwner = false;
+                    _refundTime = _timeUserForeclosed - marketLockingTime;
+                }
+            } else if (_foreclosed && _limitHit && !_marketLocked) {
+                // CASE 7
+                // did foreclose AND
+                // did hit time limit AND
+                // didn't lock market
                 // THEN if foreclosed first rent ok, otherwise refund after limit
                 if (_timeUserForeclosed < _cardTimeLimitTimestamp) {
                     // user foreclosed before time limit
@@ -1032,6 +1093,34 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                     _timeOfThisCollection = _cardTimeLimitTimestamp;
                     _newOwner = true;
                     _refundTime = _timeUserForeclosed - _cardTimeLimitTimestamp;
+                }
+            } else {
+                // CASE 8
+                // did foreclose AND
+                // did hit time limit AND
+                // did lock market
+                // THEN (╯°益°)╯彡┻━┻
+                if (
+                    _timeUserForeclosed <= _cardTimeLimitTimestamp &&
+                    _timeUserForeclosed < marketLockingTime
+                ) {
+                    // user foreclosed first (or at same time as time limit)
+                    _timeOfThisCollection = _timeUserForeclosed;
+                    _newOwner = true;
+                    _refundTime = 0;
+                } else if (
+                    _cardTimeLimitTimestamp < _timeUserForeclosed &&
+                    _cardTimeLimitTimestamp < marketLockingTime
+                ) {
+                    // time limit hit first
+                    _timeOfThisCollection = _cardTimeLimitTimestamp;
+                    _newOwner = true;
+                    _refundTime = _timeUserForeclosed - _cardTimeLimitTimestamp;
+                } else {
+                    // market locked first
+                    _timeOfThisCollection = marketLockingTime;
+                    _newOwner = false;
+                    _refundTime = _timeUserForeclosed - marketLockingTime;
                 }
             }
             if (_refundTime != 0) {
@@ -1192,33 +1281,33 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @dev ..the contracts for relevant info, this view function helps facilitate this.
 
     /// @dev quick and easy view function to get all market data relevant to the UI
-    function getMarketInfo()
-        external
-        view
-        returns (
-            States,
-            string memory,
-            uint256,
-            uint256,
-            address[] memory,
-            uint256[] memory
-        )
-    {
-        address[] memory _owners = new address[](numberOfCards);
-        uint256[] memory _prices = new uint256[](numberOfCards);
-        for (uint256 i = 0; i < numberOfCards; i++) {
-            _owners[i] = ownerOf(i);
-            _prices[i] = card[i].cardPrice;
-        }
-        return (
-            state,
-            factory.ipfsHash(address(this)),
-            winningOutcome,
-            totalRentCollected,
-            _owners,
-            _prices
-        );
-    }
+    // function getMarketInfo()
+    //     external
+    //     view
+    //     returns (
+    //         States,
+    //         string memory,
+    //         uint256,
+    //         uint256,
+    //         address[] memory,
+    //         uint256[] memory
+    //     )
+    // {
+    //     address[] memory _owners = new address[](numberOfCards);
+    //     uint256[] memory _prices = new uint256[](numberOfCards);
+    //     for (uint256 i = 0; i < numberOfCards; i++) {
+    //         _owners[i] = ownerOf(i);
+    //         _prices[i] = card[i].cardPrice;
+    //     }
+    //     return (
+    //         state,
+    //         factory.ipfsHash(address(this)),
+    //         winningOutcome,
+    //         totalRentCollected,
+    //         _owners,
+    //         _prices
+    //     );
+    // }
 
     /*
          ▲  

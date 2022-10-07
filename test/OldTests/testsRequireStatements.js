@@ -1,22 +1,15 @@
-const { assert } = require('hardhat');
-const {
-  BN,
-  expectRevert,
-  ether,
-  expectEvent,
-  balance,
-  time
-} = require('@openzeppelin/test-helpers');
-const { ZERO_ADDRESS } = require('@openzeppelin/test-helpers/src/constants');
+const { assert } = require("hardhat");
+const { BN, expectRevert, ether, expectEvent, balance, time } = require("@openzeppelin/test-helpers");
+const { ZERO_ADDRESS } = require("@openzeppelin/test-helpers/src/constants");
 
 // main contracts
-var RCFactory = artifacts.require('./RCFactory.sol');
-var RCTreasury = artifacts.require('./RCTreasury.sol');
-var RCMarket = artifacts.require('./RCMarket.sol');
-var NftHubL2 = artifacts.require('./nfthubs/RCNftHubL2.sol');
-var NftHubL1 = artifacts.require('./nfthubs/RCNftHubL1.sol');
-var RCOrderbook = artifacts.require('./RCOrderbook.sol');
-var RCLeaderboard = artifacts.require('./RCLeaderboard.sol');
+var RCFactory = artifacts.require("./RCFactory.sol");
+var RCTreasury = artifacts.require("./RCTreasury.sol");
+var RCMarket = artifacts.require("./RCMarket.sol");
+var NftHubL2 = artifacts.require("./nfthubs/RCNftHubL2.sol");
+var NftHubL1 = artifacts.require("./nfthubs/RCNftHubL1.sol");
+var RCOrderbook = artifacts.require("./RCOrderbook.sol");
+var RCLeaderboard = artifacts.require("./RCLeaderboard.sol");
 // mockups
 var RealitioMockup = artifacts.require("./mockups/RealitioMockup.sol");
 
@@ -24,19 +17,18 @@ var SelfDestructMockup = artifacts.require("./mockups/SelfDestructMockup.sol");
 var DaiMockup = artifacts.require("./mockups/DaiMockup.sol");
 const tokenMockup = artifacts.require("./mockups/tokenMockup.sol");
 // used where the address isn't important but can't be zero
-const dummyAddress = '0x0000000000000000000000000000000000000001';
+const dummyAddress = "0x0000000000000000000000000000000000000001";
 
 // arbitrator
-var kleros = '0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D';
+var kleros = "0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D";
 
-const delay = duration => new Promise(resolve => setTimeout(resolve, duration));
+const delay = (duration) => new Promise((resolve) => setTimeout(resolve, duration));
 
-contract('TestRequireStatements', (accounts) => {
-
+contract("TestRequireStatements", (accounts) => {
   var realitycards;
-  var tokenURIs = ['x', 'x', 'x', 'uri', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x']; // 20 tokens
+  var tokenURIs = ["x", "x", "x", "uri", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x", "x"]; // 20 tokens
   // lengthen the array 5x, for the originals, copies, winners, undecided and losers
-  tokenURIs = tokenURIs.concat(tokenURIs.concat(tokenURIs.concat(tokenURIs.concat(tokenURIs))))
+  tokenURIs = tokenURIs.concat(tokenURIs.concat(tokenURIs.concat(tokenURIs.concat(tokenURIs))));
   var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
   var maxuint256 = 4294967295;
 
@@ -52,24 +44,24 @@ contract('TestRequireStatements', (accounts) => {
   user9 = accounts[9];
   andrewsAddress = accounts[9];
   // throws a tantrum if cardRecipients is not outside beforeEach for some reason
-  var zeroAddress = '0x0000000000000000000000000000000000000000';
+  var zeroAddress = "0x0000000000000000000000000000000000000000";
   var cardRecipients = [];
 
   beforeEach(async () => {
     var latestTime = await time.latest();
-    var oneYear = new BN('31104000');
+    var oneYear = new BN("31104000");
     var oneYearInTheFuture = oneYear.add(latestTime);
     var marketLockingTime = oneYearInTheFuture;
     var oracleResolutionTime = oneYearInTheFuture;
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
-    var artistAddress = '0x0000000000000000000000000000000000000000';
-    var affiliateAddress = '0x0000000000000000000000000000000000000000';
+    var artistAddress = "0x0000000000000000000000000000000000000000";
+    var affiliateAddress = "0x0000000000000000000000000000000000000000";
     erc20 = await tokenMockup.new("Dai", "Dai", ether("10000000"), user0);
     for (let index = 0; index < 10; index++) {
       user = eval("user" + index);
       erc20.transfer(user, ether("1000"), { from: user0 });
     }
-    // mockups 
+    // mockups
     realitio = await RealitioMockup.new();
     dai = await DaiMockup.new();
     // main contracts
@@ -90,19 +82,8 @@ contract('TestRequireStatements', (accounts) => {
     await treasury.toggleWhitelist();
 
     // market creation
-    let slug = "slug"
-    await rcfactory.createMarket(
-      0,
-      '0x0',
-      slug,
-      timestamps,
-      tokenURIs,
-      artistAddress,
-      affiliateAddress,
-      cardRecipients,
-      question,
-      0,
-    );
+    let slug = "slug";
+    await rcfactory.createMarket(0, "0x0", slug, timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0);
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards = await RCMarket.at(marketAddress);
     await rcfactory.changeMarketApproval(marketAddress);
@@ -110,27 +91,16 @@ contract('TestRequireStatements', (accounts) => {
 
   async function createMarketCustomMode(mode) {
     var latestTime = await time.latest();
-    var oneYear = new BN('31104000');
+    var oneYear = new BN("31104000");
     var oneYearInTheFuture = oneYear.add(latestTime);
     var marketLockingTime = oneYearInTheFuture;
     var oracleResolutionTime = oneYearInTheFuture;
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
-    var artistAddress = '0x0000000000000000000000000000000000000000';
-    var affiliateAddress = '0x0000000000000000000000000000000000000000';
+    var artistAddress = "0x0000000000000000000000000000000000000000";
+    var affiliateAddress = "0x0000000000000000000000000000000000000000";
 
-    let slug = "slug"
-    await rcfactory.createMarket(
-      mode,
-      '0x0',
-      slug,
-      timestamps,
-      tokenURIs,
-      artistAddress,
-      affiliateAddress,
-      cardRecipients,
-      question,
-      0,
-    );
+    let slug = "slug";
+    await rcfactory.createMarket(mode, "0x0", slug, timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0);
     var marketAddress = await rcfactory.getMostRecentMarket.call(mode);
     realitycards2 = await RCMarket.at(marketAddress);
     return realitycards2;
@@ -138,23 +108,12 @@ contract('TestRequireStatements', (accounts) => {
 
   async function createMarketCustomeTimestamps(marketOpeningTime, marketLockingTime, oracleResolutionTime) {
     var artistAddress = user8;
-    await treasury.grantRoleString("ARTIST", artistAddress)
-    var affiliateAddress = '0x0000000000000000000000000000000000000000';
+    await treasury.grantRoleString("ARTIST", artistAddress);
+    var affiliateAddress = "0x0000000000000000000000000000000000000000";
     var timestamps = [marketOpeningTime, marketLockingTime, oracleResolutionTime];
 
-    let slug = "slug"
-    await rcfactory.createMarket(
-      0,
-      '0x0',
-      slug,
-      timestamps,
-      tokenURIs,
-      artistAddress,
-      affiliateAddress,
-      cardRecipients,
-      question,
-      0,
-    );
+    let slug = "slug";
+    await rcfactory.createMarket(0, "0x0", slug, timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0);
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
     return realitycards2;
@@ -163,61 +122,50 @@ contract('TestRequireStatements', (accounts) => {
   async function createMarketCustomeTimestamps2(marketOpeningTime, marketLockingTime, oracleResolutionTime) {
     var artistAddress = user8;
     // await rcfactory.addArtist(user8);
-    var affiliateAddress = '0x0000000000000000000000000000000000000000';
+    var affiliateAddress = "0x0000000000000000000000000000000000000000";
     var timestamps = [marketOpeningTime, marketLockingTime, oracleResolutionTime];
 
-    let slug = "slug"
-    await rcfactory.createMarket(
-      0,
-      '0x0',
-      slug,
-      timestamps,
-      tokenURIs,
-      artistAddress,
-      affiliateAddress,
-      cardRecipients,
-      question,
-      0,
-    );
+    let slug = "slug";
+    await rcfactory.createMarket(0, "0x0", slug, timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0);
     var marketAddress = await rcfactory.getMostRecentMarket.call(0);
     realitycards2 = await RCMarket.at(marketAddress);
     return realitycards2;
   }
 
   async function depositDai(amount, user) {
-    amount = web3.utils.toWei(amount.toString(), 'ether');
-    await erc20.approve(treasury.address, amount, { from: user })
+    amount = web3.utils.toWei(amount.toString(), "ether");
+    await erc20.approve(treasury.address, amount, { from: user });
     await treasury.deposit(amount, user, { from: user });
   }
   async function newRental(price, outcome, user) {
-    price = web3.utils.toWei(price.toString(), 'ether');
+    price = web3.utils.toWei(price.toString(), "ether");
     await realitycards.newRental(price, 0, zeroAddress, outcome, { from: user });
   }
 
   async function newRentalWithStartingPosition(price, outcome, position, user) {
-    price = web3.utils.toWei(price.toString(), 'ether');
+    price = web3.utils.toWei(price.toString(), "ether");
     await realitycards.newRental(price, 0, position, outcome, { from: user });
   }
 
   async function newRentalWithDeposit(price, outcome, user, dai) {
-    price = web3.utils.toWei(price.toString(), 'ether');
-    dai = web3.utils.toWei(dai.toString(), 'ether');
+    price = web3.utils.toWei(price.toString(), "ether");
+    dai = web3.utils.toWei(dai.toString(), "ether");
     await realitycards.newRental(price, 0, zeroAddress, outcome, { from: user, value: dai });
   }
 
   async function newRentalCustomContract(contract, price, outcome, user) {
-    price = web3.utils.toWei(price.toString(), 'ether');
+    price = web3.utils.toWei(price.toString(), "ether");
     await contract.newRental(price, maxuint256.toString(), zeroAddress, outcome, { from: user });
   }
 
   async function newRentalWithDepositCustomContract(contract, price, outcome, user, dai) {
-    price = web3.utils.toWei(price.toString(), 'ether');
-    dai = web3.utils.toWei(dai.toString(), 'ether');
+    price = web3.utils.toWei(price.toString(), "ether");
+    dai = web3.utils.toWei(dai.toString(), "ether");
     await contract.newRental(price, maxuint256.toString(), zeroAddress, outcome, { from: user, value: dai });
   }
 
   async function newRentalCustomTimeLimit(price, timelimit, outcome, user) {
-    price = web3.utils.toWei(price.toString(), 'ether');
+    price = web3.utils.toWei(price.toString(), "ether");
     await realitycards.newRental(price, (timelimit * 3600 * 24).toString(), zeroAddress, outcome, { from: user });
   }
 
@@ -230,12 +178,11 @@ contract('TestRequireStatements', (accounts) => {
   }
 
   async function withdrawDeposit(amount, userx) {
-    amount = web3.utils.toWei(amount.toString(), 'ether');
+    amount = web3.utils.toWei(amount.toString(), "ether");
     await treasury.withdrawDeposit(amount, true, { from: userx });
   }
 
-
-  it('check expected failures with market resolution: question not resolved but market ended', async () => {
+  it("check expected failures with market resolution: question not resolved but market ended", async () => {
     await depositDai(1000, user0);
     await newRental(1, 0, user0);
     await time.increase(time.duration.hours(1));
@@ -249,19 +196,19 @@ contract('TestRequireStatements', (accounts) => {
     await withdrawDeposit(1000, user0);
   });
 
-  it('newRental check failures', async () => {
+  it("newRental check failures", async () => {
     /////// SETUP //////
     user = user0;
     await depositDai(1000, user0);
     // check newRental stuff
-    await expectRevert(realitycards.newRental(web3.utils.toWei('0.5', 'picoether'), maxuint256, zeroAddress, 0, { from: user }), "Price below min");
-    await expectRevert(realitycards.newRental(web3.utils.toWei('24', 'picoether'), maxuint256, zeroAddress, 23, { from: user }), "Card does not exist");
+    await expectRevert(realitycards.newRental(web3.utils.toWei("0.5", "picoether"), maxuint256, zeroAddress, 0, { from: user }), "Price below min");
+    await expectRevert(realitycards.newRental(web3.utils.toWei("24", "picoether"), maxuint256, zeroAddress, 23, { from: user }), "Card does not exist");
     // withdraw for next test
     await time.increase(time.duration.minutes(10));
     await withdrawDeposit(1000, user0);
   });
 
-  it('check lockMarket cant be called too early', async () => {
+  it("check lockMarket cant be called too early", async () => {
     /////// SETUP //////
     await depositDai(1000, user0);
     await newRental(1, 0, user0);
@@ -278,15 +225,12 @@ contract('TestRequireStatements', (accounts) => {
     await withdrawDeposit(1000, user0);
   });
 
-
-  it('check that cannot rent a card if less than 1 hours rent', async () => {
+  it("check that cannot rent a card if less than 1 hours rent", async () => {
     await depositDai(1, user0);
-    await expectRevert(realitycards.newRental(web3.utils.toWei('150', 'ether'), maxuint256, zeroAddress, 2, { from: user0 }), "Insufficient deposit");
+    await expectRevert(realitycards.newRental(web3.utils.toWei("150", "ether"), maxuint256, zeroAddress, 2, { from: user0 }), "Insufficient deposit");
   });
 
-
-
-  it('check that users cannot transfer their NFTs until withdraw state', async () => {
+  it("check that users cannot transfer their NFTs until withdraw state", async () => {
     await rcfactory.changeMarketApproval(realitycards.address);
     user = user0;
     await depositDai(144, user);
@@ -318,12 +262,12 @@ contract('TestRequireStatements', (accounts) => {
     await nftHubL2.safeTransferFrom(user1, user, tokenId, { from: user1 });
   });
 
-  it('make sure functions cant be called in the wrong state', async () => {
+  it("make sure functions cant be called in the wrong state", async () => {
     user = user0;
     realitycards2 = realitycards; // cos later we will add realitycards2 back
     var state = await realitycards2.state.call();
     assert.equal(1, state);
-    // currently in state 'OPEN' the following should all fail 
+    // currently in state 'OPEN' the following should all fail
     await expectRevert(realitycards2.withdraw(), "Incorrect state");
     await expectRevert(realitycards2.payArtist(), "Incorrect state");
     await expectRevert(realitycards2.payMarketCreator(), "Incorrect state");
@@ -334,8 +278,7 @@ contract('TestRequireStatements', (accounts) => {
     await realitycards2.lockMarket();
     var state = await realitycards2.state.call();
     assert.equal(2, state);
-    // currently in state 'LOCKED' the following should all fail 
-    await expectRevert(realitycards2.collectRent(0), "Incorrect state");
+    // currently in state 'LOCKED' the following should all fail
     await expectRevert(realitycards2.newRental(0, maxuint256, zeroAddress, 0), "Incorrect state");
     await expectRevert(realitycards2.exit(0), "Incorrect state");
     await expectRevert(realitycards2.sponsor(user0, 3), "Incorrect state");
@@ -348,52 +291,51 @@ contract('TestRequireStatements', (accounts) => {
     // await realitycards2.determineWinner();
     var state = await realitycards2.state.call();
     assert.equal(3, state);
-    // currently in state 'WITHDRAW' the following should all fail 
+    // currently in state 'WITHDRAW' the following should all fail
     await expectRevert(realitycards2.lockMarket(), "Incorrect state");
     await expectRevert(realitycards2.collectRent(0), "Incorrect state");
     await expectRevert(realitycards2.newRental(0, maxuint256, zeroAddress, 0), "Incorrect state");
     await expectRevert(realitycards2.exit(0), "Incorrect state");
-    await erc20.approve(treasury.address, ether('3')) // we aren't testing erc20 here
-    await expectRevert(realitycards2.sponsor(ether('3')), "Incorrect state");
+    await erc20.approve(treasury.address, ether("3")); // we aren't testing erc20 here
+    await expectRevert(realitycards2.sponsor(ether("3")), "Incorrect state");
   });
 
-  it('check oracleResolutionTime and marketLockingTime expected failures', async () => {
+  it("check oracleResolutionTime and marketLockingTime expected failures", async () => {
     let now = await time.latest();
-    let oneDay = new BN('86400');
+    let oneDay = new BN("86400");
     // someone else deploys question to realitio
     var question = 'Test 6␟"X","Y","Z"␟news-politics␟en_US';
     var arbitrator = "0xA6EAd513D05347138184324392d8ceb24C116118";
     var timeout = oneDay;
     var templateId = 2;
-    var artistAddress = '0x0000000000000000000000000000000000000000';
-    var affiliateAddress = '0x0000000000000000000000000000000000000000';
+    var artistAddress = "0x0000000000000000000000000000000000000000";
+    var affiliateAddress = "0x0000000000000000000000000000000000000000";
 
     // resolution time before locking, expect failure
     var oracleResolutionTime = now.add(new BN(69419));
     var marketLockingTime = now.add(new BN(69420));
     var timestamps = [0, marketLockingTime, oracleResolutionTime];
-    await expectRevert(rcfactory.createMarket(0, '0x0', "slug", timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0), "Oracle resolution time error");
+    await expectRevert(rcfactory.createMarket(0, "0x0", "slug", timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0), "Oracle resolution time error");
     // resolution time > 1 weeks after locking, expect failure
     var oracleResolutionTime = now.add(new BN(604910));
     var marketLockingTime = now.add(new BN(100));
     var timestamps = [now, marketLockingTime, oracleResolutionTime];
-    await expectRevert(rcfactory.createMarket(0, '0x0', "slug", timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0), "Oracle resolution time error");
+    await expectRevert(rcfactory.createMarket(0, "0x0", "slug", timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0), "Oracle resolution time error");
     // resolution time < 1 week  after locking, no failure
     var oracleResolutionTime = now.add(new BN(604790));
     var marketLockingTime = now.add(new BN(100));
     var timestamps = [now, marketLockingTime, oracleResolutionTime];
 
-    await rcfactory.createMarket(0, '0x0', "slug", timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0);
+    await rcfactory.createMarket(0, "0x0", "slug", timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0);
     // same time, no failure
     var oracleResolutionTime = now.add(new BN(100));
     var marketLockingTime = now.add(new BN(100));
     var timestamps = [now, marketLockingTime, oracleResolutionTime];
-    var slug = 'a';
-    await rcfactory.createMarket(0, '0x0', "slug", timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0);
+    var slug = "a";
+    await rcfactory.createMarket(0, "0x0", "slug", timestamps, tokenURIs, artistAddress, affiliateAddress, cardRecipients, question, 0);
   });
 
-
-  it('test marketOpeningTime stuff', async () => {
+  it("test marketOpeningTime stuff", async () => {
     let now = await time.latest();
     await depositDai(144, user0);
     // // check that state is 1 if marketopening time in the past
@@ -401,8 +343,8 @@ contract('TestRequireStatements', (accounts) => {
     var state = await realitycards2.state();
     assert.equal(state, 1);
     var latestTime = await time.latest();
-    var oneMonth = new BN('2592000');
-    var oneYear = new BN('31104000');
+    var oneMonth = new BN("2592000");
+    var oneYear = new BN("31104000");
     var oneMonthInTheFuture = oneMonth.add(latestTime);
     var oneYearInTheFuture = oneYear.add(latestTime);
     var realitycards3 = await createMarketCustomeTimestamps2(oneMonthInTheFuture, oneYearInTheFuture, oneYearInTheFuture);
@@ -413,9 +355,9 @@ contract('TestRequireStatements', (accounts) => {
     assert.equal(state, 0);
     // advance time so its in the past, should work
     await time.increase(time.duration.weeks(8));
-    await realitycards3.newRental(web3.utils.toWei('150', 'ether'), maxuint256, zeroAddress, 2, { from: user0 })
+    await realitycards3.newRental(web3.utils.toWei("150", "ether"), maxuint256, zeroAddress, 2, { from: user0 });
     // check that it won't increment state twice
-    await realitycards3.newRental(web3.utils.toWei('200', 'ether'), maxuint256, zeroAddress, 2, { from: user0 })
+    await realitycards3.newRental(web3.utils.toWei("200", "ether"), maxuint256, zeroAddress, 2, { from: user0 });
     var state = await realitycards3.state();
     assert.equal(state, 1);
     // withdraw for next test
@@ -423,7 +365,7 @@ contract('TestRequireStatements', (accounts) => {
     await withdrawDeposit(1000, user0);
   });
 
-  it('test cant withdraw within minimum duration', async () => {
+  it("test cant withdraw within minimum duration", async () => {
     await depositDai(10, user0);
     await newRental(1, 0, user0);
     await expectRevert(treasury.withdrawDeposit(678, { from: user0 }), "Too soon");
@@ -434,5 +376,4 @@ contract('TestRequireStatements', (accounts) => {
     await time.increase(time.duration.minutes(5));
     await treasury.withdrawDeposit(678, { from: user0 });
   });
-
 });
