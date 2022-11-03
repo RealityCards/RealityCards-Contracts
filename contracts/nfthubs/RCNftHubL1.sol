@@ -8,13 +8,13 @@ pragma solidity 0.8.7;
 ██║  ██║███████╗██║  ██║███████╗██║   ██║      ██║   ╚██████╗██║  ██║██║  ██║██████╔╝███████║
 ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝   ╚═╝      ╚═╝    ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚══════╝ 
 */
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/access/Ownable.sol"; // for OpenSea
-import "hardhat/console.sol";
-import "../lib/NativeMetaTransaction.sol";
-import "../interfaces/IRCNftHubL1.sol";
+import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
+import '@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol';
+import '@openzeppelin/contracts/access/AccessControl.sol';
+import '@openzeppelin/contracts/access/Ownable.sol'; // for OpenSea
+import 'hardhat/console.sol';
+import '../lib/NativeMetaTransaction.sol';
+import '../interfaces/IRCNftHubL1.sol';
 
 /// @title Reality Cards NFT Hub- mainnet side
 /// @author Andrew Stanger & Daniel Chilvers
@@ -29,15 +29,15 @@ contract RCNftHubL1 is
       ║           VARIABLES             ║
       ╚═════════════════════════════════╝*/
 
-    bytes32 public constant PREDICATE_ROLE = keccak256("PREDICATE_ROLE");
+    bytes32 public constant PREDICATE_ROLE = keccak256('PREDICATE_ROLE');
 
     /*╔═════════════════════════════════╗
       ║          CONSTRUCTOR            ║
       ╚═════════════════════════════════╝*/
 
-    constructor(address _predicate) ERC721("RealityCards", "RC") {
+    constructor(address _predicate) ERC721('RealityCards', 'RC') {
         // initialise MetaTransactions
-        _initializeEIP712("RealityCardsNftHubL1", "1");
+        _initializeEIP712('RealityCardsNftHubL1', '1');
         _setupRole(DEFAULT_ADMIN_ROLE, msgSender());
         _setupRole(PREDICATE_ROLE, _predicate);
     }
