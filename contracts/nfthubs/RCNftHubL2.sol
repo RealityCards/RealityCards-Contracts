@@ -42,6 +42,7 @@ contract RCNftHubL2 is
     IRCFactory public factory;
     IRCTreasury public treasury;
     bytes32 public constant UBER_OWNER = keccak256('UBER_OWNER');
+    bytes32 public constant MINTER = keccak256('MINTER');
     mapping(uint256 => bool) public withdrawnTokens;
     event TransferWithMetadata(
         address indexed from,
@@ -68,6 +69,7 @@ contract RCNftHubL2 is
 
     constructor(address _factoryAddress) ERC721('RealityCards', 'RC') {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _setupRole(MINTER, msg.sender);
         factory = IRCFactory(_factoryAddress);
         treasury = factory.treasury();
     }
@@ -110,7 +112,10 @@ contract RCNftHubL2 is
             !withdrawnTokens[_tokenId],
             'ChildMintableERC721: TOKEN_EXISTS_ON_ROOT_CHAIN'
         );
-        require(msg.sender == address(factory), 'Not factory');
+        require(
+            msg.sender == address(factory) || hasRole(MINTER, msg.sender),
+            'No permisson'
+        );
         marketTracker[_tokenId] = _originalOwner;
         mintCount++;
         _mint(_originalOwner, _tokenId);
