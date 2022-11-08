@@ -17,6 +17,7 @@ import 'hardhat/console.sol';
 import '../interfaces/IRCMarket.sol';
 import '../interfaces/IRCTreasury.sol';
 import '../interfaces/IRCFactory.sol';
+import '../lib/NativeMetaTransaction.sol';
 import '../interfaces/IRCNftHubL2.sol';
 
 /// @title Reality Cards NFT Hub- Layer 2 side
@@ -27,6 +28,7 @@ contract RCNftHubL2 is
     ERC721URIStorage,
     ERC721Enumerable,
     AccessControl,
+    NativeMetaTransaction,
     IRCNftHubL2
 {
     /*╔═════════════════════════════════╗
@@ -57,7 +59,7 @@ contract RCNftHubL2 is
 
     modifier onlyUberOwner() {
         require(
-            treasury.checkPermission(UBER_OWNER, msg.sender),
+            treasury.checkPermission(UBER_OWNER, msgSender()),
             'Not approved'
         );
         _;
@@ -89,7 +91,7 @@ contract RCNftHubL2 is
         external
         override
     {
-        address _msgSender = msg.sender;
+        address _msgSender = msgSender();
         require(
             _msgSender == address(factory) ||
                 hasRole(DEFAULT_ADMIN_ROLE, _msgSender),
@@ -128,14 +130,76 @@ contract RCNftHubL2 is
         address _newOwner,
         uint256 _tokenId
     ) external override {
-        require(marketTracker[_tokenId] == msg.sender, 'Not market');
+        require(marketTracker[_tokenId] == msgSender(), 'Not market');
         _transfer(_currentOwner, _newOwner, _tokenId);
     }
 
     /// @notice to burn the NFT
     function burn(uint256 _tokenId) external {
-        _isApprovedOrOwner(msg.sender, _tokenId);
+        _isApprovedOrOwner(msgSender(), _tokenId);
         _burn(_tokenId);
+    }
+
+    /*╔═════════════════════════════════╗
+      ║        MATIC MINTABLE           ║
+      ╚═════════════════════════════════╝*/
+
+    function deposit(address user, bytes calldata depositData)
+        external
+        override
+        onlyRole(DEPOSITOR_ROLE)
+    {
+        // deposit single
+        if (depositData.length == 32) {
+            uint256 tokenId = abi.decode(depositData, (uint256));
+            withdrawnTokens[tokenId] = false;
+            _mint(user, tokenId);
+
+            // deposit batch
+        } else {
+            uint256[] memory tokenIds = abi.decode(depositData, (uint256[]));
+            uint256 length = tokenIds.length;
+            for (uint256 i = 0; i < length; i++) {
+                withdrawnTokens[tokenIds[i]] = false;
+                _mint(user, tokenIds[i]);
+            }
+        }
+    }
+
+    function withdraw(uint256 tokenId) external override {
+        require(
+            _isApprovedOrOwner(msgSender(), tokenId),
+            'ChildMintableERC721: INVALID_TOKEN_OWNER'
+        );
+        withdrawnTokens[tokenId] = true;
+        _burn(tokenId);
+    }
+
+    function withdrawWithMetadata(uint256 tokenId) external override {
+        require(
+            _isApprovedOrOwner(msgSender(), tokenId),
+            'ChildMintableERC721: INVALID_TOKEN_OWNER'
+        );
+        withdrawnTokens[tokenId] = true;
+
+        // Encoding metadata associated with tokenId & emitting event
+        emit TransferWithMetadata(
+            ownerOf(tokenId),
+            address(0),
+            tokenId,
+            this.encodeTokenMetadata(tokenId)
+        );
+
+        _burn(tokenId);
+    }
+
+    function encodeTokenMetadata(uint256 tokenId)
+        external
+        view
+        virtual
+        returns (bytes memory)
+    {
+        return abi.encode(tokenURI(tokenId));
     }
 
     /*╔═════════════════════════════════╗
@@ -150,8 +214,8 @@ contract RCNftHubL2 is
         super._beforeTokenTransfer(from, to, tokenId);
 
         if (
-            msg.sender != address(factory) &&
-            msg.sender != marketTracker[tokenId]
+            msgSender() != address(factory) &&
+            msgSender() != marketTracker[tokenId]
         ) {
             IRCMarket market = IRCMarket(marketTracker[tokenId]);
             require(

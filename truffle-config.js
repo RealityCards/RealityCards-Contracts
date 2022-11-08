@@ -1,29 +1,28 @@
-require('dotenv').config();
+require("dotenv").config();
 
-const path = require('path');
-const HDWalletProvider = require('@truffle/hdwallet-provider');
+const path = require("path");
+const HDWalletProvider = require("@truffle/hdwallet-provider");
 const INFURA_KEY = process.env.INFURA_KEY;
 const MNEMONIC = process.env.MNEMONIC;
 const ETHERSCAN_KEY = process.env.ETHERSCAN_KEY;
-const blockchainNodeHost = process.env.BLOCKCHAIN_NODE_HOST || 'localhost';
-const MATIC_RPC = process.env.MATIC_RPC || 'https://rpc-mainnet.maticvigil.com';
-const MUMBAI_RPC =
-  process.env.MUMBAI_RPC || 'https://rpc-mumbai.maticvigil.com';
+const blockchainNodeHost = process.env.BLOCKCHAIN_NODE_HOST || "localhost";
+const MATIC_RPC = process.env.MATIC_RPC || "https://rpc-mainnet.maticvigil.com";
+const MUMBAI_RPC = process.env.MUMBAI_RPC || "https://rpc-mumbai.maticvigil.com";
 const MATIC_KEY = process.env.MATIC_KEY;
 
 module.exports = {
-  plugins: ['truffle-plugin-verify', 'truffle-contract-size'],
-  contracts_build_directory: path.join(__dirname, './artifactsTruffle'),
+  plugins: ["truffle-plugin-verify", 'truffle-contract-size'],
+  contracts_build_directory: path.join(__dirname, "./artifactsTruffle"),
   networks: {
     develop: {
-      host: '127.0.0.1',
+      host: "127.0.0.1",
       port: 8545,
-      network_id: '*',
+      network_id: "*",
     },
     graphTesting: {
       host: blockchainNodeHost, // Localhost (default: none)
       port: 8545, // Standard Ethereum port (default: none)
-      network_id: '*', // Any network (default: none)
+      network_id: "*", // Any network (default: none)
       gasPrice: 1000000000, // 1 gwei
     },
     mainnet: {
@@ -82,7 +81,7 @@ module.exports = {
     },
     xdai: {
       provider: function () {
-        return new HDWalletProvider(MNEMONIC, 'http://rpc.xdaichain.com');
+        return new HDWalletProvider(MNEMONIC, "http://rpc.xdaichain.com");
       },
       network_id: 100,
       gas: 12000000,
@@ -99,7 +98,7 @@ module.exports = {
       gas: 6000000,
       gasPrice: 75000000000,
       networkCheckTimeout: 1000000,
-      timeoutBlocks: 200,
+      timeoutBlocks: 200
     },
     matic2: {
       provider: () => {
@@ -112,7 +111,7 @@ module.exports = {
       gas: 6000000,
       gasPrice: 7500000000,
       networkCheckTimeout: 1000000,
-      timeoutBlocks: 200,
+      timeoutBlocks: 200
     },
     mumbai: {
       provider: () => {
@@ -179,23 +178,11 @@ module.exports = {
       gas: 12000000,
       gasPrice: 5000000000,
     },
-    bsc: {
-      provider: () => {
-        return new HDWalletProvider(
-          MNEMONIC,
-          `https://bsc-dataseed.binance.org/`
-        );
-      },
-      network_id: 56,
-      gas: 6000000,
-      gasPrice: 5000000000,
-      networkCheckTimeout: 1000000,
-      timeoutBlocks: 200,
-    },
+
   },
   compilers: {
     solc: {
-      version: '0.8.7',
+      version: "0.8.7",
       settings: {
         optimizer: {
           enabled: true,
