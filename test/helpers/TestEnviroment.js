@@ -22,6 +22,7 @@ const NftHubL2 = artifacts.require('./nfthubs/RCNftHubL2.sol');
 const NftHubL1 = artifacts.require('./nfthubs/RCNftHubL1.sol');
 const RCOrderbook = artifacts.require('./RCOrderbook.sol');
 const RCLeaderboard = artifacts.require('./RCLeaderboard.sol');
+const GloryPass = artifacts.require('./mockups/GloryPassMockup.sol');
 // mockups
 const RealitioMockup = artifacts.require('./mockups/RealitioMockup.sol');
 const SelfDestructMockup = artifacts.require(
@@ -94,6 +95,7 @@ module.exports = class TestEnviroment {
         from: user0,
       });
     }
+    this.contracts.glorypass = await GloryPass.new('GloryPass', 'GLP');
     // mockups
     this.contracts.realitio = await RealitioMockup.new();
     this.contracts.dai = await DaiMockup.new();
@@ -116,7 +118,7 @@ module.exports = class TestEnviroment {
     // nft hubs
     this.contracts.nftHubL2 = await NftHubL2.new(
       this.contracts.factory.address,
-      dummyAddress
+      this.contracts.glorypass.address
     );
     this.contracts.nftHubL1 = await NftHubL1.new(dummyAddress);
     // tell treasury about factory, tell factory about nft hub and reference

@@ -21,6 +21,7 @@ contract('RealityCardsTests', (accounts) => {
       erc20,
       realitio,
       nftHubL2,
+      glorypass,
     } = rc.contracts);
   });
   afterEach(async function () {
@@ -2309,6 +2310,24 @@ contract('RealityCardsTests', (accounts) => {
       await nftHubL2.mint(alice, 0, 'testURI');
       const NFTOwner = await nftHubL2.ownerOf(0);
       assert.equal(NFTOwner, alice);
+    });
+    it('should allow to mint if user has glorypass', async () => {
+      await glorypass.mint(alice, 0);
+      await glorypass.mint(carol, 1);
+      await rc.deposit(1000, alice);
+      await rc.deposit(1000, bob);
+      await rc.newRental({from: alice});
+      await rc.newRental({from: bob});
+      await markets[0].setAmicableResolution(0);
+      await nftHubL2.gloryPassMint(markets[0].address, 0, {from: alice});
+      await expectRevert(
+        nftHubL2.gloryPassMint(markets[0].address, 0, {from: bob}),
+        'No glory pass'
+      );
+      await expectRevert(
+        nftHubL2.gloryPassMint(markets[0].address, 0, {from: carol}),
+        'Rent required'
+      );
     });
   });
 });
