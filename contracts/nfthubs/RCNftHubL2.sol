@@ -72,7 +72,7 @@ contract RCNftHubL2 is
       ╚═════════════════════════════════╝*/
 
     constructor(address _factoryAddress, address _gloryPassAddress)
-        ERC721("RealityCards", "RC")
+        ERC721("ApeCards", "AC")
     {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(MINTER, msg.sender);
