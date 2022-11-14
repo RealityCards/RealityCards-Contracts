@@ -45,6 +45,7 @@ var arbAddressXdai = '0x7301CFA0e1756B71869E93d4e4Dca5c7d0eb0AA6'; // may not be
 var kleros = '0xd47f72a2d1d0E91b0Ec5e5f5d02B2dc26d00A14D'; //double check this
 const PoSDai = '0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063';
 const PoSUSDC = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
+const GloryPass = '0xa23b58EA2eE75A30075B3D071444Da35d4947Cc9';
 // Testnet addresses
 var ambAddressSokol = '0xFe446bEF1DbF7AFE24E81e05BC8B271C1BA9a560';
 var ambAddressKovan = '0xFe446bEF1DbF7AFE24E81e05BC8B271C1BA9a560';
@@ -87,7 +88,7 @@ module.exports = async (deployer, network, accounts) => {
     orderbook = await RCOrderbook.deployed();
     await deployer.deploy(RCLeaderboard, treasury.address);
     leaderboard = await RCLeaderboard.deployed();
-    await deployer.deploy(NftHubL2, factory.address);
+    await deployer.deploy(NftHubL2, factory.address, GloryPass);
     nftHubL2 = await NftHubL2.deployed();
 
     // const achievements = await deployProxy(
