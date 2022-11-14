@@ -166,7 +166,7 @@ contract RCNftHubL2 is
             _tokenURIIndex = _cardId + (_numberOfCards * 4);
         }
         uint256 _newTokenId = totalSupply();
-        marketTracker[_newTokenId] = msg.sender;
+        marketTracker[_newTokenId] = _market;
         mintCount++;
         _mint(msg.sender, _newTokenId);
         _setTokenURI(_tokenId, tokenURI(_tokenId));
@@ -202,6 +202,7 @@ contract RCNftHubL2 is
 
         if (
             msg.sender != address(factory) &&
+            !hasRole(MINTER, msg.sender) &&
             msg.sender != marketTracker[tokenId]
         ) {
             IRCMarket market = IRCMarket(marketTracker[tokenId]);
