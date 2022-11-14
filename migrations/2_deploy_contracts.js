@@ -3,9 +3,9 @@
 var myArgs = process.argv.slice(6, 9);
 
 const _ = require('underscore');
-const {BN, time} = require('@openzeppelin/test-helpers');
-const {ZERO_ADDRESS} = require('@openzeppelin/test-helpers/src/constants');
-const {deployProxy, upgradeProxy} = require('@openzeppelin/truffle-upgrades');
+const { BN, time } = require('@openzeppelin/test-helpers');
+const { ZERO_ADDRESS } = require('@openzeppelin/test-helpers/src/constants');
+const { deployProxy, upgradeProxy } = require('@openzeppelin/truffle-upgrades');
 
 const argv = require('minimist')(process.argv.slice(2), {
   string: ['ipfs_hash'],
@@ -90,23 +90,23 @@ module.exports = async (deployer, network, accounts) => {
     await deployer.deploy(NftHubL2, factory.address);
     nftHubL2 = await NftHubL2.deployed();
 
-    const achievements = await deployProxy(
-      RCAchievements,
-      [childChainManager],
-      {deployer}
-    );
-    console.log(achievements);
+    // const achievements = await deployProxy(
+    //   RCAchievements,
+    //   [childChainManager],
+    //   {deployer}
+    // );
+    // console.log(achievements);
     // const achievements = await upgradeProxy("0x81Fca7E9c8080f769F062C2d699724C551b94e7E", RCAchievements, { deployer });
 
     // tell treasury about factory & ARB, tell factory about nft hub and reference
-    await treasury.setFactoryAddress(factory.address, {gas: 200000});
+    await treasury.setFactoryAddress(factory.address, { gas: 200000 });
     await factory.setReferenceContractAddress(reference.address, {
       gas: 100000,
     });
-    await factory.setNftHubAddress(nftHubL2.address, {gas: 100000});
-    await factory.setRealitioAddress(realitio.address, {gas: 100000});
-    await treasury.setOrderbookAddress(orderbook.address, {gas: 200000});
-    await treasury.setLeaderboardAddress(leaderboard.address, {gas: 200000});
+    await factory.setNftHubAddress(nftHubL2.address, { gas: 100000 });
+    await factory.setRealitioAddress(realitio.address, { gas: 100000 });
+    await treasury.setOrderbookAddress(orderbook.address, { gas: 200000 });
+    await treasury.setLeaderboardAddress(leaderboard.address, { gas: 200000 });
     // await treasury.toggleWhitelist({ gas: 100000 });
 
     // print out some stuff to be picked up by the deploy script ready for the next stage
@@ -116,7 +116,7 @@ module.exports = async (deployer, network, accounts) => {
     console.log('RCMarketAddress    ', RCMarket.address);
     console.log('RCOrderbookAddress ', RCOrderbook.address);
     console.log('NFTHubL2Address    ', nftHubL2.address);
-    console.log('RCAchievements     ', achievements.address);
+    // console.log('RCAchievements     ', achievements.address);
     console.log('Realitio           ', realitio.address);
   } else if (network === 'graphTesting') {
     /**************************************
@@ -162,7 +162,7 @@ module.exports = async (deployer, network, accounts) => {
     const achievements = await deployProxy(
       RCAchievements,
       [childChainManager],
-      {deployer}
+      { deployer }
     );
     // tell treasury and factory about various things
     await treasury.setFactoryAddress(factory.address);
@@ -323,8 +323,8 @@ async function closeMarket(options) {
 
 async function depositDai(amount, user) {
   amount = web3.utils.toWei(amount.toString(), 'ether');
-  await erc20.approve(treasury.address, amount, {from: user});
-  await treasury.deposit(amount, user, {from: user});
+  await erc20.approve(treasury.address, amount, { from: user });
+  await treasury.deposit(amount, user, { from: user });
 }
 
 function setDefaults(options, defaults) {
@@ -368,7 +368,7 @@ async function rent(options) {
       options.timeLimit,
       options.startingPosition,
       options.outcome,
-      {from: options.from}
+      { from: options.from }
     );
   } catch (err) {
     console.log(
@@ -391,7 +391,7 @@ async function exit(options) {
   };
   options = setDefaults(options, defaults);
 
-  await options.market.exit(options.outcome, {from: options.from});
+  await options.market.exit(options.outcome, { from: options.from });
 }
 
 async function sponsor(options) {
