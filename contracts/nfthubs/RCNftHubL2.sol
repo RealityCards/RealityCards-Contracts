@@ -8,17 +8,17 @@ pragma solidity 0.8.7;
 ██║  ██║███████╗██║  ██║███████╗██║   ██║      ██║   ╚██████╗██║  ██║██║  ██║██████╔╝███████║
 ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝   ╚═╝      ╚═╝    ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚══════╝ 
 */
-import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
-import '@openzeppelin/contracts/token/ERC721/IERC721.sol';
-import '@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol';
-import '@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol';
-import '@openzeppelin/contracts/access/Ownable.sol';
-import '@openzeppelin/contracts/access/AccessControl.sol';
-import 'hardhat/console.sol';
-import '../interfaces/IRCMarket.sol';
-import '../interfaces/IRCTreasury.sol';
-import '../interfaces/IRCFactory.sol';
-import '../interfaces/IRCNftHubL2.sol';
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "hardhat/console.sol";
+import "../interfaces/IRCMarket.sol";
+import "../interfaces/IRCTreasury.sol";
+import "../interfaces/IRCFactory.sol";
+import "../interfaces/IRCNftHubL2.sol";
 
 /// @title Reality Cards NFT Hub- Layer 2 side
 /// @author Andrew Stanger & Daniel Chilvers
@@ -47,15 +47,8 @@ contract RCNftHubL2 is
     IRCFactory public factory;
     IRCTreasury public treasury;
     IERC721 public gloryPass;
-    bytes32 public constant UBER_OWNER = keccak256('UBER_OWNER');
-    bytes32 public constant MINTER = keccak256('MINTER');
-    mapping(uint256 => bool) public withdrawnTokens;
-    event TransferWithMetadata(
-        address indexed from,
-        address indexed to,
-        uint256 indexed tokenId,
-        bytes metaData
-    );
+    bytes32 public constant UBER_OWNER = keccak256("UBER_OWNER");
+    bytes32 public constant MINTER = keccak256("MINTER");
     event LogMintNFTCopy(
         uint256 _originalTokenId,
         address _newOwner,
@@ -69,7 +62,7 @@ contract RCNftHubL2 is
     modifier onlyUberOwner() {
         require(
             treasury.checkPermission(UBER_OWNER, msg.sender),
-            'Not approved'
+            "Not approved"
         );
         _;
     }
@@ -79,7 +72,7 @@ contract RCNftHubL2 is
       ╚═════════════════════════════════╝*/
 
     constructor(address _factoryAddress, address _gloryPassAddress)
-        ERC721('RealityCards', 'RC')
+        ERC721("RealityCards", "RC")
     {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _setupRole(MINTER, msg.sender);
@@ -94,14 +87,14 @@ contract RCNftHubL2 is
 
     /// @dev address of RC factory contract, so only factory can mint
     function setFactory(address _newAddress) external onlyUberOwner {
-        require(_newAddress != address(0), 'Must set an address');
+        require(_newAddress != address(0), "Must set an address");
         factory = IRCFactory(_newAddress);
         treasury = factory.treasury();
     }
 
     /// @dev address of Binance GloryPass contract
     function setGloryPass(address _newAddress) external onlyUberOwner {
-        require(_newAddress != address(0), 'Must set an address');
+        require(_newAddress != address(0), "Must set an address");
         gloryPass = IERC721(_newAddress);
     }
 
@@ -113,7 +106,7 @@ contract RCNftHubL2 is
         require(
             _msgSender == address(factory) ||
                 hasRole(DEFAULT_ADMIN_ROLE, _msgSender),
-            'Not Authorised'
+            "Not Authorised"
         );
         _setTokenURI(_tokenId, _tokenURI);
     }
@@ -129,12 +122,8 @@ contract RCNftHubL2 is
         string calldata _tokenURI
     ) external override {
         require(
-            !withdrawnTokens[_tokenId],
-            'ChildMintableERC721: TOKEN_EXISTS_ON_ROOT_CHAIN'
-        );
-        require(
             msg.sender == address(factory) || hasRole(MINTER, msg.sender),
-            'No permisson'
+            "No permisson"
         );
         marketTracker[_tokenId] = _originalOwner;
         mintCount++;
@@ -143,19 +132,19 @@ contract RCNftHubL2 is
     }
 
     function gloryPassMint(address _market, uint256 _cardId) external {
-        require(gloryPass.balanceOf(msg.sender) > 0, 'No glory pass');
+        require(gloryPass.balanceOf(msg.sender) > 0, "No glory pass");
         require(
             !treasury.marketPaused(_market) && !treasury.globalPause(),
-            'Market is Paused'
+            "Market is Paused"
         );
-        require(factory.isMarketApproved(_market), 'Market is not approved');
+        require(factory.isMarketApproved(_market), "Market is not approved");
         IRCMarket market = IRCMarket(_market);
-        require(market.state() == IRCMarket.States.WITHDRAW, 'Incorrect state');
+        require(market.state() == IRCMarket.States.WITHDRAW, "Incorrect state");
         bool _winner = _cardId == market.winningOutcome(); // invalid outcome defaults to losing
         uint256 _tokenId = market.getTokenId(_cardId);
         require(
             !gloryPassCollectedByUserByTokenId[msg.sender][_tokenId],
-            'Already claimed'
+            "Already claimed"
         );
         gloryPassCollectedByUserByTokenId[msg.sender][_tokenId] = true;
         uint256 _numberOfCards = IRCMarket(_market).numberOfCards();
@@ -179,7 +168,7 @@ contract RCNftHubL2 is
         address _newOwner,
         uint256 _tokenId
     ) external override {
-        require(marketTracker[_tokenId] == msg.sender, 'Not market');
+        require(marketTracker[_tokenId] == msg.sender, "Not market");
         _transfer(_currentOwner, _newOwner, _tokenId);
     }
 
@@ -208,7 +197,7 @@ contract RCNftHubL2 is
             require(
                 market.state() == IRCMarket.States.WITHDRAW ||
                     market.state() == IRCMarket.States.LOCKED,
-                'Incorrect state'
+                "Incorrect state"
             );
         }
     }
