@@ -162,7 +162,7 @@ contract RCTreasury is AccessControl, NativeMetaTransaction, IRCTreasury {
 
         // initialise adjustable parameters
         setMinRental(24 * 6); // MinRental is a divisor of 1 day(86400 seconds), 24*6 will set to 10 minutes
-        setMaxContractBalance(1_000_000 ether); // 1m
+        setMaxContractBalance(100_000_000 ether); // 100m
         setTokenAddress(_tokenAddress);
         whitelistEnabled = true;
     }
