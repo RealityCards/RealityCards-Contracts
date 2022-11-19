@@ -8,16 +8,16 @@ pragma solidity 0.8.7;
 ██║  ██║███████╗██║  ██║███████╗██║   ██║      ██║   ╚██████╗██║  ██║██║  ██║██████╔╝███████║
 ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝   ╚═╝      ╚═╝    ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ ╚══════╝ 
 */
-import '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
-import 'hardhat/console.sol';
-import './interfaces/IRealitio.sol';
-import './interfaces/IRCFactory.sol';
-import './interfaces/IRCLeaderboard.sol';
-import './interfaces/IRCTreasury.sol';
-import './interfaces/IRCMarket.sol';
-import './interfaces/IRCNftHubL2.sol';
-import './interfaces/IRCOrderbook.sol';
-import './lib/NativeMetaTransaction.sol';
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "hardhat/console.sol";
+import "./interfaces/IRealitio.sol";
+import "./interfaces/IRCFactory.sol";
+import "./interfaces/IRCLeaderboard.sol";
+import "./interfaces/IRCTreasury.sol";
+import "./interfaces/IRCMarket.sol";
+import "./interfaces/IRCNftHubL2.sol";
+import "./interfaces/IRCOrderbook.sol";
+import "./lib/NativeMetaTransaction.sol";
 
 /// @title Reality Cards Market
 /// @author Andrew Stanger & Daniel Chilvers
@@ -29,8 +29,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
     // CONTRACT SETUP
     uint256 public constant PER_MILLE = 1000; // in MegaBip so (1000 = 100%)
-    /// @dev minimum rental value per day, setting to 24mil means 1 USDC/hour
-    uint256 public constant MIN_RENTAL_VALUE = 24_000_000;
+    /// @dev minimum rental value per day, setting to 240**18 means 10 BANANA/hour
+    uint256 public constant MIN_RENTAL_VALUE = 240 ether;
     /// @dev the number of cards in this market
     uint256 public override numberOfCards;
     /// @dev current market state, Closed -> Open -> Locked -> Withdraw
@@ -218,7 +218,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         mode = Mode(_mode);
 
         // initialise MetaTransactions
-        _initializeEIP712('RealityCardsMarket', '1');
+        _initializeEIP712("RealityCardsMarket", "1");
 
         // external contract variables:
         factory = IRCFactory(msgSender());
@@ -344,7 +344,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
     /// @notice gets the owner of the NFT via their Card Id
     function ownerOf(uint256 _cardId) public view override returns (address) {
-        require(_cardId < numberOfCards, 'Card does not exist');
+        require(_cardId < numberOfCards, "Card does not exist");
         if (tokenExists(_cardId)) {
             uint256 _tokenId = getTokenId(_cardId);
             return nfthub.ownerOf(_tokenId);
@@ -361,7 +361,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     ) internal {
         require(
             _from != address(0) && _to != address(0),
-            'Cannot send to/from zero address'
+            "Cannot send to/from zero address"
         );
         uint256 _tokenId = getTokenId(_cardId);
 
@@ -378,7 +378,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         uint256 _price,
         uint256 _timeLimit
     ) external override {
-        require(msgSender() == address(orderbook), 'Not orderbook');
+        require(msgSender() == address(orderbook), "Not orderbook");
         _checkState(States.OPEN);
         if (_to != _from) {
             _transferCard(_from, _to, _cardId);
@@ -434,9 +434,9 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @dev sets the winning outcome
     /// @dev market.setWinner() will revert if done twice, because wrong state
     function getWinnerFromOracle() external override {
-        require(isFinalized(), 'Oracle not finalised');
+        require(isFinalized(), "Oracle not finalised");
         // check market state to prevent market closing early
-        require(marketLockingTime <= block.timestamp, 'Market not finished');
+        require(marketLockingTime <= block.timestamp, "Market not finished");
         bytes32 _winningOutcome = realitio.resultFor(questionId);
         // call the market
         setWinner(uint256(_winningOutcome));
@@ -445,8 +445,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @dev admin override of the oracle
     function setAmicableResolution(uint256 _winningOutcome) external override {
         require(
-            treasury.checkPermission(keccak256('OWNER'), msgSender()),
-            'Not authorised'
+            treasury.checkPermission(keccak256("OWNER"), msgSender()),
+            "Not authorised"
         );
         setWinner(_winningOutcome);
     }
@@ -464,7 +464,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         _checkState(States.OPEN);
         require(
             uint256(marketLockingTime) <= block.timestamp,
-            'Market has not finished'
+            "Market has not finished"
         );
 
         bool _cardAccountingComplete = false;
@@ -522,7 +522,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         if (state == States.OPEN) {
             // change the locking time to allow lockMarket to lock
             /// @dev implementing our own SafeCast as this is the only place we need it
-            require(block.timestamp <= type(uint32).max, 'Overflow');
+            require(block.timestamp <= type(uint32).max, "Overflow");
             if (uint32(block.timestamp) < marketLockingTime) {
                 marketLockingTime = uint32(block.timestamp);
             }
@@ -539,7 +539,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @notice pays out winnings, or returns funds
     function withdraw() external override {
         _checkState(States.WITHDRAW);
-        require(!userAlreadyWithdrawn[msgSender()], 'Already withdrawn');
+        require(!userAlreadyWithdrawn[msgSender()], "Already withdrawn");
         userAlreadyWithdrawn[msgSender()] = true;
         if (card[winningOutcome].totalTimeHeld > 0) {
             _payoutWinnings();
@@ -556,19 +556,19 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         _checkState(States.WITHDRAW);
         require(
             !treasury.marketPaused(address(this)) && !treasury.globalPause(),
-            'Market is Paused'
+            "Market is Paused"
         );
         address _user = msgSender();
         uint256 _tokenId = getTokenId(_card);
         bool _winner = _card == winningOutcome; // invalid outcome defaults to losing
-        require(!card[_card].userAlreadyClaimed[_user], 'Already claimed');
+        require(!card[_card].userAlreadyClaimed[_user], "Already claimed");
         card[_card].userAlreadyClaimed[_user] = true;
         if (_user == card[_card].longestOwner) {
             factory.updateTokenOutcome(_card, _tokenId, _winner);
             _transferCard(ownerOf(_card), card[_card].longestOwner, _card);
         } else {
             if (limitNFTsToWinners) {
-                require(_winner, 'Not winning outcome');
+                require(_winner, "Not winning outcome");
             }
             leaderboard.claimNFT(_user, _card);
             factory.mintCopyOfNFT(_user, _card, _tokenId, _winner);
@@ -607,7 +607,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         uint256 _numerator = _remainingPot * _winnersTimeHeld;
         _winningsToTransfer += (_numerator /
             card[winningOutcome].totalTimeHeld);
-        require(_winningsToTransfer > 0, 'Not a winner');
+        require(_winningsToTransfer > 0, "Not a winner");
         _payout(_msgSender, _winningsToTransfer);
         emit LogWinningsPaid(_msgSender, _winningsToTransfer);
     }
@@ -618,7 +618,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         uint256 _remainingCut = ((uint256(PER_MILLE) - artistCut) -
             affiliateCut) - cardAffiliateCut;
         uint256 _rentCollected = rentCollectedPerUser[msgSender()];
-        require(_rentCollected > 0, 'Paid no rent');
+        require(_rentCollected > 0, "Paid no rent");
         uint256 _rentCollectedAdjusted = (_rentCollected * _remainingCut) /
             (PER_MILLE);
         _payout(msgSender(), _rentCollectedAdjusted);
@@ -638,7 +638,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @notice pay artist
     function payArtist() external override {
         _checkState(States.WITHDRAW);
-        require(!artistPaid, 'Artist already paid');
+        require(!artistPaid, "Artist already paid");
         artistPaid = true;
         _processStakeholderPayment(artistCut, artistAddress);
     }
@@ -646,8 +646,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @notice pay market creator
     function payMarketCreator() external override {
         _checkState(States.WITHDRAW);
-        require(card[winningOutcome].totalTimeHeld > 0, 'No winner');
-        require(!creatorPaid, 'Creator already paid');
+        require(card[winningOutcome].totalTimeHeld > 0, "No winner");
+        require(!creatorPaid, "Creator already paid");
         creatorPaid = true;
         _processStakeholderPayment(creatorCut, marketCreatorAddress);
     }
@@ -655,7 +655,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @notice pay affiliate
     function payAffiliate() external override {
         _checkState(States.WITHDRAW);
-        require(!affiliatePaid, 'Affiliate already paid');
+        require(!affiliatePaid, "Affiliate already paid");
         affiliatePaid = true;
         _processStakeholderPayment(affiliateCut, affiliateAddress);
     }
@@ -664,7 +664,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     /// @dev does not call _processStakeholderPayment because it works differently
     function payCardAffiliate(uint256 _card) external override {
         _checkState(States.WITHDRAW);
-        require(!card[_card].cardAffiliatePaid, 'Card affiliate already paid');
+        require(!card[_card].cardAffiliatePaid, "Card affiliate already paid");
         card[_card].cardAffiliatePaid = true;
         uint256 _cardAffiliatePayment = (card[_card].rentCollectedPerCard *
             cardAffiliateCut) / (PER_MILLE);
@@ -719,7 +719,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             }
         }
 
-        require(_actualSumOfPrices <= _maxSumOfPrices, 'Prices too high');
+        require(_actualSumOfPrices <= _maxSumOfPrices, "Prices too high");
 
         for (uint256 i = 0; i < numberOfCards; i++) {
             if (ownerOf(i) != _user) {
@@ -743,8 +743,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
         // if the market isn't open then don't do anything else, not reverting
         // .. will allow autoLock to process the accounting to lock the market
         if (state == States.OPEN && !accountingComplete) {
-            require(_newPrice >= MIN_RENTAL_VALUE, 'Price below min');
-            require(_card < numberOfCards, 'Card does not exist');
+            require(_newPrice >= MIN_RENTAL_VALUE, "Price below min");
+            require(_card < numberOfCards, "Card does not exist");
 
             // if the NFT hasn't been minted, we should probably do that
             if (!tokenExists(_card)) {
@@ -757,17 +757,17 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             // prevent re-renting, this limits (but doesn't eliminate) a frontrunning attack
             require(
                 exitedTimestamp[_user] != block.timestamp,
-                'Cannot lose and re-rent in same block'
+                "Cannot lose and re-rent in same block"
             );
             require(
                 !treasury.marketPaused(address(this)) &&
                     !treasury.globalPause(),
-                'Rentals are disabled'
+                "Rentals are disabled"
             );
             // restrict certain markets to specific whitelists
             require(
                 treasury.marketWhitelistCheck(_user),
-                'Not approved for this market'
+                "Not approved for this market"
             );
 
             // if the user is foreclosed then delete some old bids
@@ -786,7 +786,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
                 require(
                     _newPrice >= _requiredPrice ||
                         _newPrice < card[_card].cardPrice,
-                    'Invalid price'
+                    "Invalid price"
                 );
             }
 
@@ -803,7 +803,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
             require(
                 treasury.userDeposit(_user) >=
                     _userTotalBidRate / minRentalDayDivisor,
-                'Insufficient deposit'
+                "Insufficient deposit"
             );
 
             _checkTimeHeldLimit(_timeHeldLimit);
@@ -914,7 +914,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     function _sponsor(address _sponsorAddress, uint256 _amount) internal {
         _checkNotState(States.LOCKED);
         _checkNotState(States.WITHDRAW);
-        require(_amount > 0, 'Must send something');
+        require(_amount > 0, "Must send something");
         // send tokens to the Treasury
         treasury.sponsor(_sponsorAddress, _amount);
         totalRentCollected = totalRentCollected + _amount;
@@ -934,7 +934,7 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     function _checkTimeHeldLimit(uint256 _timeHeldLimit) internal view {
         if (_timeHeldLimit != 0) {
             uint256 _minRentalTime = uint256(1 days) / minRentalDayDivisor;
-            require(_timeHeldLimit >= _minRentalTime, 'Limit too low');
+            require(_timeHeldLimit >= _minRentalTime, "Limit too low");
         }
     }
 
@@ -1196,11 +1196,11 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
     }
 
     function _checkState(States currentState) internal view {
-        require(state == currentState, 'Incorrect state');
+        require(state == currentState, "Incorrect state");
     }
 
     function _checkNotState(States currentState) internal view {
-        require(state != currentState, 'Incorrect state');
+        require(state != currentState, "Incorrect state");
     }
 
     /// @dev should only be called thrice
