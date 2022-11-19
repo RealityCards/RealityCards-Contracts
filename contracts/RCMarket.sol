@@ -29,8 +29,8 @@ contract RCMarket is Initializable, NativeMetaTransaction, IRCMarket {
 
     // CONTRACT SETUP
     uint256 public constant PER_MILLE = 1000; // in MegaBip so (1000 = 100%)
-    /// @dev minimum rental value per day, setting to 240mil means 1 BANANA/hour
-    uint256 public constant MIN_RENTAL_VALUE = 240_000_000;
+    /// @dev minimum rental value per day, setting to 240**18 means 10 BANANA/hour
+    uint256 public constant MIN_RENTAL_VALUE = 240 ether;
     /// @dev the number of cards in this market
     uint256 public override numberOfCards;
     /// @dev current market state, Closed -> Open -> Locked -> Withdraw
